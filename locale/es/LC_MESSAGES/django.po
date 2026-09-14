@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-10 21:49+0000\n"
+"POT-Creation-Date: 2026-09-14 15:33+0000\n"
 "PO-Revision-Date: 2019-05-13 20:14+0000\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
@@ -3033,12 +3033,6 @@ msgstr "Difusiones programadas"
 msgid "To get started you need to <a href=\"%(link)s\">add a channel</a> to your workspace which will allow you to send messages to your contacts."
 msgstr "Para comenzar, debe <a href=\"%(link)s\">agregar un canal</a> a su espacio de trabajo que le permitirá enviar mensajes a sus contactos."
 
-msgid "Hi @contact.name!"
-msgstr "Hola @contact.name!"
-
-msgid "Send Message"
-msgstr "Enviar Mensaje"
-
 msgid "Inbox"
 msgstr "Bandeja de entrada"
 
@@ -4351,6 +4345,9 @@ msgstr "Este evento se está programando actualmente y no se puede volver a edit
 msgid "<b>%(count)s</b> scheduled contacts"
 msgstr "<b>%(count)s</b> contactos programados"
 
+msgid "Send Message"
+msgstr "Enviar Mensaje"
+
 #, python-format
 msgid "Translation provided in %(langs)s"
 msgid_plural "Translations provided in %(langs)s"
@@ -5488,9 +5485,6 @@ msgstr[2] ""
 "        %(count)s contactos eliminados\n"
 "      "
 
-msgid "to a flow node"
-msgstr "a un nodo del flujo"
-
 msgid "Deleted"
 msgstr "Borrado"
 
@@ -5666,13 +5660,6 @@ msgstr "Eliminar difusión"
 
 msgid "You are about to delete this broadcast. There is no way to undo this. Are you sure?"
 msgstr "Está a punto de eliminar esta difusión. No hay forma de deshacer esto. ¿Está seguro?"
-
-#, python-format
-msgid "<b>%(recipients)s</b> recipient currently at this point in the flow"
-msgid_plural "<b>%(recipients)s</b> recipients currently at this point in the flow"
-msgstr[0] "<b>%(recipients)s</b> destinatario actualmente en este punto del flujo"
-msgstr[1] "<b>%(recipients)s</b> destinatarios actualmente en este punto del flujo"
-msgstr[2] "<b>%(recipients)s</b> destinatarios actualmente en este punto del flujo"
 
 msgid "No messages"
 msgstr "Ningún mensaje"

@@ -471,7 +471,6 @@ class TembaTest(SmartminTest):
             contacts=contacts,
             urns=urns,
             query=None,
-            node_uuid=None,
             exclude=exclude,
             template=None,
             template_variables=None,

@@ -286,13 +286,8 @@ class OrgTest(TembaTest):
 
         expected_message = "Sorry, your workspace is currently flagged. To re-enable starting flows and sending messages, please contact support."
 
-        # while we are flagged, we can't send broadcasts
-        send_url = reverse("msgs.broadcast_to_node") + "?node=123&count=3"
-        response = self.client.get(send_url)
-        self.assertContains(response, expected_message)
-
+        # while we are flagged, we can't start flows
         start_url = f"{reverse('flows.flow_start', args=[])}?flow={flow.id}"
-        # we also can't start flows
         self.assertRaises(
             AssertionError,
             self.client.post,
@@ -311,9 +306,6 @@ class OrgTest(TembaTest):
         self.org.suspend()
 
         expected_message = "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please contact support."
-
-        response = self.client.get(send_url)
-        self.assertContains(response, expected_message)
 
         # we also can't start flows
         self.assertRaises(

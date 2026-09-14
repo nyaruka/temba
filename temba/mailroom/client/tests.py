@@ -653,7 +653,6 @@ class MailroomClientTest(TembaTest):
             [ann, bob],
             ["tel:1234"],
             "age > 20",
-            "",
             Exclusions(in_a_flow=True),
             template,
             ["@contact"],
@@ -674,7 +673,6 @@ class MailroomClientTest(TembaTest):
                 "contact_ids": [ann.id, bob.id],
                 "urns": ["tel:1234"],
                 "query": "age > 20",
-                "node_uuid": "",
                 "exclude": {
                     "in_a_flow": True,
                     "non_active": False,

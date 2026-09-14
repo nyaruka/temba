@@ -11,7 +11,6 @@ from temba.msgs.views import ScheduleForm
 from temba.schedules.models import Schedule
 from temba.templates.models import TemplateTranslation
 from temba.tests import CRUDLTestMixin, TembaTest, mock_mailroom
-from temba.tests.engine import MockSessionWriter
 from temba.utils.compose import compose_deserialize_attachments, compose_serialize
 from temba.utils.fields import ContactSearchWidget
 
@@ -541,52 +540,6 @@ class BroadcastCRUDLTest(TembaTest, CRUDLTestMixin):
             form.fields["compose"].widget.attrs["template-warning"],
             "Using a message template may incur additional fees from your channel provider.",
         )
-
-    def test_to_node(self):
-        to_node_url = reverse("msgs.broadcast_to_node")
-
-        # give Joe a flow run that has stopped on a node
-        flow = self.get_flow("color")
-        flow_nodes = flow.get_definition()["nodes"]
-        color_prompt = flow_nodes[0]
-        color_split = flow_nodes[4]
-        (
-            MockSessionWriter(self.joe, flow)
-            .visit(color_prompt)
-            .send_msg("What is your favorite color?", self.channel)
-            .visit(color_split)
-            .wait()
-            .save()
-        )[0]
-
-        self.assertRequestDisallowed(to_node_url, [None, self.agent])
-
-        # initialize form based on a flow node UUID
-        self.assertCreateFetch(
-            f"{to_node_url}?node={color_split['uuid']}&count=1", [self.editor, self.admin], form_fields=["text"]
-        )
-
-        response = self.assertCreateSubmit(
-            f"{to_node_url}?node={color_split['uuid']}&count=1",
-            self.admin,
-            {"text": "Hurry up"},
-            new_obj_query=Broadcast.objects.filter(
-                translations={"und": {"text": "Hurry up"}},
-                base_language="und",
-                groups=None,
-                contacts=None,
-                node_uuid=color_split["uuid"],
-            ),
-            success_status=200,
-        )
-
-        self.assertEqual(1, Broadcast.objects.count())
-
-        # if org has no send channel, show blocker
-        response = self.assertCreateFetch(
-            f"{to_node_url}?node=4ba8fcfa-f213-4164-a8d4-daede0a02144&count=1", [self.admin2], form_fields=["text"]
-        )
-        self.assertContains(response, "To get started you need to")
 
     def test_list(self):
         list_url = reverse("msgs.broadcast_list")

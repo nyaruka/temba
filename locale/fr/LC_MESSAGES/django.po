@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-10 21:49+0000\n"
+"POT-Creation-Date: 2026-09-14 15:33+0000\n"
 "PO-Revision-Date: 2019-05-13 20:14+0000\n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
@@ -3033,12 +3033,6 @@ msgstr "Diffusions planifiées"
 msgid "To get started you need to <a href=\"%(link)s\">add a channel</a> to your workspace which will allow you to send messages to your contacts."
 msgstr "Pour commencer, vous devez <a href=\"%(link)s\">ajouter un canal</a> à votre espace de travail qui vous permettra d'envoyer des messages à vos contacts."
 
-msgid "Hi @contact.name!"
-msgstr "Salut @contact.name!"
-
-msgid "Send Message"
-msgstr "Envoyer un message"
-
 msgid "Inbox"
 msgstr "Boîte de Réception"
 
@@ -4351,6 +4345,9 @@ msgstr "Cet événement est en cours de planification et ne pourra pas être mod
 msgid "<b>%(count)s</b> scheduled contacts"
 msgstr "<b>%(count)s</b> contacts planifiés"
 
+msgid "Send Message"
+msgstr "Envoyer un message"
+
 #, python-format
 msgid "Translation provided in %(langs)s"
 msgid_plural "Translations provided in %(langs)s"
@@ -5492,9 +5489,6 @@ msgstr[2] ""
 "\n"
 "      "
 
-msgid "to a flow node"
-msgstr "vers un nœud de flux"
-
 msgid "Deleted"
 msgstr "Supprimé"
 
@@ -5670,13 +5664,6 @@ msgstr "Supprimer la diffusion"
 
 msgid "You are about to delete this broadcast. There is no way to undo this. Are you sure?"
 msgstr "Vous êtes sur le point de supprimer cette diffusion. Cette action est irréversible. Voulez-vous continuer ?"
-
-#, python-format
-msgid "<b>%(recipients)s</b> recipient currently at this point in the flow"
-msgid_plural "<b>%(recipients)s</b> recipients currently at this point in the flow"
-msgstr[0] "<b>%(recipients)s</b> récipiendaire actuel à ce stade du flux"
-msgstr[1] "<b>%(recipients)s</b> récipiendaires actuels à ce stade du flux"
-msgstr[2] "<b>%(recipients)s</b> récipiendaires actuels à ce stade du flux"
 
 msgid "No messages"
 msgstr "Pas de messages"

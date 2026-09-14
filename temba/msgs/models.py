@@ -213,7 +213,6 @@ class Broadcast(LegacyIDMixin, models.Model):
     contacts = models.ManyToManyField(Contact, related_name="addressed_broadcasts")
     urns = ArrayField(models.TextField(), null=True)
     query = models.TextField(null=True)
-    node_uuid = models.UUIDField(null=True)
     exclusions = models.JSONField(default=dict, null=True)
 
     # message content
@@ -244,13 +243,12 @@ class Broadcast(LegacyIDMixin, models.Model):
         contacts=(),
         urns=(),
         query=None,
-        node_uuid=None,
         exclude=None,
         template=None,
         template_variables=(),
         schedule=None,
     ):
-        assert groups or contacts or urns or query or node_uuid, "can't create broadcast without recipients"
+        assert groups or contacts or urns or query, "can't create broadcast without recipients"
         assert base_language and languages.get_name(base_language), f"{base_language} is not a valid language code"
         assert base_language in translations, "no translation for base language"
 
@@ -263,7 +261,6 @@ class Broadcast(LegacyIDMixin, models.Model):
             contacts=contacts,
             urns=urns,
             query=query,
-            node_uuid=node_uuid,
             exclude=exclude,
             template=template,
             template_variables=template_variables,

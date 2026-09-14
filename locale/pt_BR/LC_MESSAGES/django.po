@@ -17,7 +17,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-10 21:49+0000\n"
+"POT-Creation-Date: 2026-09-14 15:33+0000\n"
 "PO-Revision-Date: 2019-05-13 20:14+0000\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
@@ -3037,12 +3037,6 @@ msgstr "Transmissões agendadas"
 msgid "To get started you need to <a href=\"%(link)s\">add a channel</a> to your workspace which will allow you to send messages to your contacts."
 msgstr "Para começar você precisa <a href=\"%(link)s\">adicionar um canal</a> à sua área de trabalho, o que permitirá enviar mensagens aos seus contatos."
 
-msgid "Hi @contact.name!"
-msgstr "Olá @contact.name!"
-
-msgid "Send Message"
-msgstr "Enviar mensagem"
-
 msgid "Inbox"
 msgstr "Caixa de entrada"
 
@@ -4355,6 +4349,9 @@ msgstr "Este evento está sendo agendado no momento e não pode ser editado nova
 msgid "<b>%(count)s</b> scheduled contacts"
 msgstr "<b>%(count)s</b> contatos agendados"
 
+msgid "Send Message"
+msgstr "Enviar mensagem"
+
 #, python-format
 msgid "Translation provided in %(langs)s"
 msgid_plural "Translations provided in %(langs)s"
@@ -5492,9 +5489,6 @@ msgstr[2] ""
 "        %(count)s contatos deletados\n"
 "      "
 
-msgid "to a flow node"
-msgstr "para um nó do fluxo"
-
 msgid "Deleted"
 msgstr "Deletado"
 
@@ -5670,13 +5664,6 @@ msgstr "Deletar transmissão"
 
 msgid "You are about to delete this broadcast. There is no way to undo this. Are you sure?"
 msgstr "Você está prestes a deletar esta transmissão. Não é possível reverter isso. Você tem certeza?"
-
-#, python-format
-msgid "<b>%(recipients)s</b> recipient currently at this point in the flow"
-msgid_plural "<b>%(recipients)s</b> recipients currently at this point in the flow"
-msgstr[0] "<b>%(recipients)s</b> destinatário atualmente neste ponto do fluxo"
-msgstr[1] "<b>%(recipients)s</b> destinatários atualmente neste ponto do fluxo"
-msgstr[2] "<b>%(recipients)s</b> destinatários atualmente neste ponto do fluxo"
 
 msgid "No messages"
 msgstr "Nenhuma mensagem"
