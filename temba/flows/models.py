@@ -1216,13 +1216,6 @@ class FlowRun(models.Model):
             models.Index(
                 name="flowruns_api_responded_by_org", fields=("org", "-modified_on", "-id"), condition=Q(responded=True)
             ),
-            # for finding and messaging all contacts at a given node
-            models.Index(
-                name="flows_flowrun_contacts_at_node",
-                fields=("org", "current_node_uuid"),
-                condition=Q(status__in=("A", "W")),
-                include=("contact",),
-            ),
             # for indexing contacts with their flow history
             models.Index(name="flows_flowrun_contact_inc_flow", fields=("contact",), include=("flow",)),
             # for interrupts
