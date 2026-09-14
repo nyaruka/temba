@@ -30,7 +30,6 @@ class MsgTest(TembaTest, CRUDLTestMixin):
 
         assert_folder(self.create_incoming_msg(self.joe, "Hi"), Msg.FOLDER_INBOX)
         assert_folder(self.create_incoming_msg(self.joe, "Hi", flow=flow), Msg.FOLDER_HANDLED)
-        assert_folder(self.create_incoming_msg(self.joe, "Hi", visibility=Msg.VISIBILITY_ARCHIVED), Msg.FOLDER_ARCHIVED)
         assert_folder(self.create_outgoing_msg(self.joe, "Hi", status=Msg.STATUS_FAILED), Msg.FOLDER_FAILED)
 
         # the outbox and sent folders each fold in several statuses
@@ -41,12 +40,8 @@ class MsgTest(TembaTest, CRUDLTestMixin):
             msg = self.create_outgoing_msg(self.joe, "Hi", status=status, sent_on=timezone.now())
             assert_folder(msg, Msg.FOLDER_SENT)
 
-        # incoming messages which haven't been handled yet are pending, whatever their visibility
+        # incoming messages which haven't been handled yet are pending
         assert_folder(self.create_incoming_msg(self.joe, "Hi", status=Msg.STATUS_PENDING), Msg.FOLDER_PENDING)
-        assert_folder(
-            self.create_incoming_msg(self.joe, "Hi", status=Msg.STATUS_PENDING, visibility=Msg.VISIBILITY_ARCHIVED),
-            Msg.FOLDER_PENDING,
-        )
 
         # being deleted takes precedence over everything else
         for visibility in (Msg.VISIBILITY_DELETED_BY_USER, Msg.VISIBILITY_DELETED_BY_SENDER):
@@ -225,14 +220,12 @@ class MsgTest(TembaTest, CRUDLTestMixin):
         Msg.bulk_archive(self.org, [msg1])
 
         msg1 = Msg.objects.get(pk=msg1.pk)
-        self.assertEqual(msg1.visibility, Msg.VISIBILITY_ARCHIVED)
         self.assertEqual(Msg.FOLDER_ARCHIVED, msg1.folder)
         self.assertEqual(set(msg1.labels.all()), {label})  # don't remove labels
 
         Msg.bulk_restore(self.org, [msg1])
 
         msg1 = Msg.objects.get(pk=msg1.id)
-        self.assertEqual(msg1.visibility, Msg.VISIBILITY_VISIBLE)
         self.assertEqual(Msg.FOLDER_INBOX, msg1.folder)
 
         msg1.delete()
@@ -267,7 +260,7 @@ class MsgTest(TembaTest, CRUDLTestMixin):
             else:
                 msg = self.create_incoming_msg(self.joe, "Hey hey", flow=flow, status=status)
 
-            # change visibility the way mailroom does, with the folder
+            # write the state the way mailroom does, with the folder
             Msg.objects.filter(id=msg.id).update(visibility=visibility, folder=folder.code)
 
             # assert our folder count is right
@@ -285,7 +278,7 @@ class MsgTest(TembaTest, CRUDLTestMixin):
 
         # incoming labels
         assertReleaseCount("I", Msg.STATUS_HANDLED, Msg.VISIBILITY_VISIBLE, None, MsgFolder.INBOX)
-        assertReleaseCount("I", Msg.STATUS_HANDLED, Msg.VISIBILITY_ARCHIVED, None, MsgFolder.ARCHIVED)
+        assertReleaseCount("I", Msg.STATUS_HANDLED, Msg.VISIBILITY_VISIBLE, None, MsgFolder.ARCHIVED)
         assertReleaseCount("I", Msg.STATUS_HANDLED, Msg.VISIBILITY_VISIBLE, flow, MsgFolder.HANDLED)
 
     def test_big_ids(self):

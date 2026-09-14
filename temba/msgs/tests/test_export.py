@@ -105,9 +105,8 @@ class MessageExportTest(TembaTest):
         label.toggle_label([msg1, msg3], add=True)
 
         # archive last message
-        msg3.visibility = Msg.VISIBILITY_ARCHIVED
         msg3.folder = Msg.FOLDER_ARCHIVED
-        msg3.save()
+        msg3.save(update_fields=("folder",))
 
         expected_headers = [
             "Date",
@@ -573,9 +572,8 @@ class MessageExportTest(TembaTest):
         label.toggle_label([msg1], add=True)
 
         # archive last message
-        msg3.visibility = Msg.VISIBILITY_ARCHIVED
         msg3.folder = Msg.FOLDER_ARCHIVED
-        msg3.save()
+        msg3.save(update_fields=("folder",))
 
         # archive 6 msgs
         self.create_archive(

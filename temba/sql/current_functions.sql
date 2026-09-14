@@ -359,7 +359,7 @@ BEGIN
     IF NEW.direction = 'I' AND NEW.status NOT IN ('P', 'H') THEN
       RAISE EXCEPTION 'Incoming messages can only be PENDING or HANDLED';
     END IF;
-    IF NEW.direction = 'O' AND (NEW.visibility = 'A' OR NEW.folder = 'A') THEN
+    IF NEW.direction = 'O' AND NEW.folder = 'A' THEN
       RAISE EXCEPTION 'Outgoing messages cannot be archived';
     END IF;
   END IF;

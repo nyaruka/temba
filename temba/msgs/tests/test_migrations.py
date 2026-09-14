@@ -40,7 +40,7 @@ class BackfillMsgFolderTest(MigrationTest):
 
         self.inbox = self.create_incoming_msg(contact, "Hi")
         self.handled = self.create_incoming_msg(contact, "Hi", flow=flow)
-        self.archived = self.create_incoming_msg(contact, "Hi", visibility=Msg.VISIBILITY_ARCHIVED)
+        self.archived = self.create_incoming_msg(contact, "Hi", visibility="A")
         self.failed = self.create_outgoing_msg(contact, "Hi", status=Msg.STATUS_FAILED)
         self.pending = self.create_incoming_msg(contact, "Hi", status=Msg.STATUS_PENDING)
 
@@ -59,9 +59,7 @@ class BackfillMsgFolderTest(MigrationTest):
         self.deleted_by_sender = self.create_incoming_msg(
             contact, "Hi", status=Msg.STATUS_PENDING, visibility=Msg.VISIBILITY_DELETED_BY_SENDER
         )
-        self.pending_archived = self.create_incoming_msg(
-            contact, "Hi", status=Msg.STATUS_PENDING, visibility=Msg.VISIBILITY_ARCHIVED
-        )
+        self.pending_archived = self.create_incoming_msg(contact, "Hi", status=Msg.STATUS_PENDING, visibility="A")
 
         # an outgoing message that is pending belongs to no folder - unlikely, but the database permits it
         self.underivable = self.create_outgoing_msg(contact, "Hi")
@@ -75,7 +73,7 @@ class BackfillMsgFolderTest(MigrationTest):
         self.stale_sent = self.create_outgoing_msg(contact, "Hi", status=Msg.STATUS_SENT)
         Msg.objects.filter(id=self.stale_sent.id).update(folder=Msg.FOLDER_OUTBOX)
 
-        self.stale_archived = self.create_incoming_msg(contact, "Hi", visibility=Msg.VISIBILITY_ARCHIVED)
+        self.stale_archived = self.create_incoming_msg(contact, "Hi", visibility="A")
         Msg.objects.filter(id=self.stale_archived.id).update(folder=Msg.FOLDER_INBOX)
 
         # a message whose folder agrees with its state is left as it is
@@ -179,8 +177,8 @@ class BackfillMsgVisibilityTest(MigrationTest):
         self.label = self.create_label("Spam")
 
         # archived messages, which stay in the Archived folder and only lose the second record of being archived
-        self.archived = self.create_incoming_msg(contact, "Hi", visibility="A")
-        self.archived_in_flow = self.create_incoming_msg(contact, "Hi", flow=flow, visibility="A")
+        self.archived = self.create_incoming_msg(contact, "Hi", visibility="A", archived=True)
+        self.archived_in_flow = self.create_incoming_msg(contact, "Hi", flow=flow, visibility="A", archived=True)
 
         # archived while still unhandled, so filed as pending rather than archived
         self.archived_pending = self.create_incoming_msg(contact, "Hi", status=Msg.STATUS_PENDING, visibility="A")

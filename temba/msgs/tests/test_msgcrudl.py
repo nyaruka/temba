@@ -45,7 +45,7 @@ class MsgCRUDLTest(TembaTest, CRUDLTestMixin):
         msg2 = self.create_incoming_msg(contact1, "message number 2")
         msg3 = self.create_incoming_msg(contact2, "message number 3")
         self.create_incoming_msg(contact2, "message number 4")
-        msg5 = self.create_incoming_msg(contact2, "message number 5", visibility="A")
+        msg5 = self.create_incoming_msg(contact2, "message number 5", archived=True)
         self.create_incoming_msg(contact2, "message number 6", status=Msg.STATUS_PENDING)
 
         inbox_url = reverse("msgs.msg_inbox")
@@ -135,7 +135,7 @@ class MsgCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # test archiving a msg
         self.client.post(inbox_url, {"action": "archive", "objects": str(msg1.uuid)})
-        self.assertEqual({msg1, msg5}, set(Msg.objects.filter(visibility=Msg.VISIBILITY_ARCHIVED)))
+        self.assertEqual({msg1, msg5}, set(Msg.objects.filter(folder=Msg.FOLDER_ARCHIVED)))
 
         # archiving doesn't remove labels
         msg1.refresh_from_db()
@@ -168,9 +168,9 @@ class MsgCRUDLTest(TembaTest, CRUDLTestMixin):
     def test_archived(self, mr_mocks):
         contact1 = self.create_contact("Joe Blow", phone="+250788000001")
         contact2 = self.create_contact("Frank", phone="+250788000002")
-        msg1 = self.create_incoming_msg(contact1, "message number 1", visibility=Msg.VISIBILITY_ARCHIVED)
-        msg2 = self.create_incoming_msg(contact1, "message number 2", visibility=Msg.VISIBILITY_ARCHIVED)
-        msg3 = self.create_incoming_msg(contact2, "message number 3", visibility=Msg.VISIBILITY_ARCHIVED)
+        msg1 = self.create_incoming_msg(contact1, "message number 1", archived=True)
+        msg2 = self.create_incoming_msg(contact1, "message number 2", archived=True)
+        msg3 = self.create_incoming_msg(contact2, "message number 3", archived=True)
         self.create_incoming_msg(contact2, "message number 4", visibility=Msg.VISIBILITY_DELETED_BY_USER)
         self.create_incoming_msg(contact2, "message number 5", status=Msg.STATUS_PENDING)
 
@@ -190,7 +190,7 @@ class MsgCRUDLTest(TembaTest, CRUDLTestMixin):
             archived_url, self.editor, post_data={"action": "restore", "objects": [str(msg1.uuid)]}
         )
         self.assertEqual(200, response.status_code)
-        self.assertEqual({msg2, msg3}, set(Msg.objects.filter(visibility=Msg.VISIBILITY_ARCHIVED)))
+        self.assertEqual({msg2, msg3}, set(Msg.objects.filter(folder=Msg.FOLDER_ARCHIVED)))
 
         # can also delete messages
         response = self.requestView(
@@ -306,7 +306,7 @@ class MsgCRUDLTest(TembaTest, CRUDLTestMixin):
         msg1 = self.create_incoming_msg(joe, "test1")
         msg2 = self.create_incoming_msg(frank, "test2")
         msg3 = self.create_incoming_msg(frank, "test3")
-        msg4 = self.create_incoming_msg(joe, "test4", visibility=Msg.VISIBILITY_ARCHIVED)
+        msg4 = self.create_incoming_msg(joe, "test4", archived=True)
         msg5 = self.create_incoming_msg(joe, "test5", visibility=Msg.VISIBILITY_DELETED_BY_USER)
         msg6 = self.create_incoming_msg(joe, "IVR test", flow=flow)
 

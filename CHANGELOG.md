@@ -1,3 +1,8 @@
+v26.3.88 (2026-09-14)
+-------------------------
+ * Add migration to clear archived visibility from existing messages
+ * Remove unused broadcast to flow node feature
+
 v26.3.87 (2026-09-10)
 -------------------------
  * Fail contact import preview cleanly when a new group is requested at the group limit

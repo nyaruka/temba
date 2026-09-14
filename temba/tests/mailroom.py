@@ -576,7 +576,7 @@ class TestClient(MailroomClient):
 
     @_client_method
     def msg_archive(self, org, msgs):
-        update_msgs_visibility(msgs, Msg.VISIBILITY_VISIBLE, Msg.VISIBILITY_ARCHIVED)
+        archive_msgs(msgs)
 
         return {}
 
@@ -588,7 +588,7 @@ class TestClient(MailroomClient):
 
     @_client_method
     def msg_restore(self, org, msgs):
-        update_msgs_visibility(msgs, Msg.VISIBILITY_ARCHIVED, Msg.VISIBILITY_VISIBLE)
+        restore_msgs(msgs)
 
         return {}
 
@@ -829,9 +829,10 @@ def create_contact_locally(
 
 def derive_msg_folder(msg) -> str:
     """
-    Derives the folder for a message from its state, as mailroom and courier do when they write it. In particular this
-    pins down the precedence, which matters for states that fall outside the user facing folders entirely: a message
-    can be archived or deleted while still pending, and such messages must not appear in the Archived folder.
+    Derives the folder for a message from its state, as mailroom and courier do when they write it. Archived isn't
+    derivable - it's recorded by the folder alone, and a message gets there by being moved (see archive_msgs). In
+    particular this pins down the precedence, which matters for states that fall outside the user facing folders
+    entirely: a message can be deleted while still pending, and such messages must not appear in the Deleted folder.
     """
 
     if msg.visibility in (Msg.VISIBILITY_DELETED_BY_USER, Msg.VISIBILITY_DELETED_BY_SENDER):
@@ -840,8 +841,6 @@ def derive_msg_folder(msg) -> str:
     if msg.direction == Msg.DIRECTION_IN:
         if msg.status != Msg.STATUS_HANDLED:
             return Msg.FOLDER_PENDING
-        if msg.visibility == Msg.VISIBILITY_ARCHIVED:
-            return Msg.FOLDER_ARCHIVED
         return Msg.FOLDER_HANDLED if msg.flow_id else Msg.FOLDER_INBOX
     elif msg.visibility == Msg.VISIBILITY_VISIBLE:
         if msg.status in (Msg.STATUS_INITIALIZING, Msg.STATUS_QUEUED, Msg.STATUS_ERRORED):
@@ -857,15 +856,12 @@ def derive_msg_folder(msg) -> str:
 def delete_msgs(msgs):
     """
     Simulates mailroom soft deleting the given incoming messages - clearing their content and labels as well as
-    updating their visibility. Messages which aren't visible or archived are ignored. Note that unlike the visibility
-    changes below, mailroom doesn't bump modified_on here.
+    updating their visibility. Messages which are already deleted are ignored. Note that unlike the folder moves
+    below, mailroom doesn't bump modified_on here.
     """
 
     for msg in msgs:
-        if msg.direction != Msg.DIRECTION_IN or msg.visibility not in (
-            Msg.VISIBILITY_VISIBLE,
-            Msg.VISIBILITY_ARCHIVED,
-        ):
+        if msg.direction != Msg.DIRECTION_IN or msg.visibility != Msg.VISIBILITY_VISIBLE:
             continue
 
         msg.visibility = Msg.VISIBILITY_DELETED_BY_USER
@@ -876,20 +872,34 @@ def delete_msgs(msgs):
         msg.labels.clear()
 
 
-def update_msgs_visibility(msgs, from_visibility: str, to_visibility: str):
+def archive_msgs(msgs):
     """
-    Simulates mailroom changing the visibility of the given messages, and the folder that follows from it. Messages
-    which aren't in the visibility we're transitioning from are ignored.
+    Simulates mailroom archiving the given messages, i.e. moving them into the Archived folder. Messages which aren't
+    in the inbox or the handled folder are ignored.
     """
 
     for msg in msgs:
-        if msg.visibility != from_visibility:
+        if msg.folder not in (Msg.FOLDER_INBOX, Msg.FOLDER_HANDLED):
             continue
 
-        msg.visibility = to_visibility
+        msg.folder = Msg.FOLDER_ARCHIVED
+        msg.modified_on = timezone.now()
+        msg.save(update_fields=("folder", "modified_on"))
+
+
+def restore_msgs(msgs):
+    """
+    Simulates mailroom restoring the given messages, i.e. moving them out of the Archived folder and back into the
+    folder their state implies. Messages which aren't archived are ignored.
+    """
+
+    for msg in msgs:
+        if msg.folder != Msg.FOLDER_ARCHIVED:
+            continue
+
         msg.folder = derive_msg_folder(msg)
         msg.modified_on = timezone.now()
-        msg.save(update_fields=("visibility", "folder", "modified_on"))
+        msg.save(update_fields=("folder", "modified_on"))
 
 
 def update_fields_locally(user, contact, fields):

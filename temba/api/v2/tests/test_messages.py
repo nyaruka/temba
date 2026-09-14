@@ -36,7 +36,7 @@ class MessagesEndpointTest(APITest):
         joe_msg3 = self.create_incoming_msg(
             joe, "Good", flow=flow, attachments=["image/jpeg:https://example.com/test.jpg"]
         )
-        frank_msg3 = self.create_incoming_msg(frank, "Bien", channel=facebook, visibility="A")
+        frank_msg3 = self.create_incoming_msg(frank, "Bien", channel=facebook, archived=True)
         frank_msg4 = self.create_outgoing_msg(frank, "Ça va?", status="F")
 
         # add a failed message with no URN or channel

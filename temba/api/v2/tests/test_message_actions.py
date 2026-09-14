@@ -134,12 +134,12 @@ class MessageActionsEndpointTest(APITest):
         self.assertPost(
             endpoint_url, self.admin, {"messages": [msg1.id, msg2.id, msg3.id], "action": "archive"}, status=204
         )
-        self.assertEqual(set(Msg.objects.filter(visibility=Msg.VISIBILITY_ARCHIVED)), {msg1, msg2, msg3})
+        self.assertEqual(set(Msg.objects.filter(folder=Msg.FOLDER_ARCHIVED)), {msg1, msg2, msg3})
 
         # restore message 1
         self.assertPost(endpoint_url, self.admin, {"messages": [msg1.id], "action": "restore"}, status=204)
-        self.assertEqual(set(Msg.objects.filter(visibility=Msg.VISIBILITY_VISIBLE)), {msg1})
-        self.assertEqual(set(Msg.objects.filter(visibility=Msg.VISIBILITY_ARCHIVED)), {msg2, msg3})
+        self.assertEqual(set(Msg.objects.filter(folder=Msg.FOLDER_INBOX)), {msg1})
+        self.assertEqual(set(Msg.objects.filter(folder=Msg.FOLDER_ARCHIVED)), {msg2, msg3})
 
         # delete messages 2
         self.assertPost(endpoint_url, self.admin, {"messages": [msg2.id], "action": "delete"}, status=204)
@@ -152,7 +152,7 @@ class MessageActionsEndpointTest(APITest):
 
         # should get a partial success
         self.assertEqual(response.json(), {"failures": [msg2.id]})
-        self.assertEqual(set(Msg.objects.filter(visibility=Msg.VISIBILITY_VISIBLE)), {msg1, msg3})
+        self.assertEqual(set(Msg.objects.filter(folder=Msg.FOLDER_INBOX)), {msg1, msg3})
 
         # try to act on an outgoing message
         msg4 = self.create_outgoing_msg(joe, "Hi Joe")

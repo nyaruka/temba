@@ -543,12 +543,10 @@ class Msg(models.Model):
     )
 
     VISIBILITY_VISIBLE = "V"
-    VISIBILITY_ARCHIVED = "A"
     VISIBILITY_DELETED_BY_USER = "D"
     VISIBILITY_DELETED_BY_SENDER = "X"
     VISIBILITY_CHOICES = (
         (VISIBILITY_VISIBLE, "Visible"),
-        (VISIBILITY_ARCHIVED, "Archived"),
         (VISIBILITY_DELETED_BY_USER, "Deleted by user"),
         (VISIBILITY_DELETED_BY_SENDER, "Deleted by sender"),
     )

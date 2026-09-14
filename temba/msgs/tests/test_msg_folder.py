@@ -26,7 +26,7 @@ class MsgFolderTest(TembaTest):
         msg3 = self.create_incoming_msg(contact, "Msg 3", created_on=t0 + timedelta(milliseconds=2))
         msg4 = self.create_incoming_msg(contact, "Msg 4", created_on=t0 + timedelta(milliseconds=2, microseconds=500))
         msg5 = self.create_incoming_msg(contact, "Msg 5", created_on=t0 + timedelta(milliseconds=20))
-        self.create_incoming_msg(contact, "Archived", created_on=t0, visibility=Msg.VISIBILITY_ARCHIVED)
+        self.create_incoming_msg(contact, "Archived", created_on=t0, archived=True)
         self.create_incoming_msg(other_contact, "Other org", created_on=t0)
 
         # newest first, filtered by folder rather than the columns it's derived from

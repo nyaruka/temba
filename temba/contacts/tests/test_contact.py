@@ -339,7 +339,7 @@ class ContactTest(TembaTest):
         flow = self.create_flow("Test")
         msg1 = self.create_incoming_msg(self.joe, "Test 1")
         msg2 = self.create_incoming_msg(self.joe, "Test 2", flow=flow)
-        msg3 = self.create_incoming_msg(self.joe, "Test 3", visibility="A")
+        msg3 = self.create_incoming_msg(self.joe, "Test 3", archived=True)
         label = self.create_label("Interesting")
         label.toggle_label([msg1, msg2, msg3], add=True)
         static_group = self.create_group("Just Joe", [self.joe])
@@ -403,7 +403,7 @@ class ContactTest(TembaTest):
         self.assertEqual(set(static_group.contacts.all()), set())
 
         # but his messages are unchanged
-        self.assertEqual(2, Msg.objects.filter(contact=self.joe, visibility="V").count())
+        self.assertEqual(3, Msg.objects.filter(contact=self.joe, visibility="V").count())
         msg_counts = MsgFolder.get_counts(self.org)
         self.assertEqual(1, msg_counts[MsgFolder.INBOX])
         self.assertEqual(1, msg_counts[MsgFolder.HANDLED])

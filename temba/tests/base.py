@@ -307,13 +307,14 @@ class TembaTest(SmartminTest):
         attachments=(),
         status=Msg.STATUS_HANDLED,
         visibility=Msg.VISIBILITY_VISIBLE,
+        archived=False,
         created_on=None,
         external_identifier=None,
         voice=False,
         flow=None,
         logs=None,
     ):
-        return self._create_msg(
+        msg = self._create_msg(
             contact,
             text,
             Msg.DIRECTION_IN,
@@ -328,6 +329,17 @@ class TembaTest(SmartminTest):
             flow=flow,
             logs=logs,
         )
+
+        # archived isn't a state a message is created in - it's a folder a handled visible message is moved to
+        if archived:
+            assert msg.folder in (Msg.FOLDER_INBOX, Msg.FOLDER_HANDLED), (
+                "only inbox or handled messages can be archived"
+            )
+
+            msg.folder = Msg.FOLDER_ARCHIVED
+            msg.save(update_fields=("folder",))
+
+        return msg
 
     def create_incoming_msgs(self, contact, count):
         for m in range(count):
