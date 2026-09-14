@@ -93,6 +93,7 @@ class EndpointsTest(APITestMixin, TembaTest):
 
         # a message in another folder shouldn't appear in the inbox
         archived = self.create_incoming_msg(contact1, "Archived", visibility=Msg.VISIBILITY_ARCHIVED)
+        archived.labels.add(label)
 
         msg1_logs_url = reverse("channels.channel_logs_read", args=[self.channel.uuid, "msg", msg1.uuid])
         msg2_logs_url = reverse("channels.channel_logs_read", args=[self.channel.uuid, "msg", msg2.uuid])
@@ -198,8 +199,8 @@ class EndpointsTest(APITestMixin, TembaTest):
         sent_new = self.create_outgoing_msg(contact1, "Newer reply", sent_on=timezone.now() - timedelta(hours=2))
         self.assertGet(endpoint_url + "?folder=sent", [self.admin], results=[sent_new, sent_old])
 
-        # ?label=<uuid> filters to that label's visible messages
-        self.assertGet(endpoint_url + f"?label={label.uuid}", [self.admin], results=[msg2])
+        # ?label=<uuid> filters to that label's messages, whatever folder they're in
+        self.assertGet(endpoint_url + f"?label={label.uuid}", [self.admin], results=[archived, msg2])
 
         # a label belonging to another org isn't visible
         other_label = self.create_label("Other", org=self.org2)

@@ -46,13 +46,13 @@ class LabelTest(TembaTest):
         squash_msg_counts()
         self.assertEqual(label.get_visible_count(), 2)
 
-        Msg.bulk_archive(self.org, [msg2])  # won't remove label from msg, but msg no longer counts toward visible count
+        Msg.bulk_archive(self.org, [msg2])  # archiving neither removes the label nor changes the count
 
         label.refresh_from_db()
-        self.assertEqual(label.get_visible_count(), 1)
+        self.assertEqual(label.get_visible_count(), 2)
         self.assertEqual(set(label.get_messages()), {msg1, msg2})
 
-        Msg.bulk_restore(self.org, [msg2])  # msg back in visible count
+        Msg.bulk_restore(self.org, [msg2])
 
         label.refresh_from_db()
         self.assertEqual(label.get_visible_count(), 2)
@@ -65,13 +65,13 @@ class LabelTest(TembaTest):
         self.assertEqual(set(label.get_messages()), {msg1})
 
         Msg.bulk_archive(self.org, [msg3])
-        label.toggle_label([msg3], add=True)  # labelling an already archived message doesn't increment the count
+        label.toggle_label([msg3], add=True)  # labelling an already archived message counts it like any other
 
         label.refresh_from_db()
-        self.assertEqual(label.get_visible_count(), 1)
+        self.assertEqual(label.get_visible_count(), 2)
         self.assertEqual(set(label.get_messages()), {msg1, msg3})
 
-        Msg.bulk_restore(self.org, [msg3])  # but then restoring that message will
+        Msg.bulk_restore(self.org, [msg3])
 
         label.refresh_from_db()
         self.assertEqual(label.get_visible_count(), 2)

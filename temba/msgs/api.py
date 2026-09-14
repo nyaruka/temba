@@ -171,8 +171,10 @@ class MessagesEndpoint(SearchLengthMixin, ListAPIMixin, BaseEndpoint):
         return MsgFolder.get_counts(org).get(self.folder, 0) if self.folder else 0
 
     def derive_queryset(self):
-        # `label` takes precedence — the filter view passes a label UUID rather than a folder name, and the visible
-        # messages for that label aren't a MsgFolder slice.
+        # `label` takes precedence — the filter view passes a label UUID rather than a folder name, and a label's
+        # messages aren't a MsgFolder slice: they're listed whatever folder they're in (archived included), which is
+        # why the filter view offers no folder-dependent bulk actions. Deleted messages lose their labellings, but
+        # are excluded explicitly too.
         # `org` and `channel` are select_related because Msg.as_json reads self.org (for contact display) and
         # self.channel.is_active/uuid (for the channel-log link gated on the channels.channel_logs perm).
         if self.request.query_params.get("label"):
@@ -181,7 +183,7 @@ class MessagesEndpoint(SearchLengthMixin, ListAPIMixin, BaseEndpoint):
                 return Msg.objects.none()
             return (
                 Msg.objects.filter(org=self.request.org, labels=label)
-                .exclude(folder__in=(Msg.FOLDER_ARCHIVED, Msg.FOLDER_DELETED))
+                .exclude(folder=Msg.FOLDER_DELETED)
                 .select_related("contact", "channel", "flow", "org")
                 .prefetch_related("labels")
             )

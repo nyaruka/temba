@@ -681,7 +681,7 @@ class MsgCRUDL(SmartCRUDL):
 
     class Filter(MsgListView):
         search_fields = ("text__icontains", "contact__name__icontains")
-        bulk_actions = ("label", "archive")
+        bulk_actions = ("label",)
 
         def derive_menu_path(self):
             return f"/msg/labels/{self.label.uuid}"
@@ -732,7 +732,7 @@ class MsgCRUDL(SmartCRUDL):
                 super()
                 .get_queryset(**kwargs)
                 .filter(labels=self.label)
-                .exclude(folder__in=(Msg.FOLDER_ARCHIVED, Msg.FOLDER_DELETED))
+                .exclude(folder=Msg.FOLDER_DELETED)
                 .prefetch_related("labels")
             )
 

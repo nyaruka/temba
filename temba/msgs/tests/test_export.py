@@ -100,9 +100,9 @@ class MessageExportTest(TembaTest):
 
         self.assertEqual(msg5.get_attachments(), [Attachment("audio", "http://rapidpro.io/audio/sound.mp3")])
 
-        # label first message
+        # label first and third messages
         label = self.create_label("la\02bel1")
-        label.toggle_label([msg1], add=True)
+        label.toggle_label([msg1, msg3], add=True)
 
         # archive last message
         msg3.visibility = Msg.VISIBILITY_ARCHIVED
@@ -272,13 +272,13 @@ class MessageExportTest(TembaTest):
                     "",
                     "handled",
                     "Telegram",
-                    "",
+                    "label1",
                 ],
             ],
             self.org.timezone,
         )
 
-        # try export with user label
+        # try export with user label - includes the archived message
         self.assertExcelSheet(
             self._export(None, label, date(2000, 9, 1), date(2022, 9, 28)).worksheets[0],
             [
@@ -295,6 +295,20 @@ class MessageExportTest(TembaTest):
                     "",
                     "handled",
                     "Test Channel",
+                    "label1",
+                ],
+                [
+                    msg3.created_on,
+                    msg3.contact.uuid,
+                    "Bob",
+                    "telegram",
+                    "234567",
+                    "",
+                    "IN",
+                    "hello 3",
+                    "",
+                    "handled",
+                    "Telegram",
                     "label1",
                 ],
             ],
