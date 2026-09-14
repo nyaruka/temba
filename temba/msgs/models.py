@@ -1017,11 +1017,11 @@ class Label(TembaModel, DependencyMixin):
     def get_messages(self):
         return self.msgs.all()
 
-    def get_visible_count(self):
+    def get_message_count(self):
         """
-        Returns the count of messages tagged with this label. Archived messages are included - a label is the user's
-        own tag and is independent of which folder a message is filed in. Deleted messages have their labellings
-        removed so contribute nothing.
+        Returns the count of messages tagged with this label, whatever folder they're in - a label is the user's own
+        tag and is independent of where a message is filed. Deleted messages have their labellings removed so
+        contribute nothing.
         """
 
         return LabelCount.get_totals([self])[self]

@@ -164,7 +164,7 @@ class MsgTest(TembaTest, CRUDLTestMixin):
         label = self.create_label("Spam")
         label.toggle_label([msg1, msg2], add=True)
 
-        self.assertEqual(2, label.get_visible_count())
+        self.assertEqual(2, label.get_message_count())
 
         # can't soft delete outgoing messages
         with self.assertRaises(AssertionError):
@@ -186,7 +186,7 @@ class MsgTest(TembaTest, CRUDLTestMixin):
         self.assertEqual([], msg1.attachments)
         self.assertEqual(set(), set(msg1.labels.all()))
 
-        self.assertEqual(0, label.get_visible_count())
+        self.assertEqual(0, label.get_message_count())
 
     @patch("django.core.files.storage.default_storage.delete")
     def test_bulk_delete(self, mock_storage_delete):

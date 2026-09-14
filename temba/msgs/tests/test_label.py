@@ -28,53 +28,53 @@ class LabelTest(TembaTest):
         msg2 = self.create_incoming_msg(self.joe, "Message 2")
         msg3 = self.create_incoming_msg(self.joe, "Message 3")
 
-        self.assertEqual(label.get_visible_count(), 0)
+        self.assertEqual(label.get_message_count(), 0)
 
         label.toggle_label([msg1, msg2, msg3], add=True)  # add label to 3 messages
 
         label.refresh_from_db()
-        self.assertEqual(label.get_visible_count(), 3)
+        self.assertEqual(label.get_message_count(), 3)
         self.assertEqual(set(label.get_messages()), {msg1, msg2, msg3})
 
         label.toggle_label([msg3], add=False)  # remove label from a message
 
         label.refresh_from_db()
-        self.assertEqual(label.get_visible_count(), 2)
+        self.assertEqual(label.get_message_count(), 2)
         self.assertEqual(set(label.get_messages()), {msg1, msg2})
 
         # check still correct after squashing
         squash_msg_counts()
-        self.assertEqual(label.get_visible_count(), 2)
+        self.assertEqual(label.get_message_count(), 2)
 
         Msg.bulk_archive(self.org, [msg2])  # archiving neither removes the label nor changes the count
 
         label.refresh_from_db()
-        self.assertEqual(label.get_visible_count(), 2)
+        self.assertEqual(label.get_message_count(), 2)
         self.assertEqual(set(label.get_messages()), {msg1, msg2})
 
         Msg.bulk_restore(self.org, [msg2])
 
         label.refresh_from_db()
-        self.assertEqual(label.get_visible_count(), 2)
+        self.assertEqual(label.get_message_count(), 2)
         self.assertEqual(set(label.get_messages()), {msg1, msg2})
 
         msg2.delete()  # removes label message no longer visible
 
         label.refresh_from_db()
-        self.assertEqual(label.get_visible_count(), 1)
+        self.assertEqual(label.get_message_count(), 1)
         self.assertEqual(set(label.get_messages()), {msg1})
 
         Msg.bulk_archive(self.org, [msg3])
         label.toggle_label([msg3], add=True)  # labelling an already archived message counts it like any other
 
         label.refresh_from_db()
-        self.assertEqual(label.get_visible_count(), 2)
+        self.assertEqual(label.get_message_count(), 2)
         self.assertEqual(set(label.get_messages()), {msg1, msg3})
 
         Msg.bulk_restore(self.org, [msg3])
 
         label.refresh_from_db()
-        self.assertEqual(label.get_visible_count(), 2)
+        self.assertEqual(label.get_message_count(), 2)
         self.assertEqual(set(label.get_messages()), {msg1, msg3})
 
         # can't label outgoing messages

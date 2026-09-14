@@ -166,7 +166,7 @@ class MessagesEndpoint(SearchLengthMixin, ListAPIMixin, BaseEndpoint):
         # when there's no search, avoiding a COUNT(*) on the messages table.
         org = self.request.org
         if self.request.query_params.get("label"):
-            return self.label.get_visible_count() if self.label else 0
+            return self.label.get_message_count() if self.label else 0
 
         return MsgFolder.get_counts(org).get(self.folder, 0) if self.folder else 0
 
