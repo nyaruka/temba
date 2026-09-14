@@ -270,17 +270,6 @@ class ContactSearchWidget(forms.Widget):
         return super().render(name, value, attrs)
 
 
-class CompletionTextarea(forms.Widget):
-    template_name = "utils/forms/completion_textarea.html"
-    is_annotated = True
-
-    def __init__(self, attrs=None):
-        default_attrs = {"width": "100%", "height": "100%"}
-        if attrs:
-            default_attrs.update(attrs)
-        super().__init__(default_attrs)
-
-
 class OmniboxChoice(forms.Widget):
     template_name = "utils/forms/omnibox_choice.html"
     is_annotated = True
