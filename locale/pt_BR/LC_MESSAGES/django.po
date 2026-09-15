@@ -17,7 +17,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-15 16:43+0000\n"
+"POT-Creation-Date: 2026-09-15 20:04+0000\n"
 "PO-Revision-Date: 2019-05-13 20:14+0000\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
@@ -5696,6 +5696,11 @@ msgstr "As cores de fundo que os artigos podem dar às suas colunas."
 
 #, fuzzy, python-format
 #| msgid "You are about to delete the <b>%(object)s</b> team. There is no way to undo this. Are you sure?"
+msgid "You are about to delete the document <b>%(object.name)s</b> and everything indexed from it. There is no way to undo this. Are you sure?"
+msgstr "Você está prestes a deletar a equipe <b>%(object)s</b>. Não é possível reverter isso. Você tem certeza?"
+
+#, fuzzy, python-format
+#| msgid "You are about to delete the <b>%(object)s</b> team. There is no way to undo this. Are you sure?"
 msgid "You are about to delete the knowledge source <b>%(object)s</b> and everything indexed from it. There is no way to undo this. Are you sure?"
 msgstr "Você está prestes a deletar a equipe <b>%(object)s</b>. Não é possível reverter isso. Você tem certeza?"
 
@@ -5712,11 +5717,6 @@ msgstr "Nenhum atalho"
 #| msgid "These are canned responses that agents can use to quickly reply to tickets."
 msgid "Canned responses that agents can use to quickly reply to tickets."
 msgstr "Estas são respostas prontas que os agentes podem usar para responder rapidamente aos tickets."
-
-#, fuzzy, python-format
-#| msgid "You are about to delete the <b>%(object)s</b> team. There is no way to undo this. Are you sure?"
-msgid "You are about to delete the document <b>%(object.name)s</b> and everything indexed from it. There is no way to undo this. Are you sure?"
-msgstr "Você está prestes a deletar a equipe <b>%(object)s</b>. Não é possível reverter isso. Você tem certeza?"
 
 #, fuzzy
 #| msgid "Delete Event"

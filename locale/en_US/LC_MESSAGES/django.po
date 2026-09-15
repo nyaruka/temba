@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-15 16:43+0000\n"
+"POT-Creation-Date: 2026-09-15 20:04+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Language: \n"
 "MIME-Version: 1.0\n"
@@ -5631,6 +5631,10 @@ msgid "The background colors articles can give their columns."
 msgstr ""
 
 #, python-format
+msgid "You are about to delete the document <b>%(object.name)s</b> and everything indexed from it. There is no way to undo this. Are you sure?"
+msgstr ""
+
+#, python-format
 msgid "You are about to delete the knowledge source <b>%(object)s</b> and everything indexed from it. There is no way to undo this. Are you sure?"
 msgstr ""
 
@@ -5644,10 +5648,6 @@ msgid "No shortcuts"
 msgstr ""
 
 msgid "Canned responses that agents can use to quickly reply to tickets."
-msgstr ""
-
-#, python-format
-msgid "You are about to delete the document <b>%(object.name)s</b> and everything indexed from it. There is no way to undo this. Are you sure?"
 msgstr ""
 
 msgid "Delete Document"
