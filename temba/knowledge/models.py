@@ -494,7 +494,7 @@ def make_snippet(text: str, terms: list, *, length: int = 200) -> str:
     return mark_safe(html)
 
 
-class Knowledge(TembaModel):
+class KnowledgeSource(TembaModel):
     """
     A source of knowledge that AI agents can search semantically.
 
@@ -554,8 +554,8 @@ class Knowledge(TembaModel):
     MAX_MAX_PAGES = 5_000
     MAX_URL_LEN = 2048
 
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="knowledge")
-    knowledge_type = models.CharField(max_length=16, choices=TYPE_CHOICES)
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="sources")
+    source_type = models.CharField(max_length=16, choices=TYPE_CHOICES)
 
     # type specific settings, e.g. for website: url, max_depth, max_pages, refresh. Empty for other types.
     config = models.JSONField(default=dict)
@@ -574,14 +574,12 @@ class Knowledge(TembaModel):
         """
         Creates the org's two system sources - its shortcut list and its helpdesk.
         """
-        assert not org.knowledge.filter(knowledge_type__in=cls.SYSTEM_TYPES).exists(), (
-            "org already has system knowledge"
-        )
+        assert not org.sources.filter(source_type__in=cls.SYSTEM_TYPES).exists(), "org already has system knowledge"
 
         return [
-            org.knowledge.create(
+            org.sources.create(
                 name=cls.SYSTEM_NAMES[t],
-                knowledge_type=t,
+                source_type=t,
                 is_system=True,
                 created_by=org.created_by,
                 modified_by=org.modified_by,
@@ -592,11 +590,11 @@ class Knowledge(TembaModel):
     @classmethod
     def create_website(cls, org, user, name: str, url: str, *, max_depth=None, max_pages=None, refresh=None):
         assert cls.is_valid_name(name), f"'{name}' is not a valid knowledge name"
-        assert not org.knowledge.filter(name__iexact=name, is_active=True).exists()
+        assert not org.sources.filter(name__iexact=name, is_active=True).exists()
 
-        return org.knowledge.create(
+        return org.sources.create(
             name=name,
-            knowledge_type=cls.TYPE_WEBSITE,
+            source_type=cls.TYPE_WEBSITE,
             config={
                 cls.CONFIG_URL: url,
                 cls.CONFIG_MAX_DEPTH: max_depth or cls.DEFAULT_MAX_DEPTH,
@@ -610,12 +608,12 @@ class Knowledge(TembaModel):
     @classmethod
     def create_documents(cls, org, user, name: str):
         assert cls.is_valid_name(name), f"'{name}' is not a valid knowledge name"
-        assert not org.knowledge.filter(name__iexact=name, is_active=True).exists()
+        assert not org.sources.filter(name__iexact=name, is_active=True).exists()
 
         # nothing to index until files are uploaded
-        return org.knowledge.create(
+        return org.sources.create(
             name=name,
-            knowledge_type=cls.TYPE_DOCUMENTS,
+            source_type=cls.TYPE_DOCUMENTS,
             status=cls.STATUS_READY,
             created_by=user,
             modified_by=user,
@@ -671,15 +669,15 @@ class Knowledge(TembaModel):
         """
         # collect storage keys before the rows that name them disappear - two different buckets
         item_paths = list(self.items.exclude(path=None).values_list("path", flat=True))
-        image_paths = list(ArticleImage.objects.filter(article__knowledge=self).values_list("path", flat=True))
+        image_paths = list(ArticleImage.objects.filter(article__source=self).values_list("path", flat=True))
 
         delete_in_batches(self.chunks.all())
         delete_in_batches(self.items.all())
-        delete_in_batches(ArticleImage.objects.filter(article__knowledge=self))
-        delete_in_batches(ArticleCount.objects.filter(article__knowledge=self))
+        delete_in_batches(ArticleImage.objects.filter(article__source=self))
+        delete_in_batches(ArticleCount.objects.filter(article__source=self))
 
         # the helpdesk's public site goes with its articles
-        for site in HelpSite.objects.filter(knowledge=self):
+        for site in HelpSite.objects.filter(source=self):
             site.delete()
 
         # parent is PROTECT so flatten the article tree before deleting it
@@ -698,10 +696,10 @@ class Knowledge(TembaModel):
             public_file_storage.delete(path)
 
     class Meta:
-        constraints = [models.UniqueConstraint("org", Lower("name"), name="unique_knowledge_names")]
+        constraints = [models.UniqueConstraint("org", Lower("name"), name="unique_knowledgesource_names")]
         indexes = [
             # mailroom's indexing sweep's worklist
-            models.Index(name="knowledge_pending", fields=("id",), condition=Q(is_active=True, status="P")),
+            models.Index(name="knowledgesource_pending", fields=("id",), condition=Q(is_active=True, status="P")),
         ]
 
 
@@ -727,7 +725,7 @@ class Article(models.Model):
     MAX_ARTICLES = 1000  # per helpdesk
 
     uuid = models.UUIDField(unique=True, default=uuid4)
-    knowledge = models.ForeignKey(Knowledge, on_delete=models.PROTECT, related_name="articles")
+    source = models.ForeignKey(KnowledgeSource, on_delete=models.PROTECT, related_name="articles")
 
     # the tree - a plain self-FK, not mptt (that dep exists only for locations and buys nothing at help-centre depth).
     # Depth is capped at MAX_DEPTH and cycles are rejected server-side.
@@ -753,37 +751,37 @@ class Article(models.Model):
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+")
     created_on = models.DateTimeField(default=timezone.now)
     modified_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+")
-    # auto_now is load-bearing: mailroom's staleness sweep is MAX(modified_on) > knowledge.last_indexed_on, so an
+    # auto_now is load-bearing: mailroom's staleness sweep is MAX(modified_on) > source.last_indexed_on, so an
     # unpublish or a soft-delete has to bump it for the removal to be noticed
     modified_on = models.DateTimeField(auto_now=True)
 
     @classmethod
     def create(
-        cls, knowledge, user, title: str, *, body: str = "", description: str = "", parent=None, language: str = None
+        cls, source, user, title: str, *, body: str = "", description: str = "", parent=None, language: str = None
     ):
-        assert knowledge.knowledge_type == Knowledge.TYPE_HELPDESK, "articles can only belong to a helpdesk"
-        assert parent is None or parent.knowledge_id == knowledge.id, "parent must be in the same helpdesk"
+        assert source.source_type == KnowledgeSource.TYPE_HELPDESK, "articles can only belong to a helpdesk"
+        assert parent is None or parent.source_id == source.id, "parent must be in the same helpdesk"
 
         # new articles go to the end of their level so creating one never reshuffles the tree
-        last = cls.objects.filter(knowledge=knowledge, parent=parent, is_active=True).order_by("-sort_order").first()
+        last = cls.objects.filter(source=source, parent=parent, is_active=True).order_by("-sort_order").first()
 
         return cls.objects.create(
-            knowledge=knowledge,
+            source=source,
             parent=parent,
             sort_order=(last.sort_order + 1) if last else 0,
             title=title,
-            slug=cls.get_unique_slug(knowledge, title),
+            slug=cls.get_unique_slug(source, title),
             body=body,
             description=description,
-            language=language or knowledge.org.flow_languages[0],
+            language=language or source.org.flow_languages[0],
             created_by=user,
             modified_by=user,
         )
 
     @classmethod
-    def get_unique_slug(cls, knowledge, title: str, ignore=None) -> str:
+    def get_unique_slug(cls, source, title: str, ignore=None) -> str:
         base = slugify(title)[: cls.MAX_SLUG_LEN] or "article"
-        qs = cls.objects.filter(knowledge=knowledge, is_active=True)
+        qs = cls.objects.filter(source=source, is_active=True)
         if ignore:
             qs = qs.exclude(id=ignore.id)
 
@@ -796,7 +794,7 @@ class Article(models.Model):
         return slug
 
     @classmethod
-    def get_tree(cls, knowledge) -> list:
+    def get_tree(cls, source) -> list:
         """
         Returns the helpdesk's active articles in display order - depth first, siblings by (sort_order, title) - with
         each one's depth and the uuid of the article it's shown under attached.
@@ -806,7 +804,7 @@ class Article(models.Model):
         stored deeper than MAX_DEPTH allows - data can predate the cap - render flattened rather than hidden: as
         siblings following their parent, under the deepest ancestor the cap does allow.
         """
-        active = list(knowledge.articles.filter(is_active=True).order_by("sort_order", "title"))
+        active = list(source.articles.filter(is_active=True).order_by("sort_order", "title"))
         active_ids = {a.id for a in active}
 
         by_parent = defaultdict(list)
@@ -833,13 +831,13 @@ class Article(models.Model):
         return ordered
 
     @classmethod
-    def apply_sort(cls, knowledge, order: list):
+    def apply_sort(cls, source, order: list):
         """
         Applies a new tree ordering given as (uuid, parent uuid or None, sort order) tuples, which need only describe
         what moved. The client's tree is never trusted - the resulting forest is re-derived here and rejected if it
         names an article that isn't in this helpdesk, introduces a cycle, or nests deeper than MAX_DEPTH.
         """
-        articles = {str(a.uuid): a for a in knowledge.articles.filter(is_active=True)}
+        articles = {str(a.uuid): a for a in source.articles.filter(is_active=True)}
         uuids_by_id = {a.id: uuid for uuid, a in articles.items()}
 
         # start from the tree as it stands so unmentioned articles keep their place
@@ -881,7 +879,7 @@ class Article(models.Model):
 
     @property
     def org(self):
-        return self.knowledge.org
+        return self.source.org
 
     @property
     def is_section(self) -> bool:
@@ -892,7 +890,7 @@ class Article(models.Model):
         The article rendered for reading, with its links to other articles resolved against the given map of uuid to
         address - see HelpSite.get_link_targets. Without one, they render as plain text.
         """
-        return render_markdown(self.body, self.knowledge.colors, links)
+        return render_markdown(self.body, self.source.colors, links)
 
     def as_plain_text(self) -> str:
         return to_plain_text(self.body)
@@ -952,13 +950,13 @@ class Article(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint("knowledge", "slug", condition=Q(is_active=True), name="unique_article_slugs")
+            models.UniqueConstraint("source", "slug", condition=Q(is_active=True), name="unique_article_slugs")
         ]
         indexes = [
             # the tree, in display order
-            models.Index(name="article_by_tree", fields=("knowledge", "parent", "sort_order")),
+            models.Index(name="article_by_tree", fields=("source", "parent", "sort_order")),
             # mailroom's staleness + delta sweep
-            models.Index(name="article_by_modified", fields=("knowledge", "modified_on")),
+            models.Index(name="article_by_modified", fields=("source", "modified_on")),
         ]
 
 
@@ -970,8 +968,7 @@ def get_article_image_path(article, image_uuid, content_type: str) -> str:
     extension = mimetypes.guess_extension(content_type) or ".bin"
 
     return (
-        f"orgs/{article.knowledge.org_id}/knowledge/{article.knowledge.uuid}/"
-        f"articles/{article.uuid}/{image_uuid}{extension}"
+        f"orgs/{article.source.org_id}/knowledge/{article.source.uuid}/articles/{article.uuid}/{image_uuid}{extension}"
     )
 
 
@@ -1132,7 +1129,7 @@ class HelpSite(models.Model):
     SEARCH_CACHE_TTL = 60 * 5
 
     uuid = models.UUIDField(unique=True, default=uuid4)
-    knowledge = models.OneToOneField(Knowledge, on_delete=models.PROTECT, related_name="site")
+    source = models.OneToOneField(KnowledgeSource, on_delete=models.PROTECT, related_name="site")
 
     title = models.CharField(max_length=MAX_TITLE_LEN)
     tagline = models.CharField(max_length=MAX_TAGLINE_LEN, default="")
@@ -1160,12 +1157,12 @@ class HelpSite(models.Model):
     modified_on = models.DateTimeField(auto_now=True)
 
     @classmethod
-    def get_or_create(cls, knowledge, user):
-        assert knowledge.knowledge_type == Knowledge.TYPE_HELPDESK, "only a helpdesk has a site"
+    def get_or_create(cls, source, user):
+        assert source.source_type == KnowledgeSource.TYPE_HELPDESK, "only a helpdesk has a site"
 
         site, _ = cls.objects.get_or_create(
-            knowledge=knowledge,
-            defaults={"title": knowledge.org.name, "created_by": user, "modified_by": user},
+            source=source,
+            defaults={"title": source.org.name, "created_by": user, "modified_by": user},
         )
         return site
 
@@ -1194,7 +1191,7 @@ class HelpSite(models.Model):
         if not site_id:
             return None
 
-        return cls.objects.filter(id=site_id).select_related("knowledge__org").first()
+        return cls.objects.filter(id=site_id).select_related("source__org").first()
 
     @classmethod
     def clean_domain(cls, value: str) -> str | None:
@@ -1262,7 +1259,7 @@ class HelpSite(models.Model):
 
     @property
     def org(self):
-        return self.knowledge.org
+        return self.source.org
 
     @property
     def is_available(self) -> bool:
@@ -1273,7 +1270,7 @@ class HelpSite(models.Model):
         return (
             self.is_enabled
             and self.is_domain_verified
-            and self.knowledge.is_active
+            and self.source.is_active
             and self.org.is_active
             and Org.FEATURE_AGENTS in self.org.features
         )
@@ -1298,7 +1295,7 @@ class HelpSite(models.Model):
         """
         The bubble colors that are set, by their palette key.
         """
-        colors = self.knowledge.colors
+        colors = self.source.colors
         return {key: colors[key] for key in self.BUBBLE_KEYS if colors.get(key)}
 
     def set_bubbles(self, colors: dict):
@@ -1306,7 +1303,7 @@ class HelpSite(models.Model):
         Sets the helpdesk's palette to the given bubble colors - only those keys, so a bubble cleared here stops being
         offered, and any column that embedded it paints nothing until it's set again.
         """
-        self.knowledge.set_colors({key: colors[key].lower() for key in self.BUBBLE_KEYS if colors.get(key)})
+        self.source.set_colors({key: colors[key].lower() for key in self.BUBBLE_KEYS if colors.get(key)})
 
     def set_config(self, user, **values):
         self.config = {**self.config, **values}
@@ -1314,7 +1311,7 @@ class HelpSite(models.Model):
         self.save(update_fields=("config", "modified_by", "modified_on"))
 
     def _published(self):
-        return self.knowledge.articles.filter(is_active=True, status=Article.STATUS_PUBLISHED)
+        return self.source.articles.filter(is_active=True, status=Article.STATUS_PUBLISHED)
 
     def get_sections(self) -> list:
         """
@@ -1391,7 +1388,7 @@ class HelpSite(models.Model):
         since = timezone.now().date() - timedelta(days=self.POPULAR_DAYS)
         totals = (
             ArticleCount.objects.filter(
-                article__knowledge=self.knowledge,
+                article__source=self.source,
                 article__is_active=True,
                 article__status=Article.STATUS_PUBLISHED,
                 article__parent__is_active=True,
@@ -1430,7 +1427,7 @@ class HelpSite(models.Model):
 
         ordered, snippets = [], {}
 
-        if self.knowledge.last_indexed_on:
+        if self.source.last_indexed_on:
             try:
                 # the org's sources are searched together, so ask for more than we need and keep what's ours
                 results = mailroom.get_client().knowledge_search(self.org, query, limit=limit * 3)
@@ -1440,7 +1437,7 @@ class HelpSite(models.Model):
 
             keys = []
             for r in results:
-                if r["knowledge_uuid"] == str(self.knowledge.uuid) and r["item_key"] not in keys:
+                if r["knowledge_uuid"] == str(self.source.uuid) and r["item_key"] not in keys:
                     keys.append(r["item_key"])
                     snippets[r["item_key"]] = make_snippet(to_plain_text(r["text"]), terms)
 
@@ -1555,7 +1552,7 @@ class HelpdeskImport(models.Model):
 
     uuid = models.UUIDField(unique=True, default=uuid4)
     org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="helpdesk_imports")
-    knowledge = models.ForeignKey(Knowledge, on_delete=models.PROTECT, related_name="imports")
+    source = models.ForeignKey(KnowledgeSource, on_delete=models.PROTECT, related_name="imports")
     import_type = models.CharField(max_length=16)  # the slug of a registered HelpdeskImportType
 
     # what the type needs to get in and bring the site over - its secrets are dropped once the import is over
@@ -1585,27 +1582,27 @@ class HelpdeskImport(models.Model):
         return TYPES.get(slug)
 
     @classmethod
-    def create(cls, knowledge, user, import_type: HelpdeskImportType, config: dict):
-        assert knowledge.knowledge_type == Knowledge.TYPE_HELPDESK, "only a helpdesk can be imported into"
+    def create(cls, source, user, import_type: HelpdeskImportType, config: dict):
+        assert source.source_type == KnowledgeSource.TYPE_HELPDESK, "only a helpdesk can be imported into"
 
         return cls.objects.create(
-            org=knowledge.org, knowledge=knowledge, import_type=import_type.slug, config=config, created_by=user
+            org=source.org, source=source, import_type=import_type.slug, config=config, created_by=user
         )
 
     @classmethod
-    def get_unfinished(cls, knowledge):
+    def get_unfinished(cls, source):
         """
         The import that's running for the helpdesk, if one is - another can't be started while it is.
         """
         return cls.objects.filter(
-            knowledge=knowledge,
+            source=source,
             status__in=(cls.STATUS_PENDING, cls.STATUS_PROCESSING),
             created_on__gt=timezone.now() - cls.UNFINISHED_WINDOW,
         ).first()
 
     @classmethod
-    def get_latest(cls, knowledge):
-        return cls.objects.filter(knowledge=knowledge).order_by("-created_on").first()
+    def get_latest(cls, source):
+        return cls.objects.filter(source=source).order_by("-created_on").first()
 
     @property
     def type(self) -> HelpdeskImportType | None:
@@ -1643,7 +1640,7 @@ class HelpdeskImport(models.Model):
             self.error = _("Something went wrong. Please try again later.")
         else:
             self.status = self.STATUS_COMPLETE
-            self.knowledge.mark_pending()
+            self.source.mark_pending()
 
         secrets = imp_type.secret_config_keys if imp_type else ()
         self.config = {k: v for k, v in self.config.items() if k not in secrets}
@@ -1669,11 +1666,11 @@ class HelpdeskImport(models.Model):
         }
 
     class Meta:
-        indexes = [models.Index(name="helpdeskimport_by_created", fields=("knowledge", "-created_on"))]
+        indexes = [models.Index(name="helpdeskimport_by_created", fields=("source", "-created_on"))]
 
 
-def get_knowledge_item_path(knowledge, item_uuid, filename: str) -> str:
-    return f"orgs/{knowledge.org_id}/knowledge/{knowledge.uuid}/{item_uuid}{Path(filename).suffix.lower()}"
+def get_knowledge_item_path(source, item_uuid, filename: str) -> str:
+    return f"orgs/{source.org_id}/knowledge/{source.uuid}/{item_uuid}{Path(filename).suffix.lower()}"
 
 
 class KnowledgeItem(models.Model):
@@ -1708,7 +1705,7 @@ class KnowledgeItem(models.Model):
     )
 
     uuid = models.UUIDField(unique=True, default=uuid4)
-    knowledge = models.ForeignKey(Knowledge, on_delete=models.PROTECT, related_name="items")
+    source = models.ForeignKey(KnowledgeSource, on_delete=models.PROTECT, related_name="items")
     name = models.CharField(max_length=255)  # page title, or the cleaned original filename
 
     # null for uploads; the normalised page URL for crawled pages, and their identity within the source
@@ -1741,16 +1738,16 @@ class KnowledgeItem(models.Model):
         return base_name + extension[:50]
 
     @classmethod
-    def from_upload(cls, knowledge, user, file):
-        assert knowledge.knowledge_type == Knowledge.TYPE_DOCUMENTS, "can only upload to documents knowledge"
+    def from_upload(cls, source, user, file):
+        assert source.source_type == KnowledgeSource.TYPE_DOCUMENTS, "can only upload to documents knowledge"
         assert cls.is_allowed_type(file.content_type), "unsupported content type"
 
         uuid = uuid4()
-        path = default_storage.save(get_knowledge_item_path(knowledge, uuid, file.name), file)
+        path = default_storage.save(get_knowledge_item_path(source, uuid, file.name), file)
 
         obj = cls.objects.create(
             uuid=uuid,
-            knowledge=knowledge,
+            source=source,
             name=cls.clean_name(file.name),
             url=None,  # explicit: this is what makes it a document rather than a page
             path=path,
@@ -1759,21 +1756,21 @@ class KnowledgeItem(models.Model):
             created_by=user,
         )
 
-        knowledge.mark_pending()
+        source.mark_pending()
         return obj
 
     @property
     def org(self):
-        return self.knowledge.org
+        return self.source.org
 
     def delete(self):
         path = self.path
 
         with transaction.atomic():
             # this item's chunks are no longer valid - mailroom will recompute the source's counters
-            delete_in_batches(self.knowledge.chunks.filter(item_key=self.uuid))
+            delete_in_batches(self.source.chunks.filter(item_key=self.uuid))
             super().delete()
-            self.knowledge.mark_pending()
+            self.source.mark_pending()
 
         # only remove the storage object once the deletion has committed - with ATOMIC_REQUESTS the atomic block above
         # is just a savepoint, so this has to wait for the request's transaction
@@ -1785,7 +1782,7 @@ class KnowledgeItem(models.Model):
             # a page's identity within its source. Postgres treats NULLs as distinct in a unique index, so uploaded
             # documents (url null) are exempt automatically - no partial-index condition needed, and any number of
             # documents can coexist in one source.
-            models.UniqueConstraint("knowledge", "url", name="unique_knowledge_item_urls"),
+            models.UniqueConstraint("source", "url", name="unique_knowledge_item_urls"),
         ]
 
 
@@ -1797,7 +1794,7 @@ class KnowledgeChunk(models.Model):
 
     EMBEDDING_DIMENSIONS = 384  # intfloat/multilingual-e5-small
 
-    knowledge = models.ForeignKey(Knowledge, on_delete=models.PROTECT, related_name="chunks")
+    source = models.ForeignKey(KnowledgeSource, on_delete=models.PROTECT, related_name="chunks")
 
     # the owning item's uuid. Not an FK, because the item lives in a different table per source type: KnowledgeItem
     # for pages/documents, Shortcut for shortcuts, Article for helpdesk. One mechanism spanning all four beats an FK
@@ -1821,5 +1818,5 @@ class KnowledgeChunk(models.Model):
                 opclasses=("vector_cosine_ops",),
             ),
             # lets mailroom replace one item's chunks on reindex, and lets us delete one item's chunks
-            models.Index(name="knowledgechunk_by_item", fields=("knowledge", "item_key")),
+            models.Index(name="knowledgechunk_by_item", fields=("source", "item_key")),
         ]

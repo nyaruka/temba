@@ -70,7 +70,7 @@ class ShortcutCRUDLTest(TembaTest, CRUDLTestMixin):
             new_obj_query=Shortcut.objects.filter(name="Old Reliable"),
             success_status=302,
         )
-        self.assertEqual(reverse("knowledge.knowledge_shortcuts"), response.url)
+        self.assertEqual(reverse("knowledge.knowledgesource_shortcuts"), response.url)
 
     def test_update(self):
         shortcut = Shortcut.create(self.org, self.admin, "Planes", "Planes are...")
@@ -106,7 +106,7 @@ class ShortcutCRUDLTest(TembaTest, CRUDLTestMixin):
         response = self.assertUpdateSubmit(
             update_url, self.admin, {"name": "Boats", "text": "Boats are..."}, success_status=302
         )
-        self.assertEqual(reverse("knowledge.knowledge_shortcuts"), response.url)
+        self.assertEqual(reverse("knowledge.knowledgesource_shortcuts"), response.url)
 
     def test_delete(self):
         shortcut1 = Shortcut.create(self.org, self.admin, "Planes", "Planes are...")
@@ -139,7 +139,7 @@ class ShortcutCRUDLTest(TembaTest, CRUDLTestMixin):
             object_deactivated=shortcut2,
             success_status=302,
         )
-        self.assertEqual(reverse("knowledge.knowledge_shortcuts"), response.url)
+        self.assertEqual(reverse("knowledge.knowledgesource_shortcuts"), response.url)
 
     def test_list(self):
         shortcut1 = Shortcut.create(self.org, self.admin, "Planes", "Planes are...")

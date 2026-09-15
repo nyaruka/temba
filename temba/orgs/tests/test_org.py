@@ -17,7 +17,7 @@ from temba.channels.models import SyncEvent
 from temba.contacts.models import ContactExport, ContactField, ContactFire, ContactImport, ContactImportBatch
 from temba.flows.models import FlowLabel, FlowRun, FlowSession, FlowStart, FlowStartCount, ResultsExport
 from temba.globals.models import Global
-from temba.knowledge.models import Article, ArticleImage, Knowledge, KnowledgeChunk, KnowledgeItem
+from temba.knowledge.models import Article, ArticleImage, KnowledgeChunk, KnowledgeItem, KnowledgeSource
 from temba.locations.models import AdminBoundary
 from temba.msgs.models import MessageExport, Msg
 from temba.notifications.incidents.builtin import ChannelDisconnectedIncidentType
@@ -50,7 +50,7 @@ class OrgTest(TembaTest):
         # initialize gave it both system knowledge sources
         self.assertEqual(
             {("Shortcuts", "shortcuts"), ("Helpdesk", "helpdesk")},
-            set(new_org.knowledge.filter(is_system=True).values_list("name", "knowledge_type")),
+            set(new_org.sources.filter(is_system=True).values_list("name", "source_type")),
         )
 
         # as well as system fields, system groups and the sample flows
@@ -702,24 +702,24 @@ class OrgDeleteTest(TembaTest):
         add(Shortcut.create(org, user, "Interested", "We're interested"))
 
         # a website source with a crawled page (url set, no stored file)
-        website = add(Knowledge.create_website(org, user, "Nyaruka", "https://nyaruka.com"))
+        website = add(KnowledgeSource.create_website(org, user, "Nyaruka", "https://nyaruka.com"))
         page = add(
             KnowledgeItem.objects.create(
-                knowledge=website, name="Home", url="https://nyaruka.com/", content_type="text/html", size=1024
+                source=website, name="Home", url="https://nyaruka.com/", content_type="text/html", size=1024
             )
         )
         add(
             KnowledgeChunk.objects.create(
-                knowledge=website, item_key=page.uuid, item_name=page.name, text="welcome", embedding=[0.0] * 384
+                source=website, item_key=page.uuid, item_name=page.name, text="welcome", embedding=[0.0] * 384
             )
         )
 
         # a document set with an uploaded file (path set, no url) - the path is a key that never existed since
         # deleting a missing key is a no-op
-        docs = add(Knowledge.create_documents(org, user, "Guides"))
+        docs = add(KnowledgeSource.create_documents(org, user, "Guides"))
         doc = add(
             KnowledgeItem.objects.create(
-                knowledge=docs,
+                source=docs,
                 name="guide.txt",
                 path=f"orgs/{org.id}/knowledge/{docs.uuid}/guide.txt",
                 content_type="text/plain",
@@ -729,18 +729,18 @@ class OrgDeleteTest(TembaTest):
         )
         add(
             KnowledgeChunk.objects.create(
-                knowledge=docs, item_key=doc.uuid, item_name=doc.name, text="hello", embedding=[0.0] * 384
+                source=docs, item_key=doc.uuid, item_name=doc.name, text="hello", embedding=[0.0] * 384
             )
         )
 
         # a nested article with an image on the org's system helpdesk source
-        helpdesk = org.knowledge.get(knowledge_type=Knowledge.TYPE_HELPDESK)
+        helpdesk = org.sources.get(source_type=KnowledgeSource.TYPE_HELPDESK)
         article = add(
-            Article.objects.create(knowledge=helpdesk, title="Flows", slug="flows", created_by=user, modified_by=user)
+            Article.objects.create(source=helpdesk, title="Flows", slug="flows", created_by=user, modified_by=user)
         )
         add(
             Article.objects.create(
-                knowledge=helpdesk, parent=article, title="Nodes", slug="nodes", created_by=user, modified_by=user
+                source=helpdesk, parent=article, title="Nodes", slug="nodes", created_by=user, modified_by=user
             )
         )
         add(

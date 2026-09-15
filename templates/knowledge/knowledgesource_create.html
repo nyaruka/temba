@@ -3,7 +3,7 @@
 
 {% block fields %}
   {% render_field 'name' %}
-  {% render_field 'knowledge_type' %}
+  {% render_field 'source_type' %}
   <div class="website-fields">
     {% render_field 'url' %}
     {% render_field 'max_pages' %}
@@ -14,7 +14,7 @@
   {{ block.super }}
   <script type="text/javascript">
     var modalBody = getModax("#new-knowledge").shadowRoot;
-    var typeSelect = modalBody.querySelector("temba-select[name='knowledge_type']");
+    var typeSelect = modalBody.querySelector("temba-select[name='source_type']");
     var websiteFields = modalBody.querySelector(".website-fields");
 
     typeSelect.addEventListener("change", function(evt) {

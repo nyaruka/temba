@@ -8,7 +8,7 @@ from temba.orgs.views.mixins import UniqueNameMixin
 from temba.utils import languages
 from temba.utils.fields import CheckboxWidget, ColorInputWidget, InputWidget, SelectWidget
 
-from .models import Article, HelpdeskImport, HelpSite, Knowledge
+from .models import Article, HelpdeskImport, HelpSite, KnowledgeSource
 
 
 class MarkdownEditorWidget(forms.Widget):
@@ -21,31 +21,31 @@ class MarkdownEditorWidget(forms.Widget):
     is_annotated = True
 
 
-class KnowledgeForm(UniqueNameMixin, forms.ModelForm):
+class KnowledgeSourceForm(UniqueNameMixin, forms.ModelForm):
     """
     Create form - the type picker plus the website-only settings.
     """
 
-    knowledge_type = forms.ChoiceField(
+    source_type = forms.ChoiceField(
         choices=(
-            (Knowledge.TYPE_WEBSITE, _("Website")),
-            (Knowledge.TYPE_DOCUMENTS, _("Documents")),
+            (KnowledgeSource.TYPE_WEBSITE, _("Website")),
+            (KnowledgeSource.TYPE_DOCUMENTS, _("Documents")),
         ),
         label=_("Type"),
         widget=SelectWidget(attrs={"widget_only": False}),
     )
     url = forms.URLField(
         required=False,
-        max_length=Knowledge.MAX_URL_LEN,
+        max_length=KnowledgeSource.MAX_URL_LEN,
         label=_("URL"),
         widget=InputWidget(),
         help_text=_("The address to crawl, e.g. https://help.example.com"),
     )
     max_pages = forms.IntegerField(
-        required=False, min_value=1, max_value=Knowledge.MAX_MAX_PAGES, label=_("Max Pages"), widget=InputWidget()
+        required=False, min_value=1, max_value=KnowledgeSource.MAX_MAX_PAGES, label=_("Max Pages"), widget=InputWidget()
     )
     refresh = forms.ChoiceField(
-        choices=Knowledge.REFRESH_CHOICES, required=False, label=_("Refresh"), widget=SelectWidget()
+        choices=KnowledgeSource.REFRESH_CHOICES, required=False, label=_("Refresh"), widget=SelectWidget()
     )
 
     def __init__(self, org, *args, **kwargs):
@@ -55,27 +55,27 @@ class KnowledgeForm(UniqueNameMixin, forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        if cleaned.get("knowledge_type") == Knowledge.TYPE_WEBSITE and not cleaned.get("url"):
+        if cleaned.get("source_type") == KnowledgeSource.TYPE_WEBSITE and not cleaned.get("url"):
             self.add_error("url", _("This field is required."))
         return cleaned
 
     class Meta:
-        model = Knowledge
-        fields = ("name", "knowledge_type", "url", "max_pages", "refresh")
+        model = KnowledgeSource
+        fields = ("name", "source_type", "url", "max_pages", "refresh")
         widgets = {"name": InputWidget()}
 
 
-class KnowledgeUpdateForm(UniqueNameMixin, forms.ModelForm):
+class KnowledgeSourceUpdateForm(UniqueNameMixin, forms.ModelForm):
     """
     Update form - type is fixed; website sources also expose their crawl settings.
     """
 
-    url = forms.URLField(required=True, max_length=Knowledge.MAX_URL_LEN, label=_("URL"), widget=InputWidget())
+    url = forms.URLField(required=True, max_length=KnowledgeSource.MAX_URL_LEN, label=_("URL"), widget=InputWidget())
     max_pages = forms.IntegerField(
-        required=False, min_value=1, max_value=Knowledge.MAX_MAX_PAGES, label=_("Max Pages"), widget=InputWidget()
+        required=False, min_value=1, max_value=KnowledgeSource.MAX_MAX_PAGES, label=_("Max Pages"), widget=InputWidget()
     )
     refresh = forms.ChoiceField(
-        choices=Knowledge.REFRESH_CHOICES, required=False, label=_("Refresh"), widget=SelectWidget()
+        choices=KnowledgeSource.REFRESH_CHOICES, required=False, label=_("Refresh"), widget=SelectWidget()
     )
 
     def __init__(self, org, *args, **kwargs):
@@ -83,16 +83,16 @@ class KnowledgeUpdateForm(UniqueNameMixin, forms.ModelForm):
 
         self.org = org
 
-        if self.instance.knowledge_type != Knowledge.TYPE_WEBSITE:
+        if self.instance.source_type != KnowledgeSource.TYPE_WEBSITE:
             for f in ("url", "max_pages", "refresh"):
                 del self.fields[f]
         else:
-            self.fields["url"].initial = self.instance.config.get(Knowledge.CONFIG_URL)
-            self.fields["max_pages"].initial = self.instance.config.get(Knowledge.CONFIG_MAX_PAGES)
-            self.fields["refresh"].initial = self.instance.config.get(Knowledge.CONFIG_REFRESH)
+            self.fields["url"].initial = self.instance.config.get(KnowledgeSource.CONFIG_URL)
+            self.fields["max_pages"].initial = self.instance.config.get(KnowledgeSource.CONFIG_MAX_PAGES)
+            self.fields["refresh"].initial = self.instance.config.get(KnowledgeSource.CONFIG_REFRESH)
 
     class Meta:
-        model = Knowledge
+        model = KnowledgeSource
         fields = ("name",)
         widgets = {"name": InputWidget()}
 

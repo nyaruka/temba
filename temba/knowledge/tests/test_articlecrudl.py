@@ -4,7 +4,7 @@ from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
 
-from temba.knowledge.models import Article, HelpSite, Knowledge
+from temba.knowledge.models import Article, HelpSite, KnowledgeSource
 from temba.orgs.models import Org
 from temba.tests import CRUDLTestMixin, TembaTest, cleanup
 from temba.utils import json
@@ -15,7 +15,7 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
     def setUp(self):
         super().setUp()
 
-        self.helpdesk = self.org.knowledge.get(knowledge_type=Knowledge.TYPE_HELPDESK)
+        self.helpdesk = self.org.sources.get(source_type=KnowledgeSource.TYPE_HELPDESK)
 
     def enable_agents(self, org):
         org.features = [Org.FEATURE_AGENTS]
@@ -113,14 +113,14 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # an article that isn't ours to edit, or isn't a uuid at all, is simply ignored
         other_org = Article.create(
-            self.org2.knowledge.get(knowledge_type=Knowledge.TYPE_HELPDESK), self.admin2, "Other"
+            self.org2.sources.get(source_type=KnowledgeSource.TYPE_HELPDESK), self.admin2, "Other"
         )
         for edit in (other_org.uuid, "not-a-uuid", ""):
             response = self.requestView(f"{list_url}?edit={edit}", self.admin)
             self.assertNotIn("edit_article", response.context)
 
         # 404 if the system source is somehow absent
-        self.org.knowledge.filter(knowledge_type=Knowledge.TYPE_HELPDESK).update(is_active=False)
+        self.org.sources.filter(source_type=KnowledgeSource.TYPE_HELPDESK).update(is_active=False)
         response = self.requestView(list_url, self.admin)
         self.assertEqual(404, response.status_code)
 
@@ -155,7 +155,7 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
             create_url,
             self.admin,
             {"title": "Getting Started", "description": "Setting up and finding your way around."},
-            new_obj_query=Article.objects.filter(title="Getting Started", knowledge=self.helpdesk),
+            new_obj_query=Article.objects.filter(title="Getting Started", source=self.helpdesk),
         )
 
         section = Article.objects.get(title="Getting Started")
@@ -198,7 +198,7 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
             article_url,
             self.admin,
             {"title": "Installing", "language": "spa"},
-            new_obj_query=Article.objects.filter(title="Installing", knowledge=self.helpdesk),
+            new_obj_query=Article.objects.filter(title="Installing", source=self.helpdesk),
         )
 
         article = Article.objects.get(title="Installing")
@@ -216,7 +216,7 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # a section that isn't one of ours, isn't a section, or isn't a uuid at all is nowhere to file an article
         other_org = Article.create(
-            self.org2.knowledge.get(knowledge_type=Knowledge.TYPE_HELPDESK), self.admin2, "Other"
+            self.org2.sources.get(source_type=KnowledgeSource.TYPE_HELPDESK), self.admin2, "Other"
         )
         for bad in (other_org.uuid, article.uuid, "not-a-uuid"):
             response = self.requestView(f"{create_url}?section={bad}", self.admin)
@@ -334,7 +334,7 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
     def test_publish(self):
         article = Article.create(self.helpdesk, self.admin, "Flows")
         other_org = Article.create(
-            self.org2.knowledge.get(knowledge_type=Knowledge.TYPE_HELPDESK), self.admin2, "Other"
+            self.org2.sources.get(source_type=KnowledgeSource.TYPE_HELPDESK), self.admin2, "Other"
         )
 
         publish_url = reverse("knowledge.article_publish")

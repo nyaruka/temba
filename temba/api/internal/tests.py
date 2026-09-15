@@ -14,7 +14,7 @@ from temba.contacts.models import Contact, ContactExport, ContactField, ContactG
 from temba.flows.models import Flow, FlowLabel
 from temba.globals.models import Global
 from temba.ivr.models import Call
-from temba.knowledge.models import Article, Knowledge
+from temba.knowledge.models import Article, KnowledgeSource
 from temba.msgs.models import Broadcast, Msg
 from temba.notifications.types import ExportFinishedNotificationType
 from temba.orgs.models import Org, OrgRole
@@ -916,7 +916,7 @@ class EndpointsTest(APITestMixin, TembaTest):
         self.assertPostNotAllowed(endpoint_url)
         self.assertDeleteNotAllowed(endpoint_url)
 
-        helpdesk = self.org.knowledge.get(knowledge_type=Knowledge.TYPE_HELPDESK)
+        helpdesk = self.org.sources.get(source_type=KnowledgeSource.TYPE_HELPDESK)
         flows = Article.create(helpdesk, self.admin, "Flows", description="All about flows.")
         nodes = Article.create(helpdesk, self.admin, "Nodes", parent=flows)
         contacts = Article.create(helpdesk, self.admin, "Contacts")
@@ -924,7 +924,7 @@ class EndpointsTest(APITestMixin, TembaTest):
         released.release(self.admin)
         flows.publish(self.admin)
 
-        Article.create(self.org2.knowledge.get(knowledge_type=Knowledge.TYPE_HELPDESK), self.admin2, "Other")
+        Article.create(self.org2.sources.get(source_type=KnowledgeSource.TYPE_HELPDESK), self.admin2, "Other")
 
         # the helpdesk is part of the agents feature, so without it there's nothing to serve
         self.assertGet(endpoint_url, [self.admin], results=[])
@@ -969,7 +969,7 @@ class EndpointsTest(APITestMixin, TembaTest):
         )
 
         # an org whose helpdesk has somehow gone is served an empty tree rather than an error
-        self.org.knowledge.filter(knowledge_type=Knowledge.TYPE_HELPDESK).update(is_active=False)
+        self.org.sources.filter(source_type=KnowledgeSource.TYPE_HELPDESK).update(is_active=False)
 
         self.assertGet(endpoint_url, [self.admin], results=[])
 

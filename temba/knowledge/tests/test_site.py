@@ -2,7 +2,7 @@ from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from temba.knowledge.models import Article, ArticleCount, HelpSite, Knowledge
+from temba.knowledge.models import Article, ArticleCount, HelpSite, KnowledgeSource
 from temba.orgs.models import Org
 from temba.tests import TembaTest
 
@@ -16,7 +16,7 @@ class SiteViewsTest(TembaTest):
     def setUp(self):
         super().setUp()
 
-        self.helpdesk = self.org.knowledge.get(knowledge_type=Knowledge.TYPE_HELPDESK)
+        self.helpdesk = self.org.sources.get(source_type=KnowledgeSource.TYPE_HELPDESK)
         self.org.features = [Org.FEATURE_AGENTS]
         self.org.save(update_fields=("features",))
 
@@ -285,7 +285,7 @@ class SiteViewsTest(TembaTest):
         self.login(self.admin)
         response = self.client.get(home_url)
         self.assertEqual(200, response.status_code)
-        self.assertEqual(1, HelpSite.objects.filter(knowledge=self.helpdesk).count())
+        self.assertEqual(1, HelpSite.objects.filter(source=self.helpdesk).count())
 
         # but not for a helpdesk that's gone
         self.helpdesk.is_active = False

@@ -8,7 +8,7 @@ from django.views.generic import TemplateView
 
 from temba.orgs.models import Org
 
-from .models import ArticleCount, HelpSite, Knowledge
+from .models import ArticleCount, HelpSite, KnowledgeSource
 
 # where the app mounts the preview of the current org's site
 PREVIEW_PREFIX = "/helpsite/preview"
@@ -41,8 +41,8 @@ class SiteView(TemplateView):
             ):
                 raise PermissionDenied()
 
-            helpdesk = org.knowledge.filter(
-                knowledge_type=Knowledge.TYPE_HELPDESK, is_system=True, is_active=True
+            helpdesk = org.sources.filter(
+                source_type=KnowledgeSource.TYPE_HELPDESK, is_system=True, is_active=True
             ).first()
             if not helpdesk:
                 raise Http404()

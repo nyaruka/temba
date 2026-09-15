@@ -16,7 +16,7 @@ from temba.knowledge.models import (
     Article,
     ArticleCount,
     HelpSite,
-    Knowledge,
+    KnowledgeSource,
     is_dark_color,
     lookup_txt,
     make_snippet,
@@ -32,7 +32,7 @@ class HelpSiteTest(TembaTest):
     def setUp(self):
         super().setUp()
 
-        self.helpdesk = self.org.knowledge.get(knowledge_type=Knowledge.TYPE_HELPDESK)
+        self.helpdesk = self.org.sources.get(source_type=KnowledgeSource.TYPE_HELPDESK)
         self.org.features = [Org.FEATURE_AGENTS]
         self.org.save(update_fields=("features",))
 
@@ -45,7 +45,7 @@ class HelpSiteTest(TembaTest):
     def test_get_or_create(self):
         site = HelpSite.get_or_create(self.helpdesk, self.admin)
 
-        self.assertEqual(self.helpdesk, site.knowledge)
+        self.assertEqual(self.helpdesk, site.source)
         self.assertEqual(self.org, site.org)
         self.assertEqual("Nyaruka", site.title)  # named for the org until told otherwise
         self.assertEqual("", site.tagline)
@@ -59,7 +59,7 @@ class HelpSiteTest(TembaTest):
         self.assertEqual(1, HelpSite.objects.count())
 
         # and only for a helpdesk
-        website = Knowledge.create_website(self.org, self.admin, "Site", "https://nyaruka.com")
+        website = KnowledgeSource.create_website(self.org, self.admin, "Site", "https://nyaruka.com")
         with self.assertRaises(AssertionError):
             HelpSite.get_or_create(website, self.admin)
 
@@ -141,7 +141,7 @@ class HelpSiteTest(TembaTest):
         self.assertEqual(verified_on, site.domain_verified_on)
 
         # a verified domain is one site's alone
-        other = HelpSite.get_or_create(self.org2.knowledge.get(knowledge_type=Knowledge.TYPE_HELPDESK), self.admin2)
+        other = HelpSite.get_or_create(self.org2.sources.get(source_type=KnowledgeSource.TYPE_HELPDESK), self.admin2)
         other.set_domain(self.admin2, "help.nyaruka.com")  # an unverified claim is allowed
         with self.assertRaises(IntegrityError):
             with transaction.atomic():
@@ -275,7 +275,7 @@ class HelpSiteTest(TembaTest):
         self.create_article("Secret", parent=empty, published=False)
         hidden = self.create_article("Hidden", published=False)  # an unpublished section hides its articles
         self.create_article("Visible", parent=hidden)
-        other_helpdesk = self.org2.knowledge.get(knowledge_type=Knowledge.TYPE_HELPDESK)
+        other_helpdesk = self.org2.sources.get(source_type=KnowledgeSource.TYPE_HELPDESK)
         other = Article.create(other_helpdesk, self.admin2, "Other")
         other.publish(self.admin2)
 
@@ -529,7 +529,7 @@ class HelpSiteTest(TembaTest):
 
 class HelpSiteMiddlewareTest(TembaTest):
     def test_middleware(self):
-        helpdesk = self.org.knowledge.get(knowledge_type=Knowledge.TYPE_HELPDESK)
+        helpdesk = self.org.sources.get(source_type=KnowledgeSource.TYPE_HELPDESK)
         site = HelpSite.get_or_create(helpdesk, self.admin)
         site.domain = "help.nyaruka.com"
         site.domain_verified_on = timezone.now()

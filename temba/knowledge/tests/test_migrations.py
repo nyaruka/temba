@@ -1,7 +1,6 @@
 from importlib import import_module
 from zoneinfo import ZoneInfo
 
-from temba.knowledge.models import Knowledge
 from temba.orgs.models import Org
 from temba.tests import MigrationTest
 from temba.utils.uuid import uuid4
@@ -46,24 +45,31 @@ class BackfillSystemKnowledgeTest(MigrationTest):
         )
 
     def assertSystemRows(self, org, shortcuts_name: str, helpdesk_name: str):
-        shortcuts = org.knowledge.get(knowledge_type="shortcuts")
-        helpdesk = org.knowledge.get(knowledge_type="helpdesk")
+        # the model as it was at this migration, before it became KnowledgeSource
+        Knowledge = self.apps.get_model("knowledge", "Knowledge")
 
-        for kb in (shortcuts, helpdesk):
-            self.assertTrue(kb.is_system)
-            self.assertTrue(kb.is_active)
-            self.assertEqual("P", kb.status)
+        shortcuts = Knowledge.objects.get(org_id=org.id, knowledge_type="shortcuts")
+        helpdesk = Knowledge.objects.get(org_id=org.id, knowledge_type="helpdesk")
+
+        for source in (shortcuts, helpdesk):
+            self.assertTrue(source.is_system)
+            self.assertTrue(source.is_active)
+            self.assertEqual("P", source.status)
 
         self.assertEqual(shortcuts_name, shortcuts.name)
         self.assertEqual(helpdesk_name, helpdesk.name)
 
     def test_migration(self):
+        Knowledge = self.apps.get_model("knowledge", "Knowledge")
+
         self.assertSystemRows(self.org, "Shortcuts", "Helpdesk")
         self.assertSystemRows(self.org2, "Shortcuts 2", "Helpdesk")  # "Shortcuts" was taken by its website source
         self.assertSystemRows(self.org3, "Shortcuts", "Helpdesk")
 
         # org3's pre-existing helpdesk row is untouched
-        self.assertEqual(self.org3_helpdesk_uuid, self.org3.knowledge.get(knowledge_type="helpdesk").uuid)
+        self.assertEqual(
+            self.org3_helpdesk_uuid, Knowledge.objects.get(org_id=self.org3.id, knowledge_type="helpdesk").uuid
+        )
 
         # re-running the backfill is a no-op
         num_rows = Knowledge.objects.count()

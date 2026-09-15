@@ -3,7 +3,7 @@ from unittest.mock import patch
 from django.urls import reverse
 from django.utils import timezone
 
-from temba.knowledge.models import HelpSite, Knowledge
+from temba.knowledge.models import HelpSite, KnowledgeSource
 from temba.orgs.models import Org
 from temba.tests import CRUDLTestMixin, TembaTest
 
@@ -12,7 +12,7 @@ class HelpSiteCRUDLTest(TembaTest, CRUDLTestMixin):
     def setUp(self):
         super().setUp()
 
-        self.helpdesk = self.org.knowledge.get(knowledge_type=Knowledge.TYPE_HELPDESK)
+        self.helpdesk = self.org.sources.get(source_type=KnowledgeSource.TYPE_HELPDESK)
 
     def enable_agents(self, org):
         org.features = [Org.FEATURE_AGENTS]
@@ -23,7 +23,7 @@ class HelpSiteCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("/helpsite/update/", update_url)
 
         # the site is made the first time anyone comes here
-        self.assertFalse(HelpSite.objects.filter(knowledge=self.helpdesk).exists())
+        self.assertFalse(HelpSite.objects.filter(source=self.helpdesk).exists())
 
         # nobody can access if agents feature not enabled
         response = self.requestView(update_url, self.admin)
@@ -48,8 +48,8 @@ class HelpSiteCRUDLTest(TembaTest, CRUDLTestMixin):
             },
         )
 
-        site = HelpSite.objects.get(knowledge=self.helpdesk)
-        self.assertEqual(1, HelpSite.objects.filter(knowledge=self.helpdesk).count())
+        site = HelpSite.objects.get(source=self.helpdesk)
+        self.assertEqual(1, HelpSite.objects.filter(source=self.helpdesk).count())
 
         self.assertUpdateSubmit(
             update_url,
@@ -124,7 +124,7 @@ class HelpSiteCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertRequestDisallowed(domain_url, [None, self.agent])
         self.assertUpdateFetch(domain_url, [self.editor, self.admin], form_fields={"is_enabled": False, "domain": None})
 
-        site = HelpSite.objects.get(knowledge=self.helpdesk)
+        site = HelpSite.objects.get(source=self.helpdesk)
 
         # the records panel is there from the start, hidden until a domain is typed - so it's ready to follow one
         response = self.requestView(domain_url, self.admin)
@@ -161,7 +161,7 @@ class HelpSiteCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertContains(response, reverse("knowledge.helpsite_verify"))
 
         # a domain another site has verified can't be claimed, though an unverified claim on it can
-        other = HelpSite.get_or_create(self.org2.knowledge.get(knowledge_type=Knowledge.TYPE_HELPDESK), self.admin2)
+        other = HelpSite.get_or_create(self.org2.sources.get(source_type=KnowledgeSource.TYPE_HELPDESK), self.admin2)
         other.set_domain(self.admin2, "help.example.com")
         self.assertUpdateSubmit(domain_url, self.admin, {"domain": "help.example.com"})
         site.refresh_from_db()
@@ -229,7 +229,7 @@ class HelpSiteCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(400, response.status_code)
         self.assertEqual({"error": "No domain has been set."}, response.json())
 
-        site = HelpSite.objects.get(knowledge=self.helpdesk)
+        site = HelpSite.objects.get(source=self.helpdesk)
         site.set_domain(self.editor, "help.nyaruka.com")
 
         mock_lookup.return_value = ["nope"]

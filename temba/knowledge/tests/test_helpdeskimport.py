@@ -4,7 +4,7 @@ from django.urls import reverse
 
 from temba.knowledge.forms import HelpdeskImportForm
 from temba.knowledge.imports import register_import_type, reload_import_types
-from temba.knowledge.models import Article, HelpdeskImport, HelpdeskImportError, HelpdeskImportType, Knowledge
+from temba.knowledge.models import Article, HelpdeskImport, HelpdeskImportError, HelpdeskImportType, KnowledgeSource
 from temba.orgs.models import Org
 from temba.tests import CRUDLTestMixin, TembaTest
 
@@ -33,13 +33,13 @@ class TestImportType(HelpdeskImportType):
     def perform(self, imp):
         imp.set_total(3)
 
-        section = Article.create(imp.knowledge, imp.created_by, "Imported")
+        section = Article.create(imp.source, imp.created_by, "Imported")
         imp.advance()
 
         for i in (1, 2):
             if imp.config.get("fail_at") == i:
                 raise HelpdeskImportError("The site went away.")
-            Article.create(imp.knowledge, imp.created_by, f"Article {i}", parent=section)
+            Article.create(imp.source, imp.created_by, f"Article {i}", parent=section)
             imp.advance()
 
 
@@ -80,7 +80,7 @@ class ImportTypesMixin:
 
         self.addCleanup(restore)
 
-        self.helpdesk = self.org.knowledge.get(knowledge_type=Knowledge.TYPE_HELPDESK)
+        self.helpdesk = self.org.sources.get(source_type=KnowledgeSource.TYPE_HELPDESK)
         self.test_type = HelpdeskImport.get_type("test")
 
 
@@ -107,7 +107,7 @@ class HelpdeskImportTest(ImportTypesMixin, TembaTest):
         self.assertEqual(["test", "elsewhere"], [t.slug for t in HelpdeskImport.get_types()])
 
     def test_perform(self):
-        self.helpdesk.status = Knowledge.STATUS_READY
+        self.helpdesk.status = KnowledgeSource.STATUS_READY
         self.helpdesk.save(update_fields=("status",))
 
         imp = self.create_import()
@@ -131,7 +131,7 @@ class HelpdeskImportTest(ImportTypesMixin, TembaTest):
 
         # and the helpdesk is queued for reindexing
         self.helpdesk.refresh_from_db()
-        self.assertEqual(Knowledge.STATUS_PENDING, self.helpdesk.status)
+        self.assertEqual(KnowledgeSource.STATUS_PENDING, self.helpdesk.status)
 
         # an import that can't go on says why, and keeps what it brought before that
         imp = self.create_import(fail_at=2)
@@ -201,7 +201,7 @@ class HelpdeskImportCRUDLTest(ImportTypesMixin, TembaTest, CRUDLTestMixin):
             self.editor,
             {"key": "secret"},
             new_obj_query=HelpdeskImport.objects.filter(
-                org=self.org, knowledge=self.helpdesk, import_type="test", created_by=self.editor
+                org=self.org, source=self.helpdesk, import_type="test", created_by=self.editor
             ),
         )
 

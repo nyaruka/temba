@@ -1070,14 +1070,16 @@ class Org(LegacyIDMixin, SmartModel):
         Initializes an organization, creating all the dependent objects we need for it to work properly.
         """
         from temba.contacts.models import ContactField, ContactGroup
-        from temba.knowledge.models import Knowledge
+        from temba.knowledge.models import KnowledgeSource
         from temba.tickets.models import Team, Topic
 
         ContactGroup.create_system_groups(self)
         ContactField.create_system_fields(self)
         Team.create_system(self)
         Topic.create_system(self)
-        Knowledge.create_system(self)  # both system sources; MUST be last so seeded UUIDs stay stable in test dumps
+        KnowledgeSource.create_system(
+            self
+        )  # both system sources; MUST be last so seeded UUIDs stay stable in test dumps
 
         # we should be called within a transaction, create the sample flows when its committed
         if sample_flows:
@@ -1167,8 +1169,8 @@ class Org(LegacyIDMixin, SmartModel):
 
         # delete contact-related data
         delete_in_batches(self.http_logs.all())
-        for kb in self.knowledge.all():
-            kb.delete()  # batched purge of chunks, items, articles, images + their storage objects
+        for source in self.sources.all():
+            source.delete()  # batched purge of chunks, items, articles, images + their storage objects
         delete_in_batches(self.shortcuts.all())
         delete_in_batches(self.tickets.all())
         delete_in_batches(self.topics.all())

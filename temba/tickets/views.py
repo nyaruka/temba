@@ -65,7 +65,7 @@ def shortcuts_url(org) -> str:
     Where shortcut CRUD lands: the fixed shortcuts page for agent orgs, the plain list otherwise.
     """
     if Org.FEATURE_AGENTS in org.features:
-        return reverse("knowledge.knowledge_shortcuts")
+        return reverse("knowledge.knowledgesource_shortcuts")
 
     return reverse("tickets.shortcut_list")
 
