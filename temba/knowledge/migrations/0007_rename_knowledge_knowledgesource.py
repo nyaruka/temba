@@ -13,6 +13,11 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RenameModel(old_name="Knowledge", new_name="KnowledgeSource"),
+        # RenameModel renames the table but not its id sequence, whose name tooling derives from the table
+        migrations.RunSQL(
+            "ALTER SEQUENCE knowledge_knowledge_id_seq RENAME TO knowledge_knowledgesource_id_seq",
+            "ALTER SEQUENCE knowledge_knowledgesource_id_seq RENAME TO knowledge_knowledge_id_seq",
+        ),
         migrations.AlterField(
             model_name="knowledgesource",
             name="org",
