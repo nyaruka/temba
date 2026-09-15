@@ -68,24 +68,46 @@ def find_mutated_globals(path: pathlib.Path) -> list[str]:
         if not isinstance(func, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
 
-        # a name the function rebinds as a plain local isn't the module-level one
-        declared_global = {n for node in ast.walk(func) if isinstance(node, ast.Global) for n in node.names}
-        rebound = {
-            t.id for node in ast.walk(func) if isinstance(node, ast.Assign) for t in node.targets if isinstance(t, ast.Name)
-        }
-        shadowed = rebound - declared_global
+        # only this function's own scope: nested functions and classes are scopes of their own, and are visited in
+        # their own right by the walk above
+        scope = list(iter_scope(func))
 
-        for node in ast.walk(func):
+        # a name this function binds itself - a parameter, or anything it assigns to by any means - is a local
+        # shadowing whatever module-level name it shares, unless it's declared global
+        declared_global = {n for node in scope if isinstance(node, ast.Global) for n in node.names}
+        params = {a.arg for a in ast.walk(func.args) if isinstance(a, ast.arg)}
+        bound = {node.id for node in scope if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store)}
+        bound |= {node.name for node in scope if isinstance(node, ast.ExceptHandler) and node.name}
+        shadowed = (params | bound) - declared_global
+
+        for node in scope:
             name = None
-            if isinstance(node, (ast.Assign, ast.AugAssign, ast.Delete)):  # X[k] = v, X[k] += v, del X[k]
+            if isinstance(node, (ast.Assign, ast.AugAssign, ast.Delete)):
                 targets = node.targets if isinstance(node, (ast.Assign, ast.Delete)) else [node.target]
-                name = next((t.value.id for t in targets if isinstance(t, ast.Subscript) and isinstance(t.value, ast.Name)), None)
+                for target in targets:
+                    if isinstance(target, ast.Subscript) and isinstance(target.value, ast.Name):  # X[k] = v, del X[k]
+                        name = target.value.id
+                    elif isinstance(node, ast.AugAssign) and isinstance(target, ast.Name):  # X += [v] mutates in place
+                        name = target.id
             elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):  # X.append(v) etc
                 if isinstance(node.func.value, ast.Name) and node.func.attr in MUTATING_METHODS:
                     name = node.func.value.id
             if name in containers and name not in shadowed:
                 problems.append(f"{path}:{node.lineno}: {func.name}() mutates module-level `{name}` (defined line {containers[name]})")
     return problems
+
+
+def iter_scope(func):
+    """
+    Walks a function body without descending into the nested functions and classes that have scopes of their own
+    """
+    stack = list(func.body)
+    while stack:
+        node = stack.pop()
+        yield node
+        for child in ast.iter_child_nodes(node):
+            if not isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                stack.append(child)
 
 
 def is_app_source(path: pathlib.Path) -> bool:
