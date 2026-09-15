@@ -13,6 +13,7 @@ from temba.campaigns.models import Campaign, CampaignEvent
 from temba.contacts.models import Contact, ContactExport, ContactField, ContactGroup, ContactURN
 from temba.flows.models import Flow, FlowLabel
 from temba.globals.models import Global
+from temba.ivr.models import Call
 from temba.knowledge.models import Article, Knowledge
 from temba.msgs.models import Broadcast
 from temba.notifications.types import ExportFinishedNotificationType
@@ -22,7 +23,7 @@ from temba.templates.models import Template, TemplateTranslation
 from temba.tests import TembaTest, matchers, mock_mailroom
 from temba.tickets.models import Shortcut, TicketExport, Topic
 from temba.triggers.models import Trigger
-from temba.utils.uuid import uuid4
+from temba.utils.uuid import uuid4, uuid7
 
 NUM_BASE_QUERIES = 3  # number of queries required for any request (internal API is session only)
 
@@ -74,6 +75,73 @@ class EndpointsTest(APITestMixin, TembaTest):
         # missing or invalid level, no results
         self.assertGet(endpoint_url + "?level=hood", [self.agent], results=[])
         self.assertGet(endpoint_url, [self.agent], results=[])
+
+    def test_calls(self):
+        endpoint_url = reverse("api.internal.calls") + ".json"
+
+        self.assertGetNotPermitted(endpoint_url, [None, self.agent])
+        self.assertPostNotAllowed(endpoint_url)
+        self.assertDeleteNotAllowed(endpoint_url)
+
+        flow = self.create_flow("IVR")
+        contact1 = self.create_contact("Ann", phone="+1234567001")
+        contact2 = self.create_contact("Bob", phone="+1234567002")
+
+        call1 = self.create_incoming_call(flow, contact1)
+        call2 = self.create_incoming_call(flow, contact2, status=Call.STATUS_ERRORED, error_reason=Call.ERROR_BUSY)
+        call2.duration = None
+        call2.save(update_fields=("duration",))
+
+        # a call in another org shouldn't appear
+        Call.objects.create(
+            uuid=uuid7(),
+            org=self.org2,
+            channel=self.channel,
+            direction=Call.DIRECTION_OUT,
+            contact=contact1,
+            contact_urn=contact1.get_urn(),
+            status=Call.STATUS_COMPLETED,
+        )
+
+        # admin has `channels.channel_logs` so as_json resolves logs_url to a real path
+        response = self.assertGet(
+            endpoint_url,
+            [self.admin],
+            results=[
+                {
+                    "uuid": str(call2.uuid),
+                    "direction": "in",
+                    "status": "errored",
+                    "status_display": "Errored (Busy)",
+                    "contact": {"uuid": str(contact2.uuid), "name": "Bob"},
+                    "duration": 0,
+                    "created_on": matchers.ISODatetime(),
+                    "logs_url": reverse("channels.channel_logs_read", args=[self.channel.uuid, "call", call2.uuid]),
+                },
+                {
+                    "uuid": str(call1.uuid),
+                    "direction": "in",
+                    "status": "completed",
+                    "status_display": "Complete",
+                    "contact": {"uuid": str(contact1.uuid), "name": "Ann"},
+                    "duration": 15,
+                    "created_on": matchers.ISODatetime(),
+                    "logs_url": reverse("channels.channel_logs_read", args=[self.channel.uuid, "call", call1.uuid]),
+                },
+            ],
+            num_queries=NUM_BASE_QUERIES + 4,
+        )
+
+        # the list is cursor paginated but always carries the org's pre-calculated call count as its total
+        self.assertEqual("cursor", response.json()["paged_by"])
+        self.assertEqual(2, response.json()["count"])
+
+        # editor lacks `channels.channel_logs` so logs_url is gated to None
+        response = self.assertGet(endpoint_url, [self.editor], results=[call2, call1])
+        self.assertEqual([None, None], [c["logs_url"] for c in response.json()["results"]])
+
+        # page size can be set by the client
+        self.assertGet(endpoint_url + "?page_size=1", [self.admin], results=[call2])
 
     def test_messages(self):
         endpoint_url = reverse("api.internal.messages") + ".json"

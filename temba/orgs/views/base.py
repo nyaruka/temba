@@ -197,7 +197,8 @@ class BaseListComponentView(ContextMenuMixin, BulkActionMixin, SpaMixin, BaseLis
 
     def derive_list_query(self) -> str:
         """
-        The query string selecting what the component should fetch, e.g. "folder=active"
+        The query string selecting what the component should fetch, e.g. "folder=active", or empty if the endpoint
+        needs none
         """
         return "folder=active"
 
@@ -220,7 +221,10 @@ class BaseListComponentView(ContextMenuMixin, BulkActionMixin, SpaMixin, BaseLis
 
         # the resolved API endpoint, the subtitle, and the bulk action configs the component expects (resolved here
         # so the template stays inert)
-        context["list_url"] = f"{reverse(self.list_endpoint)}.json?{self.derive_list_query()}"
+        list_url = f"{reverse(self.list_endpoint)}.json"
+        if query := self.derive_list_query():
+            list_url += f"?{query}"
+        context["list_url"] = list_url
         subtitle = self.derive_subtitle()
         context["list_subtitle"] = str(subtitle) if subtitle else ""
 

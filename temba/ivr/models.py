@@ -50,6 +50,17 @@ class Call(models.Model):
         (ERROR_SUSPENDED, _("Workspace suspended")),  # the call was never made because the workspace is suspended
     )
 
+    # slugs used for statuses in the internal API
+    STATUS_SLUGS = {
+        STATUS_PENDING: "pending",
+        STATUS_QUEUED: "queued",
+        STATUS_WIRED: "wired",
+        STATUS_IN_PROGRESS: "in_progress",
+        STATUS_COMPLETED: "completed",
+        STATUS_ERRORED: "errored",
+        STATUS_FAILED: "failed",
+    }
+
     RETRY_CHOICES = ((-1, _("Never")), (30, _("After 30 minutes")), (60, _("After 1 hour")), (1440, _("After 1 day")))
 
     uuid = models.UUIDField(unique=True)
@@ -99,6 +110,29 @@ class Call(models.Model):
 
     def get_logs(self) -> list:
         return ChannelLog.get_by_uuid(self.channel, self.log_uuids or [])
+
+    def as_json(self, context=None) -> dict:
+        """
+        Internal API shape, consumed by the temba-call-list component. `context` is the DRF serializer context (with
+        `user` / `org`) and is used to resolve the channel-log link, which is permission and retention gated.
+        """
+        if self.contact.name:
+            contact_name = self.contact.name
+        elif self.org.is_anon:
+            contact_name = self.contact.ref
+        else:
+            contact_name = self.contact_urn.get_display(self.org)
+
+        return {
+            "uuid": str(self.uuid),
+            "direction": "in" if self.direction == self.DIRECTION_IN else "out",
+            "status": self.STATUS_SLUGS[self.status],
+            "status_display": str(self.status_display),
+            "contact": {"uuid": str(self.contact.uuid), "name": contact_name},
+            "duration": int(self.get_duration().total_seconds()),
+            "created_on": self.created_on.isoformat(),
+            "logs_url": ChannelLog.get_read_url(self, context["user"], context["org"]) if context else None,
+        }
 
     class Meta:
         indexes = [

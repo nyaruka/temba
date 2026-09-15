@@ -5,6 +5,7 @@ from django.urls import re_path
 from temba.campaigns.api import CampaignsEndpoint
 from temba.contacts.api import ContactsEndpoint
 from temba.flows.api import FlowLabelsEndpoint, FlowsEndpoint
+from temba.ivr.api import CallsEndpoint
 from temba.msgs.api import BroadcastsEndpoint, MessagesEndpoint
 from temba.triggers.api import TriggersEndpoint
 
@@ -24,6 +25,7 @@ urlpatterns = [
     re_path(r"^articles$", ArticlesEndpoint.as_view(), name="api.internal.articles"),
     re_path(r"^assets$", AssetsEndpoint.as_view(), name="api.internal.assets"),
     re_path(r"^broadcasts$", BroadcastsEndpoint.as_view(), name="api.internal.broadcasts"),
+    re_path(r"^calls$", CallsEndpoint.as_view(), name="api.internal.calls"),
     re_path(r"^campaigns$", CampaignsEndpoint.as_view(), name="api.internal.campaigns"),
     re_path(r"^contacts$", ContactsEndpoint.as_view(), name="api.internal.contacts"),
     re_path(r"^flow_labels$", FlowLabelsEndpoint.as_view(), name="api.internal.flow_labels"),

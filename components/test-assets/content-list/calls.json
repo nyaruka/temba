@@ -1,0 +1,68 @@
+{
+  "count": 2417,
+  "paged_by": "cursor",
+  "next": "/test-assets/content-list/calls.json?cursor=next",
+  "previous": null,
+  "results": [
+    {
+      "uuid": "c-001",
+      "direction": "in",
+      "status": "completed",
+      "status_display": "Complete",
+      "contact": { "uuid": "ct-001", "name": "Amelia Chen" },
+      "duration": 154,
+      "created_on": "2026-05-11T13:42:11Z",
+      "logs_url": "/channels/channel/logs/ch-001/call/c-001/"
+    },
+    {
+      "uuid": "c-002",
+      "direction": "out",
+      "status": "in_progress",
+      "status_display": "In Progress",
+      "contact": { "uuid": "ct-002", "name": "Ben Okonkwo" },
+      "duration": 37,
+      "created_on": "2026-05-11T13:14:02Z",
+      "logs_url": "/channels/channel/logs/ch-001/call/c-002/"
+    },
+    {
+      "uuid": "c-003",
+      "direction": "out",
+      "status": "errored",
+      "status_display": "Errored (No Answer)",
+      "contact": { "uuid": "ct-003", "name": "Carla Mendes" },
+      "duration": 0,
+      "created_on": "2026-05-11T12:58:40Z",
+      "logs_url": "/channels/channel/logs/ch-001/call/c-003/"
+    },
+    {
+      "uuid": "c-004",
+      "direction": "out",
+      "status": "failed",
+      "status_display": "Failed (Busy)",
+      "contact": { "uuid": "ct-004", "name": "0788 123 123" },
+      "duration": 0,
+      "created_on": "2026-05-11T11:03:19Z",
+      "logs_url": null
+    },
+    {
+      "uuid": "c-005",
+      "direction": "in",
+      "status": "completed",
+      "status_display": "Complete",
+      "contact": { "uuid": "ct-005", "name": "Dmitri Volkov" },
+      "duration": 3725,
+      "created_on": "2026-05-10T16:21:05Z",
+      "logs_url": null
+    },
+    {
+      "uuid": "c-006",
+      "direction": "out",
+      "status": "wired",
+      "status_display": "Wired",
+      "contact": { "uuid": "ct-006", "name": "Esi Boateng" },
+      "duration": 0,
+      "created_on": "2026-05-10T09:45:00Z",
+      "logs_url": null
+    }
+  ]
+}

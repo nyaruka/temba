@@ -181,6 +181,26 @@ export interface Campaign {
   modified_on: string;
 }
 
+/** A single row in the call CRUDL list (`ivr/call_list.html`). */
+export interface Call {
+  uuid: string;
+  /** `in` for calls the contact made, `out` for calls made to them. */
+  direction: 'in' | 'out';
+  /** Status slug — `pending`, `queued`, `wired`, `in_progress`,
+   * `completed`, `errored` or `failed`. */
+  status: string;
+  /** Server-localized status, including the error reason for an
+   * errored / failed call, e.g. "Errored (No Answer)". */
+  status_display: string;
+  contact: ObjectReference;
+  /** Call length in seconds, zero if it never connected. */
+  duration: number;
+  created_on: string;
+  /** Channel log link, present only when the viewer may read logs
+   * and the call is still within the log retention window. */
+  logs_url?: string | null;
+}
+
 /** A single row in the trigger CRUDL list
  * (`triggers/trigger_list.html`): what starts the flow (type +
  * per-type details), any channel / group filters, and the flow it

@@ -1534,6 +1534,14 @@
   <source><x id="0" equiv-text="${formatCount(first)}"/>–<x id="1" equiv-text="${formatCount(last)}"/> of <x id="2" equiv-text="${formatCount(this.total)}"/> matches</source>
   <target><x id="0" equiv-text="${formatCount(first)}"/>–<x id="1" equiv-text="${formatCount(last)}"/> de <x id="2" equiv-text="${formatCount(this.total)}"/> correspondências</target>
 </trans-unit>
+<trans-unit id="sf66ae32062e87a53">
+  <source>No calls</source>
+  <target>Sem chamadas</target>
+</trans-unit>
+<trans-unit id="s92921878e886e36d">
+  <source>Duration</source>
+  <target>Duração</target>
+</trans-unit>
 </body>
 </file>
 </xliff>

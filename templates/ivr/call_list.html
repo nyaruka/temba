@@ -1,47 +1,89 @@
-{% extends "orgs/base/list.html" %}
-{% load i18n contacts channels %}
+{% extends "smartmin/list.html" %}
+{% load i18n %}
 
-{% block table %}
-  <table class="list lined selectable scrolled">
-    <tbody>
-      {% for object in object_list %}
-        <tr data-sender-uuid="{{ object.contact.uuid }}"
-            onclick="handleRowClicked(event)"
-            href="{% url 'contacts.contact_read' object.contact.uuid %}">
-          <td class="w-10">
-            {% if object.direction == "I" %}
-              <temba-icon name="incoming_call">
-              </temba-icon>
-            {% else %}
-              <temba-icon name="call">
-              </temba-icon>
-            {% endif %}
-          </td>
-          <td class="whitespace-nowrap">{{ object.contact|name_or_urn:user_org|truncatechars:20 }}</td>
-          <td>{{ object.get_duration }}</td>
-          <td>
-            <div class="flex w-full items-center justify-end">
-              <div class="time whitespace-nowrap">{{ object.created_on|timedate }}</div>
-              {% channel_log_link object %}
-            </div>
-          </td>
-        </tr>
-      {% empty %}
-        <tr class="empty_list">
-          <td colspan="99" class="text-center">{% trans "No calls" %}</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-{% endblock table %}
+{% block page-header %}
+  {# the temba-call-list renders its own header (title + content menu); #}
+  {# keep the csrf token and a hidden title for the SPA document.title hook #}
+  {% csrf_token %}
+  <div id="title-text" class="hide">{{ title }}</div>
+{% endblock page-header %}
+{% block extra-style %}
+  {{ block.super }}
+  <style type="text/css">
+    /* The list component fills its container edge to edge and brings
+       its own surface, so drop the SPA content padding (and the grey
+       page background it would otherwise reveal around the list). */
+    .spa-content {
+      padding: 0 !important;
+    }
+  </style>
+{% endblock extra-style %}
+{% block content %}
+  <temba-call-list id="call-list"
+                   fill-window
+                   history-state-key="calls"
+                   list-title="{{ title }}"
+                   endpoint="{{ list_url }}"
+                   content-menu-endpoint="{{ request.path }}?{{ request.GET.urlencode }}"
+                   empty-message="{% trans "No calls" %}">
+  </temba-call-list>
+{% endblock content %}
 {% block extra-script %}
   {{ block.super }}
   <script type="text/javascript">
-    function handleRowClicked(event) {
-      var row = event.target.closest("tr");
-      var uuid = row.getAttribute("data-sender-uuid");
+    onSpload(function() {
+      var list = document.querySelector("#call-list");
 
-      goto(event, row);
-    }
+      // the embedded content menu fires temba-selection - dispatch it the
+      // same way the page chrome's content menu (spa_page_menu.html) does
+      list.addEventListener("temba-selection", function(event) {
+        var item = event.detail.item;
+        var click = event.detail.event;
+        if (item.type === "link") {
+          if (click) {
+            click.preventDefault();
+            click.stopPropagation();
+            if (click.metaKey && item.url) {
+              window.open(item.url, "_blank");
+              return;
+            }
+          }
+          spaGet(item.url);
+        } else if (item.type === "modax") {
+          showModax(item.title, item.url, {
+            disabled: item.disabled,
+            onSubmit: item.on_submit,
+            onRedirect: item.on_redirect,
+            id: item.modal_id,
+            originX: event.detail.originX,
+            originY: event.detail.originY
+          });
+        } else if (item.type === "url_post") {
+          posterize(item.url);
+        } else if (item.type === "js") {
+          if (window[item.id]) {
+            window[item.id]();
+          }
+        }
+        refreshMenu();
+      });
+
+      // See msgs/msg_list.html for the full rationale: stash the list's
+      // restorable state (page, sort, cursor url) on the current history
+      // entry so a navigation away and back lands on the same page.
+      list.addEventListener("temba-history-change", function(event) {
+        var current = history.state || {};
+        var next = Object.assign({}, current);
+        next[event.detail.key] = event.detail.state;
+        if (!next.url) {
+          next.url = location.href;
+        }
+        if (event.detail.replace) {
+          history.replaceState(next, "", event.detail.url || null);
+        } else {
+          history.pushState(next, "", event.detail.url || null);
+        }
+      });
+    });
   </script>
 {% endblock extra-script %}

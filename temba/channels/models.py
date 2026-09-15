@@ -12,12 +12,13 @@ from django_valkey import get_valkey_connection
 from phonenumbers import NumberParseException
 from twilio.base.exceptions import TwilioRestException
 
+from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.postgres.indexes import OpClass
 from django.db import models
 from django.db.models import Q
 from django.template import Engine
-from django.urls import re_path
+from django.urls import re_path, reverse
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -826,6 +827,21 @@ class ChannelLog:
     is_error: bool
     elapsed_ms: int
     created_on: datetime
+
+    @classmethod
+    def get_read_url(cls, obj, user, org) -> str | None:
+        """
+        Gets the URL to read the logs for the given message or call, or None if the user can't view channel logs, the
+        channel is inactive or has no logs, or the object is older than the channel log retention period.
+        """
+        if not (user.has_org_perm(org, "channels.channel_logs") or user.is_staff):
+            return None
+        if not (obj.channel and obj.channel.is_active and obj.channel.type.has_logs and obj.created_on):
+            return None
+        if timezone.now() - obj.created_on >= settings.RETENTION_PERIODS["channellog"]:
+            return None
+
+        return reverse("channels.channel_logs_read", args=[obj.channel.uuid, obj._meta.model_name, obj.uuid])
 
     @classmethod
     def get_by_uuid(cls, channel, uuids: list) -> list:

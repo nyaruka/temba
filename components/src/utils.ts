@@ -430,6 +430,19 @@ export const plural = (count: number, singular: string, plural: string) => {
 export const formatCount = (count: number, locale = navigator.language) =>
   count.toLocaleString(locale);
 
+/** Formats a duration in seconds as `m:ss`, or `h:mm:ss` once it
+ * reaches an hour, e.g. 75 → "1:15" and 3661 → "1:01:01". */
+export const formatDuration = (seconds: number): string => {
+  const total = Math.max(0, Math.floor(seconds || 0));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return hours > 0
+    ? `${hours}:${pad(minutes)}:${pad(secs)}`
+    : `${minutes}:${pad(secs)}`;
+};
+
 export const range = (start: number, end: number) =>
   Array.from({ length: end - start }, (v: number, k: number) => k + start);
 
