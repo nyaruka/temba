@@ -343,4 +343,3 @@ class BackfillMsgNextAttemptPagingTest(MigrationTest):
 
         self.errored.refresh_from_db()
         self.assertIsNotNone(self.errored.next_attempt)
-
