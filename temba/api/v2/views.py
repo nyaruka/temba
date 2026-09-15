@@ -40,6 +40,7 @@ from ..support import (
     DateJoinedCursorPagination,
     DocumentationRenderer,
     InvalidQueryError,
+    LabelMsgUUIDCursorPagination,
     ModifiedOnCursorPagination,
     OrgUserRateThrottle,
     UUIDCursorPagination,
@@ -2281,11 +2282,16 @@ class MessagesEndpoint(ListAPIMixin, WriteAPIMixin, BaseEndpoint):
     class Pagination(CreatedOnCursorPagination):
         """
         Folder requests are paged by uuid, which is what the folder index is keyed on (and time ordered, as message
-        uuids are v7). Everything else is paged by created_on.
+        uuids are v7), and label requests by the message uuid carried on each labelling, which is what the labellings
+        index is keyed on. Everything else is paged by created_on.
         """
 
         def get_ordering(self, request, queryset, view=None):
-            return UUIDCursorPagination.ordering if view.folder else self.ordering
+            if view.folder:
+                return UUIDCursorPagination.ordering
+            if view.label:
+                return LabelMsgUUIDCursorPagination.ordering
+            return self.ordering
 
     model = Msg
     serializer_class = MsgReadSerializer
@@ -2312,23 +2318,44 @@ class MessagesEndpoint(ListAPIMixin, WriteAPIMixin, BaseEndpoint):
         folder = self.request.query_params.get("folder")
         return self.FOLDER_FILTERS.get(folder.lower()) if folder else None
 
+    @cached_property
+    def label(self):
+        """
+        The label selected by the `label` param, by uuid or name, or None if there isn't one or it isn't valid
+        """
+        label_ref = self.request.query_params.get("label")
+        if not label_ref:
+            return None
+
+        label_filter = Q(name=label_ref)
+        if is_uuid(label_ref):
+            label_filter |= Q(uuid=label_ref)
+
+        return Label.get_active_for_org(self.request.org).filter(label_filter).first()
+
     def derive_queryset(self):
         org = self.request.org
+        params = self.request.query_params
 
-        if self.request.query_params.get("folder"):
+        if not params.get("folder") and not params.get("label"):
+            return self.model.objects.filter(org=org).exclude(folder__in=(Msg.FOLDER_PENDING, Msg.FOLDER_DELETED))
+
+        # before/after are passed to the folder or label as uuid bounds so that they're conditions on its index -
+        # filter_queryset still applies them to created_on so that they're exact, and rejects them if malformed (an
+        # empty queryset here couldn't be ordered by a label's annotation)
+        try:
+            before, after = self.get_before_after()
+        except ValueError:
+            before, after = None, None
+
+        if params.get("folder"):
             if not self.folder:
                 return self.model.objects.none()
-
-            # before/after are passed to the folder as uuid bounds so that they're conditions on the folder index -
-            # filter_queryset still applies them to created_on so that they're exact
-            try:
-                before, after = self.get_before_after()
-            except ValueError:
-                return self.model.objects.none()
-
             return self.folder.get_queryset(org, after=after, before=before)
-        else:
-            return self.model.objects.filter(org=org).exclude(folder__in=(Msg.FOLDER_PENDING, Msg.FOLDER_DELETED))
+
+        if not self.label:
+            return self.model.objects.none()
+        return self.label.get_queryset(after=after, before=before)
 
     def filter_queryset(self, queryset):
         params = self.request.query_params
@@ -2353,18 +2380,6 @@ class MessagesEndpoint(ListAPIMixin, WriteAPIMixin, BaseEndpoint):
             contact = Contact.objects.filter(org=org, is_active=True, uuid=contact_uuid).first()
             if contact:
                 queryset = queryset.filter(contact=contact)
-            else:
-                queryset = queryset.none()
-
-        # filter by label name/uuid (optional)
-        if label_ref := params.get("label"):
-            label_filter = Q(name=label_ref)
-            if is_uuid(label_ref):
-                label_filter |= Q(uuid=label_ref)
-
-            label = Label.get_active_for_org(org).filter(label_filter).first()
-            if label:
-                queryset = queryset.filter(labels=label)
             else:
                 queryset = queryset.none()
 

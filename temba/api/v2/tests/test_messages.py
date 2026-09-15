@@ -1,10 +1,11 @@
-from unittest.mock import call
+from unittest.mock import call, patch
 
 from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
 
 from temba.api.v2.serializers import format_datetime
+from temba.api.v2.views import MessagesEndpoint
 from temba.msgs.models import Msg
 from temba.tests import mock_mailroom
 
@@ -133,6 +134,24 @@ class MessagesEndpointTest(APITest):
 
         # filter by invalid label
         self.assertGet(endpoint_url + "?label=invalid", [self.admin], results=[])
+
+        # a label's messages are paged by the message uuid carried on each labelling
+        with patch.object(MessagesEndpoint.Pagination, "page_size", 2):
+            response = self.assertGet(endpoint_url + "?label=Spam", [self.admin], results=[frank_msg3, joe_msg3])
+            self.assertGet(response.json()["next"], [self.admin], results=[frank_msg1])
+
+        # filter by before/after within a label, which pages by uuid and so applies them as uuid bounds as well
+        self.assertGet(
+            endpoint_url + f"?label=Spam&before={format_datetime(joe_msg3.created_on)}",
+            [self.editor],
+            results=[joe_msg3, frank_msg1],
+        )
+        self.assertGet(
+            endpoint_url + f"?label=Spam&after={format_datetime(joe_msg3.created_on)}",
+            [self.editor],
+            results=[frank_msg3, joe_msg3],
+        )
+        self.assertGet(endpoint_url + "?label=Spam&before=nope", [self.editor], results=[])
 
         # filter by before (inclusive)
         self.assertGet(

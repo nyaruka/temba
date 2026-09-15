@@ -731,14 +731,13 @@ class MsgCRUDL(SmartCRUDL):
         def derive_folder(self):
             return self.label
 
+        def pre_process(self, request, *args, **kwargs):
+            self.queryset = self.label.get_queryset()
+
+            return super().pre_process(request, *args, **kwargs)
+
         def get_queryset(self, **kwargs):
-            return (
-                super()
-                .get_queryset(**kwargs)
-                .filter(labels=self.label)
-                .exclude(folder=Msg.FOLDER_DELETED)
-                .prefetch_related("labels")
-            )
+            return super().get_queryset(**kwargs).prefetch_related("labels")
 
 
 class BaseLabelForm(UniqueNameMixin, forms.ModelForm):

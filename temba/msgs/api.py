@@ -10,6 +10,7 @@ from temba.api.internal.serializers import ModelAsJsonSerializer
 from temba.api.internal.views import BaseEndpoint
 from temba.api.support import (
     CreatedOnCursorPagination,
+    LabelMsgUUIDCursorPagination,
     ListPagination,
     SearchCountMixin,
     SearchLengthMixin,
@@ -98,8 +99,9 @@ class MessagesEndpoint(SearchLengthMixin, ListAPIMixin, BaseEndpoint):
         """
         Folders are paged by `-uuid`, which is what the folder index (`msgs_by_folder`, see Msg.Meta.indexes) is
         keyed on and time ordered as message uuids are v7, so a page is an index-ordered read rather than a sort.
-        Labels are paged by `-created_on, -id`. The response always carries a `count` so the list UI can show a
-        total: a search count via SearchCountMixin, otherwise the folder/label's cheap pre-calculated count (see
+        Labels are likewise paged by the message uuid carried on each labelling, which is what the labellings index
+        is keyed on (see Label.get_queryset). The response always carries a `count` so the list UI can show a total:
+        a search count via SearchCountMixin, otherwise the folder/label's cheap pre-calculated count (see
         `get_total_count`) — never a COUNT(*) on the messages table.
         """
 
@@ -111,7 +113,11 @@ class MessagesEndpoint(SearchLengthMixin, ListAPIMixin, BaseEndpoint):
         max_page_size = 500
 
         def get_ordering(self, request, queryset, view=None):
-            return UUIDCursorPagination.ordering if view.folder else self.ordering
+            if view.folder:
+                return UUIDCursorPagination.ordering
+            if view.label:
+                return LabelMsgUUIDCursorPagination.ordering
+            return self.ordering
 
         def paginate_queryset(self, queryset, request, view=None):
             page = super().paginate_queryset(queryset, request, view)
@@ -173,31 +179,21 @@ class MessagesEndpoint(SearchLengthMixin, ListAPIMixin, BaseEndpoint):
     def derive_queryset(self):
         # `label` takes precedence — the filter view passes a label UUID rather than a folder name, and a label's
         # messages aren't a MsgFolder slice: they're listed whatever folder they're in (archived included), which is
-        # why the filter view offers no folder-dependent bulk actions. Deleted messages lose their labellings, but
-        # are excluded explicitly too.
-        # `org` and `channel` are select_related because Msg.as_json reads self.org (for contact display) and the
-        # channel's uuid and name
+        # why the filter view offers no folder-dependent bulk actions.
+        # a search's window is passed to the folder or label as a uuid bound so that it's a condition on its index
+        # rather than something checked on every row the search then has to scan - filter_queryset makes it exact
         if self.request.query_params.get("label"):
-            label = self.label
-            if not label:
+            if not self.label:
                 return Msg.objects.none()
-            return (
-                Msg.objects.filter(org=self.request.org, labels=label)
-                .exclude(folder=Msg.FOLDER_DELETED)
-                .select_related("contact", "channel", "flow", "org")
-                .prefetch_related("labels")
-            )
-
-        if not self.folder:
+            qs = self.label.get_queryset(after=self.search_since)
+        elif self.folder:
+            qs = self.folder.get_queryset(self.request.org, after=self.search_since)
+        else:
             return Msg.objects.none()
 
-        # a search's window is passed to the folder as a uuid bound so that it's a condition on the folder index
-        # rather than something checked on every row the search then has to scan - filter_queryset makes it exact
-        return (
-            self.folder.get_queryset(self.request.org, after=self.search_since)
-            .select_related("contact", "channel", "flow", "org")
-            .prefetch_related("labels")
-        )
+        # `org` and `channel` are select_related because Msg.as_json reads self.org (for contact display) and the
+        # channel's uuid and name
+        return qs.select_related("contact", "channel", "flow", "org").prefetch_related("labels")
 
     @cached_property
     def search_since(self):

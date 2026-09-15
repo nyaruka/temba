@@ -16,7 +16,7 @@ from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.core.files.storage import default_storage
 from django.db import models
-from django.db.models import Prefetch, Q, Sum
+from django.db.models import F, Prefetch, Q, Sum
 from django.db.models.functions import Lower
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -931,20 +931,16 @@ class MsgFolder(Enum):
     def get_queryset(self, org, *, after=None, before=None):
         """
         Returns the messages in this folder, newest first, optionally bounded by created_on (inclusive at both ends).
-        The bounds are applied to uuid rather than created_on - message uuids are v7 and so time ordered - so that
-        they're conditions on the folder index rather than a filter over everything it yields. A message's uuid can
-        be a few milliseconds either side of its created_on - the writers read the clock separately for each, and a
-        v7 generator which exhausts its sequence within a millisecond spills into the next - so both bounds are
-        padded to cover that, at the cost of a few milliseconds of rows read and discarded at each end of a walk of
-        the folder. The bounds are therefore a superset of the messages created in the range, and callers which need
-        created_on itself honored filter on it as well.
+        The bounds are applied to uuid rather than created_on so that they're conditions on the folder index rather
+        than a filter over everything it yields - see msg_uuid_bounds for what that means for callers.
         """
         # we don't use org.msgs here because it causes problems when the API is using different db connections
         qs = Msg.objects.filter(org=org, folder=self.code)
-        if after:
-            qs = qs.filter(uuid__gte=uuid7_range(after - self.UUID_PADDING)[0])
-        if before:
-            qs = qs.filter(uuid__lte=uuid7_range(before + self.UUID_PADDING)[1])
+        lower, upper = msg_uuid_bounds(after, before)
+        if lower:
+            qs = qs.filter(uuid__gte=lower)
+        if upper:
+            qs = qs.filter(uuid__lte=upper)
 
         return qs.order_by("-uuid")
 
@@ -973,9 +969,23 @@ class MsgFolder(Enum):
         return f"<MsgFolder.{self.name} code={self.code}>"
 
 
-# how far the bounds of a folder's uuid range are widened - see MsgFolder.get_queryset. Set outside the class as an
-# attribute defined inside it would become a member.
-MsgFolder.UUID_PADDING = timedelta(milliseconds=10)
+# how far the bounds of a uuid range are widened - see msg_uuid_bounds
+MSG_UUID_BOUNDS_PADDING = timedelta(milliseconds=10)
+
+
+def msg_uuid_bounds(after, before) -> tuple:
+    """
+    Converts a created_on range (inclusive at both ends, either end optional) into the inclusive uuid bounds which
+    cover it, for querying an index keyed by message uuid rather than by created_on - message uuids are v7 and so
+    time ordered. A message's uuid can be a few milliseconds either side of its created_on - the writers read the
+    clock separately for each, and a v7 generator which exhausts its sequence within a millisecond spills into the
+    next - so both bounds are padded to cover that, at the cost of a few milliseconds of rows read and discarded at
+    each end of a walk of the index. The bounds are therefore a superset of the messages created in the range, and
+    callers which need created_on itself honored filter on it as well.
+    """
+    lower = uuid7_range(after - MSG_UUID_BOUNDS_PADDING)[0] if after else None
+    upper = uuid7_range(before + MSG_UUID_BOUNDS_PADDING)[1] if before else None
+    return lower, upper
 
 
 class Label(TembaModel, DependencyMixin):
@@ -1003,6 +1013,31 @@ class Label(TembaModel, DependencyMixin):
 
     def get_messages(self):
         return self.msgs.all()
+
+    def get_queryset(self, *, after=None, before=None):
+        """
+        Returns the messages with this label, newest first, whatever folder they're in (archived included) except
+        deleted, optionally bounded by created_on (inclusive at both ends). Like MsgFolder.get_queryset this is paged
+        by uuid rather than created_on, but here by the copy of the message's uuid that each labelling carries, which
+        is what the labellings index (msgs_by_label, see MsgLabel.Meta.indexes) is keyed on. It's exposed as the
+        `label_msg_uuid` annotation, which is what callers order and page by - ordering by the message's own uuid
+        would be the same order but a sort, as the database can't know the two are equal. The bounds are applied to
+        it too, so they're conditions on the index - see msg_uuid_bounds for what that means for callers.
+
+        Deleted messages lose their labellings, so excluding them is belt and braces.
+        """
+        qs = (
+            Msg.objects.filter(org=self.org, msglabel__label=self)
+            .annotate(label_msg_uuid=F("msglabel__msg_uuid"))
+            .exclude(folder=Msg.FOLDER_DELETED)
+        )
+        lower, upper = msg_uuid_bounds(after, before)
+        if lower:
+            qs = qs.filter(label_msg_uuid__gte=lower)
+        if upper:
+            qs = qs.filter(label_msg_uuid__lte=upper)
+
+        return qs.order_by("-label_msg_uuid")
 
     def get_message_count(self):
         """
@@ -1220,7 +1255,9 @@ class MessageExport(ExportType):
             messages = folder.get_queryset(export.org, after=start_date, before=end_date)
             order_by = "uuid"
         elif label:
-            messages = label.get_messages().exclude(folder=Msg.FOLDER_DELETED)
+            # likewise for a label, whose messages are paged by the uuid carried on each labelling
+            messages = label.get_queryset(after=start_date, before=end_date)
+            order_by = "label_msg_uuid"
         else:
             messages = export.org.msgs.exclude(folder__in=(Msg.FOLDER_ARCHIVED, Msg.FOLDER_DELETED))
 

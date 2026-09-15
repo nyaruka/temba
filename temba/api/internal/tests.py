@@ -225,7 +225,16 @@ class EndpointsTest(APITestMixin, TembaTest):
         self.assertGet(endpoint_url + "?folder=sent", [self.admin], results=[sent_new, sent_old])
 
         # ?label=<uuid> filters to that label's messages, whatever folder they're in
-        self.assertGet(endpoint_url + f"?label={label.uuid}", [self.admin], results=[archived, msg2])
+        response = self.assertGet(endpoint_url + f"?label={label.uuid}", [self.admin], results=[archived, msg2])
+        self.assertEqual(2, response.json()["count"])
+
+        # paged by the message uuid carried on each labelling, so the cursor is on that rather than created_on
+        response = self.assertGet(endpoint_url + f"?label={label.uuid}&page_size=1", [self.admin], results=[archived])
+        self.assertEqual("cursor", response.json()["paged_by"])
+        self.assertGet(response.json()["next"], [self.admin], results=[msg2])
+
+        # a search within a label
+        self.assertGet(endpoint_url + f"?label={label.uuid}&search=look", [self.admin], results=[msg2])
 
         # a label belonging to another org isn't visible
         other_label = self.create_label("Other", org=self.org2)
