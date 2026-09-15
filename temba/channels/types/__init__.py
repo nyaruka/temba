@@ -3,15 +3,13 @@ from collections import OrderedDict
 from django.conf import settings
 from django.utils.module_loading import import_string
 
-TYPES = OrderedDict({})
+TYPES = OrderedDict({})  # thread-safe: populated once at import
 
 
 def register_channel_type(type_class):
     """
     Registers a channel type
     """
-    global TYPES
-
     if not type_class.slug:  # pragma: no cover
         type_class.slug = type_class.__module__.split(".")[-2]
 

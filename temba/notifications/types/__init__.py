@@ -7,15 +7,13 @@ from .builtin import (
     TicketsOpenedNotificationType,
 )
 
-TYPES = {}
+TYPES = {}  # thread-safe: populated once at import
 
 
 def register_notification_type(typ):
     """
     Registers a notification type
     """
-    global TYPES
-
     assert typ.slug not in TYPES, f"type {typ.slug} is already registered"
 
     TYPES[typ.slug] = typ

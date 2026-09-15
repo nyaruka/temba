@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 import argparse
+import ast
 import os
+import pathlib
 import subprocess
 import tempfile
 import tomllib
@@ -26,6 +28,68 @@ def cmd(line):
     except subprocess.CalledProcessError as e:
         print(colorama.Fore.RED + e.stdout.decode("utf-8") + colorama.Style.RESET_ALL)
         exit(1)
+
+
+# Module-level containers that functions mutate in place are shared between every request a threaded server is
+# handling at once - and unlike assigning to a global, mutating one needs no `global` statement, so no linter rule
+# flags it. Each one has to either be populated once at import time or be safe to mutate concurrently, and says
+# which with a `# thread-safe: <reason>` comment on the line that defines it.
+MUTATING_METHODS = {"append", "extend", "insert", "pop", "popitem", "remove", "clear", "update", "setdefault", "add", "discard", "sort", "reverse"}
+CONTAINER_TYPES = {"dict", "list", "set", "OrderedDict", "defaultdict", "deque", "Counter"}
+THREAD_SAFE_MARKER = "# thread-safe:"
+
+
+def find_mutated_globals(path: pathlib.Path) -> list[str]:
+    source = path.read_text()
+    lines = source.splitlines()
+    tree = ast.parse(source, str(path))
+
+    # module-level names bound to a container, less any whose defining line carries the marker
+    containers = {}
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            targets = node.targets
+        elif isinstance(node, ast.AnnAssign) and node.value is not None:
+            targets = [node.target]
+        else:
+            continue
+        value = node.value
+        is_container = isinstance(value, (ast.Dict, ast.List, ast.Set, ast.DictComp, ast.ListComp, ast.SetComp)) or (
+            isinstance(value, ast.Call) and getattr(value.func, "id", getattr(value.func, "attr", None)) in CONTAINER_TYPES
+        )
+        for target in targets:
+            if isinstance(target, ast.Name) and is_container and THREAD_SAFE_MARKER not in lines[node.lineno - 1]:
+                containers[target.id] = node.lineno
+    if not containers:
+        return []
+
+    problems = []
+    for func in ast.walk(tree):
+        if not isinstance(func, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+
+        # a name the function rebinds as a plain local isn't the module-level one
+        declared_global = {n for node in ast.walk(func) if isinstance(node, ast.Global) for n in node.names}
+        rebound = {
+            t.id for node in ast.walk(func) if isinstance(node, ast.Assign) for t in node.targets if isinstance(t, ast.Name)
+        }
+        shadowed = rebound - declared_global
+
+        for node in ast.walk(func):
+            name = None
+            if isinstance(node, (ast.Assign, ast.AugAssign, ast.Delete)):  # X[k] = v, X[k] += v, del X[k]
+                targets = node.targets if isinstance(node, (ast.Assign, ast.Delete)) else [node.target]
+                name = next((t.value.id for t in targets if isinstance(t, ast.Subscript) and isinstance(t.value, ast.Name)), None)
+            elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):  # X.append(v) etc
+                if isinstance(node.func.value, ast.Name) and node.func.attr in MUTATING_METHODS:
+                    name = node.func.value.id
+            if name in containers and name not in shadowed:
+                problems.append(f"{path}:{node.lineno}: {func.name}() mutates module-level `{name}` (defined line {containers[name]})")
+    return problems
+
+
+def is_app_source(path: pathlib.Path) -> bool:
+    return "migrations" not in path.parts and "tests" not in path.parts and path.name != "tests.py"
 
 
 def status(line):
@@ -75,6 +139,22 @@ if __name__ == "__main__":
 
         # nothing to do, so restore the originals rather than leaving a dirty working tree behind
         cmd(f"cp -a {backup_dir}/. {locale_dir}")
+
+    status("Check for module-level state mutated in functions")
+    problems = []
+    for package in config["packages"]:
+        for path in sorted(pathlib.Path(package).rglob("*.py")):
+            if is_app_source(path):
+                problems.extend(find_mutated_globals(path))
+    if problems:
+        print(
+            colorama.Fore.RED
+            + "\n".join(problems)
+            + "\n\nEach of these is shared by every request a threaded server is handling at once. Either don't mutate "
+            + "it after import, or add a `# thread-safe: <reason>` comment to the line that defines it."
+            + colorama.Style.RESET_ALL
+        )
+        exit(1)
 
     status("Running ruff format")
     cmd(f"ruff format --check {packages}")

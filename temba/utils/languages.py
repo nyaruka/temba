@@ -25,14 +25,14 @@ NAME_OVERRIDES = {
     "zsm": "Malay (Standard, ISO-639-3)",
 }
 
-NAMES = {}
+NAMES = {}  # thread-safe: populated once at import
 
 
 def reload():
     """
     Reloads languages
     """
-    global NAMES
+    global NAMES  # noqa: PLW0603 - rebuilt by reassignment so a concurrent reader never sees it half-built
     NAMES = {}
 
     for lang in pycountry.languages:

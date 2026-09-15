@@ -77,8 +77,14 @@ line-length = 120
 fix = true
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I"]
+select = ["E", "F", "W", "I", "PLW0602", "PLW0603"]
 ignore = ["E741", "E501", "F405"]
+
+[tool.ruff.lint.per-file-ignores]
+# tests only ever run single-threaded and set module state per test by design (see temba.tests.mailroom)
+"temba/tests/**" = ["PLW0603"]
+"**/tests.py" = ["PLW0603"]
+"**/tests/**" = ["PLW0603"]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true

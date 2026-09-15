@@ -22,7 +22,7 @@ MIGRATION_OVERRIDES = {
     "XX:esp": "spa",
 }
 
-migration_lang_cache = {}
+migration_lang_cache = {}  # thread-safe: idempotent memo, and a single dict store is atomic
 
 
 def iso6391_to_iso6393(iso_code, country_code=None):
