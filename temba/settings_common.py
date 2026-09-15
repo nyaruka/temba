@@ -918,6 +918,14 @@ if TESTING:
 NON_ISO6391_LANGUAGES = {"mul", "und"}
 
 # -----------------------------------------------------------------------------------
+# Help sites
+# -----------------------------------------------------------------------------------
+
+# The host an org points its help site's domain at by CNAME - the TLS front that gets certificates for site domains
+# on demand (see temba.knowledge.views.HelpSiteAskView). Unset, sites are pointed at the app's own domain.
+HELPSITE_CNAME_TARGET = None
+
+# -----------------------------------------------------------------------------------
 # Mailroom
 # -----------------------------------------------------------------------------------
 

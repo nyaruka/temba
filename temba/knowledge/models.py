@@ -1181,13 +1181,21 @@ class HelpSite(models.Model):
         return domains
 
     @classmethod
+    def resolve_host(cls, host: str) -> int | None:
+        """
+        The id of the site served on the given host, if any - a cache lookup and nothing more, so cheap enough for
+        every request, and for the TLS front asking whether a host is ours before it gets a certificate for it.
+        """
+        domain, _ = split_domain_port(host)
+        domain = domain.lower().removeprefix("www.")
+        return cls.get_domains().get(domain) if domain else None
+
+    @classmethod
     def get_for_host(cls, host: str):
         """
         The site served on the given host, if any. Costs nothing but a cache lookup unless the host is a site's.
         """
-        domain, _ = split_domain_port(host)
-        domain = domain.lower().removeprefix("www.")
-        site_id = cls.get_domains().get(domain) if domain else None
+        site_id = cls.resolve_host(host)
         if not site_id:
             return None
 

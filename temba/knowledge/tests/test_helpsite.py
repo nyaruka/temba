@@ -7,10 +7,12 @@ import dns.resolver
 
 from django.core.cache import cache
 from django.db import IntegrityError, transaction
+from django.http.request import validate_host
 from django.test import RequestFactory
 from django.test.utils import override_settings
 from django.utils import timezone
 
+from temba.knowledge.hosts import AllowedHosts
 from temba.knowledge.middleware import HelpSiteMiddleware
 from temba.knowledge.models import (
     Article,
@@ -80,6 +82,13 @@ class HelpSiteTest(TembaTest):
         self.assertEqual(site, HelpSite.get_for_host("www.help.nyaruka.com"))
         self.assertIsNone(HelpSite.get_for_host("nyaruka.com"))
         self.assertIsNone(HelpSite.get_for_host(""))
+
+        # resolving a host to a site's id is the cache lookup alone
+        with self.assertNumQueries(0):
+            self.assertEqual(site.id, HelpSite.resolve_host("help.nyaruka.com"))
+            self.assertEqual(site.id, HelpSite.resolve_host("www.HELP.nyaruka.com:443"))
+            self.assertIsNone(HelpSite.resolve_host("nyaruka.com"))
+            self.assertIsNone(HelpSite.resolve_host(""))
 
         # the domains are cached, so a host that isn't a site's costs no query, and a site's costs one
         with self.assertNumQueries(0):
@@ -525,6 +534,44 @@ class HelpSiteTest(TembaTest):
         self.assertTrue(excerpt.endswith("…"))
         self.assertLessEqual(len(excerpt), 41)
         self.assertEqual("Short", self.create_article("Short", body="Short").excerpt())
+
+
+class AllowedHostsTest(TembaTest):
+    def test_allowed_hosts(self):
+        hosts = AllowedHosts(["rapidpro.io", ".rapidpro.io"])
+        helpdesk = self.org.sources.get(source_type=KnowledgeSource.TYPE_HELPDESK)
+        site = HelpSite.get_or_create(helpdesk, self.admin)
+
+        # the hosts it's given, and no site domains until there are verified ones
+        self.assertEqual(["rapidpro.io", ".rapidpro.io"], list(hosts))
+        self.assertTrue(validate_host("app.rapidpro.io", hosts))
+        self.assertFalse(validate_host("help.nyaruka.com", hosts))
+
+        site.set_domain(self.admin, "help.nyaruka.com")
+        self.assertFalse(validate_host("help.nyaruka.com", hosts))
+
+        site.domain_verified_on = timezone.now()
+        site.save(update_fields=("domain_verified_on",))
+
+        self.assertEqual(["rapidpro.io", ".rapidpro.io", "help.nyaruka.com", "www.help.nyaruka.com"], list(hosts))
+        self.assertTrue(validate_host("help.nyaruka.com", hosts))
+        self.assertTrue(validate_host("www.help.nyaruka.com", hosts))
+        self.assertFalse(validate_host("nyaruka.com", hosts))
+
+        # a host the fixed list settles is never looked up
+        with self.assertNumQueries(0):
+            cache.delete(HelpSite.DOMAINS_CACHE_KEY)
+            self.assertTrue(validate_host("app.rapidpro.io", hosts))
+
+        # so with it as the setting, a request on the site's domain gets through to the site
+        self.org.features.append(Org.FEATURE_AGENTS)
+        self.org.save(update_fields=("features",))
+        site.is_enabled = True
+        site.save(update_fields=("is_enabled",))
+
+        with override_settings(ALLOWED_HOSTS=hosts):
+            self.assertEqual(200, self.client.get("/", HTTP_HOST="help.nyaruka.com").status_code)
+            self.assertEqual(400, self.client.get("/", HTTP_HOST="help.example.com").status_code)
 
 
 class HelpSiteMiddlewareTest(TembaTest):

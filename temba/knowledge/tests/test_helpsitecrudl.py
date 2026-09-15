@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -130,7 +131,15 @@ class HelpSiteCRUDLTest(TembaTest, CRUDLTestMixin):
         response = self.requestView(domain_url, self.admin)
         self.assertRegex(response.content.decode(), r'data-saved=""\s+hidden')
         self.assertContains(response, f"<code>{site.domain_token}</code>")
-        self.assertContains(response, "<code>app.rapidpro.io</code>")
+
+        # the CNAME points at the app itself unless the deployment has a TLS front for sites, and then at that
+        with override_settings(HELPSITE_CNAME_TARGET=None):
+            response = self.requestView(domain_url, self.admin)
+            self.assertContains(response, "<code>app.rapidpro.io</code>")
+        with override_settings(HELPSITE_CNAME_TARGET="sites.rapidpro.io"):
+            response = self.requestView(domain_url, self.admin)
+            self.assertContains(response, "<code>sites.rapidpro.io</code>")
+            self.assertNotContains(response, "<code>app.rapidpro.io</code>")
 
         # a domain has to be a domain, and not the app's own
         for bad, error in (
@@ -205,6 +214,31 @@ class HelpSiteCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertIsNone(site.domain)
         response = self.requestView(domain_url, self.admin)
         self.assertRegex(response.content.decode(), r'data-saved=""\s+hidden')
+
+    def test_ask(self):
+        ask_url = reverse("knowledge.helpsite_ask")
+        self.assertEqual("/helpsite/ask/", ask_url)
+
+        site = HelpSite.get_or_create(self.helpdesk, self.admin)
+
+        # asked by the TLS front rather than a user, so there's no logging in - and nothing is anyone's yet
+        self.assertEqual(403, self.client.get(ask_url).status_code)
+        self.assertEqual(403, self.client.get(ask_url, {"domain": "help.nyaruka.com"}).status_code)
+
+        # a domain isn't ours until it's verified
+        site.set_domain(self.admin, "help.nyaruka.com")
+        self.assertEqual(403, self.client.get(ask_url, {"domain": "help.nyaruka.com"}).status_code)
+
+        site.domain_verified_on = timezone.now()
+        site.save(update_fields=("domain_verified_on",))
+
+        self.assertEqual(200, self.client.get(ask_url, {"domain": "help.nyaruka.com"}).status_code)
+        self.assertEqual(200, self.client.get(ask_url, {"domain": "www.help.nyaruka.com"}).status_code)
+        self.assertEqual(403, self.client.get(ask_url, {"domain": "nyaruka.com"}).status_code)
+        self.assertEqual(403, self.client.get(ask_url, {"domain": "app.rapidpro.io"}).status_code)
+
+        # and it's a question, not something to post to
+        self.assertEqual(405, self.client.post(ask_url, {"domain": "help.nyaruka.com"}).status_code)
 
     @patch("temba.knowledge.models.lookup_txt")
     def test_verify(self, mock_lookup):

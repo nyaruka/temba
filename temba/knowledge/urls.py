@@ -2,7 +2,14 @@ from django.conf.urls import include
 from django.urls import re_path
 
 from .site import site_urlpatterns
-from .views import ArticleCRUDL, HelpdeskImportCRUDL, HelpSiteCRUDL, KnowledgeItemCRUDL, KnowledgeSourceCRUDL
+from .views import (
+    ArticleCRUDL,
+    HelpdeskImportCRUDL,
+    HelpSiteAskView,
+    HelpSiteCRUDL,
+    KnowledgeItemCRUDL,
+    KnowledgeSourceCRUDL,
+)
 
 urlpatterns = [
     re_path(r"^", include(ArticleCRUDL().as_urlpatterns())),
@@ -12,4 +19,6 @@ urlpatterns = [
     re_path(r"^", include(KnowledgeItemCRUDL().as_urlpatterns())),
     # the org's own help site as its readers will see it, for looking over before a domain is pointed at it
     re_path(r"^helpsite/preview/", include(site_urlpatterns(preview=True))),
+    # whether a domain is a verified site's, for the TLS front to check before getting a certificate for it
+    re_path(r"^helpsite/ask/$", HelpSiteAskView.as_view(), name="knowledge.helpsite_ask"),
 ]
