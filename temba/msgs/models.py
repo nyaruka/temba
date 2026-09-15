@@ -1058,7 +1058,7 @@ class MsgLabel(models.Model):
     id = models.BigAutoField(primary_key=True)
     msg = models.ForeignKey(Msg, on_delete=models.CASCADE)
     msg_uuid = models.UUIDField()
-    label = models.ForeignKey(Label, on_delete=models.CASCADE, db_index=False)
+    label = models.ForeignKey(Label, on_delete=models.CASCADE)
 
     class Meta:
         db_table = "msgs_msg_labels"  # the table Django created for Msg.labels before this model was declared
