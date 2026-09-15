@@ -187,7 +187,10 @@ class BackfillMsgVisibilityTest(MigrationTest):
         self.deleted_by_user = self.create_incoming_msg(contact, "Hi", visibility=Msg.VISIBILITY_DELETED_BY_USER)
         self.deleted_by_sender = self.create_incoming_msg(contact, "Hi", visibility=Msg.VISIBILITY_DELETED_BY_SENDER)
 
-        self.label.toggle_label([self.archived, self.visible], add=True)
+        # labelled via the through model as it was then, before it carried the message's uuid (added in 0324)
+        msg_labels = apps.get_model("msgs", "Msg").labels.through
+        for msg in (self.archived, self.visible):
+            msg_labels.objects.create(msg_id=msg.id, label_id=self.label.id)
 
         self.folder_counts_before = self.org.counts.prefix("msgs:folder:").scope_totals()
         self.label_count_before = self.label.counts.sum()
@@ -340,3 +343,4 @@ class BackfillMsgNextAttemptPagingTest(MigrationTest):
 
         self.errored.refresh_from_db()
         self.assertIsNotNone(self.errored.next_attempt)
+

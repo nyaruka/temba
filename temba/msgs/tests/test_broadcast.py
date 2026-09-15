@@ -54,7 +54,7 @@ class BroadcastTest(TembaTest):
         broadcast2.msgs.filter(contact=self.joe).update(status="F", folder=Msg.FOLDER_FAILED)
 
         # label one of our messages
-        msg_in1.labels.add(label)
+        self.add_msg_label(msg_in1, label)
         self.assertEqual(LabelCount.get_totals([label])[label], 1)
 
         msg_counts = MsgFolder.get_counts(self.org)

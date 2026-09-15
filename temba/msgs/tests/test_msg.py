@@ -286,7 +286,7 @@ class MsgTest(TembaTest, CRUDLTestMixin):
             modified_on=timezone.now(),
         )
         spam = self.create_label("Spam")
-        msg.labels.add(spam)
+        self.add_msg_label(msg, spam)
 
     def test_foreign_keys(self):
         # create a message which references a flow

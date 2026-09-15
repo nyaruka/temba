@@ -154,11 +154,11 @@ class EndpointsTest(APITestMixin, TembaTest):
         # inbox messages (incoming, handled, visible, no flow)
         msg1 = self.create_incoming_msg(contact1, "Hello there")
         msg2 = self.create_incoming_msg(contact2, "Look at this", attachments=["image/jpeg:https://example.com/a.jpg"])
-        msg2.labels.add(label)
+        self.add_msg_label(msg2, label)
 
         # a message in another folder shouldn't appear in the inbox
         archived = self.create_incoming_msg(contact1, "Archived", archived=True)
-        archived.labels.add(label)
+        self.add_msg_label(archived, label)
 
         channel_ref = {"uuid": str(self.channel.uuid), "name": "Test Channel"}
 

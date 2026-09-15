@@ -915,7 +915,7 @@ def label_msgs(label, msgs, add: bool):
 
         has_label = msg.labels.filter(id=label.id).exists()
         if add and not has_label:
-            msg.labels.add(label)
+            msg.labels.add(label, through_defaults={"msg_uuid": msg.uuid})
         elif not add and has_label:
             msg.labels.remove(label)
         else:

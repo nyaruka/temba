@@ -276,6 +276,13 @@ class TembaTest(SmartminTest):
     def create_label(self, name, *, org=None):
         return Label.create(org or self.org, self.admin, name)
 
+    def add_msg_label(self, msg, label):
+        """
+        Labels a message directly, bypassing the checks mailroom makes on what can be labelled. Tests of labelling
+        itself should go through the mailroom mock instead.
+        """
+        msg.labels.add(label, through_defaults={"msg_uuid": msg.uuid})
+
     def create_field(
         self,
         key,
