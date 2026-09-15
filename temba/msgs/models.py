@@ -1051,18 +1051,18 @@ class MsgLabel(models.Model):
     removed here when a label is released. Counts per label are maintained by database triggers (see LabelCount).
 
     The message's uuid is duplicated here so that a label's messages can be paged and date-bounded by uuid (time
-    ordered, as message uuids are v7) the same way the folder views page the msgs_by_folder index - see
-    MsgFolder.get_queryset. It's nullable until the services which write labellings are all writing it, after which
-    it's backfilled, made required and indexed by (label, -msg_uuid).
+    ordered, as message uuids are v7) from the index on (label, -msg_uuid) alone, the same way the folder views page
+    the msgs_by_folder index - see MsgFolder.get_queryset.
     """
 
     id = models.BigAutoField(primary_key=True)
     msg = models.ForeignKey(Msg, on_delete=models.CASCADE)
-    msg_uuid = models.UUIDField(null=True)
-    label = models.ForeignKey(Label, on_delete=models.CASCADE)
+    msg_uuid = models.UUIDField()
+    label = models.ForeignKey(Label, on_delete=models.CASCADE, db_index=False)
 
     class Meta:
         db_table = "msgs_msg_labels"  # the table Django created for Msg.labels before this model was declared
+        indexes = [models.Index(name="msgs_by_label", fields=["label", "-msg_uuid"])]
         constraints = [models.UniqueConstraint(name="unique_msg_labels", fields=["msg", "label"])]
 
 

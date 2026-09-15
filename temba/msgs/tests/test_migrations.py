@@ -5,6 +5,7 @@ from django.utils import timezone
 
 from temba.msgs.models import Msg
 from temba.tests import MigrationTest
+from temba.utils.uuid import UUID
 
 
 class BackfillBroadcastUUIDsTest(MigrationTest):
@@ -343,3 +344,78 @@ class BackfillMsgNextAttemptPagingTest(MigrationTest):
 
         self.errored.refresh_from_db()
         self.assertIsNotNone(self.errored.next_attempt)
+
+
+class BackfillMsgLabelUUIDTest(MigrationTest):
+    app = "msgs"
+    migrate_from = "0324_msglabel"
+    migrate_to = "0325_backfill_msglabel_msg_uuid"
+
+    def setUpBeforeMigration(self, apps):
+        contact = self.create_contact("Bob", phone="+1234567890")
+        label1 = self.create_label("Spam")
+        label2 = self.create_label("Social")
+
+        # labellings written before the column existed
+        self.msg1 = self.create_incoming_msg(contact, "Hi 1")
+        self.msg1.labels.add(label1, label2)
+        self.msg2 = self.create_incoming_msg(contact, "Hi 2")
+        self.msg2.labels.add(label1)
+
+        # and one written since, which the backfill leaves as it is (given a different uuid to make that provable)
+        self.msg3 = self.create_incoming_msg(contact, "Hi 3")
+        self.already = self.msg3.labels.through.objects.create(
+            msg=self.msg3, label=label1, msg_uuid="01997d23-81ec-73c2-a3da-4d8d69025931"
+        )
+
+    def test_migration(self):
+        def msg_uuids(msg) -> set:
+            return set(msg.labels.through.objects.filter(msg=msg).values_list("msg_uuid", flat=True))
+
+        self.assertEqual({self.msg1.uuid}, msg_uuids(self.msg1))
+        self.assertEqual({self.msg2.uuid}, msg_uuids(self.msg2))
+        self.assertEqual({UUID("01997d23-81ec-73c2-a3da-4d8d69025931")}, msg_uuids(self.msg3))
+
+
+class BackfillMsgLabelUUIDPagingTest(MigrationTest):
+    """
+    The backfill walks the table BATCH_SIZE rows at a time, so with a realistic batch size a test fixture never runs
+    the loop more than once. Shrink it so that looping - and terminating - is actually exercised.
+    """
+
+    app = "msgs"
+    migrate_from = "0324_msglabel"
+    migrate_to = "0325_backfill_msglabel_msg_uuid"
+
+    def setUp(self):
+        # has to be patched before super() runs the migration
+        migration = import_module("temba.msgs.migrations.0325_backfill_msglabel_msg_uuid")
+        patcher = patch.object(migration, "BATCH_SIZE", 2)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+        super().setUp()
+
+    def setUpBeforeMigration(self, apps):
+        contact = self.create_contact("Bob", phone="+1234567890")
+        label = self.create_label("Spam")
+
+        # enough rows to span several batches
+        self.msgs = [self.create_incoming_msg(contact, f"Hi {m}") for m in range(5)]
+        for msg in self.msgs:
+            msg.labels.add(label)
+
+    def test_migration(self):
+        # every row filled, so no batch was skipped and the loop terminated
+        for msg in self.msgs:
+            labelling = msg.labels.through.objects.get(msg=msg)
+            self.assertEqual(msg.uuid, labelling.msg_uuid, f"msg_uuid still unset on msg #{msg.id}")
+
+
+class BackfillMsgLabelUUIDNoRowsTest(MigrationTest):
+    app = "msgs"
+    migrate_from = "0324_msglabel"
+    migrate_to = "0325_backfill_msglabel_msg_uuid"
+
+    def test_migration(self):
+        self.assertFalse(Msg.labels.through.objects.exists())
