@@ -104,10 +104,10 @@ def iter_scope(func):
     stack = list(func.body)
     while stack:
         node = stack.pop()
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            continue
         yield node
-        for child in ast.iter_child_nodes(node):
-            if not isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-                stack.append(child)
+        stack.extend(ast.iter_child_nodes(node))
 
 
 def is_app_source(path: pathlib.Path) -> bool:
