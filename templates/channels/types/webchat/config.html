@@ -1,4 +1,4 @@
-{% load i18n %}
+{% load i18n static %}
 
 {% blocktrans trimmed %}
   Visitors chat with this channel through a widget embedded on your website.
@@ -16,11 +16,16 @@
   <div class="subtitle">{% trans "Embed" %}</div>
   <div class="mt-2">
     {% blocktrans trimmed %}
-      Add a snippet like the following to your website to embed the chat widget (coming soon).
+      Add the following to your website to embed the chat widget. The script only needs to be included once per page.
     {% endblocktrans %}
   </div>
+  {% static "components/temba-webchat.js" as bundle %}
   <div class="bleed-x bleed-b text-white bg-black">
-    <div class="code p-0 break-all bg-black text-white">&lt;temba-webchat channel="{{ channel.uuid }}"&gt;&lt;/temba-webchat&gt;</div>
+    <div class="code p-0 break-all bg-black text-white">
+      &lt;script src="{% if bundle|slice:":4" == "http" %}{{ bundle }}{% else %}https://{{ request.get_host }}{{ bundle }}{% endif %}"&gt;&lt;/script&gt;
+      <br />
+      &lt;temba-webchat channel="{{ channel.uuid }}" host="https://{{ request.get_host }}"&gt;&lt;/temba-webchat&gt;
+    </div>
   </div>
 </div>
 <div class="mt-4 card">

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en-GB">
   <head>
     <meta charset="utf-8" />
@@ -16,13 +16,15 @@
     <script>
       function handleOpen() {
         const webchat = document.querySelector('temba-webchat');
-        const input = document.querySelector('temba-textinput');
+        const channel = document.querySelector('#channel');
+        const host = document.querySelector('#host');
 
         if (webchat.open) {
           webchat.open = false;
         }
 
-        webchat.setAttribute('channel', input.value);
+        webchat.setAttribute('channel', channel.value);
+        webchat.setAttribute('host', host.value);
         webchat.open = true;
       }
       function handleKeyPress(event) {
@@ -39,6 +41,11 @@
     <h1>WebChat example</h1>
     <p><a href="/demo/index.html">← Back to main demo</a></p>
 
+    <p>
+      Enter the UUID of a WebChat channel. The host is the platform the channel
+      lives on and defaults to this page's origin.
+    </p>
+
     <div style="margin: 0.5em">Channel UUID</div>
     <div
       style="
@@ -51,9 +58,28 @@
     >
       <div style="margin-right: 0.5em; flex-grow: 1">
         <temba-textinput
+          id="channel"
           onkeypress="handleKeyPress(event)"
           placeholder="Channel UUID"
-          value="442cafcd-a052-4b2b-bdb5-5b4ce2a9962f"
+        ></temba-textinput>
+      </div>
+    </div>
+
+    <div style="margin: 0.5em">Host</div>
+    <div
+      style="
+        display: flex;
+        flex-direction: row;
+        width: 500px;
+        margin-bottom: 1em;
+        align-items: center;
+      "
+    >
+      <div style="margin-right: 0.5em; flex-grow: 1">
+        <temba-textinput
+          id="host"
+          onkeypress="handleKeyPress(event)"
+          placeholder="https://app.textit.com"
         ></temba-textinput>
       </div>
       <temba-button
@@ -62,9 +88,7 @@
       ></temba-button>
     </div>
 
-    <temba-webchat
-      channel="442cafcd-a052-4b2b-bdb5-5b4ce2a9962f"
-    ></temba-webchat>
+    <temba-webchat></temba-webchat>
 
     <script type="module">
       import '/static/components-dev/temba-modules.js';

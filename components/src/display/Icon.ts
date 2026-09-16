@@ -1,9 +1,33 @@
 import { LitElement, TemplateResult, html, css, PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
+import { unsafeSVG } from 'lit/directives/unsafe-svg.js';
 import { Icon, SVG_FINGERPRINT } from '../Icons';
 import { getClasses } from '../utils';
 
+interface InlineSymbol {
+  viewBox: string;
+  content: string;
+}
+
 export class VectorIcon extends LitElement {
+  // symbols carried inside a standalone bundle rather than referenced from the
+  // sprite - a page on another site can't <use> a cross-origin sprite, so the
+  // webchat bundle registers its own here and those icons render inline
+  private static inlineSymbols = new Map<string, InlineSymbol>();
+
+  /**
+   * Registers the symbols of a sprite to be rendered inline, by id
+   */
+  public static addInlineSprite(sprite: string): void {
+    const doc = new DOMParser().parseFromString(sprite, 'image/svg+xml');
+    doc.querySelectorAll('symbol').forEach((symbol) => {
+      VectorIcon.inlineSymbols.set(symbol.id, {
+        viewBox: symbol.getAttribute('viewBox') || '0 0 24 24',
+        content: symbol.innerHTML
+      });
+    });
+  }
+
   @property({ type: String })
   name: string;
 
@@ -228,6 +252,18 @@ export class VectorIcon extends LitElement {
       name = this.id;
     }
 
+    const inline = this.src ? null : VectorIcon.inlineSymbols.get(name);
+    const svgStyle = `height:${this.size}em;width:${this.size}em;transition:transform ${
+      this.animationDuration / this.steps
+    }ms ${this.easing}`;
+    const svgClasses = getClasses({
+      sheet: this.src === '',
+      [this.animateChange]: !!this.animateChange,
+      [this.animateChange + '-' + this.animationStep]: this.animationStep > 0,
+      [this.animateClick]: !!this.animateClick,
+      [this.animateClick + '-' + this.animationStep]: this.animationStep > 0
+    });
+
     return html`
       <div
         @click=${this.handleClicked}
@@ -238,29 +274,23 @@ export class VectorIcon extends LitElement {
           'spin-forever': this.spin
         })}"
       >
-        <svg
-          style="height:${this.size}em;width:${this
-            .size}em;transition:transform ${this.animationDuration /
-          this.steps}ms
-          ${this.easing}"
-          class="${getClasses({
-            sheet: this.src === '',
-            [this.animateChange]: !!this.animateChange,
-            [this.animateChange + '-' + this.animationStep]:
-              this.animationStep > 0,
-            [this.animateClick]: !!this.animateClick,
-            [this.animateClick + '-' + this.animationStep]:
-              this.animationStep > 0
-          })}"
-        >
-          <use
-            href="${this.src
-              ? this.src
-              : `${
-                  this.prefix || (window as any).static_url || '/static/'
-                }svg/index.svg?v=${SVG_FINGERPRINT}#${name}`}"
-          />
-        </svg>
+        ${inline
+          ? html`<svg
+              style="${svgStyle}"
+              class="${svgClasses}"
+              viewBox="${inline.viewBox}"
+            >
+              ${unsafeSVG(inline.content)}
+            </svg>`
+          : html`<svg style="${svgStyle}" class="${svgClasses}">
+              <use
+                href="${this.src
+                  ? this.src
+                  : `${
+                      this.prefix || (window as any).static_url || '/static/'
+                    }svg/index.svg?v=${SVG_FINGERPRINT}#${name}`}"
+              />
+            </svg>`}
       </div>
     `;
   }

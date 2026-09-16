@@ -1,1125 +1,590 @@
-import { useFakeTimers, stub, SinonStub } from 'sinon';
+import { expect } from '@open-wc/testing';
+import { SinonStub, useFakeTimers } from 'sinon';
 import { WebChat } from '../src/webchat/WebChat';
+import { Chat } from '../src/display/Chat';
+import {
+  ConnectionState,
+  setSocketProvider,
+  SocketProvider
+} from '../src/live/SocketService';
 import {
   assertScreenshot,
-  getClip,
+  clearMockGets,
+  clearMockPosts,
   getComponent,
+  mockGET,
   mockNow,
-  mouseClickElement
+  mockPOST,
+  MockSocketProvider
 } from '../test/utils.test';
-import { expect, assert } from '@open-wc/testing';
-
-let clock: any;
 
 const TAG = 'temba-webchat';
+const CHANNEL = 'e3b643b7-c5a7-43b2-a08c-06749a8d9ad8';
+const CHAT_ID = 'AbCdEfGhIjKlMnOpQrStUvWx';
+const SOCKET = `chat:${CHANNEL}:${CHAT_ID}`;
+const COOKIE = `temba-chat-${CHANNEL}`;
+
+const START_URL = new RegExp(`/c/wch/${CHANNEL}/start$`);
+const RECEIVE_URL = new RegExp(`/c/wch/${CHANNEL}/receive$`);
+const UPLOAD_URL = new RegExp(`/c/wch/${CHANNEL}/upload$`);
+const HISTORY_URL = new RegExp(`/c/wch/${CHANNEL}/history\\?`);
+const HISTORY_PAGE_URL = new RegExp(`/c/wch/${CHANNEL}/history\\?.*before=`);
+
+let clock: any;
+let mockedNow: SinonStub;
+let mockSocket: MockSocketProvider;
+let previousProvider: SocketProvider;
+
+// a fake cookie jar so a chat remembered by one test doesn't leak into the next
+let cookies: string[] = [];
+const installCookieJar = (initial: string[] = []) => {
+  cookies = [...initial];
+  Object.defineProperty(document, 'cookie', {
+    configurable: true,
+    get: () => cookies.join('; '),
+    set: (value: string) => {
+      const pair = value.split(';')[0];
+      const name = pair.split('=')[0];
+      cookies = cookies.filter((c) => c.split('=')[0] !== name);
+      cookies.push(pair);
+    }
+  });
+};
+
+const removeCookieJar = () => {
+  delete (document as any).cookie;
+};
+
+// real time, so mocked http roundtrips can complete while the clock is faked
+const realSetTimeout = window.setTimeout.bind(window);
+const settle = async (predicate: () => boolean, attempts = 300) => {
+  for (let i = 0; i < attempts; i++) {
+    await new Promise((resolve) => realSetTimeout(resolve, 5));
+    clock.tick(20);
+    if (predicate()) {
+      return;
+    }
+  }
+  throw new Error('condition never met');
+};
+
+// the requests the widget has made to a courier endpoint
+const requestsTo = (url: RegExp) => {
+  return (window.fetch as SinonStub)
+    .getCalls()
+    .filter((call) => url.test(call.args[0]))
+    .map((call) => ({
+      url: call.args[0] as string,
+      init: (call.args[1] || {}) as RequestInit
+    }));
+};
+
+const bodyOf = (request: { init: RequestInit }) => {
+  return JSON.parse(request.init.body as string);
+};
+
+const msgOut = (uuid: string, text: string, extra: any = {}) => {
+  return {
+    type: 'msg_out',
+    created_on: '2021-03-30T10:00:00Z',
+    msg_uuid: uuid,
+    text,
+    ...extra
+  };
+};
+
+const msgIn = (uuid: string, text: string, extra: any = {}) => {
+  return {
+    type: 'msg_in',
+    created_on: '2021-03-30T10:00:00Z',
+    msg_uuid: uuid,
+    text,
+    ...extra
+  };
+};
 
 const getWebChat = async (attrs: any = {}) => {
-  const webChat = (await getComponent(TAG, attrs, '', 400, 600)) as WebChat;
+  const webChat = (await getComponent(
+    TAG,
+    { channel: CHANNEL, ...attrs },
+    '',
+    400,
+    600
+  )) as WebChat;
 
-  // Ensure component is fully initialized before returning
+  // no open/close animation, so screenshots aren't taken mid-transition
+  webChat.style.setProperty('--toggle-speed', '0ms');
   await webChat.updateComplete;
-  clock.tick(100);
-  await webChat.updateComplete;
-
   return webChat;
 };
 
-// Mock WebSocket
-class MockWebSocket {
-  public onopen: ((event: Event) => void) | null = null;
-  public onclose: ((event: CloseEvent) => void) | null = null;
-  public onmessage: ((event: MessageEvent) => void) | null = null;
-  public onerror: ((event: Event) => void) | null = null;
-  public readyState: number = 0;
-  public url: string;
-  public sentMessages: string[] = [];
-  public autoOpen: boolean = true;
+const getChat = (webChat: WebChat): Chat => {
+  return webChat.shadowRoot.querySelector('temba-chat') as Chat;
+};
 
-  constructor(url: string) {
-    this.url = url;
-    // Only auto-open if enabled
-    if (this.autoOpen) {
-      // Use synchronous execution instead of setTimeout to avoid clock advancing issues
-      this.readyState = 1; // OPEN
-      if (this.onopen) {
-        this.onopen(new Event('open'));
-      }
-    }
-  }
+const hasMessage = (webChat: WebChat, uuid: string): boolean => {
+  return getChat(webChat).messageExists({ uuid } as any);
+};
 
-  send(data: string) {
-    this.sentMessages.push(data);
-  }
+// opens the widget and waits for it to be chatting
+const openWebChat = async (attrs: any = {}) => {
+  const webChat = await getWebChat(attrs);
+  webChat.open = true;
+  await settle(() => webChat.status === ConnectionState.Connected);
+  await webChat.updateComplete;
+  return webChat;
+};
 
-  close() {
-    this.readyState = 3; // CLOSED
-    if (this.onclose) {
-      this.onclose(new CloseEvent('close'));
-    }
-  }
+// the widget's own box is empty - its panel and launcher float over the page -
+// so screenshots clip to whichever of those are showing
+const getWidgetClip = (webChat: WebChat) => {
+  const rects = ['.launcher', ...(webChat.open ? ['.panel'] : [])].map(
+    (selector) =>
+      webChat.shadowRoot.querySelector(selector).getBoundingClientRect()
+  );
+  const padding = 10;
+  const left = Math.min(...rects.map((r) => r.left)) - padding;
+  const top = Math.min(...rects.map((r) => r.top)) - padding;
+  const right = Math.max(...rects.map((r) => r.right)) + padding;
+  const bottom = Math.max(...rects.map((r) => r.bottom)) + padding;
+  return {
+    x: left,
+    y: top,
+    width: right - left,
+    height: bottom - top,
+    left,
+    top,
+    right,
+    bottom
+  };
+};
 
-  // Test helper to manually open connection
-  manualOpen() {
-    this.readyState = 1; // OPEN
-    if (this.onopen) {
-      this.onopen(new Event('open'));
-    }
-  }
+const getInput = (webChat: WebChat): HTMLInputElement => {
+  return webChat.shadowRoot.querySelector('.input') as HTMLInputElement;
+};
 
-  // Test helper to simulate incoming messages
-  simulateMessage(data: any) {
-    if (this.onmessage) {
-      this.onmessage(
-        new MessageEvent('message', { data: JSON.stringify(data) })
-      );
-    }
-  }
+const typeMessage = async (webChat: WebChat, text: string) => {
+  const input = getInput(webChat);
+  input.value = text;
+  input.dispatchEvent(new Event('input'));
+  await webChat.updateComplete;
+};
 
-  // Test helper to simulate errors
-  simulateError() {
-    if (this.onerror) {
-      this.onerror(new Event('error'));
-    }
-  }
-}
+const pressEnter = async (webChat: WebChat) => {
+  getInput(webChat).dispatchEvent(
+    new KeyboardEvent('keydown', { key: 'Enter' })
+  );
+  await webChat.updateComplete;
+};
 
 describe('temba-webchat', () => {
-  let originalWebSocket: any;
-  let mockWebSocket: MockWebSocket;
-  let webSocketStub: SinonStub;
-  let cookieStub: SinonStub;
-  let mockedNow: SinonStub;
-
   beforeEach(() => {
     mockedNow = mockNow('2021-03-31T00:31:00.000-00:00');
-
-    // Mock WebSocket
-    originalWebSocket = window.WebSocket;
-    webSocketStub = stub(window, 'WebSocket').callsFake((url: string) => {
-      mockWebSocket = new MockWebSocket(url);
-      mockWebSocket.autoOpen = false; // Disable auto-open by default
-      return mockWebSocket as any;
-    });
-
-    // Mock document.cookie
-    cookieStub = stub(document, 'cookie').value('');
-
-    // Use fake timers but with a shorter timeout to avoid test hanging
     clock = useFakeTimers({
       shouldAdvanceTime: true,
       advanceTimeDelta: 10
     });
+    installCookieJar();
+    (window.fetch as SinonStub).resetHistory();
+
+    mockSocket = new MockSocketProvider();
+    previousProvider = setSocketProvider(mockSocket);
+
+    mockPOST(START_URL, { chat_id: CHAT_ID });
+    mockPOST(RECEIVE_URL, {
+      message: 'Message Accepted',
+      data: [{ type: 'msg', msg_uuid: 'sent-msg-uuid', text: 'x' }]
+    });
   });
 
   afterEach(() => {
+    setSocketProvider(previousProvider);
+    clearMockGets();
+    clearMockPosts();
+    removeCookieJar();
     clock.restore();
-    webSocketStub.restore();
-    cookieStub.restore();
     mockedNow.restore();
-    window.WebSocket = originalWebSocket;
   });
 
-  describe('Component Initialization', () => {
-    it('creates component with default properties', async () => {
-      const webChat = await getWebChat();
+  it('renders closed by default', async () => {
+    const webChat = await getWebChat();
 
-      assert.instanceOf(webChat, WebChat);
-      expect(webChat.open).to.equal(false);
-      expect(webChat.status).to.equal('disconnected');
-      expect(webChat.hasPendingText).to.equal(false);
-      expect(webChat.messageGroups).to.deep.equal([]);
-      expect(webChat.blockHistoryFetching).to.equal(false);
-    });
+    expect(webChat.open).to.equal(false);
+    expect(webChat.status).to.equal(ConnectionState.Disconnected);
+    expect(requestsTo(START_URL).length).to.equal(0);
+    expect(mockSocket.activeChannels()).to.deep.equal([]);
 
-    it('accepts channel and urn properties', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel',
-        urn: 'test-urn-123'
-      });
-
-      expect(webChat.channel).to.equal('test-channel');
-      expect(webChat.urn).to.equal('test-urn-123');
-    });
-
-    it('accepts host and activeUserAvatar properties', async () => {
-      const webChat = await getWebChat({
-        host: 'example.com',
-        activeUserAvatar: 'https://example.com/avatar.jpg'
-      });
-
-      expect(webChat.host).to.equal('example.com');
-      expect(webChat.activeUserAvatar).to.equal(
-        'https://example.com/avatar.jpg'
-      );
-    });
-
-    it('initializes chat component on first update', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
-
-      // Check that the chat component was initialized
-      const chatElement = webChat.shadowRoot.querySelector('temba-chat');
-      expect(chatElement).to.exist;
-    });
+    await assertScreenshot('webchat/closed-widget', getWidgetClip(webChat));
   });
 
-  describe('UI Rendering', () => {
-    it('renders closed chat widget by default', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
+  it('starts a new chat when opened for the first time', async () => {
+    const webChat = await openWebChat();
 
-      await assertScreenshot('webchat/closed-widget', getClip(webChat));
-    });
+    // no chat to resume, so one was started
+    expect(requestsTo(START_URL).length).to.equal(1);
+    expect(requestsTo(HISTORY_URL).length).to.equal(0);
+    expect(webChat.chatId).to.equal(CHAT_ID);
 
-    it('renders opened chat widget', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel',
-        open: true
-      });
+    // remembered for next time, and its socket subscribed to
+    expect(document.cookie).to.equal(`${COOKIE}=${CHAT_ID}`);
+    expect(mockSocket.activeChannels()).to.deep.equal([SOCKET]);
 
-      await assertScreenshot('webchat/opened-widget', getClip(webChat));
-    });
-
-    it('renders connecting state', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
-
-      expect(webChat.open).to.equal(false);
-      expect(webChat.status).to.equal('disconnected');
-
-      // Click to open the widget, which should trigger connecting state
-      const toggleElement = webChat.shadowRoot.querySelector('.toggle');
-      expect(toggleElement).to.exist;
-
-      await mouseClickElement(toggleElement);
-      await webChat.updateComplete;
-      clock.tick(50);
-
-      // Now it should be open and connecting
-      expect(webChat.open).to.equal(true);
-      expect(webChat.status).to.equal('connecting');
-
-      // await assertScreenshot('webchat/connecting-state', getClip(webChat));
-    });
-
-    it('renders disconnected state with reconnect option', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel',
-        open: true,
-        status: 'disconnected'
-      });
-
-      await assertScreenshot('webchat/disconnected-state', getClip(webChat));
-    });
-
-    it('renders connected state with input field', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel',
-        open: true,
-        status: 'connected'
-      });
-
-      // the cursor is blinking, we need to account for it in our screenshot by making it transparent
-      const inputField = webChat.shadowRoot.querySelector(
-        '.input'
-      ) as HTMLInputElement;
-      expect(inputField).to.exist;
-      inputField.style.caretColor = 'transparent';
-
-      await assertScreenshot('webchat/connected-state', getClip(webChat));
-    });
+    // the cursor is blinking, make it transparent for the screenshot
+    const input = getInput(webChat);
+    expect(input).to.exist;
+    input.style.caretColor = 'transparent';
+    await assertScreenshot('webchat/connected-state', getWidgetClip(webChat));
   });
 
-  describe('Chat Toggle Functionality', () => {
-    it('toggles chat open/closed', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
-
-      expect(webChat.open).to.equal(false);
-
-      // Click the toggle element
-      const toggleElement = webChat.shadowRoot.querySelector('.toggle');
-      expect(toggleElement).to.exist;
-
-      await mouseClickElement(toggleElement);
-      await webChat.updateComplete;
-      clock.tick(50);
-
-      expect(webChat.open).to.equal(true);
-
-      // Click toggle again
-      await mouseClickElement(toggleElement);
-      await webChat.updateComplete;
-      clock.tick(50);
-
-      expect(webChat.open).to.equal(false);
+  it('resumes a remembered chat with its history', async () => {
+    installCookieJar([`${COOKIE}=${CHAT_ID}`]);
+    mockGET(HISTORY_URL, {
+      events: [
+        msgOut('msg-3', 'Which one?', {
+          quick_replies: [
+            { type: 'text', text: 'Red' },
+            { type: 'text', text: 'Blue' },
+            { type: 'location' }
+          ]
+        }),
+        msgIn('msg-2', 'I would like to order a hat'),
+        msgOut('msg-1', 'Hi there, how can we help?', {
+          user: { uuid: 'user-1', name: 'Bob McBob' }
+        })
+      ]
     });
 
-    it('toggles chat via close button', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel',
-        open: true
-      });
+    const webChat = await openWebChat();
 
-      expect(webChat.open).to.equal(true);
+    // resumed rather than started
+    expect(requestsTo(START_URL).length).to.equal(0);
+    expect(requestsTo(HISTORY_URL).length).to.equal(1);
+    expect(requestsTo(HISTORY_URL)[0].url).to.contain(`chat_id=${CHAT_ID}`);
+    expect(mockSocket.activeChannels()).to.deep.equal([SOCKET]);
 
-      // Click close button in header
-      const closeButton = webChat.shadowRoot.querySelector('.close-button');
-      expect(closeButton).to.exist;
+    await settle(() => hasMessage(webChat, 'msg-1'));
+    expect(hasMessage(webChat, 'msg-2')).to.equal(true);
+    expect(hasMessage(webChat, 'msg-3')).to.equal(true);
 
-      (closeButton as HTMLElement).click();
-      await webChat.updateComplete;
+    // the newest message's text quick replies are offered
+    expect(webChat.quickReplies).to.deep.equal(['Red', 'Blue']);
+    await webChat.updateComplete;
+    const buttons = webChat.shadowRoot.querySelectorAll('.quick-reply');
+    expect(buttons.length).to.equal(2);
 
-      expect(webChat.open).to.equal(false);
-    });
+    // replies get an avatar like they do in the app's own chat, and one sent
+    // by a user says who
+    await getChat(webChat).updateComplete;
+    const chatRoot = getChat(webChat).shadowRoot;
+    expect(chatRoot.querySelectorAll('.avatar temba-user').length).to.equal(2);
+    expect(chatRoot.querySelector('.bubble .name').textContent.trim()).to.equal(
+      'Bob McBob'
+    );
+    expect(chatRoot.querySelector('temba-user').getAttribute('name')).to.equal(
+      'Bob McBob'
+    );
 
-    it('opens chat programmatically', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
+    // and no hover timestamps - a visitor doesn't need the app's detail
+    expect(chatRoot.querySelectorAll('.popup').length).to.equal(0);
 
-      expect(webChat.open).to.equal(false);
-
-      webChat.openChat();
-      await webChat.updateComplete;
-
-      expect(webChat.open).to.equal(true);
-    });
+    getInput(webChat).style.caretColor = 'transparent';
+    await assertScreenshot('webchat/with-messages', getWidgetClip(webChat));
   });
 
-  describe('Socket Connection Management', () => {
-    it('opens socket when chat is opened', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
+  it('starts over when the remembered chat is no longer valid', async () => {
+    installCookieJar([`${COOKIE}=stale`]);
+    mockGET(HISTORY_URL, { message: 'unknown chat id' }, {}, '400');
 
-      expect(webChat.status).to.equal('disconnected');
+    const webChat = await openWebChat();
 
-      // Open chat - this should trigger socket connection
-      webChat.open = true;
-      await webChat.updateComplete;
-      clock.tick(50);
-
-      expect(webChat.status).to.equal('connecting');
-      expect(webSocketStub.called).to.be.true;
-      expect(mockWebSocket.url).to.include('test-channel');
-
-      // Now simulate the socket opening
-      mockWebSocket.manualOpen();
-      await webChat.updateComplete;
-      clock.tick(50);
-
-      expect(webChat.status).to.equal('connected');
-    });
-
-    it('does not open socket if already connecting or connected', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
-
-      // First connection
-      webChat.open = true;
-      await webChat.updateComplete;
-      await clock.tick(0);
-
-      const firstCallCount = webSocketStub.callCount;
-
-      // Try to connect again while connecting
-      webChat.open = false;
-      webChat.open = true;
-      await webChat.updateComplete;
-      await clock.tick(0);
-
-      // Should not create another socket
-      expect(webSocketStub.callCount).to.equal(firstCallCount);
-    });
-
-    it('constructs correct WebSocket URL with channel', async () => {
-      const webChat = await getWebChat({
-        channel: 'my-channel'
-      });
-
-      webChat.open = true;
-      await webChat.updateComplete;
-      clock.tick(50);
-
-      expect(mockWebSocket.url).to.equal(
-        'wss://localhost.textit.com/wc/connect/my-channel/'
-      );
-    });
-
-    it('includes urn in WebSocket URL when present', async () => {
-      const webChat = await getWebChat({
-        channel: 'my-channel',
-        urn: 'chat-123'
-      });
-
-      webChat.open = true;
-      await webChat.updateComplete;
-      clock.tick(50);
-
-      expect(mockWebSocket.url).to.equal(
-        'wss://localhost.textit.com/wc/connect/my-channel/?chat_id=chat-123'
-      );
-    });
-
-    it('sends start_chat command on socket open', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
-
-      webChat.open = true;
-      await webChat.updateComplete;
-
-      // Manually open the socket to trigger the start_chat command
-      mockWebSocket.manualOpen();
-      await webChat.updateComplete;
-      clock.tick(100);
-
-      expect(mockWebSocket.sentMessages.length).to.be.at.least(1);
-      const sentMessage = JSON.parse(mockWebSocket.sentMessages[0]);
-      expect(sentMessage.type).to.equal('start_chat');
-    });
-
-    it('includes chat_id in start_chat command when urn is present', async () => {
-      // Set the cookie directly in document.cookie
-      cookieStub.value('temba-chat-urn=existing-chat-123');
-
-      const webChat = await getWebChat({
-        channel: 'test-channel',
-        urn: 'existing-chat-123'
-      });
-
-      webChat.open = true;
-      await webChat.updateComplete;
-
-      mockWebSocket.manualOpen();
-      await webChat.updateComplete;
-      clock.tick(50);
-
-      const sentMessage = JSON.parse(mockWebSocket.sentMessages[0]);
-      expect(sentMessage.type).to.equal('start_chat');
-      // The chat_id should be 'existing-chat-123' either from the urn property or cookie
-      expect(sentMessage.chat_id).to.equal('existing-chat-123');
-    });
-
-    it('handles socket close event', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
-
-      webChat.open = true;
-      await webChat.updateComplete;
-      clock.tick(50);
-
-      expect(webChat.status).to.equal('connecting');
-
-      mockWebSocket.close();
-      await webChat.updateComplete;
-      clock.tick(50);
-
-      expect(webChat.status).to.equal('disconnected');
-    });
-
-    it('handles socket error event', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
-
-      webChat.open = true;
-      await webChat.updateComplete;
-
-      expect(webChat.status).to.equal('connecting');
-
-      mockWebSocket.simulateError();
-      await webChat.updateComplete;
-
-      expect(webChat.status).to.equal('disconnected');
-    });
-
-    it('reconnects when reconnect button is clicked', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel',
-        open: true,
-        status: 'disconnected'
-      });
-
-      const reconnectButton = webChat.shadowRoot.querySelector('.reconnect');
-      expect(reconnectButton).to.exist;
-
-      await mouseClickElement(reconnectButton);
-      await webChat.updateComplete;
-
-      expect(webSocketStub.called).to.be.true;
-      expect(webChat.status).to.equal('connecting');
-    });
+    expect(requestsTo(HISTORY_URL).length).to.equal(1);
+    expect(requestsTo(START_URL).length).to.equal(1);
+    expect(webChat.chatId).to.equal(CHAT_ID);
+    expect(document.cookie).to.equal(`${COOKIE}=${CHAT_ID}`);
+    expect(mockSocket.activeChannels()).to.deep.equal([SOCKET]);
   });
 
-  describe('Message Handling', () => {
-    it('handles chat_started message', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
+  it('reports a failure to connect and can retry', async () => {
+    clearMockPosts();
+    mockPOST(START_URL, { message: 'nope' }, {}, '500');
 
-      webChat.open = true;
-      await webChat.updateComplete;
-      mockWebSocket.manualOpen();
-      await webChat.updateComplete;
+    const webChat = await getWebChat();
+    webChat.open = true;
+    await settle(() => webChat.status === ConnectionState.Disconnected);
+    await webChat.updateComplete;
 
-      expect(webChat.status).to.equal('connected');
+    expect(webChat.error).to.equal('Unable to connect to chat');
+    expect(mockSocket.activeChannels()).to.deep.equal([]);
+    const reconnect = webChat.shadowRoot.querySelector('.reconnect');
+    expect(reconnect).to.exist;
 
-      // Simulate chat_started message
-      mockWebSocket.simulateMessage({
-        type: 'chat_started',
-        chat_id: 'new-chat-456'
-      });
-      await webChat.updateComplete;
+    // then the platform comes back
+    clearMockPosts();
+    mockPOST(START_URL, { chat_id: CHAT_ID });
+    (reconnect as HTMLElement).click();
+    await settle(() => webChat.status === ConnectionState.Connected);
 
-      expect(webChat.urn).to.equal('new-chat-456');
-      expect(webChat.messageGroups).to.deep.equal([]);
-    });
-
-    it('handles chat_resumed message and fetches history', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
-
-      webChat.open = true;
-      await webChat.updateComplete;
-      mockWebSocket.manualOpen();
-      await webChat.updateComplete;
-
-      // Simulate chat_resumed message
-      mockWebSocket.simulateMessage({
-        type: 'chat_resumed',
-        chat_id: 'resumed-chat-789'
-      });
-      await webChat.updateComplete;
-
-      expect(webChat.urn).to.equal('resumed-chat-789');
-
-      // Should have sent get_history command
-      expect(mockWebSocket.sentMessages.length).to.be.greaterThan(1);
-      const lastMessage = JSON.parse(
-        mockWebSocket.sentMessages[mockWebSocket.sentMessages.length - 1]
-      );
-      expect(lastMessage.type).to.equal('get_history');
-    });
-
-    it('handles chat_out message and sends ack', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
-
-      webChat.open = true;
-      await webChat.updateComplete;
-      mockWebSocket.manualOpen();
-      await webChat.updateComplete;
-
-      const initialMessageCount = mockWebSocket.sentMessages.length;
-
-      // Simulate incoming message
-      mockWebSocket.simulateMessage({
-        type: 'chat_out',
-        msg_out: {
-          id: 'msg-123',
-          text: 'Hello from server',
-          time: '2021-03-31T00:31:00.000Z',
-          user: {
-            id: 'user-1',
-            name: 'Test User',
-            email: 'test@example.com'
-          }
-        }
-      });
-      await webChat.updateComplete;
-
-      // Should have sent ack
-      expect(mockWebSocket.sentMessages.length).to.equal(
-        initialMessageCount + 1
-      );
-      const ackMessage = JSON.parse(
-        mockWebSocket.sentMessages[mockWebSocket.sentMessages.length - 1]
-      );
-      expect(ackMessage.type).to.equal('ack_chat');
-      expect(ackMessage.msg_id).to.equal('msg-123');
-    });
-
-    it('handles history response', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
-
-      webChat.open = true;
-      await webChat.updateComplete;
-      mockWebSocket.manualOpen();
-      await webChat.updateComplete;
-
-      // Simulate history response
-      mockWebSocket.simulateMessage({
-        type: 'history',
-        history: [
-          {
-            msg_out: {
-              id: 'msg-1',
-              text: 'First message',
-              time: '2021-03-31T00:30:00.000Z',
-              user: { id: 'user-1', name: 'User', email: 'user@example.com' }
-            }
-          },
-          {
-            msg_in: {
-              id: 'msg-2',
-              text: 'Second message',
-              time: '2021-03-31T00:30:30.000Z'
-            }
-          }
-        ]
-      });
-      await webChat.updateComplete;
-
-      // Should have updated beforeTime and unblocked history fetching
-      expect(webChat.blockHistoryFetching).to.equal(false);
-    });
-
-    it('clears messages when chat_id changes', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel',
-        urn: 'old-chat-123'
-      });
-
-      webChat.messageGroups = [['existing', 'messages']];
-
-      webChat.open = true;
-      await webChat.updateComplete;
-      mockWebSocket.manualOpen();
-      await webChat.updateComplete;
-
-      // Simulate chat_started with different chat_id
-      mockWebSocket.simulateMessage({
-        type: 'chat_started',
-        chat_id: 'new-chat-456'
-      });
-      await webChat.updateComplete;
-
-      expect(webChat.urn).to.equal('new-chat-456');
-      expect(webChat.messageGroups).to.deep.equal([]);
-    });
-
-    it('keeps messages when chat_id is the same', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
-
-      webChat.open = true;
-      await webChat.updateComplete;
-      mockWebSocket.manualOpen();
-      await webChat.updateComplete;
-
-      // First, simulate a chat_started to set the URN
-      mockWebSocket.simulateMessage({
-        type: 'chat_started',
-        chat_id: 'same-chat-123'
-      });
-      await webChat.updateComplete;
-
-      // Now set some messages
-      webChat.messageGroups = [['existing', 'messages']];
-      await webChat.updateComplete;
-
-      // Simulate another chat_started with the same chat_id
-      mockWebSocket.simulateMessage({
-        type: 'chat_started',
-        chat_id: 'same-chat-123'
-      });
-      await webChat.updateComplete;
-
-      expect(webChat.urn).to.equal('same-chat-123');
-      expect(webChat.messageGroups).to.deep.equal([['existing', 'messages']]);
-    });
+    expect(webChat.error).to.equal(null);
+    expect(mockSocket.activeChannels()).to.deep.equal([SOCKET]);
   });
 
-  describe('User Input and Message Sending', () => {
-    it('updates hasPendingText on keyup', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel',
-        open: true,
-        status: 'connected'
-      });
+  it('shows live messages and their quick replies', async () => {
+    const webChat = await openWebChat();
 
-      const inputField = webChat.shadowRoot.querySelector(
-        '.input'
-      ) as HTMLInputElement;
-      expect(inputField).to.exist;
-
-      expect(webChat.hasPendingText).to.equal(false);
-
-      // Simulate typing
-      inputField.value = 'Hello';
-      inputField.dispatchEvent(new KeyboardEvent('keydown', { key: 'h' }));
-      await webChat.updateComplete;
-
-      expect(webChat.hasPendingText).to.equal(true);
-
-      // Clear input
-      inputField.value = '';
-      inputField.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Backspace' })
-      );
-      await webChat.updateComplete;
-
-      expect(webChat.hasPendingText).to.equal(false);
+    mockSocket.serverPublish(SOCKET, {
+      type: 'msg_out',
+      created_on: '2021-03-31T00:30:00Z',
+      msg_uuid: 'live-1',
+      text: 'Are you still there?',
+      quick_replies: [
+        { type: 'text', text: 'Yes' },
+        { type: 'text', text: 'No' }
+      ]
     });
 
-    it('sends message on Enter key', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
+    await settle(() => hasMessage(webChat, 'live-1'));
+    await settle(
+      () => webChat.shadowRoot.querySelectorAll('.quick-reply').length === 2
+    );
 
-      webChat.open = true;
-      await webChat.updateComplete;
-      mockWebSocket.manualOpen();
-      await webChat.updateComplete;
+    // picking a quick reply sends it
+    const yes = webChat.shadowRoot.querySelector('.quick-reply') as HTMLElement;
+    yes.click();
 
-      // Ensure the socket is properly set
-      expect(webChat.status).to.equal('connected');
-
-      const inputField = webChat.shadowRoot.querySelector(
-        '.input'
-      ) as HTMLInputElement;
-      inputField.value = 'Test message';
-      webChat.hasPendingText = true;
-
-      const initialMessageCount = mockWebSocket.sentMessages.length;
-
-      // Call handleKeyUp directly with Enter key event
-      webChat.handleKeyUp({ key: 'Enter', target: inputField });
-      await webChat.updateComplete;
-
-      // Should have sent message
-      expect(mockWebSocket.sentMessages.length).to.equal(
-        initialMessageCount + 1
-      );
-      const sentMessage = JSON.parse(
-        mockWebSocket.sentMessages[mockWebSocket.sentMessages.length - 1]
-      );
-      expect(sentMessage.type).to.equal('send_msg');
-      expect(sentMessage.text).to.equal('Test message');
-
-      // input should be cleared and hasPendingText should be false
-      expect(inputField.value).to.equal('');
-      expect(webChat.hasPendingText).to.equal(false);
+    await settle(() => hasMessage(webChat, 'sent-msg-uuid'));
+    const sent = requestsTo(RECEIVE_URL);
+    expect(sent.length).to.equal(1);
+    expect(bodyOf(sent[0])).to.deep.equal({
+      chat_id: CHAT_ID,
+      text: 'Yes',
+      attachments: []
     });
 
-    it('sends message via send button click', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
-
-      webChat.open = true;
-      await webChat.updateComplete;
-      mockWebSocket.manualOpen();
-      await webChat.updateComplete;
-
-      const inputField = webChat.shadowRoot.querySelector(
-        '.input'
-      ) as HTMLInputElement;
-
-      inputField.value = 'Button click message';
-      webChat.hasPendingText = true;
-      await webChat.updateComplete;
-
-      const initialMessageCount = mockWebSocket.sentMessages.length;
-
-      // call sendPendingMessage directly since it's a private method called by click handler
-      (webChat as any).sendPendingMessage();
-      await webChat.updateComplete;
-
-      // should have sent message
-      expect(mockWebSocket.sentMessages.length).to.equal(
-        initialMessageCount + 1
-      );
-      const sentMessage = JSON.parse(
-        mockWebSocket.sentMessages[mockWebSocket.sentMessages.length - 1]
-      );
-      expect(sentMessage.type).to.equal('send_msg');
-      expect(sentMessage.text).to.equal('Button click message');
-    });
-
-    it('focuses input when input panel is clicked', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel',
-        open: true,
-        status: 'connected'
-      });
-
-      const inputPanel = webChat.shadowRoot.querySelector('.input-panel');
-      expect(inputPanel).to.exist;
-
-      // Mock focus method
-      const inputField = webChat.shadowRoot.querySelector(
-        '.input'
-      ) as HTMLInputElement;
-      let focusCalled = false;
-      inputField.focus = () => {
-        focusCalled = true;
-      };
-
-      await mouseClickElement(inputPanel);
-
-      expect(focusCalled).to.be.true;
-    });
-
-    it('does not send message when disconnected', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel',
-        open: true
-      });
-
-      // Keep the status as disconnected - don't connect the socket
-      expect(webChat.status).to.equal('disconnected');
-
-      // Find input field - it might not exist in disconnected state
-      const inputField = webChat.shadowRoot.querySelector(
-        '.input'
-      ) as HTMLInputElement;
-      if (inputField) {
-        inputField.value = 'Should not send';
-        webChat.hasPendingText = true;
-
-        // Try to send message by calling handleKeyUp
-        webChat.handleKeyUp({ key: 'Enter', target: inputField });
-        await webChat.updateComplete;
-      }
-
-      // Should not have created any WebSocket connections
-      expect(webSocketStub.called).to.be.false;
-    });
+    // which spends them
+    expect(webChat.quickReplies).to.deep.equal([]);
   });
 
-  describe('History Fetching', () => {
-    it('fetches previous messages when requested', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
+  it('sends typed messages', async () => {
+    const webChat = await openWebChat();
 
-      webChat.open = true;
-      await webChat.updateComplete;
-      mockWebSocket.manualOpen();
-      await webChat.updateComplete;
+    await typeMessage(webChat, 'Hello there');
+    expect(webChat.hasPendingText).to.equal(true);
 
-      const initialMessageCount = mockWebSocket.sentMessages.length;
+    await pressEnter(webChat);
+    await settle(() => hasMessage(webChat, 'sent-msg-uuid'));
 
-      // Manually call fetchPreviousMessages
-      webChat.fetchPreviousMessages();
-      await webChat.updateComplete;
-
-      expect(webChat.blockHistoryFetching).to.equal(true);
-      expect(mockWebSocket.sentMessages.length).to.equal(
-        initialMessageCount + 1
-      );
-
-      const historyRequest = JSON.parse(
-        mockWebSocket.sentMessages[mockWebSocket.sentMessages.length - 1]
-      );
-      expect(historyRequest.type).to.equal('get_history');
-      expect(historyRequest.before).to.exist;
+    const sent = requestsTo(RECEIVE_URL);
+    expect(sent.length).to.equal(1);
+    expect(sent[0].init.method).to.equal('POST');
+    expect(bodyOf(sent[0])).to.deep.equal({
+      chat_id: CHAT_ID,
+      text: 'Hello there',
+      attachments: []
     });
 
-    it('does not fetch when already fetching', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
+    expect(getInput(webChat).value).to.equal('');
+    expect(webChat.hasPendingText).to.equal(false);
 
-      webChat.blockHistoryFetching = true;
+    // and they can keep typing without reaching for the mouse
+    expect(webChat.shadowRoot.activeElement).to.equal(getInput(webChat));
 
-      webChat.open = true;
-      await webChat.updateComplete;
-      mockWebSocket.manualOpen();
-      await webChat.updateComplete;
-
-      const initialMessageCount = mockWebSocket.sentMessages.length;
-
-      // Try to fetch - should be blocked
-      webChat.fetchPreviousMessages();
-      await webChat.updateComplete;
-
-      expect(mockWebSocket.sentMessages.length).to.equal(initialMessageCount);
-    });
-
-    it('completes fetch and unblocks history fetching', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
-
-      webChat.blockHistoryFetching = true;
-
-      webChat.fetchComplete();
-
-      expect(webChat.blockHistoryFetching).to.equal(false);
-    });
+    // nothing to send doesn't send anything
+    await pressEnter(webChat);
+    expect(requestsTo(RECEIVE_URL).length).to.equal(1);
   });
 
-  describe('Edge Cases and Additional Coverage', () => {
-    it('handles keyup events that are not Enter', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
+  it('gives a message back when it fails to send', async () => {
+    const webChat = await openWebChat();
 
-      webChat.open = true;
-      await webChat.updateComplete;
-      mockWebSocket.manualOpen();
-      await webChat.updateComplete;
+    clearMockPosts();
+    mockPOST(RECEIVE_URL, { message: 'nope' }, {}, '500');
 
-      const inputField = webChat.shadowRoot.querySelector(
-        '.input'
-      ) as HTMLInputElement;
-      inputField.value = 'Some text';
+    await typeMessage(webChat, 'Hello there');
+    await pressEnter(webChat);
+    await settle(() => webChat.error !== null);
 
-      // Test with non-Enter key
-      webChat.handleKeyUp({ key: 'a', target: inputField });
-      await webChat.updateComplete;
-
-      expect(webChat.hasPendingText).to.equal(true);
-
-      // Test with empty value
-      inputField.value = '';
-      webChat.handleKeyUp({ key: 'Backspace', target: inputField });
-      await webChat.updateComplete;
-
-      expect(webChat.hasPendingText).to.equal(false);
-    });
-
-    it('does not send message on Enter if no pending text', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
-
-      webChat.open = true;
-      await webChat.updateComplete;
-      mockWebSocket.manualOpen();
-      await webChat.updateComplete;
-
-      const inputField = webChat.shadowRoot.querySelector(
-        '.input'
-      ) as HTMLInputElement;
-      inputField.value = '';
-      webChat.hasPendingText = false;
-
-      const initialMessageCount = mockWebSocket.sentMessages.length;
-
-      // Try to send with Enter but no pending text
-      webChat.handleKeyUp({ key: 'Enter', target: inputField });
-      await webChat.updateComplete;
-
-      // Should not have sent any new messages
-      expect(mockWebSocket.sentMessages.length).to.equal(initialMessageCount);
-    });
-
-    it('updates status when open changes from false to true', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
-
-      expect(webChat.status).to.equal('disconnected');
-
-      // Open the chat for the first time
-      webChat.open = true;
-      await webChat.updateComplete;
-
-      expect(webChat.status).to.equal('connecting');
-      expect(webSocketStub.called).to.be.true;
-    });
-
-    it('focuses input when status changes to connected', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
-
-      // Open chat to trigger connection
-      webChat.open = true;
-      await webChat.updateComplete;
-
-      expect(webChat.status).to.equal('connecting');
-
-      // Mock focus method before the input is rendered
-      let focusCalled = false;
-      const originalFocus = HTMLInputElement.prototype.focus;
-      HTMLInputElement.prototype.focus = function () {
-        focusCalled = true;
-      };
-
-      // Manually open socket to trigger status change to connected
-      mockWebSocket.manualOpen();
-      await webChat.updateComplete;
-
-      // Restore original focus
-      HTMLInputElement.prototype.focus = originalFocus;
-
-      // Focus should have been called when status changed to connected
-      expect(focusCalled).to.be.true;
-    });
-
-    it('handles focus input when input element does not exist', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel',
-        open: true,
-        status: 'disconnected'
-      });
-
-      // Try to focus input when it might not exist
-      (webChat as any).focusInput();
-
-      // Should not throw an error
-      expect(true).to.be.true;
-    });
-
-    it('handles empty history response', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
-
-      webChat.open = true;
-      await webChat.updateComplete;
-      mockWebSocket.manualOpen();
-      await webChat.updateComplete;
-
-      // Simulate empty history response
-      mockWebSocket.simulateMessage({
-        type: 'history',
-        history: []
-      });
-      await webChat.updateComplete;
-
-      expect(webChat.blockHistoryFetching).to.equal(false);
-    });
-
-    it('handles message with msg_in in history response', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
-
-      webChat.open = true;
-      await webChat.updateComplete;
-      mockWebSocket.manualOpen();
-      await webChat.updateComplete;
-
-      // Simulate history response with msg_in first
-      mockWebSocket.simulateMessage({
-        type: 'history',
-        history: [
-          {
-            msg_in: {
-              id: 'msg-1',
-              text: 'Incoming message',
-              time: '2021-03-31T00:30:00.000Z'
-            }
-          }
-        ]
-      });
-      await webChat.updateComplete;
-
-      expect(webChat.blockHistoryFetching).to.equal(false);
-    });
-
-    it('prevents event propagation on input panel click', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel',
-        open: true,
-        status: 'connected'
-      });
-
-      const inputPanel = webChat.shadowRoot.querySelector('.input-panel');
-      expect(inputPanel).to.exist;
-
-      let preventDefaultCalled = false;
-      let stopPropagationCalled = false;
-
-      const mockEvent = {
-        preventDefault: () => {
-          preventDefaultCalled = true;
-        },
-        stopPropagation: () => {
-          stopPropagationCalled = true;
-        }
-      };
-
-      (webChat as any).handleClickInputPanel(mockEvent);
-
-      expect(preventDefaultCalled).to.be.true;
-      expect(stopPropagationCalled).to.be.true;
-    });
-
-    it('handles unknown message types gracefully', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
-
-      webChat.open = true;
-      await webChat.updateComplete;
-      mockWebSocket.manualOpen();
-      await webChat.updateComplete;
-
-      // Simulate unknown message type
-      mockWebSocket.simulateMessage({
-        type: 'unknown_message_type',
-        data: 'some data'
-      });
-      await webChat.updateComplete;
-
-      // Should not throw an error
-      expect(true).to.be.true;
-    });
+    expect(webChat.error).to.equal('Your message could not be sent');
+    expect(getInput(webChat).value).to.equal('Hello there');
+    expect(webChat.hasPendingText).to.equal(true);
+    expect(webChat.shadowRoot.activeElement).to.equal(getInput(webChat));
   });
 
-  describe('Integration with Chat Component', () => {
-    it('listens to scroll threshold event for history fetching', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
+  it('pages back through history', async () => {
+    installCookieJar([`${COOKIE}=${CHAT_ID}`]);
 
-      webChat.open = true;
-      await webChat.updateComplete;
-      mockWebSocket.manualOpen();
-      await webChat.updateComplete;
-
-      const chatElement = webChat.shadowRoot.querySelector('temba-chat');
-      expect(chatElement).to.exist;
-
-      const initialMessageCount = mockWebSocket.sentMessages.length;
-
-      // Simulate scroll threshold event
-      chatElement.dispatchEvent(new CustomEvent('temba-scroll-threshold'));
-      await webChat.updateComplete;
-
-      // Should have triggered history fetch
-      expect(mockWebSocket.sentMessages.length).to.equal(
-        initialMessageCount + 1
-      );
-      const historyRequest = JSON.parse(
-        mockWebSocket.sentMessages[mockWebSocket.sentMessages.length - 1]
-      );
-      expect(historyRequest.type).to.equal('get_history');
+    // the first page points at the one before it
+    mockGET(HISTORY_PAGE_URL, {
+      events: [msgOut('older-1', 'Welcome!')]
+    });
+    mockGET(HISTORY_URL, {
+      events: [msgIn('newer-2', 'Thanks'), msgOut('newer-1', 'Hello')],
+      next: 'newer-1'
     });
 
-    it('listens to fetch complete event', async () => {
-      const webChat = await getWebChat({
-        channel: 'test-channel'
-      });
+    const webChat = await openWebChat();
+    await settle(() => hasMessage(webChat, 'newer-1'));
 
-      webChat.blockHistoryFetching = true;
+    // the chat asks for more when it can't scroll, otherwise on scrolling up
+    webChat.fetchPreviousMessages();
+    await settle(() => hasMessage(webChat, 'older-1'));
 
-      const chatElement = webChat.shadowRoot.querySelector('temba-chat');
-      expect(chatElement).to.exist;
+    const pages = requestsTo(HISTORY_PAGE_URL);
+    expect(pages.length).to.equal(1);
+    expect(pages[0].url).to.contain('before=newer-1');
 
-      // Simulate fetch complete event
-      chatElement.dispatchEvent(new CustomEvent('temba-fetch-complete'));
+    // and that was the last page
+    await settle(() => webChat.blockHistoryFetching === false);
+    webChat.fetchPreviousMessages();
+    await settle(() => webChat.blockHistoryFetching === false);
+    expect(requestsTo(HISTORY_URL).length).to.equal(2);
+  });
 
-      expect(webChat.blockHistoryFetching).to.equal(false);
+  it('recovers missed messages when the socket resubscribes', async () => {
+    const webChat = await openWebChat();
+    expect(requestsTo(HISTORY_URL).length).to.equal(0);
+
+    mockGET(HISTORY_URL, {
+      events: [
+        msgOut('missed-2', 'Anyone home?', {
+          quick_replies: [{ type: 'text', text: 'Yes' }]
+        }),
+        msgOut('missed-1', 'You still there?')
+      ]
     });
+
+    // the connection dropped and came back
+    mockSocket.subs[0].onSubscribed();
+
+    await settle(() => hasMessage(webChat, 'missed-2'));
+    expect(hasMessage(webChat, 'missed-1')).to.equal(true);
+    expect(requestsTo(HISTORY_URL).length).to.equal(1);
+    expect(webChat.quickReplies).to.deep.equal(['Yes']);
+  });
+
+  it('uploads attachments and sends them with the next message', async () => {
+    const webChat = await openWebChat();
+    const attachment =
+      'image/jpeg:https://storage.example.com/attachments/1/hat.jpg';
+    mockPOST(UPLOAD_URL, { attachment });
+
+    await webChat.uploadFiles([
+      new File(['hat'], 'hat.jpg', { type: 'image/jpeg' })
+    ]);
+    await webChat.updateComplete;
+
+    const uploads = requestsTo(UPLOAD_URL);
+    expect(uploads.length).to.equal(1);
+    const form = uploads[0].init.body as FormData;
+    expect(form.get('chat_id')).to.equal(CHAT_ID);
+    expect((form.get('file') as File).name).to.equal('hat.jpg');
+
+    expect(webChat.attachments).to.deep.equal([attachment]);
+    const chip = webChat.shadowRoot.querySelector('.attachment .name');
+    expect(chip.textContent).to.equal('hat.jpg');
+
+    await typeMessage(webChat, 'Like this one');
+    await pressEnter(webChat);
+    await settle(() => hasMessage(webChat, 'sent-msg-uuid'));
+
+    expect(bodyOf(requestsTo(RECEIVE_URL)[0])).to.deep.equal({
+      chat_id: CHAT_ID,
+      text: 'Like this one',
+      attachments: [attachment]
+    });
+    expect(webChat.attachments).to.deep.equal([]);
+  });
+
+  it('reports a rejected upload and can drop pending attachments', async () => {
+    const webChat = await openWebChat();
+    mockPOST(UPLOAD_URL, { message: 'unsupported file type' }, {}, '400');
+
+    await webChat.uploadFiles([
+      new File(['zip'], 'archive.zip', { type: 'application/zip' })
+    ]);
+    expect(webChat.error).to.equal('File type not supported');
+    expect(webChat.attachments).to.deep.equal([]);
+
+    webChat.attachments = [
+      'application/pdf:https://storage.example.com/a/b/doc.pdf'
+    ];
+    await webChat.updateComplete;
+    const remove = webChat.shadowRoot.querySelector('.attachment .remove');
+    (remove as HTMLElement).click();
+    await webChat.updateComplete;
+    expect(webChat.attachments).to.deep.equal([]);
+  });
+
+  it('shows a notice while disconnected', async () => {
+    const webChat = await openWebChat();
+
+    mockSocket.setConnectionState(ConnectionState.Disconnected);
+    await settle(() => webChat.status === ConnectionState.Disconnected);
+    await webChat.updateComplete;
+
+    expect(getInput(webChat).disabled).to.equal(true);
+    expect(webChat.shadowRoot.querySelector('.reconnect')).to.exist;
+    expect(
+      webChat.shadowRoot.querySelector('.presence').textContent.trim()
+    ).to.equal('Offline');
+
+    await assertScreenshot(
+      'webchat/disconnected-state',
+      getWidgetClip(webChat)
+    );
+
+    mockSocket.setConnectionState(ConnectionState.Connected);
+    await settle(() => webChat.status === ConnectionState.Connected);
+    await webChat.updateComplete;
+    expect(getInput(webChat).disabled).to.equal(false);
+    expect(webChat.shadowRoot.querySelector('.reconnect')).to.not.exist;
+  });
+
+  it('closes and reopens without starting over', async () => {
+    const webChat = await openWebChat();
+
+    const close = webChat.shadowRoot.querySelector('.close') as HTMLElement;
+    close.click();
+    await webChat.updateComplete;
+    expect(webChat.open).to.equal(false);
+
+    webChat.openChat();
+    await webChat.updateComplete;
+    expect(webChat.open).to.equal(true);
+    expect(requestsTo(START_URL).length).to.equal(1);
+    expect(mockSocket.activeChannels()).to.deep.equal([SOCKET]);
+  });
+
+  it('counts replies that arrive while closed', async () => {
+    const webChat = await openWebChat();
+
+    // an empty conversation invites the first message
+    expect(webChat.shadowRoot.querySelector('.empty')).to.exist;
+
+    webChat.open = false;
+    await webChat.updateComplete;
+
+    mockSocket.serverPublish(SOCKET, msgOut('while-closed', 'Still there?'));
+    mockSocket.serverPublish(SOCKET, msgOut('while-closed-2', 'Hello?'));
+    await settle(() => webChat.unread === 2);
+    await webChat.updateComplete;
+
+    expect(webChat.shadowRoot.querySelector('.badge').textContent).to.equal(
+      '2'
+    );
+    expect(webChat.shadowRoot.querySelector('.empty')).to.not.exist;
+
+    // opening the panel reads them
+    webChat.open = true;
+    await webChat.updateComplete;
+    expect(webChat.unread).to.equal(0);
+    expect(webChat.shadowRoot.querySelector('.badge')).to.not.exist;
+  });
+
+  it('tears down its subscription when removed from the page', async () => {
+    const webChat = await openWebChat();
+    expect(mockSocket.activeChannels()).to.deep.equal([SOCKET]);
+
+    webChat.remove();
+    expect(mockSocket.activeChannels()).to.deep.equal([]);
   });
 });

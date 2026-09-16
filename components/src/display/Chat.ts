@@ -421,10 +421,34 @@ export class Chat extends RapidElement {
         }
       }
 
+      /* a message that just arrived settles into place from just below,
+         growing from the corner its bubble points at */
+      .row.arriving {
+        animation: arrive 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        animation-delay: var(--arrive-delay, 0ms);
+        transform-origin: bottom left;
+      }
+
+      .incoming .row.arriving {
+        transform-origin: bottom right;
+      }
+
+      @keyframes arrive {
+        from {
+          opacity: 0;
+          transform: translateY(0.6em) scale(0.96);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
       @media (prefers-reduced-motion: reduce) {
         .condensed-events .reveal,
         .condensed-events.collapsing .reveal,
-        .row.summary-row {
+        .row.summary-row,
+        .row.arriving {
           animation: none;
         }
       }
@@ -1224,6 +1248,11 @@ export class Chat extends RapidElement {
   // discarded rather than re-merged into the fresh view
   private resetGeneration = 0;
 
+  // messages that just arrived live, by uuid, with their position in the
+  // batch they came in - they play an entrance, staggered a little when
+  // several land together. History pages don't: they were always there.
+  private arriving = new Map<string, number>();
+
   public disconnectedCallback(): void {
     super.disconnectedCallback();
     // clear pending typing decay timers so no callback fires on a detached
@@ -1305,6 +1334,7 @@ export class Chat extends RapidElement {
         this.insertGroups(grouped, append);
 
         if (append) {
+          newMessages.forEach((uuid, i) => this.arriving.set(uuid, i));
           this.refloatTyping();
         }
 
@@ -1445,6 +1475,7 @@ export class Chat extends RapidElement {
     } else {
       this.typingEvents.set(key, event);
       this.addMessage(event);
+      this.arriving.set(event.uuid, 0);
       this.insertGroups(this.groupMessages([event.uuid]), true);
     }
 
@@ -1782,6 +1813,26 @@ export class Chat extends RapidElement {
     }
   }
 
+  private arrivingClass(uuid: string): string {
+    return this.arriving.has(uuid) ? 'arriving' : '';
+  }
+
+  // later arrivals in a batch start a beat after the ones before them, up
+  // to a short cap so a big catch-up doesn't crawl in
+  private arrivingStyle(uuid: string): string | typeof nothing {
+    const index = this.arriving.get(uuid);
+    if (index === undefined) {
+      return nothing;
+    }
+    return `--arrive-delay: ${Math.min(index, 5) * 45}ms`;
+  }
+
+  // once played, an entrance is done - the row keeps its class until the
+  // next render, which is fine as an animation only runs when a node is made
+  private handleArrived(uuids: string[]) {
+    uuids.forEach((uuid) => this.arriving.delete(uuid));
+  }
+
   private renderMessageGroup(group: MessageGroup): TemplateResult {
     const msgIds = group.messages;
 
@@ -1889,7 +1940,9 @@ export class Chat extends RapidElement {
                 return html`<div
                   class="row message is-event condensed-events ${collapsing
                     ? 'collapsing'
-                    : ''}"
+                    : ''} ${this.arrivingClass(chunk.ids[0])}"
+                  style=${this.arrivingStyle(chunk.ids[0])}
+                  @animationend=${() => this.handleArrived(chunk.ids)}
                 >
                   <div class="reveal">
                     <div class="reveal-inner">
@@ -1956,8 +2009,12 @@ export class Chat extends RapidElement {
                 const matchClass =
                   this.highlightMessageUuid === msg.uuid ? 'search-match' : '';
                 return html`<div
-                  class="row message ${statusClass} ${unsendableClass} ${deletedClass} ${emptyClass} ${latestClass} ${eventClass} ${noteClass} ${typingClass} ${matchClass}"
+                  class="row message ${statusClass} ${unsendableClass} ${deletedClass} ${emptyClass} ${latestClass} ${eventClass} ${noteClass} ${typingClass} ${matchClass} ${this.arrivingClass(
+                    msgId
+                  )}"
+                  style=${this.arrivingStyle(msgId)}
                   data-uuid=${msg.uuid || nothing}
+                  @animationend=${() => this.handleArrived([msgId])}
                 >
                   ${this.renderMessage(msg, index == 0 ? name : null)}
                 </div>`;
@@ -2143,6 +2200,7 @@ export class Chat extends RapidElement {
     this.metadataCache.clear();
     this.expandedEventChunks.clear();
     this.collapsingEventChunks.clear();
+    this.arriving.clear();
     this.messageGroups = [];
     this.hideBottomScroll = true;
     this.hideTopScroll = true;

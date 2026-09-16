@@ -10,7 +10,7 @@
   "license": "AGPL-3.0-only",
   "repository": "https://github.com/nyaruka/temba/",
   "scripts": {
-    "build": "rimraf dist && bun run svg && tsc && rollup -c rollup.components.mjs ",
+    "build": "rimraf dist && bun run svg && tsc && rollup -c rollup.components.mjs && rollup -c rollup.webchat.mjs",
     "build-wc": "rollup -c rollup.webchat.mjs",
     "watch": "bun build temba-modules.ts --outdir=dev-dist --format=esm --sourcemap=linked --watch --define 'process.env.NODE_ENV=\"development\"' --define '__TEMBA_COMPONENTS_VERSION__=\"dev\"'",
     "pre-commit": "bun run locale:extract && bun run locale:build && bun run svg && git add ./src/Icons.ts ./static/svg/index.svg ./xliff ./src/locales && lint-staged",
