@@ -31,9 +31,21 @@
         {% for sibling in siblings %}
           <li {% if sibling.id == article.id %}class="current" aria-current="page"{% endif %}>
             <a href="{{ prefix }}/{{ section.slug }}/{{ sibling.slug }}/">{{ sibling.title }}</a>
+            {% if sibling.id == article.id and headings %}
+              <ul class="headings" aria-label="{% trans "In this article" %}">
+                {% for heading in headings %}
+                  <li>
+                    <a href="#{{ heading.id }}">{{ heading.text }}</a>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% endif %}
           </li>
         {% endfor %}
       </ul>
     </aside>
   </div>
 {% endblock content %}
+{% block scripts %}
+  {% if headings %}<script src="{{ STATIC_URL }}js/helpsite.js" defer></script>{% endif %}
+{% endblock scripts %}
