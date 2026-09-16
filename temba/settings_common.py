@@ -247,7 +247,9 @@ MIDDLEWARE = (
 )
 
 # the path of a health check endpoint which load balancers address by the app's own network address rather than by
-# one of its domains - see HealthCheckHostMiddleware. Unset means there isn't one.
+# one of its domains - see HealthCheckHostMiddleware. Must be exactly the path the load balancer asks for, trailing
+# slash and all: a near miss doesn't error, it just falls through to the usual host check and fails there. Unset
+# means there isn't one.
 HEALTH_CHECK_PATH = None
 
 # whether to treat every request as having arrived over https regardless of what the connection or any forwarded header

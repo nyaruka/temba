@@ -79,6 +79,21 @@ class HealthCheckHostTest(TembaTest):
 
             self.assertEqual("app.example.com", request.get_host())
 
+    def test_forwarded_host_replaced_when_thats_what_is_trusted(self):
+        request = RequestFactory().get(
+            "/system/ping/", headers={"host": "10.0.1.23:8020", "x-forwarded-host": "10.0.1.23:8020"}
+        )
+
+        with override_settings(
+            HEALTH_CHECK_PATH="/system/ping/",
+            ALLOWED_HOSTS=["app.example.com"],
+            BRAND={"domain": "app.example.com"},
+            USE_X_FORWARDED_HOST=True,
+        ):
+            HealthCheckHostMiddleware(lambda r: HttpResponse())(request)
+
+            self.assertEqual("app.example.com", request.get_host())
+
     def test_other_paths_are_untouched(self):
         request = RequestFactory().get("/msg/", headers={"host": "10.0.1.23:8020"})
 
