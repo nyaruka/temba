@@ -225,8 +225,7 @@ FORM_RENDERER = "django.forms.renderers.TemplatesSetting"
 # things that are only for the app's own responses go below it - static files are served pre-compressed with a
 # far-future max-age and mustn't be gzipped again or marked uncacheable.
 MIDDLEWARE = (
-    "temba.middleware.HealthCheckHostMiddleware",
-    "temba.middleware.AssumeHTTPSMiddleware",
+    "temba.middleware.ProxiedRequestMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.csp.ContentSecurityPolicyMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -247,7 +246,7 @@ MIDDLEWARE = (
 )
 
 # the path of a health check endpoint which load balancers address by the app's own network address rather than by
-# one of its domains - see HealthCheckHostMiddleware. Must be exactly the path the load balancer asks for, trailing
+# one of its domains - see ProxiedRequestMiddleware. Must be exactly the path the load balancer asks for, trailing
 # slash and all: a near miss doesn't error, it just falls through to the usual host check and fails there. Unset
 # means there isn't one.
 HEALTH_CHECK_PATH = None

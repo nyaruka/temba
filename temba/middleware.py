@@ -24,44 +24,36 @@ class ExceptionMiddleware:
         return None
 
 
-class HealthCheckHostMiddleware:
+class ProxiedRequestMiddleware:
     """
-    Lets a load balancer's health checks through the allowed hosts check. Health checkers address each instance by its
-    own network address, and can't be told to send a different Host header, so the host they send is never one of the
-    app's domains and every check would be rejected - taking the whole deployment out of service. For that one path,
-    and only that path, the host is replaced with the app's own domain. The check itself still runs as normal.
+    Corrects what a request says about how it arrived, for deployments where something always sits in front of the app.
+
+    Two things are otherwise wrong behind a load balancer. The connection reaching the app is plain http even though
+    the client's was https, and everything that keys off the scheme gets that wrong - CSRF origin checks, HSTS,
+    absolute URLs, the API's SSL requirement. And health checks address the app by its own network address rather than
+    by one of its domains, with no way to tell a load balancer otherwise, so the allowed hosts check rejects every one
+    of them and the whole deployment is taken out of service.
+
+    Both corrections are settings-gated, so a deployment with nothing in front of it is left alone. This has to run
+    before anything that reads the scheme or the host, which is why it's first.
     """
 
     def __init__(self, get_response=None):
-        if not settings.HEALTH_CHECK_PATH:
+        if not settings.SECURE_ASSUME_HTTPS and not settings.HEALTH_CHECK_PATH:
             raise MiddlewareNotUsed()
 
         self.get_response = get_response
 
     def __call__(self, request):
-        if request.path == settings.HEALTH_CHECK_PATH:
+        if settings.SECURE_ASSUME_HTTPS:
+            request.META["wsgi.url_scheme"] = "https"
+
+        # only the health check path, and only the host it's addressed by - the check itself still runs as normal
+        if settings.HEALTH_CHECK_PATH and request.path == settings.HEALTH_CHECK_PATH:
             request.META["HTTP_HOST"] = settings.BRAND["domain"]
             if settings.USE_X_FORWARDED_HOST:
                 request.META["HTTP_X_FORWARDED_HOST"] = settings.BRAND["domain"]
 
-        return self.get_response(request)
-
-
-class AssumeHTTPSMiddleware:
-    """
-    Tells Django every request arrived over https, for when TLS is always terminated in front of the app. Everything
-    that keys off the scheme - CSRF origin checks, HSTS, absolute URLs, the API's SSL requirement - then works without
-    the app having to trust a forwarded header from whatever is in front of it.
-    """
-
-    def __init__(self, get_response=None):
-        if not settings.SECURE_ASSUME_HTTPS:
-            raise MiddlewareNotUsed()
-
-        self.get_response = get_response
-
-    def __call__(self, request):
-        request.META["wsgi.url_scheme"] = "https"
         return self.get_response(request)
 
 
