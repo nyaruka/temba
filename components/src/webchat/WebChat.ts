@@ -585,11 +585,14 @@ export class WebChat extends LitElement {
           color-mix(in srgb, var(--color-primary) 18%, transparent);
       }
 
+      /* inputs don't inherit the page font by default, and a browser's own
+         UI font differs between environments */
       .input {
         flex: 1;
         min-width: 0;
         border: 0;
         background: transparent;
+        font: inherit;
         color: var(--webchat-ink);
         padding: 0.5rem 0.25rem;
       }
