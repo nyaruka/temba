@@ -2,12 +2,12 @@ import tempfile
 from pathlib import Path
 
 from django.conf import settings
-from django.core.exceptions import MiddlewareNotUsed
+from django.core.exceptions import DisallowedHost, MiddlewareNotUsed
 from django.http import HttpResponse
 from django.test import Client, RequestFactory, override_settings
 from django.urls import reverse
 
-from temba.middleware import AssumeHTTPSMiddleware, NoStoreMiddleware
+from temba.middleware import AssumeHTTPSMiddleware, HealthCheckHostMiddleware, NoStoreMiddleware
 from temba.tests import TembaTest
 
 
@@ -65,3 +65,31 @@ class AssumeHTTPSTest(TembaTest):
     def test_not_used_when_off(self):
         with self.assertRaises(MiddlewareNotUsed):
             AssumeHTTPSMiddleware(lambda r: HttpResponse())
+
+
+class HealthCheckHostTest(TembaTest):
+    def test_host_replaced_for_the_health_check_path(self):
+        # a health checker addresses the instance by its own address, which is never one of our domains
+        request = RequestFactory().get("/system/ping/", headers={"host": "10.0.1.23:8020"})
+
+        with override_settings(
+            HEALTH_CHECK_PATH="/system/ping/", ALLOWED_HOSTS=["app.example.com"], BRAND={"domain": "app.example.com"}
+        ):
+            HealthCheckHostMiddleware(lambda r: HttpResponse())(request)
+
+            self.assertEqual("app.example.com", request.get_host())
+
+    def test_other_paths_are_untouched(self):
+        request = RequestFactory().get("/msg/", headers={"host": "10.0.1.23:8020"})
+
+        with override_settings(
+            HEALTH_CHECK_PATH="/system/ping/", ALLOWED_HOSTS=["app.example.com"], BRAND={"domain": "app.example.com"}
+        ):
+            HealthCheckHostMiddleware(lambda r: HttpResponse())(request)
+
+            self.assertRaises(DisallowedHost, request.get_host)
+
+    def test_not_used_when_no_health_check_path(self):
+        with override_settings(HEALTH_CHECK_PATH=None):
+            with self.assertRaises(MiddlewareNotUsed):
+                HealthCheckHostMiddleware(lambda r: HttpResponse())

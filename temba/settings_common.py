@@ -225,6 +225,7 @@ FORM_RENDERER = "django.forms.renderers.TemplatesSetting"
 # things that are only for the app's own responses go below it - static files are served pre-compressed with a
 # far-future max-age and mustn't be gzipped again or marked uncacheable.
 MIDDLEWARE = (
+    "temba.middleware.HealthCheckHostMiddleware",
     "temba.middleware.AssumeHTTPSMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.csp.ContentSecurityPolicyMiddleware",
@@ -244,6 +245,10 @@ MIDDLEWARE = (
     "temba.middleware.ToastMiddleware",
     "allauth.account.middleware.AccountMiddleware",
 )
+
+# the path of a health check endpoint which load balancers address by the app's own network address rather than by
+# one of its domains - see HealthCheckHostMiddleware. Unset means there isn't one.
+HEALTH_CHECK_PATH = None
 
 # whether to treat every request as having arrived over https regardless of what the connection or any forwarded header
 # says - for when TLS is always terminated in front of the app

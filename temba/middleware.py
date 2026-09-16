@@ -24,6 +24,29 @@ class ExceptionMiddleware:
         return None
 
 
+class HealthCheckHostMiddleware:
+    """
+    Lets a load balancer's health checks through the allowed hosts check. Health checkers address each instance by its
+    own network address, and can't be told to send a different Host header, so the host they send is never one of the
+    app's domains and every check would be rejected - taking the whole deployment out of service. For that one path,
+    and only that path, the host is replaced with the app's own domain. The check itself still runs as normal.
+    """
+
+    def __init__(self, get_response=None):
+        if not settings.HEALTH_CHECK_PATH:
+            raise MiddlewareNotUsed()
+
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.path == settings.HEALTH_CHECK_PATH:
+            request.META["HTTP_HOST"] = settings.BRAND["domain"]
+            if settings.USE_X_FORWARDED_HOST:
+                request.META["HTTP_X_FORWARDED_HOST"] = settings.BRAND["domain"]
+
+        return self.get_response(request)
+
+
 class AssumeHTTPSMiddleware:
     """
     Tells Django every request arrived over https, for when TLS is always terminated in front of the app. Everything
