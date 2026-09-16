@@ -1,4 +1,20 @@
+{% load i18n %}
+
 <temba-markdown-edit name="{{ widget.name }}"
                      {% include "django/forms/widgets/attrs.html" %}
                      value="{% if widget.value %}{{ widget.value }}{% endif %}">
+  {% if title %}
+    {# a textarea rather than an input so a long title wraps as the site's heading does - the editor keeps it to one line of text and grows it to fit #}
+    <textarea slot="title"
+              name="{{ title.html_name }}"
+              rows="1"
+              {% if title.field.max_length %}maxlength="{{ title.field.max_length }}"{% endif %}
+              placeholder="{% trans "Title" %}"
+              autocomplete="off">{% if title.value != None %}{{ title.value }}{% endif %}</textarea>
+    {% if title.errors %}
+      <div slot="title-errors">
+        {% for error in title.errors %}<div>{{ error }}</div>{% endfor %}
+      </div>
+    {% endif %}
+  {% endif %}
 </temba-markdown-edit>

@@ -263,11 +263,24 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
         # and at storage, so images referenced by their key can be shown
         self.assertContains(response, f'storage-url="{settings.STORAGE_URL}"')
 
-        # the dialog has no title bar, so the article's title leads and stands as one, with its status riding inside
-        # it as a pill that states rather than does - publishing is done from the row, and deleting from the gutter
-        # button the list page owns
-        self.assertContains(response, "status-pill")
-        self.assertContains(response, "Draft")
+        # the article is shown in the site's own colors - the default until the org has a site that chose one
+        self.assertNotContains(response, "primary-color")
+
+        site = HelpSite.get_or_create(self.helpdesk, self.admin)
+        site.config[HelpSite.CONFIG_PRIMARY_COLOR] = "#b03060"
+        site.save(update_fields=("config",))
+
+        response = self.assertUpdateFetch(update_url, [self.admin], form_fields=("title", "language", "body"))
+        self.assertContains(response, 'primary-color="#b03060"')
+
+        # the dialog has no title bar: the title field is slotted into the editor, which heads the article with it as
+        # the site does - and there's no status either, since publishing is done from the row, and deleting from the
+        # gutter button the list page owns
+        self.assertContains(response, 'slot="title"')
+        self.assertContains(response, 'name="title"')
+        self.assertContains(response, ">Nodes</textarea>")
+        self.assertNotContains(response, "temba-textinput")
+        self.assertNotContains(response, "status-pill")
         self.assertNotContains(response, "temba-toggle")
         self.assertNotContains(response, reverse("knowledge.article_delete", args=[article.uuid]))
 
@@ -286,7 +299,7 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
             object_unchanged=article,
         )
 
-        # a missing title is an error the hand-rendered input carries itself
+        # a missing title is an error the editor shows under the title, since that's where it's edited
         response = self.assertUpdateSubmit(
             update_url,
             self.admin,
@@ -294,7 +307,8 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
             form_errors={"title": "This field is required."},
             object_unchanged=article,
         )
-        self.assertContains(response, "errors=")
+        self.assertContains(response, 'slot="title-errors"')
+        self.assertContains(response, "This field is required.")
 
         self.assertUpdateSubmit(
             update_url, self.admin, {"title": "All About Flows", "language": "kin", "body": "# Flows"}
@@ -320,7 +334,8 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
         section_url = reverse("knowledge.article_update", args=[section.uuid])
         response = self.assertUpdateFetch(section_url, [self.editor, self.admin], form_fields=("title", "description"))
         self.assertContains(response, "All about flows.")
-        self.assertContains(response, "status-pill")
+        self.assertContains(response, "temba-textinput")  # a title field of its own, there being no editor to head
+        self.assertNotContains(response, "status-pill")
         self.assertNotContains(response, reverse("knowledge.article_upload", args=[section.uuid]))
         self.assertNotContains(response, "88vh")
 

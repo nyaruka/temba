@@ -8,11 +8,15 @@
 {% endblock page-header %}
 {% block content %}
   {% comment %}
-    Wider than any of the dialog's named sizes, since an article is read at the width it was
-    written at. No header either - the article's own title stands as one, and a title bar would
-    only cost the editor height.
+    Sized to the article rather than to one of the dialog's named sizes: the editor shows the
+    article as a card of the width the help site gives it (692px) with the same 24px of ground on
+    every side, and the dialog is that plus its own edges - the editor's 1px border and the body's
+    20px of padding - so the ground around the card is even all round rather than wider at the
+    sides. No header either - the article's own title stands as one, and a title bar would only
+    cost the editor height. Nothing is focused on opening: the article is there to be read as
+    much as written, and the caret goes where the author clicks.
   {% endcomment %}
-  <temba-modax id="update-article" width="min(60rem, 92vw)" -temba-submitted="refreshArticles()">
+  <temba-modax id="update-article" width="min(782px, 92vw)" no-autofocus -temba-submitted="refreshArticles()">
     {% if org_perms.knowledge.article_delete %}
       {# rides the dialog's gutter so the editor itself is nothing but the article #}
       <temba-button slot="gutter" name="{% trans "Delete" %}" destructive small onclick="deleteArticle()">

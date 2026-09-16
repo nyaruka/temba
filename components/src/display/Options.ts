@@ -470,11 +470,14 @@ export class Options extends RapidElement {
   public updated(changed: Map<string, any>) {
     super.updated(changed);
 
-    if (changed.has('anchorTo') && this.anchorTo) {
+    // Watched from the first update that has both an anchor and a container to watch. The container isn't
+    // rendered until the render function is resolved in firstUpdated, so an anchor given before that has to wait
+    // for the update after.
+    if (this.anchorTo && !this.resizeObserver) {
       const optionsContainer =
         this.shadowRoot.querySelector('.options-container');
 
-      if (!this.resizeObserver) {
+      if (optionsContainer) {
         this.resizeObserver = new ResizeObserver((entries) => {
           window.requestAnimationFrame((): void | undefined => {
             if (!Array.isArray(entries) || !entries.length) {

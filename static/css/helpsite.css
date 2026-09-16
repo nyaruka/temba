@@ -501,7 +501,9 @@ mark {
   font-weight: 600;
 }
 
-/* article typography - the served rendering of what the editor shows the author, so the two agree */
+/* article typography - the served rendering of what the editor shows the author, so the two agree. The editor
+   (components/src/form/MarkdownEditor.ts) carries a copy of these rules and of the .article card's; change them
+   together. */
 
 .doc {
   font-size: 16.5px;

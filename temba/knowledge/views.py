@@ -500,9 +500,13 @@ class ArticleCRUDL(SmartCRUDL):
             if "body" not in form.fields:
                 return form
 
-            # the dialog carries no title bar of its own, so the article's title stands as one (the template renders
-            # it by hand, with the status pill riding inside it) and the article below it needs no label either
-            form.fields["body"].widget.attrs.update(
+            # the dialog carries no title bar of its own: the title heads the article inside the editor, as it does on
+            # the site - the title field is slotted into the editor rather than rendered above it - so the article
+            # needs no label either
+            widget = form.fields["body"].widget
+            widget.title = form["title"]
+            attrs = widget.attrs
+            attrs.update(
                 {
                     "hide_label": True,
                     # the editor takes the height the dialog gives it and scrolls the article inside itself, so a long
@@ -519,6 +523,11 @@ class ArticleCRUDL(SmartCRUDL):
                     "storage-url": settings.STORAGE_URL,
                 }
             )
+
+            # the editor shows the article as the site will - in the site's own colors, once it has chosen them
+            site = HelpSite.objects.filter(source=self.get_object().source).first()
+            if site:
+                attrs["primary-color"] = site.primary_color
             return form
 
         def pre_save(self, obj):

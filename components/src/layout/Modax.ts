@@ -133,6 +133,11 @@ export class Modax extends RapidElement {
   @property({ type: Boolean })
   fetching = false;
 
+  /** leaves focus where it is on opening, rather than putting it in the first field - for a dialog that's read
+   * before it's written in */
+  @property({ type: Boolean, attribute: 'no-autofocus' })
+  noAutofocus = false;
+
   @property({ type: Boolean })
   submitting: boolean;
 
@@ -224,7 +229,13 @@ export class Modax extends RapidElement {
       }
     }
 
-    if (changes.has('body') && this.open && this.body && !this.fetching) {
+    if (
+      changes.has('body') &&
+      this.open &&
+      this.body &&
+      !this.fetching &&
+      !this.noAutofocus
+    ) {
       const dialog = this.shadowRoot.querySelector('temba-dialog') as Dialog;
       dialog.focusFirstInput();
     }

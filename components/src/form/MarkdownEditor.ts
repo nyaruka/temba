@@ -3,6 +3,7 @@ import { msg } from '@lit/localize';
 import { property, state } from 'lit/decorators.js';
 import { FieldElement } from './FieldElement';
 import { Icon } from '../Icons';
+import { Options } from '../display/Options';
 import { getSelectionFromRoot } from '../excellent/caret-utils';
 import { sessionParser } from '../excellent/helpers';
 import { tokenize } from '../excellent/tokenizer';
@@ -545,6 +546,9 @@ export interface ArticleTarget {
   depth: number;
 }
 
+/** what a link points at for the instant between being made and being emptied - see startLink */
+const NEW_LINK = 'about:blank#new';
+
 /** whether what's been typed into the link bar is an address rather than a search: it has a scheme, or reads as a
  * path or a host. A title has none of those. */
 export const isAddress = (text: string): boolean =>
@@ -623,7 +627,8 @@ export class MarkdownEditor extends FieldElement {
       }
 
       .overlays .popover,
-      .overlays .image-actions {
+      .overlays .image-actions,
+      .overlays .link-options {
         pointer-events: auto;
       }
 
@@ -691,6 +696,14 @@ export class MarkdownEditor extends FieldElement {
         background: none;
       }
 
+      /* none of it applies to the title, which is a line of plain text - so while the caret is there the toolbar
+         goes quiet rather than offering formatting that would have nowhere to go */
+      .toolbar.muted > temba-icon,
+      .toolbar.muted .format {
+        opacity: 0.3;
+        pointer-events: none;
+      }
+
       .toolbar .spacer {
         flex-grow: 1;
       }
@@ -741,56 +754,66 @@ export class MarkdownEditor extends FieldElement {
         white-space: nowrap;
       }
 
-      /* the link bar stacks its matches under the box they were typed into */
+      /* The link bar: a card the width of the picker that hangs beneath it, and the card is the field - the box
+         inside it draws no border of its own. A mark at its head says what the link is (an address, an article,
+         or a search underway), and removing the link is a quiet icon at its foot. */
       .popover.link-popover {
-        flex-direction: column;
-        align-items: stretch;
+        box-sizing: border-box;
+        width: 380px;
+        max-width: calc(100% - 8px);
+        gap: 2px;
+        padding: 3px 5px 3px 10px;
+        border-radius: 10px;
+        box-shadow:
+          0 1px 2px rgba(16, 24, 40, 0.06),
+          0 12px 32px -12px rgba(16, 24, 40, 0.25);
       }
 
-      .popover .link-row {
-        display: flex;
-        align-items: center;
-        gap: 0.4em;
-      }
-
-      .popover .link-kind {
-        color: var(--color-text-help);
+      .link-popover .link-kind {
         flex-shrink: 0;
+        color: var(--color-text-help);
       }
 
-      .popover .link-matches {
-        display: flex;
-        flex-direction: column;
-        margin-top: 0.3em;
-        border-top: 1px solid var(--color-widget-border);
-        padding-top: 0.3em;
-        max-height: 14em;
-        overflow-y: auto;
+      .link-popover input[type='text'] {
+        flex: 1;
+        width: auto;
+        min-width: 0;
+        padding: 6px 6px;
+        border: none;
+        background: transparent;
+        box-shadow: none;
+        outline: none;
+        font-size: 13.5px;
+        color: var(--color-text-dark);
       }
 
-      .popover .link-match {
+      .link-popover input[type='text']::placeholder {
+        color: var(--color-text-help);
+      }
+
+      .link-popover .link-remove {
+        flex-shrink: 0;
+        padding: 5px;
+        border-radius: 6px;
+        color: var(--color-text-help);
         cursor: pointer;
-        padding: 0.3em 0.4em;
-        border-radius: var(--curvature);
-        line-height: 1.25;
       }
 
-      .popover .link-match:hover {
+      .link-popover .link-remove:hover {
         background: var(--color-selection);
+        color: var(--color-text-dark);
       }
 
-      .popover .link-match.none {
-        cursor: default;
-        color: var(--color-text-help);
-      }
-
-      .popover .link-match.draft .link-match-title {
-        color: var(--color-text-help);
-      }
-
-      .popover .link-match-section {
-        font-size: 0.85em;
-        color: var(--color-text-help);
+      /* The articles a search in the link bar matches, floated under the box as any options list is - it's the
+         options control, so it reads and steers like every other list of choices. Roomier than a select's rows:
+         each match is a rounded row of its own, inset from the edges and from its neighbours, wide enough to
+         carry a title and the section it's filed under side by side. */
+      .link-options temba-options {
+        --temba-options-font-size: 13.5px;
+        --temba-options-option-padding: 4px 12px;
+        --temba-options-option-margin: 2px 4px;
+        --temba-options-option-radius: 8px;
+        --temba-options-option-min-height: 0;
       }
 
       /* The column whose styling is being edited, traced in dashed blue over the gray guidelines - just that
@@ -927,76 +950,168 @@ export class MarkdownEditor extends FieldElement {
         line-height: 1.5;
       }
 
-      .doc {
-        padding: 0.75em;
+      /* The article as the help site serves it. From here to the guideline rule below is the site's own article
+         styling - the .article card and the .doc typography of static/css/helpsite.css, with the site's tokens set on
+         the document - so what the author sees is what a reader gets, down to the font and the measure. The two are
+         changed together. The document stands on the site's ground as a card of the width the site's article column
+         gives it (its container less the sidebar and the gap between them), so lines break where they will on the
+         page rather than running the width of the dialog. */
+      .doc-frame {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 24px;
+        background: #f7f7f9; /* the site's --ground */
+      }
+
+      /* the card: the site's .article, holding the title and then the body as the site's page does */
+      .article {
+        /* the site's tokens, as helpsite.css sets them on :root. The primary color is the one a site chooses for
+           itself, and comes in as an attribute that overrides this default - which is the site's own default. */
+        --primary: #2f6fed;
+        --font:
+          ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+          'Helvetica Neue', Arial, sans-serif;
+        --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        --text: #1f2430;
+        --text-muted: #6b7280;
+        --surface: #ffffff;
+        --border: #e6e8ec;
+        --radius: 12px;
+
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 692px;
+        /* and at least the height of the frame, so a short article is a page rather than a card afloat on the ground */
+        flex: 1 0 auto;
+        padding: 40px 48px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        color: var(--text);
+        font-family: var(--font);
+        -webkit-font-smoothing: antialiased;
         cursor: text;
-        font-size: 0.95em;
-        line-height: 1.5;
+      }
+
+      /* The title, slotted in as the form's own field - an input, so its name, value, length and errors are the
+         form's business - and drawn as the site's .article > h1, which is what the reader gets. It inherits the
+         card's font and color through the slot. */
+      ::slotted([slot='title']) {
+        display: block !important;
+        box-sizing: border-box !important;
+        width: 100% !important;
+        margin: 0 0 24px !important;
+        padding: 0 !important;
+        border: none !important;
+        background: none !important;
+        font: inherit !important;
+        color: inherit !important;
+        font-size: clamp(26px, 3.5vw, 34px) !important;
+        font-weight: 700 !important;
+        line-height: 1.25 !important;
+        letter-spacing: -0.01em !important;
+        outline: none !important;
+        /* a textarea, so a long title wraps as the site's heading does - sized to its text by the editor, so it
+           never scrolls inside itself or shows a grip */
+        resize: none !important;
+        overflow: hidden !important;
+      }
+
+      /* the form's word on the title, in the app's own voice rather than the article's */
+      ::slotted([slot='title-errors']) {
+        margin: -16px 0 24px;
+        font-family: var(--font-family);
+        font-size: 0.85em;
+        color: var(--color-error);
+      }
+
+      .doc {
+        flex: 1 0 auto;
+        font-size: 16.5px;
+        line-height: 1.7;
+        cursor: text;
         outline: none;
       }
 
-      /* article typography - what the author is editing is what the article looks like */
       .doc > * {
-        margin: 0 0 0.6em 0;
+        margin: 0 0 1em;
       }
 
       .doc > *:last-child {
         margin-bottom: 0;
       }
 
+      .doc h1,
+      .doc h2,
+      .doc h3,
+      .doc h4,
+      .doc h5,
+      .doc h6 {
+        margin-top: 1.6em;
+        font-weight: 650;
+        line-height: 1.25;
+        letter-spacing: -0.01em;
+      }
+
       .doc h1 {
         font-size: 1.5em;
-        font-weight: var(--w-semibold);
-        line-height: 1.25;
       }
 
       .doc h2 {
-        font-size: 1.25em;
-        font-weight: var(--w-semibold);
-        line-height: 1.3;
+        font-size: 1.3em;
       }
 
       .doc h3 {
-        font-size: 1.1em;
-        font-weight: var(--w-semibold);
-        line-height: 1.35;
+        font-size: 1.12em;
       }
 
       .doc h4,
       .doc h5,
       .doc h6 {
         font-size: 1em;
-        font-weight: var(--w-semibold);
       }
 
       .doc ul,
       .doc ol {
-        padding-left: 1.4em;
+        padding-left: 1.5em;
+      }
+
+      .doc li + li {
+        margin-top: 0.25em;
       }
 
       .doc blockquote {
-        border-left: 3px solid var(--color-borders);
-        padding-left: 0.75em;
-        color: var(--color-text-help);
+        margin-left: 0;
+        padding-left: 1em;
+        border-left: 3px solid var(--primary);
+        color: var(--text-muted);
       }
 
       .doc pre {
         font-family: var(--font-mono);
         font-size: 0.85em;
-        background: var(--color-code-bg, #f5f6f8);
-        border-radius: var(--curvature);
-        padding: 0.5em 0.75em;
+        background: #f4f5f7;
+        border-radius: 8px;
+        padding: 0.75em 1em;
         white-space: pre-wrap;
+        overflow-x: auto;
       }
 
       .doc pre code {
         background: transparent;
+        padding: 0;
         font-size: inherit;
       }
 
       .doc code {
         font-family: var(--font-mono);
-        font-size: 0.9em;
+        font-size: 0.88em;
+        background: #f4f5f7;
+        border-radius: 4px;
+        padding: 0.1em 0.35em;
       }
 
       /* Inline rather than block, which is also what markdown calls an image. A block level image would make the
@@ -1004,31 +1119,30 @@ export class MarkdownEditor extends FieldElement {
          dropped mid-sentence would land somewhere other than where the caret was. */
       .doc img {
         max-width: 100%;
+        height: auto;
         display: inline-block;
         vertical-align: bottom;
+        border-radius: 8px;
       }
 
       /* What the image's own fragment asks for. One value caps both axes, so it's the long side of any aspect
          ratio that lands on it. */
       .doc img.size-small {
-        max-width: 200px;
+        max-width: min(200px, 100%);
         max-height: 200px;
         width: auto;
-        height: auto;
       }
 
       .doc img.size-medium {
-        max-width: 400px;
+        max-width: min(400px, 100%);
         max-height: 400px;
         width: auto;
-        height: auto;
       }
 
       .doc img.size-large {
-        max-width: 640px;
+        max-width: min(640px, 100%);
         max-height: 640px;
         width: auto;
-        height: auto;
       }
 
       .doc img.layout-block {
@@ -1040,7 +1154,12 @@ export class MarkdownEditor extends FieldElement {
       }
 
       .doc a {
-        color: var(--color-link-primary);
+        color: var(--primary);
+        text-decoration: none;
+      }
+
+      .doc a:hover {
+        text-decoration: underline;
       }
 
       /* a divider is a breath in the article, not the browser's ruled-off box: a hairline that fades out at its
@@ -1048,24 +1167,32 @@ export class MarkdownEditor extends FieldElement {
       .doc hr {
         border: none;
         height: 1px;
-        margin: 1.6em 0;
+        margin: 2em 0;
         background: linear-gradient(
           to right,
           transparent,
-          var(--color-borders) 18%,
-          var(--color-borders) 82%,
+          var(--border) 18%,
+          var(--border) 82%,
           transparent
         );
       }
 
       .doc table {
         border-collapse: collapse;
+        max-width: 100%;
       }
 
       .doc th,
       .doc td {
-        border: 1px solid var(--color-borders);
-        padding: 0.25em 0.5em;
+        border: 1px solid var(--border);
+        padding: 0.4em 0.7em;
+        vertical-align: top;
+      }
+
+      .doc th {
+        background: #f4f5f7;
+        text-align: left;
+        font-weight: 600;
       }
 
       /* A table whose header says nothing is layout rather than data - the two cell row the Columns button inserts,
@@ -1075,7 +1202,6 @@ export class MarkdownEditor extends FieldElement {
          of data. */
       .doc table:not(:has(th:not(:empty))) {
         width: 100%;
-        max-width: 100%;
         table-layout: auto;
       }
 
@@ -1086,9 +1212,6 @@ export class MarkdownEditor extends FieldElement {
       .doc table:not(:has(th:not(:empty))) td {
         border: none;
         padding: 16px;
-        vertical-align: top;
-        /* an empty cell still has to be something the author can click into */
-        min-width: 2em;
       }
 
       /* A link over a column's own color keeps that color rather than the article-wide link blue, which can
@@ -1103,7 +1226,9 @@ export class MarkdownEditor extends FieldElement {
          chrome rather than part of the article - the served rendering draws no borders on a layout row - so they
          come and go with the editing itself. */
       .doc[contenteditable='true'] table:not(:has(th:not(:empty))) td {
-        border: 1px dashed var(--color-borders);
+        border: 1px dashed var(--border);
+        /* an empty cell still has to be something the author can click into */
+        min-width: 2em;
       }
 
       /* a block the editor can't write back out - it renders, but it isn't edited here */
@@ -1149,6 +1274,11 @@ export class MarkdownEditor extends FieldElement {
   @property({ type: String, attribute: 'articles-endpoint' })
   articlesEndpoint = '';
 
+  /** The help site's primary color - what its links and accents are drawn in - so the article is shown in the
+   * site's own colors. Unset, it's the color a site has until it picks one. */
+  @property({ type: String, attribute: 'primary-color' })
+  primaryColor = '';
+
   @property({ type: String })
   accept = 'image/gif,image/jpeg,image/png,image/webp';
 
@@ -1173,6 +1303,12 @@ export class MarkdownEditor extends FieldElement {
   /** which toolbar commands describe what the caret is sitting in */
   @state()
   private active: string[] = [];
+
+  /** whether the caret is in the slotted title, where none of the toolbar applies */
+  @state()
+  private inTitle = false;
+
+  private titleSizer: ResizeObserver = null;
 
   /** whether the caret (or a selected image) is inside a table cell, where a new table can't go */
   @state()
@@ -1312,7 +1448,7 @@ export class MarkdownEditor extends FieldElement {
         title: msg('Link'),
         icon: Icon.hyperlink,
         prefix: '[',
-        suffix: '](https://)'
+        suffix: ']()'
       },
       {
         format: 'columns',
@@ -1354,9 +1490,16 @@ export class MarkdownEditor extends FieldElement {
     // The overlays live in the document's own coordinate space, so scrolling needs no help - but a window resize
     // reflows the article under them.
     window.addEventListener('resize', this.handleViewportChange);
+
+    // The title wraps to the card's width, so it's sized whenever that settles - which is also the first moment
+    // it can be measured at all, since the dialog around it is laid out only once it's shown.
+    this.titleSizer = new ResizeObserver(() => this.sizeTitle());
+    this.titleSizer.observe(this);
   }
 
   public disconnectedCallback(): void {
+    this.titleSizer?.disconnect();
+    this.titleSizer = null;
     document.removeEventListener('selectionchange', this.handleSelectionChange);
     window.removeEventListener('resize', this.handleViewportChange);
     document.removeEventListener('mousemove', this.handleResizeMove);
@@ -1402,6 +1545,21 @@ export class MarkdownEditor extends FieldElement {
   }
 
   public updated(changes: Map<string, any>): void {
+    // The link bar's options list hangs from the bar, which is only there once the bar is: anchored on its left
+    // edge and as wide as it is, less the list's own border, so the two read as one control.
+    const options = this.shadowRoot.querySelector(
+      '.link-options temba-options'
+    ) as Options;
+    if (options) {
+      const bar = this.shadowRoot.querySelector('.link-popover') as HTMLElement;
+      if (options.anchorTo !== bar) {
+        options.anchorTo = bar;
+      }
+      const width = bar ? Math.round(bar.getBoundingClientRect().width) - 2 : 0;
+      if (width > 0 && options.staticWidth !== width) {
+        options.staticWidth = width;
+      }
+    }
     super.updated(changes);
 
     if (this.stale && !this.sourceMode && this.doc) {
@@ -2372,17 +2530,23 @@ export class MarkdownEditor extends FieldElement {
     const range = this.range;
     const selected = range ? range.toString() : '';
 
+    // A new link points nowhere yet: the bar opens empty, so what's typed is a search for an article as readily as
+    // an address. createLink wants something to link to, so the placeholder goes in and comes straight back out.
     if (selected) {
-      this.exec('createLink', 'https://');
+      this.exec('createLink', NEW_LINK);
     } else {
       this.exec(
         'insertHTML',
-        `<a href="https://">${escapeHtml(msg('link'))}</a>`
+        `<a href="${NEW_LINK}">${escapeHtml(msg('link'))}</a>`
       );
     }
 
+    const anchor = block?.querySelector(`a[href="${NEW_LINK}"]`);
+    if (anchor) {
+      anchor.setAttribute('href', '');
+    }
+
     // the caret has to be inside the new link for the link bar to find it
-    const anchor = block?.querySelector('a[href="https://"]');
     if (anchor) {
       const inside = document.createRange();
       inside.selectNodeContents(anchor);
@@ -2408,18 +2572,17 @@ export class MarkdownEditor extends FieldElement {
     this.setLinkHref(typed);
   }
 
-  private handleLinkKeydown(evt: KeyboardEvent): void {
-    // enter takes the best match, escape gives up the search and shows the link as it is
-    if (evt.key === 'Enter' && this.linkQuery !== null) {
-      evt.preventDefault();
-      const [first] = this.matchingArticles();
-      if (first) {
-        this.linkToArticle(first);
-      }
-    } else if (evt.key === 'Escape' && this.linkQuery !== null) {
-      evt.preventDefault();
-      this.linkQuery = null;
+  /** the options control took a pick - by enter, or a click - so the link goes there */
+  private handleLinkPick(evt: CustomEvent): void {
+    const article = evt.detail?.selected as ArticleTarget;
+    if (article) {
+      this.linkToArticle(article);
     }
+  }
+
+  /** escape in the search gives it up and shows the link as it is */
+  private handleLinkCancel(): void {
+    this.linkQuery = null;
   }
 
   private linkToArticle(article: ArticleTarget): void {
@@ -3339,7 +3502,89 @@ export class MarkdownEditor extends FieldElement {
   /** A floor under the document, which a filled editor doesn't get - it's the container that's being sized, and an
    * inline minimum here would win over the flex rules and put the scroll back on the page. */
   private get documentStyle(): string {
-    return this.fill ? '' : `min-height:${this.minHeight}px`;
+    const styles = [];
+    if (!this.fill) {
+      styles.push(`min-height:${this.minHeight}px`);
+    }
+    if (this.primaryColor) {
+      styles.push(`--primary:${this.primaryColor}`);
+    }
+    return styles.join(';');
+  }
+
+  /** the form's title field, slotted in at the head of the card - null when the editor is a body alone */
+  private get titleField(): HTMLTextAreaElement | HTMLInputElement {
+    return this.querySelector('[slot="title"]');
+  }
+
+  /** A textarea title is grown to its text and no further, so a long title wraps to the card as the site's
+   * heading does rather than scrolling inside a box. Left alone until it has a size to measure. */
+  private sizeTitle(): void {
+    const field = this.titleField;
+    if (!(field instanceof HTMLTextAreaElement) || !field.offsetWidth) {
+      return;
+    }
+    field.style.height = '0';
+    field.style.height = `${field.scrollHeight}px`;
+  }
+
+  /** a title is one line of text however it's typed or pasted, so any line breaks that get in become spaces */
+  private handleTitleInput(): void {
+    const field = this.titleField;
+    if (field && /[\r\n]/.test(field.value)) {
+      field.value = field.value.replace(/\s*[\r\n]+\s*/g, ' ');
+    }
+    this.sizeTitle();
+  }
+
+  /** Enter in the title goes on to the article rather than breaking the title, or submitting the form as Enter in
+   * a form's lone text input would */
+  private handleTitleKeyDown(evt: KeyboardEvent): void {
+    if (evt.key === 'Enter') {
+      evt.preventDefault();
+      this.focusStart();
+    }
+  }
+
+  /** puts the caret at the start of the article's first block */
+  private focusStart(): void {
+    const doc = this.doc;
+    if (!doc) {
+      return;
+    }
+    doc.focus();
+    const range = document.createRange();
+    range.selectNodeContents(doc.firstElementChild || doc);
+    range.collapse(true);
+    this.select(range);
+  }
+
+  /** A press on the ground beside or below the article, or on the card's own margins - the frame is wider than
+   * the article's measure, as the site's page is - puts the caret at the end of the article's last block, so the
+   * whole editor is somewhere to click to write. Inside the block rather than after it: the caret is always in a
+   * block, and the rest of the editor reads where it is on that footing. */
+  private handleFrameMouseDown(evt: MouseEvent): void {
+    const doc = this.doc;
+    const target = evt.target as Element;
+    if (
+      (target !== evt.currentTarget &&
+        !target.classList?.contains('article')) ||
+      !doc ||
+      this.disabled
+    ) {
+      return;
+    }
+    evt.preventDefault();
+    doc.focus();
+
+    const last = doc.lastElementChild;
+    if (!last) {
+      return;
+    }
+    const range = document.createRange();
+    range.selectNodeContents(last);
+    range.collapse(false);
+    this.select(range);
   }
 
   /** Where an element sits relative to the overlay layer, which is what the overlays position against. The layer
@@ -3434,57 +3679,75 @@ export class MarkdownEditor extends FieldElement {
           }
         }}
       >
-        <div class="link-row">
-          ${linked && this.linkQuery === null
-            ? html`<temba-icon
-                class="link-kind"
-                name=${Icon.help}
-                title=${msg('Links to an article')}
-              ></temba-icon>`
-            : null}
-          <input
-            type="text"
-            spellcheck="false"
-            .value=${shown}
-            placeholder=${this.articles.length
-              ? msg('https:// or an article title')
-              : 'https://'}
-            @input=${this.handleLinkInput}
-            @keydown=${this.handleLinkKeydown}
-          />
-          <div class="popover-action" @click=${this.handleLinkRemove}>
-            ${msg('Remove')}
-          </div>
-        </div>
-        ${matches.length
-          ? html`
-              <div class="link-matches">
-                ${matches.map(
-                  (article) => html`
-                    <div
-                      class="link-match ${article.status === 'draft'
-                        ? 'draft'
-                        : ''}"
-                      @click=${() => this.linkToArticle(article)}
-                    >
-                      <div class="link-match-title">${article.title}</div>
-                      <div class="link-match-section">
-                        ${article.parent
-                          ? this.sectionOf(article)
-                          : msg('Section')}
-                      </div>
-                    </div>
-                  `
-                )}
-              </div>
-            `
-          : this.linkQuery
-            ? html`<div class="link-matches">
-                <div class="link-match none">
-                  ${msg('No matching articles')}
-                </div>
-              </div>`
-            : null}
+        <temba-icon
+          class="link-kind"
+          name=${this.linkQuery !== null
+            ? Icon.search
+            : linked
+              ? Icon.help
+              : Icon.hyperlink}
+          title=${this.linkQuery !== null
+            ? msg('Searching articles')
+            : linked
+              ? msg('Links to an article')
+              : msg('Links to an address')}
+        ></temba-icon>
+        <input
+          type="text"
+          spellcheck="false"
+          .value=${shown}
+          placeholder=${this.articles.length
+            ? msg('https:// or an article title')
+            : 'https://'}
+          @input=${this.handleLinkInput}
+        />
+        <temba-icon
+          class="link-remove"
+          name=${Icon.delete_small}
+          title=${msg('Remove link')}
+          @click=${this.handleLinkRemove}
+        ></temba-icon>
+      </div>
+      ${this.renderLinkOptions(matches)}
+    `;
+  }
+
+  /** The articles a search matches, as an options list floated under the link bar's box - the same control as a
+   * select's dropdown, so it's steered the same way: arrows or ctrl-n and ctrl-p, enter to take one, escape to
+   * give the search up. It stands beside the bar rather than inside it, since the bar is shifted into place with
+   * a transform that would otherwise pin the list to it. A press on it keeps the caret where it is. */
+  private renderLinkOptions(matches: ArticleTarget[]): TemplateResult {
+    const searching = !!(this.linkQuery || '').trim();
+    return html`
+      <div
+        class="link-options"
+        @mousedown=${(evt: MouseEvent) => evt.preventDefault()}
+      >
+        <temba-options
+          .options=${matches}
+          ?visible=${searching}
+          showEmptyMessage
+          emptyMessage=${msg('No matching articles')}
+          .renderOption=${(article: ArticleTarget) => html`
+            <div
+              class="name"
+              style="flex: 1; min-width: 0; font-weight: 500; ${article.status ===
+              'draft'
+                ? 'color: var(--color-text-help)'
+                : ''}"
+            >
+              ${article.title}
+            </div>
+            <div
+              class="detail"
+              style="flex-shrink: 0; max-width: 45%; margin-left: 1em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap"
+            >
+              ${article.parent ? this.sectionOf(article) : msg('Section')}
+            </div>
+          `}
+          @temba-selection=${this.handleLinkPick}
+          @temba-canceled=${this.handleLinkCancel}
+        ></temba-options>
       </div>
     `;
   }
@@ -3621,6 +3884,24 @@ export class MarkdownEditor extends FieldElement {
     `;
   }
 
+  /** Where the title goes: at the head of the card, as on the site. The page slots the form's own title field in
+   * here, with whatever the form had to say about it after it; the editor's part is placing it, drawing it as the
+   * site's heading, and standing its toolbar down while the title is what's being written. */
+  private renderTitle(): TemplateResult {
+    return html`
+      <div
+        class="title"
+        @focusin=${() => (this.inTitle = true)}
+        @focusout=${() => (this.inTitle = false)}
+        @keydown=${this.handleTitleKeyDown}
+        @input=${this.handleTitleInput}
+      >
+        <slot name="title" @slotchange=${() => this.sizeTitle()}></slot>
+        <slot name="title-errors"></slot>
+      </div>
+    `;
+  }
+
   private renderOverlays(): TemplateResult {
     if (this.sourceMode) {
       return null;
@@ -3647,7 +3928,7 @@ export class MarkdownEditor extends FieldElement {
       <div class="container">
         <div class="chrome">
           <div
-            class="toolbar"
+            class="toolbar ${this.inTitle ? 'muted' : ''}"
             @mousedown=${(evt: MouseEvent) => evt.preventDefault()}
           >
             ${this.sourceMode
@@ -3699,25 +3980,28 @@ export class MarkdownEditor extends FieldElement {
         ${this.sourceMode
           ? this.renderSource()
           : html`
-              <div class="doc-frame">
-                <div
-                  class="doc"
-                  style=${this.documentStyle}
-                  contenteditable=${this.disabled ? 'false' : 'true'}
-                  @beforeinput=${this.handleBeforeInput}
-                  @input=${this.handleInput}
-                  @click=${this.handleDocClick}
-                  @keydown=${this.handleKeyDown}
-                  @mousemove=${this.handleDocMouseMove}
-                  @mousedown=${this.handleDocMouseDown}
-                  @blur=${this.handleDocBlur}
-                  @copy=${this.handleCopy}
-                  @cut=${this.handleCut}
-                  @dragenter=${this.handleDragOver}
-                  @dragover=${this.handleDragOver}
-                  @drop=${this.handleDrop}
-                  @paste=${this.handlePaste}
-                ></div>
+              <div class="doc-frame" @mousedown=${this.handleFrameMouseDown}>
+                <div class="article">
+                  ${this.renderTitle()}
+                  <div
+                    class="doc"
+                    style=${this.documentStyle}
+                    contenteditable=${this.disabled ? 'false' : 'true'}
+                    @beforeinput=${this.handleBeforeInput}
+                    @input=${this.handleInput}
+                    @click=${this.handleDocClick}
+                    @keydown=${this.handleKeyDown}
+                    @mousemove=${this.handleDocMouseMove}
+                    @mousedown=${this.handleDocMouseDown}
+                    @blur=${this.handleDocBlur}
+                    @copy=${this.handleCopy}
+                    @cut=${this.handleCut}
+                    @dragenter=${this.handleDragOver}
+                    @dragover=${this.handleDragOver}
+                    @drop=${this.handleDrop}
+                    @paste=${this.handlePaste}
+                  ></div>
+                </div>
                 <div class="overlays">${this.renderOverlays()}</div>
               </div>
             `}

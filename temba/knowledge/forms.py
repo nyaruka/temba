@@ -20,6 +20,16 @@ class MarkdownEditorWidget(forms.Widget):
     template_name = "knowledge/forms/markdown_editor.html"
     is_annotated = True
 
+    # The form's title field, when the title is to be edited at the head of the article as the site shows it. It's
+    # slotted into the editor as the input it is - so its name, value, length and errors stay the form's - and the
+    # editor draws it as the site's heading. Set by the view that has the bound form.
+    title = None
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        context["title"] = self.title
+        return context
+
 
 class KnowledgeSourceForm(UniqueNameMixin, forms.ModelForm):
     """

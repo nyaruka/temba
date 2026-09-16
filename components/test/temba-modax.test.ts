@@ -118,6 +118,36 @@ describe('temba-modax', () => {
     await assertScreenshot('modax/form', getDialogClip(modax));
   });
 
+  // the fetched form is rendered inside the modax, so its fields and the focus among them are read from there
+  const isFocused = (modax: Modax, selector: string): boolean => {
+    const field = modax.shadowRoot.querySelector(selector);
+    return !!field && modax.shadowRoot.activeElement === field;
+  };
+
+  it('focuses the first field on opening', async () => {
+    const modax: Modax = await fixture(
+      getModaxHTML('/test-assets/modax/form.html')
+    );
+    await open(modax);
+    await clock.runAll();
+
+    assert.isTrue(isFocused(modax, 'input[type="text"]'));
+  });
+
+  it('leaves focus alone on opening when told to', async () => {
+    // a dialog that's read before it's written in
+    const modax: Modax = await fixture(
+      `<temba-modax header="Quiet" endpoint="/test-assets/modax/form.html" no-autofocus>
+        <div>Open Me</div>
+      </temba-modax>`
+    );
+    await open(modax);
+    await clock.runAll();
+
+    assert.isOk(modax.shadowRoot.querySelector('input[type="text"]'));
+    assert.isFalse(isFocused(modax, 'input[type="text"]'));
+  });
+
   it('reverts primary name on reuse', async () => {
     const modax: Modax = await fixture(
       getModaxHTML('/test-assets/modax/hello.html')

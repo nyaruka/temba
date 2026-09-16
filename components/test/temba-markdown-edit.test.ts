@@ -1,5 +1,6 @@
 import { fixture, assert, expect } from '@open-wc/testing';
 import { stub } from 'sinon';
+import { Options } from '../src/display/Options';
 import { MarkdownEditor } from '../src/form/MarkdownEditor';
 import {
   blockOf,
@@ -618,6 +619,134 @@ describe(TAG, () => {
   // Toolbar
   // ==========================================================
 
+  describe('the ground beside the article', () => {
+    it('puts the caret at the end of the article when pressed', async () => {
+      const editor = await getEditor('# Title\n\nA paragraph.');
+      const frame = editor.shadowRoot.querySelector('.doc-frame');
+
+      frame.dispatchEvent(
+        new MouseEvent('mousedown', { bubbles: true, composed: true })
+      );
+      await editor.updateComplete;
+
+      assert.equal(editor.shadowRoot.activeElement, doc(editor));
+      const range = selectionOf(editor).getRangeAt(0);
+      assert.isTrue(range.collapsed);
+
+      // at the end of the last block - everything in the block is before the caret
+      const last = blocks(editor)[1];
+      assert.isTrue(last.contains(range.startContainer));
+      const before = document.createRange();
+      before.selectNodeContents(last);
+      before.setEnd(range.startContainer, range.startOffset);
+      assert.equal(before.toString(), last.textContent);
+    });
+
+    it('leaves a press on the article itself to the browser', async () => {
+      const editor = await getEditor('# Title\n\nA paragraph.');
+      const evt = new MouseEvent('mousedown', {
+        bubbles: true,
+        composed: true,
+        cancelable: true
+      });
+      blocks(editor)[0].dispatchEvent(evt);
+      assert.isFalse(evt.defaultPrevented);
+    });
+  });
+
+  describe('a slotted title', () => {
+    const getTitled = async (): Promise<MarkdownEditor> => {
+      const editor = (await fixture(
+        `<${TAG} widget_only endpoint="${UPLOAD}">
+          <textarea slot="title" name="title" rows="1">Getting started</textarea>
+        </${TAG}>`
+      )) as MarkdownEditor;
+      editor.value = '# Heading\n\nA paragraph.';
+      await editor.updateComplete;
+      return editor;
+    };
+
+    const titleOf = (editor: MarkdownEditor): HTMLTextAreaElement =>
+      editor.querySelector('textarea[slot="title"]');
+
+    it('heads the article with it', async () => {
+      const editor = await getTitled();
+      const slot = titleOf(editor).assignedSlot;
+      assert.isOk(slot, 'the title was not slotted');
+      assert.isOk(slot.closest('.article'), 'the title is not in the card');
+      assert.isTrue(
+        !!(
+          slot.compareDocumentPosition(doc(editor)) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+        ),
+        'the title does not come before the article'
+      );
+    });
+
+    it('mutes the toolbar while the title is being written', async () => {
+      const editor = await getTitled();
+      const toolbar = editor.shadowRoot.querySelector('.toolbar');
+
+      titleOf(editor).focus();
+      await editor.updateComplete;
+      assert.isTrue(toolbar.classList.contains('muted'));
+
+      titleOf(editor).blur();
+      await editor.updateComplete;
+      assert.isFalse(toolbar.classList.contains('muted'));
+    });
+
+    it('wraps a long title rather than clipping it', async () => {
+      const editor = await getTitled();
+      const title = titleOf(editor);
+      const oneLine = title.offsetHeight;
+
+      title.value =
+        'A title long enough that it has to wrap onto a second line of the card';
+      title.dispatchEvent(
+        new Event('input', { bubbles: true, composed: true })
+      );
+      await editor.updateComplete;
+
+      assert.isAbove(title.offsetHeight, oneLine);
+      assert.equal(title.scrollHeight, title.clientHeight, 'the title scrolls');
+    });
+
+    it('keeps the title to one line of text', async () => {
+      const editor = await getTitled();
+      const title = titleOf(editor);
+
+      title.value = 'Getting\nstarted\r\n  today';
+      title.dispatchEvent(
+        new Event('input', { bubbles: true, composed: true })
+      );
+
+      assert.equal(title.value, 'Getting started today');
+    });
+
+    it('moves on to the article on Enter rather than submitting', async () => {
+      const editor = await getTitled();
+      const title = titleOf(editor);
+      title.focus();
+
+      const evt = new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        composed: true,
+        cancelable: true
+      });
+      title.dispatchEvent(evt);
+      await editor.updateComplete;
+
+      assert.isTrue(evt.defaultPrevented);
+      assert.equal(editor.shadowRoot.activeElement, doc(editor));
+      const range = selectionOf(editor).getRangeAt(0);
+      assert.isTrue(range.collapsed);
+      assert.isTrue(blocks(editor)[0].contains(range.startContainer));
+      assert.equal(range.startOffset, 0);
+    });
+  });
+
   describe('toolbar', () => {
     it('bolds the selection', async () => {
       const editor = await getEditor('# Title\n\nhello world');
@@ -824,7 +953,7 @@ describe(TAG, () => {
       await caretIn(editor, 0, 10);
       await editor.updateComplete;
 
-      (linkbar(editor).querySelector('.popover-action') as HTMLElement).click();
+      (linkbar(editor).querySelector('.link-remove') as HTMLElement).click();
       await editor.updateComplete;
 
       assert.equal(editor.value, 'see the docs now');
@@ -873,6 +1002,43 @@ describe(TAG, () => {
       return editor;
     };
 
+    /** the options control the matches are listed in, and its rows */
+    const linkOptions = (editor: MarkdownEditor): Options =>
+      editor.shadowRoot.querySelector('.link-options temba-options');
+    const matchRows = (editor: MarkdownEditor): HTMLElement[] =>
+      [...linkOptions(editor).shadowRoot.querySelectorAll('.option')].filter(
+        (row) => !row.classList.contains('no-options')
+      ) as HTMLElement[];
+    const search = async (editor: MarkdownEditor, text: string) => {
+      const bar = linkbar(editor).querySelector('input') as HTMLInputElement;
+      bar.value = text;
+      bar.dispatchEvent(new Event('input'));
+      await editor.updateComplete;
+      await linkOptions(editor).updateComplete;
+    };
+    /** a key pressed in the link bar's box, which the options control hears at the document */
+    const press = async (
+      editor: MarkdownEditor,
+      key: string,
+      init: KeyboardEventInit = {}
+    ) => {
+      linkbar(editor)
+        .querySelector('input')
+        .dispatchEvent(
+          new KeyboardEvent('keydown', {
+            key,
+            bubbles: true,
+            composed: true,
+            cancelable: true,
+            ...init
+          })
+        );
+      await editor.updateComplete;
+      await linkOptions(editor).updateComplete;
+      // the control throttles cursor moves, so one press settles before the next
+      await new Promise((resolve) => setTimeout(resolve, 60));
+    };
+
     it('shows a link to an article by the article it points at', async () => {
       const editor = await getLinkingEditor(
         `see [nodes](article:${NODES}) now`
@@ -896,31 +1062,34 @@ describe(TAG, () => {
 
       await caretIn(editor, 0, 10);
       await editor.updateComplete;
-
-      const bar = linkbar(editor).querySelector('input') as HTMLInputElement;
-      bar.value = 'node';
-      bar.dispatchEvent(new Event('input'));
-      await editor.updateComplete;
+      await search(editor, 'node');
 
       // a search leaves the link where it was until something is picked
       assert.equal(editor.value, 'see the [docs](https://example.com) now');
 
-      const matches = [...linkbar(editor).querySelectorAll('.link-match')];
+      // the list hangs from the bar, as wide as it is
+      assert.isTrue(linkOptions(editor).anchorTo === linkbar(editor));
+      assert.equal(
+        linkOptions(editor).staticWidth,
+        Math.round(linkbar(editor).getBoundingClientRect().width) - 2
+      );
+
+      const rows = matchRows(editor);
       assert.deepEqual(
-        matches.map((m) =>
-          m.querySelector('.link-match-title').textContent.trim()
-        ),
+        rows.map((row) => row.querySelector('.name').textContent.trim()),
         ['Nodes', 'Node Actions']
       );
       assert.deepEqual(
-        matches.map((m) =>
-          m.querySelector('.link-match-section').textContent.trim()
-        ),
+        rows.map((row) => row.querySelector('.detail').textContent.trim()),
         ['Flows', 'Flows']
       );
-      assert.isTrue(matches[1].classList.contains('draft'));
+      // a draft is offered, but shown for what it is
+      assert.isOk((rows[1].querySelector('.name') as HTMLElement).style.color);
+      assert.isNotOk(
+        (rows[0].querySelector('.name') as HTMLElement).style.color
+      );
 
-      (matches[0] as HTMLElement).click();
+      rows[0].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
       await editor.updateComplete;
 
       assert.equal(editor.value, `see the [docs](article:${NODES}) now`);
@@ -928,7 +1097,7 @@ describe(TAG, () => {
         (linkbar(editor).querySelector('input') as HTMLInputElement).value,
         'Nodes'
       );
-      assert.isNotOk(linkbar(editor).querySelector('.link-match'));
+      assert.isNotOk(linkOptions(editor).visible);
     });
 
     it('takes the best match on enter and says when there is none', async () => {
@@ -938,25 +1107,71 @@ describe(TAG, () => {
 
       await caretIn(editor, 0, 10);
       await editor.updateComplete;
+      await search(editor, 'xyzzy');
 
-      const bar = linkbar(editor).querySelector('input') as HTMLInputElement;
-      bar.value = 'xyzzy';
-      bar.dispatchEvent(new Event('input'));
-      await editor.updateComplete;
+      assert.isTrue(linkOptions(editor).visible);
       assert.equal(
-        linkbar(editor).querySelector('.link-match.none').textContent.trim(),
+        linkOptions(editor)
+          .shadowRoot.querySelector('.option.no-options')
+          .textContent.trim(),
         'No matching articles'
       );
 
-      bar.value = 'flows';
-      bar.dispatchEvent(new Event('input'));
-      await editor.updateComplete;
-      bar.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
-      );
-      await editor.updateComplete;
+      await search(editor, 'flows');
+      await press(editor, 'Enter');
 
       assert.equal(editor.value, `see the [docs](article:${FLOWS}) now`);
+    });
+
+    it('steers the matches like any options list', async () => {
+      const editor = await getLinkingEditor(
+        'see the [docs](https://example.com) now'
+      );
+
+      await caretIn(editor, 0, 10);
+      await editor.updateComplete;
+      await search(editor, 'node');
+      assert.equal(linkOptions(editor).cursorIndex, 0);
+
+      // ctrl-n and ctrl-p walk the list, as the arrows do
+      await press(editor, 'n', { ctrlKey: true });
+      assert.equal(linkOptions(editor).cursorIndex, 1);
+      await press(editor, 'p', { ctrlKey: true });
+      assert.equal(linkOptions(editor).cursorIndex, 0);
+      await press(editor, 'ArrowDown');
+      assert.equal(linkOptions(editor).cursorIndex, 1);
+
+      // and enter takes the one the cursor is on
+      await press(editor, 'Enter');
+      assert.equal(editor.value, `see the [docs](article:${ACTIONS}) now`);
+
+      // escape gives a search up and shows the link as it is
+      await search(editor, 'flo');
+      assert.isTrue(linkOptions(editor).visible);
+      await press(editor, 'Escape');
+      assert.isNotOk(linkOptions(editor).visible);
+      assert.equal(
+        (linkbar(editor).querySelector('input') as HTMLInputElement).value,
+        'Node Actions'
+      );
+    });
+
+    it('starts a new link empty, ready for a title or an address', async () => {
+      const editor = await getLinkingEditor('see the docs now');
+
+      await caretIn(editor, 0, 8);
+      await toolbar(editor, 'link');
+
+      // the link points nowhere yet, and the bar offers the search rather than an address to overtype
+      assert.equal(editor.value, 'see the [link]()docs now');
+      const bar = linkbar(editor)?.querySelector('input') as HTMLInputElement;
+      assert.isOk(bar, 'no link bar for the new link');
+      assert.equal(bar.value, '');
+      assert.equal(bar.placeholder, 'https:// or an article title');
+
+      await search(editor, 'nodes');
+      await press(editor, 'Enter');
+      assert.equal(editor.value, `see the [link](article:${NODES})docs now`);
     });
 
     it('still takes an address as typed', async () => {
@@ -967,18 +1182,15 @@ describe(TAG, () => {
       await caretIn(editor, 0, 10);
       await editor.updateComplete;
 
-      const bar = linkbar(editor).querySelector('input') as HTMLInputElement;
       for (const address of [
         'https://nyaruka.com',
         '/flows/nodes/',
         'nyaruka.com/docs',
         'mailto:x@y.com'
       ]) {
-        bar.value = address;
-        bar.dispatchEvent(new Event('input'));
-        await editor.updateComplete;
+        await search(editor, address);
         assert.equal(editor.value, `see the [docs](${address}) now`);
-        assert.isNotOk(linkbar(editor).querySelector('.link-match'));
+        assert.isNotOk(linkOptions(editor).visible);
       }
     });
 
@@ -1073,7 +1285,7 @@ describe(TAG, () => {
         img.getAttribute('src'),
         `${IMAGE}#size=medium&layout=inline`
       );
-      assert.equal(getComputedStyle(img).maxWidth, '400px');
+      assert.equal(getComputedStyle(img).maxWidth, 'min(400px, 100%)');
     });
 
     it('renders an image without a fragment the way it always has', async () => {
@@ -1155,12 +1367,12 @@ describe(TAG, () => {
 
       const img = doc(editor).querySelector('img');
       assert.include([...img.classList], 'size-small');
-      assert.equal(getComputedStyle(img).maxWidth, '200px');
+      assert.equal(getComputedStyle(img).maxWidth, 'min(200px, 100%)');
 
       // the size showing is the one lit, so the bar says what the image already is
       await pickSize(editor, 'Medium');
       assert.equal(editor.value, `![shot](${IMAGE}#size=medium)`);
-      assert.equal(getComputedStyle(img).maxWidth, '400px');
+      assert.equal(getComputedStyle(img).maxWidth, 'min(400px, 100%)');
       assert.equal(
         imagebar(editor).querySelector('.chip.on').textContent.trim(),
         'Medium'

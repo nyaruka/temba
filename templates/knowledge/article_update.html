@@ -3,16 +3,12 @@
 
 {% block fields %}
   {% comment %}
-    The title leads and stands as the dialog's header, rendered by hand rather than through the
-    field include so the article's status can ride inside the input as a pill in its suffix slot.
+    An article's title heads the article inside the editor, as it does on the site, and is posted from there;
+    only a section, which has no editor, gets a title field of its own.
   {% endcomment %}
-  <div class="control-group field_title {% if form.title.errors %}error{% endif %}">
-    <div class="controls">
-      <temba-textinput type="text" name="title" maxlength="{{ form.fields.title.max_length }}" {% if form.title.value != None %}value="{{ form.title.value }}"{% endif %} {% if form.title.errors %}errors="[{% for error in form.title.errors %}&quot;{{ error|escapejs }}&quot;{% if not forloop.last %},{% endif %} {% endfor %} " {% endif %}>
-        <div slot="suffix" class="status-pill{% if object.status == 'P' %} published{% endif %}">{{ object.get_status_display }}</div>
-      </temba-textinput>
-    </div>
-  </div>
+  {% if not form.body %}
+    {% render_field 'title' %}
+  {% endif %}
   {% if form.description %}
     {% render_field 'description' %}
   {% endif %}
@@ -57,19 +53,4 @@
       }
     </style>
   {% endif %}
-  <style type="text/css">
-    .status-pill {
-      padding: 2px 10px;
-      border: 1px solid var(--color-borders);
-      border-radius: 999px;
-      font-size: 12.5px;
-      color: var(--text-3);
-      white-space: nowrap;
-    }
-
-    .status-pill.published {
-      border-color: var(--color-primary-dark);
-      color: var(--color-primary-dark);
-    }
-  </style>
 {% endblock modal-extra-style %}
