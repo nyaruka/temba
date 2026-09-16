@@ -1,0 +1,248 @@
+/* An article as the help site serves it: the card and the typography of its body. Shared between the help site
+   (knowledge/site/base.html) and the marketing blog, which links it alongside its own frame, so an article written in
+   the editor reads the same on either. The editor (components/src/form/MarkdownEditor.ts) carries a copy of these
+   rules - it renders the article rather than previewing it - so what the author sees is what a reader gets; change
+   them together.
+
+   The card depends on the tokens the host page sets - --primary, --font, --font-mono, --text, --text-muted,
+   --surface, --border and --radius - which the help site sets on :root (helpsite.css) and the blog on the card. */
+
+/* the card */
+
+.article {
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 40px 48px;
+  min-width: 0;
+}
+
+.article > h1 {
+  margin: 0 0 24px;
+  font-size: clamp(26px, 3.5vw, 34px);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+/* what a post has around its body that a help article doesn't: a cover image bleeding to the card's edges at its
+   head, and a subtitle hanging close under the heading */
+.article > .cover {
+  height: 20rem;
+  margin: -40px -48px 32px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background-position: center;
+  background-size: cover;
+}
+
+.article > h1:has(+ .subtitle) {
+  margin-bottom: 8px;
+}
+
+.article > .subtitle {
+  margin: 0 0 24px;
+  font-size: 18px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+/* the body */
+
+.doc {
+  font-size: 16.5px;
+  line-height: 1.7;
+}
+
+.doc > * {
+  margin: 0 0 1em;
+}
+
+.doc > *:last-child {
+  margin-bottom: 0;
+}
+
+/* a body that opens with a heading starts where any body does, rather than a heading's distance below the title */
+.doc > *:first-child {
+  margin-top: 0;
+}
+
+.doc h1,
+.doc h2,
+.doc h3,
+.doc h4,
+.doc h5,
+.doc h6 {
+  margin-top: 1.6em;
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.doc h1 {
+  font-size: 1.5em;
+}
+
+.doc h2 {
+  font-size: 1.3em;
+}
+
+.doc h3 {
+  font-size: 1.12em;
+}
+
+.doc h4,
+.doc h5,
+.doc h6 {
+  font-size: 1em;
+}
+
+.doc ul,
+.doc ol {
+  padding-left: 1.5em;
+}
+
+.doc ul {
+  list-style: disc;
+}
+
+.doc ol {
+  list-style: decimal;
+}
+
+.doc li + li {
+  margin-top: 0.25em;
+}
+
+.doc blockquote {
+  margin-left: 0;
+  padding-left: 1em;
+  border-left: 3px solid var(--primary);
+  color: var(--text-muted);
+}
+
+.doc pre {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: #f4f5f7;
+  border-radius: 8px;
+  padding: 0.75em 1em;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.doc pre code {
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+}
+
+.doc code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: #f4f5f7;
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+
+.doc a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.doc a:hover {
+  text-decoration: underline;
+}
+
+.doc img {
+  max-width: 100%;
+  height: auto;
+  display: inline-block;
+  vertical-align: bottom;
+  border-radius: 8px;
+}
+
+.doc img.size-small {
+  max-width: min(200px, 100%);
+  max-height: 200px;
+  width: auto;
+}
+
+.doc img.size-medium {
+  max-width: min(400px, 100%);
+  max-height: 400px;
+  width: auto;
+}
+
+.doc img.size-large {
+  max-width: min(640px, 100%);
+  max-height: 640px;
+  width: auto;
+}
+
+.doc img.layout-block {
+  display: block;
+}
+
+.doc img.layout-inline {
+  display: inline-block;
+}
+
+.doc hr {
+  border: none;
+  height: 1px;
+  margin: 2em 0;
+  background: linear-gradient(to right, transparent, var(--border) 18%, var(--border) 82%, transparent);
+}
+
+.doc table {
+  border-collapse: collapse;
+  max-width: 100%;
+}
+
+.doc th,
+.doc td {
+  border: 1px solid var(--border);
+  padding: 0.4em 0.7em;
+  vertical-align: top;
+}
+
+.doc th {
+  background: #f4f5f7;
+  text-align: left;
+  font-weight: 600;
+}
+
+/* a table whose header says nothing is layout rather than data - columns for putting a screenshot beside the text
+   that explains it - so it spans the page, hides its header and draws no borders */
+.doc table:not(:has(th:not(:empty))) {
+  width: 100%;
+  table-layout: auto;
+}
+
+.doc table:not(:has(th:not(:empty))) thead {
+  display: none;
+}
+
+.doc table:not(:has(th:not(:empty))) td {
+  border: none;
+  padding: 16px;
+}
+
+.doc td[style*="color:"] a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+/* on a narrow screen the card gives up most of its padding to the text */
+@media (max-width: 860px) {
+  .article {
+    padding: 28px 24px;
+  }
+
+  .article > .cover {
+    margin: -28px -24px 24px;
+  }
+}

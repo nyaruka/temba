@@ -696,8 +696,8 @@ export class MarkdownEditor extends FieldElement {
         background: none;
       }
 
-      /* none of it applies to the title, which is a line of plain text - so while the caret is there the toolbar
-         goes quiet rather than offering formatting that would have nowhere to go */
+      /* none of it applies to the title or subtitle, which are lines of plain text - so while the caret is in one
+         the toolbar goes quiet rather than offering formatting that would have nowhere to go */
       .toolbar.muted > temba-icon,
       .toolbar.muted .format {
         opacity: 0.3;
@@ -951,11 +951,11 @@ export class MarkdownEditor extends FieldElement {
       }
 
       /* The article as the help site serves it. From here to the guideline rule below is the site's own article
-         styling - the .article card and the .doc typography of static/css/helpsite.css, with the site's tokens set on
-         the document - so what the author sees is what a reader gets, down to the font and the measure. The two are
-         changed together. The document stands on the site's ground as a card of the width the site's article column
-         gives it (its container less the sidebar and the gap between them), so lines break where they will on the
-         page rather than running the width of the dialog. */
+         styling - the .article card and the .doc typography of static/css/article.css, which the help site and the
+         blog share, with the site's tokens set on the document - so what the author sees is what a reader gets, down
+         to the font and the measure. The two are changed together. The document stands on the site's ground as a
+         card of the width the site's article column gives it (its container less the sidebar and the gap between
+         them), so lines break where they will on the page rather than running the width of the dialog. */
       .doc-frame {
         display: flex;
         flex-direction: column;
@@ -966,8 +966,9 @@ export class MarkdownEditor extends FieldElement {
 
       /* the card: the site's .article, holding the title and then the body as the site's page does */
       .article {
-        /* the site's tokens, as helpsite.css sets them on :root. The primary color is the one a site chooses for
-           itself, and comes in as an attribute that overrides this default - which is the site's own default. */
+        /* the site's tokens, as helpsite.css sets them on :root (and the blog on its card). The primary color is
+           the one a site chooses for itself, and comes in as an attribute that overrides this default - which is
+           the site's own default. */
         --primary: #2f6fed;
         --font:
           ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
@@ -996,10 +997,73 @@ export class MarkdownEditor extends FieldElement {
         cursor: text;
       }
 
-      /* The title, slotted in as the form's own field - an input, so its name, value, length and errors are the
-         form's business - and drawn as the site's .article > h1, which is what the reader gets. It inherits the
-         card's font and color through the slot. */
-      ::slotted([slot='title']) {
+      /* The cover image, when the page slots a file field in for one - a blog post has one, a help article doesn't.
+         Drawn as the site's .article > .cover: bleeding to the card's edges at its head, the way the page shows it.
+         The slotted input itself is never seen; the cover is the control, and a press on it asks the input for a
+         file. */
+      .cover {
+        position: relative;
+        height: 20rem;
+        margin: -40px -48px 32px;
+        border-radius: var(--radius) var(--radius) 0 0;
+        background: #eef0f4 center / cover no-repeat;
+        cursor: pointer;
+        outline: none;
+      }
+
+      .cover.empty {
+        background: #f4f5f7;
+      }
+
+      .cover:focus-visible {
+        box-shadow: inset 0 0 0 2px var(--color-focus);
+      }
+
+      /* what a press would do, said only when it's wanted: over an image on hover, and in the middle of an empty
+         cover all the time, since an empty cover is nothing but the offer */
+      .cover-prompt {
+        position: absolute;
+        left: 50%;
+        bottom: 16px;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+        color: var(--text-muted);
+        font-family: var(--font-family);
+        font-size: 13px;
+        white-space: nowrap;
+        opacity: 0;
+        transition: opacity var(--transition-speed);
+        pointer-events: none;
+      }
+
+      .cover:hover .cover-prompt,
+      .cover:focus-visible .cover-prompt,
+      .cover.empty .cover-prompt {
+        opacity: 1;
+      }
+
+      .cover.empty .cover-prompt {
+        top: 50%;
+        bottom: auto;
+        transform: translate(-50%, -50%);
+      }
+
+      ::slotted([slot='hero']) {
+        display: none !important;
+      }
+
+      /* The title and subtitle, slotted in as the form's own fields - inputs, so their names, values, lengths and
+         errors are the form's business - and drawn as the site's .article > h1 and .subtitle, which is what the
+         reader gets. They inherit the card's font and color through the slot. Textareas, so a long one wraps as the
+         site's heading does - sized to its text by the editor, so it never scrolls inside itself or shows a grip. */
+      ::slotted([slot='title']),
+      ::slotted([slot='subtitle']) {
         display: block !important;
         box-sizing: border-box !important;
         width: 100% !important;
@@ -1009,19 +1073,33 @@ export class MarkdownEditor extends FieldElement {
         background: none !important;
         font: inherit !important;
         color: inherit !important;
-        font-size: clamp(26px, 3.5vw, 34px) !important;
-        font-weight: 700 !important;
-        line-height: 1.25 !important;
-        letter-spacing: -0.01em !important;
         outline: none !important;
-        /* a textarea, so a long title wraps as the site's heading does - sized to its text by the editor, so it
-           never scrolls inside itself or shows a grip */
         resize: none !important;
         overflow: hidden !important;
       }
 
-      /* the form's word on the title, in the app's own voice rather than the article's */
-      ::slotted([slot='title-errors']) {
+      ::slotted([slot='title']) {
+        font-size: clamp(26px, 3.5vw, 34px) !important;
+        font-weight: 700 !important;
+        line-height: 1.25 !important;
+        letter-spacing: -0.01em !important;
+      }
+
+      /* a subtitle hangs close under its title, as on the page */
+      .head.with-subtitle ::slotted([slot='title']) {
+        margin-bottom: 8px !important;
+      }
+
+      ::slotted([slot='subtitle']) {
+        font-size: 18px !important;
+        line-height: 1.4 !important;
+        color: var(--text-muted) !important;
+      }
+
+      /* the form's word on any of them, in the app's own voice rather than the article's */
+      ::slotted([slot='hero-errors']),
+      ::slotted([slot='title-errors']),
+      ::slotted([slot='subtitle-errors']) {
         margin: -16px 0 24px;
         font-family: var(--font-family);
         font-size: 0.85em;
@@ -1288,6 +1366,11 @@ export class MarkdownEditor extends FieldElement {
   @property({ type: String })
   accept = 'image/gif,image/jpeg,image/png,image/webp';
 
+  /** The cover image the post has now, when the page slots a file field in for one - shown at the head of the
+   * card until a new file is picked, which is then shown in its place. */
+  @property({ type: String })
+  hero = '';
+
   @property({ type: Number })
   minHeight = 320;
 
@@ -1310,11 +1393,22 @@ export class MarkdownEditor extends FieldElement {
   @state()
   private active: string[] = [];
 
-  /** whether the caret is in the slotted title, where none of the toolbar applies */
+  /** whether the caret is in the slotted title or subtitle, where none of the toolbar applies */
   @state()
-  private inTitle = false;
+  private inHead = false;
 
-  private titleSizer: ResizeObserver = null;
+  /** whether the page slotted a subtitle in under the title, and a file field in for a cover image */
+  @state()
+  private hasSubtitle = false;
+
+  @state()
+  private hasHero = false;
+
+  /** the cover image picked but not yet saved, as an object url of the file - what's shown once one is picked */
+  @state()
+  private heroPreview = '';
+
+  private headSizer: ResizeObserver = null;
 
   /** whether the caret (or a selected image) is inside a table cell, where a new table can't go */
   @state()
@@ -1497,15 +1591,17 @@ export class MarkdownEditor extends FieldElement {
     // reflows the article under them.
     window.addEventListener('resize', this.handleViewportChange);
 
-    // The title wraps to the card's width, so it's sized whenever that settles - which is also the first moment
-    // it can be measured at all, since the dialog around it is laid out only once it's shown.
-    this.titleSizer = new ResizeObserver(() => this.sizeTitle());
-    this.titleSizer.observe(this);
+    // The title and subtitle wrap to the card's width, so they're sized whenever that settles - which is also the
+    // first moment they can be measured at all, since the dialog around them is laid out only once it's shown.
+    this.headSizer = new ResizeObserver(() => this.sizeHead());
+    this.headSizer.observe(this);
+    this.syncSlots();
   }
 
   public disconnectedCallback(): void {
-    this.titleSizer?.disconnect();
-    this.titleSizer = null;
+    this.headSizer?.disconnect();
+    this.headSizer = null;
+    this.setHeroPreview('');
     document.removeEventListener('selectionchange', this.handleSelectionChange);
     window.removeEventListener('resize', this.handleViewportChange);
     document.removeEventListener('mousemove', this.handleResizeMove);
@@ -3518,39 +3614,96 @@ export class MarkdownEditor extends FieldElement {
     return styles.join(';');
   }
 
-  /** the form's title field, slotted in at the head of the card - null when the editor is a body alone */
-  private get titleField(): HTMLTextAreaElement | HTMLInputElement {
-    return this.querySelector('[slot="title"]');
+  /** the form's title or subtitle field, slotted in at the head of the card - null when it wasn't */
+  private headField(
+    slot: 'title' | 'subtitle'
+  ): HTMLTextAreaElement | HTMLInputElement {
+    return this.querySelector(`[slot="${slot}"]`);
   }
 
-  /** A textarea title is grown to its text and no further, so a long title wraps to the card as the site's
-   * heading does rather than scrolling inside a box. Left alone until it has a size to measure. */
-  private sizeTitle(): void {
-    const field = this.titleField;
-    if (!(field instanceof HTMLTextAreaElement) || !field.offsetWidth) {
-      return;
+  /** what the page slotted in, which is what the card has to make room for */
+  private syncSlots(): void {
+    this.hasSubtitle = !!this.headField('subtitle');
+    this.hasHero = !!this.heroInput;
+    this.sizeHead();
+  }
+
+  /** A textarea title or subtitle is grown to its text and no further, so a long one wraps to the card as the
+   * site's heading does rather than scrolling inside a box. Left alone until it has a size to measure. */
+  private sizeHead(): void {
+    for (const slot of ['title', 'subtitle'] as const) {
+      const field = this.headField(slot);
+      if (!(field instanceof HTMLTextAreaElement) || !field.offsetWidth) {
+        continue;
+      }
+      field.style.height = '0';
+      field.style.height = `${field.scrollHeight}px`;
     }
-    field.style.height = '0';
-    field.style.height = `${field.scrollHeight}px`;
   }
 
-  /** a title is one line of text however it's typed or pasted, so any line breaks that get in become spaces */
-  private handleTitleInput(): void {
-    const field = this.titleField;
-    if (field && /[\r\n]/.test(field.value)) {
+  /** a title or subtitle is one line of text however it's typed or pasted, so any line breaks that get in become
+   * spaces */
+  private handleHeadInput(evt: Event): void {
+    const field = evt.target as HTMLTextAreaElement | HTMLInputElement;
+    if (field?.value && /[\r\n]/.test(field.value)) {
       field.value = field.value.replace(/\s*[\r\n]+\s*/g, ' ');
     }
-    this.sizeTitle();
+    this.sizeHead();
   }
 
-  /** Enter in the title goes on to the article rather than breaking the title, or submitting the form as Enter in
-   * a form's lone text input would */
-  private handleTitleKeyDown(evt: KeyboardEvent): void {
-    // not while an IME is composing, where Enter commits the composition rather than the title
-    if (evt.key === 'Enter' && !evt.isComposing) {
-      evt.preventDefault();
+  /** Enter in the title goes on to the subtitle if there is one and the article otherwise, and Enter in the
+   * subtitle to the article - rather than breaking the line, or submitting the form as Enter in a form's lone text
+   * input would */
+  private handleHeadKeyDown(evt: KeyboardEvent): void {
+    // not while an IME is composing, where Enter commits the composition rather than the field
+    if (evt.key !== 'Enter' || evt.isComposing) {
+      return;
+    }
+    evt.preventDefault();
+
+    const subtitle = this.headField('subtitle');
+    if (evt.target === this.headField('title') && subtitle) {
+      subtitle.focus();
+      subtitle.setSelectionRange(subtitle.value.length, subtitle.value.length);
+    } else {
       this.focusStart();
     }
+  }
+
+  /** the form's file field for the cover image, slotted in and never shown - the cover itself is the control */
+  private get heroInput(): HTMLInputElement {
+    return this.querySelector('input[slot="hero"]');
+  }
+
+  /** a press on the cover asks the slotted input for a file */
+  private pickHero(): void {
+    if (!this.disabled) {
+      this.heroInput?.click();
+    }
+  }
+
+  private handleCoverKeyDown(evt: KeyboardEvent): void {
+    if (evt.key === 'Enter' || evt.key === ' ') {
+      evt.preventDefault();
+      this.pickHero();
+    }
+  }
+
+  /** the file the input was given is what the cover shows from here on - or the saved image again, if the
+   * picking was cancelled and the input emptied */
+  private handleHeroChange(evt: Event): void {
+    if (evt.target !== this.heroInput) {
+      return;
+    }
+    const file = this.heroInput.files?.[0];
+    this.setHeroPreview(file ? URL.createObjectURL(file) : '');
+  }
+
+  private setHeroPreview(url: string): void {
+    if (this.heroPreview) {
+      URL.revokeObjectURL(this.heroPreview);
+    }
+    this.heroPreview = url;
   }
 
   /** puts the caret at the start of the article's first block */
@@ -3891,20 +4044,52 @@ export class MarkdownEditor extends FieldElement {
     `;
   }
 
-  /** Where the title goes: at the head of the card, as on the site. The page slots the form's own title field in
-   * here, with whatever the form had to say about it after it; the editor's part is placing it, drawing it as the
-   * site's heading, and standing its toolbar down while the title is what's being written. */
-  private renderTitle(): TemplateResult {
+  /** Where the cover image goes: across the head of the card, as on the page - when the page has slotted a file
+   * field in for one. The cover shows the image the post has, or the one just picked, and is itself the way to
+   * pick one; the input stays the form's. */
+  private renderCover(): TemplateResult {
+    if (!this.hasHero) {
+      return html`<slot name="hero" @slotchange=${this.syncSlots}></slot>`;
+    }
+
+    const url = this.heroPreview || this.hero;
     return html`
       <div
-        class="title"
-        @focusin=${() => (this.inTitle = true)}
-        @focusout=${() => (this.inTitle = false)}
-        @keydown=${this.handleTitleKeyDown}
-        @input=${this.handleTitleInput}
+        class="cover ${url ? '' : 'empty'}"
+        role="button"
+        tabindex="0"
+        style=${url ? `background-image:url('${url}')` : ''}
+        @click=${this.pickHero}
+        @keydown=${this.handleCoverKeyDown}
+        @change=${this.handleHeroChange}
       >
-        <slot name="title" @slotchange=${() => this.sizeTitle()}></slot>
+        <div class="cover-prompt">
+          <temba-icon name="${Icon.image}"></temba-icon>
+          ${url ? msg('Change cover image') : msg('Add a cover image')}
+        </div>
+        <slot name="hero" @slotchange=${this.syncSlots}></slot>
+      </div>
+      <slot name="hero-errors"></slot>
+    `;
+  }
+
+  /** Where the title and subtitle go: at the head of the card, as on the site. The page slots the form's own
+   * fields in here, with whatever the form had to say about them after each; the editor's part is placing them,
+   * drawing them as the site's heading and standfirst, and standing its toolbar down while one of them is what's
+   * being written. */
+  private renderHead(): TemplateResult {
+    return html`
+      <div
+        class="head ${this.hasSubtitle ? 'with-subtitle' : ''}"
+        @focusin=${() => (this.inHead = true)}
+        @focusout=${() => (this.inHead = false)}
+        @keydown=${this.handleHeadKeyDown}
+        @input=${this.handleHeadInput}
+      >
+        <slot name="title" @slotchange=${this.syncSlots}></slot>
         <slot name="title-errors"></slot>
+        <slot name="subtitle" @slotchange=${this.syncSlots}></slot>
+        <slot name="subtitle-errors"></slot>
       </div>
     `;
   }
@@ -3935,7 +4120,7 @@ export class MarkdownEditor extends FieldElement {
       <div class="container">
         <div class="chrome">
           <div
-            class="toolbar ${this.inTitle ? 'muted' : ''}"
+            class="toolbar ${this.inHead ? 'muted' : ''}"
             @mousedown=${(evt: MouseEvent) => evt.preventDefault()}
           >
             ${this.sourceMode
@@ -3989,7 +4174,7 @@ export class MarkdownEditor extends FieldElement {
           : html`
               <div class="doc-frame" @mousedown=${this.handleFrameMouseDown}>
                 <div class="article">
-                  ${this.renderTitle()}
+                  ${this.renderCover()} ${this.renderHead()}
                   <div
                     class="doc"
                     style=${this.documentStyle}

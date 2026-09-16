@@ -22,12 +22,18 @@ class MarkdownEditorWidget(forms.Widget):
 
     # The form's title field, when the title is to be edited at the head of the article as the site shows it. It's
     # slotted into the editor as the input it is - so its name, value, length and errors stay the form's - and the
-    # editor draws it as the site's heading. Set by the view that has the bound form.
+    # editor draws it as the site's heading. Set by the view that has the bound form. A subtitle field goes the same
+    # way, drawn under the title; and a file field for a cover image, which the editor draws across the head of the
+    # article and offers as the way to pick one. Neither is a help article's - the blog has both.
     title = None
+    subtitle = None
+    hero = None
 
     def get_context(self, name, value, attrs):
         context = super().get_context(name, value, attrs)
         context["title"] = self.title
+        context["subtitle"] = self.subtitle
+        context["hero"] = self.hero
         return context
 
 
