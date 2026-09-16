@@ -30,16 +30,16 @@ class ProxiedRequestMiddleware:
 
     Two things are otherwise wrong behind a load balancer. The connection reaching the app is plain http even though
     the client's was https, and everything that keys off the scheme gets that wrong - CSRF origin checks, HSTS,
-    absolute URLs, the API's SSL requirement. And health checks address the app by its own network address rather than
-    by one of its domains, with no way to tell a load balancer otherwise, so the allowed hosts check rejects every one
-    of them and the whole deployment is taken out of service.
+    absolute URLs, the API's SSL requirement. And some requests reach the app by its network address rather than by one
+    of its domains, so the allowed hosts check rejects them - health checks being the case that matters, since a load
+    balancer can't be told to address an instance any other way and failing them takes the deployment out of service.
 
     Both corrections are settings-gated, so a deployment with nothing in front of it is left alone. This has to run
     before anything that reads the scheme or the host, which is why it's first.
     """
 
     def __init__(self, get_response=None):
-        if not settings.SECURE_ASSUME_HTTPS and not settings.HEALTH_CHECK_PATH:
+        if not settings.SECURE_ASSUME_HTTPS and not settings.ALLOWED_HOSTS_EXEMPT_PATHS:
             raise MiddlewareNotUsed()
 
         self.get_response = get_response
@@ -48,8 +48,8 @@ class ProxiedRequestMiddleware:
         if settings.SECURE_ASSUME_HTTPS:
             request.META["wsgi.url_scheme"] = "https"
 
-        # only the health check path, and only the host it's addressed by - the check itself still runs as normal
-        if settings.HEALTH_CHECK_PATH and request.path == settings.HEALTH_CHECK_PATH:
+        # only the host these are addressed by is corrected - whatever is served at them still runs as normal
+        if request.path in settings.ALLOWED_HOSTS_EXEMPT_PATHS:
             request.META["HTTP_HOST"] = settings.BRAND["domain"]
             if settings.USE_X_FORWARDED_HOST:
                 request.META["HTTP_X_FORWARDED_HOST"] = settings.BRAND["domain"]

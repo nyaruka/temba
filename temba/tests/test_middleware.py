@@ -52,8 +52,10 @@ class ResponseHeadersTest(TembaTest):
 
 
 class ProxiedRequestTest(TembaTest):
-    HEALTH_CHECK = dict(
-        HEALTH_CHECK_PATH="/system/ping/", ALLOWED_HOSTS=["app.example.com"], BRAND={"domain": "app.example.com"}
+    EXEMPT = dict(
+        ALLOWED_HOSTS_EXEMPT_PATHS=("/system/ping/",),
+        ALLOWED_HOSTS=["app.example.com"],
+        BRAND={"domain": "app.example.com"},
     )
 
     def test_scheme_assumed_https(self):
@@ -69,16 +71,16 @@ class ProxiedRequestTest(TembaTest):
     def test_scheme_left_alone_when_not_assumed(self):
         request = RequestFactory().get("/")
 
-        with override_settings(SECURE_ASSUME_HTTPS=False, **self.HEALTH_CHECK):
+        with override_settings(SECURE_ASSUME_HTTPS=False, **self.EXEMPT):
             ProxiedRequestMiddleware(lambda r: HttpResponse())(request)
 
         self.assertFalse(request.is_secure())
 
-    def test_host_replaced_for_the_health_check_path(self):
+    def test_host_replaced_for_an_exempt_path(self):
         # a health checker addresses the instance by its own address, which is never one of our domains
         request = RequestFactory().get("/system/ping/", headers={"host": "10.0.1.23:8020"})
 
-        with override_settings(**self.HEALTH_CHECK):
+        with override_settings(**self.EXEMPT):
             ProxiedRequestMiddleware(lambda r: HttpResponse())(request)
 
             self.assertEqual("app.example.com", request.get_host())
@@ -88,7 +90,7 @@ class ProxiedRequestTest(TembaTest):
             "/system/ping/", headers={"host": "10.0.1.23:8020", "x-forwarded-host": "10.0.1.23:8020"}
         )
 
-        with override_settings(USE_X_FORWARDED_HOST=True, **self.HEALTH_CHECK):
+        with override_settings(USE_X_FORWARDED_HOST=True, **self.EXEMPT):
             ProxiedRequestMiddleware(lambda r: HttpResponse())(request)
 
             self.assertEqual("app.example.com", request.get_host())
@@ -96,20 +98,20 @@ class ProxiedRequestTest(TembaTest):
     def test_other_paths_are_untouched(self):
         request = RequestFactory().get("/msg/", headers={"host": "10.0.1.23:8020"})
 
-        with override_settings(**self.HEALTH_CHECK):
+        with override_settings(**self.EXEMPT):
             ProxiedRequestMiddleware(lambda r: HttpResponse())(request)
 
             self.assertRaises(DisallowedHost, request.get_host)
 
     def test_not_used_when_neither_correction_is_wanted(self):
-        with override_settings(SECURE_ASSUME_HTTPS=False, HEALTH_CHECK_PATH=None):
+        with override_settings(SECURE_ASSUME_HTTPS=False, ALLOWED_HOSTS_EXEMPT_PATHS=()):
             with self.assertRaises(MiddlewareNotUsed):
                 ProxiedRequestMiddleware(lambda r: HttpResponse())
 
     def test_used_when_only_one_correction_is_wanted(self):
         for only in (
-            dict(SECURE_ASSUME_HTTPS=True, HEALTH_CHECK_PATH=None),
-            dict(SECURE_ASSUME_HTTPS=False, **self.HEALTH_CHECK),
+            dict(SECURE_ASSUME_HTTPS=True, ALLOWED_HOSTS_EXEMPT_PATHS=()),
+            dict(SECURE_ASSUME_HTTPS=False, **self.EXEMPT),
         ):
             with override_settings(**only):
                 self.assertIsNotNone(ProxiedRequestMiddleware(lambda r: HttpResponse()))
