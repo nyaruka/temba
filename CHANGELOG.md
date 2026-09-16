@@ -1,3 +1,8 @@
+v26.3.100 (2026-09-16)
+-------------------------
+ * Keep loggers that exist before Django configures logging
+ * Fix double slash in sample import link on welcome page
+
 v26.3.99 (2026-09-16)
 -------------------------
  * Edit help articles as the help site renders them
