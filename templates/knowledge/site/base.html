@@ -1,4 +1,4 @@
-{% load i18n %}
+{% load i18n static %}
 
 {% get_current_language as LANGUAGE_CODE %}
 <!DOCTYPE html>
@@ -19,6 +19,11 @@
         --primary: {{ site.primary_color }};
         --header-bg: {{ site.header_color }};
         --header-text: {{ site.header_text_color }};
+      }
+
+      /* the chat widget takes the site's accent */
+      temba-webchat {
+        --webchat-primary: var(--primary);
       }
     </style>
   </head>
@@ -60,5 +65,10 @@
         {% endif %}
       </div>
     </footer>
+    {% if chat_channel %}
+      <script src="{% static 'components/temba-webchat.js' %}"></script>
+      <temba-webchat channel="{{ chat_channel.uuid }}" host="{{ chat_host }}">
+      </temba-webchat>
+    {% endif %}
   </body>
 </html>

@@ -76,6 +76,30 @@ class SiteViewsTest(TembaTest):
         self.assertContains(response, "--header-bg: #1f2937;")
         self.assertContains(response, "--header-text: #ffffff;")
 
+        # there's no chat widget until the site has a chat channel
+        self.assertNotContains(response, "<temba-webchat")
+
+        webchat = self.create_channel("WCH", "Site Chat", None)
+        self.site.set_config(self.admin, chat_channel=str(webchat.uuid))
+
+        with override_settings(HOSTNAME="app.nyaruka.com"):
+            response = self.public("/")
+            self.assertContains(response, "components/temba-webchat.js")
+            self.assertContains(response, f'<temba-webchat channel="{webchat.uuid}" host="https://app.nyaruka.com">')
+
+            # on every page of the site, including the preview
+            self.assertContains(self.public("/flows/"), f'<temba-webchat channel="{webchat.uuid}"')
+            self.assertContains(
+                self.public("/nothing/here/"), f'<temba-webchat channel="{webchat.uuid}"', status_code=404
+            )
+            self.login(self.admin)
+            self.assertContains(self.client.get("/helpsite/preview/"), f'<temba-webchat channel="{webchat.uuid}"')
+            self.client.logout()
+
+        # and none once the channel is gone
+        webchat.release(self.admin)
+        self.assertNotContains(self.public("/"), "<temba-webchat")
+
         # popular articles show up once there are views
         for _ in range(2):
             ArticleCount.record_view(self.importing)

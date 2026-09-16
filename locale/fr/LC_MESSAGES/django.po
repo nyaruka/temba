@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-15 20:04+0000\n"
+"POT-Creation-Date: 2026-09-16 21:24+0000\n"
 "PO-Revision-Date: 2019-05-13 20:14+0000\n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
@@ -2829,6 +2829,12 @@ msgstr "Pied de page"
 msgid "Shown at the bottom of every page."
 msgstr "Affiché en bas de chaque page."
 
+msgid "Chat"
+msgstr "Discussion"
+
+msgid "A WebChat channel to let readers chat with you from every page."
+msgstr ""
+
 msgid "Primary Color"
 msgstr "Couleur principale"
 
@@ -5163,7 +5169,9 @@ msgstr "Le widget intégré utilise cet UUID pour identifier ce canal lors de la
 msgid "Embed"
 msgstr "Intégrer"
 
-msgid "Add a snippet like the following to your website to embed the chat widget (coming soon)."
+#, fuzzy
+#| msgid "Add a snippet like the following to your website to embed the chat widget (coming soon)."
+msgid "Add the following to your website to embed the chat widget. The script only needs to be included once per page."
 msgstr "Ajoutez un extrait comme celui-ci à votre site web pour intégrer le widget de chat (bientôt disponible)."
 
 msgid "Only websites on the following domains can embed this channel's chat widget. This can be changed in the channel settings."
@@ -5232,9 +5240,6 @@ msgstr "Supprimer tous les contacts"
 
 msgid "Are you sure you want to delete all archived contacts? This cannot be undone."
 msgstr "Voulez-vous vraiment supprimer tous les contacts archivés ? Cette action est irréversible."
-
-msgid "Chat"
-msgstr "Discussion"
 
 msgid "Details"
 msgstr "Détails"

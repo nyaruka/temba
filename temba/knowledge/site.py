@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.http import Http404, HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.shortcuts import render
@@ -61,6 +62,7 @@ class SiteView(TemplateView):
         context["prefix"] = self.prefix
         context["is_preview"] = self.preview
         context["settings_url"] = reverse("knowledge.article_list") if self.preview else None
+        context.update(chat_context(self.site))
         return context
 
     def render_to_response(self, context, **response_kwargs):
@@ -147,6 +149,14 @@ class SearchView(SiteView):
         return context
 
 
+def chat_context(site: HelpSite) -> dict:
+    """
+    What a page needs to embed the site's chat widget: the WebChat channel it chats on, and the platform host the
+    widget talks to - a reader is on the site's own domain, not ours.
+    """
+    return {"chat_channel": site.chat_channel, "chat_host": f"https://{settings.HOSTNAME}"}
+
+
 def site_urlpatterns(preview: bool) -> list:
     """
     The site's URLs - at the root of its own domain, or under the preview prefix in the app. Search comes before the
@@ -173,4 +183,9 @@ def page_not_found(request, exception=None):
     if not site or not site.is_available:
         return render(request, "knowledge/site/unavailable.html", {"title": _("Not available")}, status=404)
 
-    return render(request, "knowledge/site/404.html", {"site": site, "prefix": "", "is_preview": False}, status=404)
+    return render(
+        request,
+        "knowledge/site/404.html",
+        {"site": site, "prefix": "", "is_preview": False, **chat_context(site)},
+        status=404,
+    )

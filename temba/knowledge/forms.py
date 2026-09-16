@@ -204,6 +204,12 @@ class HelpSiteForm(forms.ModelForm):
         help_text=_("Shown at the bottom of every page."),
         widget=InputWidget(),
     )
+    chat_channel = forms.ChoiceField(
+        required=False,
+        label=_("Chat"),
+        help_text=_("A WebChat channel to let readers chat with you from every page."),
+        widget=SelectWidget(),
+    )
     primary_color = forms.CharField(
         label=_("Primary Color"),
         help_text=_("Used for links, buttons and highlights."),
@@ -227,6 +233,10 @@ class HelpSiteForm(forms.ModelForm):
 
     def __init__(self, org, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.fields["chat_channel"].choices = [("", _("None"))] + [
+            (str(channel.uuid), channel.name) for channel in HelpSite.get_chat_channels(org)
+        ]
 
     def _clean_color(self, field: str, required: bool) -> str:
         value = (self.cleaned_data[field] or "").strip().lower()

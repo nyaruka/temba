@@ -1111,6 +1111,7 @@ class HelpSite(models.Model):
     # config keys
     CONFIG_PRIMARY_COLOR = "primary_color"  # links, buttons, accents
     CONFIG_HEADER_COLOR = "header_color"  # the header's background
+    CONFIG_CHAT_CHANNEL = "chat_channel"  # the uuid of the WebChat channel whose widget the site embeds, if any
 
     DEFAULT_PRIMARY_COLOR = "#2f6fed"
     DEFAULT_HEADER_COLOR = "#ffffff"
@@ -1289,6 +1290,24 @@ class HelpSite(models.Model):
         What's legible on the header - the page's own dark text on a light header, white on a dark one.
         """
         return "#ffffff" if is_dark_color(self.header_color) else "#1f2430"
+
+    @classmethod
+    def get_chat_channels(cls, org):
+        """
+        The org's WebChat channels - the ones a site can embed the chat widget of.
+        """
+        from temba.channels.types.webchat import WebChatType
+
+        return org.channels.filter(channel_type=WebChatType.code, is_active=True).order_by("name")
+
+    @property
+    def chat_channel(self):
+        """
+        The WebChat channel readers chat through from the site's pages, if one is configured and still active - a
+        channel that's been removed since just leaves the site without chat.
+        """
+        uuid = self.config.get(self.CONFIG_CHAT_CHANNEL)
+        return self.get_chat_channels(self.org).filter(uuid=uuid).first() if uuid else None
 
     @property
     def bubbles(self) -> dict:

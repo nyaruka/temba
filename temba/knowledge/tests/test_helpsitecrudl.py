@@ -40,6 +40,7 @@ class HelpSiteCRUDLTest(TembaTest, CRUDLTestMixin):
                 "title": "Nyaruka",
                 "tagline": "",
                 "footer": "",
+                "chat_channel": "",
                 "primary_color": HelpSite.DEFAULT_PRIMARY_COLOR,
                 "header_color": HelpSite.DEFAULT_HEADER_COLOR,
                 "bubble_1": None,
@@ -110,6 +111,54 @@ class HelpSiteCRUDLTest(TembaTest, CRUDLTestMixin):
         )
         self.helpdesk.refresh_from_db()
         self.assertEqual({"3": "#123456"}, self.helpdesk.colors)
+
+        # the site can embed the chat widget of one of the org's WebChat channels
+        webchat = self.create_channel("WCH", "Site Chat", None)
+        other_webchat = self.create_channel("WCH", "Other Chat", None, org=self.org2)
+        self.create_channel("TG", "Telegram", "1234")
+
+        response = self.requestView(update_url, self.admin)
+        self.assertEqual(
+            [("", "None"), (str(webchat.uuid), "Site Chat")], response.context["form"].fields["chat_channel"].choices
+        )
+        site.refresh_from_db()
+
+        self.assertUpdateSubmit(
+            update_url,
+            self.admin,
+            {
+                "title": "Nyaruka Help",
+                "primary_color": "#ff6600",
+                "header_color": "#ffffff",
+                "chat_channel": str(other_webchat.uuid),
+            },
+            form_errors={
+                "chat_channel": "Select a valid choice. %s is not one of the available choices." % other_webchat.uuid
+            },
+            object_unchanged=site,
+        )
+
+        self.assertUpdateSubmit(
+            update_url,
+            self.admin,
+            {
+                "title": "Nyaruka Help",
+                "primary_color": "#ff6600",
+                "header_color": "#ffffff",
+                "chat_channel": str(webchat.uuid),
+            },
+        )
+
+        site.refresh_from_db()
+        self.assertEqual(str(webchat.uuid), site.config[HelpSite.CONFIG_CHAT_CHANNEL])
+        self.assertEqual(webchat, site.chat_channel)
+
+        response = self.requestView(update_url, self.admin)
+        self.assertEqual(str(webchat.uuid), response.context["form"].initial["chat_channel"])
+
+        # a channel that's since been removed leaves the site without chat
+        webchat.release(self.admin)
+        self.assertIsNone(site.chat_channel)
 
     def test_domain(self):
         domain_url = reverse("knowledge.helpsite_domain")

@@ -775,6 +775,7 @@ class HelpSiteCRUDL(SmartCRUDL):
             site = self.get_object()
             initial["primary_color"] = site.primary_color
             initial["header_color"] = site.header_color
+            initial["chat_channel"] = site.config.get(HelpSite.CONFIG_CHAT_CHANNEL) or ""
             for key, color in site.bubbles.items():
                 initial[f"bubble_{key}"] = color
             return initial
@@ -785,6 +786,7 @@ class HelpSiteCRUDL(SmartCRUDL):
                 **obj.config,
                 HelpSite.CONFIG_PRIMARY_COLOR: self.form.cleaned_data["primary_color"],
                 HelpSite.CONFIG_HEADER_COLOR: self.form.cleaned_data["header_color"],
+                HelpSite.CONFIG_CHAT_CHANNEL: self.form.cleaned_data["chat_channel"],
             }
             return obj
 
