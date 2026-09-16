@@ -5,7 +5,6 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
 from temba.orgs.views.mixins import UniqueNameMixin
-from temba.utils import languages
 from temba.utils.fields import CheckboxWidget, ColorInputWidget, InputWidget, SelectWidget
 
 from .models import Article, HelpdeskImport, HelpSite, KnowledgeSource
@@ -113,31 +112,15 @@ class ArticleForm(forms.ModelForm):
     alongside the save, so that saving an edit can never silently make a draft public.
     """
 
-    # declared rather than taken from the model, whose language field has no choices of its own - which ones are on
-    # offer depends on the workspace, and a ChoiceField is what puts them onto the widget as well as validating them
-    language = forms.ChoiceField(label=_("Language"), widget=SelectWidget(attrs={"widget_only": False}))
-
     def __init__(self, org, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         if "body" in self.fields:  # the create form asks only for a title
             self.fields["body"].max_length = Article.MAX_BODY_LEN
 
-        # an article keeps the language it was written in even if the workspace later drops it, so that language stays
-        # a choice here - otherwise the article could never be saved again
-        codes = list(org.flow_languages)
-        if self.instance.language and self.instance.language not in codes:
-            codes.append(self.instance.language)
-
-        # only worth asking which language an article is in when there's actually more than one to choose from
-        if len(codes) > 1:
-            self.fields["language"].choices = [(c, languages.get_name(c)) for c in codes]
-        else:
-            del self.fields["language"]
-
     class Meta:
         model = Article
-        fields = ("title", "language", "body")
+        fields = ("title", "body")
         widgets = {
             "title": InputWidget(attrs={"widget_only": False}),
             "body": MarkdownEditorWidget(),
@@ -151,13 +134,13 @@ class ArticleCreateForm(ArticleForm):
     """
 
     class Meta(ArticleForm.Meta):
-        fields = ("title", "language")
+        fields = ("title",)
 
 
 class SectionForm(forms.ModelForm):
     """
     A section - a root of the helpdesk tree - is a heading over the articles filed under it, so it's titled and
-    described in plain text rather than written. Nothing of it is indexed, so it isn't asked its language either.
+    described in plain text rather than written.
     """
 
     description = forms.CharField(

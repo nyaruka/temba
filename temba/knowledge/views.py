@@ -471,7 +471,6 @@ class ArticleCRUDL(SmartCRUDL):
                 obj.title,
                 description=self.form.cleaned_data.get("description", ""),
                 parent=self.section,
-                language=self.form.cleaned_data.get("language"),
             )
 
         def get_success_url(self):
