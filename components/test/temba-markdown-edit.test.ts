@@ -898,6 +898,12 @@ describe(TAG, () => {
       assert.include(coverOf(editor).style.backgroundImage, 'cover.jpg');
     });
 
+    it('keeps an awkward address inside the style it is written into', async () => {
+      const editor = await getCovered("https://example.com/it's (1).jpg");
+      const style = coverOf(editor).getAttribute('style');
+      assert.include(style, "url('https://example.com/it%27s%20%281%29.jpg')");
+    });
+
     it('asks the input for a file when pressed', async () => {
       const editor = await getCovered();
       const click = stub(inputOf(editor), 'click');

@@ -4053,12 +4053,18 @@ export class MarkdownEditor extends FieldElement {
     }
 
     const url = this.heroPreview || this.hero;
+    // the address is written into an inline style, so anything that could end the url() is percent-encoded first
+    // - by hand, since encodeURIComponent leaves quotes and parentheses alone
+    const cssUrl = url.replace(
+      /[()'"\s\\]/g,
+      (c) => `%${c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0')}`
+    );
     return html`
       <div
         class="cover ${url ? '' : 'empty'}"
         role="button"
         tabindex="0"
-        style=${url ? `background-image:url('${url}')` : ''}
+        style=${url ? `background-image:url('${cssUrl}')` : ''}
         @click=${this.pickHero}
         @keydown=${this.handleCoverKeyDown}
         @change=${this.handleHeroChange}
