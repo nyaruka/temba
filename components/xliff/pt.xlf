@@ -154,14 +154,6 @@
   <source>Style text</source>
   <target>Estilizar texto</target>
 </trans-unit>
-<trans-unit id="s7dd0d53a22ca1b62">
-  <source>New color</source>
-  <target>Nova cor</target>
-</trans-unit>
-<trans-unit id="saa8f64ba8b9a3042">
-  <source>Remove this color everywhere it is used</source>
-  <target>Remover esta cor de todos os lugares onde é usada</target>
-</trans-unit>
 <trans-unit id="s06c4d89f9e3480b3">
   <source>Remove styling</source>
   <target>Remover estilo</target>
@@ -893,10 +885,6 @@
   <source>Message..</source>
   <target>Mensagem..</target>
 </trans-unit>
-<trans-unit id="se222e6ada35017b5">
-  <source>No articles</source>
-  <target>Nenhum artigo</target>
-</trans-unit>
 <trans-unit id="s4fa8414c37c75316">
   <source>No broadcasts</source>
   <target>Nenhuma transmissão</target>
@@ -1442,14 +1430,6 @@
   <source>Edit note</source>
   <target>Editar nota</target>
 </trans-unit>
-<trans-unit id="se16c5e66886fbc59">
-  <source>Article</source>
-  <target>Artigo</target>
-</trans-unit>
-<trans-unit id="s6d3b5b0561ba34c9">
-  <source>Published</source>
-  <target>Publicado</target>
-</trans-unit>
 <trans-unit id="s44a318192b7f8f56">
   <source>Next Send</source>
   <target>Próximo envio</target>
@@ -1589,6 +1569,33 @@
 <trans-unit id="s092f6914654487ef">
   <source>Workspace suspended</source>
   <target>Workspace suspenso</target>
+</trans-unit>
+<trans-unit id="s4c29078e3fac16ce">
+  <source>Searching articles</source>
+</trans-unit>
+<trans-unit id="sa62d0398be435bb0">
+  <source>Links to an article</source>
+</trans-unit>
+<trans-unit id="s8d2ab15f65e011c2">
+  <source>Links to an address</source>
+</trans-unit>
+<trans-unit id="s03007732a34e7c5e">
+  <source>https:// or an article title</source>
+</trans-unit>
+<trans-unit id="se44dd3f2702d6bdb">
+  <source>Remove link</source>
+</trans-unit>
+<trans-unit id="s47825e83c2d9e940">
+  <source>No matching articles</source>
+</trans-unit>
+<trans-unit id="scc1db59d292cbc4c">
+  <source>Section</source>
+</trans-unit>
+<trans-unit id="sf8377ceea7083edf">
+  <source>Change cover image</source>
+</trans-unit>
+<trans-unit id="s8fc556c37b60845d">
+  <source>Add a cover image</source>
 </trans-unit>
 </body>
 </file>
