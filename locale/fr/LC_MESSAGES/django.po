@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-15 20:04+0000\n"
+"POT-Creation-Date: 2026-09-16 21:21+0000\n"
 "PO-Revision-Date: 2019-05-13 20:14+0000\n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
@@ -5771,6 +5771,11 @@ msgid "Last updated %(date)s"
 msgstr "Dernière mise à jour le %(date)s"
 
 msgid "In this section"
+msgstr "Dans cette section"
+
+#, fuzzy
+#| msgid "In this section"
+msgid "In this article"
 msgstr "Dans cette section"
 
 msgid "This is a preview of your help site as its readers will see it."
