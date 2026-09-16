@@ -1044,6 +1044,12 @@ export class MarkdownEditor extends FieldElement {
         margin-bottom: 0;
       }
 
+      /* a body that opens with a heading starts where any body does, rather than a heading's distance below the
+         title */
+      .doc > *:first-child {
+        margin-top: 0;
+      }
+
       .doc h1,
       .doc h2,
       .doc h3,
@@ -3540,7 +3546,8 @@ export class MarkdownEditor extends FieldElement {
   /** Enter in the title goes on to the article rather than breaking the title, or submitting the form as Enter in
    * a form's lone text input would */
   private handleTitleKeyDown(evt: KeyboardEvent): void {
-    if (evt.key === 'Enter') {
+    // not while an IME is composing, where Enter commits the composition rather than the title
+    if (evt.key === 'Enter' && !evt.isComposing) {
       evt.preventDefault();
       this.focusStart();
     }

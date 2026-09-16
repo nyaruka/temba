@@ -128,7 +128,7 @@ def normalize(body: str) -> str:
         hard_break = line.endswith("  ")
         if IMAGE.search(line) and not IMAGE_LINE.match(line.strip()):
             pieces = [piece.strip() for piece in IMAGE_SPLIT.split(line) if piece.strip()]
-            lines.extend((piece, hard_break and piece == pieces[-1]) for piece in pieces)
+            lines.extend((piece, hard_break and i == len(pieces) - 1) for i, piece in enumerate(pieces))
             continue
 
         lines.append((line.strip() if IMAGE_LINE.match(line.strip()) else line.rstrip(), hard_break))

@@ -1747,8 +1747,6 @@ describe(TAG, () => {
 
   describe('screenshots', () => {
     const ARTICLE = [
-      '# Getting started',
-      '',
       'Open the **Flows** tab and pick a flow to edit. See the [docs](https://example.com) for more.',
       '',
       '* Add a node',
@@ -1757,12 +1755,13 @@ describe(TAG, () => {
       '![a screenshot](/test-assets/img/sim_image_c.jpg)'
     ].join('\n');
 
-    // the rendered document sizes itself to its content, so the screenshots only need a floor for source mode
+    // The rendered document sizes itself to its content, so the screenshots only need a floor for source mode. The
+    // title is slotted in as the page slots it, so the pictures show the article as it's edited.
     const getArticle = async (minHeight = 0): Promise<MarkdownEditor> => {
       const editor = (await getComponent(
         TAG,
         { widget_only: true },
-        '',
+        '<textarea slot="title" rows="1">Getting started</textarea>',
         500
       )) as MarkdownEditor;
 
@@ -1775,14 +1774,14 @@ describe(TAG, () => {
 
     it('renders the document', async () => {
       const editor = await getArticle();
-      expect(blocks(editor).length).to.equal(4);
+      expect(blocks(editor).length).to.equal(3);
       await assertScreenshot('markdown-editor/document', getClip(editor));
     });
 
     it('shows the toolbar following the caret while editing', async () => {
       const editor = await getArticle();
 
-      // the caret in the heading - the toolbar says what it is sitting in, and the article stays an article
+      // the caret in the paragraph - the toolbar says what it is sitting in, and the article stays an article
       await caretIn(editor, 0, 7);
       await editor.updateComplete;
 
@@ -1793,8 +1792,8 @@ describe(TAG, () => {
       const editor = await getArticle();
 
       // inside "docs", which is the link's own text
-      const at = blocks(editor)[1].textContent.indexOf('docs') + 2;
-      await caretIn(editor, 1, at);
+      const at = blocks(editor)[0].textContent.indexOf('docs') + 2;
+      await caretIn(editor, 0, at);
       await editor.updateComplete;
 
       assert.isOk(

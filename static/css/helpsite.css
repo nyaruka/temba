@@ -518,6 +518,11 @@ mark {
   margin-bottom: 0;
 }
 
+/* a body that opens with a heading starts where any body does, rather than a heading's distance below the title */
+.doc > *:first-child {
+  margin-top: 0;
+}
+
 .doc h1,
 .doc h2,
 .doc h3,
