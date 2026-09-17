@@ -1171,7 +1171,7 @@ class ContactsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseEndpoint
     write_with_transaction = False
     pagination_class = ModifiedOnCursorPagination
     throttle_scope = "v2.contacts"
-    lookup_params = {"uuid": "uuid", "urn": "urns__identity"}
+    lookup_params = {"uuid": "uuid", "urn": "id"}  # URNs are resolved to contact ids
 
     def filter_queryset(self, queryset):
         params = self.request.query_params
@@ -1186,7 +1186,7 @@ class ContactsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseEndpoint
 
         # filter by URN (optional)
         if urn := params.get("urn"):
-            queryset = queryset.filter(urns__identity=self.normalize_urn(urn))
+            queryset = queryset.filter(id=self.resolve_urn(urn).contact_id)
 
         # filter by group name/uuid (optional)
         group_ref = params.get("group")
@@ -1244,7 +1244,7 @@ class ContactsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseEndpoint
         queryset = self.get_queryset().filter(**self.lookup_values)
 
         # don't blow up if posted a URN that doesn't exist - we'll let the serializer create a new contact
-        if self.request.method == "POST" and "urns__identity" in self.lookup_values:
+        if self.request.method == "POST" and self.lookup_urn:
             return queryset.first()
         else:
             return generics.get_object_or_404(queryset)
