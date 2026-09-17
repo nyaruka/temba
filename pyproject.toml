@@ -1,6 +1,6 @@
 [project]
 name = "temba"
-version = "26.3.100"
+version = "26.3.101"
 description = "Hosted service for visually building interactive messaging applications"
 authors = [
     {"name" = "Nyaruka", "email" = "code@nyaruka.com"}
@@ -70,6 +70,7 @@ dev = [
 [tool.code_check]
 packages = ["temba"]
 locale = "locale"
+translated = ["es", "fr", "pt_BR"]
 migrations = true
 ignore = ["env/*", ".venv/*", ".claude/*", "fabfile.py", "media/*", "sitestatic/*", "static/*", "node_modules/*"]
 

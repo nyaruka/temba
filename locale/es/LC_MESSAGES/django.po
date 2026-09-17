@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-16 23:53+0000\n"
+"POT-Creation-Date: 2026-09-17 18:43+0000\n"
 "PO-Revision-Date: 2019-05-13 20:14+0000\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
@@ -2251,6 +2251,10 @@ msgid "Import file contains duplicated contact UUID '%(uuid)s' on row %(row)s."
 msgstr "El archivo de importación contiene el UUID de contacto duplicado '%(uuid)s' en la fila %(row)s."
 
 #, python-format
+msgid "Import file contains invalid phone number '%(number)s' on row %(row)s. Ensure phone numbers include a country code."
+msgstr "El archivo de importación contiene el número de teléfono inválido '%(number)s' en la fila %(row)s. Asegúrese de que los números de teléfono incluyan el código de país."
+
+#, python-format
 msgid "Import file contains duplicated contact URN '%(urn)s' on row %(row)s."
 msgstr "El archivo de importación contiene el URN de contacto duplicado '%(urn)s' en la fila %(row)s."
 
@@ -2786,21 +2790,17 @@ msgstr "Nunca"
 msgid "Calls"
 msgstr "Llamadas"
 
-#, fuzzy
-#| msgid "Website Language"
 msgid "Website"
-msgstr "Idioma del sitio web"
+msgstr "Sitio web"
 
-#, fuzzy
-#| msgid "Documentation"
 msgid "Documents"
-msgstr "Documentación"
+msgstr "Documentos"
 
 msgid "The address to crawl, e.g. https://help.example.com"
-msgstr ""
+msgstr "La dirección a rastrear, p. ej. https://help.example.com"
 
 msgid "Max Pages"
-msgstr ""
+msgstr "Máximo de páginas"
 
 msgid "Refresh"
 msgstr "Actualizar"
@@ -2833,7 +2833,7 @@ msgid "Chat"
 msgstr "Chat"
 
 msgid "A WebChat channel to let readers chat with you from every page."
-msgstr ""
+msgstr "Un canal WebChat para que los lectores chateen con usted desde cualquier página."
 
 msgid "Primary Color"
 msgstr "Color principal"
@@ -2884,10 +2884,10 @@ msgid "Shortcuts"
 msgstr "Atajos"
 
 msgid "Helpdesk"
-msgstr ""
+msgstr "Centro de ayuda"
 
 msgid "Indexing"
-msgstr ""
+msgstr "Indexando"
 
 msgid "Daily"
 msgstr "Diariamente"
@@ -2913,38 +2913,30 @@ msgstr "Algo salió mal. Vuelva a intentarlo más tarde."
 msgid "Not available"
 msgstr "No disponible"
 
-#, fuzzy
-#| msgid "New Shortcut"
 msgid "New Source"
-msgstr "Nuevo atajo"
+msgstr "Nueva fuente"
 
 msgid "Upload"
-msgstr ""
+msgstr "Subir"
 
-#, fuzzy
-#| msgid "Update Shortcut"
 msgid "Update Source"
-msgstr "Actualizar atajo"
+msgstr "Actualizar fuente"
 
-#, fuzzy
-#| msgid "Delete Shortcut"
 msgid "Delete Source"
-msgstr "Eliminar atajo"
+msgstr "Eliminar fuente"
 
 msgid "New Shortcut"
 msgstr "Nuevo atajo"
 
-#, fuzzy
-#| msgid "Your label has been deleted."
 msgid "Your knowledge source has been deleted."
-msgstr "Su etiqueta ha sido eliminada."
+msgstr "Su fuente de conocimiento ha sido eliminada."
 
 msgid "Files can only be added to document sets."
-msgstr ""
+msgstr "Los archivos solo se pueden añadir a conjuntos de documentos."
 
 #, python-format
 msgid "Limit of %d documents reached."
-msgstr ""
+msgstr "Se alcanzó el límite de %d documentos."
 
 msgid "Unsupported file type"
 msgstr "Tipo de archivo no admitido"
@@ -3456,7 +3448,7 @@ msgid "Tickets"
 msgstr "Tickets"
 
 msgid "Knowledge"
-msgstr ""
+msgstr "Conocimiento"
 
 msgid "Notifications"
 msgstr "Notificaciones"
@@ -5169,10 +5161,8 @@ msgstr "El widget integrado utiliza este UUID para identificar este canal al con
 msgid "Embed"
 msgstr "Integrar"
 
-#, fuzzy
-#| msgid "Add a snippet like the following to your website to embed the chat widget (coming soon)."
 msgid "Add the following to your website to embed the chat widget. The script only needs to be included once per page."
-msgstr "Agregue un fragmento como el siguiente a su sitio web para integrar el widget de chat (próximamente)."
+msgstr "Agregue lo siguiente a su sitio web para integrar el widget de chat. El script solo debe incluirse una vez por página."
 
 msgid "Only websites on the following domains can embed this channel's chat widget. This can be changed in the channel settings."
 msgstr "Solo los sitios web en los siguientes dominios pueden integrar el widget de chat de este canal. Esto se puede cambiar en la configuración del canal."
@@ -5695,15 +5685,13 @@ msgstr "La comprobación falló. Inténtalo de nuevo."
 msgid "The background colors articles can give their columns."
 msgstr "Los colores de fondo que los artículos pueden dar a sus columnas."
 
-#, fuzzy, python-format
-#| msgid "You are about to delete the <b>%(object)s</b> team. There is no way to undo this. Are you sure?"
+#, python-format
 msgid "You are about to delete the document <b>%(object.name)s</b> and everything indexed from it. There is no way to undo this. Are you sure?"
-msgstr "Está a punto de eliminar el equipo <b>%(object)s</b>. No hay forma de deshacer esto. ¿Está seguro?"
+msgstr "Está a punto de eliminar el documento <b>%(object.name)s</b> y todo lo indexado a partir de él. No hay forma de deshacer esto. ¿Está seguro?"
 
-#, fuzzy, python-format
-#| msgid "You are about to delete the <b>%(object)s</b> team. There is no way to undo this. Are you sure?"
+#, python-format
 msgid "You are about to delete the knowledge source <b>%(object)s</b> and everything indexed from it. There is no way to undo this. Are you sure?"
-msgstr "Está a punto de eliminar el equipo <b>%(object)s</b>. No hay forma de deshacer esto. ¿Está seguro?"
+msgstr "Está a punto de eliminar la fuente de conocimiento <b>%(object)s</b> y todo lo indexado a partir de ella. No hay forma de deshacer esto. ¿Está seguro?"
 
 msgid "Update Shortcut"
 msgstr "Actualizar atajo"
@@ -5714,43 +5702,29 @@ msgstr "Eliminar atajo"
 msgid "No shortcuts"
 msgstr "Sin atajos"
 
-#, fuzzy
-#| msgid "These are canned responses that agents can use to quickly reply to tickets."
 msgid "Canned responses that agents can use to quickly reply to tickets."
-msgstr "Estas son respuestas predefinidas que los agentes pueden utilizar para responder rápidamente a los tickets."
+msgstr "Respuestas predefinidas que los agentes pueden utilizar para responder rápidamente a los tickets."
 
-#, fuzzy
-#| msgid "Delete Event"
 msgid "Delete Document"
-msgstr "Eliminar Evento"
+msgstr "Eliminar documento"
 
 msgid "Uploaded documents that AI agents can search when handling conversations."
-msgstr ""
+msgstr "Documentos subidos que los agentes de IA pueden consultar al gestionar conversaciones."
 
-#, fuzzy
-#| msgid "You have reached the per-workspace limit and must delete existing ones before you can create new ones."
 msgid "You have reached the limit of documents for this source and must delete existing ones before you can upload more."
-msgstr "Ha alcanzado el límite por workspace y debe eliminar los existentes antes de poder crear nuevos."
+msgstr "Ha alcanzado el límite de documentos para esta fuente y debe eliminar los existentes antes de poder subir más."
 
-#, fuzzy
-#| msgid "No sync events yet"
 msgid "No documents yet"
-msgstr "Aún no hay eventos de sincronización"
+msgstr "Aún no hay documentos"
 
-#, fuzzy
-#| msgid "Last synced"
 msgid "Last Indexed"
-msgstr "Última sincronización"
+msgstr "Última indexación"
 
-#, fuzzy
-#| msgid "Usages"
 msgid "Pages"
-msgstr "Usos"
+msgstr "Páginas"
 
-#, fuzzy
-#| msgid "No models yet"
 msgid "No pages yet"
-msgstr "Aún no hay modelos"
+msgstr "Aún no hay páginas"
 
 msgid "Page not found"
 msgstr "Página no encontrada"
@@ -5773,6 +5747,9 @@ msgstr "Última actualización: %(date)s"
 
 msgid "In this section"
 msgstr "En esta sección"
+
+msgid "In this article"
+msgstr "En este artículo"
 
 msgid "This is a preview of your help site as its readers will see it."
 msgstr "Esta es una vista previa de tu sitio de ayuda tal como lo verán sus lectores."
@@ -6478,22 +6455,7 @@ msgstr ""
 msgid "Add Number"
 msgstr "Agregar número"
 
-#, fuzzy, python-format
-#| msgid ""
-#| "\n"
-#| "          Before you do anything else in %(name)s, it is helpful to have a list of contacts. This will make it easy to send a message or survey out\n"
-#| "          to a wide distribution list.\n"
-#| "\n"
-#| "          For example, you might have groups\n"
-#| "          called <i>Field Staff</i>, <i>Office Managers</i>, or <i>Trainees</i>. You can import these groups into\n"
-#| "          %(name)s by uploading an Excel file using our\n"
-#| "          <a href=\"%(STATIC_URL)s/examples/sample_import.xlsx\">\n"
-#| "            template\n"
-#| "          </a>\n"
-#| "          as a guide. We'll create a group for you automatically for each file you upload. Don't worry, it's easy to add or\n"
-#| "          remove people from groups later if you need to tweak things.\n"
-#| "\n"
-#| "        "
+#, python-format
 msgid ""
 "\n"
 "          Before you do anything else in %(name)s, it is helpful to have a list of contacts. This will make it easy to send a message or survey out\n"
@@ -6517,7 +6479,7 @@ msgstr ""
 "          Por ejemplo, puede tener grupos\n"
 "          llamados <i>Personal de campo</i>, <i>Gerentes de oficina</i> o <i>Aprendices</i>. Puede importar estos grupos a\n"
 "          %(name)s subiendo un archivo de Excel utilizando nuestra\n"
-"          <a href=\"%(STATIC_URL)s/examples/sample_import.xlsx\">\n"
+"          <a href=\"%(STATIC_URL)sexamples/sample_import.xlsx\">\n"
 "            plantilla\n"
 "          </a>\n"
 "          como guía. Crearemos un grupo automáticamente por cada archivo que suba. No se preocupe, es fácil añadir o\n"

@@ -709,3 +709,10 @@ class EndpointsTest(APITestMixin, TembaTest):
         errors = websockets_auth_secret(None)
         self.assertEqual(1, len(errors))
         self.assertEqual("WEBSOCKETS_AUTH_SECRET is not set.", errors[0].msg)
+
+    def test_paths(self):
+        # these live under the internal prefix, which is what the URLs reverse to
+        self.assertEqual("/ti/websockets/connect", reverse("api.websockets.connect"))
+        self.assertEqual("/ti/websockets/sub_refresh", reverse("api.websockets.sub_refresh"))
+
+        self.assertEqual(200, self.post("api.websockets.connect").status_code)

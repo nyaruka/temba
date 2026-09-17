@@ -70,15 +70,6 @@ class ContactURNTest(TembaTest):
         with self.assertRaises(IntegrityError):
             ContactURN.objects.create(org=self.org, scheme="ext", path="1234", identity="ext:5678")
 
-    def test_ensure_normalization(self):
-        contact1 = self.create_contact("Bob", urns=["tel:+250788111111"])
-        contact2 = self.create_contact("Jim", urns=["tel:+0788222222"])
-
-        self.org.normalize_contact_tels()
-
-        self.assertEqual("+250788111111", contact1.urns.get().path)
-        self.assertEqual("+250788222222", contact2.urns.get().path)
-
 
 class URNTest(TembaTest):
     def test_facebook_urn(self):

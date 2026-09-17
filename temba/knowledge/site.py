@@ -118,7 +118,7 @@ class ArticleView(SiteView):
 
         context["section"] = section
         context["article"] = article
-        context["html"] = article.as_html(links=self.site.get_link_targets(self.prefix))
+        context["html"], context["headings"] = article.render(links=self.site.get_link_targets(self.prefix))
         context["siblings"] = self.site.get_articles(section)
         return context
 

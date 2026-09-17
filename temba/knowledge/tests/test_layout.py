@@ -1,4 +1,12 @@
-from temba.knowledge.layout import cleanup_body, fit_beside, fit_pair, kind_of, normalize, split_blocks
+from temba.knowledge.layout import (
+    cleanup_body,
+    fit_beside,
+    fit_pair,
+    kind_of,
+    level_headings,
+    normalize,
+    split_blocks,
+)
 from temba.tests import TembaTest
 
 SHOT = "https://storage.example.com/shot.png"
@@ -66,6 +74,26 @@ class LayoutTest(TembaTest):
             "- a list\n    - nested  \n\n```\ncode  \n\n  ![](https://x/1.png)\n```\n\n| a | ![](https://x/2.png) |\n"
         )
         self.assertEqual(body.rstrip("\n").replace("nested  ", "nested"), normalize(body))
+
+    def test_level_headings(self):
+        # headings that all sit a level down are lifted to the top, keeping their hierarchy
+        self.assertEqual(
+            "Intro.\n\n# Setup\n\nText.\n\n## Details\n\n### Deeper\n\n# Usage",
+            level_headings("Intro.\n\n## Setup\n\nText.\n\n### Details\n\n#### Deeper\n\n## Usage"),
+        )
+
+        # by however far down they sit, indentation and closing marks kept
+        self.assertEqual("# One ###\n\n  ## Two", level_headings("### One ###\n\n  #### Two"))
+
+        # a body whose headings already start at the top is left as it is, as is one with no headings
+        self.assertEqual("# One\n\n### Three", level_headings("# One\n\n### Three"))
+        self.assertEqual("Just words.", level_headings("Just words."))
+
+        # a # inside fenced code, or without a space after it, isn't a heading and doesn't count
+        self.assertEqual(
+            "```\n# comment\n```\n\n#hashtag\n\n# Two", level_headings("```\n# comment\n```\n\n#hashtag\n\n## Two")
+        )
+        self.assertEqual("```\n# comment\n```", level_headings("```\n# comment\n```"))
 
     def test_split_blocks(self):
         self.assertEqual(["a\nb", "c", "```\n\nd\n```", "e"], split_blocks("a\nb\n\nc\n\n```\n\nd\n```\n\ne"))
@@ -179,3 +207,6 @@ Now the big picture:
         self.assertEqual(
             "Just words.\n\n1. and\n2. a list", cleanup_body("Just words. \n\n\n1. and\n2. a list\n", sizer)
         )
+
+        # headings are lifted so the top level ones are top level
+        self.assertEqual("# Setup\n\nWords.\n\n## Details", cleanup_body("## Setup\n\nWords.\n\n### Details\n", sizer))

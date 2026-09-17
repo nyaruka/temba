@@ -6,6 +6,7 @@ from django.core.validators import ValidationError
 from django.utils import timezone
 
 from temba.contacts.models import ContactField, ContactImport, ContactImportBatch
+from temba.orgs.models import Org
 from temba.tests import TembaTest, matchers, mock_mailroom
 
 
@@ -36,6 +37,10 @@ class ContactImportTest(TembaTest):
                 "Import file contains duplicated contact UUID 'f519ca1f-8513-49ba-8896-22bf0420dec7' on row 4.",
             ),
             ("invalid_scheme.xlsx", "Header 'URN:XXX' is not a valid URN type."),
+            (
+                "invalid_urn.xlsx",
+                "Import file contains invalid phone number '+?' on row 2. Ensure phone numbers include a country code.",
+            ),
             ("invalid_field_key.xlsx", "Header 'Field: #$^%' is not a valid field name."),
             ("reserved_field_key.xlsx", "Header 'Field:HAS' is not a valid field name."),
             ("no_urn_or_uuid.xlsx", "Import files must contain either UUID or a URN header."),
@@ -400,23 +405,34 @@ class ContactImportTest(TembaTest):
             batch.specs,
         )
 
-    def test_batches_with_invalid_urn(self):
-        imp = self.create_contact_import("media/test_imports/invalid_urn.xlsx")
+    def test_local_numbers(self):
+        # local numbers are normalized using the workspace's country (RW)
+        imp = self.create_contact_import("media/test_imports/local_numbers.xlsx")
         imp.start()
         batch = imp.batches.get()
 
-        # invalid looking urns still passed to mailroom to decide how to handle them
         self.assertEqual(
             [
-                {"_import_row": 2, "name": "Eric Newcomer", "urns": ["tel:+%3F"], "groups": [str(imp.group.uuid)]},
-                {
-                    "_import_row": 3,
-                    "name": "Nic Pottier",
-                    "urns": ["tel:2345678901234567890"],
-                    "groups": [str(imp.group.uuid)],
-                },
+                {"_import_row": 2, "name": "Bob", "urns": ["tel:+250788383383"], "groups": [str(imp.group.uuid)]},
+                {"_import_row": 3, "name": "Jim", "urns": ["tel:+250788111222"], "groups": [str(imp.group.uuid)]},
             ],
             batch.specs,
+        )
+
+        # but if the workspace has no country, they can't be interpreted and are rejected
+        self.org.timezone = ZoneInfo("UTC")
+        self.org.save(update_fields=("timezone",))
+        self.channel.country = None
+        self.channel.save(update_fields=("country",))
+        org = Org.objects.get(id=self.org.id)
+        self.assertEqual("", org.default_country_code)
+
+        with self.assertRaises(ValidationError) as e:
+            self.create_contact_import("media/test_imports/local_numbers.xlsx", org=org)
+
+        self.assertEqual(
+            "Import file contains invalid phone number '0788 383 383' on row 2. Ensure phone numbers include a country code.",
+            e.exception.messages[0],
         )
 
     def test_batches_with_multiple_tels(self):

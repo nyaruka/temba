@@ -26,6 +26,13 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* following a link to a heading of the article glides there, for readers who haven't asked for less motion */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -481,7 +488,7 @@ mark {
   border-left: 2px solid var(--border);
 }
 
-.sidebar li a {
+.sidebar li > a {
   display: block;
   padding: 6px 14px;
   margin-left: -2px;
@@ -490,12 +497,37 @@ mark {
   font-size: 15px;
 }
 
-.sidebar li a:hover {
+.sidebar li > a:hover {
   color: var(--text);
   text-decoration: none;
 }
 
-.sidebar li.current a {
+.sidebar li.current > a {
+  color: var(--primary);
+  border-left-color: var(--primary);
+  font-weight: 600;
+}
+
+/* the current article's top level headings, listed beneath it on the same rail; the one the reader is at is marked
+   current by js/helpsite.js as they scroll */
+.sidebar .headings {
+  border-left: none;
+  margin: 2px 0 6px;
+}
+
+.sidebar .headings li > a {
+  padding: 4px 14px 4px 30px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-muted);
+  border-left-color: transparent;
+}
+
+.sidebar .headings li > a:hover {
+  color: var(--text);
+}
+
+.sidebar .headings li.current > a {
   color: var(--primary);
   border-left-color: var(--primary);
   font-weight: 600;
@@ -531,6 +563,7 @@ mark {
 .doc h6 {
   margin-top: 1.6em;
   font-weight: 650;
+  scroll-margin-top: 32px; /* a heading linked to from the sidebar lands a little below the top of the window */
 }
 
 .doc h1 {

@@ -41,6 +41,7 @@ IMAGE_LINE = re.compile(rf"^{IMAGE.pattern}$")
 IMAGE_SPLIT = re.compile(r"(!\[[^\]]*\]\([^)\s]+\))")  # the image kept, as the one group a split hands back
 FENCE = re.compile(r"^\s{0,3}(```|~~~)")
 HEADING = re.compile(r"^\s{0,3}#{1,6}\s")
+HEADING_MARKS = re.compile(r"^(?P<indent>\s{0,3})(?P<marks>#{1,6})(?=\s)")
 LIST_ITEM = re.compile(r"^\s{0,3}(?:[-*+]|\d+[.)])\s+")
 TABLE_ROW = re.compile(r"^\s{0,3}\|")
 QUOTE = re.compile(r"^\s{0,3}>")
@@ -57,7 +58,7 @@ def cleanup_body(body: str, sizer: Sizer) -> str:
     The body tidied and laid out. The sizer says how big an image is, by its address, for deciding what goes beside
     what - an image it can't size is left where it is.
     """
-    blocks = split_blocks(normalize(body))
+    blocks = split_blocks(level_headings(normalize(body)))
     kinds = [kind_of(block) for block in blocks]
     out = []
     i = 0
@@ -159,6 +160,37 @@ def normalize(body: str) -> str:
     text = "\n".join(out)
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip("\n")
+
+
+def level_headings(text: str) -> str:
+    """
+    The body with its headings starting at the top level. An import's headings often all sit a level or two down -
+    every top level heading written as ## because the site it came from put the title at # - so the shallowest
+    heading is lifted to #, and every other heading by the same amount, keeping their hierarchy. Headings inside
+    fenced code aren't headings and are left alone.
+    """
+    lines = text.split("\n")
+    levels = []
+    in_fence = False
+    for line in lines:
+        if FENCE.match(line):
+            in_fence = not in_fence
+        elif not in_fence and HEADING.match(line):
+            levels.append(len(HEADING_MARKS.match(line)["marks"]))
+
+    lift = min(levels, default=1) - 1
+    if not lift:
+        return text
+
+    out = []
+    in_fence = False
+    for line in lines:
+        if FENCE.match(line):
+            in_fence = not in_fence
+        elif not in_fence and HEADING.match(line):
+            line = HEADING_MARKS.sub(lambda m: m["indent"] + m["marks"][lift:], line)
+        out.append(line)
+    return "\n".join(out)
 
 
 def split_blocks(text: str) -> list[str]:

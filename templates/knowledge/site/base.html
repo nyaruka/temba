@@ -65,6 +65,8 @@
         {% endif %}
       </div>
     </footer>
+    {% block scripts %}
+    {% endblock scripts %}
     {% if chat_channel %}
       <script src="{% static 'components/temba-webchat.js' %}"></script>
       <temba-webchat channel="{{ chat_channel.uuid }}" host="{{ chat_host }}">

@@ -113,7 +113,6 @@ class TembaTest(SmartminTest):
             device="Nexus 5X",
             secret="12345",
             config={Channel.CONFIG_FCM_ID: "123"},
-            normalize_urns=False,
         )
 
     def setUp(self):
@@ -696,11 +695,12 @@ class TembaTest(SmartminTest):
             Archive.objects.filter(id__in=[a.id for a in rollup_of]).update(rollup=archive)
         return archive
 
-    def create_contact_import(self, path):
+    def create_contact_import(self, path, org=None):
+        org = org or self.org
         with open(path, "rb") as f:
-            mappings, num_records = ContactImport.try_to_parse(self.org, f, path)
+            mappings, num_records = ContactImport.try_to_parse(org, f, path)
             return ContactImport.objects.create(
-                org=self.org,
+                org=org,
                 original_filename=path,
                 file=SimpleUploadedFile(f.name, f.read()),
                 mappings=mappings,

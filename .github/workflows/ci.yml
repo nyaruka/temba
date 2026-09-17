@@ -60,12 +60,6 @@ jobs:
     if: needs.changes.outputs.components == 'true'
     runs-on: ubuntu-latest
     steps:
-      # screenshot tests render dates so keep the timezone pinned
-      - name: Set timezone
-        uses: szenius/set-timezone@v2.0
-        with:
-          timezoneLinux: 'UTC'
-
       - name: Checkout code
         uses: actions/checkout@v6
 
@@ -76,8 +70,10 @@ jobs:
           # the devcontainer's workspaceFolder is already components/
           runCmd: bun install --frozen-lockfile && bun run validate
           push: never
+          # screenshot tests render dates so keep the timezone pinned
           env: |
             CI=true
+            TZ=UTC
 
   test-django:
     name: Test Django

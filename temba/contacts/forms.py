@@ -128,13 +128,14 @@ class UpdateContactForm(forms.ModelForm):
             for field, urn in urns_by_field.items():
                 resolved = resolved_by_value[urn]
                 scheme, path, query, display = URN.to_parts(resolved.normalized)
+                existing_path = self.fields[field].initial if field in self.fields else None
 
                 if resolved.contact_id and resolved.contact_id != self.instance.id:
                     self.add_error(field, _("In use by another contact."))
                 elif resolved.error:
                     self.add_error(field, _("Invalid format."))
-                elif scheme == URN.TEL_SCHEME and field == "new_path" and not resolved.e164:
-                    # if a new phone numer is being added, it must have country code
+                elif scheme == URN.TEL_SCHEME and not resolved.e164 and path != existing_path:
+                    # a new or changed phone number must have a country code
                     self.add_error(field, _("Invalid phone number. Ensure number includes country code."))
 
                 self.cleaned_data[field] = path

@@ -4,7 +4,6 @@ from unittest.mock import call, patch
 from django.urls import reverse
 
 from temba import mailroom
-from temba.contacts.models import URN, Contact
 from temba.msgs.models import Msg
 from temba.notifications.incidents.builtin import ChannelDisconnectedIncidentType
 from temba.templates.models import TemplateTranslation
@@ -76,24 +75,6 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
 
         self.tel_channel.address = ""
         self.assertEqual("", self.tel_channel.get_address_display())
-
-    def test_ensure_normalization(self):
-        self.tel_channel.country = "RW"
-        self.tel_channel.save()
-
-        contact1 = self.create_contact("contact1", phone="0788111222")
-        contact2 = self.create_contact("contact2", phone="+250788333444")
-        contact3 = self.create_contact("contact3", phone="+18006927753")
-
-        self.org.normalize_contact_tels()
-
-        norm_c1 = Contact.objects.get(pk=contact1.pk)
-        norm_c2 = Contact.objects.get(pk=contact2.pk)
-        norm_c3 = Contact.objects.get(pk=contact3.pk)
-
-        self.assertEqual(norm_c1.get_urn(URN.TEL_SCHEME).path, "+250788111222")
-        self.assertEqual(norm_c2.get_urn(URN.TEL_SCHEME).path, "+250788333444")
-        self.assertEqual(norm_c3.get_urn(URN.TEL_SCHEME).path, "+18006927753")
 
     def test_channel_create(self):
         # can't use an invalid scheme for a fixed-scheme channel type

@@ -6,7 +6,9 @@ import os
 import re
 from collections import defaultdict
 from datetime import timedelta
+from html import unescape
 from pathlib import Path
+from typing import NamedTuple
 from urllib.parse import parse_qs
 from xml.etree.ElementTree import Element, SubElement
 
@@ -15,6 +17,7 @@ import dns.resolver
 import markdown
 import nh3
 from markdown.extensions import Extension
+from markdown.extensions.toc import TocExtension, slugify_unicode
 from markdown.treeprocessors import Treeprocessor
 from pgvector.django import HnswIndex, VectorField
 
@@ -363,10 +366,35 @@ class ArticleLinksProcessor(Treeprocessor):
 # itself more expressive than what the editor can round-trip.
 MARKDOWN_EXTENSIONS = ("fenced_code", "tables", "sane_lists")
 
-# nh3's default attribute allowances plus class on images (where AnnotateImages puts one) and style on tables and
-# their cells and cols (where ColumnStyles and the tables extension put what they realize)
+HEADING_TAGS = ("h1", "h2", "h3", "h4", "h5", "h6")
+
+# what a heading's id may be: what heading_id makes, with the _1, _2 the toc extension appends to keep them unique
+HEADING_ID = re.compile(r"^[\w-]+$")
+
+
+class Heading(NamedTuple):
+    """
+    A top level heading of an article, as its page lists them - the id its element carries, and its text.
+    """
+
+    id: str
+    text: str
+
+
+def heading_id(text: str, separator: str) -> str:
+    """
+    The id a heading gets from its text - the text slugified, keeping its letters whatever the language, or "section"
+    for a heading with no letters in it at all so the id still says what it anchors.
+    """
+    return slugify_unicode(text, separator) or "section"
+
+
+# nh3's default attribute allowances plus class on images (where AnnotateImages puts one), style on tables and their
+# cells and cols (where ColumnStyles and the tables extension put what they realize) and id on headings (where the
+# toc extension puts one for the page to link to)
 SANITIZE_ATTRIBUTES = {
     **nh3.ALLOWED_ATTRIBUTES,
+    **{tag: {"id"} for tag in HEADING_TAGS},
     "img": nh3.ALLOWED_ATTRIBUTES["img"] | {"class"},
     "col": nh3.ALLOWED_ATTRIBUTES.get("col", set()) | {"style"},
     "table": nh3.ALLOWED_ATTRIBUTES.get("table", set()) | {"style"},
@@ -388,9 +416,11 @@ COL_DECLARATION = re.compile(r"^(width:\s*\d+(px|%)|background:\s*#[0-9a-f]{3,8}
 def _sanitize_attribute(element: str, attribute: str, value: str) -> str | None:
     """
     Tightens what SANITIZE_ATTRIBUTES lets through: an image's class may only carry the classes AnnotateImages
-    emits, and a table, col or cell style only what our own pipeline writes. Nothing else can put those attributes
-    there, so like the sanitizing itself this is defense in depth.
+    emits, a table, col or cell style only what our own pipeline writes, and a heading's id only what heading_id
+    makes. Nothing else can put those attributes there, so like the sanitizing itself this is defense in depth.
     """
+    if element in HEADING_TAGS and attribute == "id":
+        return value if HEADING_ID.match(value) else None
     if element == "img" and attribute == "class":
         kept = [c for c in value.split() if c in IMAGE_CLASSES]
         return " ".join(kept) if kept else None
@@ -405,7 +435,7 @@ def _sanitize_attribute(element: str, attribute: str, value: str) -> str | None:
     return value
 
 
-def render_markdown(body: str, colors: dict = None, links: dict = None) -> str:
+def render_markdown(body: str, colors: dict = None, links: dict = None) -> tuple[str, list[Heading]]:
     """
     Renders authored markdown for display, resolving column backgrounds against the org's palette and article: links
     against the given map of article uuid to address. Raw HTML is escaped rather than passed through, so that a
@@ -413,22 +443,26 @@ def render_markdown(body: str, colors: dict = None, links: dict = None) -> str:
     like a tag (the `<url>` of our own quick reply syntax, say) survives instead of being quietly swallowed.
     Sanitizing stays as defense in depth, and still deals with the javascript: URLs markdown will happily make a
     link out of.
+
+    Every heading gets an id made from its text, so a page can link to it, and the top level ones come back
+    alongside the HTML in the order they appear, for the page to list them.
     """
-    return nh3.clean(
-        markdown.markdown(
-            body,
-            extensions=[
-                *MARKDOWN_EXTENSIONS,
-                EscapeRawHTML(),
-                AnnotateImages(),
-                CellBreaks(),
-                ColumnStyles(colors),
-                ArticleLinks(links),
-            ],
-        ),
-        attributes=SANITIZE_ATTRIBUTES,
-        attribute_filter=_sanitize_attribute,
+    md = markdown.Markdown(
+        extensions=[
+            *MARKDOWN_EXTENSIONS,
+            EscapeRawHTML(),
+            AnnotateImages(),
+            CellBreaks(),
+            ColumnStyles(colors),
+            ArticleLinks(links),
+            TocExtension(marker="", toc_depth=1, slugify=heading_id),  # no marker, so [TOC] in an article is just text
+        ]
     )
+    html = nh3.clean(md.convert(body), attributes=SANITIZE_ATTRIBUTES, attribute_filter=_sanitize_attribute)
+
+    # the extension's names are HTML with the tags stripped, so their entities are still encoded
+    headings = [Heading(token["id"], unescape(token["name"])) for token in md.toc_tokens]
+    return html, headings
 
 
 # what to strip from markdown to read an article as plain text - for excerpts and search snippets, where the markup
@@ -885,12 +919,16 @@ class Article(models.Model):
     def is_section(self) -> bool:
         return self.parent_id is None
 
-    def as_html(self, links: dict = None) -> str:
+    def render(self, links: dict = None) -> tuple[str, list[Heading]]:
         """
-        The article rendered for reading, with its links to other articles resolved against the given map of uuid to
-        address - see HelpSite.get_link_targets. Without one, they render as plain text.
+        The article rendered for reading, and its top level headings for the page to link to. Links to other
+        articles are resolved against the given map of uuid to address - see HelpSite.get_link_targets. Without one,
+        they render as plain text.
         """
         return render_markdown(self.body, self.source.colors, links)
+
+    def as_html(self, links: dict = None) -> str:
+        return self.render(links)[0]
 
     def as_plain_text(self) -> str:
         return to_plain_text(self.body)
