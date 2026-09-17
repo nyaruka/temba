@@ -354,7 +354,6 @@ class Channel(LegacyIDMixin, TembaModel, DependencyMixin):
         config=None,
         role=DEFAULT_ROLE,
         schemes=None,
-        normalize_urns=True,
         **kwargs,
     ):
         if isinstance(channel_type, str):
@@ -393,10 +392,6 @@ class Channel(LegacyIDMixin, TembaModel, DependencyMixin):
             create_args["uuid"] = generate_uuid()
 
         channel = cls.objects.create(**create_args)
-
-        # normalize any telephone numbers that we may now have a clue as to country
-        if org and country and "tel" in schemes and normalize_urns:
-            org.normalize_contact_tels()
 
         if channel_type.async_activation:
             on_transaction_commit(lambda: channel_type.activate(channel))

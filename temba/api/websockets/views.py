@@ -25,11 +25,11 @@ doesn't forward it) is treated as before.
 
 Unlike the rest of the internal API (``/api/internal/``), which is called by the editor running in the user's
 browser and so *must* be reachable from the public internet, every endpoint here is only ever called by the
-realtime messaging server from inside our own network. That means this API can be made truly internal: serve
-``/api/websockets/`` only on an internal-only network path (e.g. behind an internal load balancer) and refuse it
-at the public edge, so it's never exposed to the internet at all. The shared-secret header enforced by
-``HasWebSocketsSecret`` is defense-in-depth on top of that network isolation - it lets us reject anything that
-isn't the realtime server even if the path is ever reachable - but the secret is not a substitute for keeping the
+realtime messaging server from inside our own network. That means this API can be made truly internal, which is
+why it lives under ``/ti/``: serve that prefix only on an internal-only network path (e.g. behind an internal load
+balancer) and refuse it at the public edge, so it's never exposed to the internet at all. The shared-secret header
+enforced by ``HasWebSocketsSecret`` is defense-in-depth on top of that network isolation - it lets us reject anything
+that isn't the realtime server even if the path is ever reachable - but the secret is not a substitute for keeping the
 API off the public internet.
 """
 

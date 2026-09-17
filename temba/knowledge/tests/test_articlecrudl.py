@@ -144,12 +144,9 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
 
         self.assertRequestDisallowed(create_url, [None, self.agent])
 
-        # without a section named, we're making one: titled and described in plain text, and never asked its
-        # language, since nothing of it is indexed
-        self.org.set_flow_languages(self.admin, ["eng", "spa"])
+        # without a section named, we're making one: titled and described in plain text
         response = self.assertCreateFetch(create_url, [self.editor, self.admin], form_fields=("title", "description"))
         self.assertEqual("New Section", response.context["title"])
-        self.assertNotContains(response, 'name="Spanish"')
 
         self.assertCreateSubmit(
             create_url,
@@ -162,7 +159,7 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("getting-started", section.slug)
         self.assertEqual("Setting up and finding your way around.", section.description)
         self.assertIsNone(section.parent)
-        self.assertEqual("eng", section.language)
+        self.assertEqual("eng", section.language)  # the workspace's primary language, never asked
         self.assertEqual(Article.STATUS_DRAFT, section.status)  # new sections are drafts
 
         # a section is complete as described, so we're just sent back to the helpdesk
@@ -181,34 +178,29 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
             f"{Article.MAX_DESCRIPTION_LEN + 1}).",
         )
 
-        # named a section, we're making an article in it - titled here and written in the editor, and a
-        # multi-language workspace is asked which language it's in
-        article_url = f"{create_url}?section={section.uuid}"
-        response = self.assertCreateFetch(article_url, [self.editor, self.admin], form_fields=("title", "language"))
-        self.assertEqual("New Article", response.context["title"])
-        self.assertContains(response, 'name="Spanish"')
-
-        # one with a single language isn't
-        self.org.set_flow_languages(self.admin, ["eng"])
-        self.assertCreateFetch(article_url, [self.admin], form_fields=("title",))
-
+        # named a section, we're making an article in it - titled here and written in the editor. Even a
+        # multi-language workspace isn't asked which language it's in: articles take the primary language
         self.org.set_flow_languages(self.admin, ["eng", "spa"])
+        article_url = f"{create_url}?section={section.uuid}"
+        response = self.assertCreateFetch(article_url, [self.editor, self.admin], form_fields=("title",))
+        self.assertEqual("New Article", response.context["title"])
+        self.assertNotContains(response, 'name="Spanish"')
 
         self.assertCreateSubmit(
             article_url,
             self.admin,
-            {"title": "Installing", "language": "spa"},
+            {"title": "Installing"},
             new_obj_query=Article.objects.filter(title="Installing", source=self.helpdesk),
         )
 
         article = Article.objects.get(title="Installing")
         self.assertEqual("installing", article.slug)
         self.assertEqual(section, article.parent)
-        self.assertEqual("spa", article.language)
+        self.assertEqual("eng", article.language)
         self.assertEqual(Article.STATUS_DRAFT, article.status)  # new articles are drafts
 
         # and we're sent back to the helpdesk, which opens the editor on what we just made
-        response = self.requestView(article_url, self.admin, post_data={"title": "Configuring", "language": "eng"})
+        response = self.requestView(article_url, self.admin, post_data={"title": "Configuring"})
         self.assertEqual(302, response.status_code)
         self.assertEqual(
             f"{reverse('knowledge.article_list')}?edit={Article.objects.get(title='Configuring').uuid}", response.url
@@ -231,7 +223,7 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
             self.assertEqual(200, response.status_code)
             self.assertFalse(Article.objects.filter(title="Nope").exists())
 
-            response = self.requestView(article_url, self.admin, post_data={"title": "Nope", "language": "eng"})
+            response = self.requestView(article_url, self.admin, post_data={"title": "Nope"})
             self.assertEqual(200, response.status_code)
             self.assertFalse(Article.objects.filter(title="Nope").exists())
 
@@ -249,9 +241,7 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
 
         self.assertRequestDisallowed(update_url, [None, self.agent, self.admin2])
 
-        response = self.assertUpdateFetch(
-            update_url, [self.editor, self.admin], form_fields=("title", "language", "body")
-        )
+        response = self.assertUpdateFetch(update_url, [self.editor, self.admin], form_fields=("title", "body"))
 
         # the editor is pointed at this article for uploads, and fills the dialog rather than growing it
         self.assertContains(response, reverse("knowledge.article_upload", args=[article.uuid]))
@@ -270,7 +260,7 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
         site.config[HelpSite.CONFIG_PRIMARY_COLOR] = "#b03060"
         site.save(update_fields=("config",))
 
-        response = self.assertUpdateFetch(update_url, [self.admin], form_fields=("title", "language", "body"))
+        response = self.assertUpdateFetch(update_url, [self.admin], form_fields=("title", "body"))
         self.assertContains(response, 'primary-color="#b03060"')
 
         # the dialog has no title bar: the title field is slotted into the editor, which heads the article with it as
@@ -287,50 +277,28 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
         # the body stands without a label of its own either
         self.assertEqual(1, response.content.decode().count("hide_label"))
 
-        # the languages on offer reach the select itself, not just the field
-        self.assertContains(response, 'name="Kinyarwanda"')
-
-        # and are all it will accept
-        self.assertUpdateSubmit(
-            update_url,
-            self.admin,
-            {"title": "All About Flows", "language": "fra", "body": "# Flows"},
-            form_errors={"language": "Select a valid choice. fra is not one of the available choices."},
-            object_unchanged=article,
-        )
-
         # a missing title is an error the editor shows under the title, since that's where it's edited
         response = self.assertUpdateSubmit(
             update_url,
             self.admin,
-            {"title": "", "language": "kin", "body": "# Flows"},
+            {"title": "", "body": "# Flows"},
             form_errors={"title": "This field is required."},
             object_unchanged=article,
         )
         self.assertContains(response, 'slot="title-errors"')
         self.assertContains(response, "This field is required.")
 
-        self.assertUpdateSubmit(
-            update_url, self.admin, {"title": "All About Flows", "language": "kin", "body": "# Flows"}
-        )
+        self.assertUpdateSubmit(update_url, self.admin, {"title": "All About Flows", "body": "# Flows"})
 
         article.refresh_from_db()
         self.assertEqual("All About Flows", article.title)
         self.assertEqual("# Flows", article.body)
         self.assertEqual("all-about-flows", article.slug)  # the slug follows the title
-        self.assertEqual("kin", article.language)
+        self.assertEqual("eng", article.language)  # never asked, so unchanged by an edit
         self.assertEqual(Article.STATUS_DRAFT, article.status)  # saving an edit doesn't publish
 
-        # an article keeps the language it was written in as a choice even if the workspace later drops it, so that
-        # dropping a language can't make its articles permanently unsaveable
-        self.org.set_flow_languages(self.admin, ["eng"])
-        Article.objects.filter(id=article.id).update(language="spa")
-
-        response = self.assertUpdateFetch(update_url, [self.admin], form_fields=("title", "language", "body"))
-        self.assertEqual([("eng", "English"), ("spa", "Spanish")], response.context["form"].fields["language"].choices)
-
-        # a section is described rather than written: no editor, no language, and the dialog isn't held open to
-        # the window's height for an editor it doesn't have
+        # a section is described rather than written: no editor, and the dialog isn't held open to the window's
+        # height for an editor it doesn't have
         section_url = reverse("knowledge.article_update", args=[section.uuid])
         response = self.assertUpdateFetch(section_url, [self.editor, self.admin], form_fields=("title", "description"))
         self.assertContains(response, "All about flows.")

@@ -472,7 +472,7 @@ class ArticleTest(TembaTest):
 
         article.body = "# Heading\n\nSome **bold** text with a [link](https://nyaruka.com).\n\n* one\n* two"
         self.assertEqual(
-            '<h1>Heading</h1>\n<p>Some <strong>bold</strong> text with a <a href="https://nyaruka.com" '
+            '<h1 id="heading">Heading</h1>\n<p>Some <strong>bold</strong> text with a <a href="https://nyaruka.com" '
             'rel="noopener noreferrer">link</a>.</p>\n<ul>\n<li>one</li>\n<li>two</li>\n</ul>',
             article.as_html(),
         )
@@ -536,6 +536,38 @@ class ArticleTest(TembaTest):
                 article.as_html(),
                 f"for fragment {fragment}",
             )
+
+    def test_render_headings(self):
+        article = self.create_article(self.helpdesk, "Getting Started")
+
+        # every heading is anchored by an id made from its text, and the top level ones are listed alongside the HTML
+        # in the order they appear, as plain text
+        article.body = (
+            "Intro.\n\n# Setting *up* & running\n\nText.\n\n## Details\n\n# Configuración\n\n"
+            "### Deep\n\n# 中文\n\n# ???\n\n# Setting up & running\n\n[TOC]"
+        )
+        html, headings = article.render()
+        self.assertEqual(
+            '<p>Intro.</p>\n<h1 id="setting-up-running">Setting <em>up</em> &amp; running</h1>\n<p>Text.</p>\n'
+            '<h2 id="details">Details</h2>\n<h1 id="configuración">Configuración</h1>\n<h3 id="deep">Deep</h3>\n'
+            '<h1 id="中文">中文</h1>\n<h1 id="section">???</h1>\n<h1 id="setting-up-running_1">Setting up &amp; running</h1>\n'
+            "<p>[TOC]</p>",
+            html,
+        )
+        self.assertEqual(
+            [
+                ("setting-up-running", "Setting up & running"),
+                ("configuración", "Configuración"),
+                ("中文", "中文"),
+                ("section", "???"),
+                ("setting-up-running_1", "Setting up & running"),
+            ],
+            headings,
+        )
+
+        # an article with no top level headings has nothing to list
+        article.body = "Just text.\n\n## A subheading"
+        self.assertEqual(('<p>Just text.</p>\n<h2 id="a-subheading">A subheading</h2>', []), article.render())
 
     def test_as_html_cell_breaks(self):
         article = self.create_article(self.helpdesk, "Getting Started")

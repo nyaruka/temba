@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import call, patch
 from zoneinfo import ZoneInfo
 
 import requests
@@ -13,7 +13,7 @@ from temba.request_logs.models import HTTPLog
 from temba.tests import CRUDLTestMixin, TembaTest
 
 from .models import Template, TemplateTranslation
-from .tasks import refresh_templates
+from .tasks import refresh_channel_templates, refresh_templates
 
 
 class TemplateTest(TembaTest):
@@ -187,10 +187,7 @@ class TemplateTest(TembaTest):
         self.assertEqual(0, goodbye.translations.count())
         self.assertEqual(2, channel.template_translations.count())
 
-    @patch("temba.templates.models.TemplateTranslation.update_local")
-    @patch("temba.channels.types.twilio_whatsapp.TwilioWhatsappType.fetch_templates")
-    @patch("temba.channels.types.dialog360.Dialog360Type.fetch_templates")
-    def test_refresh_task(self, mock_d3c_fetch_templates, mock_twa_fetch_templates, mock_update_local):
+    def test_refresh_task(self):
         org3 = Org.objects.create(
             name="Nyaruka 3",
             timezone=ZoneInfo("Africa/Kigali"),
@@ -239,6 +236,18 @@ class TemplateTest(TembaTest):
             org=org4,
         )
 
+        # inactive channels are ignored
+        self.create_channel(
+            "D3C",
+            "360Dialog channel",
+            address="456",
+            country="BR",
+            config={
+                Channel.CONFIG_BASE_URL: "https://waba-v2.360dialog.io",
+                Channel.CONFIG_AUTH_TOKEN: "123456789",
+            },
+        ).release(self.admin)
+
         d3c_channel = self.create_channel(
             "D3C",
             "360Dialog channel",
@@ -250,13 +259,33 @@ class TemplateTest(TembaTest):
             },
         )
 
-        self.create_channel(
+        twa_channel = self.create_channel(
             "TWA",
             "TWilio WhatsAPp channel",
             address="1234",
             country="US",
             config={
                 Channel.CONFIG_BASE_URL: "https://example.com/whatsapp",
+                Channel.CONFIG_AUTH_TOKEN: "123456789",
+            },
+        )
+
+        # cron only queues a task per eligible channel (self.channel is Android so has no templates)
+        with patch("temba.templates.tasks.refresh_channel_templates.delay") as mock_delay:
+            self.assertEqual({"queued": 2}, refresh_templates())
+
+        self.assertCountEqual([call(d3c_channel.id), call(twa_channel.id)], mock_delay.call_args_list)
+
+    @patch("temba.templates.models.TemplateTranslation.update_local")
+    @patch("temba.channels.types.dialog360.Dialog360Type.fetch_templates")
+    def test_refresh_channel_task(self, mock_d3c_fetch_templates, mock_update_local):
+        d3c_channel = self.create_channel(
+            "D3C",
+            "360Dialog channel",
+            address="1234",
+            country="BR",
+            config={
+                Channel.CONFIG_BASE_URL: "https://waba-v2.360dialog.io",
                 Channel.CONFIG_AUTH_TOKEN: "123456789",
             },
         )
@@ -274,33 +303,30 @@ class TemplateTest(TembaTest):
             raise requests.ConnectionError("timeout")
 
         mock_d3c_fetch_templates.side_effect = mock_fetch
-        mock_twa_fetch_templates.side_effect = mock_fetch
         mock_update_local.return_value = None
 
-        refresh_templates()
+        refresh_channel_templates(d3c_channel.id)
 
         self.assertEqual(1, mock_d3c_fetch_templates.call_count)
-        self.assertEqual(1, mock_twa_fetch_templates.call_count)
-        self.assertEqual(2, mock_update_local.call_count)
+        self.assertEqual(1, mock_update_local.call_count)
         self.assertEqual(0, Incident.objects.filter(incident_type=ChannelTemplatesFailedIncidentType.slug).count())
 
-        # if one channel fails, others continue
+        # request errors are swallowed as they're already logged against the channel
         mock_d3c_fetch_templates.side_effect = mock_fail_fetch
 
-        refresh_templates()
+        refresh_channel_templates(d3c_channel.id)
 
         self.assertEqual(2, mock_d3c_fetch_templates.call_count)
-        self.assertEqual(2, mock_twa_fetch_templates.call_count)
-        self.assertEqual(3, mock_update_local.call_count)
+        self.assertEqual(1, mock_update_local.call_count)
 
         # one failure isn't enough to create an incident
         self.assertEqual(0, Incident.objects.filter(incident_type=ChannelTemplatesFailedIncidentType.slug).count())
 
         # but 5 will be
-        refresh_templates()
-        refresh_templates()
-        refresh_templates()
-        refresh_templates()
+        refresh_channel_templates(d3c_channel.id)
+        refresh_channel_templates(d3c_channel.id)
+        refresh_channel_templates(d3c_channel.id)
+        refresh_channel_templates(d3c_channel.id)
 
         self.assertEqual(
             1,
@@ -312,7 +338,7 @@ class TemplateTest(TembaTest):
         # a successful fetch will clear it
         mock_d3c_fetch_templates.side_effect = mock_fetch
 
-        refresh_templates()
+        refresh_channel_templates(d3c_channel.id)
 
         self.assertEqual(
             0,
@@ -324,9 +350,20 @@ class TemplateTest(TembaTest):
         # other exception logged to sentry
         mock_d3c_fetch_templates.side_effect = Exception("boom")
         with patch("logging.Logger.error") as mock_log_error:
-            refresh_templates()
+            refresh_channel_templates(d3c_channel.id)
             self.assertEqual(1, mock_log_error.call_count)
             self.assertEqual("Error refreshing whatsapp templates: boom", mock_log_error.call_args[0][0])
+
+        # channel that has been released since being queued is skipped
+        mock_d3c_fetch_templates.reset_mock()
+        d3c_channel.release(self.admin)
+
+        refresh_channel_templates(d3c_channel.id)
+
+        # as is a channel that no longer exists
+        refresh_channel_templates(d3c_channel.id + 1000)
+
+        mock_d3c_fetch_templates.assert_not_called()
 
 
 class TemplateCRUDLTest(CRUDLTestMixin, TembaTest):

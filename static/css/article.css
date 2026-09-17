@@ -79,6 +79,7 @@
   font-weight: 650;
   line-height: 1.25;
   letter-spacing: -0.01em;
+  scroll-margin-top: 32px; /* a heading linked to from the sidebar lands a little below the top of the window */
 }
 
 .doc h1 {

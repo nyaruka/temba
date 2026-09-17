@@ -334,7 +334,9 @@ SMARTMIN_DEFAULT_MESSAGES = False
 
 LOGGING = {
     "version": 1,
-    "disable_existing_loggers": True,
+    # loggers created before this is applied stay enabled - gunicorn sets up its access and error loggers in the master
+    # before the app loads in a worker, and disabling them silences its request log
+    "disable_existing_loggers": False,
     "formatters": {"verbose": {"format": "%(levelname)s %(asctime)s %(module)s %(message)s"}},
     "handlers": {
         "console": {"level": "DEBUG", "class": "logging.StreamHandler", "formatter": "verbose"},

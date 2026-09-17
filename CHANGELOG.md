@@ -1,3 +1,15 @@
+v26.3.101 (2026-09-17)
+-------------------------
+ * Serve the websockets endpoints under an internal-only URL prefix
+ * Reject non-E164 phone numbers in contact imports and remove URN normalization task
+ * Require a real translation for every string in maintained locales
+ * Fan out template refresh cron into per-channel tasks
+
+v26.3.100 (2026-09-16)
+-------------------------
+ * Keep loggers that exist before Django configures logging
+ * Fix double slash in sample import link on welcome page
+
 v26.3.99 (2026-09-16)
 -------------------------
  * Edit help articles as the help site renders them

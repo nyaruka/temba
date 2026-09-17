@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-16 15:01-0700\n"
+"POT-Creation-Date: 2026-09-17 11:37-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Language: \n"
 "MIME-Version: 1.0\n"
@@ -2234,6 +2234,10 @@ msgstr ""
 
 #, python-format
 msgid "Import file contains duplicated contact UUID '%(uuid)s' on row %(row)s."
+msgstr ""
+
+#, python-format
+msgid "Import file contains invalid phone number '%(number)s' on row %(row)s. Ensure phone numbers include a country code."
 msgstr ""
 
 #, python-format
@@ -5696,6 +5700,9 @@ msgstr ""
 msgid "In this section"
 msgstr ""
 
+msgid "In this article"
+msgstr ""
+
 msgid "This is a preview of your help site as its readers will see it."
 msgstr ""
 
@@ -6365,7 +6372,7 @@ msgid ""
 "          For example, you might have groups\n"
 "          called <i>Field Staff</i>, <i>Office Managers</i>, or <i>Trainees</i>. You can import these groups into\n"
 "          %(name)s by uploading an Excel file using our\n"
-"          <a href=\"%(STATIC_URL)s/examples/sample_import.xlsx\">\n"
+"          <a href=\"%(STATIC_URL)sexamples/sample_import.xlsx\">\n"
 "            template\n"
 "          </a>\n"
 "          as a guide. We'll create a group for you automatically for each file you upload. Don't worry, it's easy to add or\n"
