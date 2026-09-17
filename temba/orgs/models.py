@@ -734,14 +734,6 @@ class Org(LegacyIDMixin, SmartModel):
         setattr(self, cache_attr, schemes)
         return schemes
 
-    def normalize_contact_tels(self):
-        """
-        Attempts to normalize any contacts which don't have full e164 phone numbers
-        """
-        from .tasks import normalize_contact_tels_task
-
-        normalize_contact_tels_task.delay(self.pk)
-
     @cached_property
     def active_contacts_group(self):
         from temba.contacts.models import ContactGroup

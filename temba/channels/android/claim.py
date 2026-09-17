@@ -92,5 +92,3 @@ def claim_channel(org, channel, phone: str):
     channel.claim_code = None
     channel.address = phone
     channel.save()
-
-    org.normalize_contact_tels()

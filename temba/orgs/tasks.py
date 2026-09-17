@@ -7,7 +7,6 @@ from celery import shared_task
 from django.conf import settings
 from django.utils import timezone
 
-from temba.contacts.models import URN, ContactURN
 from temba.utils.crons import cron_task
 
 from .models import DailyCount, Export, Invitation, ItemCount, Org, OrgImport, OrgMembership
@@ -37,17 +36,6 @@ def perform_export(export_id):
         Export.objects.select_related("org", "created_by").get(id=export_id).perform()
     finally:
         gc.collect()
-
-
-@shared_task
-def normalize_contact_tels_task(org_id):
-    org = Org.objects.get(id=org_id)
-
-    # do we have an org-level country code? if so, try to normalize any numbers not starting with +
-    if org.default_country_code:
-        urns = ContactURN.objects.filter(org=org, scheme=URN.TEL_SCHEME).exclude(path__startswith="+").iterator()
-        for urn in urns:
-            urn.ensure_number_normalization(org.default_country_code)
 
 
 @cron_task()

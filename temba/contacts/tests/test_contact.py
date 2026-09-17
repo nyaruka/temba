@@ -896,17 +896,6 @@ class ContactTest(TembaTest):
         contact = self.create_contact(name="Boy", phone="12345")
         self.assertEqual(contact.get_display(), "Boy")
 
-        contact3 = self.create_contact(name=None, phone="0788111222")
-        self.channel.country = "RW"
-        self.channel.save()
-
-        normalized = contact3.get_urn(URN.TEL_SCHEME).ensure_number_normalization(self.channel)
-        self.assertEqual(normalized.path, "+250788111222")
-
-        contact4 = self.create_contact(name=None, phone="0788333444")
-        normalized = contact4.get_urn(URN.TEL_SCHEME).ensure_number_normalization(self.channel)
-        self.assertEqual(normalized.path, "+250788333444")
-
         contact5 = self.create_contact(name="Jimmy", phone="+250788333555")
         mods = contact5.update_urns(["twitter:jimmy_woot", "tel:0788333666"])
         contact5.modify(self.editor, mods)

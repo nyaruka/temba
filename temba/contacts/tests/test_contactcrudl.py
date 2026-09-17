@@ -898,6 +898,17 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
             object_unchanged=contact,
         )
 
+        # try to change an existing phone URN to one that isn't E164
+        mr_mocks.contact_urns({"tel:0979111111": False})
+
+        self.assertUpdateSubmit(
+            update_url,
+            self.admin,
+            {"name": "Bobby", "status": "B", "language": "spa", "groups": [testers.id], "urn__tel__0": "0979111111"},
+            form_errors={"urn__tel__0": "Invalid phone number. Ensure number includes country code."},
+            object_unchanged=contact,
+        )
+
         # update all fields (removes second tel URN, adds a new Facebook URN)
         self.assertUpdateSubmit(
             update_url,

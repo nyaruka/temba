@@ -70,6 +70,7 @@ dev = [
 [tool.code_check]
 packages = ["temba"]
 locale = "locale"
+translated = ["es", "fr", "pt_BR"]
 migrations = true
 ignore = ["env/*", ".venv/*", ".claude/*", "fabfile.py", "media/*", "sitestatic/*", "static/*", "node_modules/*"]
 

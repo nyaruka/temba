@@ -1455,25 +1455,6 @@ class ContactURN(LegacyIDMixin, models.Model):
     # auth tokens - usage is channel specific, e.g. every FCM URN has its own token, FB channels have per opt-in tokens
     auth_tokens = models.JSONField(null=True)
 
-    def ensure_number_normalization(self, country_code):
-        """
-        Tries to normalize our phone number from a possible 10 digit (0788 383 383) to a 12 digit number
-        with country code (+250788383383) using the country we now know about the channel.
-        """
-        number = self.path
-
-        if number and not number[0] == "+" and country_code:
-            norm_number = URN.normalize_number(number, country_code)
-
-            # don't trounce existing contacts with that country code already
-            norm_urn = URN.from_tel(norm_number)
-            if not ContactURN.objects.filter(identity=norm_urn, org_id=self.org_id).exclude(id=self.id):
-                self.identity = norm_urn
-                self.path = norm_number
-                self.save(update_fields=["identity", "path"])
-
-        return self
-
     def get_display(self, org=None, international: bool = False, formatted: bool = True) -> str:
         """
         Gets a representation of the URN for display, e.g. tel:+12345678901 becomes +1 234 567-8901
@@ -2171,6 +2152,7 @@ class ContactImport(SmartModel):
             raise ValidationError(_("Import file contains an empty header."))
 
         mappings = cls._auto_mappings(org, headers)
+        country_code = org.default_country_code
 
         # iterate over rest of the rows to do row-level validation
         seen_uuids = set()
@@ -2187,7 +2169,7 @@ class ContactImport(SmartModel):
                 break
 
             row = cls._parse_row(raw_row, len(mappings))
-            uuid, urns = cls._extract_uuid_and_urns(row, mappings)
+            uuid, urns = cls._extract_uuid_and_urns(row, mappings, country_code)
             if uuid:
                 if uuid in seen_uuids:
                     raise ValidationError(
@@ -2195,7 +2177,17 @@ class ContactImport(SmartModel):
                         params={"uuid": uuid, "row": intcomma(row_num)},
                     )
                 seen_uuids.add(uuid)
-            for urn in urns:
+            for value, urn in urns:
+                # phone numbers must be E164 by the time they reach mailroom, so a local number is only accepted if
+                # the workspace has a country to interpret it in
+                if URN.to_parts(urn)[0] == URN.TEL_SCHEME and not URN.validate(urn):
+                    raise ValidationError(
+                        _(
+                            "Import file contains invalid phone number '%(number)s' on row %(row)s. Ensure phone "
+                            "numbers include a country code."
+                        ),
+                        params={"number": value, "row": intcomma(row_num)},
+                    )
                 if urn in seen_urns:
                     raise ValidationError(
                         _("Import file contains duplicated contact URN '%(urn)s' on row %(row)s."),
@@ -2220,10 +2212,11 @@ class ContactImport(SmartModel):
 
         return mappings, num_records
 
-    @staticmethod
-    def _extract_uuid_and_urns(row, mappings) -> tuple[str, list[str]]:
+    @classmethod
+    def _extract_uuid_and_urns(cls, row, mappings, country_code: str) -> tuple[str, list[tuple[str, str]]]:
         """
-        Extracts any UUIDs and URNs from the given row so they can be checked for uniqueness
+        Extracts any UUIDs and URNs from the given row so they can be validated - URNs as tuples of the original value
+        and the normalized URN
         """
         uuid = ""
         urns = []
@@ -2232,13 +2225,20 @@ class ContactImport(SmartModel):
             if mapping["type"] == "attribute" and mapping["name"] == "uuid":
                 uuid = value.lower()
             elif mapping["type"] == "scheme" and value:
-                urn = URN.from_parts(mapping["scheme"], value)
-                try:
-                    urn = URN.normalize(urn)
-                except ValueError:
-                    pass
-                urns.append(urn)
+                urns.append((value, cls._normalize_urn(mapping["scheme"], value, country_code)))
         return uuid, urns
+
+    @staticmethod
+    def _normalize_urn(scheme: str, value: str, country_code: str) -> str:
+        """
+        Normalizes a URN value from the import file, e.g. a local phone number becomes E164 if the workspace has a
+        country. Values which can't be normalized are returned as is.
+        """
+        urn = URN.from_parts(scheme, value)
+        try:
+            return URN.normalize(urn, country_code=country_code)
+        except ValueError:
+            return urn
 
     @classmethod
     def _auto_mappings(cls, org: Org, headers: list[str]) -> list:
@@ -2478,16 +2478,10 @@ class ContactImport(SmartModel):
                     value = value.lower()
                 spec[attribute] = value
             elif mapping["type"] == "scheme":
-                scheme = mapping["scheme"]
                 if value:
                     if "urns" not in spec:
                         spec["urns"] = []
-                    urn = URN.from_parts(scheme, value)
-                    try:
-                        urn = URN.normalize(urn, country_code=self.org.default_country_code)
-                    except ValueError:
-                        pass
-                    spec["urns"].append(urn)
+                    spec["urns"].append(self._normalize_urn(mapping["scheme"], value, self.org.default_country_code))
 
             elif mapping["type"] in ("field", "new_field"):
                 if "fields" not in spec:

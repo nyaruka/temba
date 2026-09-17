@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-17 14:39+0000\n"
+"POT-Creation-Date: 2026-09-17 14:49+0000\n"
 "PO-Revision-Date: 2019-05-13 20:14+0000\n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
@@ -2251,6 +2251,10 @@ msgid "Import file contains duplicated contact UUID '%(uuid)s' on row %(row)s."
 msgstr "Le fichier d'importation contient l'UUID de contact '%(uuid)s' en double à la ligne %(row)s."
 
 #, python-format
+msgid "Import file contains invalid phone number '%(number)s' on row %(row)s. Ensure phone numbers include a country code."
+msgstr "Le fichier d'importation contient le numéro de téléphone invalide '%(number)s' à la ligne %(row)s. Assurez-vous que les numéros de téléphone incluent l'indicatif du pays."
+
+#, python-format
 msgid "Import file contains duplicated contact URN '%(urn)s' on row %(row)s."
 msgstr "Le fichier d'importation contient l'URN de contact '%(urn)s' en double à la ligne %(row)s."
 
@@ -2786,21 +2790,17 @@ msgstr "Jamais"
 msgid "Calls"
 msgstr "Appels"
 
-#, fuzzy
-#| msgid "Website Language"
 msgid "Website"
-msgstr "Langue du site"
+msgstr "Site web"
 
-#, fuzzy
-#| msgid "Documentation"
 msgid "Documents"
-msgstr "Documentation"
+msgstr "Documents"
 
 msgid "The address to crawl, e.g. https://help.example.com"
-msgstr ""
+msgstr "L'adresse à explorer, par ex. https://help.example.com"
 
 msgid "Max Pages"
-msgstr ""
+msgstr "Nombre maximal de pages"
 
 msgid "Refresh"
 msgstr "Actualiser"
@@ -2878,10 +2878,10 @@ msgid "Shortcuts"
 msgstr "Raccourcis"
 
 msgid "Helpdesk"
-msgstr ""
+msgstr "Centre d'aide"
 
 msgid "Indexing"
-msgstr ""
+msgstr "Indexation en cours"
 
 msgid "Daily"
 msgstr "Quotidiennement"
@@ -2907,38 +2907,30 @@ msgstr "Une erreur s'est produite. Veuillez réessayer plus tard."
 msgid "Not available"
 msgstr "Non disponible"
 
-#, fuzzy
-#| msgid "New Shortcut"
 msgid "New Source"
-msgstr "Nouveau raccourci"
+msgstr "Nouvelle source"
 
 msgid "Upload"
-msgstr ""
+msgstr "Téléverser"
 
-#, fuzzy
-#| msgid "Update Shortcut"
 msgid "Update Source"
-msgstr "Mettre à jour le raccourci"
+msgstr "Mettre à jour la source"
 
-#, fuzzy
-#| msgid "Delete Shortcut"
 msgid "Delete Source"
-msgstr "Supprimer le raccourci"
+msgstr "Supprimer la source"
 
 msgid "New Shortcut"
 msgstr "Nouveau raccourci"
 
-#, fuzzy
-#| msgid "Your label has been deleted."
 msgid "Your knowledge source has been deleted."
-msgstr "Votre étiquette a été supprimée."
+msgstr "Votre source de connaissances a été supprimée."
 
 msgid "Files can only be added to document sets."
-msgstr ""
+msgstr "Les fichiers ne peuvent être ajoutés qu'à des ensembles de documents."
 
 #, python-format
 msgid "Limit of %d documents reached."
-msgstr ""
+msgstr "La limite de %d documents est atteinte."
 
 msgid "Unsupported file type"
 msgstr "Type de fichier non pris en charge"
@@ -3450,7 +3442,7 @@ msgid "Tickets"
 msgstr "Billets"
 
 msgid "Knowledge"
-msgstr ""
+msgstr "Connaissances"
 
 msgid "Notifications"
 msgstr "Notifications"
@@ -5694,15 +5686,13 @@ msgstr "La vérification a échoué. Veuillez réessayer."
 msgid "The background colors articles can give their columns."
 msgstr "Les couleurs de fond que les articles peuvent donner à leurs colonnes."
 
-#, fuzzy, python-format
-#| msgid "You are about to delete the <b>%(object)s</b> team. There is no way to undo this. Are you sure?"
+#, python-format
 msgid "You are about to delete the document <b>%(object.name)s</b> and everything indexed from it. There is no way to undo this. Are you sure?"
-msgstr "Vous êtes sur le point de supprimer l'équipe <b>%(object)s</b>. Cette action est irréversible. Voulez-vous continuer ?"
+msgstr "Vous êtes sur le point de supprimer le document <b>%(object.name)s</b> et tout ce qui en a été indexé. Cette action est irréversible. Voulez-vous continuer ?"
 
-#, fuzzy, python-format
-#| msgid "You are about to delete the <b>%(object)s</b> team. There is no way to undo this. Are you sure?"
+#, python-format
 msgid "You are about to delete the knowledge source <b>%(object)s</b> and everything indexed from it. There is no way to undo this. Are you sure?"
-msgstr "Vous êtes sur le point de supprimer l'équipe <b>%(object)s</b>. Cette action est irréversible. Voulez-vous continuer ?"
+msgstr "Vous êtes sur le point de supprimer la source de connaissances <b>%(object)s</b> et tout ce qui en a été indexé. Cette action est irréversible. Voulez-vous continuer ?"
 
 msgid "Update Shortcut"
 msgstr "Mettre à jour le raccourci"
@@ -5713,43 +5703,29 @@ msgstr "Supprimer le raccourci"
 msgid "No shortcuts"
 msgstr "Aucun raccourci"
 
-#, fuzzy
-#| msgid "These are canned responses that agents can use to quickly reply to tickets."
 msgid "Canned responses that agents can use to quickly reply to tickets."
-msgstr "Il s'agit de réponses préenregistrées que les agents peuvent utiliser pour répondre rapidement aux billets."
+msgstr "Réponses préenregistrées que les agents peuvent utiliser pour répondre rapidement aux billets."
 
-#, fuzzy
-#| msgid "Delete Event"
 msgid "Delete Document"
-msgstr "Supprimer l'événement"
+msgstr "Supprimer le document"
 
 msgid "Uploaded documents that AI agents can search when handling conversations."
-msgstr ""
+msgstr "Documents téléversés que les agents IA peuvent consulter lorsqu'ils traitent des conversations."
 
-#, fuzzy
-#| msgid "You have reached the per-workspace limit and must delete existing ones before you can create new ones."
 msgid "You have reached the limit of documents for this source and must delete existing ones before you can upload more."
-msgstr "Vous avez atteint la limite par espace de travail et vous devez supprimer des éléments existants avant de pouvoir en créer de nouveaux."
+msgstr "Vous avez atteint la limite de documents pour cette source et vous devez supprimer des documents existants avant de pouvoir en téléverser d'autres."
 
-#, fuzzy
-#| msgid "No sync events yet"
 msgid "No documents yet"
-msgstr "Aucun événement de synchronisation pour l'instant"
+msgstr "Aucun document pour l'instant"
 
-#, fuzzy
-#| msgid "Last synced"
 msgid "Last Indexed"
-msgstr "Dernière synchronisation"
+msgstr "Dernière indexation"
 
-#, fuzzy
-#| msgid "Usages"
 msgid "Pages"
-msgstr "Utilisations"
+msgstr "Pages"
 
-#, fuzzy
-#| msgid "No models yet"
 msgid "No pages yet"
-msgstr "Pas encore de modèles"
+msgstr "Aucune page pour l'instant"
 
 msgid "Page not found"
 msgstr "Page introuvable"
