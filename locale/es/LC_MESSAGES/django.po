@@ -5652,10 +5652,8 @@ msgstr "Configurar"
 msgid "Not verified"
 msgstr "No verificado"
 
-#, fuzzy
-#| msgid "Title"
 msgid "Subtitle"
-msgstr "Título"
+msgstr "Subtítulo"
 
 msgid "An import is already in progress. Wait for it to finish before starting another."
 msgstr "Ya hay una importación en curso. Espere a que termine antes de iniciar otra."
