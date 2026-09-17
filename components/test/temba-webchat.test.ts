@@ -1,5 +1,5 @@
 import { expect } from '@open-wc/testing';
-import { SinonStub, useFakeTimers } from 'sinon';
+import { SinonStub, stub as sinonStub, useFakeTimers } from 'sinon';
 import { WebChat } from '../src/webchat/WebChat';
 import { Chat } from '../src/display/Chat';
 import {
@@ -393,6 +393,22 @@ describe('temba-webchat', () => {
     expect(requestsTo(RECEIVE_URL).length).to.equal(1);
   });
 
+  it('treats a message the platform refused as unsent', async () => {
+    const webChat = await openWebChat();
+
+    // accepted-looking, but nothing was taken
+    clearMockPosts();
+    mockPOST(RECEIVE_URL, { message: 'Message Accepted', data: [] });
+
+    await typeMessage(webChat, 'Hello there');
+    await pressEnter(webChat);
+    await settle(() => webChat.error !== null);
+
+    expect(webChat.error).to.equal('Your message could not be sent');
+    expect(getInput(webChat).value).to.equal('Hello there');
+    expect(getChat(webChat).messageGroups.length).to.equal(0);
+  });
+
   it('gives a message back when it fails to send', async () => {
     const webChat = await openWebChat();
 
@@ -459,6 +475,60 @@ describe('temba-webchat', () => {
     expect(hasMessage(webChat, 'missed-1')).to.equal(true);
     expect(requestsTo(HISTORY_URL).length).to.equal(1);
     expect(webChat.quickReplies).to.deep.equal(['Yes']);
+
+    // while the panel was open, so nothing is unread
+    expect(webChat.unread).to.equal(0);
+
+    // recovered while closed, only the replies not already shown count
+    webChat.open = false;
+    await webChat.updateComplete;
+    clearMockGets();
+    mockGET(HISTORY_URL, {
+      events: [
+        msgOut('missed-3', 'Hello again'),
+        msgOut('missed-2', 'Anyone home?'),
+        msgOut('missed-1', 'You still there?')
+      ]
+    });
+    mockSocket.subs[0].onSubscribed();
+    await settle(() => hasMessage(webChat, 'missed-3'));
+    expect(webChat.unread).to.equal(1);
+  });
+
+  it('opens a connection of its own to a platform on another origin', async () => {
+    const own = new MockSocketProvider();
+    const disconnect = sinonStub();
+    const created: string[] = [];
+    const createStub = sinonStub(
+      WebChat.prototype,
+      'createSocketManager'
+    ).callsFake((url: string) => {
+      created.push(url);
+      return Object.assign(own, { disconnect }) as any;
+    });
+
+    try {
+      const webChat = await openWebChat({
+        host: 'https://platform.example.com'
+      });
+
+      // the widget's own connection, to the platform, not the page's
+      expect(created).to.deep.equal(['wss://platform.example.com/ws/connect']);
+      expect(own.activeChannels()).to.deep.equal([SOCKET]);
+      expect(mockSocket.activeChannels()).to.deep.equal([]);
+
+      // and its requests go there too
+      expect(requestsTo(START_URL)[0].url).to.equal(
+        `https://platform.example.com/c/wch/${CHANNEL}/start`
+      );
+
+      // leaving the page closes it
+      webChat.remove();
+      expect(own.activeChannels()).to.deep.equal([]);
+      expect(disconnect.calledOnce).to.equal(true);
+    } finally {
+      createStub.restore();
+    }
   });
 
   it('uploads attachments and sends them with the next message', async () => {

@@ -92,6 +92,19 @@ export class SocketManager implements SocketProvider {
   }
 
   /**
+   * Closes the connection, if one was opened, and forgets its
+   * subscriptions. For a manager owned by a single component - the page's
+   * shared one lives for the life of the page and is never closed.
+   */
+  public disconnect(): void {
+    if (this.socket) {
+      this.channels.clear();
+      this.socket.disconnect();
+      this.socket = null;
+    }
+  }
+
+  /**
    * Publishes data on a channel. The server proxies client publications
    * (e.g. typing events on history channels) to mailroom for authorization
    * and fan-out; a rejection means the publication was denied.

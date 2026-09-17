@@ -9,7 +9,7 @@ import {
 import { property } from 'lit/decorators.js';
 import { msg } from '@lit/localize';
 import { Centrifuge } from 'centrifuge';
-import { generateUUIDv7, getCookie, setCookie } from '../utils';
+import { getCookie, setCookie } from '../utils';
 import { Chat, MsgEvent } from '../display/Chat';
 import { QuickReply } from '../interfaces';
 import {
@@ -694,6 +694,10 @@ export class WebChat extends LitElement {
 
   private chat: Chat;
   private sockets: SocketProvider;
+
+  // the connection of our own we open when the platform is another origin,
+  // which we close again when we're done with it
+  private ownSockets: SocketManager;
   private subscription: SocketSubscription;
   private connectionWatch: SocketSubscription;
   private connecting = false;
@@ -810,6 +814,19 @@ export class WebChat extends LitElement {
   }
 
   /**
+   * Opens a realtime connection of our own to the given websocket url - for
+   * a platform on another origin, which the page's shared connection can't
+   * reach. Exposed so tests can stand in a mock for it.
+   */
+  public createSocketManager(url: string): SocketManager {
+    return new SocketManager(() => {
+      const socket = new Centrifuge(url);
+      socket.connect();
+      return socket;
+    });
+  }
+
+  /**
    * The realtime connection: the page's shared one when the platform is our
    * own origin, otherwise a connection of our own to the platform host.
    */
@@ -818,11 +835,8 @@ export class WebChat extends LitElement {
       const base = this.baseUrl();
       if (base !== window.location.origin) {
         const url = `${base.replace(/^http/i, 'ws')}/ws/connect`;
-        this.sockets = new SocketManager(() => {
-          const socket = new Centrifuge(url);
-          socket.connect();
-          return socket;
-        });
+        this.ownSockets = this.createSocketManager(url);
+        this.sockets = this.ownSockets;
       } else {
         this.sockets = {
           subscribe: subscribeToSocket,
@@ -903,6 +917,11 @@ export class WebChat extends LitElement {
       this.connectionWatch.unsubscribe();
       this.connectionWatch = null;
     }
+    if (this.ownSockets) {
+      this.ownSockets.disconnect();
+      this.ownSockets = null;
+      this.sockets = null;
+    }
     this.subscribedOnce = false;
   }
 
@@ -939,6 +958,17 @@ export class WebChat extends LitElement {
       .then((page) => {
         if (page) {
           const events = [...page.events].reverse();
+
+          // replies we haven't shown yet count as unread like live ones do
+          const missed = events.filter(
+            (e) =>
+              e.type === 'msg_out' &&
+              !this.chat.messageExists({ uuid: e.msg_uuid } as MsgEvent)
+          );
+          if (!this.open) {
+            this.unread += missed.length;
+          }
+
           this.chat.addMessages(
             events.map((e) => toMsgEvent(e, this.activeUserAvatar)),
             null,
@@ -1120,11 +1150,14 @@ export class WebChat extends LitElement {
         text,
         attachments
       });
-      if (status !== 200) {
+      // courier answers an accepted message with its uuid - one it refused
+      // (e.g. a workspace at its contact limit) comes back accepted-looking
+      // but with nothing in data
+      const uuid = json?.data?.[0]?.msg_uuid;
+      if (status !== 200 || !uuid) {
         throw new Error(`error sending message: ${status}`);
       }
 
-      const uuid = json?.data?.[0]?.msg_uuid || generateUUIDv7();
       this.chat.addMessages(
         [
           {
