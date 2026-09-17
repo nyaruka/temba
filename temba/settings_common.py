@@ -225,7 +225,6 @@ FORM_RENDERER = "django.forms.renderers.TemplatesSetting"
 # things that are only for the app's own responses go below it - static files are served pre-compressed with a
 # far-future max-age and mustn't be gzipped again or marked uncacheable.
 MIDDLEWARE = (
-    "temba.middleware.InternalPortMiddleware",
     "temba.middleware.ProxiedRequestMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.csp.ContentSecurityPolicyMiddleware",
