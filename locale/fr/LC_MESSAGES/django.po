@@ -5773,10 +5773,8 @@ msgstr "Dernière mise à jour le %(date)s"
 msgid "In this section"
 msgstr "Dans cette section"
 
-#, fuzzy
-#| msgid "In this section"
 msgid "In this article"
-msgstr "Dans cette section"
+msgstr "Dans cet article"
 
 msgid "This is a preview of your help site as its readers will see it."
 msgstr "Ceci est un aperçu de votre site d'aide tel que ses lecteurs le verront."
