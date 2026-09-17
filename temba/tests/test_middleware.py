@@ -3,7 +3,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.core.exceptions import DisallowedHost, MiddlewareNotUsed
-from django.http import Http404, HttpResponse
+from django.http import HttpResponse
 from django.test import Client, RequestFactory, override_settings
 from django.urls import reverse
 
@@ -114,21 +114,18 @@ class ProxiedRequestTest(TembaTest):
             self.assertEqual(b"served", self.serve("/system/ping/", 8021).content)
 
             for path in ("/", "/msg/", "/api/v2/contacts.json", "/sitestatic/css/temba.css", "/system/ping"):
-                with self.assertRaises(Http404, msg=path):
-                    self.serve(path, 8021)
+                self.assertEqual(404, self.serve(path, 8021).status_code, path)
 
     def test_other_ports_serve_everything_but_the_internal_api(self):
         with override_settings(**self.SPLIT):
             for path in ("/", "/msg/", "/api/v2/contacts.json", "/sitestatic/css/temba.css", "/system/ping/"):
                 self.assertEqual(b"served", self.serve(path, 8020).content, path)
 
-            with self.assertRaises(Http404):
-                self.serve("/ti/websockets/connect", 8020)
+            self.assertEqual(404, self.serve("/ti/websockets/connect", 8020).status_code)
 
     def test_port_is_the_one_connected_to_not_the_one_claimed(self):
         with override_settings(USE_X_FORWARDED_PORT=True, **self.SPLIT):
-            with self.assertRaises(Http404):
-                self.serve("/ti/websockets/connect", 8020, HTTP_X_FORWARDED_PORT="8021")
+            self.assertEqual(404, self.serve("/ti/websockets/connect", 8020, HTTP_X_FORWARDED_PORT="8021").status_code)
 
     def test_through_the_whole_stack(self):
         # a fresh client so that the middleware is loaded with the split in place
@@ -139,11 +136,14 @@ class ProxiedRequestTest(TembaTest):
             self.assertEqual(
                 200, client.post("/ti/websockets/connect", content_type="application/json", **internal).status_code
             )
-            self.assertEqual(404, client.get("/", **internal).status_code)
+            # refused outright, not with the 404 page - the middleware that gives it its context hasn't run
+            response = client.get("/", **internal)
+            self.assertEqual(404, response.status_code)
+            self.assertEqual(b"", response.content)
 
-            self.assertEqual(
-                404, client.post("/ti/websockets/connect", content_type="application/json", **public).status_code
-            )
+            response = client.post("/ti/websockets/connect", content_type="application/json", **public)
+            self.assertEqual(404, response.status_code)
+            self.assertEqual(b"", response.content)
             self.assertEqual(200, client.get(reverse("public.public_index"), **public).status_code)
 
     def test_not_used_when_nothing_is_wanted(self):

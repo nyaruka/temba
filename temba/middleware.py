@@ -4,7 +4,7 @@ import traceback
 from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import MiddlewareNotUsed
-from django.http import Http404, HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpResponseNotFound
 from django.utils import timezone, translation
 
 from temba.orgs.models import Org
@@ -53,8 +53,9 @@ class ProxiedRequestMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        # a bare 404 rather than the 404 page: nothing later in the chain has run yet, so the page's context isn't there
         if settings.INTERNAL_PORT and not self._served_on_port(request):
-            raise Http404()
+            return HttpResponseNotFound()
 
         if settings.SECURE_ASSUME_HTTPS:
             request.META["wsgi.url_scheme"] = "https"
