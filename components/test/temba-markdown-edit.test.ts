@@ -747,6 +747,198 @@ describe(TAG, () => {
     });
   });
 
+  describe('a slotted subtitle', () => {
+    const getSubtitled = async (): Promise<MarkdownEditor> => {
+      const editor = (await fixture(
+        `<${TAG} widget_only endpoint="${UPLOAD}">
+          <textarea slot="title" name="title" rows="1">Getting started</textarea>
+          <textarea slot="subtitle" name="subtitle" rows="1">The first steps</textarea>
+        </${TAG}>`
+      )) as MarkdownEditor;
+      editor.value = '# Heading\n\nA paragraph.';
+      await editor.updateComplete;
+      return editor;
+    };
+
+    const fieldOf = (
+      editor: MarkdownEditor,
+      slot: string
+    ): HTMLTextAreaElement => editor.querySelector(`textarea[slot="${slot}"]`);
+
+    it('hangs under the title, before the article', async () => {
+      const editor = await getSubtitled();
+      const title = fieldOf(editor, 'title').assignedSlot;
+      const subtitle = fieldOf(editor, 'subtitle').assignedSlot;
+      assert.isOk(subtitle, 'the subtitle was not slotted');
+      assert.isOk(
+        subtitle.closest('.article'),
+        'the subtitle is not in the card'
+      );
+      assert.isTrue(
+        !!(
+          title.compareDocumentPosition(subtitle) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+        ),
+        'the subtitle does not come after the title'
+      );
+      assert.isTrue(
+        !!(
+          subtitle.compareDocumentPosition(doc(editor)) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+        ),
+        'the subtitle does not come before the article'
+      );
+      assert.isTrue(
+        subtitle.closest('.head').classList.contains('with-subtitle'),
+        'the head does not know it has a subtitle'
+      );
+    });
+
+    it('mutes the toolbar while the subtitle is being written', async () => {
+      const editor = await getSubtitled();
+      const toolbar = editor.shadowRoot.querySelector('.toolbar');
+
+      fieldOf(editor, 'subtitle').focus();
+      await editor.updateComplete;
+      assert.isTrue(toolbar.classList.contains('muted'));
+
+      fieldOf(editor, 'subtitle').blur();
+      await editor.updateComplete;
+      assert.isFalse(toolbar.classList.contains('muted'));
+    });
+
+    it('keeps the subtitle to one line of text', async () => {
+      const editor = await getSubtitled();
+      const subtitle = fieldOf(editor, 'subtitle');
+
+      subtitle.value = 'The\nfirst\r\n  steps';
+      subtitle.dispatchEvent(
+        new Event('input', { bubbles: true, composed: true })
+      );
+
+      assert.equal(subtitle.value, 'The first steps');
+    });
+
+    it('goes from the title to the subtitle on Enter, and on to the article', async () => {
+      const editor = await getSubtitled();
+      const title = fieldOf(editor, 'title');
+      const subtitle = fieldOf(editor, 'subtitle');
+      const enter = () =>
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          bubbles: true,
+          composed: true,
+          cancelable: true
+        });
+
+      title.focus();
+      let evt = enter();
+      title.dispatchEvent(evt);
+      await editor.updateComplete;
+      assert.isTrue(evt.defaultPrevented);
+      assert.equal(document.activeElement, subtitle);
+      assert.equal(subtitle.selectionStart, subtitle.value.length);
+
+      evt = enter();
+      subtitle.dispatchEvent(evt);
+      await editor.updateComplete;
+      assert.isTrue(evt.defaultPrevented);
+      assert.equal(editor.shadowRoot.activeElement, doc(editor));
+    });
+  });
+
+  describe('a slotted cover image', () => {
+    const getCovered = async (hero = ''): Promise<MarkdownEditor> => {
+      const editor = (await fixture(
+        `<${TAG} widget_only endpoint="${UPLOAD}" hero="${hero}">
+          <input type="file" slot="hero" name="hero" accept="image/png">
+          <textarea slot="title" name="title" rows="1">Getting started</textarea>
+        </${TAG}>`
+      )) as MarkdownEditor;
+      editor.value = 'A paragraph.';
+      await editor.updateComplete;
+      return editor;
+    };
+
+    const inputOf = (editor: MarkdownEditor): HTMLInputElement =>
+      editor.querySelector('input[slot="hero"]');
+    const coverOf = (editor: MarkdownEditor): HTMLElement =>
+      editor.shadowRoot.querySelector('.cover');
+
+    it('draws a cover across the head of the card, hiding the input', async () => {
+      const editor = await getCovered();
+      const cover = coverOf(editor);
+      assert.isOk(cover, 'no cover was drawn');
+      assert.isOk(cover.closest('.article'), 'the cover is not in the card');
+      assert.isTrue(
+        !!(
+          cover.compareDocumentPosition(
+            editor.querySelector('[slot="title"]').assignedSlot
+          ) & Node.DOCUMENT_POSITION_FOLLOWING
+        ),
+        'the cover does not come before the title'
+      );
+      assert.equal(getComputedStyle(inputOf(editor)).display, 'none');
+    });
+
+    it('is not drawn when there is no cover to slot', async () => {
+      const editor = await getEditor();
+      assert.isNull(coverOf(editor));
+    });
+
+    it('offers to add a cover when there is none, and to change one when there is', async () => {
+      let editor = await getCovered();
+      assert.isTrue(coverOf(editor).classList.contains('empty'));
+      assert.include(coverOf(editor).textContent, 'Add a cover image');
+      assert.equal(coverOf(editor).style.backgroundImage, '');
+
+      editor = await getCovered('https://example.com/cover.jpg');
+      assert.isFalse(coverOf(editor).classList.contains('empty'));
+      assert.include(coverOf(editor).textContent, 'Change cover image');
+      assert.include(coverOf(editor).style.backgroundImage, 'cover.jpg');
+    });
+
+    it('keeps an awkward address inside the style it is written into', async () => {
+      const editor = await getCovered("https://example.com/it's (1).jpg");
+      const style = coverOf(editor).getAttribute('style');
+      assert.include(style, "url('https://example.com/it%27s%20%281%29.jpg')");
+    });
+
+    it('asks the input for a file when pressed', async () => {
+      const editor = await getCovered();
+      const click = stub(inputOf(editor), 'click');
+
+      coverOf(editor).click();
+      assert.isTrue(click.calledOnce);
+
+      coverOf(editor).dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+      );
+      assert.isTrue(click.calledTwice);
+      click.restore();
+    });
+
+    it('shows the file picked in place of the saved cover', async () => {
+      const editor = await getCovered('https://example.com/cover.jpg');
+      const input = inputOf(editor);
+
+      const files = new DataTransfer();
+      files.items.add(new File(['png'], 'new.png', { type: 'image/png' }));
+      input.files = files.files;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      await editor.updateComplete;
+
+      assert.include(coverOf(editor).style.backgroundImage, 'blob:');
+      assert.isFalse(coverOf(editor).classList.contains('empty'));
+
+      // picking cancelled and the input emptied - the saved cover is back
+      input.files = new DataTransfer().files;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      await editor.updateComplete;
+      assert.include(coverOf(editor).style.backgroundImage, 'cover.jpg');
+    });
+  });
+
   describe('toolbar', () => {
     it('bolds the selection', async () => {
       const editor = await getEditor('# Title\n\nhello world');

@@ -14,6 +14,7 @@
     <meta name="description" content="{% block description %}{% if site.tagline %}{{ site.tagline }}{% else %}{{ site.title }}{% endif %}{% endblock description %}">
     {% if is_preview %}<meta name="robots" content="noindex">{% endif %}
     <link rel="stylesheet" href="{{ STATIC_URL }}css/helpsite.css">
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/article.css">
     <style>
       :root {
         --primary: {{ site.primary_color }};

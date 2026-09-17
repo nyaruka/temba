@@ -1,3 +1,10 @@
+v26.3.102 (2026-09-17)
+-------------------------
+ * Validate contact import URNs via mailroom instead of normalizing them locally
+ * Stop asking which language a helpdesk article is in
+ * List an article's headings in the help site sidebar and level imported headings
+ * Stop serving the websockets endpoints at their previous path
+
 v26.3.101 (2026-09-17)
 -------------------------
  * Serve the websockets endpoints under an internal-only URL prefix

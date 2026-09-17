@@ -13,7 +13,6 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-17 18:56+0000\n"
 "PO-Revision-Date: 2019-05-13 20:14+0000\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
@@ -5658,6 +5657,9 @@ msgstr "Configurar"
 
 msgid "Not verified"
 msgstr "No verificado"
+
+msgid "Subtitle"
+msgstr "Subtítulo"
 
 msgid "An import is already in progress. Wait for it to finish before starting another."
 msgstr "Ya hay una importación en curso. Espere a que termine antes de iniciar otra."
