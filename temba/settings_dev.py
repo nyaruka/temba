@@ -18,9 +18,6 @@ DEBUG = True
 # allow all hosts in dev
 ALLOWED_HOSTS = ["*"]
 
-# nothing to keep off the internet in dev, and only the one port anyway
-INTERNAL_PORT = None
-
 INTERNAL_IPS = ("127.0.0.1",)
 
 # serve the components as live modules straight off the checkout (components/dev-dist, kept fresh
