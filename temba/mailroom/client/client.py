@@ -145,8 +145,8 @@ class MailroomClient:
             metadata=QueryMetadata(**resp.get("metadata", {})),
         )
 
-    def contact_urns(self, org, urns: list[str]):
-        resp = self._request("contact/urns", {"org_id": org.id, "urns": urns})
+    def contact_urns(self, org, urns: list[str], validate_only: bool = False):
+        resp = self._request("contact/urns", {"org_id": org.id, "urns": urns, "validate_only": validate_only})
 
         return [URNResult(**ur) for ur in resp["urns"]]
 
