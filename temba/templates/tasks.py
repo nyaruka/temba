@@ -23,14 +23,14 @@ def refresh_templates():
 
     num_queued = 0
     for channel_id in channel_ids:
-        refresh_channel_templates_task.delay(channel_id)
+        refresh_channel_templates.delay(channel_id)
         num_queued += 1
 
     return {"queued": num_queued}
 
 
 @shared_task
-def refresh_channel_templates_task(channel_id):
+def refresh_channel_templates(channel_id):
     """
     Syncs the templates of a single channel.
     """

@@ -13,7 +13,7 @@ from temba.request_logs.models import HTTPLog
 from temba.tests import CRUDLTestMixin, TembaTest
 
 from .models import Template, TemplateTranslation
-from .tasks import refresh_channel_templates_task, refresh_templates
+from .tasks import refresh_channel_templates, refresh_templates
 
 
 class TemplateTest(TembaTest):
@@ -271,7 +271,7 @@ class TemplateTest(TembaTest):
         )
 
         # cron only queues a task per eligible channel (self.channel is Android so has no templates)
-        with patch("temba.templates.tasks.refresh_channel_templates_task.delay") as mock_delay:
+        with patch("temba.templates.tasks.refresh_channel_templates.delay") as mock_delay:
             self.assertEqual({"queued": 2}, refresh_templates())
 
         self.assertCountEqual([call(d3c_channel.id), call(twa_channel.id)], mock_delay.call_args_list)
@@ -305,7 +305,7 @@ class TemplateTest(TembaTest):
         mock_d3c_fetch_templates.side_effect = mock_fetch
         mock_update_local.return_value = None
 
-        refresh_channel_templates_task(d3c_channel.id)
+        refresh_channel_templates(d3c_channel.id)
 
         self.assertEqual(1, mock_d3c_fetch_templates.call_count)
         self.assertEqual(1, mock_update_local.call_count)
@@ -314,7 +314,7 @@ class TemplateTest(TembaTest):
         # request errors are swallowed as they're already logged against the channel
         mock_d3c_fetch_templates.side_effect = mock_fail_fetch
 
-        refresh_channel_templates_task(d3c_channel.id)
+        refresh_channel_templates(d3c_channel.id)
 
         self.assertEqual(2, mock_d3c_fetch_templates.call_count)
         self.assertEqual(1, mock_update_local.call_count)
@@ -323,10 +323,10 @@ class TemplateTest(TembaTest):
         self.assertEqual(0, Incident.objects.filter(incident_type=ChannelTemplatesFailedIncidentType.slug).count())
 
         # but 5 will be
-        refresh_channel_templates_task(d3c_channel.id)
-        refresh_channel_templates_task(d3c_channel.id)
-        refresh_channel_templates_task(d3c_channel.id)
-        refresh_channel_templates_task(d3c_channel.id)
+        refresh_channel_templates(d3c_channel.id)
+        refresh_channel_templates(d3c_channel.id)
+        refresh_channel_templates(d3c_channel.id)
+        refresh_channel_templates(d3c_channel.id)
 
         self.assertEqual(
             1,
@@ -338,7 +338,7 @@ class TemplateTest(TembaTest):
         # a successful fetch will clear it
         mock_d3c_fetch_templates.side_effect = mock_fetch
 
-        refresh_channel_templates_task(d3c_channel.id)
+        refresh_channel_templates(d3c_channel.id)
 
         self.assertEqual(
             0,
@@ -350,7 +350,7 @@ class TemplateTest(TembaTest):
         # other exception logged to sentry
         mock_d3c_fetch_templates.side_effect = Exception("boom")
         with patch("logging.Logger.error") as mock_log_error:
-            refresh_channel_templates_task(d3c_channel.id)
+            refresh_channel_templates(d3c_channel.id)
             self.assertEqual(1, mock_log_error.call_count)
             self.assertEqual("Error refreshing whatsapp templates: boom", mock_log_error.call_args[0][0])
 
@@ -358,10 +358,10 @@ class TemplateTest(TembaTest):
         mock_d3c_fetch_templates.reset_mock()
         d3c_channel.release(self.admin)
 
-        refresh_channel_templates_task(d3c_channel.id)
+        refresh_channel_templates(d3c_channel.id)
 
         # as is a channel that no longer exists
-        refresh_channel_templates_task(d3c_channel.id + 1000)
+        refresh_channel_templates(d3c_channel.id + 1000)
 
         mock_d3c_fetch_templates.assert_not_called()
 
