@@ -34,7 +34,9 @@ class InternalPortMiddleware:
     listeners, and it has to come before anything that would answer a request - static files included.
 
     The port is the one the app's own socket accepted the connection on, never one a header claims, since a client can
-    put what it likes in a header. Settings-gated, so a deployment with a single port is left alone.
+    put what it likes in a header. That means the app has to be listening on TCP ports: bound to a unix socket, the
+    WSGI server has no port of its own and fills in what the Host header says, which is the client's to choose.
+    Settings-gated, so a deployment with a single port is left alone.
     """
 
     def __init__(self, get_response=None):
