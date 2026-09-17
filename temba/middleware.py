@@ -4,7 +4,7 @@ import traceback
 from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import MiddlewareNotUsed
-from django.http import HttpResponseForbidden
+from django.http import Http404, HttpResponseForbidden
 from django.utils import timezone, translation
 
 from temba.orgs.models import Org
@@ -22,6 +22,39 @@ class ExceptionMiddleware:
             traceback.print_exc()
 
         return None
+
+
+class InternalPortMiddleware:
+    """
+    Splits what the app serves by the port a request arrived on, for deployments which have it listen on a second port
+    that only their own network can reach. The internal-only API - everything under /ti/ - is served on that port and
+    nowhere else, and that port serves nothing else, bar the paths a load balancer reaches an instance at directly,
+    since the internal one health checks the same way as the public one does. A request in the wrong place gets a 404,
+    the same as if the URL didn't exist. This is what a proxy in front of the app would otherwise be doing with two
+    listeners, and it has to come before anything that would answer a request - static files included.
+
+    The port is the one the app's own socket accepted the connection on, never one a header claims, since a client can
+    put what it likes in a header. Settings-gated, so a deployment with a single port is left alone.
+    """
+
+    def __init__(self, get_response=None):
+        if not settings.INTERNAL_PORT:
+            raise MiddlewareNotUsed()
+
+        self.get_response = get_response
+
+    def __call__(self, request):
+        internal = int(request.META["SERVER_PORT"]) == settings.INTERNAL_PORT
+
+        if request.path.startswith("/ti/"):
+            allowed = internal
+        else:
+            allowed = not internal or request.path in settings.ALLOWED_HOSTS_EXEMPT_PATHS
+
+        if not allowed:
+            raise Http404()
+
+        return self.get_response(request)
 
 
 class ProxiedRequestMiddleware:

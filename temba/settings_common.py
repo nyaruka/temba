@@ -225,6 +225,7 @@ FORM_RENDERER = "django.forms.renderers.TemplatesSetting"
 # things that are only for the app's own responses go below it - static files are served pre-compressed with a
 # far-future max-age and mustn't be gzipped again or marked uncacheable.
 MIDDLEWARE = (
+    "temba.middleware.InternalPortMiddleware",
     "temba.middleware.ProxiedRequestMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.csp.ContentSecurityPolicyMiddleware",
@@ -252,6 +253,12 @@ MIDDLEWARE = (
 # be exactly the path asked for, trailing slash and all: a near miss doesn't error, it falls through to the usual
 # host check and fails there.
 ALLOWED_HOSTS_EXEMPT_PATHS = ()
+
+# the port on which the app serves only its internal-only API (everything under /ti/) plus the paths above, for a
+# deployment which has it listen on a second port that only its own network can reach - the way to keep those
+# endpoints off the public internet with nothing in front of the app. Every other port then doesn't serve /ti/ at all.
+# None when there's one port and whatever is in front of the app does the splitting.
+INTERNAL_PORT = None
 
 # whether to treat every request as having arrived over https regardless of what the connection or any forwarded header
 # says - for when TLS is always terminated in front of the app

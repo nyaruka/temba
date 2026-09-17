@@ -3,11 +3,11 @@ from pathlib import Path
 
 from django.conf import settings
 from django.core.exceptions import DisallowedHost, MiddlewareNotUsed
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 from django.test import Client, RequestFactory, override_settings
 from django.urls import reverse
 
-from temba.middleware import NoStoreMiddleware, ProxiedRequestMiddleware
+from temba.middleware import InternalPortMiddleware, NoStoreMiddleware, ProxiedRequestMiddleware
 from temba.tests import TembaTest
 
 
@@ -49,6 +49,57 @@ class ResponseHeadersTest(TembaTest):
         middleware = NoStoreMiddleware(lambda r: HttpResponse("ok", headers={"Cache-Control": "max-age=60"}))
 
         self.assertEqual("max-age=60", middleware(request)["Cache-Control"])
+
+
+class InternalPortTest(TembaTest):
+    SPLIT = dict(INTERNAL_PORT=8021, ALLOWED_HOSTS_EXEMPT_PATHS=("/system/ping/",))
+
+    def serve(self, path, port, **extra):
+        request = RequestFactory().get(path, SERVER_PORT=str(port), **extra)
+        return InternalPortMiddleware(lambda r: HttpResponse("served"))(request)
+
+    def test_internal_port_serves_only_the_internal_api_and_health_check(self):
+        with override_settings(**self.SPLIT):
+            self.assertEqual(b"served", self.serve("/ti/websockets/connect", 8021).content)
+            self.assertEqual(b"served", self.serve("/system/ping/", 8021).content)
+
+            for path in ("/", "/msg/", "/api/v2/contacts.json", "/sitestatic/css/temba.css", "/system/ping"):
+                with self.assertRaises(Http404, msg=path):
+                    self.serve(path, 8021)
+
+    def test_other_ports_serve_everything_but_the_internal_api(self):
+        with override_settings(**self.SPLIT):
+            for path in ("/", "/msg/", "/api/v2/contacts.json", "/sitestatic/css/temba.css", "/system/ping/"):
+                self.assertEqual(b"served", self.serve(path, 8020).content, path)
+
+            with self.assertRaises(Http404):
+                self.serve("/ti/websockets/connect", 8020)
+
+    def test_port_is_the_one_connected_to_not_the_one_claimed(self):
+        with override_settings(USE_X_FORWARDED_PORT=True, **self.SPLIT):
+            with self.assertRaises(Http404):
+                self.serve("/ti/websockets/connect", 8020, HTTP_X_FORWARDED_PORT="8021")
+
+    def test_not_used_without_an_internal_port(self):
+        with override_settings(INTERNAL_PORT=None):
+            with self.assertRaises(MiddlewareNotUsed):
+                InternalPortMiddleware(lambda r: HttpResponse())
+
+    def test_through_the_whole_stack(self):
+        # a fresh client so that the middleware is loaded with the split in place
+        with override_settings(WEBSOCKETS_AUTH_SECRET="topsecret", **self.SPLIT):
+            client = Client(HTTP_X_WEBSOCKETS_SECRET="topsecret")
+            internal, public = dict(SERVER_PORT="8021"), dict(SERVER_PORT="8020")
+
+            self.assertEqual(
+                200, client.post("/ti/websockets/connect", content_type="application/json", **internal).status_code
+            )
+            self.assertEqual(404, client.get("/", **internal).status_code)
+
+            self.assertEqual(
+                404, client.post("/ti/websockets/connect", content_type="application/json", **public).status_code
+            )
+            self.assertEqual(200, client.get(reverse("public.public_index"), **public).status_code)
 
 
 class ProxiedRequestTest(TembaTest):
