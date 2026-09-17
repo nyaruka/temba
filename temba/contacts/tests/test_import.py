@@ -6,12 +6,13 @@ from django.core.validators import ValidationError
 from django.utils import timezone
 
 from temba.contacts.models import ContactField, ContactImport, ContactImportBatch
-from temba.orgs.models import Org
+from temba.mailroom.client.types import URNResult
 from temba.tests import TembaTest, matchers, mock_mailroom
 
 
 class ContactImportTest(TembaTest):
-    def test_parse_errors(self):
+    @mock_mailroom
+    def test_parse_errors(self, mr_mocks):
         # try to open an import that is completely empty
         with self.assertRaisesRegex(ValidationError, "Import file appears to be empty."):
             path = "media/test_imports/empty_all_rows.xlsx"  # No header row present either
@@ -28,27 +29,42 @@ class ContactImportTest(TembaTest):
             with self.assertRaisesRegex(ValidationError, r"Import files can contain a maximum of 2 records\."):
                 try_to_parse("simple.xlsx")
 
+        # URNs are normalized and validated by mailroom, so mock what it would return for the problem files
         bad_files = [
-            ("empty.xlsx", "Import file doesn't contain any records."),
-            ("empty_header.xlsx", "Import file contains an empty header."),
-            ("duplicate_urn.xlsx", "Import file contains duplicated contact URN 'tel:+250788382382' on row 4."),
+            ("empty.xlsx", "Import file doesn't contain any records.", None),
+            ("empty_header.xlsx", "Import file contains an empty header.", None),
+            (
+                "duplicate_urn.xlsx",
+                "Import file contains duplicated contact URN 'tel:+250788382382' on row 4.",
+                {"tel:(+250) 788 382382": URNResult(normalized="tel:+250788382382", e164=True)},
+            ),
             (
                 "duplicate_uuid.xlsx",
                 "Import file contains duplicated contact UUID 'f519ca1f-8513-49ba-8896-22bf0420dec7' on row 4.",
+                None,
             ),
-            ("invalid_scheme.xlsx", "Header 'URN:XXX' is not a valid URN type."),
+            ("invalid_scheme.xlsx", "Header 'URN:XXX' is not a valid URN type.", None),
             (
                 "invalid_urn.xlsx",
                 "Import file contains invalid phone number '+?' on row 2. Ensure phone numbers include a country code.",
+                {"tel:+%3F": "invalid path component"},  # the ? is escaped in the URN
             ),
-            ("invalid_field_key.xlsx", "Header 'Field: #$^%' is not a valid field name."),
-            ("reserved_field_key.xlsx", "Header 'Field:HAS' is not a valid field name."),
-            ("no_urn_or_uuid.xlsx", "Import files must contain either UUID or a URN header."),
-            ("uuid_only.xlsx", "Import files must contain columns besides UUID."),
-            ("invalid.txt.xlsx", "Import file appears to be corrupted."),
+            (
+                "twitter_and_phone.xlsx",
+                "Import file contains invalid contact URN 'twitter:rapidpro' on row 2.",
+                {"twitter:rapidpro": "invalid path component"},
+            ),
+            ("invalid_field_key.xlsx", "Header 'Field: #$^%' is not a valid field name.", None),
+            ("reserved_field_key.xlsx", "Header 'Field:HAS' is not a valid field name.", None),
+            ("no_urn_or_uuid.xlsx", "Import files must contain either UUID or a URN header.", None),
+            ("uuid_only.xlsx", "Import files must contain columns besides UUID.", None),
+            ("invalid.txt.xlsx", "Import file appears to be corrupted.", None),
         ]
 
-        for imp_file, imp_error in bad_files:
+        for imp_file, imp_error, urn_results in bad_files:
+            if urn_results:
+                mr_mocks.contact_urns(urn_results)
+
             with self.assertRaises(ValidationError, msg=f"expected error in {imp_file}") as e:
                 try_to_parse(imp_file)
             self.assertEqual(imp_error, e.exception.messages[0], f"error mismatch for {imp_file}")
@@ -175,19 +191,19 @@ class ContactImportTest(TembaTest):
                 {
                     "_import_row": 2,
                     "name": "Eric Newcomer",
-                    "urns": ["tel:+250788382382"],
+                    "urns": ["tel:250788382382"],
                     "groups": [str(imp.group.uuid)],
                 },
                 {
                     "_import_row": 3,
                     "name": "NIC POTTIER",
-                    "urns": ["tel:+250788383383"],
+                    "urns": ["tel:250(78) 8 383 383"],
                     "groups": [str(imp.group.uuid)],
                 },
                 {
                     "_import_row": 4,
                     "name": "jen newcomer",
-                    "urns": ["tel:+250788383385"],
+                    "urns": ["tel:250788383385"],
                     "groups": [str(imp.group.uuid)],
                 },
             ],
@@ -405,34 +421,53 @@ class ContactImportTest(TembaTest):
             batch.specs,
         )
 
-    def test_local_numbers(self):
-        # local numbers are normalized using the workspace's country (RW)
+    @mock_mailroom
+    def test_local_numbers(self, mr_mocks):
+        # mailroom normalizes local numbers using the workspace's country, and we pass the values as they appear in
+        # the file so that it can do the same when importing
         imp = self.create_contact_import("media/test_imports/local_numbers.xlsx")
+
+        self.assertEqual(
+            [call(self.org, ["tel:0788 383 383", "tel:+250788111222"], validate_only=True)],
+            mr_mocks.calls["contact_urns"],
+        )
+
         imp.start()
         batch = imp.batches.get()
 
         self.assertEqual(
             [
-                {"_import_row": 2, "name": "Bob", "urns": ["tel:+250788383383"], "groups": [str(imp.group.uuid)]},
+                {"_import_row": 2, "name": "Bob", "urns": ["tel:0788 383 383"], "groups": [str(imp.group.uuid)]},
                 {"_import_row": 3, "name": "Jim", "urns": ["tel:+250788111222"], "groups": [str(imp.group.uuid)]},
             ],
             batch.specs,
         )
 
-        # but if the workspace has no country, they can't be interpreted and are rejected
-        self.org.timezone = ZoneInfo("UTC")
-        self.org.save(update_fields=("timezone",))
-        self.channel.country = None
-        self.channel.save(update_fields=("country",))
-        org = Org.objects.get(id=self.org.id)
-        self.assertEqual("", org.default_country_code)
+        # but if mailroom can't interpret a local number as E164, e.g. because the workspace has no country, the file
+        # is rejected
+        mr_mocks.contact_urns({"tel:0788 383 383": False})
 
         with self.assertRaises(ValidationError) as e:
-            self.create_contact_import("media/test_imports/local_numbers.xlsx", org=org)
+            self.create_contact_import("media/test_imports/local_numbers.xlsx")
 
         self.assertEqual(
             "Import file contains invalid phone number '0788 383 383' on row 2. Ensure phone numbers include a country code.",
             e.exception.messages[0],
+        )
+
+    @mock_mailroom
+    def test_urn_validation_chunks(self, mr_mocks):
+        # URNs are sent to mailroom for validation in chunks
+        with patch("temba.contacts.models.ContactImport.URN_VALIDATION_CHUNK", 2):
+            self.create_contact_import("media/test_imports/multiple_tel_urns.xlsx")
+
+        self.assertEqual(
+            [
+                call(self.org, ["tel:+250788382001", "tel:+250788382002"], validate_only=True),
+                call(self.org, ["tel:+250788382003", "tel:+250788382004"], validate_only=True),
+                call(self.org, ["tel:+250788382005"], validate_only=True),
+            ],
+            mr_mocks.calls["contact_urns"],
         )
 
     def test_batches_with_multiple_tels(self):
@@ -468,19 +503,19 @@ class ContactImportTest(TembaTest):
                 {
                     "_import_row": 2,
                     "name": "Eric Newcomer",
-                    "urns": ["tel:+250788382382"],
+                    "urns": ["tel:250788382382"],
                     "groups": [str(imp.group.uuid)],
                 },
                 {
                     "_import_row": 3,
                     "name": "NIC POTTIER",
-                    "urns": ["tel:+250788383383"],
+                    "urns": ["tel:250(78) 8 383 383"],
                     "groups": [str(imp.group.uuid)],
                 },
                 {
                     "_import_row": 4,
                     "name": "jen newcomer",
-                    "urns": ["tel:+250788383385"],
+                    "urns": ["tel:250788383385"],
                     "groups": [str(imp.group.uuid)],
                 },
             ],
@@ -541,6 +576,11 @@ class ContactImportTest(TembaTest):
                 ContactImport._detect_spamminess(
                     ["tel:+593979000001", "tel:ABC", "tel:+593979000002", "tel:+593979000003"]
                 )
+            )
+
+            # formatting is ignored since numbers haven't been normalized
+            self.assertTrue(
+                ContactImport._detect_spamminess(["tel:(605) 555-0131", "tel:605 555 0132", "tel:6055550133"])
             )
 
     def test_detect_spamminess_verified_org(self):

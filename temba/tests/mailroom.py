@@ -266,6 +266,10 @@ class Mocks:
         self._contact_export_preview.append(total)
 
     def contact_urns(self, urns: dict):
+        """
+        Queues overrides for the next contact_urns call, keyed by URN. A str value sets the error, a bool the e164
+        flag, an int the contact_id and a URNResult replaces the result entirely.
+        """
         self._contact_urns.append(urns)
 
     def flow_change_language(self, definition: dict):
@@ -475,14 +479,16 @@ class TestClient(MailroomClient):
         return mock(org, offset, sort)
 
     @_client_method
-    def contact_urns(self, org, urns: list[str]):
+    def contact_urns(self, org, urns: list[str], validate_only: bool = False):
         results = [mailroom.URNResult(normalized=urn, e164=True) for urn in urns]
 
         if self.mocks._contact_urns:
             result_by_urn = self.mocks._contact_urns.pop(0)
             for i, urn in enumerate(urns):
                 result = result_by_urn.get(urn)
-                if isinstance(result, str):
+                if isinstance(result, mailroom.URNResult):
+                    results[i] = result
+                elif isinstance(result, str):
                     results[i].error = result
                 elif isinstance(result, bool):
                     results[i].e164 = result

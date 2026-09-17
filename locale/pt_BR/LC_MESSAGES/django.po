@@ -17,7 +17,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-17 14:49+0000\n"
+"POT-Creation-Date: 2026-09-17 16:40+0000\n"
 "PO-Revision-Date: 2019-05-13 20:14+0000\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
@@ -2255,19 +2255,23 @@ msgid "Import file contains duplicated contact UUID '%(uuid)s' on row %(row)s."
 msgstr "O arquivo de importação contém o UUID de contato duplicado '%(uuid)s' na linha %(row)s."
 
 #, python-format
-msgid "Import file contains invalid phone number '%(number)s' on row %(row)s. Ensure phone numbers include a country code."
-msgstr "O arquivo de importação contém o número de telefone inválido '%(number)s' na linha %(row)s. Certifique-se de que os números de telefone incluam o código do país."
-
-#, python-format
-msgid "Import file contains duplicated contact URN '%(urn)s' on row %(row)s."
-msgstr "O arquivo de importação contém a URN de contato duplicada '%(urn)s' na linha %(row)s."
-
-#, python-format
 msgid "Import files can contain a maximum of %(max)s records."
 msgstr "Arquivos de importação podem possuir um máximo de %(max)s registros."
 
 msgid "Import file doesn't contain any records."
 msgstr "Arquivo de importação não possui registros."
+
+#, python-format
+msgid "Import file contains invalid phone number '%(number)s' on row %(row)s. Ensure phone numbers include a country code."
+msgstr "O arquivo de importação contém o número de telefone inválido '%(number)s' na linha %(row)s. Certifique-se de que os números de telefone incluam o código do país."
+
+#, python-format
+msgid "Import file contains invalid contact URN '%(urn)s' on row %(row)s."
+msgstr "O arquivo de importação contém a URN de contato inválida '%(urn)s' na linha %(row)s."
+
+#, python-format
+msgid "Import file contains duplicated contact URN '%(urn)s' on row %(row)s."
+msgstr "O arquivo de importação contém a URN de contato duplicada '%(urn)s' na linha %(row)s."
 
 #, python-format
 msgid "Header '%(header)s' is not a valid URN type."
