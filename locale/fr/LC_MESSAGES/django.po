@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-17 11:37-0700\n"
+"POT-Creation-Date: 2026-09-17 11:54-0700\n"
 "PO-Revision-Date: 2019-05-13 20:14+0000\n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
@@ -2251,19 +2251,23 @@ msgid "Import file contains duplicated contact UUID '%(uuid)s' on row %(row)s."
 msgstr "Le fichier d'importation contient l'UUID de contact '%(uuid)s' en double à la ligne %(row)s."
 
 #, python-format
-msgid "Import file contains invalid phone number '%(number)s' on row %(row)s. Ensure phone numbers include a country code."
-msgstr "Le fichier d'importation contient le numéro de téléphone invalide '%(number)s' à la ligne %(row)s. Assurez-vous que les numéros de téléphone incluent l'indicatif du pays."
-
-#, python-format
-msgid "Import file contains duplicated contact URN '%(urn)s' on row %(row)s."
-msgstr "Le fichier d'importation contient l'URN de contact '%(urn)s' en double à la ligne %(row)s."
-
-#, python-format
 msgid "Import files can contain a maximum of %(max)s records."
 msgstr "Les fichiers d'importation peuvent contenir un maximum de %(max)s enregistrements."
 
 msgid "Import file doesn't contain any records."
 msgstr "Le fichier d'importation ne contient aucun enregistrement."
+
+#, python-format
+msgid "Import file contains invalid phone number '%(number)s' on row %(row)s. Ensure phone numbers include a country code."
+msgstr "Le fichier d'importation contient le numéro de téléphone invalide '%(number)s' à la ligne %(row)s. Assurez-vous que les numéros de téléphone incluent l'indicatif du pays."
+
+#, python-format
+msgid "Import file contains invalid contact URN '%(urn)s' on row %(row)s."
+msgstr "Le fichier d'importation contient l'URN de contact invalide '%(urn)s' à la ligne %(row)s."
+
+#, python-format
+msgid "Import file contains duplicated contact URN '%(urn)s' on row %(row)s."
+msgstr "Le fichier d'importation contient l'URN de contact '%(urn)s' en double à la ligne %(row)s."
 
 #, python-format
 msgid "Header '%(header)s' is not a valid URN type."

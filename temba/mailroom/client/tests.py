@@ -420,7 +420,24 @@ class MailroomClientTest(TembaTest):
         mock_post.assert_called_once_with(
             "http://localhost:8090/mi/contact/urns",
             headers={"User-Agent": "Temba", "Authorization": "Token sesame"},
-            json={"org_id": self.org.id, "urns": ["tel:+1234", "webchat:3a2ef3"]},
+            json={"org_id": self.org.id, "urns": ["tel:+1234", "webchat:3a2ef3"], "validate_only": False},
+        )
+
+        # can request validation only which skips the lookup of owning contacts
+        mock_post.reset_mock()
+        mock_post.return_value = MockJsonResponse(
+            200, {"urns": [{"normalized": "tel:+1234", "e164": True}, {"normalized": "tel:1234", "error": "invalid"}]}
+        )
+
+        response = self.client.contact_urns(self.org, ["tel:+1234", "tel:1234"], validate_only=True)
+
+        self.assertEqual(
+            [URNResult(normalized="tel:+1234", e164=True), URNResult(normalized="tel:1234", error="invalid")], response
+        )
+        mock_post.assert_called_once_with(
+            "http://localhost:8090/mi/contact/urns",
+            headers={"User-Agent": "Temba", "Authorization": "Token sesame"},
+            json={"org_id": self.org.id, "urns": ["tel:+1234", "tel:1234"], "validate_only": True},
         )
 
     def test_flow_change_language(self):

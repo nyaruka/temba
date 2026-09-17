@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-17 11:37-0700\n"
+"POT-Creation-Date: 2026-09-17 11:54-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Language: \n"
 "MIME-Version: 1.0\n"
@@ -2237,18 +2237,22 @@ msgid "Import file contains duplicated contact UUID '%(uuid)s' on row %(row)s."
 msgstr ""
 
 #, python-format
-msgid "Import file contains invalid phone number '%(number)s' on row %(row)s. Ensure phone numbers include a country code."
-msgstr ""
-
-#, python-format
-msgid "Import file contains duplicated contact URN '%(urn)s' on row %(row)s."
-msgstr ""
-
-#, python-format
 msgid "Import files can contain a maximum of %(max)s records."
 msgstr ""
 
 msgid "Import file doesn't contain any records."
+msgstr ""
+
+#, python-format
+msgid "Import file contains invalid phone number '%(number)s' on row %(row)s. Ensure phone numbers include a country code."
+msgstr ""
+
+#, python-format
+msgid "Import file contains invalid contact URN '%(urn)s' on row %(row)s."
+msgstr ""
+
+#, python-format
+msgid "Import file contains duplicated contact URN '%(urn)s' on row %(row)s."
 msgstr ""
 
 #, python-format
