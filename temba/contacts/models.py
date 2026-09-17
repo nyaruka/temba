@@ -2230,7 +2230,7 @@ class ContactImport(SmartModel):
             chunk = urns[start : start + cls.URN_VALIDATION_CHUNK]
             results = client.contact_urns(org, [urn for _, _, urn in chunk], validate_only=True)
 
-            for (row_num, value, urn), result in zip(chunk, results):
+            for (row_num, value, urn), result in zip(chunk, results, strict=True):
                 if URN.to_parts(urn)[0] == URN.TEL_SCHEME:
                     if result.error or not result.e164:
                         raise ValidationError(
