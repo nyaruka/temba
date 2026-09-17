@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -179,7 +180,15 @@ class HelpSiteCRUDLTest(TembaTest, CRUDLTestMixin):
         response = self.requestView(domain_url, self.admin)
         self.assertRegex(response.content.decode(), r'data-saved=""\s+hidden')
         self.assertContains(response, f"<code>{site.domain_token}</code>")
-        self.assertContains(response, "<code>app.rapidpro.io</code>")
+
+        # the CNAME points at the service that serves the sites, or at the app itself where none is configured
+        with override_settings(HELPSITE_CNAME_TARGET=None):
+            response = self.requestView(domain_url, self.admin)
+            self.assertContains(response, "<code>app.rapidpro.io</code>")
+        with override_settings(HELPSITE_CNAME_TARGET="helpsites.rapidpro.io"):
+            response = self.requestView(domain_url, self.admin)
+            self.assertContains(response, "<code>helpsites.rapidpro.io</code>")
+            self.assertNotContains(response, "<code>app.rapidpro.io</code>")
 
         # a domain has to be a domain, and not the app's own
         for bad, error in (
