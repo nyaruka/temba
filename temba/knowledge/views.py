@@ -4,10 +4,11 @@ from smartmin.views import SmartCRUDL, SmartReadView, SmartTemplateView
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db.models.functions import Lower
-from django.http import Http404, HttpResponseRedirect, JsonResponse
+from django.http import Http404, HttpResponse, HttpResponseRedirect, JsonResponse
 from django.urls import reverse
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
+from django.views import View
 
 from temba.orgs.models import Org
 from temba.orgs.views.base import (
@@ -811,7 +812,8 @@ class HelpSiteCRUDL(SmartCRUDL):
 
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
-            context["cname_target"] = self.request.branding["domain"]
+            # sites are pointed at the TLS front that serves them, or at the app itself where there isn't one
+            context["cname_target"] = settings.HELPSITE_CNAME_TARGET or self.request.branding["domain"]
             context["verification_record_prefix"] = HelpSite.VERIFICATION_RECORD
             context["verify_url"] = reverse("knowledge.helpsite_verify")
             return context
@@ -834,3 +836,18 @@ class HelpSiteCRUDL(SmartCRUDL):
                 return JsonResponse({"error": _("No domain has been set.")}, status=400)
 
             return JsonResponse({"domain": site.domain, "verified": site.verify_domain()})
+
+
+class HelpSiteAskView(View):
+    """
+    Whether a host is a help site's, asked by the TLS front before it gets a certificate for a domain a request came
+    in on - the "ask" endpoint of Caddy's on-demand TLS, which takes a 2xx as yes and anything else as no. A domain is
+    ours once it's verified, so this is the same lookup the middleware makes, and costs the same: a cache read.
+    """
+
+    def get(self, request, *args, **kwargs):
+        domain = request.GET.get("domain", "")
+        if domain and HelpSite.resolve_host(domain):
+            return HttpResponse(status=200)
+
+        return HttpResponse(status=403)
