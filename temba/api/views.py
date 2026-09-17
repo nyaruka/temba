@@ -13,7 +13,6 @@ from django.utils.translation import gettext_lazy as _
 
 from temba import mailroom
 from temba.api.support import InvalidQueryError
-from temba.contacts.models import URN
 from temba.orgs.views.base import BaseDeleteModal, BaseListView
 from temba.utils.models import OrgLimitMixin, TembaModel
 from temba.utils.views.mixins import ContextMenuMixin, NonAtomicMixin, SpaMixin
@@ -29,6 +28,7 @@ class BaseAPIView(NonAtomicMixin, generics.GenericAPIView):
     model = None
     model_manager = "objects"
     lookup_params = {"uuid": "uuid"}
+    lookup_urn = None  # the normalized URN if the request looked up an object by URN
 
     # whether servicing staff are limited to GET requests - endpoints whose POSTs are actually
     # reads (e.g. resolving references) can set this to False
@@ -51,13 +51,18 @@ class BaseAPIView(NonAtomicMixin, generics.GenericAPIView):
         Extracts lookup_params from the request URL, e.g. {"uuid": "123..."}
         """
         lookup_values = {}
+        self.lookup_urn = None
+
         for param, field in self.lookup_params.items():
             if param in self.request.query_params:
                 param_value = self.request.query_params[param]
 
-                # try to normalize URN lookup values
+                # URN lookups are resolved by mailroom to the owning contact - if there isn't one we filter on a null
+                # id so that nothing matches
                 if param == "urn":
-                    param_value = self.normalize_urn(param_value)
+                    resolved = self.resolve_urn(param_value)
+                    self.lookup_urn = resolved.normalized
+                    param_value = resolved.contact_id
 
                 if param == "uuid":
                     try:
@@ -106,16 +111,20 @@ class BaseAPIView(NonAtomicMixin, generics.GenericAPIView):
         context["by_token"] = isinstance(self.request.auth, APIToken)
         return context
 
-    def normalize_urn(self, value):
+    def resolve_urn(self, value: str) -> mailroom.URNResult:
+        """
+        Resolves a URN lookup value via mailroom which normalizes it and looks up the contact that owns it
+        """
         org = self.request.org
 
         if org.is_anon:
             raise InvalidQueryError("URN lookups not allowed for anonymous organizations")
 
-        try:
-            return URN.identity(URN.normalize(value, country_code=org.default_country_code))
-        except ValueError:
+        resolved = mailroom.get_client().contact_urns(org, [value])[0]
+        if resolved.error:
             raise InvalidQueryError("Invalid URN: %s" % value)
+
+        return resolved
 
     def is_docs(self):
         return "format" not in self.kwargs
@@ -221,6 +230,7 @@ class WriteAPIMixin:
 
         context = self.get_serializer_context()
         context["lookup_values"] = self.lookup_values
+        context["lookup_urn"] = self.lookup_urn
         context["instance"] = instance
 
         serializer = self.write_serializer_class(instance=instance, data=request.data, context=context)

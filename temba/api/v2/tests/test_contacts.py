@@ -7,6 +7,8 @@ from django.utils import timezone
 from temba import mailroom
 from temba.api.v2.serializers import format_datetime
 from temba.contacts.models import Contact, ContactField, ContactGroup
+from temba.mailroom.client.types import URNResult
+from temba.tests import mock_mailroom
 
 from . import APITest
 
@@ -18,7 +20,8 @@ class ContactsEndpointTest(APITest):
         self.joe = self.create_contact("Joe Blow", phone="+250788123123")
         self.frank = self.create_contact("Frank", urns=["facebook:123456"])
 
-    def test_endpoint(self):
+    @mock_mailroom
+    def test_endpoint(self, mr_mocks):
         endpoint_url = reverse("api.v2.contacts") + ".json"
 
         self.assertGetNotPermitted(endpoint_url, [None])
@@ -205,10 +208,17 @@ class ContactsEndpointTest(APITest):
         # filter by UUID
         self.assertGet(endpoint_url + f"?uuid={contact2.uuid}", [self.editor], results=[contact2])
 
-        # filter by URN (which should be normalized)
+        # filter by URN (which mailroom normalizes and resolves to a contact)
+        mr_mocks.contact_urns(
+            {"tel:078-8000004": URNResult(normalized="tel:+250788000004", contact_id=contact4.id, e164=True)}
+        )
         self.assertGet(endpoint_url + f"?urn={quote_plus('tel:078-8000004')}", [self.editor], results=[contact4])
 
+        # no results if URN isn't owned by a contact
+        self.assertGet(endpoint_url + f"?urn={quote_plus('tel:+250788000005')}", [self.editor], results=[])
+
         # error if URN can't be parsed
+        mr_mocks.contact_urns({"12345": "invalid scheme component"})
         self.assertGet(endpoint_url + "?urn=12345", [self.editor], errors={None: "Invalid URN: 12345"})
 
         # filter by group UUID / name
@@ -428,13 +438,19 @@ class ContactsEndpointTest(APITest):
         self.assertEqual(jean.get_field_value(nickname), "Jado")
         self.assertEqual(jean.get_field_value(gender), None)
 
-        # update by URN (which should be normalized)
+        # update by URN (which mailroom normalizes and resolves to a contact)
+        mr_mocks.contact_urns(
+            {"tel:+250-78-4444444": URNResult(normalized="tel:+250784444444", contact_id=jean.id, e164=True)}
+        )
         self.assertPost(endpoint_url + f"?urn={quote_plus('tel:+250-78-4444444')}", self.editor, {"name": "Jean III"})
 
         jean.refresh_from_db()
         self.assertEqual(jean.name, "Jean III")
 
         # try to specify URNs field whilst referencing by URN
+        mr_mocks.contact_urns(
+            {"tel:+250-78-4444444": URNResult(normalized="tel:+250784444444", contact_id=jean.id, e164=True)}
+        )
         self.assertPost(
             endpoint_url + f"?urn={quote_plus('tel:+250-78-4444444')}",
             self.editor,
@@ -443,6 +459,7 @@ class ContactsEndpointTest(APITest):
         )
 
         # if contact doesn't exist with URN, they're created
+        mr_mocks.contact_urns({"tel:+250-78-5555555": URNResult(normalized="tel:+250785555555", e164=True)})
         self.assertPost(
             endpoint_url + f"?urn={quote_plus('tel:+250-78-5555555')}", self.editor, {"name": "Bobby"}, status=201
         )
@@ -566,7 +583,8 @@ class ContactsEndpointTest(APITest):
         self.assertEqual(set(xavier.urns.values_list("identity", flat=True)), {"twitter:xavier", "tel:+250787777777"})
         self.assertEqual(xavier.get_field_value(gender), "Male")
 
-        # delete a contact by URN (which should be normalized)
+        # delete a contact by URN (which mailroom normalizes and resolves to a contact)
+        mr_mocks.contact_urns({"twitter:XAVIER": URNResult(normalized="twitter:xavier", contact_id=xavier.id)})
         self.assertDelete(endpoint_url + f"?urn={quote_plus('twitter:XAVIER')}", self.editor, status=204)
 
         xavier.refresh_from_db()

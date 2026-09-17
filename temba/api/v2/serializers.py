@@ -697,7 +697,7 @@ class ContactWriteSerializer(WriteSerializer):
         org = self.context["org"]
 
         # this field isn't allowed if we are looking up by URN in the URL
-        if "urns__identity" in self.context["lookup_values"]:
+        if self.context.get("lookup_urn"):
             raise serializers.ValidationError("Field not allowed when using URN in URL")
 
         # or for updates by anonymous organizations (we do allow creation of contacts with URNs)
@@ -711,10 +711,8 @@ class ContactWriteSerializer(WriteSerializer):
             raise serializers.ValidationError("Deleted contacts can't be modified.")
 
         # we allow creation of contacts by URN used for lookup
-        if not data.get("urns") and "urns__identity" in self.context["lookup_values"] and not self.instance:
-            url_urn = self.context["lookup_values"]["urns__identity"]
-
-            data["urns"] = [fields.validate_urn(url_urn)]
+        if not data.get("urns") and self.context.get("lookup_urn") and not self.instance:
+            data["urns"] = [fields.validate_urn(self.context["lookup_urn"])]
 
         return data
 

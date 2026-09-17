@@ -481,11 +481,14 @@ class TestClient(MailroomClient):
     @_client_method
     def contact_urns(self, org, urns: list[str], validate_only: bool = False):
         results = [mailroom.URNResult(normalized=urn, e164=True) for urn in urns]
+        overridden = set()
 
         if self.mocks._contact_urns:
             result_by_urn = self.mocks._contact_urns.pop(0)
             for i, urn in enumerate(urns):
                 result = result_by_urn.get(urn)
+                if result is not None:
+                    overridden.add(i)
                 if isinstance(result, mailroom.URNResult):
                     results[i] = result
                 elif isinstance(result, str):
@@ -494,6 +497,18 @@ class TestClient(MailroomClient):
                     results[i].e164 = result
                 elif isinstance(result, int):
                     results[i].contact_id = result
+
+        # like mailroom, look up the owning contacts of URNs which weren't given explicit results
+        if not validate_only:
+            to_lookup = [urns[i] for i in range(len(urns)) if i not in overridden]
+            owners = dict(
+                ContactURN.objects.filter(org=org, identity__in=to_lookup, contact__isnull=False).values_list(
+                    "identity", "contact_id"
+                )
+            )
+            for i, urn in enumerate(urns):
+                if i not in overridden:
+                    results[i].contact_id = owners.get(urn)
 
         return results
 
