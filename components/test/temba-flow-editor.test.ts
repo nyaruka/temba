@@ -53,6 +53,12 @@ class EditorSocketProvider implements SocketProvider {
     return { unsubscribe: () => undefined };
   }
 
+  onDenied(): SocketSubscription {
+    return { unsubscribe: () => undefined };
+  }
+
+  recheck(): void {}
+
   serverPublish(channel: string, event: any): void {
     this.subscriptions
       .filter(

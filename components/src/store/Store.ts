@@ -23,6 +23,7 @@ import {
 } from '../interfaces';
 import { RapidElement } from '../RapidElement';
 import {
+  onWorkspaceAccessLost,
   RealtimeSubscription,
   setRealtimeContext,
   subscribeToOrganization,
@@ -225,6 +226,7 @@ export class Store extends RapidElement {
   // repopulated by a batch that was already in flight
   private assetGeneration = 0;
   private organizationWatch: RealtimeSubscription = null;
+  private accessWatch: RealtimeSubscription = null;
   private organizationSubscribed = false;
   private previousDependencyResolver: DependencyResolver = null;
   private dependencyResolver: DependencyResolver = (dependencies) =>
@@ -414,6 +416,12 @@ export class Store extends RapidElement {
           }
         );
       }
+      if (!this.accessWatch) {
+        // the page owns what to tell the user, we just let it know
+        this.accessWatch = onWorkspaceAccessLost(() =>
+          this.fireCustomEvent(CustomEventType.WorkspaceAccessLost)
+        );
+      }
     }
   }
 
@@ -428,6 +436,10 @@ export class Store extends RapidElement {
     if (this.organizationWatch) {
       this.organizationWatch.unsubscribe();
       this.organizationWatch = null;
+    }
+    if (this.accessWatch) {
+      this.accessWatch.unsubscribe();
+      this.accessWatch = null;
     }
   }
 

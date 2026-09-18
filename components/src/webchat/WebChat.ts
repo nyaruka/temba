@@ -19,7 +19,9 @@ import {
   SocketSubscription,
   getSocketConnectionState,
   onSocketConnectionState,
+  onSocketDenied,
   publishToSocket,
+  recheckSocket,
   subscribeToSocket
 } from '../live/SocketService';
 
@@ -842,7 +844,9 @@ export class WebChat extends LitElement {
           subscribe: subscribeToSocket,
           publish: publishToSocket,
           getConnectionState: getSocketConnectionState,
-          onConnectionState: onSocketConnectionState
+          onConnectionState: onSocketConnectionState,
+          onDenied: onSocketDenied,
+          recheck: recheckSocket
         };
       }
     }

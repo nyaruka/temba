@@ -48,6 +48,9 @@ class MiddlewareTest(TembaTest):
         )
         self.assertEqual(403, response.status_code)
 
+        # and a mismatch says which workspace the session is actually in
+        self.assertEqual(str(self.org.uuid), response["X-Temba-Workspace"])
+
         self.login(self.customer_support)
 
         # our staff user doesn't have a default org

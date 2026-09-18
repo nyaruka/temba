@@ -26,6 +26,14 @@ import { Watchers } from './Watchers';
  * has gone quiet rather than silently showing stale data:
  *
  *   window.sockets.onConnectionState((state) => { ... });
+ *
+ * The server re-authorizes every subscription against the live session as it
+ * goes, so one can be taken away after the fact - the session logged out, or
+ * moved to another workspace in a different tab. That arrives as a refused
+ * (re)subscribe, which the client doesn't retry, so it is reported rather than
+ * left as a channel that has silently gone dead:
+ *
+ *   window.sockets.onDenied((channel) => { ... });
  */
 
 export interface SocketSubscription {
@@ -47,6 +55,11 @@ export enum ConnectionState {
 
 export type ConnectionStateHandler = (state: ConnectionState) => void;
 
+export type DeniedHandler = (channel: string) => void;
+
+// what the subscribe proxy answers when the session may not have a channel
+const FORBIDDEN = 403;
+
 export interface SocketProvider {
   subscribe(
     channel: string,
@@ -59,11 +72,16 @@ export interface SocketProvider {
   getConnectionState(): ConnectionState;
 
   onConnectionState(handler: ConnectionStateHandler): SocketSubscription;
+
+  onDenied(handler: DeniedHandler): SocketSubscription;
+
+  recheck(channel: string): void;
 }
 
 interface ChannelEntry {
   sub: Subscription;
   count: number;
+  onUnsubscribed: (ctx: { code: number }) => void;
 }
 
 export class SocketManager implements SocketProvider {
@@ -77,6 +95,8 @@ export class SocketManager implements SocketProvider {
   private stateHandlers = new Watchers<ConnectionStateHandler>(
     'socket connection handler'
   );
+
+  private deniedHandlers = new Watchers<DeniedHandler>('socket denied handler');
 
   constructor(createSocket?: () => Centrifuge) {
     this.createSocket =
@@ -191,6 +211,35 @@ export class SocketManager implements SocketProvider {
     };
   }
 
+  /**
+   * Watches for subscriptions the server refuses. A refusal is final - the
+   * client leaves the channel unsubscribed rather than retrying - and covers
+   * both a channel we were never allowed and one that was taken away when the
+   * server re-authorized it.
+   */
+  public onDenied(handler: DeniedHandler): SocketSubscription {
+    this.deniedHandlers.add(handler);
+    return {
+      unsubscribe: () => {
+        this.deniedHandlers.remove(handler);
+      }
+    };
+  }
+
+  /**
+   * Has the server authorize a channel's subscription again now, rather than
+   * whenever it next gets round to it, by subscribing afresh. For a caller
+   * with reason to think access has changed - if it has, that arrives via
+   * onDenied. Does nothing for a channel nobody is subscribed to.
+   */
+  public recheck(channel: string): void {
+    const entry = this.channels.get(channel);
+    if (entry) {
+      entry.sub.unsubscribe();
+      entry.sub.subscribe();
+    }
+  }
+
   public subscribe(
     channel: string,
     onPublication: PublicationHandler,
@@ -202,9 +251,15 @@ export class SocketManager implements SocketProvider {
     if (!entry) {
       entry = {
         sub: socket.getSubscription(channel) || socket.newSubscription(channel),
-        count: 0
+        count: 0,
+        onUnsubscribed: (ctx) => {
+          if (ctx && ctx.code === FORBIDDEN) {
+            this.deniedHandlers.each((handler) => handler(channel));
+          }
+        }
       };
       this.channels.set(channel, entry);
+      entry.sub.on('unsubscribed', entry.onUnsubscribed);
       entry.sub.subscribe();
     }
     entry.count++;
@@ -244,6 +299,7 @@ export class SocketManager implements SocketProvider {
         entry.count--;
         if (entry.count === 0) {
           this.channels.delete(channel);
+          sub.off('unsubscribed', entry.onUnsubscribed);
           sub.unsubscribe();
           this.socket.removeSubscription(sub);
         }
@@ -290,6 +346,14 @@ export const onSocketConnectionState = (
   handler: ConnectionStateHandler
 ): SocketSubscription => {
   return (provider || getManager()).onConnectionState(handler);
+};
+
+export const onSocketDenied = (handler: DeniedHandler): SocketSubscription => {
+  return (provider || getManager()).onDenied(handler);
+};
+
+export const recheckSocket = (channel: string): void => {
+  (provider || getManager()).recheck(channel);
 };
 
 // for tests to swap in a mock provider, returns the previous provider

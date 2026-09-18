@@ -38,6 +38,7 @@ import { Compose } from '../src/form/Compose';
 import {
   ConnectionState,
   ConnectionStateHandler,
+  DeniedHandler,
   PublicationHandler,
   SocketProvider,
   SocketSubscription
@@ -105,6 +106,28 @@ export class MockSocketProvider implements SocketProvider {
     this.subs
       .filter((sub) => sub.channel === channel && !sub.unsubscribed)
       .forEach((sub) => sub.onPublication(data));
+  }
+
+  // channels the page asked to have authorized again
+  public rechecked: string[] = [];
+  private deniedHandlers: DeniedHandler[] = [];
+
+  public onDenied(handler: DeniedHandler): SocketSubscription {
+    this.deniedHandlers.push(handler);
+    return {
+      unsubscribe: () => {
+        this.deniedHandlers = this.deniedHandlers.filter((h) => h !== handler);
+      }
+    };
+  }
+
+  public recheck(channel: string): void {
+    this.rechecked.push(channel);
+  }
+
+  // refuses a channel as the server would on (re)authorizing it
+  public serverDeny(channel: string) {
+    [...this.deniedHandlers].forEach((handler) => handler(channel));
   }
 
   public activeChannels(): string[] {

@@ -5481,6 +5481,12 @@ msgstr "Oups !"
 msgid "We tried our best, but there was an error processing your request. If this keeps happening, please refresh your browser."
 msgstr "Nous avons fait de notre mieux, mais une erreur s'est produite lors du traitement de votre requête. Si cela se reproduit, veuillez actualiser votre navigateur."
 
+msgid "Workspace Changed"
+msgstr "Espace de travail modifié"
+
+msgid "You are no longer logged in to this workspace in this browser. To continue, please refresh your browser."
+msgstr "Vous n'êtes plus connecté à cet espace de travail dans ce navigateur. Pour continuer, veuillez actualiser votre navigateur."
+
 msgid "Use Single Sign-On"
 msgstr "Utiliser l'authentification unique"
 

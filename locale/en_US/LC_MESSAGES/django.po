@@ -5455,6 +5455,12 @@ msgstr ""
 msgid "We tried our best, but there was an error processing your request. If this keeps happening, please refresh your browser."
 msgstr ""
 
+msgid "Workspace Changed"
+msgstr ""
+
+msgid "You are no longer logged in to this workspace in this browser. To continue, please refresh your browser."
+msgstr ""
+
 msgid "Use Single Sign-On"
 msgstr ""
 

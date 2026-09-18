@@ -114,6 +114,11 @@
         }
       });
 
+      // our session is no longer in this page's workspace, i.e. it was switched in another tab
+      document.addEventListener("temba-workspace-access-lost", function(event) {
+        showWorkspaceChangedDialog();
+      });
+
       document.addEventListener('temba-open-tab', function(event) {
         const item = event.detail;
         if (item.href) {
@@ -209,6 +214,15 @@
               </div>
             </temba-dialog>
           {% endblock error-dialog %}
+          <temba-dialog id="workspace-changed-dialog"
+                        header="{% trans "Workspace Changed" %}"
+                        data-refresh="{% trans "Refresh" %}">
+            <div class="p-6">
+              {% blocktrans trimmed %}
+                You are no longer logged in to this workspace in this browser. To continue, please refresh your browser.
+              {% endblocktrans %}
+            </div>
+          </temba-dialog>
           <temba-toast duration="5000" error-sticky>
           </temba-toast>
           {% sso_login_warning as sso_login_warning %}

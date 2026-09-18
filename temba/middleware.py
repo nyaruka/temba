@@ -122,7 +122,11 @@ class OrgMiddleware:
         # if request was sent with a workspace identifier, ensure it matches the current org
         if posted_uuid := request.headers.get(self.header_name):
             if request.org and str(request.org.uuid) != posted_uuid:
-                return HttpResponseForbidden()
+                # typically the session has switched workspace in another tab - say which workspace it's in now so
+                # the UI can tell that apart from any other refusal
+                response = HttpResponseForbidden()
+                response[self.header_name] = str(request.org.uuid)
+                return response
 
         request.branding = settings.BRAND
 

@@ -2,10 +2,13 @@ import { Notification, ObjectReference, User } from '../interfaces';
 import { Events } from '../events/eventRenderers';
 import type { StoreAsset } from '../store/Store';
 import {
+  onSocketDenied,
   PublicationHandler,
+  recheckSocket,
   SocketSubscription,
   subscribeToSocket
 } from './SocketService';
+import { Watchers } from './Watchers';
 
 /**
  * Typed access to our realtime topics. SocketService owns the shared
@@ -17,6 +20,12 @@ import {
  * user-scoped subscriptions requested before the store mounts are queued and
  * activate when the context is set. On pages with no authenticated context
  * they simply never activate.
+ *
+ * That identity belongs to the browser's session rather than to the page, so
+ * it can be pulled out from under a page that is still open: logging out, or
+ * switching workspace, in another tab. The server stops authorizing the
+ * page's own channels when that happens, which is how we find out - see
+ * onWorkspaceAccessLost.
  *
  * Payload types below describe the wire, which is raw JSON - timestamps are
  * strings here even where the rendered equivalents in events.ts carry Dates.
@@ -158,12 +167,115 @@ interface PendingSubscription {
 let context: RealtimeContext = null;
 const pending: PendingSubscription[] = [];
 
+// the channels addressed by the page's own identity. The session can always
+// have these, so being refused one means the session is no longer the one the
+// page was rendered for - unlike say a history channel, which can be refused
+// because of what happened to the contact
+const contextChannels = (ctx: RealtimeContext): string[] => [
+  `org:${ctx.org}`,
+  `notifications:${ctx.org}:${ctx.user}`
+];
+
+export type WorkspaceAccessLostHandler = () => void;
+
+const accessLostHandlers = new Watchers<WorkspaceAccessLostHandler>(
+  'workspace access handler'
+);
+let accessLost = false;
+let deniedWatch: SocketSubscription = null;
+
+/**
+ * Tabs share a session, so they tell each other whose page they are. The
+ * server only re-authorizes a subscription every minute or so, and a tab
+ * that hears from one rendered for a different identity needn't wait for
+ * that - it has the server check again straight away. What another tab says
+ * is only ever a reason to ask: the server's answer is what counts, so a tab
+ * that is wrong, or legitimately different, costs a resubscribe and no more.
+ */
+let tabsChannel = 'temba-realtime-context';
+let tabs: BroadcastChannel = null;
+
+// for tests, whose files run as tabs of one browser and would otherwise hear
+// each other, returns the previous name
+export const setRealtimeTabsChannel = (name: string): string => {
+  const previous = tabsChannel;
+  tabsChannel = name;
+  return previous;
+};
+
+const handleDenied = (channel: string) => {
+  if (context && !accessLost && contextChannels(context).includes(channel)) {
+    accessLost = true;
+    accessLostHandlers.each((handler) => handler());
+  }
+};
+
+const handleTabContext = (other: RealtimeContext) => {
+  if (
+    context &&
+    !accessLost &&
+    other &&
+    (other.org !== context.org || other.user !== context.user)
+  ) {
+    contextChannels(context).forEach((channel) => recheckSocket(channel));
+  }
+};
+
+const watchAccess = (ctx: RealtimeContext) => {
+  if (!deniedWatch) {
+    deniedWatch = onSocketDenied(handleDenied);
+  }
+
+  if (!tabs && typeof BroadcastChannel !== 'undefined') {
+    tabs = new BroadcastChannel(tabsChannel);
+    tabs.onmessage = (event: MessageEvent) => handleTabContext(event.data);
+  }
+  if (tabs) {
+    tabs.postMessage(ctx);
+  }
+};
+
+const unwatchAccess = () => {
+  if (deniedWatch) {
+    deniedWatch.unsubscribe();
+    deniedWatch = null;
+  }
+  if (tabs) {
+    tabs.close();
+    tabs = null;
+  }
+  accessLost = false;
+  accessLostHandlers.clear();
+};
+
+/**
+ * Watches for the page's session no longer being the one it was rendered
+ * for - it logged out, or moved to another workspace, somewhere else. Nothing
+ * on the page can work after that, its requests will all be refused, so this
+ * is the cue to tell the user to reload. Fires at most once, and straight
+ * away for a handler that arrives after the fact.
+ */
+export const onWorkspaceAccessLost = (
+  handler: WorkspaceAccessLostHandler
+): RealtimeSubscription => {
+  accessLostHandlers.add(handler);
+  if (accessLost) {
+    accessLostHandlers.prime(handler, (primed) => primed());
+  }
+  return {
+    unsubscribe: () => {
+      accessLostHandlers.remove(handler);
+    }
+  };
+};
+
 /**
  * Sets the page's realtime identity, flushing any subscriptions that were
  * waiting on it. Set once per page load - an org switch is a full page
  * load, so a real page never changes or clears its context. Passing null is
- * a full reset for tests: it discards the context AND any still-queued
- * subscriptions, so handles handed out before the reset never activate.
+ * a full reset for tests: it discards the context, any still-queued
+ * subscriptions, so handles handed out before the reset never activate, and
+ * anyone watching for lost access.
  * Returns the previous context.
  */
 export const setRealtimeContext = (
@@ -172,6 +284,7 @@ export const setRealtimeContext = (
   const previous = context;
   context = ctx;
   if (ctx) {
+    watchAccess(ctx);
     while (pending.length > 0) {
       const p = pending.shift();
       if (!p.cancelled) {
@@ -184,6 +297,7 @@ export const setRealtimeContext = (
     }
   } else {
     pending.length = 0;
+    unwatchAccess();
   }
   return previous;
 };

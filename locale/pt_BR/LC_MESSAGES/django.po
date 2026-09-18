@@ -5485,6 +5485,12 @@ msgstr "Opa!"
 msgid "We tried our best, but there was an error processing your request. If this keeps happening, please refresh your browser."
 msgstr "Nós tentamos o nosso melhor, mas ocorreu um erro ao processar a sua requisição. Se isso continuar acontecendo, por favor atualize o seu navegador."
 
+msgid "Workspace Changed"
+msgstr "Área de trabalho alterada"
+
+msgid "You are no longer logged in to this workspace in this browser. To continue, please refresh your browser."
+msgstr "Você não está mais conectado a esta área de trabalho neste navegador. Para continuar, atualize seu navegador."
+
 msgid "Use Single Sign-On"
 msgstr "Usar login único (SSO)"
 
