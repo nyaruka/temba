@@ -1,58 +1,69 @@
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
-from django.http import Http404, HttpResponsePermanentRedirect, HttpResponseRedirect
+from django.http import Http404, HttpResponse, HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import re_path, reverse
-from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
+from django.views import View
 from django.views.generic import TemplateView
 
+from temba import helpsites
 from temba.orgs.models import Org
 
 from .models import ArticleCount, HelpSite, KnowledgeSource
 
-# where the app mounts the preview of the current org's site
-PREVIEW_PREFIX = "/helpsite/preview"
+
+class PreviewView(View):
+    """
+    A page of the org's own help site as its readers will see it, seen from inside the app by anyone who can see the
+    site's settings - whether or not the site is up yet. The pages are rendered by the service that serves the site
+    publicly, so what the org previews is what its readers get: this fetches the page from there, and passes it on.
+    """
+
+    def dispatch(self, request, *args, **kwargs):
+        org = request.org
+        user = request.user
+
+        if not user.is_authenticated:
+            return HttpResponseRedirect(f"{reverse('account_login')}?next={request.path}")
+        if not org:
+            return HttpResponseRedirect(reverse("orgs.org_choose"))
+        if Org.FEATURE_AGENTS not in org.features or not (
+            user.is_staff or user.has_org_perm(org, "knowledge.article_list")
+        ):
+            raise PermissionDenied()
+
+        helpdesk = org.sources.filter(source_type=KnowledgeSource.TYPE_HELPDESK, is_system=True, is_active=True).first()
+        if not helpdesk:
+            raise Http404()
+
+        self.site = HelpSite.get_or_create(helpdesk, user)
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, path: str):
+        page = helpsites.get_client().preview(self.site, path, request.META.get("QUERY_STRING", ""))
+
+        # the page as the service rendered it - a redirect included, since where it goes is under the preview too
+        response = HttpResponse(page.content, status=page.status_code, content_type=page.headers.get("Content-Type"))
+        if location := page.headers.get("Location"):
+            response.headers["Location"] = location
+        response.headers["X-Robots-Tag"] = "noindex"  # the service says so too, but a preview is never for indexing
+        return response
 
 
 class SiteView(TemplateView):
     """
-    A page of a help site. The site is the one the request's host names - the org's own domain, served publicly - or
-    when previewing, the current org's own, seen from inside the app by anyone who can see its settings. Either way
-    the pages are the same, so what the org previews is what its readers get.
+    A page of a help site, served publicly on the org's own domain - the one the request's host names. Being replaced
+    by the service that renders the previews, which serves the same pages on the domains itself.
     """
 
-    preview = False
-
-    @cached_property
-    def prefix(self) -> str:
-        return PREVIEW_PREFIX if self.preview else ""
+    prefix = ""  # the site's pages are at the root of its domain
 
     def dispatch(self, request, *args, **kwargs):
-        if self.preview:
-            org = request.org
-            user = request.user
-
-            if not user.is_authenticated:
-                return HttpResponseRedirect(f"{reverse('account_login')}?next={request.path}")
-            if not org:
-                return HttpResponseRedirect(reverse("orgs.org_choose"))
-            if Org.FEATURE_AGENTS not in org.features or not (
-                user.is_staff or user.has_org_perm(org, "knowledge.article_list")
-            ):
-                raise PermissionDenied()
-
-            helpdesk = org.sources.filter(
-                source_type=KnowledgeSource.TYPE_HELPDESK, is_system=True, is_active=True
-            ).first()
-            if not helpdesk:
-                raise Http404()
-
-            self.site = HelpSite.get_or_create(helpdesk, user)
-        else:
-            self.site = request.help_site
-            if not self.site or not self.site.is_available:
-                raise Http404()
+        self.site = request.help_site
+        if not self.site or not self.site.is_available:
+            raise Http404()
 
         return super().dispatch(request, *args, **kwargs)
 
@@ -60,16 +71,10 @@ class SiteView(TemplateView):
         context = super().get_context_data(**kwargs)
         context["site"] = self.site
         context["prefix"] = self.prefix
-        context["is_preview"] = self.preview
-        context["settings_url"] = reverse("knowledge.article_list") if self.preview else None
+        context["is_preview"] = False
+        context["settings_url"] = None
         context.update(chat_context(self.site))
         return context
-
-    def render_to_response(self, context, **response_kwargs):
-        response = super().render_to_response(context, **response_kwargs)
-        if self.preview:
-            response.headers["X-Robots-Tag"] = "noindex"
-        return response
 
 
 class HomeView(SiteView):
@@ -112,9 +117,7 @@ class ArticleView(SiteView):
         if not article:
             raise Http404()
 
-        # a preview is the org looking at its own site, not a reader
-        if not self.preview:
-            ArticleCount.record_view(article)
+        ArticleCount.record_view(article)
 
         context["section"] = section
         context["article"] = article
@@ -157,21 +160,21 @@ def chat_context(site: HelpSite) -> dict:
     return {"chat_channel": site.chat_channel, "chat_host": f"https://{settings.HOSTNAME}"}
 
 
-def site_urlpatterns(preview: bool) -> list:
+def site_urlpatterns() -> list:
     """
-    The site's URLs - at the root of its own domain, or under the preview prefix in the app. Search comes before the
-    section pattern so it can't be shadowed by a section of that name.
+    The site's URLs, at the root of its own domain. Search comes before the section pattern so it can't be shadowed
+    by a section of that name.
     """
     return [
-        re_path(r"^$", HomeView.as_view(preview=preview), name="knowledge.site_home"),
-        re_path(r"^search/$", SearchView.as_view(preview=preview), name="knowledge.site_search"),
-        re_path(r"^(?P<section>[\w-]+)/$", SectionView.as_view(preview=preview), name="knowledge.site_section"),
+        re_path(r"^$", HomeView.as_view(), name="knowledge.site_home"),
+        re_path(r"^search/$", SearchView.as_view(), name="knowledge.site_search"),
+        re_path(r"^(?P<section>[\w-]+)/$", SectionView.as_view(), name="knowledge.site_section"),
         re_path(
             r"^(?P<section>[\w-]+)/(?P<article>[\w-]+)/$",
-            ArticleView.as_view(preview=preview),
+            ArticleView.as_view(),
             name="knowledge.site_article",
         ),
-        re_path(r"^(?P<path>.+)$", RedirectView.as_view(preview=preview), name="knowledge.site_redirect"),
+        re_path(r"^(?P<path>.+)$", RedirectView.as_view(), name="knowledge.site_redirect"),
     ]
 
 

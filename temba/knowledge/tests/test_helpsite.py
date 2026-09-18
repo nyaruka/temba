@@ -332,9 +332,13 @@ class HelpSiteTest(TembaTest):
             '<a href="https://google.com" rel="noopener noreferrer">google</a>.</p>',
             article.as_html(links=site.get_link_targets()),
         )
+
+        # without a map they're kept as article: links, normalized, for the site to resolve as it serves the page -
+        # bare, exactly as its renderer looks for them
         self.assertEqual(
-            "<p>See <span>nodes</span> and <span>drafting</span> or <span>ARTICLE:"
-            f'{str(nodes.uuid).upper()}</span> and <a href="https://google.com" rel="noopener noreferrer">google</a>.</p>',
+            f'<p>See <a href="article:{nodes.uuid}">nodes</a> and <a href="article:{draft.uuid}">drafting</a> or '
+            f'<a href="article:{nodes.uuid}">ARTICLE:{str(nodes.uuid).upper()}</a> and '
+            '<a href="https://google.com" rel="noopener noreferrer">google</a>.</p>',
             article.as_html(),
         )
 

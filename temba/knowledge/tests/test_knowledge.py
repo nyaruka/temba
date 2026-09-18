@@ -767,6 +767,56 @@ class ArticleTest(TembaTest):
         self.assertIsNone(article.published_on)
         self.assertGreater(article.modified_on, modified_on)
 
+    def test_body_html(self):
+        section = self.create_article(self.helpdesk, "Flows", status=Article.STATUS_PUBLISHED)
+        article = self.create_article(self.helpdesk, "Nodes", parent=section)
+        article.body = f"# Nodes\n\nA **node** is a step. See [flows](article:{section.uuid})."
+        article.save(update_fields=("body",))
+
+        # a draft isn't rendered
+        article.refresh_from_db()
+        self.assertEqual("", article.body_html)
+        self.assertEqual([], article.headings)
+
+        # publishing renders it - for the site to serve as is, with links to other articles left for it to resolve
+        article.publish(self.editor)
+        article.refresh_from_db()
+        self.assertEqual(
+            '<h1 id="nodes">Nodes</h1>\n<p>A <strong>node</strong> is a step. '
+            f'See <a href="article:{section.uuid}">flows</a>.</p>',
+            article.body_html,
+        )
+        self.assertEqual([{"id": "nodes", "text": "Nodes"}], article.headings)
+
+        # and so does saving it once it's published, however it's saved - here with a column colored by a palette
+        # entry the helpdesk doesn't have yet, so it paints nothing
+        article.body = "# Steps\n\nA node is a step.\n\n| background: 1 |\n| - |\n| one |"
+        article.save()
+        article.refresh_from_db()
+        self.assertEqual(
+            '<h1 id="steps">Steps</h1>\n<p>A node is a step.</p>\n'
+            "<table>\n<thead>\n<tr>\n<th></th>\n</tr>\n</thead>\n"
+            "<tbody>\n<tr>\n<td>one</td>\n</tr>\n</tbody>\n</table>",
+            article.body_html,
+        )
+        self.assertEqual([{"id": "steps", "text": "Steps"}], article.headings)
+
+        # column styles bake in the helpdesk's palette, so a change to it renders every published article again -
+        # without bumping modified_on, since nothing the indexer reads has changed
+        modified_on = article.modified_on
+        self.helpdesk.set_colors({"1": "#ffe8a3"})
+
+        article.refresh_from_db()
+        self.assertIn('<col style="background: #ffe8a3">', article.body_html)
+        self.assertEqual([{"id": "steps", "text": "Steps"}], article.headings)
+        self.assertEqual(modified_on, article.modified_on)
+
+        # a draft still isn't
+        article.unpublish(self.editor)
+        self.helpdesk.set_colors({"1": "#123456"})
+        article.refresh_from_db()
+        self.assertIn('<col style="background: #ffe8a3">', article.body_html)  # as it was last published
+
     @cleanup(s3=True)
     def test_release(self):
         section = self.create_article(self.helpdesk, "Flows", status=Article.STATUS_PUBLISHED)
