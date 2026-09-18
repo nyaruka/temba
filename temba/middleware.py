@@ -3,7 +3,6 @@ import traceback
 
 from django.conf import settings
 from django.contrib import messages
-from django.core.exceptions import MiddlewareNotUsed
 from django.http import HttpResponseForbidden, HttpResponseNotFound
 from django.utils import timezone, translation
 from django.utils.crypto import constant_time_compare
@@ -27,9 +26,9 @@ class ExceptionMiddleware:
 
 class ProxiedRequestMiddleware:
     """
-    Adjusts requests for the load balancing in front of the app. Everything here is settings-gated, so a deployment
-    with nothing in front of it is left alone, and it all has to happen before anything reads the scheme or the host
-    or answers a request - static files included - which is why this is first.
+    Adjusts requests for the load balancing in front of the app, and keeps the internal-only API to our own services.
+    It all has to happen before anything reads the scheme or the host or answers a request - static files included -
+    which is why this is first.
 
     Two things a request says about itself are otherwise wrong behind a load balancer. The connection reaching the
     app is plain http even though the client's was https, and everything that keys off the scheme gets that wrong -
@@ -58,9 +57,6 @@ class ProxiedRequestMiddleware:
     """
 
     def __init__(self, get_response=None):
-        if not (settings.SECURE_ASSUME_HTTPS or settings.ALLOWED_HOSTS_EXEMPT_PATHS or settings.INTERNAL_PORT):
-            raise MiddlewareNotUsed()
-
         self.get_response = get_response
 
     def __call__(self, request):

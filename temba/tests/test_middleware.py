@@ -2,7 +2,7 @@ import tempfile
 from pathlib import Path
 
 from django.conf import settings
-from django.core.exceptions import DisallowedHost, MiddlewareNotUsed
+from django.core.exceptions import DisallowedHost
 from django.http import HttpResponse
 from django.test import Client, RequestFactory, override_settings
 from django.urls import reverse
@@ -188,19 +188,3 @@ class ProxiedRequestTest(TembaTest):
             response = Client().post("/ti/websockets/connect", content_type="application/json", **internal)
             self.assertEqual(403, response.status_code)
             self.assertEqual(b"", response.content)
-
-    def test_not_used_when_nothing_is_wanted(self):
-        with override_settings(
-            SECURE_ASSUME_HTTPS=False, ALLOWED_HOSTS_EXEMPT_PATHS=(), INTERNET_PORT=None, INTERNAL_PORT=None
-        ):
-            with self.assertRaises(MiddlewareNotUsed):
-                ProxiedRequestMiddleware(lambda r: HttpResponse())
-
-    def test_used_when_only_one_thing_is_wanted(self):
-        for only in (
-            dict(SECURE_ASSUME_HTTPS=True, ALLOWED_HOSTS_EXEMPT_PATHS=(), INTERNET_PORT=None, INTERNAL_PORT=None),
-            dict(SECURE_ASSUME_HTTPS=False, INTERNET_PORT=None, INTERNAL_PORT=None, **self.EXEMPT),
-            dict(SECURE_ASSUME_HTTPS=False, **self.SPLIT),
-        ):
-            with override_settings(**only):
-                self.assertIsNotNone(ProxiedRequestMiddleware(lambda r: HttpResponse()))
