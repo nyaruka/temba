@@ -117,7 +117,8 @@ class ProxiedRequestTest(TembaTest):
                 self.assertEqual(404, self.serve(path, 8021).status_code, path)
 
     def test_internet_port_serves_everything_but_the_internal_api(self):
-        with override_settings(**self.SPLIT):
+        # with TESTING off so that it's the port matching that serves these, not the allowance for the test client
+        with override_settings(TESTING=False, **self.SPLIT):
             for path in ("/", "/msg/", "/api/v2/contacts.json", "/sitestatic/css/temba.css", "/system/ping/"):
                 self.assertEqual(b"served", self.serve(path, 8020).content, path)
 
