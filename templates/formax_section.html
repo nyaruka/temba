@@ -10,7 +10,7 @@
   {% block extra-style %}
   {% endblock extra-style %}
 {% endrender %}
-{% if 'HTTP_X_FORMAX' in request.META %}
+{% if "HTTP_X_FORMAX" in request.META %}
   {{ scripts }}
   <div class="formax-summary" onClick="handleSectionClicked(event)">
     {% block summary %}

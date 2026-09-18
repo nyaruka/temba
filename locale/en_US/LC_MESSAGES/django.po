@@ -4795,7 +4795,7 @@ msgid "Once you press Submit below with all the information configured, the conf
 msgstr ""
 
 #, python-format
-msgid "You can connect your <a href=\"http://www.globelabs.com.ph/\">Globe Labs</a> application to %(name)s using the fields below. You will first need to create a Globe Labs application, then get approval from Globe Labs by sending an email to <a href:\"mailto:api@globelabsbeta.com\">api@globelabsbeta.com</a>."
+msgid "You can connect your <a href=\"http://www.globelabs.com.ph/\">Globe Labs</a> application to %(name)s using the fields below. You will first need to create a Globe Labs application, then get approval from Globe Labs by sending an email to <a href=\"mailto:api@globelabsbeta.com\">api@globelabsbeta.com</a>."
 msgstr ""
 
 msgid "With the approval from Globe Labs you will receive the passphrase to use below."
@@ -4847,7 +4847,7 @@ msgstr ""
 msgid "To start creating a LINE bot, go to <a href=\"https://developers.line.biz/en/docs/messaging-api/getting-started/\">Getting started with the Messaging API</a>."
 msgstr ""
 
-msgid "Access the <a href=\"https://developers.line.biz/console/\">LINE Developers Console</a> page. </li>"
+msgid "Access the <a href=\"https://developers.line.biz/console/\">LINE Developers Console</a> page."
 msgstr ""
 
 msgid "Create a Line account using the application on your smartphone"

@@ -3,7 +3,7 @@
 
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .modal .modal-body {
       max-height: 450px;
     }
@@ -11,7 +11,7 @@
 {% endblock extra-style %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function handleFlowRefreshed(evt) {
       var flow = evt.detail.data;
       if (flow.runs) {

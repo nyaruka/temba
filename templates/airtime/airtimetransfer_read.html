@@ -24,7 +24,7 @@
 {% endblock post-fields %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       prettyPrint();
     });
@@ -32,5 +32,5 @@
 {% endblock extra-script %}
 {% block extra-style %}
   {{ block.super }}
-  <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}rest_framework/css/prettify.css" />
+  <link rel="stylesheet" href="{{ STATIC_URL }}rest_framework/css/prettify.css" />
 {% endblock extra-style %}

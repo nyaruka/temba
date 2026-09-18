@@ -17,7 +17,7 @@
       Adding a DT One account will allow you to send airtime credit over 400+ operators in over 100 countries.
       Once connected you can transfer airtime credit within your flows. To signup for an account, visit {{ link }}.
     {% endblocktrans %}
-  {% endif %}
+{% endif %}
 </div>
 {% endblock pre-form %}
 {% block fields %}
@@ -27,7 +27,7 @@
     <div class="my-4">
       {% blocktrans trimmed with link='<a target="_new" href="https://dtshop.dtone.com/account">account settings</a>' %}
       You can find your credentials on the Developer tab on your {{ link }} page.
-    {% endblocktrans %}
+  {% endblocktrans %}
   </div>
 {% endif %}
 {% endblock fields %}
@@ -67,7 +67,7 @@
 {% endblock post-form %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function confirmDTOneDisconnect() {
       removalConfirmation("disconnect-dtone", "Disconnect");
     }

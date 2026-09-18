@@ -27,7 +27,7 @@
 {% endblock form %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     window.fbAsyncInit = function() {
       FB.init({
         appId: '{{ facebook_app_id }}',
@@ -37,11 +37,10 @@
     };
   </script>
   <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       const connectFB = document.querySelector(".connect-facebook");
       connectFB.addEventListener('click', function(evt) {
-
         {% if facebook_login_messenger_config_id %}
         FB.login(function(response) {
           if (response.status === 'connected') {
@@ -55,7 +54,6 @@
         }, {
           config_id: '{{ facebook_login_messenger_config_id }}'
         });
-
         {% else %}
         FB.login(function(response) {
           if (response.status === 'connected') {
@@ -69,7 +67,6 @@
         }, {
           scope: 'pages_messaging,pages_show_list,pages_manage_metadata,pages_read_engagement'
         });
-
         {% endif %}
 
       })

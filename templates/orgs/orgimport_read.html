@@ -3,7 +3,7 @@
 
 {% block styles %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .content-card {
       width: 28rem;
     }
@@ -16,7 +16,7 @@
 {% block extra-script %}
   {{ block.super }}
   {% if not is_finished %}
-    <script type="text/javascript">
+    <script>
       if (spaGet) {
         setTimeout(function() {
           spaGet(document.location.href);

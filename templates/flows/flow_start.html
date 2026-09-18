@@ -3,7 +3,7 @@
 
 {% block modal-extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .warnings {
       opacity: 1;
     }
@@ -65,7 +65,7 @@
 {% endblock modal-extra-style %}
 {% block modal-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     {
       const modax = getModax("#start-flow");
       const modalBody = modax.shadowRoot;

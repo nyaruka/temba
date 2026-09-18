@@ -46,7 +46,7 @@
   {% endblock numbers-search-form %}
   {% if form.errors %}
     {% if form.errors.upgrade %}
-      <script type="text/javascript">
+      <script>
         document.location.href = '{% url 'orgs.org_upgrade_plan' %}?from=twilio'
       </script>
     {% elif form.errors.phone_number %}
@@ -93,7 +93,7 @@
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function searchNumbers(e) {
       e.stopPropagation();
       e.preventDefault();

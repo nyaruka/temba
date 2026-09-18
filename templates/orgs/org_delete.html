@@ -3,7 +3,7 @@
 
 {% block modal-extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .confirmation {
       --color-focus: var(--color-error);
       --color-widget-text: var(--color-error);
@@ -13,7 +13,7 @@
 {% endblock modal-extra-style %}
 {% block modal-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function handleConfirmationChange(evt) {
       var confirmation = evt.currentTarget.value;
       var modax = getModax("#delete-workspace");

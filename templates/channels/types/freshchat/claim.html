@@ -9,7 +9,7 @@
   <div class="mt-4">
     {% blocktrans trimmed with format='<div class="code inline py-1">channel-uuid/user-uuid</div>' %}
     Each message sent to the channel will have a URN in the format {{ format }} where the channel UUID is the FreshChat channel's UUID.
-  {% endblocktrans %}
+{% endblocktrans %}
 </div>
 <div class="card">
   <ol class="steps">
@@ -41,7 +41,7 @@
 {% endblock pre-form %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .info {
       width: 800px;
       margin-bottom: 20px;

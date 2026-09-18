@@ -11,7 +11,7 @@
   <form method="post" id="login-form">
     {% csrf_token %}
     {% for field, errors in form.errors.items %}
-      {% if field == '__all__' %}<div class="alert alert-error my-4">{{ errors }}</div>{% endif %}
+      {% if field == "__all__" %}<div class="alert alert-error my-4">{{ errors }}</div>{% endif %}
     {% endfor %}
     <div class="mt-4">
       <temba-textinput name="username"

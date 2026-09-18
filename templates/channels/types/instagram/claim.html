@@ -43,7 +43,7 @@
 {% endblock form %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     #fb-channel-options {
       margin-top: 2rem;
     }
@@ -63,7 +63,7 @@
 {% endblock extra-style %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       {% if facebook_login_instagram_config_id %}
       document.querySelectorAll('.connect-facebook').forEach(function(element) {

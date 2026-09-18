@@ -2,19 +2,22 @@
 
 {% if exclusions.in_a_flow %}
   <div class="exclusion-pill">
-    <temba-icon name="filter"></temba-icon>
+    <temba-icon name="filter">
+    </temba-icon>
     {% trans "Not in a flow" %}
   </div>
 {% endif %}
 {% if exclusions.started_previously %}
   <div class="exclusion-pill">
-    <temba-icon name="filter"></temba-icon>
+    <temba-icon name="filter">
+    </temba-icon>
     {% trans "No recent runs" %}
   </div>
 {% endif %}
 {% if exclusions.not_seen_since_days %}
   <div class="exclusion-pill">
-    <temba-icon name="filter"></temba-icon>
+    <temba-icon name="filter">
+    </temba-icon>
     {% if exclusions.not_seen_since_days == 365 %}
       {% blocktrans trimmed %}
         Active in the last year

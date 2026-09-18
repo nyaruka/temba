@@ -18,7 +18,7 @@
 {% endblock page-header %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     /* The component renders the same flush header bar as the new list
        pages, so drop the SPA content padding the same way they do. */
     .spa-content {
@@ -48,19 +48,25 @@
       {% if object.group.is_active %}
         <a href="{% url 'contacts.contact_group' object.group.uuid %}"><temba-label icon="group" type="group" clickable>{{ object.group.name }}</temba-label></a>
       {% else %}
-        <temba-label icon="issue">{% trans "Group required" %}</temba-label>
+        <temba-label icon="issue">
+          {% trans "Group required" %}
+        </temba-label>
       {% endif %}
     </div>
     {% if object.is_archived %}
       <div slot="badges">
-        <a href="{% url 'campaigns.campaign_archived' %}"><temba-label icon="campaign_archived" clickable>{% trans "Archived" %}</temba-label></a>
+        <a href="{% url 'campaigns.campaign_archived' %}">
+          <temba-label icon="campaign_archived" clickable>
+            {% trans "Archived" %}
+          </temba-label>
+        </a>
       </div>
     {% endif %}
   </temba-campaign-events>
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       var events = document.querySelector("#campaign-events");
 
@@ -106,11 +112,15 @@
         // event rows open the edit / delete modals - both redirect back to
         // this page on completion which re-fetches the schedule
         if (detail.action === "edit_event") {
-          showModax("{% trans "Edit Event" %}", detail.event.edit_url, { id: "event-update" });
+          showModax("{% trans "Edit Event" %}", detail.event.edit_url, {
+            id: "event-update"
+          });
           return;
         }
         if (detail.action === "delete_event") {
-          showModax("{% trans "Delete Event" %}", detail.event.delete_url, { id: "event-delete" });
+          showModax("{% trans "Delete Event" %}", detail.event.delete_url, {
+            id: "event-delete"
+          });
           return;
         }
 

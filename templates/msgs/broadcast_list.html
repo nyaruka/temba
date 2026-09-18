@@ -17,7 +17,7 @@
 {% endblock page-header %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     /* The list component fills its container edge to edge and brings
        its own surface, so drop the SPA content padding (and the grey
        page background it would otherwise reveal around the list). */
@@ -42,7 +42,7 @@
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       var list = document.querySelector("#broadcast-list");
 

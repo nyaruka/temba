@@ -20,7 +20,7 @@
   {{ block.super }}
   {# a section is a short form; only an article needs the dialog holding the window's height for the editor #}
   {% if form.body %}
-    <style type="text/css">
+    <style>
       /* The dialog takes nearly the window's whole height and holds it, with the editor taking whatever the controls
        above it leave over and scrolling the article inside itself. So writing happens in a window that doesn't move,
        and a long article never pushes the dialog past the bottom of the screen. Every wrapper between the body and the

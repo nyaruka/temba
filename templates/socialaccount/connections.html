@@ -38,13 +38,13 @@
   {% endslot %}
   {% slot actions %}
     {% element button tags="delete,danger" type="submit" %}
-      {% trans 'Remove' %}
+      {% trans "Remove" %}
     {% endelement %}
   {% endslot %}
 {% endelement %}
 {% else %}
 {% element p %}
-  {% trans 'You currently have no third-party accounts connected to this account.' %}
+  {% trans "You currently have no third-party accounts connected to this account." %}
 {% endelement %}
 {% endif %}
 {% include "socialaccount/snippets/provider_list.html" with process="connect" %}

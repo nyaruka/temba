@@ -4816,8 +4816,8 @@ msgid "Once you press Submit below with all the information configured, the conf
 msgstr "Une fois que vous appuyez sur Soumettre ci-dessous avec toutes les informations configurées, la page de confirmation vous donnera l'URL à utiliser pour les Webhooks FreshChat. Entrez cette URL sur la page Paramètres, sous Webhooks où la clé publique a été copiée auparavant."
 
 #, python-format
-msgid "You can connect your <a href=\"http://www.globelabs.com.ph/\">Globe Labs</a> application to %(name)s using the fields below. You will first need to create a Globe Labs application, then get approval from Globe Labs by sending an email to <a href:\"mailto:api@globelabsbeta.com\">api@globelabsbeta.com</a>."
-msgstr "Vous pouvez connecter votre application <a href=\"http://www.globelabs.com.ph/\">Globe Labs</a> à %(name)s en utilisant les champs ci-dessous. Vous devrez d'abord créer une application Globe Labs, puis obtenir l'approbation de Globe Labs en envoyant un e-mail à <a href:\"mailto:api@globelabsbeta.com\">api@globelabsbeta.com</a>."
+msgid "You can connect your <a href=\"http://www.globelabs.com.ph/\">Globe Labs</a> application to %(name)s using the fields below. You will first need to create a Globe Labs application, then get approval from Globe Labs by sending an email to <a href=\"mailto:api@globelabsbeta.com\">api@globelabsbeta.com</a>."
+msgstr "Vous pouvez connecter votre application <a href=\"http://www.globelabs.com.ph/\">Globe Labs</a> à %(name)s en utilisant les champs ci-dessous. Vous devrez d'abord créer une application Globe Labs, puis obtenir l'approbation de Globe Labs en envoyant un e-mail à <a href=\"mailto:api@globelabsbeta.com\">api@globelabsbeta.com</a>."
 
 msgid "With the approval from Globe Labs you will receive the passphrase to use below."
 msgstr "Avec l'approbation de Globe Labs, vous recevrez la phrase secrète à utiliser ci-dessous."
@@ -4868,8 +4868,8 @@ msgstr "Vous pouvez connecter un <a href=\"https://developers.line.biz/en/docs/m
 msgid "To start creating a LINE bot, go to <a href=\"https://developers.line.biz/en/docs/messaging-api/getting-started/\">Getting started with the Messaging API</a>."
 msgstr "Pour commencer à créer un bot LINE, consultez <a href=\"https://developers.line.biz/en/docs/messaging-api/getting-started/\">Getting started with the Messaging API</a>."
 
-msgid "Access the <a href=\"https://developers.line.biz/console/\">LINE Developers Console</a> page. </li>"
-msgstr "Accédez à la page de la <a href=\"https://developers.line.biz/console/\">LINE Developers Console</a>. </li>"
+msgid "Access the <a href=\"https://developers.line.biz/console/\">LINE Developers Console</a> page."
+msgstr "Accédez à la page de la <a href=\"https://developers.line.biz/console/\">LINE Developers Console</a>."
 
 msgid "Create a Line account using the application on your smartphone"
 msgstr "Créez un compte Line en utilisant l'application sur votre smartphone"

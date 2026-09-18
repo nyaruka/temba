@@ -3,7 +3,7 @@
 {% load smartmin temba %}
 
 {% block extra-style %}
-  <style type="text/css">
+  <style>
     .workflow-btn {
       padding: 4px 10px;
     }
@@ -40,7 +40,7 @@
   </style>
 {% endblock extra-style %}
 {% block content %}
-  {% if 'success' in request.GET.keys %}
+  {% if "success" in request.GET.keys %}
     {% blocktrans with name=branding.name %}
     Your channel is now connected. You can now start flows through {{name}}.
     {% endblocktrans %}
@@ -75,7 +75,7 @@
       </div>
     </div>
   </div>
-  {% if 'success' in request.GET.keys %}
+  {% if "success" in request.GET.keys %}
     <div class="flex mt-6">
       <div class="summary card p-12 overflow-hidden relative">
         <temba-icon name="contact"
@@ -100,9 +100,7 @@
             {% endblocktrans %}
           </div>
           <div class="mt-6">
-            <div href="{% url 'channels.channel_claim' %}"
-                 onclick="goto(event)"
-                 class="button-primary lift">{% trans "Add Number" %}</div>
+            <div href="{% url 'channels.channel_claim' %}" onclick="goto(event)" class="button-primary lift">{% trans "Add Number" %}</div>
           </div>
         </div>
       </div>

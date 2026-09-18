@@ -86,16 +86,16 @@
             </div>
             <div class="t-status">{{ last_sync.power_level }}%</div>
             <div class="plugged px-2">
-              {% if last_sync.power_status == 'UNK' %}
+              {% if last_sync.power_status == "UNK" %}
                 {% trans "UNKNOWN" %}
               {% endif %}
-              {% if last_sync.power_status == 'DIS' %}
+              {% if last_sync.power_status == "DIS" %}
                 {% trans "DISCHARGING" %}
               {% endif %}
-              {% if last_sync.power_status == 'CHA' %}
+              {% if last_sync.power_status == "CHA" %}
                 {% trans "CHARGING" %}
               {% endif %}
-              {% if last_sync.power_status == 'FUL' %}
+              {% if last_sync.power_status == "FUL" %}
                 {% trans "FULLY CHARGED" %}
               {% endif %}
             </div>
@@ -174,7 +174,7 @@
             <td class="align-center">{{ sync_event.pending_message_count|intcomma }}</td>
             <td class="align-center">{{ sync_event.retry_message_count|intcomma }}</td>
             <td class="align-center">
-              {% if sync_event.power_status == 'CHA' %}
+              {% if sync_event.power_status == "CHA" %}
                 <div class="glyph icon-battery-charging"></div>
               {% else %}
                 {% if sync_event.power_level < 20 %}
@@ -188,12 +188,12 @@
               &nbsp;{{ sync_event.power_level }}%
             </td>
             <td class="align-center">
-              {% if sync_event.network_type == 'WIFI' %}
+              {% if sync_event.network_type == "WIFI" %}
                 <div class="glyph icon-connection"></div>
               {% else %}
                 <div class="glyph icon-radio"></div>
               {% endif %}
-              {% if sync_event.network_type == 'NONE' or sync_event.network_type == 'UNKNOWN' %}
+              {% if sync_event.network_type == "NONE" or sync_event.network_type == "UNKNOWN" %}
                 {% trans "&nbsp;&nbsp;OTHER" %}
               {% else %}
                 &nbsp;&nbsp;{{ sync_event.network_type }}
@@ -207,7 +207,7 @@
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       const rangePicker = document.querySelector("temba-range-picker");
 

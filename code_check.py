@@ -208,6 +208,10 @@ if __name__ == "__main__":
         )
         exit(1)
 
+    if template_dirs := " ".join(config.get("templates", [])):
+        status("Running djlint")
+        cmd(f"djlint --check {template_dirs}")
+
     status("Running ruff format")
     cmd(f"ruff format --check {packages}")
 

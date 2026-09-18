@@ -4,10 +4,10 @@
 {% block title %}
   <div class="flex">
     <div class="flex items-center text-gray-600">
-      {% if object.flow_type == 'V' %}
+      {% if object.flow_type == "V" %}
         <temba-icon name="flow_ivr" class="mr-3">
         </temba-icon>
-      {% elif object.flow_type == 'B' %}
+      {% elif object.flow_type == "B" %}
         <temba-icon name="flow_background" class="mr-3">
         </temba-icon>
       {% endif %}
@@ -17,7 +17,7 @@
 {% endblock title %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .spa-content {
       padding-left: 0px !important;
       padding-right: 0px !important;
@@ -45,15 +45,14 @@
       border-top: 1px solid #e7e7e7;
     }
 
-    temba-flow-editor[message-view] + temba-simulator {
+    temba-flow-editor[message-view]+temba-simulator {
       display: none;
     }
-
   </style>
 {% endblock extra-style %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function navigateTo(url, detail) {
       if (detail.metaKey || detail.ctrlKey) {
         window.open(url, '_blank');
@@ -95,7 +94,11 @@
   </script>
 {% endblock extra-script %}
 {% block content %}
-  <temba-flow-editor flow="{{ object.uuid }}" features='{{ feature_filters }}' -temba-contact-clicked="handleContactClicked" -temba-flow-clicked="handleFlowClicked" -temba-group-clicked="handleGroupClicked">
+  <temba-flow-editor flow="{{ object.uuid }}"
+                     features='{{ feature_filters }}'
+                     -temba-contact-clicked="handleContactClicked"
+                     -temba-flow-clicked="handleFlowClicked"
+                     -temba-group-clicked="handleGroupClicked">
   </temba-flow-editor>
   <temba-simulator flow="{{ object.uuid }}" -temba-follow-simulation="handleFollow">
   </temba-simulator>

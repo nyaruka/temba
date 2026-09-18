@@ -12,7 +12,7 @@
 {% endblock page-description %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .fb-comments {
       border: 0px solid green;
     }
@@ -75,7 +75,7 @@
   <h1 id="title-text">{{ object.name }}</h1>
 {% endblock title %}
 {% block content %}
-  <iframe class='vimeo'
+  <iframe class="vimeo"
           src="//player.vimeo.com/video/{{ object.vimeo_id }}"
           width="950"
           height="535"
@@ -83,7 +83,7 @@
           webkitallowfullscreen
           mozallowfullscreen
           allowfullscreen></iframe>
-  <div class='description'>{{ object.description }}</div>
+  <div class="description">{{ object.description }}</div>
   {% if perms.public.video_update or request.user.is_superuser %}{% endif %}
   <div class="other-vids">
     <h4>{% trans "More Videos" %}</h4>

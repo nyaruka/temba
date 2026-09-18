@@ -7,7 +7,7 @@
 {% block extra-script %}
   {{ block.super }}
   {% if not is_finished %}
-    <script type="text/javascript">
+    <script>
       if (spaGet) {
         setTimeout(function() {
           spaGet(document.location.href);
@@ -89,7 +89,7 @@
 {% endblock content %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .page-content {
       align-self: auto;
       max-width: 1024px;

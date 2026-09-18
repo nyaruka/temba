@@ -27,7 +27,7 @@
 {% endblock form %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     window.fbAsyncInit = function() {
       FB.init({
         appId: '{{ facebook_app_id }}',
@@ -37,7 +37,7 @@
     };
   </script>
   <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       const connectFB = document.querySelector(".connect-facebook");
       connectFB.addEventListener('click', function(evt) {
@@ -54,7 +54,6 @@
         }, {
           config_id: '{{ facebook_login_instagram_config_id }}'
         });
-
         {% else %}
         FB.login(function(response) {
           if (response.status === 'connected') {
@@ -68,7 +67,6 @@
         }, {
           scope: 'instagram_basic,instagram_manage_messages,pages_manage_metadata,pages_messaging,pages_read_engagement,pages_show_list'
         });
-
         {% endif %}
       })
     });

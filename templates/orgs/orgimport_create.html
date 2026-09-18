@@ -39,7 +39,7 @@
   {% endblock import-status %}
 {% endblock content %}
 {% block extra-style %}
-  <style type="text/css">
+  <style>
     #file-upload {
       position: relative;
     }
@@ -73,7 +73,7 @@
 {% endblock extra-style %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function updateFlowImportFile() {
       var fileInput = document.getElementById("file");
       var file = fileInput.value;

@@ -46,16 +46,14 @@
               {% endif %}
             </td>
             <td>{{ obj.get_start_type_display }}</td>
-            <td style="text-align: right; white-space: nowrap;">
-              {% if obj.contact_count is not None %}{{ obj.contact_count|intcomma }}{% endif %}
-            </td>
+            <td style="text-align: right; white-space: nowrap;">{% if obj.contact_count is not None %}{{ obj.contact_count|intcomma }}{% endif %}</td>
             <td style="text-align: right;">
               <div style="white-space:nowrap">{{ obj.created_on|timedate }}</div>
-              {% if obj.status == 'F' or obj.status == 'I' or obj.is_starting %}
+              {% if obj.status == "F" or obj.status == "I" or obj.is_starting %}
                 <div style="padding-top: 6px; font-size: 11px; white-space: nowrap;">
-                  {% if obj.status == 'F' %}
+                  {% if obj.status == "F" %}
                     {% trans "Failed" %}
-                  {% elif obj.status == 'I' %}
+                  {% elif obj.status == "I" %}
                     {% trans "Interrupted" %}
                   {% else %}
                     {% trans "Starting" %}
@@ -77,7 +75,7 @@
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function showStart(event, row) {
       if (event.target.closest("a")) {
         return;

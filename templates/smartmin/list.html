@@ -37,8 +37,7 @@
         <thead>
           <tr>
             {% for field in fields %}
-              <th class="header-{{ field }} {% if view|field_orderable:field %}header {% if field == order %}{% if order_asc %}headerSortUp{% else %}headerSortDown{% endif %}{% endif %}{% endif %}"
-                  id="header-{{ field }}">{% get_label field %}</th>
+              <th class="header-{{ field }} {% if view|field_orderable:field %}header {% if field == order %}{% if order_asc %}headerSortUp{% else %}headerSortDown{% endif %}{% endif %}{% endif %}" id="header-{{ field }}">{% get_label field %}</th>
             {% endfor %}
           </tr>
           <tbody>
@@ -73,7 +72,7 @@
 {% endblock content %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .page-content {
       align-self: auto;
       max-width: 100%;

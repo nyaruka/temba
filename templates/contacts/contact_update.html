@@ -3,7 +3,7 @@
 
 {% block modal-extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .icon-arrow-down {
       -ms-transform: rotate(180deg);
       -moz-transform: rotate(180deg);
@@ -38,7 +38,7 @@
 {% endblock modal-extra-style %}
 {% block modal-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       createMoveLinks();
     })

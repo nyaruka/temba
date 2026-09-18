@@ -34,7 +34,7 @@
            data-business_id="{{ phone_num.business_id }}"
            data-currency="{{ phone_num.currency }}"
            data-message_template_namespace="{{ phone_num.message_template_namespace }}"
-           class=" fb-page-channel-option lbl mt-3 mr-2 p-2 linked">{{ phone_num.display_phone_number }} ({{ phone_num.verified_name }})</div>
+           class="fb-page-channel-option lbl mt-3 mr-2 p-2 linked">{{ phone_num.display_phone_number }} ({{ phone_num.verified_name }})</div>
     {% endfor %}
   </div>
   <div class="flex mt-4" id="fb-app-connect">
@@ -43,7 +43,7 @@
 {% endblock form %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       const connectFB = document.querySelector(".connect-facebook");
       {% if facebook_login_whatsapp_config_id %}

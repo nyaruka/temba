@@ -83,7 +83,7 @@
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function updateGroupMode(groupMode) {
       const newGroup = document.querySelector(".new-group-controls");
       const existingGroup = document.querySelector(".existing-group-controls");
@@ -127,7 +127,7 @@
 {% endblock extra-script %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .control-group {
       margin-bottom: 0;
     }

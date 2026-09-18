@@ -2,7 +2,7 @@
 {% load smartmin sms temba contacts i18n %}
 
 {% block content %}
-  {% if object.status == 'S' %}
+  {% if object.status == "S" %}
     <temba-alert level="info" class="mb-4">
       {% trans "This event is currently being scheduled and can't be edited again until that completes." %}
     </temba-alert>
@@ -20,7 +20,7 @@
     </div>
   </div>
   <div class="event-details p-4 bg-white rounded-lg mb-4">
-    {% if object.event_type == 'M' %}
+    {% if object.event_type == "M" %}
       <div class="cap-label">{% trans "Send Message" %}</div>
       <div class="text-gray-600 py-3">
         <temba-expression-highlight>

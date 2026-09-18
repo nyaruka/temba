@@ -3,7 +3,7 @@
 
 {% block modal-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     var modax = getModax("#event-add, #event-update");
     var body = modax.getBody();
     var deliveryHourOptions = body.querySelector("#send-at");
@@ -56,7 +56,6 @@
     flowSection.style.display = 'none';
     messageSection.style.display = 'block';
     {% endif %}
-
     {% if form.unit.value == 'M' or form.unit.value == 'D' %}
     deliveryHourOptions.style.display = 'flex';
     {% else %}
@@ -66,7 +65,7 @@
 {% endblock modal-script %}
 {% block modal-extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .delivered {
       color: inherit;
     }

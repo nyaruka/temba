@@ -24,7 +24,7 @@
     </div>
   </div>
 </div>
-{% if object.role != 'S' %}
+{% if object.role != "S" %}
   <div class="card mt-6 flex-shrink-0">
     <div class="title">{% trans "Received URL" %}</div>
     <div class="code inline-block m-0">{% channel_callback channel "receive" %}</div>

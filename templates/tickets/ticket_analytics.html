@@ -133,7 +133,7 @@
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function escapeHtml(str) {
       var div = document.createElement("div");
       div.appendChild(document.createTextNode(str));
@@ -159,9 +159,9 @@
           }
           tbody.innerHTML = data.results.map(function(user) {
             {% if team %}
-              var name = escapeHtml(user.name);
+            var name = escapeHtml(user.name);
             {% else %}
-              var name = '<a href="/ticket/all/?assignee=' + user.uuid + '">' + escapeHtml(user.name) + '</a>';
+            var name = '<a href="/ticket/all/?assignee=' + user.uuid + '">' + escapeHtml(user.name) + '</a>';
             {% endif %}
             return '<tr><td>' + name + '</td><td>' + user.replies.toLocaleString() + '</td></tr>';
           }).join("");

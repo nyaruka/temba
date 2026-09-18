@@ -15,7 +15,7 @@
 {% endblock page-description %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .workflow-btn {
       padding: 4px 10px;
     }
@@ -80,7 +80,7 @@
           <a href="{% url "public.video_update" video.pk %}">{% trans "Edit" %}</a>
         </div>
       {% endif %}
-      <iframe class='vimeo'
+      <iframe class="vimeo"
               src="//player.vimeo.com/video/{{ video.vimeo_id }}"
               width="550"
               height="309"
@@ -91,7 +91,7 @@
       <!-- .number -->
       <!-- {{video.order}} -->
       <div class="description">
-        <div class='summary'>{{ video.summary }}</div>
+        <div class="summary">{{ video.summary }}</div>
         <a href="{% url "public.video_read" video.pk %}" class="more">{% trans "More" %}</a>
       </div>
     </div>

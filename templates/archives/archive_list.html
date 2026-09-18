@@ -19,7 +19,7 @@
     {% for archive in object_list %}
       <tr>
         <td>
-          {% if archive.period == 'D' %}
+          {% if archive.period == "D" %}
             {{ archive.start_date|date:"M j, Y" }}
           {% else %}
             {{ archive.start_date|date:"F Y" }}

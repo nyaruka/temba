@@ -15,8 +15,7 @@
     </thead>
     <tbody>
       {% for object in object_list %}
-        <tr onclick="handleRowClicked(event)"
-            href="{% url 'airtime.airtimetransfer_read' object.uuid %}">
+        <tr onclick="handleRowClicked(event)" href="{% url 'airtime.airtimetransfer_read' object.uuid %}">
           <td class="whitespace-nowrap">{{ object.contact|name_or_urn:user_org|truncatechars:20 }}</td>
           <td class="whitespace-nowrap">{{ object.recipient_display }}</td>
           <td>{{ object.currency|default:"--" }}</td>
@@ -40,7 +39,7 @@
 {% endblock table %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function handleRowClicked(event) {
       var row = event.target.closest("tr");
       goto(event, row);

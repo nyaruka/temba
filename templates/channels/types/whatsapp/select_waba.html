@@ -9,14 +9,14 @@
     <div class="grid grid-cols-4 gap-4">
       {% for waba_id in waba_ids %}
         <div href="{% url 'channels.types.whatsapp.claim' %}?waba_id={{ waba_id }}"
-               onclick="goto(event, this)"
-               class="card link">
+             onclick="goto(event, this)"
+             class="card link">
           <div class="flex flex-col mx-4 relative">
             <div class="title">{{ waba_id }}</div>
           </div>
         </div>
       {% endfor %}
-      </div>
+    </div>
   </div>
   <div class="flex mt-4" id="fb-app-connect">
     <div class="button-primary connect-facebook">{% trans "Connect other Facebook Business numbers" %}</div>
@@ -24,10 +24,9 @@
 {% endblock content %}
 {% block form-buttons %}
 {% endblock form-buttons %}
-
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       const connectFB = document.querySelector(".connect-facebook");
       connectFB.addEventListener('click', function(evt) {

@@ -14,7 +14,7 @@
 {% endblock page-header %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     /* preview pages render without the frame footer */
     .spa-footer {
       display: none;
@@ -48,10 +48,7 @@
   <div class="read-page">
     <temba-header-bar>
       <temba-page-header content-menu-endpoint="{{ request.path }}" -temba-selection="handleContentMenuSelected(event)">
-        <temba-contact-name slot="title"
-                            contact="{{ object.uuid }}"
-                            icon-size="16"
-                            -temba-refreshed="handleContactRefreshed">
+        <temba-contact-name slot="title" contact="{{ object.uuid }}" icon-size="16" -temba-refreshed="handleContactRefreshed">
         </temba-contact-name>
       </temba-page-header>
     </temba-header-bar>
@@ -94,12 +91,7 @@
         <temba-contact-timeline contact="{{ object.uuid }}" -temba-selection="handleTimelineClicked">
         </temba-contact-timeline>
       </temba-card>
-      <temba-card id="card-notepad"
-                  variant="note"
-                  label="{{ _("Notepad") |escapejs }}"
-                  icon="notes"
-                  activity
-                  bleed>
+      <temba-card id="card-notepad" variant="note" label="{{ _("Notepad") |escapejs }}" icon="notes" activity bleed>
         <temba-contact-notepad contact="{{ object.uuid }}" autogrow>
         </temba-contact-notepad>
       </temba-card>
@@ -109,7 +101,7 @@
 {% block extra-script %}
   {{ block.super }}
   {% include "includes/page_header_menu.html" %}
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       const details = document.querySelector("temba-contact-details");
       details.schemes = JSON.parse(document.getElementById("contact-urn-schemes").textContent);

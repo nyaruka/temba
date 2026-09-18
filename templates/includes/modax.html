@@ -5,7 +5,7 @@
   {% block pre-form %}
   {% endblock pre-form %}
   {% for field, errors in form.errors.items %}
-    {% if field == '__all__' %}{{ errors }}{% endif %}
+    {% if field == "__all__" %}{{ errors }}{% endif %}
   {% endfor %}
   <form method="post">
     {% csrf_token %}

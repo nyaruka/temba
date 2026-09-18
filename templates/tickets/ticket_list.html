@@ -12,7 +12,7 @@
 {% endblock page-header %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     /* preview pages render without the frame footer */
     .spa-footer {
       display: none;
@@ -229,7 +229,7 @@
 {% block extra-script %}
   {{ block.super }}
   {% include "includes/page_header_menu.html" %}
-  <script type="text/javascript">
+  <script>
     // current state
     var folder = '{{folder}}';
     var ticketUUID = '{{uuid}}';

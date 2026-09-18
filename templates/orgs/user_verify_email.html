@@ -18,14 +18,14 @@
         {% endblocktrans %}
       </div>
       <div class="text-center">
-        <a class="button-primary" href={% url 'orgs.org_start' %}>{% trans "Continue" %}</a>
+        <a class="button-primary" href="{% url 'orgs.org_start' %}">{% trans "Continue" %}</a>
       </div>
     {% endif %}
   </div>
 {% endblock content %}
 {% block styles %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .content-card {
       width: 28em;
     }

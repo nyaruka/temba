@@ -123,7 +123,7 @@
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function handleToggle(event) {
       event.currentTarget.parentElement.classList.toggle("expanded");
     }
@@ -176,7 +176,7 @@
 {% endblock extra-script %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .main-logo {
       margin: 1.5em;
     }

@@ -2,13 +2,13 @@
 {% load i18n smartmin %}
 
 {% block fields %}
-  {% if object.trigger_type == 'V' %}
+  {% if object.trigger_type == "V" %}
     {% render_field "action" %}
     <div class="{% if form.action.value == 'hangup' %}hidden{% endif %} voice-flow-container">{% render_field "voice_flow" %}</div>
     <div class="{% if form.action.value == 'answer' %}hidden{% endif %} msg-flow-container">{% render_field "msg_flow" %}</div>
     {% render_field "groups" %}
     {% render_field "exclude_groups" %}
-  {% elif object.trigger_type == 'S' %}
+  {% elif object.trigger_type == "S" %}
     {% include "includes/schedule_fields.html" with form=form %}
     {% render_field 'flow' %}
     {% render_field 'groups' %}
@@ -20,8 +20,8 @@
 {% endblock fields %}
 {% block modal-script %}
   {{ block.super }}
-  {% if object.trigger_type == 'V' %}
-    <script type="text/javascript">
+  {% if object.trigger_type == "V" %}
+    <script>
       var body = document.querySelector("#update-trigger").getBody();
       var actionSelect = body.querySelector("temba-select[name='action']");
       var voiceFlow = body.querySelector(".voice-flow-container");
@@ -41,8 +41,8 @@
         }
       });
     </script>
-  {% elif object.trigger_type == 'S' %}
-    <script type="text/javascript">
+  {% elif object.trigger_type == "S" %}
+    <script>
       var body = document.querySelector("#update-trigger").getBody();
       var repeatPeriod = body.querySelector("#id_repeat_period");
       var repeatDays = body.querySelector(".repeat-days-container");

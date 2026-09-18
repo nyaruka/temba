@@ -55,7 +55,7 @@
     {% blocktrans trimmed with "<div class='code'>quick_replies</div>" as quick_replies_var and "<div class='code'>&quick_reply=(reply)</div>" as quick_replies_output %}
     The {{ quick_replies_var }} variable with method GET or content type URL Encoded will be
     replaced by {{ quick_replies_output }} for each quick reply.
-  {% endblocktrans %}
+{% endblocktrans %}
 </div>
 <div class="mt-4">
   {% blocktrans trimmed with branding.name as brand %}
@@ -66,7 +66,7 @@
 {% endblock pre-form %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function updateFormForMethod(method) {
       var bodyCtrlGroup = document.querySelector('#id_body').closest('.control-group');
       if (method == 'GET') {
@@ -111,7 +111,7 @@
 {% endblock extra-script %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     li {
       padding: 5px 0px;
     }

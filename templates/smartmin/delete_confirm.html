@@ -5,7 +5,7 @@
 {% endblock page-top %}
 {% block modal-extra-style %}
   {{ block.super }}
-  <link rel="stylesheet" href="{{ STATIC_URL }}css/tailwind.css" type="text/css">
+  <link rel="stylesheet" href="{{ STATIC_URL }}css/tailwind.css">
 {% endblock modal-extra-style %}
 {% block modal %}
   {% block delete-message %}
@@ -25,7 +25,7 @@
   {% endblock delete-form %}
 {% endblock modal %}
 {% block content %}
-  <style type="text/css">
+  <style>
     .icon-warning.confirm {
       font-size: 150px;
       color: #888;

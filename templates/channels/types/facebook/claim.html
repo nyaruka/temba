@@ -38,7 +38,7 @@
 {% endblock form %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     #fb-channel-options {
       margin-top: 2rem;
     }
@@ -58,7 +58,7 @@
 {% endblock extra-style %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       // Conditionally set the click event on elements with the class "connect-facebook"
       {% if facebook_login_messenger_config_id %}

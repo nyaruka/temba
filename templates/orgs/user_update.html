@@ -15,7 +15,7 @@
 {% endblock fields %}
 {% block modal-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     var modalBody = getModax("#update-user").shadowRoot;
     var roleSelect = modalBody.querySelector("temba-select[name='role']");
     var team = modalBody.querySelector(".team");

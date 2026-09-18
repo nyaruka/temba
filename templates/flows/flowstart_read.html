@@ -108,9 +108,9 @@
         </temba-start-progress>
       {% else %}
         <div>
-          {% if object.status == 'F' %}
+          {% if object.status == "F" %}
             {% trans "Failed" %}
-          {% elif object.status == 'I' %}
+          {% elif object.status == "I" %}
             {% trans "Interrupted" %}
           {% else %}
             {% trans "Started" %}

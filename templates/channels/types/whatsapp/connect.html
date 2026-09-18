@@ -10,7 +10,8 @@
       {{ claim_error }}
     </temba-alert>
   {% endif %}
-  <temba-alert level="error" class="my-4 hidden" id="connect-error"></temba-alert>
+  <temba-alert level="error" class="my-4 hidden" id="connect-error">
+  </temba-alert>
 {% endblock pre-form %}
 {% block form %}
   <div class="mt-4 card">
@@ -33,7 +34,7 @@
 {% endblock form %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       var hash = window.location.hash.substring(1)
       var result = hash.split('&').reduce(function(res, item) {

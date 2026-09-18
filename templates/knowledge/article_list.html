@@ -58,10 +58,10 @@
             </temba-icon>
             <div class="import-text">
               <div class="import-title">
-              {% blocktrans trimmed with name=import_type_name %}
-                The import from {{ name }} did not finish.
-              {% endblocktrans %}
-            </div>
+                {% blocktrans trimmed with name=import_type_name %}
+                  The import from {{ name }} did not finish.
+                {% endblocktrans %}
+              </div>
               <div class="import-note">{{ helpdesk_import.error }}</div>
             </div>
             {% if import_url %}
@@ -203,7 +203,6 @@
       // the domain card reflects what the domain dialog just did, or an import just started shows its bar
       spaGet(window.location.pathname);
     }
-
     {% if import_url %}
     function showImportDialog() {
       showModax('{{ import_title|escapejs }}', '{{ import_url }}', {
@@ -212,7 +211,6 @@
       });
     }
     {% endif %}
-
     {% if helpdesk_import and not helpdesk_import.is_finished %}
     function pollHelpdeskImport(refreshes) {
       // the bar follows the import along, more patiently the longer it goes, and the page is reloaded to show the
@@ -243,7 +241,6 @@
       });
     }
     {% endif %}
-
     {% if domain_url %}
     function showSiteDomain() {
       showModax('{{ _("Site Domain") |escapejs }}', '{{ domain_url }}', {
@@ -255,11 +252,9 @@
 
     onSpload(function() {
       var list = document.querySelector('#article-list');
-
       {% if helpdesk_import and not helpdesk_import.is_finished %}
       pollHelpdeskImport(1);
       {% endif %}
-
       {% if create_url %}
       // each card offers to add an article to its section - the same create dialog the menu opens for a section,
       // told which section the article goes in
@@ -269,12 +264,10 @@
         });
       });
       {% endif %}
-
       {% if org_perms.knowledge.article_update %}
       list.addEventListener('temba-row-click', function(event) {
         showArticleEditor(event.detail.item.uuid);
       });
-
       {% if edit_article %}
       // we've just come from naming a new article, so open it for writing
       showArticleEditor('{{ edit_article.uuid }}');
@@ -285,7 +278,7 @@
 {% endblock extra-script %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     /* The cards component carries its own insets, so drop the SPA
        content padding - the cards float on the page background the way
        the contact page's do. */
