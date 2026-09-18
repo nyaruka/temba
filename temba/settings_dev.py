@@ -48,7 +48,7 @@ HELPSITES_PREVIEW_TOKEN = os.environ.get("HELPSITES_PREVIEW_TOKEN")
 # -----------------------------------------------------------------------------------
 # WebSockets - shared secret for the realtime messaging server (must match its config)
 # -----------------------------------------------------------------------------------
-WEBSOCKETS_AUTH_SECRET = "topsecret"
+INTERNAL_AUTH_TOKEN = "topsecret"
 
 # -----------------------------------------------------------------------------------
 # In development, add in extra logging for exceptions and the debug toolbar

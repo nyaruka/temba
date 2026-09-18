@@ -1,7 +1,7 @@
 from django.test import override_settings
 
 from temba.tests import TembaTest
-from temba.utils.checks import mailers, storage
+from temba.utils.checks import internal_auth_token, mailers, ports, storage
 
 
 class SystemChecksTest(TembaTest):
@@ -17,6 +17,27 @@ class SystemChecksTest(TembaTest):
 
         with override_settings(STORAGE_URL="http://example.com/uploads/"):
             self.assertEqual(storage(None)[0].msg, "Storage URL shouldn't end with trailing slash.")
+
+    def test_ports(self):
+        self.assertEqual(len(ports(None)), 0)
+
+        with override_settings(INTERNET_PORT=None, INTERNAL_PORT=None):
+            self.assertEqual(len(ports(None)), 0)
+
+        with override_settings(INTERNET_PORT=None):
+            self.assertEqual(ports(None)[0].msg, "Only one of the internet and internal ports is set.")
+
+        with override_settings(INTERNAL_PORT=None):
+            self.assertEqual(ports(None)[0].msg, "Only one of the internet and internal ports is set.")
+
+        with override_settings(INTERNET_PORT=8021):
+            self.assertEqual(ports(None)[0].msg, "The internet and internal ports are the same.")
+
+    def test_internal_auth_token(self):
+        self.assertEqual(len(internal_auth_token(None)), 0)
+
+        with override_settings(INTERNAL_AUTH_TOKEN=None):
+            self.assertEqual(internal_auth_token(None)[0].msg, "INTERNAL_AUTH_TOKEN is not set.")
 
     def test_mailers(self):
         self.assertEqual(

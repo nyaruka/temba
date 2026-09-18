@@ -35,6 +35,40 @@ def storage(app_configs, **kwargs):
 
 
 @register()
+def ports(app_configs, **kwargs):
+    internet, internal = settings.INTERNET_PORT, settings.INTERNAL_PORT
+
+    if (internet is None) != (internal is None):
+        return [
+            Error(
+                "Only one of the internet and internal ports is set.",
+                hint="Set both INTERNET_PORT and INTERNAL_PORT in Django settings, or neither to serve everything on one port.",
+            )
+        ]
+    if internet is not None and internet == internal:
+        return [
+            Error(
+                "The internet and internal ports are the same.",
+                hint="Set INTERNET_PORT and INTERNAL_PORT in Django settings to two different ports.",
+            )
+        ]
+    return []
+
+
+@register()
+def internal_auth_token(app_configs, **kwargs):
+    if not settings.INTERNAL_AUTH_TOKEN:
+        return [
+            Error(
+                "INTERNAL_AUTH_TOKEN is not set.",
+                hint="Set INTERNAL_AUTH_TOKEN in Django settings to the shared secret the services calling the "
+                "internal-only API are configured with. Nothing under /ti/ is served without it.",
+            )
+        ]
+    return []
+
+
+@register()
 def mailers(app_configs, **kwargs):
     errors = []
     config = getattr(settings, "MAILERS", {})

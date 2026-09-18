@@ -253,11 +253,18 @@ MIDDLEWARE = (
 # host check and fails there.
 ALLOWED_HOSTS_EXEMPT_PATHS = ()
 
-# the port on which the app serves only its internal-only API (everything under /ti/) plus the paths above, for a
-# deployment which has it listen on a second port that only its own network can reach - the way to keep those
-# endpoints off the public internet with nothing in front of the app. Every other port then doesn't serve /ti/ at all.
-# None when there's one port and whatever is in front of the app does the splitting.
-INTERNAL_PORT = None
+# the two ports the app listens on: one for the internet, and one that only its own network can reach on which it
+# serves just its internal-only API (everything under /ti/) plus the paths above, and nothing else. The internet port
+# doesn't serve /ti/ at all, and nothing is served on any other port. Having the split in the app itself is what keeps
+# those endpoints off the public internet with nothing in front of the app doing it. Both None only for a deployment
+# which listens on one port and has whatever is in front of the app do the splitting.
+INTERNET_PORT = 8020
+INTERNAL_PORT = 8021
+
+# the shared secret every request to the internal-only API must carry as `Authorization: Token <secret>` - defense in
+# depth on top of the port split, so that a request which does reach /ti/ still has to come from one of our own
+# services. Required (see temba.utils.checks) and left unset here so that each deployment configures its own.
+INTERNAL_AUTH_TOKEN = None
 
 # whether to treat every request as having arrived over https regardless of what the connection or any forwarded header
 # says - for when TLS is always terminated in front of the app
@@ -955,14 +962,6 @@ HELPSITES_PREVIEW_TOKEN = None  # what it requires in the Authorization header o
 # The host an org points its help site's domain at by CNAME - the help sites service, which gets certificates for
 # the domains it serves on demand. Unset, the domain dialog shows the app's own domain.
 HELPSITE_CNAME_TARGET = None
-
-# -----------------------------------------------------------------------------------
-# WebSockets (realtime messaging server)
-# -----------------------------------------------------------------------------------
-
-# shared secret the websockets API requires in the X-Websockets-Secret header; required (see temba.api.checks) and
-# left unset here so each deployment must configure it
-WEBSOCKETS_AUTH_SECRET = None
 
 # -----------------------------------------------------------------------------------
 # Data Model

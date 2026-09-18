@@ -2,7 +2,7 @@ import tempfile
 from pathlib import Path
 
 from django.conf import settings
-from django.core.exceptions import DisallowedHost, MiddlewareNotUsed
+from django.core.exceptions import DisallowedHost
 from django.http import HttpResponse
 from django.test import Client, RequestFactory, override_settings
 from django.urls import reverse
@@ -57,7 +57,7 @@ class ProxiedRequestTest(TembaTest):
         ALLOWED_HOSTS=["app.example.com"],
         BRAND={"domain": "app.example.com"},
     )
-    SPLIT = dict(INTERNAL_PORT=8021, ALLOWED_HOSTS_EXEMPT_PATHS=("/system/ping/",))
+    SPLIT = dict(INTERNET_PORT=8020, INTERNAL_PORT=8021, ALLOWED_HOSTS_EXEMPT_PATHS=("/system/ping/",))
 
     def test_scheme_assumed_https(self):
         request = RequestFactory().get("/")
@@ -108,20 +108,56 @@ class ProxiedRequestTest(TembaTest):
         request = RequestFactory().get(path, SERVER_PORT=str(port), **extra)
         return ProxiedRequestMiddleware(lambda r: HttpResponse("served"))(request)
 
+    def test_internal_api_requires_the_token(self):
+        with override_settings(INTERNAL_AUTH_TOKEN="topsecret", **self.SPLIT):
+            self.assertEqual(
+                b"served", self.serve("/ti/websockets/connect", 8021, HTTP_AUTHORIZATION="Token topsecret").content
+            )
+
+            # a bare 403 for a missing, wrong or differently framed token
+            for header in (None, "Token open", "Bearer topsecret", "topsecret"):
+                extra = {"HTTP_AUTHORIZATION": header} if header else {}
+                response = self.serve("/ti/websockets/connect", 8021, **extra)
+                self.assertEqual(403, response.status_code, header)
+                self.assertEqual(b"", response.content)
+
+            # nothing else asks for it
+            self.assertEqual(b"served", self.serve("/msg/", 8020).content)
+            self.assertEqual(b"served", self.serve("/system/ping/", 8021).content)
+
+        # and with no token configured nothing under /ti/ is served at all
+        with override_settings(INTERNAL_AUTH_TOKEN=None, **self.SPLIT):
+            self.assertEqual(
+                403, self.serve("/ti/websockets/connect", 8021, HTTP_AUTHORIZATION="Token None").status_code
+            )
+
     def test_internal_port_serves_only_the_internal_api_and_health_check(self):
         with override_settings(**self.SPLIT):
-            self.assertEqual(b"served", self.serve("/ti/websockets/connect", 8021).content)
+            self.assertEqual(
+                b"served", self.serve("/ti/websockets/connect", 8021, HTTP_AUTHORIZATION="Token topsecret").content
+            )
             self.assertEqual(b"served", self.serve("/system/ping/", 8021).content)
 
             for path in ("/", "/msg/", "/api/v2/contacts.json", "/sitestatic/css/temba.css", "/system/ping"):
                 self.assertEqual(404, self.serve(path, 8021).status_code, path)
 
-    def test_other_ports_serve_everything_but_the_internal_api(self):
-        with override_settings(**self.SPLIT):
+    def test_internet_port_serves_everything_but_the_internal_api(self):
+        # with TESTING off so that it's the port matching that serves these, not the allowance for the test client
+        with override_settings(TESTING=False, **self.SPLIT):
             for path in ("/", "/msg/", "/api/v2/contacts.json", "/sitestatic/css/temba.css", "/system/ping/"):
                 self.assertEqual(b"served", self.serve(path, 8020).content, path)
 
             self.assertEqual(404, self.serve("/ti/websockets/connect", 8020).status_code)
+
+    def test_other_ports_serve_nothing(self):
+        with override_settings(TESTING=False, **self.SPLIT):
+            for path in ("/", "/msg/", "/system/ping/", "/ti/websockets/connect"):
+                self.assertEqual(404, self.serve(path, 8000).status_code, path)
+
+        # except under test, where the test client says everything arrived on port 80
+        with override_settings(**self.SPLIT):
+            self.assertEqual(b"served", self.serve("/", 80).content)
+            self.assertEqual(404, self.serve("/ti/websockets/connect", 80).status_code)
 
     def test_port_is_the_one_connected_to_not_the_one_claimed(self):
         with override_settings(USE_X_FORWARDED_PORT=True, **self.SPLIT):
@@ -129,8 +165,8 @@ class ProxiedRequestTest(TembaTest):
 
     def test_through_the_whole_stack(self):
         # a fresh client so that the middleware is loaded with the split in place
-        with override_settings(WEBSOCKETS_AUTH_SECRET="topsecret", **self.SPLIT):
-            client = Client(HTTP_X_WEBSOCKETS_SECRET="topsecret")
+        with override_settings(INTERNAL_AUTH_TOKEN="topsecret", **self.SPLIT):
+            client = Client(HTTP_AUTHORIZATION="Token topsecret")
             internal, public = dict(SERVER_PORT="8021"), dict(SERVER_PORT="8020")
 
             self.assertEqual(
@@ -146,16 +182,9 @@ class ProxiedRequestTest(TembaTest):
             self.assertEqual(b"", response.content)
             self.assertEqual(200, client.get(reverse("public.public_index"), **public).status_code)
 
-    def test_not_used_when_nothing_is_wanted(self):
-        with override_settings(SECURE_ASSUME_HTTPS=False, ALLOWED_HOSTS_EXEMPT_PATHS=(), INTERNAL_PORT=None):
-            with self.assertRaises(MiddlewareNotUsed):
-                ProxiedRequestMiddleware(lambda r: HttpResponse())
-
-    def test_used_when_only_one_thing_is_wanted(self):
-        for only in (
-            dict(SECURE_ASSUME_HTTPS=True, ALLOWED_HOSTS_EXEMPT_PATHS=(), INTERNAL_PORT=None),
-            dict(SECURE_ASSUME_HTTPS=False, INTERNAL_PORT=None, **self.EXEMPT),
-            dict(SECURE_ASSUME_HTTPS=False, **self.SPLIT),
-        ):
-            with override_settings(**only):
-                self.assertIsNotNone(ProxiedRequestMiddleware(lambda r: HttpResponse()))
+            # the wrong port is checked before the token, so a request with neither is still a 404
+            response = Client().post("/ti/websockets/connect", content_type="application/json", **public)
+            self.assertEqual(404, response.status_code)
+            response = Client().post("/ti/websockets/connect", content_type="application/json", **internal)
+            self.assertEqual(403, response.status_code)
+            self.assertEqual(b"", response.content)

@@ -3,9 +3,9 @@ import traceback
 
 from django.conf import settings
 from django.contrib import messages
-from django.core.exceptions import MiddlewareNotUsed
 from django.http import HttpResponseForbidden, HttpResponseNotFound
 from django.utils import timezone, translation
+from django.utils.crypto import constant_time_compare
 
 from temba.orgs.models import Org
 
@@ -26,9 +26,9 @@ class ExceptionMiddleware:
 
 class ProxiedRequestMiddleware:
     """
-    Adjusts requests for the load balancing in front of the app. Everything here is settings-gated, so a deployment
-    with nothing in front of it is left alone, and it all has to happen before anything reads the scheme or the host
-    or answers a request - static files included - which is why this is first.
+    Adjusts requests for the load balancing in front of the app, and keeps the internal-only API to our own services.
+    It all has to happen before anything reads the scheme or the host or answers a request - static files included -
+    which is why this is first.
 
     Two things a request says about itself are otherwise wrong behind a load balancer. The connection reaching the
     app is plain http even though the client's was https, and everything that keys off the scheme gets that wrong -
@@ -37,25 +37,35 @@ class ProxiedRequestMiddleware:
     that matters, since a load balancer can't be told to address an instance any other way and failing them takes the
     deployment out of service.
 
-    And a deployment with an internal load balancer as well as a public one can give the app a second port for it,
-    one that only its own network can reach. The internal-only API - everything under /ti/ - is then served on that
-    port and nowhere else, and that port serves nothing else, bar the health-check paths above, since the internal load
-    balancer checks the same way as the public one. A request in the wrong place gets a 404, the same as if the URL
-    didn't exist. The port is the one the app's own socket accepted the connection on, never one a header claims,
-    since a client can put what it likes in a header - which means TCP ports: bound to a unix socket, the WSGI server
-    has no port of its own and fills in what the Host header says, which is the client's to choose.
+    And the app listens on two ports: one for the internet and one that only its own network can reach, for the
+    internal load balancer where the deployment has one. The internal-only API - everything under /ti/ - is served on
+    the internal port and nowhere else, and that port serves nothing else, bar the health-check paths above, since the
+    internal load balancer checks the same way as the public one. Nothing at all is served on any other port. A request
+    in the wrong place gets a 404, the same as if the URL didn't exist. The port is the one the app's own socket
+    accepted the connection on, never one a header claims, since a client can put what it likes in a header - which
+    means TCP ports: bound to a unix socket, the WSGI server has no port of its own and fills in what the Host header
+    says, which is the client's to choose.
+
+    The test client doesn't listen anywhere and says its requests arrived on port 80, so under test any port that
+    isn't the internal one is taken to be the internet one.
+
+    The internal-only API is also gated on a shared secret that only our own services know, carried as
+    `Authorization: Token <secret>` the way the other services' internal APIs are. That's defense in depth on top of
+    the port split - a request which does reach /ti/ still has to come from one of our own services - and not a
+    substitute for it. It's a plain 403 for the same reason the wrong port is a plain 404, and it fails closed: with no
+    secret configured nothing under /ti/ is served, though a system check refuses to start without one.
     """
 
     def __init__(self, get_response=None):
-        if not (settings.SECURE_ASSUME_HTTPS or settings.ALLOWED_HOSTS_EXEMPT_PATHS or settings.INTERNAL_PORT):
-            raise MiddlewareNotUsed()
-
         self.get_response = get_response
 
     def __call__(self, request):
         # a bare 404 rather than the 404 page: nothing later in the chain has run yet, so the page's context isn't there
-        if settings.INTERNAL_PORT and not self._served_on_port(request):
+        if settings.INTERNAL_PORT and not self._is_correct_port(request):
             return HttpResponseNotFound()
+
+        if request.path.startswith("/ti/") and not self._has_internal_token(request):
+            return HttpResponseForbidden()
 
         if settings.SECURE_ASSUME_HTTPS:
             request.META["wsgi.url_scheme"] = "https"
@@ -69,13 +79,21 @@ class ProxiedRequestMiddleware:
         return self.get_response(request)
 
     @staticmethod
-    def _served_on_port(request) -> bool:
-        internal = int(request.META["SERVER_PORT"]) == settings.INTERNAL_PORT
+    def _is_correct_port(request) -> bool:
+        port = int(request.META["SERVER_PORT"])
 
         if request.path.startswith("/ti/"):
-            return internal
+            return port == settings.INTERNAL_PORT
+        if port == settings.INTERNAL_PORT:
+            return request.path in settings.ALLOWED_HOSTS_EXEMPT_PATHS
 
-        return not internal or request.path in settings.ALLOWED_HOSTS_EXEMPT_PATHS
+        return port == settings.INTERNET_PORT or settings.TESTING
+
+    @staticmethod
+    def _has_internal_token(request) -> bool:
+        token = settings.INTERNAL_AUTH_TOKEN
+
+        return bool(token) and constant_time_compare(request.headers.get("Authorization", ""), f"Token {token}")
 
 
 class NoStoreMiddleware:
