@@ -1,5 +1,6 @@
 from django_valkey import get_valkey_connection
 
+from django.conf import settings
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -18,11 +19,16 @@ SECRET = "topsecret"
 
 @override_settings(WEBSOCKETS_AUTH_SECRET=SECRET)
 class EndpointsTest(APITestMixin, TembaTest):
+    # these endpoints are only served on the internal port
+    INTERNAL = {"SERVER_PORT": str(settings.INTERNAL_PORT)}
+
     def post(self, name, data=None, *, client=None, secret=SECRET, origin=None):
         headers = {"HTTP_X_WEBSOCKETS_SECRET": secret} if secret is not None else {}
         if origin is not None:  # the realtime server forwarding the browser's Origin header
             headers["HTTP_ORIGIN"] = origin
-        return (client or self.client).post(reverse(name), data or {}, content_type="application/json", **headers)
+        return (client or self.client).post(
+            reverse(name), data or {}, content_type="application/json", **self.INTERNAL, **headers
+        )
 
     def assertExpiry(self, expire_at):
         self.assertIsInstance(expire_at, int)
@@ -46,7 +52,9 @@ class EndpointsTest(APITestMixin, TembaTest):
 
         # GET isn't supported - this endpoint only answers the realtime server's connect POST
         self.login(self.admin)
-        self.assertEqual(405, self.client.get(endpoint_url, HTTP_X_WEBSOCKETS_SECRET=SECRET).status_code)
+        self.assertEqual(
+            405, self.client.get(endpoint_url, HTTP_X_WEBSOCKETS_SECRET=SECRET, **self.INTERNAL).status_code
+        )
 
         # an authenticated user gets no server-side subscriptions (the browser subscribes to its own notifications and
         # any history sockets itself), but their identity is attached to the connection meta

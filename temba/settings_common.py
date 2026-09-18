@@ -253,11 +253,13 @@ MIDDLEWARE = (
 # host check and fails there.
 ALLOWED_HOSTS_EXEMPT_PATHS = ()
 
-# the port on which the app serves only its internal-only API (everything under /ti/) plus the paths above, for a
-# deployment which has it listen on a second port that only its own network can reach - the way to keep those
-# endpoints off the public internet with nothing in front of the app. Every other port then doesn't serve /ti/ at all.
-# None when there's one port and whatever is in front of the app does the splitting.
-INTERNAL_PORT = None
+# the two ports the app listens on: one for the internet, and one that only its own network can reach on which it
+# serves just its internal-only API (everything under /ti/) plus the paths above, and nothing else. The internet port
+# doesn't serve /ti/ at all, and nothing is served on any other port. Having the split in the app itself is what keeps
+# those endpoints off the public internet with nothing in front of the app doing it. Both None only for a deployment
+# which listens on one port and has whatever is in front of the app do the splitting.
+INTERNET_PORT = 8020
+INTERNAL_PORT = 8021
 
 # whether to treat every request as having arrived over https regardless of what the connection or any forwarded header
 # says - for when TLS is always terminated in front of the app

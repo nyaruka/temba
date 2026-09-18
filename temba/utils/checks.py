@@ -35,6 +35,27 @@ def storage(app_configs, **kwargs):
 
 
 @register()
+def ports(app_configs, **kwargs):
+    internet, internal = settings.INTERNET_PORT, settings.INTERNAL_PORT
+
+    if (internet is None) != (internal is None):
+        return [
+            Error(
+                "Only one of the internet and internal ports is set.",
+                hint="Set both INTERNET_PORT and INTERNAL_PORT in Django settings, or neither to serve everything on one port.",
+            )
+        ]
+    if internet is not None and internet == internal:
+        return [
+            Error(
+                "The internet and internal ports are the same.",
+                hint="Set INTERNET_PORT and INTERNAL_PORT in Django settings to two different ports.",
+            )
+        ]
+    return []
+
+
+@register()
 def mailers(app_configs, **kwargs):
     errors = []
     config = getattr(settings, "MAILERS", {})

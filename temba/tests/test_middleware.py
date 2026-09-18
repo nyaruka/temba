@@ -57,7 +57,7 @@ class ProxiedRequestTest(TembaTest):
         ALLOWED_HOSTS=["app.example.com"],
         BRAND={"domain": "app.example.com"},
     )
-    SPLIT = dict(INTERNAL_PORT=8021, ALLOWED_HOSTS_EXEMPT_PATHS=("/system/ping/",))
+    SPLIT = dict(INTERNET_PORT=8020, INTERNAL_PORT=8021, ALLOWED_HOSTS_EXEMPT_PATHS=("/system/ping/",))
 
     def test_scheme_assumed_https(self):
         request = RequestFactory().get("/")
@@ -116,12 +116,22 @@ class ProxiedRequestTest(TembaTest):
             for path in ("/", "/msg/", "/api/v2/contacts.json", "/sitestatic/css/temba.css", "/system/ping"):
                 self.assertEqual(404, self.serve(path, 8021).status_code, path)
 
-    def test_other_ports_serve_everything_but_the_internal_api(self):
+    def test_internet_port_serves_everything_but_the_internal_api(self):
         with override_settings(**self.SPLIT):
             for path in ("/", "/msg/", "/api/v2/contacts.json", "/sitestatic/css/temba.css", "/system/ping/"):
                 self.assertEqual(b"served", self.serve(path, 8020).content, path)
 
             self.assertEqual(404, self.serve("/ti/websockets/connect", 8020).status_code)
+
+    def test_other_ports_serve_nothing(self):
+        with override_settings(TESTING=False, **self.SPLIT):
+            for path in ("/", "/msg/", "/system/ping/", "/ti/websockets/connect"):
+                self.assertEqual(404, self.serve(path, 8000).status_code, path)
+
+        # except under test, where the test client says everything arrived on port 80
+        with override_settings(**self.SPLIT):
+            self.assertEqual(b"served", self.serve("/", 80).content)
+            self.assertEqual(404, self.serve("/ti/websockets/connect", 80).status_code)
 
     def test_port_is_the_one_connected_to_not_the_one_claimed(self):
         with override_settings(USE_X_FORWARDED_PORT=True, **self.SPLIT):
@@ -147,14 +157,16 @@ class ProxiedRequestTest(TembaTest):
             self.assertEqual(200, client.get(reverse("public.public_index"), **public).status_code)
 
     def test_not_used_when_nothing_is_wanted(self):
-        with override_settings(SECURE_ASSUME_HTTPS=False, ALLOWED_HOSTS_EXEMPT_PATHS=(), INTERNAL_PORT=None):
+        with override_settings(
+            SECURE_ASSUME_HTTPS=False, ALLOWED_HOSTS_EXEMPT_PATHS=(), INTERNET_PORT=None, INTERNAL_PORT=None
+        ):
             with self.assertRaises(MiddlewareNotUsed):
                 ProxiedRequestMiddleware(lambda r: HttpResponse())
 
     def test_used_when_only_one_thing_is_wanted(self):
         for only in (
-            dict(SECURE_ASSUME_HTTPS=True, ALLOWED_HOSTS_EXEMPT_PATHS=(), INTERNAL_PORT=None),
-            dict(SECURE_ASSUME_HTTPS=False, INTERNAL_PORT=None, **self.EXEMPT),
+            dict(SECURE_ASSUME_HTTPS=True, ALLOWED_HOSTS_EXEMPT_PATHS=(), INTERNET_PORT=None, INTERNAL_PORT=None),
+            dict(SECURE_ASSUME_HTTPS=False, INTERNET_PORT=None, INTERNAL_PORT=None, **self.EXEMPT),
             dict(SECURE_ASSUME_HTTPS=False, **self.SPLIT),
         ):
             with override_settings(**only):
