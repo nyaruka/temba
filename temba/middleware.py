@@ -58,7 +58,7 @@ class ProxiedRequestMiddleware:
 
     def __call__(self, request):
         # a bare 404 rather than the 404 page: nothing later in the chain has run yet, so the page's context isn't there
-        if settings.INTERNAL_PORT and not self._arrived_on_right_port(request):
+        if settings.INTERNAL_PORT and not self._is_correct_port(request):
             return HttpResponseNotFound()
 
         if settings.SECURE_ASSUME_HTTPS:
@@ -73,7 +73,7 @@ class ProxiedRequestMiddleware:
         return self.get_response(request)
 
     @staticmethod
-    def _arrived_on_right_port(request) -> bool:
+    def _is_correct_port(request) -> bool:
         port = int(request.META["SERVER_PORT"])
 
         if request.path.startswith("/ti/"):
