@@ -1,7 +1,7 @@
 from django.test import override_settings
 
 from temba.tests import TembaTest
-from temba.utils.checks import mailers, ports, storage
+from temba.utils.checks import internal_auth_token, mailers, ports, storage
 
 
 class SystemChecksTest(TembaTest):
@@ -32,6 +32,12 @@ class SystemChecksTest(TembaTest):
 
         with override_settings(INTERNET_PORT=8021):
             self.assertEqual(ports(None)[0].msg, "The internet and internal ports are the same.")
+
+    def test_internal_auth_token(self):
+        self.assertEqual(len(internal_auth_token(None)), 0)
+
+        with override_settings(INTERNAL_AUTH_TOKEN=None):
+            self.assertEqual(internal_auth_token(None)[0].msg, "INTERNAL_AUTH_TOKEN is not set.")
 
     def test_mailers(self):
         self.assertEqual(

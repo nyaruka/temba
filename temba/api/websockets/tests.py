@@ -5,7 +5,6 @@ from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from temba.api.checks import websockets_auth_secret
 from temba.api.tests.mixins import APITestMixin
 from temba.api.websockets.views import SUBSCRIPTION_TTL
 from temba.channels.types.webchat.views import CONFIG_ALLOWED_DOMAINS
@@ -17,13 +16,13 @@ from temba.utils.uuid import uuid4
 SECRET = "topsecret"
 
 
-@override_settings(WEBSOCKETS_AUTH_SECRET=SECRET)
+@override_settings(INTERNAL_AUTH_TOKEN=SECRET)
 class EndpointsTest(APITestMixin, TembaTest):
     # these endpoints are only served on the internal port
     INTERNAL = {"SERVER_PORT": str(settings.INTERNAL_PORT)}
 
     def post(self, name, data=None, *, client=None, secret=SECRET, origin=None):
-        headers = {"HTTP_X_WEBSOCKETS_SECRET": secret} if secret is not None else {}
+        headers = {"HTTP_AUTHORIZATION": f"Token {secret}"} if secret is not None else {}
         if origin is not None:  # the realtime server forwarding the browser's Origin header
             headers["HTTP_ORIGIN"] = origin
         return (client or self.client).post(
@@ -53,7 +52,7 @@ class EndpointsTest(APITestMixin, TembaTest):
         # GET isn't supported - this endpoint only answers the realtime server's connect POST
         self.login(self.admin)
         self.assertEqual(
-            405, self.client.get(endpoint_url, HTTP_X_WEBSOCKETS_SECRET=SECRET, **self.INTERNAL).status_code
+            405, self.client.get(endpoint_url, HTTP_AUTHORIZATION=f"Token {SECRET}", **self.INTERNAL).status_code
         )
 
         # an authenticated user gets no server-side subscriptions (the browser subscribes to its own notifications and
@@ -700,23 +699,14 @@ class EndpointsTest(APITestMixin, TembaTest):
     def test_secret(self):
         self.login(self.admin)
 
-        # a wrong secret is rejected for the whole API, even for an authenticated user
+        # a wrong secret is rejected for the whole API (by the middleware, see its tests), even for an authenticated
+        # user, and so is a missing one
         self.assertEqual(403, self.post("api.websockets.connect", secret="open").status_code)
-
-        # a missing secret is rejected
         self.assertEqual(403, self.post("api.websockets.connect", secret=None).status_code)
 
         # a correct secret doesn't grant an identity - a browser with no session still only connects as anonymous
         self.client.logout()
         self.assertAnonymousConnect(self.post("api.websockets.connect"))
-
-    @override_settings(WEBSOCKETS_AUTH_SECRET=None)
-    def test_secret_required(self):
-        # the secret is required, enforced by a deploy-time system check (system checks run as part of migrate /
-        # runserver, so an unset secret fails the deploy before the API ever serves a request)
-        errors = websockets_auth_secret(None)
-        self.assertEqual(1, len(errors))
-        self.assertEqual("WEBSOCKETS_AUTH_SECRET is not set.", errors[0].msg)
 
     def test_paths(self):
         # these live under the internal prefix, which is what the URLs reverse to

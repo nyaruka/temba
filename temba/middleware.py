@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.core.exceptions import MiddlewareNotUsed
 from django.http import HttpResponseForbidden, HttpResponseNotFound
 from django.utils import timezone, translation
+from django.utils.crypto import constant_time_compare
 
 from temba.orgs.models import Org
 
@@ -48,6 +49,12 @@ class ProxiedRequestMiddleware:
 
     The test client doesn't listen anywhere and says its requests arrived on port 80, so under test any port that
     isn't the internal one is taken to be the internet one.
+
+    The internal-only API is also gated on a shared secret that only our own services know, carried as
+    `Authorization: Token <secret>` the way the other services' internal APIs are. That's defense in depth on top of
+    the port split - a request which does reach /ti/ still has to come from one of our own services - and not a
+    substitute for it. It's a plain 403 for the same reason the wrong port is a plain 404, and it fails closed: with no
+    secret configured nothing under /ti/ is served, though a system check refuses to start without one.
     """
 
     def __init__(self, get_response=None):
@@ -60,6 +67,9 @@ class ProxiedRequestMiddleware:
         # a bare 404 rather than the 404 page: nothing later in the chain has run yet, so the page's context isn't there
         if settings.INTERNAL_PORT and not self._is_correct_port(request):
             return HttpResponseNotFound()
+
+        if request.path.startswith("/ti/") and not self._has_internal_token(request):
+            return HttpResponseForbidden()
 
         if settings.SECURE_ASSUME_HTTPS:
             request.META["wsgi.url_scheme"] = "https"
@@ -82,6 +92,12 @@ class ProxiedRequestMiddleware:
             return request.path in settings.ALLOWED_HOSTS_EXEMPT_PATHS
 
         return port == settings.INTERNET_PORT or settings.TESTING
+
+    @staticmethod
+    def _has_internal_token(request) -> bool:
+        token = settings.INTERNAL_AUTH_TOKEN
+
+        return bool(token) and constant_time_compare(request.headers.get("Authorization", ""), f"Token {token}")
 
 
 class NoStoreMiddleware:

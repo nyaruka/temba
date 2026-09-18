@@ -56,6 +56,19 @@ def ports(app_configs, **kwargs):
 
 
 @register()
+def internal_auth_token(app_configs, **kwargs):
+    if not settings.INTERNAL_AUTH_TOKEN:
+        return [
+            Error(
+                "INTERNAL_AUTH_TOKEN is not set.",
+                hint="Set INTERNAL_AUTH_TOKEN in Django settings to the shared secret the services calling the "
+                "internal-only API are configured with. Nothing under /ti/ is served without it.",
+            )
+        ]
+    return []
+
+
+@register()
 def mailers(app_configs, **kwargs):
     errors = []
     config = getattr(settings, "MAILERS", {})

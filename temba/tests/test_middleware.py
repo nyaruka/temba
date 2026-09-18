@@ -108,9 +108,34 @@ class ProxiedRequestTest(TembaTest):
         request = RequestFactory().get(path, SERVER_PORT=str(port), **extra)
         return ProxiedRequestMiddleware(lambda r: HttpResponse("served"))(request)
 
+    def test_internal_api_requires_the_token(self):
+        with override_settings(INTERNAL_AUTH_TOKEN="topsecret", **self.SPLIT):
+            self.assertEqual(
+                b"served", self.serve("/ti/websockets/connect", 8021, HTTP_AUTHORIZATION="Token topsecret").content
+            )
+
+            # a bare 403 for a missing, wrong or differently framed token
+            for header in (None, "Token open", "Bearer topsecret", "topsecret"):
+                extra = {"HTTP_AUTHORIZATION": header} if header else {}
+                response = self.serve("/ti/websockets/connect", 8021, **extra)
+                self.assertEqual(403, response.status_code, header)
+                self.assertEqual(b"", response.content)
+
+            # nothing else asks for it
+            self.assertEqual(b"served", self.serve("/msg/", 8020).content)
+            self.assertEqual(b"served", self.serve("/system/ping/", 8021).content)
+
+        # and with no token configured nothing under /ti/ is served at all
+        with override_settings(INTERNAL_AUTH_TOKEN=None, **self.SPLIT):
+            self.assertEqual(
+                403, self.serve("/ti/websockets/connect", 8021, HTTP_AUTHORIZATION="Token None").status_code
+            )
+
     def test_internal_port_serves_only_the_internal_api_and_health_check(self):
         with override_settings(**self.SPLIT):
-            self.assertEqual(b"served", self.serve("/ti/websockets/connect", 8021).content)
+            self.assertEqual(
+                b"served", self.serve("/ti/websockets/connect", 8021, HTTP_AUTHORIZATION="Token topsecret").content
+            )
             self.assertEqual(b"served", self.serve("/system/ping/", 8021).content)
 
             for path in ("/", "/msg/", "/api/v2/contacts.json", "/sitestatic/css/temba.css", "/system/ping"):
@@ -140,8 +165,8 @@ class ProxiedRequestTest(TembaTest):
 
     def test_through_the_whole_stack(self):
         # a fresh client so that the middleware is loaded with the split in place
-        with override_settings(WEBSOCKETS_AUTH_SECRET="topsecret", **self.SPLIT):
-            client = Client(HTTP_X_WEBSOCKETS_SECRET="topsecret")
+        with override_settings(INTERNAL_AUTH_TOKEN="topsecret", **self.SPLIT):
+            client = Client(HTTP_AUTHORIZATION="Token topsecret")
             internal, public = dict(SERVER_PORT="8021"), dict(SERVER_PORT="8020")
 
             self.assertEqual(
@@ -156,6 +181,13 @@ class ProxiedRequestTest(TembaTest):
             self.assertEqual(404, response.status_code)
             self.assertEqual(b"", response.content)
             self.assertEqual(200, client.get(reverse("public.public_index"), **public).status_code)
+
+            # the wrong port is checked before the token, so a request with neither is still a 404
+            response = Client().post("/ti/websockets/connect", content_type="application/json", **public)
+            self.assertEqual(404, response.status_code)
+            response = Client().post("/ti/websockets/connect", content_type="application/json", **internal)
+            self.assertEqual(403, response.status_code)
+            self.assertEqual(b"", response.content)
 
     def test_not_used_when_nothing_is_wanted(self):
         with override_settings(

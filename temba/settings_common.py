@@ -261,6 +261,11 @@ ALLOWED_HOSTS_EXEMPT_PATHS = ()
 INTERNET_PORT = 8020
 INTERNAL_PORT = 8021
 
+# the shared secret every request to the internal-only API must carry as `Authorization: Token <secret>` - defense in
+# depth on top of the port split, so that a request which does reach /ti/ still has to come from one of our own
+# services. Required (see temba.utils.checks) and left unset here so that each deployment configures its own.
+INTERNAL_AUTH_TOKEN = None
+
 # whether to treat every request as having arrived over https regardless of what the connection or any forwarded header
 # says - for when TLS is always terminated in front of the app
 SECURE_ASSUME_HTTPS = False
@@ -946,14 +951,6 @@ NON_ISO6391_LANGUAGES = {"mul", "und"}
 
 MAILROOM_URL = None
 MAILROOM_AUTH_TOKEN = None
-
-# -----------------------------------------------------------------------------------
-# WebSockets (realtime messaging server)
-# -----------------------------------------------------------------------------------
-
-# shared secret the websockets API requires in the X-Websockets-Secret header; required (see temba.api.checks) and
-# left unset here so each deployment must configure it
-WEBSOCKETS_AUTH_SECRET = None
 
 # -----------------------------------------------------------------------------------
 # Data Model

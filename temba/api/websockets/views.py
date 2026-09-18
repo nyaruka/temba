@@ -27,10 +27,10 @@ Unlike the rest of the internal API (``/api/internal/``), which is called by the
 browser and so *must* be reachable from the public internet, every endpoint here is only ever called by the
 realtime messaging server from inside our own network. That means this API can be made truly internal, which is
 why it lives under ``/ti/``: serve that prefix only on an internal-only network path (e.g. behind an internal load
-balancer) and refuse it at the public edge, so it's never exposed to the internet at all. The shared-secret header
-enforced by ``HasWebSocketsSecret`` is defense-in-depth on top of that network isolation - it lets us reject anything
-that isn't the realtime server even if the path is ever reachable - but the secret is not a substitute for keeping the
-API off the public internet.
+balancer) and refuse it at the public edge, so it's never exposed to the internet at all. Like everything under
+``/ti/``, it's also gated on the shared secret in ``INTERNAL_AUTH_TOKEN`` (see ``temba.middleware``) - defense in
+depth on top of that network isolation, which lets us reject anything that isn't one of our own services even if the
+path is ever reachable, but not a substitute for keeping the API off the public internet.
 """
 
 import logging
@@ -38,7 +38,6 @@ import re
 from urllib.parse import urlsplit
 
 from django_valkey import get_valkey_connection
-from rest_framework.permissions import BasePermission
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -46,7 +45,6 @@ from rest_framework.views import APIView
 from django.conf import settings
 from django.http.request import validate_host
 from django.utils import timezone
-from django.utils.crypto import constant_time_compare
 
 from temba.channels.models import Channel
 from temba.channels.types.webchat.views import CONFIG_ALLOWED_DOMAINS
@@ -84,25 +82,13 @@ class WebSocketsSessionAuthentication(APISessionAuthentication):
         return
 
 
-class HasWebSocketsSecret(BasePermission):
-    """
-    Gates the whole websockets API on a shared secret known only to the realtime server, compared in constant time
-    against the ``WEBSOCKETS_AUTH_SECRET`` setting. The secret is required and enforced by a system check (see
-    ``temba.api.checks``) which fails the deploy if it's unset - and since system checks run as part of migrate /
-    runserver, the secret is always configured by the time the API serves a request.
-    """
-
-    def has_permission(self, request, view):
-        return constant_time_compare(request.headers.get("X-Websockets-Secret", ""), settings.WEBSOCKETS_AUTH_SECRET)
-
-
 class BaseEndpoint(APIView):
     """
     Base class for all websockets API endpoints.
     """
 
     authentication_classes = (WebSocketsSessionAuthentication,)
-    permission_classes = (HasWebSocketsSecret,)
+    permission_classes = ()  # the shared secret that gates the whole of /ti/ is checked by the middleware
     renderer_classes = (JSONRenderer,)
 
     def expire_at(self) -> int:
