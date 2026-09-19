@@ -31,9 +31,9 @@ We use [bun](https://bun.com), so you'll want to install with that if you care a
 ## Demo
 
 The interactive demo is served by the Django dev server (`DEBUG` only) at `/demo/`. It uses the
-live dev build of the components (`bun run watch` keeping `dev-dist/` fresh — the dev stack runs
-this for you) and hits the real temba endpoints, so demos show whatever data the logged-in user
-has.
+live dev build of the components (`bun run watch` keeping `dev-dist/` fresh, along with the
+standalone webchat bundle in `dist/temba-webchat.js` — the dev stack runs this for you) and hits
+the real temba endpoints, so demos show whatever data the logged-in user has.
 
 ## Testing
 
