@@ -31,6 +31,10 @@ const TRANSLATION_BATCH_CHAR_LIMIT = 2000;
 // total time down without hammering the LLM provider.
 const TRANSLATION_CONCURRENCY = 3;
 
+// The error code returned when the LLM didn't respond within its deadline,
+// which we handle by splitting the batch rather than giving up.
+const TIMEOUT_ERROR_CODE = 'timeout';
+
 export class AutoTranslate extends RapidElement {
   static get styles() {
     return css`
@@ -469,13 +473,16 @@ export class AutoTranslate extends RapidElement {
       return;
     }
 
-    // Workers each pull the next unsent batch until they run out, or until
-    // an interrupt or error stops any more from being sent. Batches already
-    // in flight are allowed to finish and land.
-    let next = 0;
+    // Workers each pull the next unsent batch from the queue until it's
+    // empty, or until an interrupt or failure stops any more from being
+    // sent. Batches already in flight are allowed to finish and land. The
+    // failure is only surfaced as this.error once every worker has finished,
+    // so the dialog can't be dismissed while batches are still in flight.
+    const queue = [...batches];
+    let failure: string | null = null;
     const worker = async () => {
-      while (!this.interrupt && !this.error && next < batches.length) {
-        const batch = batches[next++];
+      while (!this.interrupt && !failure && queue.length > 0) {
+        const batch = queue.shift();
 
         try {
           const response = await store.postJSON(url, {
@@ -497,22 +504,38 @@ export class AutoTranslate extends RapidElement {
               }
             }
             this.applyBatchTranslations(expanded, keyToEntries);
-          } else if (!this.error) {
-            this.error =
+            this.progress = {
+              done: this.progress.done + 1,
+              total: this.progress.total
+            };
+          } else if (
+            response.json?.code === TIMEOUT_ERROR_CODE &&
+            Object.keys(batch.items).length > 1
+          ) {
+            // the LLM couldn't translate this much within its deadline, so
+            // try again as two halves - a single entry that's still too big
+            // will fail again and be reported below
+            const keys = Object.keys(batch.items);
+            const mid = Math.ceil(keys.length / 2);
+            const half = (ks: string[]) => ({
+              items: Object.fromEntries(ks.map((k) => [k, batch.items[k]]))
+            });
+            queue.unshift(half(keys.slice(0, mid)), half(keys.slice(mid)));
+            this.progress = {
+              done: this.progress.done,
+              total: this.progress.total + 1
+            };
+          } else if (!failure) {
+            failure =
               response.json?.error ||
               msg(str`Translate request failed (${response.status}).`);
           }
         } catch (err) {
           console.error('Translate request failed', err);
-          if (!this.error) {
-            this.error = msg('Translate request failed.');
+          if (!failure) {
+            failure = msg('Translate request failed.');
           }
         }
-
-        this.progress = {
-          done: this.progress.done + 1,
-          total: batches.length
-        };
       }
     };
 
@@ -522,6 +545,7 @@ export class AutoTranslate extends RapidElement {
     }
     await Promise.all(workers);
 
+    this.error = failure;
     this.running = false;
     this.interrupt = false;
   }
@@ -781,7 +805,8 @@ export class AutoTranslate extends RapidElement {
   private renderRunningGutter(): TemplateResult {
     const { done, total } = this.progress;
     // current batch is 1-indexed: while batch 0 is in flight, done is still
-    // 0, so we display "1 of N"
+    // 0, so we display "1 of N". With several batches in flight this is the
+    // lowest numbered one we're still waiting on.
     const currentBatch = Math.min(done + 1, total);
     const statusText = this.interrupt
       ? msg('Stopping...')
