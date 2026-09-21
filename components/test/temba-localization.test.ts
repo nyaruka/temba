@@ -465,17 +465,17 @@ describe('Localization Editing', () => {
     setupWorkspace();
 
     // build a flow with enough send_msg actions that the total serialized
-    // payload exceeds the 10,000-char batch threshold. Each text needs to
+    // payload exceeds the 2,000-char batch threshold. Each text needs to
     // be unique or dedup will collapse them into a single payload entry.
     const nodes = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 8; i++) {
       nodes.push({
         uuid: `node-${i}`,
         actions: [
           {
             type: 'send_msg',
             uuid: `action-${i}`,
-            text: `${i} ${'x'.repeat(3000)}`
+            text: `${i} ${'x'.repeat(700)}`
           } as SendMsg
         ],
         exits: [{ uuid: `exit-${i}` }]
@@ -504,7 +504,7 @@ describe('Localization Editing', () => {
       info: {
         results: [],
         dependencies: [],
-        counts: { nodes: 5, languages: 2 },
+        counts: { nodes: 8, languages: 2 },
         locals: []
       }
     });
@@ -524,17 +524,19 @@ describe('Localization Editing', () => {
 
     await at.runAutoTranslation();
 
-    expect(calls.length).to.be.greaterThan(1);
+    // 8 texts of ~700 chars pack two to a batch
+    expect(calls.length).to.equal(4);
     for (const c of calls) {
       const itemKeys = Object.keys(c.body.items as Record<string, string[]>);
+      expect(itemKeys.length).to.equal(2);
       // each batch's full serialized payload stays within the limit
-      // (individual oversize items are still shipped on their own; the
-      // fixture values are each ~3000 chars which fits)
       const serialized = JSON.stringify(c.body).length;
-      if (itemKeys.length > 1) {
-        expect(serialized).to.be.at.most(10000);
-      }
+      expect(serialized).to.be.at.most(2000);
     }
+
+    // every text was translated exactly once
+    const localization = zustand.getState().flowDefinition?.localization?.fra;
+    expect(Object.keys(localization || {}).length).to.equal(8);
   });
 
   it('should interrupt translation between batches', async () => {
@@ -543,9 +545,9 @@ describe('Localization Editing', () => {
     setupWorkspace();
 
     // Each text is unique so dedup doesn't collapse them — we want enough
-    // distinct entries to span multiple batches and verify interrupt.
+    // distinct entries to span more batches than are sent concurrently.
     const nodes = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 12; i++) {
       nodes.push({
         uuid: `node-${i}`,
         actions: [
@@ -581,7 +583,7 @@ describe('Localization Editing', () => {
       info: {
         results: [],
         dependencies: [],
-        counts: { nodes: 6, languages: 2 },
+        counts: { nodes: 12, languages: 2 },
         locals: []
       }
     });
@@ -594,9 +596,10 @@ describe('Localization Editing', () => {
 
     let callCount = 0;
     (storeElement as any).postJSON = async (url: string, body: any) => {
-      callCount += 1;
-      if (callCount === 1) {
-        // request interrupt after first batch completes
+      const call = (callCount += 1);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      if (call === 1) {
+        // request interrupt while the first batches are in flight
         at.interrupt = true;
       }
       return { status: 200, json: { items: body.items } };
@@ -604,8 +607,13 @@ describe('Localization Editing', () => {
 
     await at.runAutoTranslation();
 
-    expect(callCount).to.equal(1);
+    // the batches already in flight (one per concurrent worker) complete
+    // and land, but no more are sent
+    expect(callCount).to.equal(3);
     expect(at.running).to.be.false;
+    expect(at.progress.done).to.equal(3);
+    const localization = zustand.getState().flowDefinition?.localization?.fra;
+    expect(Object.keys(localization || {}).length).to.equal(9);
   });
 
   it('should preserve all attributes when one uuid spans multiple batches', async () => {

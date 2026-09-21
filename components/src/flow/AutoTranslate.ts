@@ -19,10 +19,17 @@ interface TranslationModel {
 const MODELS_ENDPOINT = '/api/internal/llms.json';
 const ADD_MODEL_URL = '/ai/';
 
-// Max size of the serialized JSON payload per translate request. Keeps the
-// LLM's output comfortably below its token limit. Measured against the full
-// payload (uuids, keys, JSON structural chars, and source strings).
-const TRANSLATION_BATCH_CHAR_LIMIT = 10000;
+// Max size of the serialized JSON payload per translate request. Measured
+// against the full payload (uuids, keys, JSON structural chars, and source
+// strings). Sized so that the LLM can produce the translation within the
+// per-call deadline mailroom enforces, which is well under a minute, even
+// for slower models and target languages which tokenize poorly.
+const TRANSLATION_BATCH_CHAR_LIMIT = 2000;
+
+// How many translate requests to keep in flight at once. Batches are small so
+// a large flow produces many of them - running a few concurrently keeps the
+// total time down without hammering the LLM provider.
+const TRANSLATION_CONCURRENCY = 3;
 
 export class AutoTranslate extends RapidElement {
   static get styles() {
@@ -461,44 +468,58 @@ export class AutoTranslate extends RapidElement {
       return;
     }
 
-    for (let i = 0; i < batches.length; i++) {
-      if (this.interrupt) {
-        break;
-      }
+    // Workers each pull the next unsent batch until they run out, or until
+    // an interrupt or error stops any more from being sent. Batches already
+    // in flight are allowed to finish and land.
+    let next = 0;
+    const worker = async () => {
+      while (!this.interrupt && !this.error && next < batches.length) {
+        const batch = batches[next++];
 
-      try {
-        const response = await store.postJSON(url, {
-          source,
-          target,
-          items: batches[i].items
-        });
+        try {
+          const response = await store.postJSON(url, {
+            source,
+            target,
+            items: batch.items
+          });
 
-        if (response.status >= 200 && response.status < 300) {
-          const returned: Record<string, string[]> = response.json?.items || {};
-          const expanded: Record<string, string[]> = { ...returned };
-          for (const canonical of Object.keys(returned)) {
-            const dups = duplicatesByCanonical.get(canonical);
-            if (dups) {
-              for (const dup of dups) {
-                expanded[dup] = returned[canonical];
+          if (response.status >= 200 && response.status < 300) {
+            const returned: Record<string, string[]> =
+              response.json?.items || {};
+            const expanded: Record<string, string[]> = { ...returned };
+            for (const canonical of Object.keys(returned)) {
+              const dups = duplicatesByCanonical.get(canonical);
+              if (dups) {
+                for (const dup of dups) {
+                  expanded[dup] = returned[canonical];
+                }
               }
             }
+            this.applyBatchTranslations(expanded, keyToEntries);
+          } else if (!this.error) {
+            this.error =
+              response.json?.error ||
+              msg(str`Translate request failed (${response.status}).`);
           }
-          this.applyBatchTranslations(expanded, keyToEntries);
-        } else {
-          this.error =
-            response.json?.error ||
-            msg(str`Translate request failed (${response.status}).`);
-          break;
+        } catch (err) {
+          console.error('Translate request failed', err);
+          if (!this.error) {
+            this.error = msg('Translate request failed.');
+          }
         }
-      } catch (err) {
-        console.error('Translate request failed', err);
-        this.error = msg('Translate request failed.');
-        break;
-      }
 
-      this.progress = { done: i + 1, total: batches.length };
+        this.progress = {
+          done: this.progress.done + 1,
+          total: batches.length
+        };
+      }
+    };
+
+    const workers = [];
+    for (let i = 0; i < TRANSLATION_CONCURRENCY; i++) {
+      workers.push(worker());
     }
+    await Promise.all(workers);
 
     this.running = false;
     this.interrupt = false;
@@ -650,7 +671,7 @@ export class AutoTranslate extends RapidElement {
       body = this.renderRunningBody();
       gutter = this.renderRunningGutter();
       // Stop is the primary so the dialog does NOT auto-close on click;
-      // we close it ourselves once the in-flight batch returns
+      // we close it ourselves once the in-flight batches return
       primary = msg('Stop');
       disabled = this.interrupt;
     } else if (showPicker) {
