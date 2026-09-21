@@ -616,6 +616,95 @@ describe('Localization Editing', () => {
     expect(Object.keys(localization || {}).length).to.equal(9);
   });
 
+  it('should stop sending batches after one fails', async () => {
+    editor?.remove();
+
+    setupWorkspace();
+
+    // enough distinct entries to span more batches than are sent concurrently
+    const nodes = [];
+    for (let i = 0; i < 12; i++) {
+      nodes.push({
+        uuid: `node-${i}`,
+        actions: [
+          {
+            type: 'send_msg',
+            uuid: `action-${i}`,
+            text: `${i} ${'z'.repeat(600)}`
+          } as SendMsg
+        ],
+        exits: [{ uuid: `exit-${i}` }]
+      });
+    }
+
+    const flowDefinition: FlowDefinition = {
+      uuid: 'error-flow',
+      name: 'Error Flow',
+      language: 'eng',
+      type: 'messaging',
+      revision: 1,
+      spec_version: '14.3',
+      localization: {},
+      nodes,
+      _ui: {
+        nodes: Object.fromEntries(
+          nodes.map((n) => [n.uuid, { position: { left: 0, top: 0 } }])
+        ),
+        languages: []
+      }
+    };
+
+    zustand.getState().setFlowContents({
+      definition: flowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: 12, languages: 2 },
+        locals: []
+      }
+    });
+
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
+    await editor.updateComplete;
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+    const at = editor.querySelector('temba-auto-translate') as any;
+    at.selectedModel = { uuid: 'llm-1', name: 'GPT-4' };
+
+    let callCount = 0;
+    (storeElement as any).postJSON = async (url: string, body: any) => {
+      const call = (callCount += 1);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      if (call === 1) {
+        // the first batch fails while the others are still in flight
+        return { status: 400, json: { error: 'rate limit exceeded' } };
+      }
+      return { status: 200, json: { items: body.items } };
+    };
+
+    await at.runAutoTranslation();
+
+    // the other batches in flight still land, but no more are sent
+    expect(callCount).to.equal(3);
+    expect(at.error).to.equal('rate limit exceeded');
+    expect(at.running).to.be.false;
+    const localization = zustand.getState().flowDefinition?.localization?.fra;
+    expect(Object.keys(localization || {}).length).to.equal(6);
+
+    // a subsequent run starts afresh rather than being blocked by the old error
+    (storeElement as any).postJSON = async (url: string, body: any) => {
+      callCount += 1;
+      return { status: 200, json: { items: body.items } };
+    };
+    await at.runAutoTranslation();
+
+    expect(at.error).to.be.null;
+    expect(callCount).to.equal(5);
+    expect(
+      Object.keys(zustand.getState().flowDefinition?.localization?.fra || {})
+        .length
+    ).to.equal(12);
+  });
+
   it('should preserve all attributes when one uuid spans multiple batches', async () => {
     editor?.remove();
     setupWorkspace();

@@ -457,6 +457,7 @@ export class AutoTranslate extends RapidElement {
 
     this.running = true;
     this.interrupt = false;
+    this.error = null;
     this.progress = { done: 0, total: batches.length };
 
     const source = this.definition.language;
