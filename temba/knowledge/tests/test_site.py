@@ -1,5 +1,3 @@
-from unittest.mock import patch
-
 from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -7,14 +5,12 @@ from django.utils import timezone
 from temba.knowledge.models import Article, ArticleCount, HelpSite, KnowledgeSource
 from temba.orgs.models import Org
 from temba.tests import TembaTest
-from temba.tests.requests import MockResponse
 
 
 @override_settings(ALLOWED_HOSTS=["*"])
 class SiteViewsTest(TembaTest):
     """
-    The site's pages as the public sees them on the site's domain, and the org's preview of them, which is served by
-    the service that's taking over serving the sites themselves.
+    The site's pages, as the public sees them on the site's domain and as the org sees them previewing.
     """
 
     def setUp(self):
@@ -91,11 +87,14 @@ class SiteViewsTest(TembaTest):
             self.assertContains(response, "components/temba-webchat.js")
             self.assertContains(response, f'<temba-webchat channel="{webchat.uuid}" host="https://app.nyaruka.com">')
 
-            # on every page of the site
+            # on every page of the site, including the preview
             self.assertContains(self.public("/flows/"), f'<temba-webchat channel="{webchat.uuid}"')
             self.assertContains(
                 self.public("/nothing/here/"), f'<temba-webchat channel="{webchat.uuid}"', status_code=404
             )
+            self.login(self.admin)
+            self.assertContains(self.client.get("/helpsite/preview/"), f'<temba-webchat channel="{webchat.uuid}"')
+            self.client.logout()
 
         # and none once the channel is gone
         webchat.release(self.admin)
@@ -251,15 +250,15 @@ class SiteViewsTest(TembaTest):
         self.nodes.unpublish(self.admin)
         self.assertEqual(404, self.public("/en/article/flow-nodes-x7ygk2/").status_code)
 
-    @override_settings(HELPSITES_URL="http://helpsites:8031", HELPSITES_PREVIEW_TOKEN="sesame")
-    @patch("requests.get")
-    def test_preview(self, mock_get):
-        home_url = reverse("knowledge.helpsite_preview", kwargs={"path": ""})
-        self.assertEqual("/helpsite/preview/", home_url)
+        # and in the preview, on to the preview's own pages
+        self.login(self.editor)
+        response = self.client.get("/helpsite/preview/en/category/flows-6ogz7g/")
+        self.assertEqual(301, response.status_code)
+        self.assertEqual("/helpsite/preview/flows/", response.url)
 
-        mock_get.return_value = MockResponse(
-            200, "<html>the site</html>", headers={"Content-Type": "text/html; charset=utf-8"}
-        )
+    def test_preview(self):
+        home_url = reverse("knowledge.site_home")
+        self.assertEqual("/helpsite/preview/", home_url)
 
         # nobody sees the preview without logging in..
         response = self.client.get(home_url)
@@ -279,53 +278,42 @@ class SiteViewsTest(TembaTest):
         self.login(self.agent)
         self.assertEqual(403, self.client.get(home_url).status_code)
 
-        # and nothing was asked of the service for any of them
-        mock_get.assert_not_called()
-
-        # an editor can preview it, whether or not it's enabled - the page comes from the service that serves the
-        # site, and is passed on as it came
+        # an editor can preview it, whether or not it's enabled
         self.site.is_enabled = False
         self.site.save(update_fields=("is_enabled",))
 
         self.login(self.editor)
         response = self.client.get(home_url)
         self.assertEqual(200, response.status_code)
-        self.assertEqual(b"<html>the site</html>", response.content)
-        self.assertEqual("text/html; charset=utf-8", response.headers["Content-Type"])
+        self.assertEqual(self.site, response.context["site"])
+        self.assertEqual("/helpsite/preview", response.context["prefix"])
+        self.assertTrue(response.context["is_preview"])
         self.assertEqual("noindex", response.headers["X-Robots-Tag"])
-        mock_get.assert_called_once_with(
-            f"http://helpsites:8031/hi/preview/{self.site.uuid}/",
-            headers={"User-Agent": "Temba", "Authorization": "Token sesame"},
-            allow_redirects=False,
-            timeout=30,
-        )
+        self.assertContains(response, 'content="noindex"')
+        self.assertContains(response, "This is a preview of your help site")
+        self.assertContains(response, f'href="{reverse("knowledge.article_list")}"')
+        self.assertContains(response, 'href="/helpsite/preview/flows/"')
 
-        # every page of the site is under the prefix, its static files included, and a query string goes along
-        self.client.get("/helpsite/preview/search/?q=flow+nodes")
-        self.assertEqual(
-            f"http://helpsites:8031/hi/preview/{self.site.uuid}/search/?q=flow+nodes", mock_get.call_args.args[0]
-        )
-        self.client.get("/helpsite/preview/static/css/helpsite.css")
-        self.assertEqual(
-            f"http://helpsites:8031/hi/preview/{self.site.uuid}/static/css/helpsite.css", mock_get.call_args.args[0]
-        )
+        # the pages are the same ones, under the prefix
+        response = self.client.get(reverse("knowledge.site_section", args=["flows"]))
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, 'href="/helpsite/preview/flows/nodes/"')
 
-        # the status comes back as it was, and so does a redirect - which is to the preview's own pages
-        mock_get.return_value = MockResponse(301, "", headers={"Location": "/helpsite/preview/flows/"})
-        response = self.client.get("/helpsite/preview/flows")
-        self.assertEqual(301, response.status_code)
-        self.assertEqual("/helpsite/preview/flows/", response.headers["Location"])
+        response = self.client.get(reverse("knowledge.site_article", args=["flows", "nodes"]))
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, 'href="/helpsite/preview/"')
 
-        mock_get.return_value = MockResponse(404, "<html>nope</html>", headers={"Content-Type": "text/html"})
-        response = self.client.get("/helpsite/preview/nope/")
-        self.assertEqual(404, response.status_code)
-        self.assertEqual(b"<html>nope</html>", response.content)
+        # and so do the links between articles
+        response = self.client.get(reverse("knowledge.site_article", args=["flows", "actions"]))
+        self.assertContains(response, 'href="/helpsite/preview/flows/nodes/"')
 
-        # the site's settings the preview bar links to are on the helpdesk page - which is where the service has to
-        # point it
-        self.assertEqual("/article/list/", reverse("knowledge.article_list"))
+        # but previewing an article isn't reading it
+        self.assertEqual(0, ArticleCount.objects.count())
 
-        mock_get.return_value = MockResponse(200, "<html>the site</html>", headers={"Content-Type": "text/html"})
+        response = self.client.get(reverse("knowledge.site_search") + "?q=node")
+        self.assertEqual([self.nodes], [a for a, _ in response.context["results"]])
+
+        self.assertEqual(404, self.client.get(reverse("knowledge.site_section", args=["nope"])).status_code)
 
         # an org without the feature has no preview
         self.login(self.admin2)

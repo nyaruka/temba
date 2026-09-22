@@ -952,14 +952,11 @@ MAILROOM_URL = None
 MAILROOM_AUTH_TOKEN = None
 
 # -----------------------------------------------------------------------------------
-# Help sites (the service that serves them on their own domains, and renders the app's previews of them)
+# Help sites
 # -----------------------------------------------------------------------------------
 
-HELPSITES_URL = None
-HELPSITES_PREVIEW_TOKEN = None  # what it requires in the Authorization header of a request for a preview
-
-# The host an org points its help site's domain at by CNAME - the help sites service, which gets certificates for
-# the domains it serves on demand. Unset, the domain dialog shows the app's own domain.
+# The host an org points its help site's domain at by CNAME, when something other than the app itself serves the
+# sites. Unset, the domain dialog shows the app's own domain.
 HELPSITE_CNAME_TARGET = None
 
 # -----------------------------------------------------------------------------------
