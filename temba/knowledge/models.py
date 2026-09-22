@@ -689,9 +689,11 @@ class KnowledgeSource(TembaModel):
 
         # column styles bake the palette into an article's rendered HTML, so what's published is rendered again with
         # the new one - without touching modified_on, since what mailroom indexes hasn't changed
-        for article in self.articles.filter(is_active=True, status=Article.STATUS_PUBLISHED):
+        articles = list(self.articles.filter(is_active=True, status=Article.STATUS_PUBLISHED))
+        for article in articles:
             article.source = self
-            article.save(update_fields=("body_html", "headings"))
+            article.prerender()
+        Article.objects.bulk_update(articles, ("body_html", "headings"), batch_size=100)
 
     def mark_pending(self):
         """
@@ -957,12 +959,17 @@ class Article(models.Model):
         """
         return render_markdown(self.body, self.source.colors, links)
 
+    def prerender(self):
+        """
+        Renders the body into what the site serves - see body_html
+        """
+        self.body_html, headings = self.render()
+        self.headings = [h._asdict() for h in headings]
+
     def save(self, *args, **kwargs):
-        # a published article is served from its rendered HTML, so that follows the body whenever one is saved -
-        # including when it's the palette that changed rather than the body, see KnowledgeSource.set_colors
+        # a published article is served from its rendered HTML, so that follows the body whenever one is saved
         if self.status == self.STATUS_PUBLISHED:
-            self.body_html, headings = self.render()
-            self.headings = [h._asdict() for h in headings]
+            self.prerender()
             if update_fields := kwargs.get("update_fields"):
                 kwargs["update_fields"] = (*update_fields, "body_html", "headings")
 
