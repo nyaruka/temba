@@ -956,7 +956,7 @@ MAILROOM_AUTH_TOKEN = None
 # -----------------------------------------------------------------------------------
 
 HELPSITES_URL = None
-HELPSITES_PREVIEW_TOKEN = None  # what it requires in the Authorization header of a request for a preview
+HELPSITES_AUTH_TOKEN = None  # what it requires in the Authorization header of requests to its internal endpoints
 
 # The host an org points its help site's domain at by CNAME - the help sites service, which gets certificates for
 # the domains it serves on demand. Unset, the domain dialog shows the app's own domain.

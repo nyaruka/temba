@@ -10,11 +10,11 @@ class HelpsitesClient:
 
     default_headers = {"User-Agent": "Temba"}
 
-    def __init__(self, base_url: str, preview_token: str):
+    def __init__(self, base_url: str, auth_token: str):
         self.base_url = base_url
         self.headers = self.default_headers.copy()
-        if preview_token:
-            self.headers["Authorization"] = "Token " + preview_token
+        if auth_token:
+            self.headers["Authorization"] = "Token " + auth_token
 
     def preview(self, site, path: str, query: str = "") -> requests.Response:
         """

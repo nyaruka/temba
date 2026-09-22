@@ -253,7 +253,7 @@ class SiteViewsTest(TembaTest):
         self.nodes.unpublish(self.admin)
         self.assertEqual(404, self.public("/en/article/flow-nodes-x7ygk2/").status_code)
 
-    @override_settings(HELPSITES_URL="http://helpsites:8031", HELPSITES_PREVIEW_TOKEN="sesame")
+    @override_settings(HELPSITES_URL="http://helpsites:8031", HELPSITES_AUTH_TOKEN="sesame")
     @patch("requests.get")
     def test_preview(self, mock_get):
         home_url = reverse("knowledge.helpsite_preview", kwargs={"path": ""})
