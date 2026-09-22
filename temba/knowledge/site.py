@@ -1,3 +1,7 @@
+import logging
+
+import requests
+
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.http import Http404, HttpResponse, HttpResponsePermanentRedirect, HttpResponseRedirect
@@ -11,6 +15,8 @@ from temba import helpsites
 from temba.orgs.models import Org
 
 from .models import ArticleCount, HelpSite, KnowledgeSource
+
+logger = logging.getLogger(__name__)
 
 
 class PreviewView(View):
@@ -42,7 +48,11 @@ class PreviewView(View):
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, path: str):
-        page = helpsites.get_client().preview(self.site, path, request.META.get("QUERY_STRING", ""))
+        try:
+            page = helpsites.get_client().preview(self.site, path, request.META.get("QUERY_STRING", ""))
+        except requests.RequestException as e:
+            logger.error(f"error fetching help site preview: {e}", exc_info=True)
+            return HttpResponse("The preview isn't available right now.", status=502, content_type="text/plain")
 
         # the page as the service rendered it - a redirect included, since where it goes is under the preview too
         response = HttpResponse(page.content, status=page.status_code, content_type=page.headers.get("Content-Type"))

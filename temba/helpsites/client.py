@@ -1,3 +1,5 @@
+from urllib.parse import quote
+
 import requests
 
 
@@ -20,7 +22,8 @@ class HelpsitesClient:
         the given query string, under the prefix the app mounts the preview at. Redirects aren't followed - where
         they go is under that prefix too, and so for the caller to pass on.
         """
-        url = f"{self.base_url}/hi/preview/{site.uuid}/{path}"
+        # the path comes decoded from the app's URL, so anything in it that would mean something in ours is escaped
+        url = f"{self.base_url}/hi/preview/{site.uuid}/{quote(path, safe='/')}"
         if query:
             url += f"?{query}"
 

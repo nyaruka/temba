@@ -38,6 +38,13 @@ class HelpsitesClientTest(TembaTest):
             timeout=30,
         )
 
+        # the path is escaped, since it arrives decoded and could otherwise carry a query or fragment of its own
+        mock_get.reset_mock()
+        get_client().preview(site, "flows/?x=1#y ../z/")
+        self.assertEqual(
+            f"http://helpsites:8031/hi/preview/{site.uuid}/flows/%3Fx%3D1%23y%20../z/", mock_get.call_args.args[0]
+        )
+
         # with no token configured, none is sent
         mock_get.reset_mock()
         with override_settings(HELPSITES_PREVIEW_TOKEN=None):

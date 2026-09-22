@@ -1,5 +1,7 @@
 from unittest.mock import patch
 
+import requests
+
 from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -320,6 +322,13 @@ class SiteViewsTest(TembaTest):
         response = self.client.get("/helpsite/preview/nope/")
         self.assertEqual(404, response.status_code)
         self.assertEqual(b"<html>nope</html>", response.content)
+
+        # and the service being unreachable is a bad gateway rather than an error of ours
+        mock_get.side_effect = requests.ConnectionError("no route")
+        response = self.client.get(home_url)
+        self.assertEqual(502, response.status_code)
+        self.assertEqual(b"The preview isn't available right now.", response.content)
+        mock_get.side_effect = None
 
         # the site's settings the preview bar links to are on the helpdesk page - which is where the service has to
         # point it
