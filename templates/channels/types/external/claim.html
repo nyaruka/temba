@@ -3,8 +3,7 @@
 
 {% block pre-form %}
   {% blocktrans trimmed with branding.name as brand %}
-    You can connect an external aggregator or messaging service to {{ brand }} using our external API. You can
-    specify parameters to substitute in the URL or body by using these variables:
+    You can connect an external aggregator or messaging service to {{ brand }} using our external API. You can specify parameters to substitute in the URL or body by using these variables:
   {% endblocktrans %}
   <ul class="my-4">
     <li>
@@ -53,20 +52,19 @@
   </div>
   <div class="mt-4 leading-loose">
     {% blocktrans trimmed with "<div class='code'>quick_replies</div>" as quick_replies_var and "<div class='code'>&quick_reply=(reply)</div>" as quick_replies_output %}
-    The {{ quick_replies_var }} variable with method GET or content type URL Encoded will be
-    replaced by {{ quick_replies_output }} for each quick reply.
-  {% endblocktrans %}
-</div>
-<div class="mt-4">
-  {% blocktrans trimmed with branding.name as brand %}
-    After connecting your service we will provide URLs for the endpoints to call when you want to push a message to
-    {{ brand }} or notify {{ brand }} of the delivery status of a message.
-  {% endblocktrans %}
-</div>
+      The {{ quick_replies_var }} variable with method GET or content type URL Encoded will be replaced by {{ quick_replies_output }} for each quick reply.
+    {% endblocktrans %}
+  </div>
+  <div class="mt-4">
+    {% blocktrans trimmed with branding.name as brand %}
+      After connecting your service we will provide URLs for the endpoints to call when you want to push a message to
+      {{ brand }} or notify {{ brand }} of the delivery status of a message.
+    {% endblocktrans %}
+  </div>
 {% endblock pre-form %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function updateFormForMethod(method) {
       var bodyCtrlGroup = document.querySelector('#id_body').closest('.control-group');
       if (method == 'GET') {
@@ -111,7 +109,7 @@
 {% endblock extra-script %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     li {
       padding: 5px 0px;
     }
@@ -122,8 +120,8 @@
     }
 
     .medium-help {
-      font-size: 50px;
       height: 50px;
+      font-size: 50px;
     }
 
     .header-margin {
@@ -131,11 +129,11 @@
     }
 
     .variable-sub::before {
-      content: '{{'
+      content: '{{';
     }
 
     .variable-sub::after {
-      content: '}}'
+      content: '}}';
     }
   </style>
 {% endblock extra-style %}

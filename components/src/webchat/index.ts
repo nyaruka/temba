@@ -1,4 +1,4 @@
-export const SVG_FINGERPRINT = 'b2cbbef5cd8d6a0d4d5ea076f8b99714';
+export const SVG_FINGERPRINT = 'cc7b457e8eac637c9d8cdfa143f258ed';
 
 // the icons the standalone webchat bundle needs - the widget's own plus those
 // of the chat elements it renders. This is the usage file for the webchat
@@ -17,5 +17,6 @@ export enum WebChatIcon {
   attachment_image = 'image-01',
   attachment_location = 'marker-pin-01',
   attachment_video = 'video-recorder',
+  emoji = 'face-smile',
   webchat = 'message-chat-circle'
 }

@@ -3,16 +3,15 @@
 
 {% block body %}
   {% autoescape off %}
-    <div style="margin-top:1em">
+    <div style="margin-top: 1em">
       {% blocktrans trimmed with site_name=branding.name %}
         Hello there 👋
       {% endblocktrans %}
     </div>
-    <div style="margin-top:1em">
-      {% block content %}
-      {% endblock content %}
+    <div style="margin-top: 1em">
+      {% block content %} {% endblock content %}
     </div>
-    <div style="margin-top:1em;margin-bottom:2em">
+    <div style="margin-top: 1em; margin-bottom: 2em">
       {% blocktrans trimmed with site_name=branding.name site_domain=branding.domain %}
         Your friends at {{ site_name }}.
       {% endblocktrans %}

@@ -3,7 +3,7 @@
 
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function handleSubmit() {
       document.querySelector("form").submit();
     }
@@ -25,7 +25,7 @@
           {% render_field field %}
         {% endfor %}
         {% csrf_token %}
-        <input type="submit" value="{% trans "Switch Workspace" %}" class="button button-primary">
+        <input type="submit" value='{% trans "Switch Workspace" %}' class="button button-primary">
       </form>
     </div>
   {% endif %}

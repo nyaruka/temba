@@ -3,6 +3,8 @@
 
 {% block notification-body %}
   <p>
-    {% blocktrans with url=read_url %}Your export is ready! Click <a href="{{ url }}">here</a> to download it.{% endblocktrans %}
+    {% blocktrans trimmed with url=read_url %}
+      Your export is ready! Click <a href="{{ url }}">here</a> to download it.
+    {% endblocktrans %}
   </p>
 {% endblock notification-body %}

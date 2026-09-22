@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 // for cache busting we dynamically generate a fingerprint, use bun run svg to update
-export const SVG_FINGERPRINT = '8dfe8f23e097be23811eb024cb7cfecb';
+export const SVG_FINGERPRINT = '546693811e9ab53aa693f3f21ed185cf';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -79,6 +79,7 @@ export enum Icon {
   drag = 'dots-grid',
   edit = 'edit-02',
   email = 'mail-01',
+  emoji = 'face-smile',
   error = 'alert-circle',
   event = 'zap',
   export = 'download-cloud-01',
@@ -145,9 +146,11 @@ export enum Icon {
   org_suspended = 'slash-circle-01',
   org_verified = 'check-verified-02',
   overview = 'pie-chart-01',
-  /** a column's cell padding - the grid at its default density, stepped tighter or airier by the minus and plus
-   * flanking it */
-  padding = 'grid-03',
+  /** a column's cell padding at its three densities - a frame around a block of content, the gap between them
+   * growing as the padding does */
+  padding_less = 'padding-small',
+  padding_more = 'padding-large',
+  padding_normal = 'padding-medium',
   privacy = 'shield-02',
   prometheus = 'prometheus',
   progress_spinner = 'refresh-cw-04',
@@ -172,6 +175,8 @@ export enum Icon {
   runs = 'rows-03',
   schedule = 'calendar',
   search = 'search-refraction',
+  /** a helpdesk section - what its card is picked up by, in place of the usual grip */
+  section = 'folder',
   select_open = 'chevron-down',
   select_clear = 'x',
   send = 'send-03',

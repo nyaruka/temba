@@ -3,7 +3,7 @@
 
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .modal .modal-body {
       max-height: 450px;
     }
@@ -11,7 +11,7 @@
 {% endblock extra-style %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function handleFlowRefreshed(evt) {
       var flow = evt.detail.data;
       if (flow.runs) {
@@ -48,97 +48,76 @@
   </script>
 {% endblock extra-script %}
 {% block content %}
-  <temba-flow-details flow="{{ object.uuid }}" -temba-refreshed="handleFlowRefreshed">
-  </temba-flow-details>
-  <temba-tabs -temba-context-changed="handleTabChanged"
-              collapses="true"
-              class="flex-grow"
-              index="{{ request.GET.tab }}">
-    <temba-tab name="{{ _("Engagement") |escapejs }}" icon="overview">
+  <temba-flow-details flow="{{ object.uuid }}" -temba-refreshed="handleFlowRefreshed"> </temba-flow-details>
+  <temba-tabs -temba-context-changed="handleTabChanged" collapses="true" class="flex-grow" index="{{ request.GET.tab }}">
+    <temba-tab name='{{ _("Engagement") |escapejs }}' icon="overview">
       <div class="flex flex-wrap overflow-y-scroll overflow-x-hidden p-4 gap-2">
-        <temba-chart class="m-1"
-                     header="{% trans 'Responses' %}"
-                     url="{% url 'flows.flow_engagement_timeline' flow.uuid %}"
-                     dataname="Responses"
-                     xtype="time"
-                     single
-                     style="flex: 1 1 300px;
-                            overflow: hidden;
-                            border-radius: 10px;
-                            background: #fbfbfb;
-                            padding: 2em">
+        <temba-chart
+          class="m-1"
+          header="{% trans 'Responses' %}"
+          url="{% url 'flows.flow_engagement_timeline' flow.uuid %}"
+          dataname="Responses"
+          xtype="time"
+          single
+          style="flex: 1 1 300px; overflow: hidden; border-radius: 10px; background: #fbfbfb; padding: 2em"
+        >
         </temba-chart>
-        <temba-chart class="m-1"
-                     header='{% trans "Progress" %}'
-                     url="{% url 'flows.flow_engagement_progress' flow.uuid %}"
-                     dataname="Runs"
-                     single
-                     percent
-                     colorIndex="1"
-                     style="flex: 1 1 300px;
-                            overflow: hidden;
-                            border: 0px solid #e5e7eb;
-                            border-radius: 10px;
-                            background: #fbfbfb;
-                            padding: 2em">
+        <temba-chart
+          class="m-1"
+          header='{% trans "Progress" %}'
+          url="{% url 'flows.flow_engagement_progress' flow.uuid %}"
+          dataname="Runs"
+          single
+          percent
+          colorIndex="1"
+          style="flex: 1 1 300px; overflow: hidden; border: 0px solid #e5e7eb; border-radius: 10px; background: #fbfbfb; padding: 2em"
+        >
         </temba-chart>
-        <temba-chart class="m-1"
-                     header='{% trans "Day of Week" %}'
-                     url="{% url 'flows.flow_engagement_dow' flow.uuid %}"
-                     dataname="Responses"
-                     single
-                     colorIndex="2"
-                     xtype="time"
-                     xformat="EEE"
-                     percent
-                     style="flex: 1 1 300px;
-                            overflow: hidden;
-                            border: 0px solid #e5e7eb;
-                            border-radius: 10px;
-                            background: #fbfbfb;
-                            padding: 2em">
+        <temba-chart
+          class="m-1"
+          header='{% trans "Day of Week" %}'
+          url="{% url 'flows.flow_engagement_dow' flow.uuid %}"
+          dataname="Responses"
+          single
+          colorIndex="2"
+          xtype="time"
+          xformat="EEE"
+          percent
+          style="flex: 1 1 300px; overflow: hidden; border: 0px solid #e5e7eb; border-radius: 10px; background: #fbfbfb; padding: 2em"
+        >
         </temba-chart>
-        <temba-chart class="m-1"
-                     header='{% trans "Time of Day" %} ({{ user_org.timezone }})'
-                     url="{% url 'flows.flow_engagement_hod' flow.uuid %}"
-                     dataname="Responses"
-                     colorIndex="3"
-                     single
-                     xmaxticks="24"
-                     style="flex: 1 1 300px;
-                            overflow: hidden;
-                            border: 0px solid #e5e7eb;
-                            border-radius: 10px;
-                            background: #fbfbfb;
-                            padding: 2em">
+        <temba-chart
+          class="m-1"
+          header='{% trans "Time of Day" %} ({{ user_org.timezone }})'
+          url="{% url 'flows.flow_engagement_hod' flow.uuid %}"
+          dataname="Responses"
+          colorIndex="3"
+          single
+          xmaxticks="24"
+          style="flex: 1 1 300px; overflow: hidden; border: 0px solid #e5e7eb; border-radius: 10px; background: #fbfbfb; padding: 2em"
+        >
         </temba-chart>
       </div>
     </temba-tab>
-    <temba-tab name="{{ _("Analytics") |escapejs }}" icon="analytics">
+    <temba-tab name='{{ _("Analytics") |escapejs }}' icon="analytics">
       <div class="flex flex-wrap overflow-y-scroll overflow-x-hidden p-4 gap-2">
         {% for result in results %}
-          <temba-chart class="m-1"
-                       colorIndex="{{ forloop.counter0 }}"
-                       header="{{ result.name }}"
-                       single
-                       percent
-                       dataname="Responses"
-                       url="{% url 'flows.flow_result_chart' object.uuid result.key %}"
-                       style="flex: 1 1 400px;
-                              overflow: hidden;
-                              border: 0px solid #e5e7eb;
-                              border-radius: 10px;
-                              background: #fbfbfb;
-                              padding: 2em">
+          <temba-chart
+            class="m-1"
+            colorIndex="{{ forloop.counter0 }}"
+            header="{{ result.name }}"
+            single
+            percent
+            dataname="Responses"
+            url="{% url 'flows.flow_result_chart' object.uuid result.key %}"
+            style="flex: 1 1 400px; overflow: hidden; border: 0px solid #e5e7eb; border-radius: 10px; background: #fbfbfb; padding: 2em"
+          >
           </temba-chart>
         {% endfor %}
       </div>
     </temba-tab>
-    <temba-tab name="{{ _("Runs") |escapejs }}" icon="runs">
-      <temba-run-list flow="{{ object.uuid }}"
-                      -temba-refreshed="handleRunsRefreshed"
-                      class="p-4 flex flex-col flex-grow overflow-hidden">
-      </temba-run-list>
+    <temba-tab name='{{ _("Runs") |escapejs }}' icon="runs">
+      <temba-run-list flow="{{ object.uuid }}" -temba-refreshed="handleRunsRefreshed" class="p-4 flex flex-col flex-grow overflow-hidden"> </temba-run-list>
     </temba-tab>
   </temba-tabs>
 {% endblock content %}

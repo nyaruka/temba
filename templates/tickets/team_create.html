@@ -10,5 +10,7 @@
 {% endblock fields %}
 {% block modal-script %}
   {{ block.super }}
-  {% if not limit_reached %}{% include "tickets/team_script.html" with modax_id="#new-team" %}{% endif %}
+  {% if not limit_reached %}
+    {% include "tickets/team_script.html" with modax_id="#new-team" %}
+  {% endif %}
 {% endblock modal-script %}

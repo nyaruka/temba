@@ -305,6 +305,18 @@ function fetchAjax(url, options, fullPage = false) {
         return;
       }
 
+      // refused because our session has moved to a different workspace, e.g.
+      // it was switched in another tab
+      var currentOrgUUID = response.headers.get('X-Temba-Workspace');
+      if (
+        response.status === 403 &&
+        currentOrgUUID &&
+        currentOrgUUID != window.workspace?.uuid
+      ) {
+        showWorkspaceChangedDialog();
+        return;
+      }
+
       if (response.status >= 400) {
         showErrorDialog();
         return;

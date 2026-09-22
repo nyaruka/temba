@@ -14,7 +14,7 @@
 {% endblock fields %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function addActionChangeHandler(root) {
       var actionSelect = root.querySelector("temba-select[name='action']");
       var voiceFlow = root.querySelector(".voice-flow-container");

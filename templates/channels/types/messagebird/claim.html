@@ -3,8 +3,7 @@
 
 {% block pre-form %}
   {% blocktrans trimmed with name=branding.name %}
-    You can connect a <a href="https://messagebird.com/en/">Messagebird</a> Account to your {{ name }} account
-    to automate sending and receiving messages via Messagebird phone numbers and shortcodes.
+    You can connect a <a href="https://messagebird.com/en/">Messagebird</a> Account to your {{ name }} account to automate sending and receiving messages via Messagebird phone numbers and shortcodes.
   {% endblocktrans %}
   <div class="card">
     <ol class="steps">
@@ -15,10 +14,12 @@
       </li>
       <li>
         {% blocktrans trimmed %}
-          In the Messagebird Dashboard again, select Developers, API Settings and Signing Key. Click Show Key and paste it below. This assures all webhook request from Messagebird will be authenticated.
+          In the Messagebird Dashboard again, select Developers, API Settings and Signing Key. Click Show Key and paste it below. This assures all webhook request from Messagebird will be
+          authenticated.
         {% endblocktrans %}
       </li>
       <li>
+        {# djangofmt: ignore[format] #}
         {% blocktrans trimmed %}
           Lastly, you'll need the Phone number or shortcode that {{ name }} will use when it sends SMS/MMS message. This is available via
           the <a href="https://dashboard.messagebird.com/en-us/numbers">My Numbers</a> section of the Messagebird API.
@@ -26,9 +27,9 @@
       </li>
       <li>
         {% blocktrans trimmed %}
-          Once you press Submit below with all the information configured, the confirmation page will give you the URL to use for the Messagebird Message Webhooks.
-          You'll also receive a url for message status updates. You can configure this url in the Dashboard under Developers, API Settings.
-          You'll need to provide this URL to the {{ name }} team. You can also create a {{ name }} flow to forward SMS messages to this URL.
+          Once you press Submit below with all the information configured, the confirmation page will give you the URL to use for the Messagebird Message Webhooks. You'll also receive a url for
+          message status updates. You can configure this url in the Dashboard under Developers, API Settings. You'll need to provide this URL to the {{ name }} team. You can also create a {{ name }}
+          flow to forward SMS messages to this URL.
         {% endblocktrans %}
       </li>
     </ol>
@@ -36,7 +37,7 @@
 {% endblock pre-form %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .info {
       width: 800px;
       margin-bottom: 20px;

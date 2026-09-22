@@ -7,7 +7,7 @@
       <div class="p-4">
         {% if msg %}
           <div class="inline-flex items-center">
-            <div style="font-size:1.5em" class="mr-4">{{ msg|msg_status_badge }}</div>
+            <div style="font-size: 1.5em" class="mr-4">{{ msg|msg_status_badge }}</div>
             <div class="summary">
               <span>{{ msg.get_direction_display }}</span>
               <span>{% trans "message" %}</span>
@@ -19,7 +19,7 @@
                 {% endif %}
               </span>
               <span>
-                <temba-anchor href="{% url "contacts.contact_read" msg.contact.uuid %}">
+                <temba-anchor href='{% url "contacts.contact_read" msg.contact.uuid %}'>
                   {{ msg.contact_urn.get_display }}
                 </temba-anchor>
               </span>
@@ -30,7 +30,7 @@
         {% elif call %}
           <div class="inline-flex mr-8">
             <div class="font-normal mr-2">{% trans "Recipient" %}</div>
-            <temba-anchor href="{% url "contacts.contact_read" call.contact.uuid %}">
+            <temba-anchor href='{% url "contacts.contact_read" call.contact.uuid %}'>
               {{ call.contact_urn.get_display }}
             </temba-anchor>
           </div>
@@ -56,7 +56,7 @@
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       prettyPrint();
     });
@@ -64,17 +64,17 @@
 {% endblock extra-script %}
 {% block extra-style %}
   {{ block.super }}
-  <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}rest_framework/css/prettify.css" />
-  <style type="text/css">
+  <link rel="stylesheet" href="{{ STATIC_URL }}rest_framework/css/prettify.css">
+  <style>
     table.http-log tbody tr:first-child td {
       padding: 1.5rem;
     }
 
     pre.prettyprint {
-      margin: 0;
-      border: 0;
       max-height: none !important;
+      margin: 0;
       padding: 1.5rem;
+      border: 0;
     }
 
     pre.prettyprint.request {

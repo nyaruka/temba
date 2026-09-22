@@ -15,17 +15,17 @@
             The next message will be sent <b>{{ when }}</b>.
           {% endblocktrans %}
         {% endif %}
-        {% if object.repeat_period == 'M' %}
+        {% if object.repeat_period == "M" %}
           {% blocktrans trimmed with date=object.repeat_day_of_month|ordinal %}
             It will repeat every <b>month</b> on the {{ date }}.
           {% endblocktrans %}
-        {% elif object.repeat_period == 'W' %}
+        {% elif object.repeat_period == "W" %}
           {% trans "It will repeat every" %}
           {% for day in object.get_repeat_days_display %}<b>{{ day }}</b>{{ forloop|oxford }}{% endfor %}
           {% trans "at around the same time." %}
-        {% elif object.repeat_period == 'D' %}
+        {% elif object.repeat_period == "D" %}
           {% trans "It will repeat <b>daily</b> at around the same time." %}
-        {% elif object.repeat_period == 'O' %}
+        {% elif object.repeat_period == "O" %}
           {% trans "It will <b>not repeat</b>." %}
         {% endif %}
       </div>
@@ -41,7 +41,7 @@
 {% endblock form-buttons %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function wireRepeatListener() {
       var repeatPeriod = document.querySelector("#id_repeat_period");
       var repeatDays = document.querySelector(".repeat-days-container");

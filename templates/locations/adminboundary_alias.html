@@ -3,7 +3,7 @@
 
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .page-content {
       align-self: auto;
       max-width: 100%;
@@ -22,8 +22,7 @@
 {% block content %}
   <div class="my-4">
     {% blocktrans trimmed with brand=branding.name %}
-      Often certain regions are known by more than one name. In {{ brand }}, we call these alternate names for
-      regions, aliases.
+      Often certain regions are known by more than one name. In {{ brand }}, we call these alternate names for regions, aliases.
     {% endblocktrans %}
   </div>
   <alias-editor endpoint="/adminboundary/" osmid="{{ object.osm_id }}"></alias-editor>

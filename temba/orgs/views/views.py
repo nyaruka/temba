@@ -680,7 +680,7 @@ class OrgCRUDL(SmartCRUDL):
                 menu.append(
                     self.create_menu_item(
                         menu_id="knowledge",
-                        name=_("Knowledge"),
+                        name=_("Knowledge Base"),
                         icon="knowledge",
                         endpoint="knowledge.knowledgesource_menu",
                         href="knowledge.knowledgesource_shortcuts",

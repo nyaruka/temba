@@ -1,6 +1,8 @@
 import { assert } from '@open-wc/testing';
 import {
+  onWorkspaceAccessLost,
   setRealtimeContext,
+  setRealtimeTabsChannel,
   subscribeToContactHistory,
   subscribeToFlow,
   subscribeToNotifications,
@@ -114,5 +116,111 @@ describe('temba-realtime', () => {
     assert.deepEqual(mockSocket.activeChannels(), ['flow:flow-uuid']);
     mockSocket.serverPublish('flow:flow-uuid', { type: 'activity' });
     assert.deepEqual(received, [{ type: 'activity' }]);
+  });
+
+  describe('workspace access', () => {
+    // stands in for another tab in the same browser, on a channel of our own
+    // as the other test files are tabs of it too
+    const tabsChannel = 'temba-realtime-test';
+    let previousTabsChannel: string;
+    let otherTab: BroadcastChannel;
+
+    beforeEach(() => {
+      previousTabsChannel = setRealtimeTabsChannel(tabsChannel);
+      otherTab = new BroadcastChannel(tabsChannel);
+    });
+
+    afterEach(() => {
+      otherTab.close();
+      setRealtimeTabsChannel(previousTabsChannel);
+    });
+
+    // a broadcast lands on a later task, so give it a moment
+    const delivered = () => new Promise((resolve) => setTimeout(resolve, 50));
+
+    it('is lost when the server refuses one of the page channels', () => {
+      setRealtimeContext({ org: 'org-uuid', user: 'user-uuid' });
+
+      let lost = 0;
+      onWorkspaceAccessLost(() => lost++);
+
+      mockSocket.serverDeny('org:org-uuid');
+      assert.equal(lost, 1);
+
+      // and only the once
+      mockSocket.serverDeny('notifications:org-uuid:user-uuid');
+      assert.equal(lost, 1);
+    });
+
+    it('is not lost over a channel that can be refused on its own', () => {
+      setRealtimeContext({ org: 'org-uuid', user: 'user-uuid' });
+
+      let lost = 0;
+      onWorkspaceAccessLost(() => lost++);
+
+      mockSocket.serverDeny('history:contact-uuid');
+      mockSocket.serverDeny('org:other-org-uuid');
+      assert.equal(lost, 0);
+    });
+
+    it('tells a handler that arrives after the fact', async () => {
+      setRealtimeContext({ org: 'org-uuid', user: 'user-uuid' });
+      mockSocket.serverDeny('org:org-uuid');
+
+      let lost = 0;
+      onWorkspaceAccessLost(() => lost++);
+      assert.equal(lost, 0);
+
+      await Promise.resolve();
+      assert.equal(lost, 1);
+    });
+
+    it('stops telling a handler once it unsubscribes', () => {
+      setRealtimeContext({ org: 'org-uuid', user: 'user-uuid' });
+
+      let lost = 0;
+      onWorkspaceAccessLost(() => lost++).unsubscribe();
+
+      mockSocket.serverDeny('org:org-uuid');
+      assert.equal(lost, 0);
+    });
+
+    it('tells other tabs whose page it is', async () => {
+      const heard = [];
+      otherTab.onmessage = (event) => heard.push(event.data);
+
+      setRealtimeContext({ org: 'org-uuid', user: 'user-uuid' });
+      await delivered();
+
+      assert.deepEqual(heard, [{ org: 'org-uuid', user: 'user-uuid' }]);
+    });
+
+    it('rechecks its channels when another tab is in a different workspace', async () => {
+      setRealtimeContext({ org: 'org-uuid', user: 'user-uuid' });
+
+      let lost = 0;
+      onWorkspaceAccessLost(() => lost++);
+
+      otherTab.postMessage({ org: 'other-org-uuid', user: 'user-uuid' });
+      await delivered();
+
+      assert.deepEqual(mockSocket.rechecked, [
+        'org:org-uuid',
+        'notifications:org-uuid:user-uuid'
+      ]);
+
+      // hearing from the tab is only a reason to ask the server
+      assert.equal(lost, 0);
+    });
+
+    it('ignores another tab in the same workspace', async () => {
+      setRealtimeContext({ org: 'org-uuid', user: 'user-uuid' });
+
+      otherTab.postMessage({ org: 'org-uuid', user: 'user-uuid' });
+      otherTab.postMessage(null);
+      await delivered();
+
+      assert.deepEqual(mockSocket.rechecked, []);
+    });
   });
 });

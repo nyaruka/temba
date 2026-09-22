@@ -12,7 +12,7 @@
 {% endblock fields %}
 {% block modal-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     var modalBody = getModax("#new-knowledge").shadowRoot;
     var typeSelect = modalBody.querySelector("temba-select[name='source_type']");
     var websiteFields = modalBody.querySelector(".website-fields");

@@ -15,7 +15,7 @@
 {% endblock page-header %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     /* The list component fills its container edge to edge and brings
        its own surface, so drop the SPA content padding (and the grey
        page background it would otherwise reveal around the list). */
@@ -25,35 +25,33 @@
   </style>
 {% endblock extra-style %}
 {% block content %}
-  <temba-contact-list id="contact-list"
-                      fill-window
-                      history-state-key="contacts"
-                      column-width-settings="{{ list_column_settings }}"
-                      settings-endpoint="{% url 'users.user_settings' %}"
-                      list-title="{{ title }}"
-                      {% if list_subtitle %}subtitle="{{ list_subtitle }}"{% endif %}
-                      {% if list_searchable %}searchable{% endif %}
-                      {% if user_org.is_anon %}anon{% endif %}
-                      {% if org_perms.contacts.contactfield_update_priority %}priority-endpoint="{% url 'contacts.contactfield_update_priority' %}"{% endif %}
-                      endpoint="{{ list_url }}"
-                      action-endpoint="{{ request.path }}"
-                      content-menu-endpoint="{{ request.path }}?{{ request.GET.urlencode }}"
-                      empty-message="{% trans "No contacts" %}">
+  <temba-contact-list
+    id="contact-list"
+    fill-window
+    history-state-key="contacts"
+    column-width-settings="{{ list_column_settings }}"
+    settings-endpoint="{% url 'users.user_settings' %}"
+    list-title="{{ title }}"
+    {% if list_subtitle %}subtitle="{{ list_subtitle }}"{% endif %}
+    {% if list_searchable %}searchable{% endif %}
+    {% if user_org.is_anon %}anon{% endif %}
+    {% if org_perms.contacts.contactfield_update_priority %}priority-endpoint="{% url 'contacts.contactfield_update_priority' %}"{% endif %}
+    endpoint="{{ list_url }}"
+    action-endpoint="{{ request.path }}"
+    content-menu-endpoint="{{ request.path }}?{{ request.GET.urlencode }}"
+    empty-message='{% trans "No contacts" %}'
+  >
   </temba-contact-list>
   {{ list_bulk_actions|json_script:"list-bulk-actions" }}
   {% if org_perms.contacts.contact_delete %}
-    <temba-dialog header="{{ _("Delete All Contacts") |escapejs }}"
-                  primaryButtonName="{{ _("Delete") |escapejs }}"
-                  destructive="true"
-                  class="hide"
-                  id="delete-all-confirmation">
+    <temba-dialog header='{{ _("Delete All Contacts") |escapejs }}' primaryButtonName='{{ _("Delete") |escapejs }}' destructive="true" class="hide" id="delete-all-confirmation">
       <div class="p-6">{% trans "Are you sure you want to delete all archived contacts? This cannot be undone." %}</div>
     </temba-dialog>
   {% endif %}
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       var list = document.querySelector("#contact-list");
       list.bulkActions = JSON.parse(document.getElementById("list-bulk-actions").textContent);
@@ -147,7 +145,6 @@
       modax.setAttribute("endpoint", ids.length > 0 ? endpoint + "?c=" + ids.join(",") : endpoint);
       modax.open = true;
     }
-
     {% if org_perms.contacts.contact_delete %}
     // Content-menu "Delete All" (Archived view) - fired as a js selection.
     function contacts_delete_all() {
@@ -164,7 +161,9 @@
         var formData = new FormData();
         formData.append("action", "delete");
         formData.append("all", "true");
-        spaPost("{% url 'contacts.contact_archived' %}", { postData: formData });
+        spaPost("{% url 'contacts.contact_archived' %}", {
+          postData: formData
+        });
       }
       confirmation.classList.add("hide");
       confirmation.open = false;

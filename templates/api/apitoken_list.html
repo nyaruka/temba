@@ -2,8 +2,7 @@
 {% load i18n temba %}
 
 {% block modaxes %}
-  <temba-modax header="{{ _("Delete Token") |escapejs }}" id="delete-token">
-  </temba-modax>
+  <temba-modax header='{{ _("Delete Token") |escapejs }}' id="delete-token"> </temba-modax>
 {% endblock modaxes %}
 {% block pre-table %}
   <div class="mb-4">
@@ -31,11 +30,7 @@
           {% endif %}
         </td>
         <td class="w-10">
-          <temba-icon name="delete"
-                      clickable="true"
-                      style="--icon-color:#bbb"
-                      onclick="event.stopPropagation(); showDeleteTokenModal('{{ obj.key }}');">
-          </temba-icon>
+          <temba-icon name="delete" clickable="true" style="--icon-color: #bbb" onclick="event.stopPropagation(); showDeleteTokenModal('{{ obj.key }}')"> </temba-icon>
         </td>
       </tr>
     {% empty %}

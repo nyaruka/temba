@@ -23,21 +23,21 @@
 {% block modal-script %}
   {{ block.super }}
   {% if not limit_reached %}
-  <script type="text/javascript">
-    var modalBody = getModax("#create-flow-modal").shadowRoot;
-    var typeSelect = modalBody.querySelector("temba-select[name='flow_type']");
-    var keywords = modalBody.querySelector(".keywords");
-    var keywordsSelect = modalBody.querySelector("temba-select[name='keyword_triggers']");
+    <script>
+      var modalBody = getModax("#create-flow-modal").shadowRoot;
+      var typeSelect = modalBody.querySelector("temba-select[name='flow_type']");
+      var keywords = modalBody.querySelector(".keywords");
+      var keywordsSelect = modalBody.querySelector("temba-select[name='keyword_triggers']");
 
-    typeSelect.addEventListener("change", function(evt) {
-      var selected = evt.target.values[0];
-      if (selected.value === "B" || selected.value === "S") {
-        keywords.classList.add("hidden");
-        keywordsSelect.clear();
-      } else {
-        keywords.classList.remove("hidden");
-      }
-    });
-  </script>
+      typeSelect.addEventListener("change", function(evt) {
+        var selected = evt.target.values[0];
+        if (selected.value === "B" || selected.value === "S") {
+          keywords.classList.add("hidden");
+          keywordsSelect.clear();
+        } else {
+          keywords.classList.remove("hidden");
+        }
+      });
+    </script>
   {% endif %}
 {% endblock modal-script %}

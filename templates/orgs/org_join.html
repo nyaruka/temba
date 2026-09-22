@@ -3,7 +3,7 @@
 
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .content-card {
       width: 32rem;
     }
@@ -15,26 +15,13 @@
       Sign in to join the <b>{{ org }}</b> workspace.
     {% endblocktrans %}
   </div>
-  <form method="post"
-        action="/accounts/login/?next={% url 'orgs.org_join_accept' invitation.secret %}"
-        class="mt-6"
-        id="login-form">
+  <form method="post" action="/accounts/login/?next={% url 'orgs.org_join_accept' invitation.secret %}" class="mt-6" id="login-form">
     <fieldset>
       <div class="control-group">
-        <temba-textinput type="text"
-                         name="email"
-                         label="{% trans "Email Address" %}"
-                         value="{{ invitation.email }}"
-                         disabled>
-        </temba-textinput>
+        <temba-textinput type="text" name="email" label='{% trans "Email Address" %}' value="{{ invitation.email }}" disabled> </temba-textinput>
       </div>
       <div class="control-group">
-        <temba-textinput type="password"
-                         name="password"
-                         label="{% trans "Password" %}"
-                         placeholder="{% trans "Your password" %}"
-                         password>
-        </temba-textinput>
+        <temba-textinput type="password" name="password" label='{% trans "Password" %}' placeholder='{% trans "Your password" %}' password> </temba-textinput>
       </div>
     </fieldset>
     {% csrf_token %}

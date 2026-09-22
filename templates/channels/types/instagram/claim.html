@@ -30,7 +30,7 @@
     <div class="flex mt-4" id="fb-app-connect">
       <div class="button-primary connect-facebook">{% trans "Add Instagram Business Account" %}</div>
     </div>
-    <form style="display:none;" method="post" action="{{ claim_url }}" id="claim-form">
+    <form style="display: none" method="post" action="{{ claim_url }}" id="claim-form">
       {% csrf_token %}
       <input type="text" name="user_access_token" id="user-access-token">
       <input type="text" name="page_id" id="page-id">
@@ -38,12 +38,12 @@
     </form>
   </div>
   <div class="mt-4 card hide" id="fb-channel-options">
-    <p style="font-size:1rem;">{% trans "Select the page you want to add as a channel:" %}</p>
+    <p style="font-size: 1rem">{% trans "Select the page you want to add as a channel:" %}</p>
   </div>
 {% endblock form %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     #fb-channel-options {
       margin-top: 2rem;
     }
@@ -51,9 +51,9 @@
     #fb-channel-options .fb-page-channel-option {
       display: inline-block;
       border: 3px solid #eee;
-      cursor: pointer;
-      text-align: center;
       font-size: 1rem;
+      text-align: center;
+      cursor: pointer;
     }
 
     #fb-channel-options .fb-page-channel-option:hover {
@@ -63,7 +63,7 @@
 {% endblock extra-style %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       {% if facebook_login_instagram_config_id %}
       document.querySelectorAll('.connect-facebook').forEach(function(element) {

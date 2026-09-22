@@ -8,7 +8,7 @@
 {% endblock page-top %}
 {% block extra-style %}
   {{ block.super }}
-  <link rel="stylesheet" type="text/css" href='{% static "rest_framework/css/prettify.css" %}' />
+  <link rel="stylesheet" href='{% static "rest_framework/css/prettify.css" %}'>
   <style>
     .main-logo {
       margin: 1.5em;
@@ -33,8 +33,8 @@
     }
 
     .card {
-      padding: 0;
       margin: 1em 2em;
+      padding: 0;
     }
 
     .page-content {
@@ -61,8 +61,8 @@
     }
 
     pre {
-      line-height: 18px;
       font-size: 12px;
+      line-height: 18px;
       font-family: monospace;
     }
 
@@ -76,11 +76,11 @@
     h3,
     h4,
     h5 {
-      color: #444;
-      padding: 0;
-      text-transform: none;
       margin-top: 2rem;
       margin-bottom: 0.75rem;
+      padding: 0;
+      color: #444;
+      text-transform: none;
     }
 
     h1 {
@@ -102,10 +102,9 @@
 
     ul,
     ol {
-      padding: 0;
       margin: 0 0 10px 25px;
+      padding: 0;
     }
-
 
     strong {
       font-weight: bold;
@@ -118,8 +117,7 @@
       <div class="flex mb-8">
         <div class="flex-grow page-title">{{ name }}</div>
         <div>
-          {% block api-menu %}
-          {% endblock api-menu %}
+          {% block api-menu %} {% endblock api-menu %}
         </div>
       </div>
       {{ description }}

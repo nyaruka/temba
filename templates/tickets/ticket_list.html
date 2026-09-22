@@ -12,7 +12,7 @@
 {% endblock page-header %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     /* preview pages render without the frame footer */
     .spa-footer {
       display: none;
@@ -32,10 +32,10 @@
 
     .ticket-ui {
       position: relative;
+      flex-grow: 1;
+      height: 100%;
       margin: 0;
       padding: 0;
-      height: 100%;
-      flex-grow: 1;
       /* paint the header band (surface + rule) across the full width so
          the gap between the two column header strips reads as one
          continuous control */
@@ -45,8 +45,8 @@
     }
 
     .mobile .ticket-ui {
-      overflow: hidden;
       display: inline-flex;
+      overflow: hidden;
     }
 
     .mobile .ticket-ui temba-resizer {
@@ -71,9 +71,9 @@
     }
 
     .mobile .ticket-ui .chat-pane {
+      margin-left: 0;
       padding-right: 0.75em;
       padding-left: 0.75em;
-      margin-left: 0;
     }
 
     /* the pane already insets both sides — drop the extra right padding
@@ -100,26 +100,26 @@
          positioned flex child the empty state's static position is the
          top of the pane, which would print it over the page header */
       top: 53px;
-      opacity: 0;
       padding: 3px 40px;
+      opacity: 0;
       pointer-events: none;
     }
 
     .empty h2 {
-      font-size: 36px;
       margin-top: 16px;
+      font-size: 36px;
     }
 
     .popper {
-      font-size: 48px;
       display: inline;
+      font-size: 48px;
     }
 
     /* the same 8px rhythm the card layout uses — the column's header strip
        runs full-bleed, the list body below carries the inset */
     .ticket-list {
-      height: 100%;
       width: 100%;
+      height: 100%;
     }
 
     .list-body {
@@ -137,11 +137,11 @@
     }
 
     .chat-pane {
+      /* anchor the empty state's top offset to this pane */
+      position: relative;
       /* the gap to the ticket list — the resizer's drag handle strip
          (sized to match) rides in this space */
       margin-left: 8px;
-      /* anchor the empty state's top offset to this pane */
-      position: relative;
     }
 
     temba-menu {
@@ -165,37 +165,37 @@
     }
 
     .spa-content {
-      padding-left: 0;
-      padding-right: 0;
       padding-top: 0;
+      padding-right: 0;
       padding-bottom: 0em;
+      padding-left: 0;
     }
 
     /* the folder label matches the page-header title beside it, with a
        little extra optical inset for the bare text */
     #folder-title {
-      font-size: 15.5px;
-      font-weight: var(--w-semibold);
-      color: var(--text-1);
       overflow: hidden;
+      color: var(--text-1);
+      font-weight: var(--w-semibold);
+      font-size: 15.5px;
       line-height: 1.25;
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 1;
-      text-overflow: ellipsis;
       display: -webkit-box;
       margin: auto;
       margin-left: 8px;
+      text-overflow: ellipsis;
     }
 
     @container (max-width: 540px) {
       .ticket-list {
-        flex-basis: 1em;
         flex-shrink: 1;
+        flex-basis: 1em;
         max-width: inherit;
-        margin-bottom: 0.75em;
-        padding-bottom: 1em;
         margin-right: -2em;
+        margin-bottom: 0.75em;
         padding-right: 2em;
+        padding-bottom: 1em;
       }
 
       .ticket-ui {
@@ -211,9 +211,9 @@
       }
 
       .chat-pane {
-        margin-left: 0;
         flex-grow: 2;
         height: 100%;
+        margin-left: 0;
       }
 
       .menu-flex {
@@ -229,7 +229,7 @@
 {% block extra-script %}
   {{ block.super }}
   {% include "includes/page_header_menu.html" %}
-  <script type="text/javascript">
+  <script>
     // current state
     var folder = '{{folder}}';
     var ticketUUID = '{{uuid}}';
@@ -645,48 +645,50 @@
           {# the list column's own header strip — same height and surface as the #}
           {# chat header beside it so the two read as one continuous control #}
           <temba-header-bar>
-            <div class="flex items-center {% if folder == "all" %}hidden{% endif %}" id="title-row">
+            <div class='flex items-center {% if folder == "all" %}hidden{% endif %}' id="title-row">
               <div class="flex-grow relative" id="folder-title">
                 <div id="title-text">{{ title }}</div>
               </div>
-              <temba-content-menu endpoint="/ticket/folder/{{ folder }}/{{ uuid }}"
-                                  -temba-selection="handleContentMenuSelected(event)"
-                                  arrowtopleft
-                                  class="relative"
-                                  id="topic-content-menu">
+              <temba-content-menu endpoint="/ticket/folder/{{ folder }}/{{ uuid }}" -temba-selection="handleContentMenuSelected(event)" arrowtopleft class="relative" id="topic-content-menu">
               </temba-content-menu>
             </div>
-            <temba-user-select name="assignee-filter"
-                               placeholder="{% trans "All Agents" %}"
-                               onchange="handleAssigneeFilterChanged(event)"
-                               valueKey="uuid"
-                               {% if assignee_uuid %}value="{{ assignee_uuid }}"{% endif %}
-                               class="{% if folder != "all" %}hidden{% endif %}"
-                               style="z-index:3"
-                               searchable
-                               searchOnFocus
-                               clearable>
+            <temba-user-select
+              name="assignee-filter"
+              placeholder='{% trans "All Agents" %}'
+              onchange="handleAssigneeFilterChanged(event)"
+              valueKey="uuid"
+              {% if assignee_uuid %}value="{{ assignee_uuid }}"{% endif %}
+              class='{% if folder != "all" %}hidden{% endif %}'
+              style="z-index: 3"
+              searchable
+              searchOnFocus
+              clearable
+            >
             </temba-user-select>
           </temba-header-bar>
           <div class="list-body flex flex-col flex-grow min-h-0">
-            <div style="max-height:100%;" class="flex flex-grow">
+            <div style="max-height: 100%" class="flex flex-grow">
               {% if uuid %}
-                <temba-ticket-list agent="{{ request.user.email }}"
-                                   endpoint="/ticket/folder/{{ folder }}/{{ uuid }}"
-                                   -temba-refreshed="handleTicketsRefreshed"
-                                   onchange="handleContactSelected(event)"
-                                   class="flex-grow">
-                  <div style="text-align:center" class="filter-note m-2 hidden">
+                <temba-ticket-list
+                  agent="{{ request.user.email }}"
+                  endpoint="/ticket/folder/{{ folder }}/{{ uuid }}"
+                  -temba-refreshed="handleTicketsRefreshed"
+                  onchange="handleContactSelected(event)"
+                  class="flex-grow"
+                >
+                  <div style="text-align: center" class="filter-note m-2 hidden">
                     <div onclick="clearFilter()" class="linked">{% trans "See more tickets" %}</div>
                   </div>
                 </temba-ticket-list>
               {% else %}
-                <temba-ticket-list nextselection="{{ nextUUID }}"
-                                   agent="{{ request.user.email }}"
-                                   endpoint="/ticket/folder/{{ folder }}/"
-                                   -temba-refreshed="handleTicketsRefreshed"
-                                   onchange="handleContactSelected(event)"
-                                   class="flex-grow">
+                <temba-ticket-list
+                  nextselection="{{ nextUUID }}"
+                  agent="{{ request.user.email }}"
+                  endpoint="/ticket/folder/{{ folder }}/"
+                  -temba-refreshed="handleTicketsRefreshed"
+                  onchange="handleContactSelected(event)"
+                  class="flex-grow"
+                >
                 </temba-ticket-list>
               {% endif %}
             </div>
@@ -696,16 +698,15 @@
       <div class="chat-pane flex-grow flex-col flex">
         <temba-header-bar>
           {# outside the page header so the hover ring isn't clipped by its title's text truncation #}
-          <temba-icon size="1.2" class="back-button" name="arrow_left" clickable onclick="handleContactChanged()">
-          </temba-icon>
-          <temba-page-header id="page-header"
-                             content-menu-endpoint="{{ request.path }}"
-                             -temba-selection="handleContentMenuSelected(event)">
+          <temba-icon size="1.2" class="back-button" name="arrow_left" clickable onclick="handleContactChanged()"> </temba-icon>
+          <temba-page-header id="page-header" content-menu-endpoint="{{ request.path }}" -temba-selection="handleContentMenuSelected(event)">
             <div slot="title" class="flex" style="align-items: center">
-              <temba-contact-name -temba-refreshed="handleContactRefreshed"
-                                  icon-size="16"
-                                  onclick="{% if org_perms.contacts.contact_read %}handleNameClicked(){% endif %}"
-                                  class="{% if org_perms.contacts.contact_read %}clickable{% endif %}">
+              <temba-contact-name
+                -temba-refreshed="handleContactRefreshed"
+                icon-size="16"
+                onclick="{% if org_perms.contacts.contact_read %}handleNameClicked(){% endif %}"
+                class="{% if org_perms.contacts.contact_read %}clickable{% endif %}"
+              >
               </temba-contact-name>
             </div>
           </temba-page-header>
@@ -736,53 +737,51 @@
             </div>
             <div class="mt-4">
               {% blocktrans trimmed %}
-                Sometimes an automated chatbot isn't enough. When your contacts need to chat with a real person, you can use the
-                Open Ticket action to open a new ticket.
+                Sometimes an automated chatbot isn't enough. When your contacts need to chat with a real person, you can use the Open Ticket action to open a new ticket.
               {% endblocktrans %}
             </div>
           {% endif %}
         </div>
         {# the chat is the primary workspace here — give it more room (a higher #}
         {# floor) before card mode wins over tabs than on the contact read page #}
-        <temba-card-layout id="card-layout"
-                           main-name="{{ _("Chat") |escapejs }}"
-                           main-icon="message"
-                           main-min-width="480"
-                           settings-endpoint="{% url 'users.user_settings' %}"
-                           settings="{{ card_settings }}"
-                           class="hidden">
-          <temba-contact-chat slot="main"
-                              agent="{{ request.user.email }}"
-                              user="{{ request.user.uuid }}"
-                              style="opacity: 0"
-                              monitor="true"
-                              -temba-ticket-updated="handleTicketUpdated"
-                              -temba-message-sent="handleMessageSent"
-                              -temba-interrupt="handleInterruptContact"
-                              {% if org_perms.contacts.contact_interrupt %}showInterrupt{% endif %}
-                              {% if org_perms.channels.channel_logs or request.user.is_staff %}showMessageLogsAfter="{{ msg_logs_after }}"{% endif %}
-                              {% if not can_assign %}disableAssign{% endif %}
-                              {% if not can_reply_non_own %}disableReply{% endif %}
-                              avatar="{{ branding.logos.avatar }}">
+        <temba-card-layout
+          id="card-layout"
+          main-name='{{ _("Chat") |escapejs }}'
+          main-icon="message"
+          main-min-width="480"
+          settings-endpoint="{% url 'users.user_settings' %}"
+          settings="{{ card_settings }}"
+          class="hidden"
+        >
+          <temba-contact-chat
+            slot="main"
+            agent="{{ request.user.email }}"
+            user="{{ request.user.uuid }}"
+            style="opacity: 0"
+            monitor="true"
+            -temba-ticket-updated="handleTicketUpdated"
+            -temba-message-sent="handleMessageSent"
+            -temba-interrupt="handleInterruptContact"
+            {% if org_perms.contacts.contact_interrupt %}showInterrupt{% endif %}
+            {% if org_perms.channels.channel_logs or request.user.is_staff %}showMessageLogsAfter="{{ msg_logs_after }}"{% endif %}
+            {% if not can_assign %}disableAssign{% endif %}
+            {% if not can_reply_non_own %}disableReply{% endif %}
+            avatar="{{ branding.logos.avatar }}"
+          >
           </temba-contact-chat>
-          <temba-card id="card-details" label="{{ _("Details") |escapejs }}" icon="info">
-            <temba-contact-details -temba-button-clicked="handleFieldSearch"
-                                   {% if org_perms.contacts.contact_update %}editable{% endif %}
-                                   {% if request.org.is_anon %}anon{% endif %}>
+          <temba-card id="card-details" label='{{ _("Details") |escapejs }}' icon="info">
+            <temba-contact-details -temba-button-clicked="handleFieldSearch" {% if org_perms.contacts.contact_update %}editable{% endif %} {% if request.org.is_anon %}anon{% endif %}>
             </temba-contact-details>
           </temba-card>
-          <temba-card id="card-fields" label="{{ _("Fields") |escapejs }}" icon="fields">
-            <temba-contact-fields timezone="{{ object.org.timezone }}"
-                                  -temba-button-clicked="handleFieldSearch"
-                                  role="{{ user_role }}">
-              <div slot="empty" class="no-fields p-4 text-center" style="opacity:1">
+          <temba-card id="card-fields" label='{{ _("Fields") |escapejs }}' icon="fields">
+            <temba-contact-fields timezone="{{ object.org.timezone }}" -temba-button-clicked="handleFieldSearch" role="{{ user_role }}">
+              <div slot="empty" class="no-fields p-4 text-center" style="opacity: 1">
                 <div class="text-xl mb-4">{% trans "No Fields" %}</div>
               </div>
             </temba-contact-fields>
           </temba-card>
-          <temba-card id="card-notepad" variant="note" label="{{ _("Notepad") |escapejs }}" icon="notes" activity bleed>
-            <temba-contact-notepad autogrow>
-            </temba-contact-notepad>
+          <temba-card id="card-notepad" variant="note" label='{{ _("Notepad") |escapejs }}' icon="notes" activity bleed>
+            <temba-contact-notepad autogrow> </temba-contact-notepad>
           </temba-card>
         </temba-card-layout>
         {{ contact_urn_schemes|json_script:"contact-urn-schemes" }}

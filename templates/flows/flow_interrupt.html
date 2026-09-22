@@ -6,15 +6,14 @@
     {% if can_interrupt %}
       <div class="mb-4">
         {% blocktrans trimmed with run_count=run_count|intcomma %}
-          This will interrupt the <b>{{ run_count }}</b> contacts currently in this flow. There is no way to undo this.
-          Are you sure?
+          This will interrupt the <b>{{ run_count }}</b> contacts currently in this flow. There is no way to undo this. Are you sure?
         {% endblocktrans %}
       </div>
       {% if not can_archive %}
         <temba-alert level="warning">
           {% blocktrans trimmed %}
-            This flow can't be archived because it is used by active campaigns. If you want to prevent new contacts from
-            entering this flow, please remove it from the campaigns first, and then archive it.
+            This flow can't be archived because it is used by active campaigns. If you want to prevent new contacts from entering this flow, please remove it from the campaigns first, and then archive
+            it.
           {% endblocktrans %}
         </temba-alert>
       {% else %}

@@ -34,6 +34,36 @@ function showErrorDialog() {
   dialog.open = true;
 }
 
+// nothing on the page will work once its session has moved to another
+// workspace, so this one can't be dismissed
+function showWorkspaceChangedDialog() {
+  var dialog = document.querySelector('#workspace-changed-dialog');
+  if (!dialog) {
+    showErrorDialog();
+    return;
+  }
+
+  if (dialog.open) {
+    return;
+  }
+
+  // anything else that is open would sit on top of us
+  document
+    .querySelectorAll('temba-dialog, temba-modax')
+    .forEach(function (other) {
+      if (other !== dialog && other.open) {
+        other.open = false;
+      }
+    });
+
+  dialog.width = 'initial';
+  dialog.buttons = [{ type: 'primary', name: dialog.dataset.refresh }];
+  dialog.addEventListener('temba-button-clicked', function () {
+    document.location.reload();
+  });
+  dialog.open = true;
+}
+
 function showPreview(evt, ele) {
   evt.stopPropagation();
   evt.preventDefault();

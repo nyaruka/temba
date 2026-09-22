@@ -9,15 +9,15 @@
     }
 
     temba-chart {
-      background: #fff;
       padding: 2em;
       border-radius: var(--curvature);
+      background: #fff;
     }
 
     .leaderboard {
-      background: #fff;
       padding: 2em;
       border-radius: var(--curvature);
+      background: #fff;
     }
 
     .leaderboard table {
@@ -26,12 +26,12 @@
     }
 
     .leaderboard th {
-      text-align: left;
       padding: 0.5em 0.75em;
       border-bottom: 2px solid #e5e7eb;
-      font-weight: 600;
       color: #6b7280;
+      font-weight: 600;
       font-size: 0.85em;
+      text-align: left;
       text-transform: uppercase;
     }
 
@@ -58,63 +58,41 @@
     }
 
     .leaderboard td.empty {
-      text-align: center;
       padding: 2em;
       color: #9ca3af;
+      text-align: center;
     }
   </style>
 {% endblock extra-style %}
 {% block content %}
   <div class="shadow flex px-4 rounded-lg mb-6 bg-white">
     <div class="flex-grow"></div>
-    <temba-range-picker min="{{ request.org.created_on|date:"Y-m-d" }}">
-    </temba-range-picker>
+    <temba-range-picker min='{{ request.org.created_on|date:"Y-m-d" }}'> </temba-range-picker>
   </div>
-  <temba-chart class="shadow"
-               header="{% trans "Tickets Opened" %}"
-               url="{% url 'tickets.ticket_chart' 'opened' %}"
-               dataname="Topics"
-               xtype="time"
-               config
-               requireWindow
-               legend>
-  </temba-chart>
+  <temba-chart class="shadow" header='{% trans "Tickets Opened" %}' url="{% url 'tickets.ticket_chart' 'opened' %}" dataname="Topics" xtype="time" config requireWindow legend> </temba-chart>
   {% if not team %}
-    <temba-chart class="shadow mt-6"
-                 header="{% trans "Response Time" %}"
-                 url="{% url 'tickets.ticket_chart' 'resptime' %}"
-                 dataname="Average Response"
-                 colorIndex="2"
-                 xtype="time"
-                 ytype="duration"
-                 single
-                 requireWindow>
+    <temba-chart
+      class="shadow mt-6"
+      header='{% trans "Response Time" %}'
+      url="{% url 'tickets.ticket_chart' 'resptime' %}"
+      dataname="Average Response"
+      colorIndex="2"
+      xtype="time"
+      ytype="duration"
+      single
+      requireWindow
+    >
     </temba-chart>
   {% endif %}
   {% if has_teams %}
-    <temba-chart class="shadow mt-6"
-                 header="{% trans "Response Count" %}"
-                 url="{% url 'tickets.ticket_chart' 'replies' %}"
-                 dataname="Teams"
-                 colorIndex="1"
-                 xtype="time"
-                 config
-                 requireWindow
-                 legend>
+    <temba-chart class="shadow mt-6" header='{% trans "Response Count" %}' url="{% url 'tickets.ticket_chart' 'replies' %}" dataname="Teams" colorIndex="1" xtype="time" config requireWindow legend>
     </temba-chart>
   {% else %}
-    <temba-chart class="shadow mt-6"
-                 header="{% trans "Response Count" %}"
-                 url="{% url 'tickets.ticket_chart' 'replies' %}"
-                 dataname="Responses"
-                 colorIndex="1"
-                 xtype="time"
-                 single
-                 requireWindow>
+    <temba-chart class="shadow mt-6" header='{% trans "Response Count" %}' url="{% url 'tickets.ticket_chart' 'replies' %}" dataname="Responses" colorIndex="1" xtype="time" single requireWindow>
     </temba-chart>
   {% endif %}
   <div class="leaderboard shadow mt-6" id="leaderboard">
-    <h3 style="margin: 0 0 1em 0; font-size: 1.1em; font-weight: 600;">{% trans "Top Responders" %}</h3>
+    <h3 style="margin: 0 0 1em 0; font-size: 1.1em; font-weight: 600">{% trans "Top Responders" %}</h3>
     <table>
       <thead>
         <tr>
@@ -133,7 +111,7 @@
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function escapeHtml(str) {
       var div = document.createElement("div");
       div.appendChild(document.createTextNode(str));
@@ -159,9 +137,9 @@
           }
           tbody.innerHTML = data.results.map(function(user) {
             {% if team %}
-              var name = escapeHtml(user.name);
+            var name = escapeHtml(user.name);
             {% else %}
-              var name = '<a href="/ticket/all/?assignee=' + user.uuid + '">' + escapeHtml(user.name) + '</a>';
+            var name = '<a href="/ticket/all/?assignee=' + user.uuid + '">' + escapeHtml(user.name) + '</a>';
             {% endif %}
             return '<tr><td>' + name + '</td><td>' + user.replies.toLocaleString() + '</td></tr>';
           }).join("");

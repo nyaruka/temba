@@ -21,8 +21,8 @@
     }
 
     .disabled {
-      pointer-events: none;
       opacity: 0.5;
+      pointer-events: none;
       user-select: none;
     }
   </style>
@@ -46,7 +46,6 @@
         }
       });
     }
-
     {% if form.send_when.value != "later" %}
     if (sendNow) {
       sendNow.click();

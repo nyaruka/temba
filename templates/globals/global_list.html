@@ -2,20 +2,15 @@
 {% load smartmin temba i18n %}
 
 {% block modaxes %}
-  <temba-modax header="{{ _("Update Global") |escapejs }}" -temba-redirected="refreshGlobals" id="update-global">
-  </temba-modax>
-  <temba-modax header="{{ _("Delete Global") |escapejs }}" -temba-redirected="refreshGlobals" id="delete-global">
-  </temba-modax>
-  <temba-modax header="{{ _("Usages") |escapejs }}" id="usages-global">
-  </temba-modax>
+  <temba-modax header='{{ _("Update Global") |escapejs }}' -temba-redirected="refreshGlobals" id="update-global"> </temba-modax>
+  <temba-modax header='{{ _("Delete Global") |escapejs }}' -temba-redirected="refreshGlobals" id="delete-global"> </temba-modax>
+  <temba-modax header='{{ _("Usages") |escapejs }}' id="usages-global"> </temba-modax>
 {% endblock modaxes %}
 {% block pre-table %}
   <div class="mb-4">
     {% blocktrans trimmed %}
-      Globals are variables you can use across all of your flows but
-      manage the value for in one place. For example, you might use them
-      to store API keys you need to access external services or product names that
-      might change later.
+      Globals are variables you can use across all of your flows but manage the value for in one place. For example, you might use them to store API keys you need to access external services or
+      product names that might change later.
     {% endblocktrans %}
   </div>
 {% endblock pre-table %}
@@ -25,7 +20,7 @@
       {% for obj in object_list %}
         <tr onclick="showUpdateGlobalModal({{ obj.id }})" class="hover-linked update">
           <td style="min-width: 50px">{{ obj.name }}</td>
-          <td style="font-family: monospace; font-size: 12px;">@globals.{{ obj.key }}</td>
+          <td style="font-family: monospace; font-size: 12px">@globals.{{ obj.key }}</td>
           <td>
             <div class="break-all">{{ obj.value|truncatechars:25 }}</div>
           </td>
@@ -33,7 +28,7 @@
             <div class="flex text-center">
               {% with usage_count=obj.usage_count %}
                 {% if usage_count %}
-                  <div onclick="event.stopPropagation(); showGlobalUsagesModal('{{ obj.uuid }}');" class="uses">
+                  <div onclick="event.stopPropagation(); showGlobalUsagesModal('{{ obj.uuid }}')" class="uses">
                     <div class="lbl linked">
                       {% blocktrans trimmed with counter=usage_count|intcomma count num=usage_count %}
                         {{ counter }} use
@@ -48,11 +43,7 @@
           </td>
           {% if org_perms.globals.global_delete %}
             <td class="w-10">
-              <temba-icon name="delete"
-                          clickable="true"
-                          style="--icon-color:#bbb"
-                          onclick="event.stopPropagation(); showDeleteGlobalModal('{{ obj.uuid }}');">
-              </temba-icon>
+              <temba-icon name="delete" clickable="true" style="--icon-color: #bbb" onclick="event.stopPropagation(); showDeleteGlobalModal('{{ obj.uuid }}')"> </temba-icon>
             </td>
           {% endif %}
         </tr>
@@ -88,11 +79,11 @@
 {% endblock extra-script %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     td.dependencies {
+      width: 3em;
       text-align: right;
       white-space: nowrap;
-      width: 3em;
     }
   </style>
 {% endblock extra-style %}

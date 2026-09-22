@@ -2,7 +2,7 @@
 {% load i18n %}
 
 {% block fields %}
-  {% blocktrans with prefix=object.key|truncatechars:7 %}
+  {% blocktrans trimmed with prefix=object.key|truncatechars:7 %}
     You are about to delete the API token <b>{{ prefix }}</b>. There is no way to undo this. Are you sure?
   {% endblocktrans %}
 {% endblock fields %}

@@ -6,7 +6,7 @@
 {% endblock title-text %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .log-error {
       color: rgb(var(--error-rgb));
     }
@@ -23,9 +23,7 @@
     <table class="list lined scrolled">
       <tbody>
         {% for obj in logs %}
-          <tr onclick="goto(event)"
-              href="{% url "channels.channel_logs_read" channel.uuid 'log' obj.uuid %}"
-              class="hover-linked {% if obj.is_error %}log-error{% endif %}">
+          <tr onclick="goto(event)" href="{% url "channels.channel_logs_read" channel.uuid 'log' obj.uuid %}" class="hover-linked {% if obj.is_error %}log-error{% endif %}">
             <td>{{ obj.get_log_type_display }}</td>
             <td>{{ obj.elapsed_ms|intcomma }}ms</td>
             <td class="text-right">{{ obj.created_on|timedate }}</td>

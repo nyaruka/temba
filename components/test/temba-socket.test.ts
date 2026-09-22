@@ -218,6 +218,70 @@ describe('SocketManager', () => {
   });
 });
 
+describe('SocketManager denials', () => {
+  it('reports a subscription the server refuses', () => {
+    const { fake, manager } = createManager();
+    manager.subscribe('org:abc', () => {});
+
+    const denied = [];
+    manager.onDenied((channel) => denied.push(channel));
+
+    fake.subs.get('org:abc').emit('unsubscribed', {
+      channel: 'org:abc',
+      code: 403,
+      reason: 'forbidden'
+    });
+    assert.deepEqual(denied, ['org:abc']);
+  });
+
+  it('does not report a subscription ending any other way', () => {
+    const { fake, manager } = createManager();
+    manager.subscribe('org:abc', () => {});
+
+    const denied = [];
+    manager.onDenied((channel) => denied.push(channel));
+
+    const sub = fake.subs.get('org:abc');
+    sub.emit('unsubscribed', { channel: 'org:abc', code: 0 });
+    sub.emit('unsubscribed', { channel: 'org:abc', code: 2000 });
+    assert.deepEqual(denied, []);
+  });
+
+  it('stops telling a handler once it unsubscribes', () => {
+    const { fake, manager } = createManager();
+    manager.subscribe('org:abc', () => {});
+
+    const denied = [];
+    manager.onDenied((channel) => denied.push(channel)).unsubscribe();
+
+    fake.subs.get('org:abc').emit('unsubscribed', { code: 403 });
+    assert.deepEqual(denied, []);
+  });
+
+  it('stops listening when the subscription is torn down', () => {
+    const { fake, manager } = createManager();
+    const subscription = manager.subscribe('org:abc', () => {});
+    const sub = fake.subs.get('org:abc');
+
+    subscription.unsubscribe();
+    assert.deepEqual(sub.handlers['unsubscribed'], []);
+  });
+
+  it('rechecks a channel by subscribing afresh', () => {
+    const { fake, manager } = createManager();
+    manager.subscribe('org:abc', () => {});
+
+    const sub = fake.subs.get('org:abc');
+    manager.recheck('org:abc');
+    assert.equal(sub.unsubscribeCalls, 1);
+    assert.equal(sub.subscribeCalls, 2);
+
+    // nothing to ask about a channel nobody has
+    manager.recheck('org:xyz');
+    assert.isFalse(fake.subs.has('org:xyz'));
+  });
+});
+
 describe('SocketManager connection state', () => {
   it('is disconnected until something opens the connection', () => {
     const { manager, connections } = createManager();

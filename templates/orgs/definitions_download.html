@@ -6,18 +6,18 @@
     <th>{% trans "Flows" %}</th>
     <td>
       {% for flow in flows %}
-        <a href="{% url "flows.flow_editor" flow.uuid %}">{{ flow.name }}</a>
-      </br>
-    {% endfor %}
-  </td>
-</tr>
-<tr>
-  <th>{% trans "Campaigns" %}</th>
-  <td>
-    {% for campaign in campaigns %}
-      <a href="{% url "campaigns.campaign_read" campaign.uuid %}">{{ campaign.name }}</a>
-    </br>
-  {% endfor %}
-</td>
-</tr>
+        <a href='{% url "flows.flow_editor" flow.uuid %}'>{{ flow.name }}</a>
+        </br>
+      {% endfor %}
+    </td>
+  </tr>
+  <tr>
+    <th>{% trans "Campaigns" %}</th>
+    <td>
+      {% for campaign in campaigns %}
+        <a href='{% url "campaigns.campaign_read" campaign.uuid %}'>{{ campaign.name }}</a>
+        </br>
+      {% endfor %}
+    </td>
+  </tr>
 {% endblock "extra-fields" %}

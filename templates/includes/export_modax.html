@@ -6,8 +6,7 @@
   {% if blocker == "existing-export" %}
     {% trans "There is already an export in progress. You must wait for that export to complete before starting another." %}
   {% elif blocker == "too-big" %}
-    {% block too-big-blocker %}
-    {% endblock too-big-blocker %}
+    {% block too-big-blocker %} {% endblock too-big-blocker %}
   {% else %}
     {{ block.super }}
   {% endif %}

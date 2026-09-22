@@ -10,7 +10,7 @@
   <div class="mb-4">
     {% if from_email_custom %}
       {% blocktrans trimmed with from_email=from_email_custom %}
-        If you no longer want to use these SMTP settings to send emails from flows, <a onclick='confirmSMTPRemove()'>click here</a>.
+        If you no longer want to use these SMTP settings to send emails from flows, <a onclick="confirmSMTPRemove()">click here</a>.
       {% endblocktrans %}
     {% else %}
       {% blocktrans trimmed %}
@@ -22,11 +22,10 @@
     <div class="title">{% trans "Remove SMTP Settings" %}</div>
     <div class="body">
       {% blocktrans trimmed with from_email=from_email_default %}
-        Removing these settings will mean that emails sent from flows will come from <b>{{ from_email }}</b>.
-        Are you sure you want to continue?
+        Removing these settings will mean that emails sent from flows will come from <b>{{ from_email }}</b>. Are you sure you want to continue?
       {% endblocktrans %}
     </div>
-    <div href="{% url "orgs.org_flow_smtp" %}?disconnect=true" id="remove-smtp-form"></div>
+    <div href='{% url "orgs.org_flow_smtp" %}?disconnect=true' id="remove-smtp-form"></div>
   </div>
 {% endblock pre-form %}
 {% block fields %}
@@ -42,7 +41,7 @@
 {% endblock fields %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function confirmSMTPRemove() {
       removalConfirmation("remove-smtp", "Remove");
     }

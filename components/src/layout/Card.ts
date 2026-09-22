@@ -74,6 +74,8 @@ export class Card extends RapidElement {
         display: flex;
         align-items: center;
         flex-grow: 1;
+        /* lets a long title or description wrap or clip within the header rather than widen it */
+        min-width: 0;
         font-size: 13px;
         font-weight: var(--w-medium);
         color: var(--text-2);
@@ -81,6 +83,13 @@ export class Card extends RapidElement {
 
       .label temba-icon {
         margin-right: 0.5em;
+      }
+
+      /* the title, with whatever the host says about the card beneath it - a column of its own so the icon stays
+         beside the pair rather than above the second line */
+      .label-text {
+        flex: 1 1 auto;
+        min-width: 0;
       }
 
       .count {
@@ -217,6 +226,10 @@ export class Card extends RapidElement {
   @property({ type: String })
   icon = '';
 
+  // what the header is picked up by - the grip unless the host has something that says what the card is
+  @property({ type: String, attribute: 'grip-icon' })
+  gripIcon: string = Icon.drag;
+
   @property({ type: Number })
   count = 0;
 
@@ -308,12 +321,19 @@ export class Card extends RapidElement {
     return html`
       <div class="frame">
         <div class="card-header" @click=${this.handleHeaderClick}>
-          <temba-icon name=${Icon.drag} class="grip"></temba-icon>
+          <temba-icon
+            name=${this.gripIcon}
+            class="grip"
+            part="grip"
+          ></temba-icon>
           <div class="label">
             ${this.icon
               ? html`<temba-icon name=${this.icon}></temba-icon>`
               : null}
-            ${this.label}${this.dirty ? ' *' : ''}
+            <div class="label-text">
+              <div part="title">${this.label}${this.dirty ? ' *' : ''}</div>
+              <slot name="description"></slot>
+            </div>
           </div>
           <slot name="header-actions"></slot>
           ${this.count > 0

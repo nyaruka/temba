@@ -5,8 +5,7 @@
   {% if blocker == "limit_reached" %}
     <temba-alert level="warning">
       {% blocktrans trimmed with limit=max_articles|intcomma %}
-        You have reached the limit of {{ limit }} articles. You must delete existing ones before you can create new
-        ones.
+        You have reached the limit of {{ limit }} articles. You must delete existing ones before you can create new ones.
       {% endblocktrans %}
     </temba-alert>
   {% endif %}

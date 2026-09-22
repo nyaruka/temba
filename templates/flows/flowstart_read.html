@@ -13,11 +13,11 @@
     }
 
     .start-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-3, #999);
       margin-bottom: 0.4rem;
+      color: var(--text-3, #999);
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
     }
 
     .start-recipients {
@@ -30,36 +30,34 @@
     .exclusion-pill {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
       margin: 0 4px 4px 0;
       padding: 2px 10px;
-      background: #fff;
+      gap: 6px;
       border: 1px solid var(--color-borders, #e6e6e6);
       border-radius: 999px;
+      background: #fff;
       color: var(--text-3, #777);
       font-size: 12.5px;
       --icon-color: var(--text-3, #777);
     }
 
     .start-params {
-      font-size: 12px;
       margin: 0;
       padding: 0.75rem;
-      background: var(--color-widget-bg, #f9f9f9);
       border-radius: var(--curvature, 6px);
+      background: var(--color-widget-bg, #f9f9f9);
+      font-size: 12px;
       white-space: pre-wrap;
       word-break: break-word;
     }
   </style>
 {% endblock modal-extra-style %}
 {% block modal %}
-  <div style="padding: 1rem 1.25rem;">
+  <div style="padding: 1rem 1.25rem">
     <div class="start-section">
       <div class="start-label">{% trans "Flow" %}</div>
       {% if object.flow.is_active %}
-        {# djlint:off #}
         <a href="{% url 'flows.flow_editor' object.flow.uuid %}"><temba-label type="flow" primary clickable>{{ object.flow.name }}</temba-label></a>
-        {# djlint:on #}
       {% else %}
         {% trans "A deleted flow" %}
       {% endif %}
@@ -101,16 +99,18 @@
     <div class="start-section">
       <div class="start-label">{% trans "Status" %}</div>
       {% if object.is_starting %}
-        <temba-start-progress id="{{ object.id }}"
-                              interrupttitle="{{ _("Interrupt Flow") |escapejs }}"
-                              interruptendpoint="{% url 'flows.flowstart_interrupt' object.id %}"
-                              statusendpoint="{% url 'flows.flowstart_status' %}?id={{ object.id }}">
+        <temba-start-progress
+          id="{{ object.id }}"
+          interrupttitle='{{ _("Interrupt Flow") |escapejs }}'
+          interruptendpoint="{% url 'flows.flowstart_interrupt' object.id %}"
+          statusendpoint="{% url 'flows.flowstart_status' %}?id={{ object.id }}"
+        >
         </temba-start-progress>
       {% else %}
         <div>
-          {% if object.status == 'F' %}
+          {% if object.status == "F" %}
             {% trans "Failed" %}
-          {% elif object.status == 'I' %}
+          {% elif object.status == "I" %}
             {% trans "Interrupted" %}
           {% else %}
             {% trans "Started" %}

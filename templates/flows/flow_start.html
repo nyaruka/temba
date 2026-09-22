@@ -3,7 +3,7 @@
 
 {% block modal-extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .warnings {
       opacity: 1;
     }
@@ -16,8 +16,8 @@
     .warnings,
     .blockers {
       max-height: 0;
-      transition: max-height 1000ms ease-in-out;
       overflow: hidden;
+      transition: max-height 1000ms ease-in-out;
     }
 
     .warnings.opened,
@@ -26,10 +26,10 @@
     }
 
     .card-option {
-      border-radius: var(--curvature);
       padding: 14px;
-      background: #fafafa;
       border: 2px solid transparent;
+      border-radius: var(--curvature);
+      background: #fafafa;
     }
 
     .selected {
@@ -37,8 +37,8 @@
     }
 
     .card-option:hover {
-      cursor: pointer;
       background: var(--color-selection);
+      cursor: pointer;
     }
 
     .field_query.control-group,
@@ -65,7 +65,7 @@
 {% endblock modal-extra-style %}
 {% block modal-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     {
       const modax = getModax("#start-flow");
       const modalBody = modax.shadowRoot;

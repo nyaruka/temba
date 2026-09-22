@@ -4,33 +4,30 @@
 
 {% block content %}
   {% autoescape off %}
-    <div style="margin-top:1em">{% blocktrans %}We are writing to notify you about some activity on your account.{% endblocktrans %}</div>
-    <div style="margin-top:1em">
-      {% block notification_message %}
-      {% endblock notification_message %}
+    <div style="margin-top: 1em">
+      {% blocktrans trimmed %}
+        We are writing to notify you about some activity on your account.
+      {% endblocktrans %}
     </div>
-    <div style="margin-top:1em">
+    <div style="margin-top: 1em">
+      {% block notification_message %} {% endblock notification_message %}
+    </div>
+    <div style="margin-top: 1em">
       <div>
         {% blocktrans trimmed %}
           If you do not recognize this change then please take proper security precautions immediately. Below are the details from where this change was made.
         {% endblocktrans %}
       </div>
-      <div style="margin-top:2em;
-                  margin-bottom:2em;
-                  font-family:monospace;
-                  padding:1em;
-                  border:1px solid #e6e6e6;
-                  border-radius:6px;
-                  background-color:#fbfbfb">
+      <div style="margin-top: 2em; margin-bottom: 2em; font-family: monospace; padding: 1em; border: 1px solid #e6e6e6; border-radius: 6px; background-color: #fbfbfb">
         <div>
           <b>{% trans "Date" %}</b>
         </div>
         <div>{{ timestamp }}</div>
-        <div style="margin-top:0.5em">
+        <div style="margin-top: 0.5em">
           <b>{% trans "IP address" %}</b>
         </div>
         <div>{{ ip }}</div>
-        <div style="margin-top:0.5em">
+        <div style="margin-top: 0.5em">
           <b>{% trans "Browser" %}</b>
         </div>
         <div>{{ user_agent }}</div>

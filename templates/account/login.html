@@ -14,7 +14,7 @@
       {% blocktrans trimmed with org=invite.org.name %}
         Enter your password to accept your invitation to the <b>{{ org }}</b> workspace.
       {% endblocktrans %}
-      <input class="mt-4" style="color:#999;" type="text" disabled value="{{ invite.email }}" />
+      <input class="mt-4" style="color: #999" type="text" disabled value="{{ invite.email }}">
     {% endelement %}
   {% else %}
     {% element h1 %}
@@ -26,43 +26,43 @@
   {% endif %}
   {% if not SOCIALACCOUNT_ONLY %}
     {% url 'account_login' as login_url %}
-{% element form form=form method="post" action=login_url tags="entrance,login" %}
-  {% slot body %}
-    {% csrf_token %}
-    {% element fields form=form unlabeled=True %}
+    {% element form form=form method="post" action=login_url tags="entrance,login" %}
+      {% slot body %}
+        {% csrf_token %}
+        {% element fields form=form unlabeled=True %}
+        {% endelement %}
+        {{ redirect_field }}
+      {% endslot %}
+      {% slot actions %}
+        {% element button type="submit" tags="prominent,login" %}
+          {% if invite %}
+            {% trans "Accept Invitation" %}
+          {% else %}
+            {% trans "Sign In" %}
+          {% endif %}
+        {% endelement %}
+      {% endslot %}
     {% endelement %}
-    {{ redirect_field }}
-  {% endslot %}
-  {% slot actions %}
-    {% element button type="submit" tags="prominent,login" %}
-      {% if invite %}
-        {% trans "Accept Invitation" %}
-      {% else %}
-        {% trans "Sign In" %}
+  {% endif %}
+  {% if LOGIN_BY_CODE_ENABLED or PASSKEY_LOGIN_ENABLED %}
+    {% element hr %}
+    {% endelement %}
+    {% element button_group vertical=True %}
+      {% if PASSKEY_LOGIN_ENABLED %}
+        {% element button type="submit" form="mfa_login" id="passkey_login" tags="prominent,login,outline,primary" %}
+          {% trans "Sign in with a passkey" %}
+        {% endelement %}
+      {% endif %}
+      {% if LOGIN_BY_CODE_ENABLED %}
+        {% element button href=request_login_code_url tags="prominent,login,outline,primary" %}
+          {% trans "Mail me a sign-in code" %}
+        {% endelement %}
       {% endif %}
     {% endelement %}
-  {% endslot %}
-{% endelement %}
-{% endif %}
-{% if LOGIN_BY_CODE_ENABLED or PASSKEY_LOGIN_ENABLED %}
-  {% element hr %}
-  {% endelement %}
-  {% element button_group vertical=True %}
-    {% if PASSKEY_LOGIN_ENABLED %}
-      {% element button type="submit" form="mfa_login" id="passkey_login" tags="prominent,login,outline,primary" %}
-        {% trans "Sign in with a passkey" %}
-      {% endelement %}
-    {% endif %}
-    {% if LOGIN_BY_CODE_ENABLED %}
-      {% element button href=request_login_code_url tags="prominent,login,outline,primary" %}
-        {% trans "Mail me a sign-in code" %}
-      {% endelement %}
-    {% endif %}
-  {% endelement %}
-{% endif %}
-{% if SOCIALACCOUNT_ENABLED and "sso" in request.branding.features %}
-  {% include "socialaccount/snippets/login.html" with page_layout="entrance" %}
-{% endif %}
+  {% endif %}
+  {% if SOCIALACCOUNT_ENABLED and "sso" in request.branding.features %}
+    {% include "socialaccount/snippets/login.html" with page_layout="entrance" %}
+  {% endif %}
 {% endblock content %}
 {% block extra_body %}
   {{ block.super }}
@@ -74,9 +74,9 @@
   {{ block.super }}
   <style>
     .password_container .help-text {
-      float: right;
-      margin-bottom: 1.5em;
       margin-top: 0.25em;
+      margin-bottom: 1.5em;
+      float: right;
     }
   </style>
 {% endblock extra-style %}

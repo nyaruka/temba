@@ -7,8 +7,7 @@
 {% block content %}
   <div class="summary">
     {% blocktrans trimmed with count=object.num_records|intcomma %}
-      This import file contains <b>{{ count }}</b> records. Headers that didn't match existing fields
-      can be ignored or added as new custom fields by editing them below.
+      This import file contains <b>{{ count }}</b> records. Headers that didn't match existing fields can be ignored or added as new custom fields by editing them below.
     {% endblocktrans %}
   </div>
   <form method="post" enctype="multipart/form-data" class="smartmin-form horizontal-form">
@@ -24,11 +23,9 @@
                   {% if column.controls %}
                     {% render_field column.controls.0 %}
                   {% elif column.mapping.type == "ignore" %}
-                    <temba-checkbox disabled="true">
-                    </temba-checkbox>
+                    <temba-checkbox disabled="true"> </temba-checkbox>
                   {% else %}
-                    <temba-checkbox checked="true" disabled="true">
-                    </temba-checkbox>
+                    <temba-checkbox checked="true" disabled="true"> </temba-checkbox>
                   {% endif %}
                 </div>
                 <div class="mapping-header">
@@ -76,14 +73,14 @@
       </div>
     </div>
     <div class="flex mt-4">
-      <input type="submit" value="{% trans "Import" %}" class="button-primary">
+      <input type="submit" value='{% trans "Import" %}' class="button-primary">
       <div onclick="javascript:history.go(-1)" class="ml-4 button-light">{% trans "Cancel" %}</div>
     </div>
   </form>
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function updateGroupMode(groupMode) {
       const newGroup = document.querySelector(".new-group-controls");
       const existingGroup = document.querySelector(".existing-group-controls");
@@ -127,7 +124,7 @@
 {% endblock extra-script %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .control-group {
       margin-bottom: 0;
     }
@@ -154,8 +151,8 @@
 
     .mapping-header {
       flex: 0 0;
-      font-weight: bold;
       margin-right: 0.5rem;
+      font-weight: bold;
       white-space: nowrap;
     }
 
@@ -165,8 +162,8 @@
     }
 
     .mapping-as .control-group {
-      margin-bottom: 0.7rem;
       margin-right: 0.5rem;
+      margin-bottom: 0.7rem;
       margin-left: 0.5rem;
     }
 
@@ -201,12 +198,11 @@
     /* Group selection section */
     .group-selection {
       display: flex;
-      align-items: center;
       flex-wrap: wrap;
-      gap: 0.75rem;
-      margin-left: 1.5rem;
+      align-items: center;
       margin-top: 1.5rem;
-
+      margin-left: 1.5rem;
+      gap: 0.75rem;
     }
 
     .group-checkbox {
@@ -221,9 +217,9 @@
 
     .group-controls {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       gap: 0.75rem;
-      flex-wrap: wrap;
     }
 
     .new-group-controls {

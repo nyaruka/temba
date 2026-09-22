@@ -3,6 +3,17 @@ import { SinonStub, stub as sinonStub, useFakeTimers } from 'sinon';
 import { WebChat } from '../src/webchat/WebChat';
 import { Chat } from '../src/display/Chat';
 import {
+  DEFAULT_FREQUENT,
+  EMOJI,
+  EMOJI_COOKIE,
+  MAX_FREQUENT,
+  MAX_SEARCH_RESULTS,
+  getFrequentEmoji,
+  recordEmojiUse,
+  searchEmoji
+} from '../src/webchat/emoji';
+import { getCookie } from '../src/utils';
+import {
   ConnectionState,
   setSocketProvider,
   SocketProvider
@@ -120,6 +131,16 @@ const getWebChat = async (attrs: any = {}) => {
 
 const getChat = (webChat: WebChat): Chat => {
   return webChat.shadowRoot.querySelector('temba-chat') as Chat;
+};
+
+const getEmojiButton = (
+  webChat: WebChat,
+  within: string,
+  emoji: string
+): HTMLElement => {
+  return Array.from(
+    webChat.shadowRoot.querySelectorAll(`${within} .emoji`)
+  ).find((el) => el.textContent.trim() === emoji) as HTMLElement;
 };
 
 const hasMessage = (webChat: WebChat, uuid: string): boolean => {
@@ -568,11 +589,18 @@ describe('temba-webchat', () => {
     const webChat = await openWebChat();
     mockPOST(UPLOAD_URL, { message: 'unsupported file type' }, {}, '400');
 
+    // a file the browser can't put a type to is left for courier to sniff
+    await webChat.uploadFiles([new File(['zip'], 'archive.zip', { type: '' })]);
+    expect(requestsTo(UPLOAD_URL).length).to.equal(1);
+    expect(webChat.error).to.equal('File type not supported');
+    expect(webChat.attachments).to.deep.equal([]);
+
+    // one it can isn't sent at all
     await webChat.uploadFiles([
       new File(['zip'], 'archive.zip', { type: 'application/zip' })
     ]);
+    expect(requestsTo(UPLOAD_URL).length).to.equal(1);
     expect(webChat.error).to.equal('File type not supported');
-    expect(webChat.attachments).to.deep.equal([]);
 
     webChat.attachments = [
       'application/pdf:https://storage.example.com/a/b/doc.pdf'
@@ -582,6 +610,354 @@ describe('temba-webchat', () => {
     (remove as HTMLElement).click();
     await webChat.updateComplete;
     expect(webChat.attachments).to.deep.equal([]);
+  });
+
+  it('opens the file picker from the attach button', async () => {
+    const webChat = await openWebChat();
+    const fileInput = webChat.shadowRoot.querySelector(
+      '.file-input'
+    ) as HTMLInputElement;
+
+    // the picker is the default action of the click on the file input, so
+    // nothing the click bubbles through can be allowed to cancel it
+    let click: Event = null;
+    fileInput.addEventListener('click', (event) => (click = event));
+    (webChat.shadowRoot.querySelector('.attach') as HTMLElement).click();
+
+    expect(click).to.not.equal(null);
+    expect(click.defaultPrevented).to.equal(false);
+
+    // and the files it comes back with are uploaded
+    const attachment =
+      'image/jpeg:https://storage.example.com/attachments/1/hat.jpg';
+    mockPOST(UPLOAD_URL, { attachment });
+    const files = new DataTransfer();
+    files.items.add(new File(['hat'], 'hat.jpg', { type: 'image/jpeg' }));
+    fileInput.files = files.files;
+    fileInput.dispatchEvent(new Event('change'));
+
+    await settle(() => webChat.attachments.length === 1);
+    expect(webChat.attachments).to.deep.equal([attachment]);
+  });
+
+  it('attaches files dropped on the panel', async () => {
+    const webChat = await openWebChat();
+    const attachment =
+      'image/jpeg:https://storage.example.com/attachments/1/hat.jpg';
+    mockPOST(UPLOAD_URL, { attachment });
+    const panel = webChat.shadowRoot.querySelector('.panel') as HTMLElement;
+
+    const files = new DataTransfer();
+    files.items.add(new File(['hat'], 'hat.jpg', { type: 'image/jpeg' }));
+    const drag = (type: string, target: Element = panel) => {
+      const event = new DragEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer: files
+      });
+      target.dispatchEvent(event);
+      return event;
+    };
+
+    // the drag is claimed when it comes in, and the drop zone shows
+    expect(drag('dragenter').defaultPrevented).to.equal(true);
+    await webChat.updateComplete;
+    expect(webChat.shadowRoot.querySelector('.dropzone')).to.exist;
+    expect(drag('dragover').defaultPrevented).to.equal(true);
+
+    // passing over the panel's children doesn't end it
+    drag('dragenter', webChat.shadowRoot.querySelector('.body'));
+    drag('dragleave', webChat.shadowRoot.querySelector('.body'));
+    expect(webChat.dragging).to.equal(true);
+
+    // leaving the panel altogether does
+    drag('dragleave');
+    await webChat.updateComplete;
+    expect(webChat.dragging).to.equal(false);
+    expect(webChat.shadowRoot.querySelector('.dropzone')).to.not.exist;
+
+    drag('dragenter');
+    expect(drag('drop').defaultPrevented).to.equal(true);
+    await settle(() => webChat.attachments.length === 1);
+    expect(webChat.dragging).to.equal(false);
+    expect(webChat.attachments).to.deep.equal([attachment]);
+
+    // text dragged off the page isn't ours
+    const text = new DataTransfer();
+    text.setData('text/plain', 'hello');
+    const event = new DragEvent('dragenter', {
+      bubbles: true,
+      cancelable: true,
+      dataTransfer: text
+    });
+    panel.dispatchEvent(event);
+    expect(event.defaultPrevented).to.equal(false);
+    expect(webChat.dragging).to.equal(false);
+  });
+
+  it('does not take dropped files while disconnected', async () => {
+    const webChat = await openWebChat();
+    mockSocket.setConnectionState(ConnectionState.Disconnected);
+    await settle(() => webChat.status === ConnectionState.Disconnected);
+    mockPOST(UPLOAD_URL, { attachment: 'image/jpeg:https://x/hat.jpg' });
+
+    const files = new DataTransfer();
+    files.items.add(new File(['hat'], 'hat.jpg', { type: 'image/jpeg' }));
+    const panel = webChat.shadowRoot.querySelector('.panel');
+    const drag = (type: string) => {
+      const event = new DragEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer: files
+      });
+      panel.dispatchEvent(event);
+      return event;
+    };
+
+    // the drag is still claimed - an unclaimed drop would have the browser
+    // open the file in place of the page - but shown as not allowed
+    expect(drag('dragenter').defaultPrevented).to.equal(true);
+    await webChat.updateComplete;
+    expect(webChat.dragging).to.equal(false);
+    expect(webChat.shadowRoot.querySelector('.dropzone')).to.not.exist;
+    const over = drag('dragover');
+    expect(over.defaultPrevented).to.equal(true);
+    expect(over.dataTransfer.dropEffect).to.equal('none');
+
+    // and a drop goes nowhere
+    expect(drag('drop').defaultPrevented).to.equal(true);
+    await webChat.updateComplete;
+    expect(requestsTo(UPLOAD_URL).length).to.equal(0);
+    expect(webChat.attachments).to.deep.equal([]);
+  });
+
+  it('searches the emoji catalog', async () => {
+    const webChat = await openWebChat();
+    webChat.openEmojiPicker();
+    await webChat.updateComplete;
+
+    const search = webChat.shadowRoot.querySelector(
+      '.emoji-search'
+    ) as HTMLInputElement;
+    expect(webChat.shadowRoot.activeElement).to.equal(search);
+
+    const type = async (value: string) => {
+      search.value = value;
+      search.dispatchEvent(new Event('input'));
+      await webChat.updateComplete;
+    };
+
+    // results take the place of the shortcuts and the browsing grid, and
+    // reach past what's offered for browsing
+    await type('zzz');
+    expect(webChat.shadowRoot.querySelector('.emoji-grid.frequent')).to.not
+      .exist;
+    const results = Array.from(
+      webChat.shadowRoot.querySelectorAll('.emoji-grid.results .emoji')
+    ).map((el) => el.textContent.trim());
+    expect(results).to.deep.equal(['💤']);
+    expect(EMOJI.includes('💤')).to.equal(false);
+
+    await type('xyzzy');
+    expect(
+      webChat.shadowRoot.querySelector('.emoji-empty').textContent.trim()
+    ).to.equal('No emoji found');
+
+    // enter takes the first result and clears the search
+    await type('fire');
+    search.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+    );
+    await webChat.updateComplete;
+    expect(getInput(webChat).value).to.equal('🔥');
+    expect(webChat.emojiQuery).to.equal('');
+    expect(webChat.emojiOpen).to.equal(true);
+    expect(webChat.shadowRoot.querySelector('.emoji-grid.frequent')).to.exist;
+
+    // escape clears a search before it closes the picker
+    await type('cat');
+    search.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+    );
+    await webChat.updateComplete;
+    expect(webChat.emojiQuery).to.equal('');
+    expect(webChat.emojiOpen).to.equal(true);
+    search.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+    );
+    expect(webChat.emojiOpen).to.equal(false);
+  });
+
+  it('inserts emoji where the cursor is', async () => {
+    const webChat = await openWebChat();
+    expect(webChat.shadowRoot.querySelector('.emoji-picker')).to.not.exist;
+
+    const toggle = webChat.shadowRoot.querySelector(
+      '.emoji-toggle'
+    ) as HTMLElement;
+    toggle.click();
+    await webChat.updateComplete;
+    expect(webChat.shadowRoot.querySelector('.emoji-picker')).to.exist;
+    expect(toggle.getAttribute('aria-expanded')).to.equal('true');
+
+    await typeMessage(webChat, 'Thanks!');
+    const input = getInput(webChat);
+    input.setSelectionRange(6, 6);
+
+    // the picker stays up so they can add more than one
+    getEmojiButton(webChat, '.emoji-scroll', '🎉').click();
+    getEmojiButton(webChat, '.emoji-scroll', '🙏').click();
+    await webChat.updateComplete;
+    expect(input.value).to.equal('Thanks🎉🙏!');
+    expect(input.selectionStart).to.equal(10);
+    expect(webChat.emojiOpen).to.equal(true);
+
+    // an emoji on its own is something to send
+    input.value = '';
+    webChat.hasPendingText = false;
+    webChat.insertEmoji('👍');
+    expect(webChat.hasPendingText).to.equal(true);
+
+    // sending puts the picker away
+    await pressEnter(webChat);
+    await settle(() => hasMessage(webChat, 'sent-msg-uuid'));
+    expect(bodyOf(requestsTo(RECEIVE_URL)[0]).text).to.equal('👍');
+    expect(webChat.emojiOpen).to.equal(false);
+  });
+
+  it('closes the emoji picker on escape or a press elsewhere', async () => {
+    const webChat = await openWebChat();
+
+    webChat.openEmojiPicker();
+    await webChat.updateComplete;
+    getInput(webChat).dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+    );
+    expect(webChat.emojiOpen).to.equal(false);
+
+    // a press inside the picker isn't a press elsewhere
+    webChat.openEmojiPicker();
+    await webChat.updateComplete;
+    webChat.shadowRoot
+      .querySelector('.emoji-label')
+      .dispatchEvent(
+        new Event('pointerdown', { bubbles: true, composed: true })
+      );
+    expect(webChat.emojiOpen).to.equal(true);
+
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    await webChat.updateComplete;
+    expect(webChat.emojiOpen).to.equal(false);
+    expect(webChat.shadowRoot.querySelector('.emoji-picker')).to.not.exist;
+
+    // nor does it outlive the panel
+    webChat.openEmojiPicker();
+    webChat.open = false;
+    await webChat.updateComplete;
+    expect(webChat.emojiOpen).to.equal(false);
+  });
+
+  it('offers the emoji used most as shortcuts', async () => {
+    const webChat = await openWebChat();
+
+    const getShortcuts = async () => {
+      webChat.closeEmojiPicker();
+      webChat.openEmojiPicker();
+      await webChat.updateComplete;
+      return Array.from(
+        webChat.shadowRoot.querySelectorAll('.emoji-grid.frequent .emoji')
+      ).map((el) => el.textContent.trim());
+    };
+
+    // nothing used yet, so the defaults
+    expect(await getShortcuts()).to.deep.equal(DEFAULT_FREQUENT);
+
+    webChat.insertEmoji('🔥');
+    webChat.insertEmoji('☕');
+    webChat.insertEmoji('🔥');
+    webChat.insertEmoji('👍');
+
+    // shortcuts hold still while the picker is open
+    expect(webChat.frequentEmoji).to.deep.equal(DEFAULT_FREQUENT);
+
+    // most used first, then most recent, then defaults not already there
+    expect(await getShortcuts()).to.deep.equal([
+      '🔥',
+      '👍',
+      '☕',
+      '❤️',
+      '😂',
+      '😊',
+      '🙏',
+      '🎉'
+    ]);
+
+    // it's remembered in a cookie, which a new widget picks up
+    expect(JSON.parse(getCookie(EMOJI_COOKIE))).to.deep.equal([
+      ['👍', 1],
+      ['🔥', 2],
+      ['☕', 1]
+    ]);
+    expect(getFrequentEmoji().slice(0, 3)).to.deep.equal(['🔥', '👍', '☕']);
+  });
+
+  it('ignores an emoji cookie it did not write', async () => {
+    installCookieJar([
+      `${EMOJI_COOKIE}=${encodeURIComponent(
+        JSON.stringify([
+          ['<b>', 50],
+          ['🔥', 'lots'],
+          ['☕', 2],
+          ['☕', 9],
+          'nope',
+          ['✨', -1]
+        ])
+      )}`
+    ]);
+    expect(getFrequentEmoji()).to.deep.equal([
+      '☕',
+      ...DEFAULT_FREQUENT.slice(0, MAX_FREQUENT - 1)
+    ]);
+
+    installCookieJar([`${EMOJI_COOKIE}=not%20json`]);
+    expect(getFrequentEmoji()).to.deep.equal(DEFAULT_FREQUENT);
+
+    // something that isn't one of ours isn't counted either
+    recordEmojiUse('<b>');
+    expect(getFrequentEmoji()).to.deep.equal(DEFAULT_FREQUENT);
+
+    // but one from the wider catalog counts
+    recordEmojiUse('💤');
+    expect(getFrequentEmoji()[0]).to.equal('💤');
+  });
+
+  it('ranks emoji search results', async () => {
+    // named exactly, then by name, then by shortcode, then anything matching
+    expect(searchEmoji('fire').slice(0, 2)).to.deep.equal(['🔥', '🧑‍🚒']);
+    expect(searchEmoji('+1')).to.deep.equal(['👍']);
+    expect(searchEmoji('thumbs')).to.deep.equal(['👍', '👎']);
+    expect(searchEmoji('Red HEART')[0]).to.equal('❤️');
+
+    // every word has to match, at the start of a word
+    expect(searchEmoji('flag canada')).to.deep.equal(['🇨🇦']);
+    expect(searchEmoji('anada')).to.deep.equal([]);
+    expect(searchEmoji('   ')).to.deep.equal([]);
+    expect(searchEmoji('face').length).to.equal(MAX_SEARCH_RESULTS);
+  });
+
+  it('keeps the emoji cookie to a bounded size', async () => {
+    installCookieJar();
+    recordEmojiUse('🔥');
+    recordEmojiUse('🔥');
+    EMOJI.slice(0, 40).forEach((emoji) => recordEmojiUse(emoji));
+
+    const usage = JSON.parse(getCookie(EMOJI_COOKIE));
+    expect(usage.length).to.equal(24);
+
+    // the well used one survives the churn of single uses
+    expect(usage.find((use: any) => use[0] === '🔥')).to.deep.equal(['🔥', 2]);
+    expect(usage[0][0]).to.equal(EMOJI[39]);
+    expect(document.cookie.length).to.be.lessThan(2048);
   });
 
   it('shows a notice while disconnected', async () => {

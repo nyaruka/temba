@@ -5,7 +5,7 @@ import { Icon } from '../Icons';
 import { RapidElement } from '../RapidElement';
 import { Article, CustomEventType } from '../interfaces';
 import { designTokens } from '../styles/designTokens';
-import { fetchResults, postJSON } from '../utils';
+import { fetchResults, getClasses, postJSON } from '../utils';
 
 /** One card of the helpdesk: a root article standing as a section, and
  * the articles filed under it. */
@@ -262,6 +262,21 @@ export class HelpdeskCards extends RapidElement {
         opacity: 1;
       }
 
+      /* a little more room between a handle and the title it moves than
+         the row's own gap or the card's default gives - for the rows and
+         for the sections alike, set so the two titles still line up */
+      .drag-handle {
+        margin-right: 4px;
+      }
+
+      /* a section is picked up by its folder - which says what the card is
+         as well as where to grab it, so it's drawn a step darker than a
+         plain grip would be */
+      temba-card::part(grip) {
+        margin-right: 12px;
+        --icon-color: var(--text-3);
+      }
+
       .pill {
         flex: 0 0 auto;
         border-radius: 999px;
@@ -301,14 +316,54 @@ export class HelpdeskCards extends RapidElement {
         --icon-color: var(--text-1);
       }
 
-      /* what the section holds, in the section's own words, leading
-         its articles */
+      /* the section's name leads its card: heavier and darker than the
+         articles under it, so the page reads as sections first */
+      temba-card::part(title) {
+        color: var(--text-1);
+        font-size: 14px;
+        font-weight: var(--w-bold);
+        letter-spacing: -0.005em;
+      }
+
+      /* what the section holds, in the section's own words - a subtitle
+         under its name in the card's header, so it's there to read
+         whether or not the card is open. Two lines while the card is
+         shut, so a long one can't make the stack ragged, and all of it
+         once the card is open. */
       .description {
+        margin-top: 2px;
         color: var(--text-3);
         font-size: 12.5px;
-        line-height: 1.4;
-        padding: 2px 2px 8px;
-        white-space: pre-line;
+        font-weight: normal;
+        line-height: 1.45;
+        text-wrap: pretty;
+        overflow-wrap: anywhere;
+      }
+
+      temba-card[collapsed] .description {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+      }
+
+      /* a two line header wants a touch more room than the card gives
+         a single line */
+      temba-card.described::part(title) {
+        padding-top: 2px;
+      }
+
+      temba-card.described .description {
+        padding-bottom: 2px;
+      }
+
+      /* a hairline between what names the section and the articles in
+         it - not over an empty card's dashed landing place, which is
+         already its own box */
+      .rows:not(.empty) {
+        border-top: 1px solid var(--border);
+        margin-top: 2px;
+        padding-top: 6px;
       }
 
       /* an empty card still needs a place for a drop to land */
@@ -713,7 +768,11 @@ export class HelpdeskCards extends RapidElement {
     return html`
       <temba-card
         collapsed
-        class=${this.sortEndpoint ? 'sortable' : ''}
+        grip-icon=${Icon.section}
+        class=${getClasses({
+          sortable: !!this.sortEndpoint,
+          described: !!group.section.description
+        })}
         id=${group.section.uuid}
         label=${group.section.title}
         count=${group.articles.length}
@@ -764,7 +823,9 @@ export class HelpdeskCards extends RapidElement {
           ${this.renderStatus(group.section)}
         </div>
         ${group.section.description
-          ? html`<div class="description">${group.section.description}</div>`
+          ? html`<div slot="description" class="description">
+              ${group.section.description}
+            </div>`
           : null}
         ${this.renderRows(group, index)}
       </temba-card>

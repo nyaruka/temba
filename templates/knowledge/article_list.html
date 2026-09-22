@@ -19,23 +19,23 @@
   <temba-modax id="update-article" width="min(782px, 92vw)" no-autofocus -temba-submitted="refreshArticles()">
     {% if org_perms.knowledge.article_delete %}
       {# rides the dialog's gutter so the editor itself is nothing but the article #}
-      <temba-button slot="gutter" name="{% trans "Delete" %}" destructive small onclick="deleteArticle()">
-      </temba-button>
+      <temba-button slot="gutter" name='{% trans "Delete" %}' destructive small onclick="deleteArticle()"> </temba-button>
     {% endif %}
   </temba-modax>
   {# after the editor, so its confirmation sits on top of it rather than behind #}
-  <temba-modax header="{{ _("Delete Article") |escapejs }}" id="delete-article">
-  </temba-modax>
-  <temba-helpdesk-cards id="article-list"
-                        fill-window
-                        list-title="{% trans "Helpdesk" %}"
-                        endpoint="{{ articles_endpoint }}"
-                        content-menu-endpoint="{{ request.path }}"
-                        {% if sort_url %}sort-endpoint="{{ sort_url }}"{% endif %}
-                        {% if publish_url %}publish-endpoint="{{ publish_url }}"{% endif %}
-                        {% if create_url %}create-endpoint="{{ create_url }}"{% endif %}
-                        -temba-selection="handleContentMenuSelected(event)"
-                        empty-message="{% trans "No articles" %}">
+  <temba-modax header='{{ _("Delete Article") |escapejs }}' id="delete-article"> </temba-modax>
+  <temba-helpdesk-cards
+    id="article-list"
+    fill-window
+    list-title='{% trans "Helpdesk" %}'
+    endpoint="{{ articles_endpoint }}"
+    content-menu-endpoint="{{ request.path }}"
+    {% if sort_url %}sort-endpoint="{{ sort_url }}"{% endif %}
+    {% if publish_url %}publish-endpoint="{{ publish_url }}"{% endif %}
+    {% if create_url %}create-endpoint="{{ create_url }}"{% endif %}
+    -temba-selection="handleContentMenuSelected(event)"
+    empty-message='{% trans "No articles" %}'
+  >
     <div slot="subtitle">
       {% blocktrans trimmed %}
         Help articles written by your workspace. Published articles are searchable by AI agents.
@@ -54,26 +54,23 @@
       {% if helpdesk_import %}
         {% if helpdesk_import.is_finished %}
           <div class="import-card failed" id="import-card">
-            <temba-icon name="alert_warning" size="1.2" class="import-icon">
-            </temba-icon>
+            <temba-icon name="alert_warning" size="1.2" class="import-icon"> </temba-icon>
             <div class="import-text">
               <div class="import-title">
-              {% blocktrans trimmed with name=import_type_name %}
-                The import from {{ name }} did not finish.
-              {% endblocktrans %}
-            </div>
+                {% blocktrans trimmed with name=import_type_name %}
+                  The import from {{ name }} did not finish.
+                {% endblocktrans %}
+              </div>
               <div class="import-note">{{ helpdesk_import.error }}</div>
             </div>
             {% if import_url %}
               {# the same dialog as the menu's - the key isn't kept, so trying again means giving it again #}
-              <temba-button lined small name="{% trans "Try Again" %}" onclick="showImportDialog()">
-              </temba-button>
+              <temba-button lined small name='{% trans "Try Again" %}' onclick="showImportDialog()"> </temba-button>
             {% endif %}
           </div>
         {% else %}
           <div class="import-card" id="import-card">
-            <temba-icon name="import" size="1.2" class="import-icon">
-            </temba-icon>
+            <temba-icon name="import" size="1.2" class="import-icon"> </temba-icon>
             <div class="import-text">
               <div class="import-header">
                 <div class="import-title">
@@ -88,47 +85,33 @@
                   {% endif %}
                 </div>
               </div>
-              <temba-progress id="import-progress"
-                              total="{{ helpdesk_import.num_items }}"
-                              current="{{ helpdesk_import.num_imported }}">
-              </temba-progress>
+              <temba-progress id="import-progress" total="{{ helpdesk_import.num_items }}" current="{{ helpdesk_import.num_imported }}"> </temba-progress>
             </div>
           </div>
         {% endif %}
       {% endif %}
       {% if site and site.is_available %}
-        <a class="domain-card"
-           id="site-domain-card"
-           href="https://{{ site.domain }}/"
-           target="_blank"
-           rel="noopener">
-          <temba-icon name="website" size="1.2" class="domain-icon">
-          </temba-icon>
+        <a class="domain-card" id="site-domain-card" href="https://{{ site.domain }}/" target="_blank" rel="noopener">
+          <temba-icon name="website" size="1.2" class="domain-icon"> </temba-icon>
           <div class="domain-text">
             <div class="domain-name">{{ site.domain }}</div>
             <div class="domain-note">{% trans "Your help site is live on this domain." %}</div>
           </div>
           <span class="domain-badge verified">
-            <temba-icon name="check">
-            </temba-icon>
-          {% trans "Verified" %}</span>
-          <span class="domain-pill"
-                role="button"
-                tabindex="0"
-                onclick="previewHelpSite(event)"
-                onkeydown="if (event.key === 'Enter' || event.key === ' ') { previewHelpSite(event); }">
-            <temba-icon name="show">
-            </temba-icon>
-          {% trans "Preview" %}</span>
-          <temba-icon name="link" class="domain-arrow">
-          </temba-icon>
+            <temba-icon name="check"> </temba-icon>
+            {% trans "Verified" %}</span>
+          <span class="domain-pill" role="button" tabindex="0" onclick="previewHelpSite(event)" onkeydown="if (event.key === 'Enter' || event.key === ' ') { previewHelpSite(event); }">
+            <temba-icon name="show"> </temba-icon>
+            {% trans "Preview" %}</span>
+          <temba-icon name="link" class="domain-arrow"> </temba-icon>
         </a>
       {% else %}
-        <div class="domain-card{% if domain_url %} clickable{% endif %}"
-             id="site-domain-card"
-             {% if domain_url %}role="button" tabindex="0" onclick="showSiteDomain()" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); showSiteDomain(); }"{% endif %}>
-          <temba-icon name="website" size="1.2" class="domain-icon">
-          </temba-icon>
+        <div
+          class="domain-card{% if domain_url %} clickable{% endif %}"
+          id="site-domain-card"
+          {% if domain_url %}role="button" tabindex="0" onclick="showSiteDomain()" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); showSiteDomain(); }"{% endif %}
+        >
+          <temba-icon name="website" size="1.2" class="domain-icon"> </temba-icon>
           <div class="domain-text">
             {% if site %}
               <div class="domain-name">{{ site.domain }}</div>
@@ -150,20 +133,14 @@
             {% endif %}
           {% elif site.is_domain_verified %}
             <span class="domain-badge verified">
-              <temba-icon name="check">
-              </temba-icon>
-            {% trans "Verified" %}</span>
+              <temba-icon name="check"> </temba-icon>
+              {% trans "Verified" %}</span>
           {% else %}
             <span class="domain-badge unverified">{% trans "Not verified" %}</span>
           {% endif %}
-          <span class="domain-pill"
-                role="button"
-                tabindex="0"
-                onclick="previewHelpSite(event)"
-                onkeydown="if (event.key === 'Enter' || event.key === ' ') { previewHelpSite(event); }">
-            <temba-icon name="show">
-            </temba-icon>
-          {% trans "Preview" %}</span>
+          <span class="domain-pill" role="button" tabindex="0" onclick="previewHelpSite(event)" onkeydown="if (event.key === 'Enter' || event.key === ' ') { previewHelpSite(event); }">
+            <temba-icon name="show"> </temba-icon>
+            {% trans "Preview" %}</span>
         </div>
       {% endif %}
     </div>
@@ -203,7 +180,6 @@
       // the domain card reflects what the domain dialog just did, or an import just started shows its bar
       spaGet(window.location.pathname);
     }
-
     {% if import_url %}
     function showImportDialog() {
       showModax('{{ import_title|escapejs }}', '{{ import_url }}', {
@@ -212,7 +188,6 @@
       });
     }
     {% endif %}
-
     {% if helpdesk_import and not helpdesk_import.is_finished %}
     function pollHelpdeskImport(refreshes) {
       // the bar follows the import along, more patiently the longer it goes, and the page is reloaded to show the
@@ -243,7 +218,6 @@
       });
     }
     {% endif %}
-
     {% if domain_url %}
     function showSiteDomain() {
       showModax('{{ _("Site Domain") |escapejs }}', '{{ domain_url }}', {
@@ -255,11 +229,9 @@
 
     onSpload(function() {
       var list = document.querySelector('#article-list');
-
       {% if helpdesk_import and not helpdesk_import.is_finished %}
       pollHelpdeskImport(1);
       {% endif %}
-
       {% if create_url %}
       // each card offers to add an article to its section - the same create dialog the menu opens for a section,
       // told which section the article goes in
@@ -269,12 +241,10 @@
         });
       });
       {% endif %}
-
       {% if org_perms.knowledge.article_update %}
       list.addEventListener('temba-row-click', function(event) {
         showArticleEditor(event.detail.item.uuid);
       });
-
       {% if edit_article %}
       // we've just come from naming a new article, so open it for writing
       showArticleEditor('{{ edit_article.uuid }}');
@@ -285,7 +255,7 @@
 {% endblock extra-script %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     /* The cards component carries its own insets, so drop the SPA
        content padding - the cards float on the page background the way
        the contact page's do. */
@@ -297,19 +267,19 @@
     .import-card {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 12px 14px;
       margin-bottom: 12px;
-      background: var(--surface);
+      padding: 12px 14px;
+      gap: 12px;
       border: 1px solid var(--border-strong);
       border-radius: var(--r-sm);
+      background: var(--surface);
       box-shadow: var(--shadow-2);
       color: var(--text-1);
     }
 
     .import-card.failed {
-      background: var(--warning-bg);
       border-color: var(--warning-border);
+      background: var(--warning-bg);
     }
 
     .import-icon {
@@ -328,8 +298,8 @@
 
     /* the retry button - a quiet one, the card's tint carrying the warning, centered on the card's two lines */
     .import-card temba-button {
-      flex: none;
       display: flex;
+      flex: none;
       align-self: center;
     }
 
@@ -346,15 +316,15 @@
     }
 
     .import-status {
-      font-size: 12px;
       color: var(--text-3);
+      font-size: 12px;
       white-space: nowrap;
     }
 
     .import-note {
-      font-size: 12px;
-      color: var(--text-3);
       margin-top: 1px;
+      color: var(--text-3);
+      font-size: 12px;
     }
 
     #import-progress {
@@ -367,11 +337,11 @@
     .domain-card {
       display: flex;
       align-items: center;
-      gap: 12px;
       padding: 12px 14px;
-      background: var(--surface);
+      gap: 12px;
       border: 1px solid var(--border-strong);
       border-radius: var(--r-sm);
+      background: var(--surface);
       box-shadow: var(--shadow-2);
       color: var(--text-1);
       text-decoration: none;
@@ -387,6 +357,7 @@
     .domain-card.clickable:hover {
       border-color: var(--accent-300);
       box-shadow: var(--shadow-3);
+      text-decoration: none;
     }
 
     .domain-card:focus-visible {
@@ -405,28 +376,28 @@
     }
 
     .domain-name {
+      overflow: hidden;
       font-weight: var(--w-semibold);
       font-size: 14px;
-      overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
     .domain-note {
-      font-size: 12px;
-      color: var(--text-3);
       margin-top: 1px;
+      color: var(--text-3);
+      font-size: 12px;
     }
 
     .domain-badge {
-      flex: none;
       display: inline-flex;
+      flex: none;
       align-items: center;
-      gap: 4px;
       padding: 3px 9px;
+      gap: 4px;
       border-radius: 999px;
-      font-size: 11px;
       font-weight: var(--w-semibold);
+      font-size: 11px;
       line-height: 1.3;
       white-space: nowrap;
     }
@@ -436,20 +407,20 @@
     }
 
     .domain-badge.verified {
-      background: var(--success-bg);
       border: 1px solid var(--success-border);
+      background: var(--success-bg);
       color: var(--success);
     }
 
     .domain-badge.unverified {
-      background: var(--warning-bg);
       border: 1px solid var(--warning-border);
+      background: var(--warning-bg);
       color: var(--warning);
     }
 
     .domain-badge.setup {
-      background: var(--accent-100);
       border: 1px solid var(--accent-200);
+      background: var(--accent-100);
       color: var(--accent-700);
     }
 
@@ -464,17 +435,17 @@
 
     /* the preview pill - a button in its own right, riding the card */
     .domain-pill {
-      flex: none;
       display: inline-flex;
+      flex: none;
       align-items: center;
-      gap: 5px;
       padding: 4px 10px 4px 8px;
+      gap: 5px;
+      border: 1px solid var(--border-strong);
       border-radius: 999px;
       background: var(--sunken);
-      border: 1px solid var(--border-strong);
       color: var(--text-2);
-      font-size: 11px;
       font-weight: var(--w-semibold);
+      font-size: 11px;
       line-height: 1.3;
       white-space: nowrap;
       cursor: pointer;
@@ -486,8 +457,8 @@
     }
 
     .domain-pill:hover {
-      background: var(--accent-400);
       border-color: var(--accent-400);
+      background: var(--accent-400);
       color: #fff;
     }
 

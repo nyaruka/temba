@@ -8,8 +8,7 @@
     {% endblocktrans %}
   </div>
   {% block pre-table %}
-    <temba-modax header="{{ _("Usages") |escapejs }}" id="usages-template">
-    </temba-modax>
+    <temba-modax header='{{ _("Usages") |escapejs }}' id="usages-template"> </temba-modax>
   {% endblock pre-table %}
   <div class="mt-4 shadow rounded-lg rounded-bl-none rounded-br-none bg-white">{% include "includes/short_pagination.html" %}</div>
   <div class="flex-grow overflow-y-auto shadow">
@@ -19,9 +18,7 @@
           <tr onclick="goto(event)" href="{% url 'templates.template_read' obj.uuid %}" class="hover-linked">
             <td style="min-width: 50px">{{ obj.name }}</td>
             <td>
-              {# djlint:off #}
               {% blocktrans trimmed count counter=obj.locale_count %}{{ counter }} language{% plural %}{{ counter }} languages{% endblocktrans %},
-              {# djlint:on #}
               {% blocktrans trimmed with counter=obj.channel_count|intcomma count num=obj.channel_count %}
                 {{ counter }} channel
               {% plural %}
@@ -32,7 +29,7 @@
               <div class="flex text-right">
                 {% with usage_count=obj.usage_count %}
                   {% if usage_count %}
-                    <div onclick="event.stopPropagation(); showTemplateUsagesModal('{{ obj.uuid }}');" class="uses">
+                    <div onclick="event.stopPropagation(); showTemplateUsagesModal('{{ obj.uuid }}')" class="uses">
                       <div class="lbl linked">
                         {% blocktrans trimmed with counter=usage_count|intcomma count num=usage_count %}
                           {{ counter }} use
@@ -67,11 +64,11 @@
 {% endblock extra-script %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     td.dependencies {
+      width: 3em;
       text-align: right;
       white-space: nowrap;
-      width: 3em;
     }
   </style>
 {% endblock extra-style %}

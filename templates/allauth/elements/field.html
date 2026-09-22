@@ -3,54 +3,56 @@
 <div class="field {{ attrs.name }}_container">
   {% if attrs.type == "textarea" %}
     <label for="{{ attrs.id }}">
-      {% slot label %}
-      {% endslot %}
+      {% slot label %} {% endslot %}
     </label>
-    <textarea {% if attrs.required %}required{% endif %}
-              {% if attrs.rows %}rows="{{ attrs.rows }}"{% endif %}
-              {% if attrs.disabled %}disabled{% endif %}
-              {% if attrs.readonly %}readonly{% endif %}
-              {% if attrs.checked %}checked{% endif %}
-              {% if attrs.name %}name="{{ attrs.name }}"{% endif %}
-              {% if attrs.id %}id="{{ attrs.id }}"{% endif %}
-              {% if attrs.placeholder %}placeholder="{{ attrs.placeholder }}"{% endif %}>{% slot value %}{% endslot %}</textarea>
+    <textarea
+      {% if attrs.required %}required{% endif %}
+      {% if attrs.rows %}rows="{{ attrs.rows }}"{% endif %}
+      {% if attrs.disabled %}disabled{% endif %}
+      {% if attrs.readonly %}readonly{% endif %}
+      {% if attrs.checked %}checked{% endif %}
+      {% if attrs.name %}name="{{ attrs.name }}"{% endif %}
+      {% if attrs.id %}id="{{ attrs.id }}"{% endif %}
+      {% if attrs.placeholder %}placeholder="{{ attrs.placeholder }}"{% endif %}
+    >{% slot value %}{% endslot %}</textarea>
   {% elif attrs.type == "checkbox" or attrs.type == "radio" or attrs.type == "hidden" %}
-    <input {% if attrs.required %}required{% endif %}
-           {% if attrs.disabled %}disabled{% endif %}
-           {% if attrs.readonly %}readonly{% endif %}
-           {% if attrs.checked %}checked{% endif %}
-           {% if attrs.name %}name="{{ attrs.name }}"{% endif %}
-           {% if attrs.id %}id="{{ attrs.id }}"{% endif %}
-           {% if attrs.placeholder %}placeholder="{{ attrs.placeholder }}"{% endif %}
-           {% if attrs.autocomplete %}autocomplete="{{ attrs.autocomplete }}"{% endif %}
-           {% if attrs.value is not None %}value="{{ attrs.value }}"{% endif %}
-           type="{{ attrs.type }}">
+    <input
+      {% if attrs.required %}required{% endif %}
+      {% if attrs.disabled %}disabled{% endif %}
+      {% if attrs.readonly %}readonly{% endif %}
+      {% if attrs.checked %}checked{% endif %}
+      {% if attrs.name %}name="{{ attrs.name }}"{% endif %}
+      {% if attrs.id %}id="{{ attrs.id }}"{% endif %}
+      {% if attrs.placeholder %}placeholder="{{ attrs.placeholder }}"{% endif %}
+      {% if attrs.autocomplete %}autocomplete="{{ attrs.autocomplete }}"{% endif %}
+      {% if attrs.value is not None %}value="{{ attrs.value }}"{% endif %}
+      type="{{ attrs.type }}"
+    >
     {% if attrs.type == "checkbox" or attrs.type == "radio" %}
       <label for="{{ attrs.id }}">
-        {% slot label %}
-        {% endslot %}
+        {% slot label %} {% endslot %}
       </label>
     {% endif %}
   {% else %}
     <label for="{{ attrs.id }}">
-      {% slot label %}
-      {% endslot %}
+      {% slot label %} {% endslot %}
     </label>
-    <temba-textinput {% if attrs.required %}required{% endif %}
-                     {% if attrs.disabled %}disabled{% endif %}
-                     {% if attrs.readonly %}readonly{% endif %}
-                     {% if attrs.name %}name="{{ attrs.name }}"{% endif %}
-                     {% if attrs.id %}id="{{ attrs.id }}"{% endif %}
-                     {% if attrs.placeholder %}placeholder="{{ attrs.placeholder }}"{% endif %}
-                     {% if attrs.autocomplete %}autocomplete="{{ attrs.autocomplete }}"{% endif %}
-                     {% if attrs.value is not None %}value="{{ attrs.value }}"{% endif %}
-                     {% if attrs.type == "password" %}password="true"{% else %}type="{{ attrs.type }}"{% endif %}>
+    <temba-textinput
+      {% if attrs.required %}required{% endif %}
+      {% if attrs.disabled %}disabled{% endif %}
+      {% if attrs.readonly %}readonly{% endif %}
+      {% if attrs.name %}name="{{ attrs.name }}"{% endif %}
+      {% if attrs.id %}id="{{ attrs.id }}"{% endif %}
+      {% if attrs.placeholder %}placeholder="{{ attrs.placeholder }}"{% endif %}
+      {% if attrs.autocomplete %}autocomplete="{{ attrs.autocomplete }}"{% endif %}
+      {% if attrs.value is not None %}value="{{ attrs.value }}"{% endif %}
+      {% if attrs.type == "password" %}password="true"{% else %}type="{{ attrs.type }}"{% endif %}
+    >
     </temba-textinput>
   {% endif %}
   {% if slots.help_text %}
     <div class="help-text">
-      {% slot help_text %}
-      {% endslot %}
+      {% slot help_text %} {% endslot %}
     </div>
   {% endif %}
   {% if attrs.type != "hidden" %}{{ attrs.errors }}{% endif %}

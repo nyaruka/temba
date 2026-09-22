@@ -3,16 +3,14 @@
 
 {% block content %}
   {% autoescape off %}
-    <div style="margin-top:1em">
+    <div style="margin-top: 1em">
       {% blocktrans trimmed %}
-        You are receiving this email because you or someone else tried to signup for an
-        account with {{ email }}.
+        You are receiving this email because you or someone else tried to signup for an account with {{ email }}.
       {% endblocktrans %}
     </div>
-    <div style="margin-top:1em">
+    <div style="margin-top: 1em">
       {% blocktrans trimmed %}
-        An account using this email address already exists. Instead of creating a new account,
-        please <a href="{{ password_reset_url }}">resest your password</a>.
+        An account using this email address already exists. Instead of creating a new account, please <a href="{{ password_reset_url }}">resest your password</a>.
       {% endblocktrans %}
     </div>
   {% endautoescape %}

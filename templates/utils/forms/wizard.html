@@ -14,15 +14,9 @@
     </style>
   {% endblock extra-style %}
   <div class="pre-form">
-    {% block pre-form %}
-    {% endblock pre-form %}
+    {% block pre-form %} {% endblock pre-form %}
   </div>
-  <form id="wizard-form"
-        action=""
-        method="post"
-        data-completed="{{ completed }}"
-        data-step="{{ wizard.steps.step1 }}"
-        data-steps="{{ wizard.steps.count }}">
+  <form id="wizard-form" action="" method="post" data-completed="{{ completed }}" data-step="{{ wizard.steps.step1 }}" data-steps="{{ wizard.steps.count }}">
     {% csrf_token %}
     <table>
       {{ wizard.management_form }}
@@ -39,9 +33,9 @@
       {% endif %}
     </table>
     {% if wizard.steps.step1 < wizard.steps.count %}
-      <button type="submit" value="{% translate "Next" %}" />
+      <button type="submit" value='{% translate "Next" %}'></button>
     {% else %}
-      <button type="submit" value="{{ submit_button_name }}" />
+      <button type="submit" value="{{ submit_button_name }}"></button>
     {% endif %}
   </form>
 {% endblock content %}

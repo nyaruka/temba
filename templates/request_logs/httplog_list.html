@@ -5,10 +5,10 @@
 {% endblock subtitle %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     td {
-      padding-bottom: 0.25em;
       padding-right: 1em;
+      padding-bottom: 0.25em;
       padding-left: 1em;
     }
   </style>
@@ -19,10 +19,10 @@
       {% for obj in object_list %}
         <tr class="{% if obj.is_error %}warning{% endif %}">
           <td class="w-full clickable">
-            <a href="{% url "request_logs.httplog_read" obj.id %}" class="linked">{{ obj.get_log_type_display }}</a>
+            <a href='{% url "request_logs.httplog_read" obj.id %}' class="linked">{{ obj.get_log_type_display }}</a>
           </td>
           <td class="clickable">
-            <a href="{% url "request_logs.httplog_read" obj.id %}" class="linked whitespace-nowrap">{{ obj.status_code|default:"--" }}</a>
+            <a href='{% url "request_logs.httplog_read" obj.id %}' class="linked whitespace-nowrap">{{ obj.status_code|default:"--" }}</a>
           </td>
           <td class="whitespace-nowrap">
             {% if obj.request_time %}

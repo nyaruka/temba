@@ -6,7 +6,7 @@
     {% if group.group_type == "M" or group.group_type == "S" %}
       <th>{% trans "Group" %}</th>
       <td>
-        <a href="{% url "contacts.contact_group" group.uuid %}">{{ group.name }}</a>
+        <a href='{% url "contacts.contact_group" group.uuid %}'>{{ group.name }}</a>
       </td>
     {% else %}
       <th>{% trans "Status" %}</th>

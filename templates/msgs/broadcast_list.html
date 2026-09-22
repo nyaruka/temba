@@ -17,7 +17,7 @@
 {% endblock page-header %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     /* The list component fills its container edge to edge and brings
        its own surface, so drop the SPA content padding (and the grey
        page background it would otherwise reveal around the list). */
@@ -27,22 +27,24 @@
   </style>
 {% endblock extra-style %}
 {% block content %}
-  <temba-broadcast-list id="broadcast-list"
-                        fill-window
-                        mode="{{ list_mode }}"
-                        history-state-key="broadcasts-{{ list_mode }}"
-                        list-title="{{ title }}"
-                        {% if list_searchable %}searchable{% endif %}
-                        endpoint="{{ list_url }}"
-                        content-menu-endpoint="{{ request.path }}?{{ request.GET.urlencode }}"
-                        {% if list_mode == "scheduled" and org_perms.msgs.broadcast_update %}can-edit{% endif %}
-                        {% if list_mode == "scheduled" and org_perms.msgs.broadcast_scheduled_delete %}can-delete{% endif %}
-                        empty-message="{% trans "No broadcasts" %}">
+  <temba-broadcast-list
+    id="broadcast-list"
+    fill-window
+    mode="{{ list_mode }}"
+    history-state-key="broadcasts-{{ list_mode }}"
+    list-title="{{ title }}"
+    {% if list_searchable %}searchable{% endif %}
+    endpoint="{{ list_url }}"
+    content-menu-endpoint="{{ request.path }}?{{ request.GET.urlencode }}"
+    {% if list_mode == "scheduled" and org_perms.msgs.broadcast_update %}can-edit{% endif %}
+    {% if list_mode == "scheduled" and org_perms.msgs.broadcast_scheduled_delete %}can-delete{% endif %}
+    empty-message='{% trans "No broadcasts" %}'
+  >
   </temba-broadcast-list>
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       var list = document.querySelector("#broadcast-list");
 

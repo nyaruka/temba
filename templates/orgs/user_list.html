@@ -2,10 +2,8 @@
 {% load smartmin temba i18n %}
 
 {% block modaxes %}
-  <temba-modax header="{{ _("Update User") |escapejs }}" -temba-redirected="refreshUsers" id="update-user">
-  </temba-modax>
-  <temba-modax header="{{ _("Remove User") |escapejs }}" -temba-redirected="refreshUsers" id="delete-user">
-  </temba-modax>
+  <temba-modax header='{{ _("Update User") |escapejs }}' -temba-redirected="refreshUsers" id="update-user"> </temba-modax>
+  <temba-modax header='{{ _("Remove User") |escapejs }}' -temba-redirected="refreshUsers" id="delete-user"> </temba-modax>
 {% endblock modaxes %}
 {% block table %}
   <table class="list lined scrolled">
@@ -32,11 +30,7 @@
           <td>{{ obj.email_verified|yesno:"✓,-" }}</td>
           <td class="w-10">
             {% if obj.role.code != "A" or admin_count > 1 %}
-              <temba-icon name="delete"
-                          clickable="true"
-                          style="--icon-color:#bbb"
-                          onclick="event.stopPropagation(); showDeleteUserModal({{ obj.id }});">
-              </temba-icon>
+              <temba-icon name="delete" clickable="true" style="--icon-color: #bbb" onclick="event.stopPropagation(); showDeleteUserModal({{ obj.id }})"> </temba-icon>
             {% endif %}
           </td>
         </tr>

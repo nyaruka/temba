@@ -87,6 +87,29 @@ describe('temba-store', () => {
     }
   });
 
+  it('tells the page when the session loses the workspace', async () => {
+    const mockSocket = new MockSocketProvider();
+    const previousProvider = setSocketProvider(mockSocket);
+
+    let lost = 0;
+    const onLost = () => lost++;
+    document.addEventListener('temba-workspace-access-lost', onLost);
+
+    try {
+      await createStore(
+        "<temba-store org='org-uuid' user='user-uuid'></temba-store>"
+      );
+
+      // say the session switched workspace in another tab
+      mockSocket.serverDeny('org:org-uuid');
+      assert.equal(lost, 1);
+    } finally {
+      document.removeEventListener('temba-workspace-access-lost', onLost);
+      setRealtimeContext(null);
+      setSocketProvider(previousProvider);
+    }
+  });
+
   it('lazily resolves assets once and fans out organization changes', async () => {
     const mockSocket = new MockSocketProvider();
     const previousProvider = setSocketProvider(mockSocket);

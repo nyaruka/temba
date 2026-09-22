@@ -13,16 +13,12 @@
       {% endif %}
     </h1>
     <form class="search hero-search" action="{{ prefix }}/search/" method="get" role="search">
-      <input type="search"
-             name="q"
-             placeholder="{% trans "Search for answers" %}"
-             aria-label="{% trans "Search for answers" %}"
-             autofocus>
+      <input type="search" name="q" placeholder='{% trans "Search for answers" %}' aria-label='{% trans "Search for answers" %}' autofocus>
       <button type="submit">{% trans "Search" %}</button>
     </form>
   </section>
   {% if sections %}
-    <section class="sections" aria-label="{% trans "Sections" %}">
+    <section class="sections" aria-label='{% trans "Sections" %}'>
       {% for section in sections %}
         <a class="card section-card" href="{{ prefix }}/{{ section.slug }}/">
           <h2>{{ section.title }}</h2>
@@ -41,7 +37,7 @@
     <p class="empty">{% trans "Nothing has been published here yet." %}</p>
   {% endif %}
   {% if popular %}
-    <section class="popular" aria-label="{% trans "Popular articles" %}">
+    <section class="popular" aria-label='{% trans "Popular articles" %}'>
       <h2>{% trans "Popular articles" %}</h2>
       <ol>
         {% for article in popular %}

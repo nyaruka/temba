@@ -29,9 +29,12 @@
   </div>
   <div class="p-4">
     <div class="mb-2 whitespace-nowrap text-right">
-      {# djlint:off #}
-      <a href="{% url 'channels.channel_read' translation.channel.uuid %}"><temba-label icon="{{ translation.channel.type.icon }}" type="channel" clickable class="mr-1 mb-1">{{ translation.channel }}</temba-label></a>
-      {# djlint:on #}
+      <a href="{% url 'channels.channel_read' translation.channel.uuid %}"><temba-label
+          icon="{{ translation.channel.type.icon }}"
+          type="channel"
+          clickable
+          class="mr-1 mb-1"
+        >{{ translation.channel }}</temba-label></a>
       <temba-label icon="language" type="neutral">
         {{ translation.locale }}
       </temba-label>

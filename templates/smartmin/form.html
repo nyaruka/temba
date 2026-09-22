@@ -9,10 +9,7 @@
           {% block pre-form %}
           {% endblock pre-form %}
           {% block form %}
-            <form class="smartmin-form"
-                  method="post"
-                  enctype="multipart/form-data"
-                  {% if action_url %}action="{{ action_url }}"{% endif %}>
+            <form class="smartmin-form" method="post" enctype="multipart/form-data" {% if action_url %}action="{{ action_url }}"{% endif %}>
               {% block pre-form-errors %}
               {% endblock pre-form-errors %}
               {% if form.non_field_errors %}<div class="alert alert-error form-errors">{{ form.non_field_errors }}</div>{% endif %}

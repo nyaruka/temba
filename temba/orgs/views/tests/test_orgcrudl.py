@@ -97,7 +97,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
                 "Triggers",
                 "Campaigns",
                 "Tickets",
-                "Knowledge",
+                "Knowledge Base",
                 ("Notifications", []),
                 "Settings",
             ],

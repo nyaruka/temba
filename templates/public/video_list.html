@@ -2,20 +2,18 @@
 {% load i18n smartmin temba %}
 
 {% block page-title %}
-  {% blocktrans with brand=branding.name %}
+  {% blocktrans trimmed with brand=branding.name %}
     Learn {{ brand }} - SMS Application Videos and Tutorials
-
   {% endblocktrans %}
 {% endblock page-title %}
 {% block page-description %}
-  {% blocktrans with brand=branding.name %}
+  {% blocktrans trimmed with brand=branding.name %}
     Start building SMS applications by watching these short two minutes videos on various {{ brand }} features.
-
   {% endblocktrans %}
 {% endblock page-description %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .workflow-btn {
       padding: 4px 10px;
     }
@@ -32,14 +30,14 @@
     }
 
     .workflow-glyph {
-      line-height: 1;
-      font-size: 120px;
-      height: 160px;
       width: 160px;
+      height: 160px;
       padding: 20px;
-      text-decoration: none;
       border-radius: 50%;
+      font-size: 120px;
+      line-height: 1;
       text-align: center;
+      text-decoration: none;
     }
 
     .workflow-glyph.icon-1 {
@@ -57,19 +55,16 @@
 {% block content %}
   {% if perms.public.video_create or request.user.is_superuser %}
     <div class="text-right -mt-12 mb-12">
-      <a href="{% url "public.video_create" %}" class="inline button-primary">{% trans "Add Video" %}</a>
+      <a href='{% url "public.video_create" %}' class="inline button-primary">{% trans "Add Video" %}</a>
     </div>
   {% endif %}
-  {% blocktrans with brand=branding.name %}
-    To make sure you get the most out of {{brand}}, we've put together a bunch of short videos to guide you through
-    some of the most powerful features. Each of these videos are only a couple minutes, but they will help you
-    build complex flows without a lot of effort.
-
+  {% blocktrans trimmed with brand=branding.name %}
+    To make sure you get the most out of {{ brand }}, we've put together a bunch of short videos to guide you through some of the most powerful features. Each of these videos are only a couple
+    minutes, but they will help you build complex flows without a lot of effort.
   {% endblocktrans %}
   <div class="mt-2">
-    {% blocktrans %}
+    {% blocktrans trimmed %}
       You don't have to, but it's best if these are watched in order since they build on each other as you go.
-
     {% endblocktrans %}
   </div>
   {% for video in object_list %}
@@ -77,22 +72,15 @@
       <h3>{{ video.name }}</h3>
       {% if perms.public.video_update or request.user.is_superuser %}
         <div class="manage">
-          <a href="{% url "public.video_update" video.pk %}">{% trans "Edit" %}</a>
+          <a href='{% url "public.video_update" video.pk %}'>{% trans "Edit" %}</a>
         </div>
       {% endif %}
-      <iframe class='vimeo'
-              src="//player.vimeo.com/video/{{ video.vimeo_id }}"
-              width="550"
-              height="309"
-              frameborder="0"
-              webkitallowfullscreen
-              mozallowfullscreen
-              allowfullscreen></iframe>
+      <iframe class="vimeo" src="//player.vimeo.com/video/{{ video.vimeo_id }}" width="550" height="309" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
       <!-- .number -->
       <!-- {{video.order}} -->
       <div class="description">
-        <div class='summary'>{{ video.summary }}</div>
-        <a href="{% url "public.video_read" video.pk %}" class="more">{% trans "More" %}</a>
+        <div class="summary">{{ video.summary }}</div>
+        <a href='{% url "public.video_read" video.pk %}' class="more">{% trans "More" %}</a>
       </div>
     </div>
   {% endfor %}

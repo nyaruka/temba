@@ -12,6 +12,7 @@ import { Centrifuge } from 'centrifuge';
 import { getCookie, setCookie } from '../utils';
 import { Chat, MsgEvent } from '../display/Chat';
 import { QuickReply } from '../interfaces';
+import { EMOJI, getFrequentEmoji, recordEmojiUse, searchEmoji } from './emoji';
 import {
   ConnectionState,
   SocketManager,
@@ -19,7 +20,9 @@ import {
   SocketSubscription,
   getSocketConnectionState,
   onSocketConnectionState,
+  onSocketDenied,
   publishToSocket,
+  recheckSocket,
   subscribeToSocket
 } from '../live/SocketService';
 
@@ -53,6 +56,19 @@ const CHAT_COOKIE_PREFIX = 'temba-chat-';
 
 // what courier's receive endpoint accepts on a single message
 const MAX_ATTACHMENTS = 10;
+
+// the kinds of file courier's upload endpoint accepts - checked here too so a
+// visitor hears about a wrong file before it's sent
+const ACCEPTED_TYPES = ['image/', 'audio/', 'video/', 'application/pdf'];
+const ACCEPT = ACCEPTED_TYPES.map((t) => (t.endsWith('/') ? `${t}*` : t)).join(
+  ','
+);
+
+// whether a file's declared type is one we can upload - an undeclared type is
+// left for courier to sniff
+const acceptable = (file: File): boolean => {
+  return !file.type || ACCEPTED_TYPES.some((t) => file.type.startsWith(t));
+};
 
 /**
  * A message as the chat sees it - published to the chat socket for each
@@ -217,6 +233,7 @@ export class WebChat extends LitElement {
       .launcher:focus-visible,
       .close:focus-visible,
       .icon-button:focus-visible,
+      .emoji:focus-visible,
       .quick-reply:focus-visible,
       .link:focus-visible {
         outline: 3px solid color-mix(in srgb, var(--color-primary) 40%, white);
@@ -306,6 +323,31 @@ export class WebChat extends LitElement {
         transition:
           transform var(--toggle-speed) var(--ease-out),
           opacity var(--toggle-speed) ease;
+      }
+
+      /* where dragged files land */
+      .dropzone {
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        background: color-mix(in srgb, var(--webchat-surface) 88%, transparent);
+        color: var(--color-primary);
+        font-weight: 600;
+        /* the drag is the panel's to track, not the overlay's */
+        pointer-events: none;
+      }
+
+      .dropzone::before {
+        content: '';
+        position: absolute;
+        inset: 0.75rem;
+        border: 2px dashed var(--color-primary);
+        border-radius: 14px;
       }
 
       .open .panel {
@@ -493,9 +535,103 @@ export class WebChat extends LitElement {
 
       /* the composer */
       .footer {
+        position: relative;
         background: var(--webchat-footer);
         border-top: 1px solid var(--webchat-line);
         padding: 0.65rem 0.75rem 0.75rem;
+      }
+
+      /* the emoji picker floats over the end of the conversation, growing
+         upwards so the search box at its foot holds still as results change */
+      .emoji-picker {
+        position: absolute;
+        left: 0.75rem;
+        right: 0.75rem;
+        bottom: calc(100% + 0.4rem);
+        z-index: 2;
+        background: var(--webchat-surface);
+        border: 1px solid var(--webchat-line);
+        border-radius: 0.9rem;
+        box-shadow: 0 8px 24px rgba(16, 24, 40, 0.14);
+        padding: 0.6rem 0.5rem 0.5rem;
+      }
+
+      .emoji-search {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid var(--webchat-line);
+        border-radius: 999px;
+        background: var(--webchat-footer);
+        font: inherit;
+        font-size: 0.9em;
+        color: var(--webchat-ink);
+        padding: 0.4rem 0.8rem;
+        margin-top: 0.5rem;
+      }
+
+      .emoji-search:focus {
+        outline: none;
+        border-color: color-mix(in srgb, var(--color-primary) 55%, white);
+      }
+
+      .emoji-search::placeholder {
+        color: var(--webchat-muted);
+        opacity: 0.8;
+      }
+
+      .emoji-empty {
+        text-align: center;
+        color: var(--webchat-muted);
+        font-size: 0.9em;
+        padding: 1.5rem 0;
+      }
+
+      .emoji-label {
+        font-size: 0.72em;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--webchat-muted);
+        padding: 0 0.35rem 0.25rem;
+      }
+
+      .emoji-grid {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+      }
+
+      .emoji-grid.frequent {
+        border-bottom: 1px solid var(--webchat-line);
+        padding-bottom: 0.4rem;
+        margin-bottom: 0.4rem;
+      }
+
+      .emoji-scroll {
+        max-height: 10.5rem;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+      }
+
+      .emoji {
+        aspect-ratio: 1;
+        border: 0;
+        border-radius: 0.5rem;
+        background: transparent;
+        padding: 0;
+        cursor: pointer;
+        font-size: 1.3rem;
+        line-height: 1;
+        font-family:
+          'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+        transition: background var(--toggle-speed) ease;
+      }
+
+      .emoji:hover {
+        background: var(--webchat-footer);
+      }
+
+      .emoji-toggle[aria-expanded='true'] {
+        color: var(--color-primary);
       }
 
       .quick-replies {
@@ -685,6 +821,27 @@ export class WebChat extends LitElement {
   @property({ type: Boolean, attribute: false })
   uploading = false;
 
+  // is the emoji picker showing
+  @property({ type: Boolean, attribute: false })
+  emojiOpen = false;
+
+  // the visitor's shortcuts, as of when the picker opened - so that picking
+  // one doesn't reshuffle them under the pointer
+  @property({ type: Array, attribute: false })
+  frequentEmoji: string[] = [];
+
+  // what's typed in the picker's search box
+  @property({ type: String, attribute: false })
+  emojiQuery = '';
+
+  // are files being dragged over the panel
+  @property({ type: Boolean, attribute: false })
+  dragging = false;
+
+  // dragenter and dragleave fire for every element passed over, so the
+  // drag is over once as many leaves as enters have happened
+  private dragDepth = 0;
+
   // what last went wrong, shown until the next thing succeeds
   @property({ type: String, attribute: false })
   error: string = null;
@@ -733,6 +890,7 @@ export class WebChat extends LitElement {
 
   public disconnectedCallback(): void {
     super.disconnectedCallback();
+    this.closeEmojiPicker();
     this.teardown();
   }
 
@@ -750,6 +908,23 @@ export class WebChat extends LitElement {
 
     if (changed.has('status') && this.status === ConnectionState.Connected) {
       this.focusInput();
+    }
+
+    // the picker doesn't outlive the panel or the connection
+    if (
+      this.emojiOpen &&
+      (!this.open || this.status !== ConnectionState.Connected)
+    ) {
+      this.closeEmojiPicker();
+    }
+
+    if (changed.has('emojiOpen') && this.emojiOpen) {
+      const search = this.shadowRoot.querySelector(
+        '.emoji-search'
+      ) as HTMLInputElement;
+      if (search) {
+        search.focus();
+      }
     }
   }
 
@@ -842,7 +1017,9 @@ export class WebChat extends LitElement {
           subscribe: subscribeToSocket,
           publish: publishToSocket,
           getConnectionState: getSocketConnectionState,
-          onConnectionState: onSocketConnectionState
+          onConnectionState: onSocketConnectionState,
+          onDenied: onSocketDenied,
+          recheck: recheckSocket
         };
       }
     }
@@ -1084,6 +1261,9 @@ export class WebChat extends LitElement {
     if (event.key === 'Enter') {
       event.preventDefault();
       this.sendPendingMessage();
+    } else if (event.key === 'Escape' && this.emojiOpen) {
+      event.preventDefault();
+      this.closeEmojiPicker();
     }
   }
 
@@ -1112,6 +1292,7 @@ export class WebChat extends LitElement {
     }
     this.hasPendingText = false;
     this.attachments = [];
+    this.closeEmojiPicker();
 
     const sent = await this.sendMessage(text, attachments);
     if (!sent) {
@@ -1195,6 +1376,210 @@ export class WebChat extends LitElement {
     this.sendMessage(text);
   }
 
+  private handleEmojiClick(event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.emojiOpen) {
+      this.closeEmojiPicker();
+    } else {
+      this.openEmojiPicker();
+    }
+  }
+
+  public openEmojiPicker(): void {
+    if (this.emojiOpen) {
+      return;
+    }
+    this.frequentEmoji = getFrequentEmoji();
+    this.emojiQuery = '';
+    this.emojiOpen = true;
+    document.addEventListener('pointerdown', this.handleOutsidePointer, true);
+  }
+
+  public closeEmojiPicker(): void {
+    this.emojiOpen = false;
+    document.removeEventListener(
+      'pointerdown',
+      this.handleOutsidePointer,
+      true
+    );
+  }
+
+  // a press anywhere but the picker or its button puts the picker away - the
+  // path is the composed one since from the page we're just <temba-webchat>
+  private handleOutsidePointer = (event: Event): void => {
+    const inside = event
+      .composedPath()
+      .some(
+        (el) =>
+          el instanceof HTMLElement &&
+          (el.classList.contains('emoji-picker') ||
+            el.classList.contains('emoji-toggle'))
+      );
+    if (!inside) {
+      this.closeEmojiPicker();
+    }
+  };
+
+  private handleEmojiKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.closeEmojiPicker();
+      this.focusInput();
+    }
+  }
+
+  private handleEmojiSearchInput(event: Event): void {
+    this.emojiQuery = (event.target as HTMLInputElement).value;
+  }
+
+  private handleEmojiSearchKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      // the first result is the best guess at what they're after
+      event.preventDefault();
+      const [first] = searchEmoji(this.emojiQuery);
+      if (first) {
+        this.insertEmoji(first);
+      }
+    } else if (event.key === 'Escape' && this.emojiQuery) {
+      // a search is put away before the picker is
+      event.preventDefault();
+      event.stopPropagation();
+      this.emojiQuery = '';
+    }
+  }
+
+  /**
+   * Puts an emoji into the message where the visitor's cursor is
+   */
+  public insertEmoji(emoji: string): void {
+    const input = this.shadowRoot.querySelector('.input') as HTMLInputElement;
+    if (!input || input.disabled) {
+      return;
+    }
+
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? input.value.length;
+    input.setRangeText(emoji, start, end, 'end');
+    this.hasPendingText = input.value.trim().length > 0;
+
+    recordEmojiUse(emoji);
+
+    // the picker stays up for the next one, but they're still typing to us
+    this.emojiQuery = '';
+    input.focus();
+  }
+
+  private renderEmojiButton(emoji: string): TemplateResult {
+    return html`<button
+      class="emoji"
+      type="button"
+      @click=${() => this.insertEmoji(emoji)}
+    >
+      ${emoji}
+    </button>`;
+  }
+
+  private renderEmojiPicker(): TemplateResult {
+    if (!this.emojiOpen) {
+      return null;
+    }
+    return html`<div
+      class="emoji-picker"
+      role="dialog"
+      aria-label=${msg('Emoji')}
+      @keydown=${this.handleEmojiKeyDown}
+    >
+      ${this.emojiQuery.trim()
+        ? this.renderEmojiResults()
+        : html`<div class="emoji-label">${msg('Frequently used')}</div>
+            <div class="emoji-grid frequent">
+              ${this.frequentEmoji.map((emoji) =>
+                this.renderEmojiButton(emoji)
+              )}
+            </div>
+            <div class="emoji-scroll">
+              <div class="emoji-grid">
+                ${EMOJI.map((emoji) => this.renderEmojiButton(emoji))}
+              </div>
+            </div>`}
+      <input
+        class="emoji-search"
+        type="search"
+        placeholder=${msg('Search emoji')}
+        aria-label=${msg('Search emoji')}
+        autocomplete="off"
+        .value=${this.emojiQuery}
+        @input=${this.handleEmojiSearchInput}
+        @keydown=${this.handleEmojiSearchKeyDown}
+      />
+    </div>`;
+  }
+
+  private renderEmojiResults(): TemplateResult {
+    const results = searchEmoji(this.emojiQuery);
+    if (results.length === 0) {
+      return html`<div class="emoji-empty">${msg('No emoji found')}</div>`;
+    }
+    return html`<div class="emoji-scroll">
+      <div class="emoji-grid results">
+        ${results.map((emoji) => this.renderEmojiButton(emoji))}
+      </div>
+    </div>`;
+  }
+
+  // whether a drag carries files - as opposed to text or a link off the page
+  private hasFiles(event: DragEvent): boolean {
+    return Array.from(event.dataTransfer?.types || []).includes('Files');
+  }
+
+  // whether dropped files can be taken right now
+  private canTakeFiles(): boolean {
+    return this.status === ConnectionState.Connected && !this.uploading;
+  }
+
+  // Every file drag over the panel is claimed, whether or not we'll take the
+  // files - an unclaimed drop is left to the browser, which opens the file in
+  // place of the page the widget is on
+  private handleDragEnter(event: DragEvent): void {
+    if (!this.hasFiles(event)) {
+      return;
+    }
+    event.preventDefault();
+    this.dragDepth++;
+    this.dragging = this.canTakeFiles();
+  }
+
+  private handleDragOver(event: DragEvent): void {
+    if (!this.hasFiles(event)) {
+      return;
+    }
+    event.preventDefault();
+    event.dataTransfer.dropEffect = this.dragging ? 'copy' : 'none';
+  }
+
+  private handleDragLeave(event: DragEvent): void {
+    if (!this.hasFiles(event)) {
+      return;
+    }
+    this.dragDepth = Math.max(0, this.dragDepth - 1);
+    if (this.dragDepth === 0) {
+      this.dragging = false;
+    }
+  }
+
+  private handleDrop(event: DragEvent): void {
+    if (!this.hasFiles(event)) {
+      return;
+    }
+    event.preventDefault();
+    const take = this.dragging;
+    this.dragDepth = 0;
+    this.dragging = false;
+    if (take) {
+      this.uploadFiles(Array.from(event.dataTransfer?.files || []));
+    }
+  }
+
   private handleAttachClick(event: MouseEvent): void {
     event.stopPropagation();
     const input = this.shadowRoot.querySelector(
@@ -1228,6 +1613,11 @@ export class WebChat extends LitElement {
         if (this.attachments.length >= MAX_ATTACHMENTS) {
           this.error = msg('Too many attachments');
           break;
+        }
+
+        if (!acceptable(file)) {
+          this.error = msg('File type not supported');
+          continue;
         }
 
         const form = new FormData();
@@ -1337,21 +1727,25 @@ export class WebChat extends LitElement {
   private renderFooter(): TemplateResult {
     const connected = this.status === ConnectionState.Connected;
     const pending = this.hasPendingText || this.attachments.length > 0;
+    // the file input lives outside the composer, whose click handler cancels
+    // the default action of clicks inside it - which for a file input is
+    // opening the picker
     return html`<div class="footer">
-      ${this.renderQuickReplies()} ${this.renderAttachments()}
+      ${this.renderEmojiPicker()} ${this.renderQuickReplies()}
+      ${this.renderAttachments()}
+      <input
+        class="file-input"
+        type="file"
+        multiple
+        accept=${ACCEPT}
+        @change=${this.handleFilesChanged}
+      />
       <div
         class="composer ${pending ? 'pending' : ''} ${this.uploading
           ? 'uploading'
           : ''}"
         @click=${this.handleClickInputPanel}
       >
-        <input
-          class="file-input"
-          type="file"
-          multiple
-          accept="image/*,audio/*,video/*,application/pdf"
-          @change=${this.handleFilesChanged}
-        />
         <button
           class="icon-button attach"
           aria-label=${msg('Add an attachment')}
@@ -1374,6 +1768,17 @@ export class WebChat extends LitElement {
           @keydown=${this.handleKeyDown}
         />
         <button
+          class="icon-button emoji-toggle"
+          type="button"
+          aria-label=${msg('Add an emoji')}
+          aria-haspopup="dialog"
+          aria-expanded=${this.emojiOpen ? 'true' : 'false'}
+          ?disabled=${!connected}
+          @click=${this.handleEmojiClick}
+        >
+          <temba-icon name="emoji" size="1.15"></temba-icon>
+        </button>
+        <button
           class="icon-button send"
           aria-label=${msg('Send')}
           ?disabled=${!connected || !pending || this.sending}
@@ -1390,11 +1795,21 @@ export class WebChat extends LitElement {
     return html`
       <div class="widget ${this.open ? 'open' : ''}">
         <section
-          class="panel"
+          class="panel ${this.dragging ? 'dragging' : ''}"
           role="dialog"
           aria-label=${msg('Chat')}
           aria-hidden=${this.open ? 'false' : 'true'}
+          @dragenter=${this.handleDragEnter}
+          @dragover=${this.handleDragOver}
+          @dragleave=${this.handleDragLeave}
+          @drop=${this.handleDrop}
         >
+          ${this.dragging
+            ? html`<div class="dropzone">
+                <temba-icon name="attachment" size="2"></temba-icon>
+                <div>${msg('Drop files to attach them')}</div>
+              </div>`
+            : null}
           <header class="header">
             ${this.renderIdentity()}
             <div class="titles">

@@ -309,6 +309,11 @@ describe(TAG, () => {
     expect(elements[0].getAttribute('label')).to.equal('Getting Started');
     expect(elements[1].getAttribute('label')).to.equal('Flows');
 
+    // a section is picked up by its folder rather than the card's usual grip
+    expect(
+      elements[0].shadowRoot.querySelector('.grip').getAttribute('name')
+    ).to.equal('folder');
+
     // sections arrive shut - a helpdesk is scanned by its sections first
     elements.forEach((card: any) => expect(card.collapsed).to.be.true);
 
@@ -404,12 +409,16 @@ describe(TAG, () => {
     expect(rows.ghostContainer).to.equal(cards.shadowRoot);
   });
 
-  it('shows a section description ahead of its articles', async () => {
+  it('shows a section description under its title in the card header', async () => {
     const cards = await getCards();
     const [gettingStarted, flows] = getCardElements(cards);
-    expect(
-      gettingStarted.querySelector('.description').textContent.trim()
-    ).to.equal('Setting up and finding your way around.');
+    const description = gettingStarted.querySelector('.description');
+    expect(description.textContent.trim()).to.equal(
+      'Setting up and finding your way around.'
+    );
+    expect(description.getAttribute('slot')).to.equal('description');
+    expect(gettingStarted.classList.contains('described')).to.be.true;
+    expect(flows.classList.contains('described')).to.be.false;
     expect(flows.querySelector('.description')).to.not.exist;
   });
 

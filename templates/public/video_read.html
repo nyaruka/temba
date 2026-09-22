@@ -2,9 +2,8 @@
 {% load i18n %}
 
 {% block page-title %}
-  {% blocktrans with video_name=video.name %}
+  {% blocktrans trimmed with video_name=video.name %}
     Learn - {{ video_name }}
-
   {% endblocktrans %}
 {% endblock page-title %}
 {% block page-description %}
@@ -12,7 +11,7 @@
 {% endblock page-description %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .fb-comments {
       border: 0px solid green;
     }
@@ -23,11 +22,11 @@
 
     .description {
       margin-top: 30px;
+      margin-bottom: 30px;
+      color: #666;
       font-size: 19px;
       line-height: 25px;
-      color: #666;
       white-space: pre-line;
-      margin-bottom: 30px;
     }
 
     .manage {
@@ -38,24 +37,21 @@
 
     .other-vids {
       width: 300px;
-      float: right;
-      padding-left: 20px;
       min-height: 200px;
+      padding-left: 20px;
+      float: right;
 
       .link {
         display: block;
         margin-top: 8px;
       }
-
     }
 
     .fb {
-      border-right: 1px solid #f3f3f3;
-
-      padding-right: 20px;
-
       width: 600px;
       min-height: 200px;
+      padding-right: 20px;
+      border-right: 1px solid #f3f3f3;
 
       .fb-comments {
         background: #ffffff;
@@ -69,27 +65,20 @@
 {% block title %}
   {% if perms.public.video_update or request.user.is_superuser %}
     <div class="manage">
-      <a href="{% url "public.video_update" object.pk %}" class="btn btn-primary">{% trans "Edit" %}</a>
+      <a href='{% url "public.video_update" object.pk %}' class="btn btn-primary">{% trans "Edit" %}</a>
     </div>
   {% endif %}
   <h1 id="title-text">{{ object.name }}</h1>
 {% endblock title %}
 {% block content %}
-  <iframe class='vimeo'
-          src="//player.vimeo.com/video/{{ object.vimeo_id }}"
-          width="950"
-          height="535"
-          frameborder="0"
-          webkitallowfullscreen
-          mozallowfullscreen
-          allowfullscreen></iframe>
-  <div class='description'>{{ object.description }}</div>
+  <iframe class="vimeo" src="//player.vimeo.com/video/{{ object.vimeo_id }}" width="950" height="535" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+  <div class="description">{{ object.description }}</div>
   {% if perms.public.video_update or request.user.is_superuser %}{% endif %}
   <div class="other-vids">
     <h4>{% trans "More Videos" %}</h4>
     {% for video in videos %}
       <div class="link">
-        <a href="{% url "public.video_read" video.pk %}">{{ video.name }}</a>
+        <a href='{% url "public.video_read" video.pk %}'>{{ video.name }}</a>
       </div>
     {% endfor %}
   </div>

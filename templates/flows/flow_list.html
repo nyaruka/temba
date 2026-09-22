@@ -15,7 +15,7 @@
 {% endblock page-header %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     /* The list component fills its container edge to edge and brings
        its own surface, so drop the SPA content padding (and the grey
        page background it would otherwise reveal around the list). */
@@ -25,32 +25,35 @@
   </style>
 {% endblock extra-style %}
 {% block content %}
-  <temba-flow-list id="flow-list"
-                   fill-window
-                   history-state-key="flows"
-                   list-title="{{ title }}"
-                   {% if list_subtitle %}subtitle="{{ list_subtitle }}"{% endif %}
-                   {% if list_searchable %}searchable{% endif %}
-                   endpoint="{{ list_url }}"
-                   action-endpoint="{{ request.path }}"
-                   content-menu-endpoint="{{ request.path }}?{{ request.GET.urlencode }}"
-                   empty-message="{% trans "No flows" %}">
+  <temba-flow-list
+    id="flow-list"
+    fill-window
+    history-state-key="flows"
+    list-title="{{ title }}"
+    {% if list_subtitle %}subtitle="{{ list_subtitle }}"{% endif %}
+    {% if list_searchable %}searchable{% endif %}
+    endpoint="{{ list_url }}"
+    action-endpoint="{{ request.path }}"
+    content-menu-endpoint="{{ request.path }}?{{ request.GET.urlencode }}"
+    empty-message='{% trans "No flows" %}'
+  >
   </temba-flow-list>
   {{ list_bulk_actions|json_script:"list-bulk-actions" }}
-  <temba-modax header="{% trans "Export Results" %}" id="export-results">
-  </temba-modax>
+  <temba-modax header='{% trans "Export Results" %}' id="export-results"> </temba-modax>
   {% if org_perms.flows.flowlabel_create %}
-    <temba-modax header="{% trans "New Label" %}"
-                 endpoint="{% url 'flows.flowlabel_create' %}"
-                 -temba-loaded="handleCreateLabelModalLoaded"
-                 -temba-submitted="handleCreateLabelModalSubmitted"
-                 id="create-label-modal">
+    <temba-modax
+      header='{% trans "New Label" %}'
+      endpoint="{% url 'flows.flowlabel_create' %}"
+      -temba-loaded="handleCreateLabelModalLoaded"
+      -temba-submitted="handleCreateLabelModalSubmitted"
+      id="create-label-modal"
+    >
     </temba-modax>
   {% endif %}
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       var list = document.querySelector("#flow-list");
       list.bulkActions = JSON.parse(document.getElementById("list-bulk-actions").textContent);

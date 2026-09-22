@@ -20,7 +20,7 @@
   {{ block.super }}
   {# a section is a short form; only an article needs the dialog holding the window's height for the editor #}
   {% if form.body %}
-    <style type="text/css">
+    <style>
       /* The dialog takes nearly the window's whole height and holds it, with the editor taking whatever the controls
        above it leave over and scrolling the article inside itself. So writing happens in a window that doesn't move,
        and a long article never pushes the dialog past the bottom of the screen. Every wrapper between the body and the
@@ -28,19 +28,19 @@
        modax's own .modax-body rule, whose padding would otherwise win the tie and take height the editor can use. */
       temba-dialog .modax-body {
         box-sizing: border-box;
-        height: 88vh;
-        padding: 12px 20px;
         display: flex;
         flex-direction: column;
+        height: 88vh;
+        padding: 12px 20px;
       }
 
-      .modax-body>.animate,
+      .modax-body > .animate,
       .modax-body form,
       .modax-body .control-group.field_body,
       .modax-body .control-group.field_body .controls {
         display: flex;
-        flex-direction: column;
         flex-grow: 1;
+        flex-direction: column;
         min-height: 0;
       }
 

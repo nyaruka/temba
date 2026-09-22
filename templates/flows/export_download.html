@@ -6,13 +6,13 @@
     <th>{% trans "Flows" %}</th>
     <td>
       {% for flow in flows %}
-        <a href="{% url "flows.flow_editor" flow.uuid %}">{{ flow.name }}</a>
-      </br>
-    {% endfor %}
-  </td>
-</tr>
-<tr>
-  <th>{% trans "Responded Only" %}</th>
-  <td>{{ responded_only|yesno:"Yes,No" }}</td>
-</tr>
+        <a href='{% url "flows.flow_editor" flow.uuid %}'>{{ flow.name }}</a>
+        </br>
+      {% endfor %}
+    </td>
+  </tr>
+  <tr>
+    <th>{% trans "Responded Only" %}</th>
+    <td>{{ responded_only|yesno:"Yes,No" }}</td>
+  </tr>
 {% endblock "extra-fields" %}

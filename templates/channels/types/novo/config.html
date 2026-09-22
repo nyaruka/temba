@@ -1,16 +1,14 @@
 {% load i18n channels %}
 
 {% blocktrans trimmed %}
-  To finish configuring your Novo connection you'll need to set the following callback URLs on your
-  Novo account.
+  To finish configuring your Novo connection you'll need to set the following callback URLs on your Novo account.
 {% endblocktrans %}
 <div class="card">
   <div class="subtitle">{% trans "Received URL" %}</div>
   <div class="code inline-block">{% channel_callback channel "receive" %}</div>
   <div class="mt-2">
     {% blocktrans trimmed %}
-      When a new message is received by your service, it should notify us with a POST to the following URL, passing
-      the following parameters: 'from' and 'text'.
+      When a new message is received by your service, it should notify us with a POST to the following URL, passing the following parameters: 'from' and 'text'.
     {% endblocktrans %}
   </div>
   <div class="bleed-x bleed-b text-white bg-black">

@@ -7,13 +7,12 @@
 {% block login-content %}
   <div class="mb-8">
     {% blocktrans trimmed %}
-      Enter the email address you used to sign up. We will
-      send you an email with details on how to reset your password.
+      Enter the email address you used to sign up. We will send you an email with details on how to reset your password.
     {% endblocktrans %}
   </div>
   <form method="post" action="{% url 'orgs.user_forget' %}">
     {% csrf_token %}
     {% render_field 'email' %}
-    <input type="submit" value="{{ _("Reset") }}" class="mt-4 button-primary">
+    <input type="submit" value='{{ _("Reset") }}' class="mt-4 button-primary">
   </form>
 {% endblock login-content %}

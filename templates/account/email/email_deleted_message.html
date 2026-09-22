@@ -2,5 +2,7 @@
 {% load i18n %}
 
 {% block notification_message %}
-  {% blocktrans %}The email address {{ deleted_email }} has been removed from your account.{% endblocktrans %}
+  {% blocktrans trimmed %}
+    The email address {{ deleted_email }} has been removed from your account.
+  {% endblocktrans %}
 {% endblock notification_message %}

@@ -15,47 +15,37 @@
     <table class="list lined header scrolled selectable">
       <thead>
         <tr>
-          <th style="width:100%">
+          <th style="width: 100%">
             <div class="flow-start-type-selector flex">
-              <div onclick="goto(event, this)"
-                   href="{% url 'flows.flowstart_list' %}"
-                   class="{% if not filtered %}is-active{% endif %} linked mr-1">{% trans "All" %}</div>
+              <div onclick="goto(event, this)" href="{% url 'flows.flowstart_list' %}" class="{% if not filtered %}is-active{% endif %} linked mr-1">{% trans "All" %}</div>
               |
-              <div onclick="goto(event, this)"
-                   href="{% url 'flows.flowstart_list' %}?type=manual"
-                   class="{% if filtered %}is-active{% endif %} linked ml-1">{% trans "Manual" %}</div>
+              <div onclick="goto(event, this)" href="{% url 'flows.flowstart_list' %}?type=manual" class="{% if filtered %}is-active{% endif %} linked ml-1">{% trans "Manual" %}</div>
             </div>
           </th>
           <th>{% trans "Type" %}</th>
-          <th style="text-align:right">{% trans "Contacts" %}</th>
-          <th style="text-align:right">{% trans "Started" %}</th>
+          <th style="text-align: right">{% trans "Contacts" %}</th>
+          <th style="text-align: right">{% trans "Started" %}</th>
         </tr>
       </thead>
       <tbody>
         {% for obj in object_list %}
-          <tr onclick="showStart(event, this)"
-              data-endpoint="{% url 'flows.flowstart_read' obj.uuid %}"
-              class="flowstart object-row select-row">
+          <tr onclick="showStart(event, this)" data-endpoint="{% url 'flows.flowstart_read' obj.uuid %}" class="flowstart object-row select-row">
             <td>
               {% if obj.flow.is_active %}
-                {# djlint:off #}
                 <a href="{% url 'flows.flow_editor' obj.flow.uuid %}" onclick="event.stopPropagation()"><temba-label type="flow" primary clickable>{{ obj.flow.name }}</temba-label></a>
-                {# djlint:on #}
               {% else %}
                 {% trans "A deleted flow" %}
               {% endif %}
             </td>
             <td>{{ obj.get_start_type_display }}</td>
-            <td style="text-align: right; white-space: nowrap;">
-              {% if obj.contact_count is not None %}{{ obj.contact_count|intcomma }}{% endif %}
-            </td>
-            <td style="text-align: right;">
-              <div style="white-space:nowrap">{{ obj.created_on|timedate }}</div>
-              {% if obj.status == 'F' or obj.status == 'I' or obj.is_starting %}
-                <div style="padding-top: 6px; font-size: 11px; white-space: nowrap;">
-                  {% if obj.status == 'F' %}
+            <td style="text-align: right; white-space: nowrap">{% if obj.contact_count is not None %}{{ obj.contact_count|intcomma }}{% endif %}</td>
+            <td style="text-align: right">
+              <div style="white-space: nowrap">{{ obj.created_on|timedate }}</div>
+              {% if obj.status == "F" or obj.status == "I" or obj.is_starting %}
+                <div style="padding-top: 6px; font-size: 11px; white-space: nowrap">
+                  {% if obj.status == "F" %}
                     {% trans "Failed" %}
-                  {% elif obj.status == 'I' %}
+                  {% elif obj.status == "I" %}
                     {% trans "Interrupted" %}
                   {% else %}
                     {% trans "Starting" %}
@@ -72,12 +62,11 @@
       </tbody>
     </table>
   </div>
-  <temba-modax id="start-details">
-  </temba-modax>
+  <temba-modax id="start-details"> </temba-modax>
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function showStart(event, row) {
       if (event.target.closest("a")) {
         return;

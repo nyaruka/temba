@@ -10,7 +10,7 @@
       {{ claim_error }}
     </temba-alert>
   {% endif %}
-  <temba-alert level="error" class="my-4 hidden" id="connect-error"></temba-alert>
+  <temba-alert level="error" class="my-4 hidden" id="connect-error"> </temba-alert>
 {% endblock pre-form %}
 {% block form %}
   <div class="mt-4 card">
@@ -25,7 +25,7 @@
     <div class="flex mt-4" id="fb-app-connect">
       <div onclick="launchWhatsAppSignup()" class="button-primary">{% trans "Add Facebook Business" %}</div>
     </div>
-    <form style="display:none;" method="post" action="{{ connect_url }}" id="claim-form">
+    <form style="display: none" method="post" action="{{ connect_url }}" id="claim-form">
       {% csrf_token %}
       <input type="text" name="user_access_token" id="user-access-token">
     </form>
@@ -33,7 +33,7 @@
 {% endblock form %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       var hash = window.location.hash.substring(1)
       var result = hash.split('&').reduce(function(res, item) {

@@ -19,12 +19,7 @@
     {% if view.search_fields %}
       {% block search-form %}
         <form method="get" action="{{ request.path }}" id="search-form" class="mb-4">
-          <temba-textinput placeholder="{% trans "Search" %}"
-                           name="search"
-                           value="{{ search }}"
-                           maxlength="{{ view.search_max_length }}"
-                           class="w-full">
-          </temba-textinput>
+          <temba-textinput placeholder='{% trans "Search" %}' name="search" value="{{ search }}" maxlength="{{ view.search_max_length }}" class="w-full"> </temba-textinput>
           <input type="submit" class="hide">
         </form>
       {% endblock search-form %}
@@ -36,8 +31,7 @@
       {% endblock pagination %}
     {% endif %}
     <div class="flex-grow overflow-y-auto shadow">
-      {% block table %}
-      {% endblock table %}
+      {% block table %} {% endblock table %}
     </div>
   {% endblock manager %}
 {% endblock content %}

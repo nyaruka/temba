@@ -2,8 +2,7 @@
 {% load smartmin temba channels i18n tz %}
 
 {% block title %}
-  <temba-icon name="{{ object.type.icon }}" class="mr-2">
-  </temba-icon>
+  <temba-icon name="{{ object.type.icon }}" class="mr-2"> </temba-icon>
   <div class="flex items-start flex-col">
     <div class="name" id="title-text">{{ object.name }}</div>
   </div>
@@ -54,8 +53,7 @@
   </div>
   <div class="shadow flex px-4 rounded-lg mb-6 bg-white">
     <div class="flex-grow"></div>
-    <temba-range-picker min="{{ object.created_on|date:"Y-m-d" }}">
-    </temba-range-picker>
+    <temba-range-picker min='{{ object.created_on|date:"Y-m-d" }}'> </temba-range-picker>
   </div>
   {% block charts-zone %}
     {% if object.is_android %}
@@ -86,16 +84,16 @@
             </div>
             <div class="t-status">{{ last_sync.power_level }}%</div>
             <div class="plugged px-2">
-              {% if last_sync.power_status == 'UNK' %}
+              {% if last_sync.power_status == "UNK" %}
                 {% trans "UNKNOWN" %}
               {% endif %}
-              {% if last_sync.power_status == 'DIS' %}
+              {% if last_sync.power_status == "DIS" %}
                 {% trans "DISCHARGING" %}
               {% endif %}
-              {% if last_sync.power_status == 'CHA' %}
+              {% if last_sync.power_status == "CHA" %}
                 {% trans "CHARGING" %}
               {% endif %}
-              {% if last_sync.power_status == 'FUL' %}
+              {% if last_sync.power_status == "FUL" %}
                 {% trans "FULLY CHARGED" %}
               {% endif %}
             </div>
@@ -103,15 +101,7 @@
         </div>
       {% endif %}
     {% endif %}
-    <temba-chart class="shadow mb-6"
-                 url="{% url 'channels.channel_chart' object.uuid %}"
-                 dataname="Messages"
-                 legend
-                 showall
-                 requireWindow
-                 xtype="time"
-                 palette="qualitative-paired"
-                 colorIndex="0">
+    <temba-chart class="shadow mb-6" url="{% url 'channels.channel_chart' object.uuid %}" dataname="Messages" legend showall requireWindow xtype="time" palette="qualitative-paired" colorIndex="0">
     </temba-chart>
     <table class="list lined">
       <thead>
@@ -174,7 +164,7 @@
             <td class="align-center">{{ sync_event.pending_message_count|intcomma }}</td>
             <td class="align-center">{{ sync_event.retry_message_count|intcomma }}</td>
             <td class="align-center">
-              {% if sync_event.power_status == 'CHA' %}
+              {% if sync_event.power_status == "CHA" %}
                 <div class="glyph icon-battery-charging"></div>
               {% else %}
                 {% if sync_event.power_level < 20 %}
@@ -188,12 +178,12 @@
               &nbsp;{{ sync_event.power_level }}%
             </td>
             <td class="align-center">
-              {% if sync_event.network_type == 'WIFI' %}
+              {% if sync_event.network_type == "WIFI" %}
                 <div class="glyph icon-connection"></div>
               {% else %}
                 <div class="glyph icon-radio"></div>
               {% endif %}
-              {% if sync_event.network_type == 'NONE' or sync_event.network_type == 'UNKNOWN' %}
+              {% if sync_event.network_type == "NONE" or sync_event.network_type == "UNKNOWN" %}
                 {% trans "&nbsp;&nbsp;OTHER" %}
               {% else %}
                 &nbsp;&nbsp;{{ sync_event.network_type }}
@@ -207,7 +197,7 @@
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       const rangePicker = document.querySelector("temba-range-picker");
 
@@ -241,9 +231,9 @@
     }
 
     temba-chart {
-      background: #fff;
       padding: 2em;
       border-radius: var(--curvature);
+      background: #fff;
     }
 
     /* same inset as the table cells below */
@@ -256,10 +246,10 @@
     }
 
     .details .label {
-      color: var(--text-2);
-      font-size: 11px;
-      font-weight: var(--w-medium);
       margin-bottom: 4px;
+      color: var(--text-2);
+      font-weight: var(--w-medium);
+      font-size: 11px;
     }
   </style>
 {% endblock extra-style %}

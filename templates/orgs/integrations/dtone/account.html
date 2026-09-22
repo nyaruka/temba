@@ -14,11 +14,11 @@
   <div class="mb-4">
     {% if not integration_connected %}
       {% blocktrans trimmed with link='<a target="_new" href="https://www.dtone.com/">DT One</a>' %}
-      Adding a DT One account will allow you to send airtime credit over 400+ operators in over 100 countries.
-      Once connected you can transfer airtime credit within your flows. To signup for an account, visit {{ link }}.
-    {% endblocktrans %}
-  {% endif %}
-</div>
+        Adding a DT One account will allow you to send airtime credit over 400+ operators in over 100 countries. Once connected you can transfer airtime credit within your flows. To signup for an
+        account, visit {{ link }}.
+      {% endblocktrans %}
+    {% endif %}
+  </div>
 {% endblock pre-form %}
 {% block fields %}
   {% if not integration_connected %}
@@ -26,15 +26,15 @@
     {% render_field 'api_secret' %}
     <div class="my-4">
       {% blocktrans trimmed with link='<a target="_new" href="https://dtshop.dtone.com/account">account settings</a>' %}
-      You can find your credentials on the Developer tab on your {{ link }} page.
-    {% endblocktrans %}
-  </div>
-{% endif %}
+        You can find your credentials on the Developer tab on your {{ link }} page.
+      {% endblocktrans %}
+    </div>
+  {% endif %}
 {% endblock fields %}
 {% block form-buttons %}
   <div class="form-actions">
     {% if not integration_connected %}
-      <input type="submit" class="button-primary" value="{% trans "Connect" %}">
+      <input type="submit" class="button-primary" value='{% trans "Connect" %}'>
     {% endif %}
   </div>
 {% endblock form-buttons %}
@@ -43,15 +43,14 @@
     <div class="mt-4">
       {% trans "Your account is connected to a DT One account." %}
       <div class="buttons inline float-right">
-        <a href="{% url "airtime.airtimetransfer_list" %}" class="button-light">{% trans "Transfer Log" %}</a>
+        <a href='{% url "airtime.airtimetransfer_list" %}' class="button-light">{% trans "Transfer Log" %}</a>
       </div>
     </div>
     <div class="my-4">
       {% blocktrans trimmed with disconnect_url='javascript:confirmDTOneDisconnect();' %}
         If you no longer want it connected, you can
         <button type="button" class="linked focus:outline-none" onclick="{{ disconnect_url }}">disconnect</button>
-        it.
-        Doing so will cause the payment actions in your flows to no longer be processed.
+        it. Doing so will cause the payment actions in your flows to no longer be processed.
       {% endblocktrans %}
     </div>
     <div class="disconnect-dtone hide">
@@ -67,7 +66,7 @@
 {% endblock post-form %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function confirmDTOneDisconnect() {
       removalConfirmation("disconnect-dtone", "Disconnect");
     }

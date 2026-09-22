@@ -1,8 +1,7 @@
 {% load sms %}
 
 {% render as content %}
-  {% block content %}
-  {% endblock content %}
+  {% block content %} {% endblock content %}
 {% endrender %}
 {% render as scripts %}
   {% block extra-script %}
@@ -10,11 +9,10 @@
   {% block extra-style %}
   {% endblock extra-style %}
 {% endrender %}
-{% if 'HTTP_X_FORMAX' in request.META %}
+{% if "HTTP_X_FORMAX" in request.META %}
   {{ scripts }}
   <div class="formax-summary" onClick="handleSectionClicked(event)">
-    {% block summary %}
-    {% endblock summary %}
+    {% block summary %} {% endblock summary %}
   </div>
   <div class="formax-form {% if form.errors %}errors{% endif %}">{{ content }}</div>
 {% else %}

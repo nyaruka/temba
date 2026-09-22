@@ -22,6 +22,18 @@ describe('temba-card', () => {
     await assertScreenshot('layout/card', getClip(card));
   });
 
+  it('is picked up by its grip unless given another icon', async () => {
+    const card = await getCard(html`
+      <temba-card label="Details"><div>Some content</div></temba-card>
+    `);
+    const grip = card.shadowRoot.querySelector('.grip');
+    expect(grip.getAttribute('name')).to.equal('dots-grid');
+
+    card.setAttribute('grip-icon', 'folder');
+    await card.updateComplete;
+    expect(grip.getAttribute('name')).to.equal('folder');
+  });
+
   it('renders collapsed', async () => {
     const card = await getCard(html`
       <temba-card label="Details" icon="info" collapsed>

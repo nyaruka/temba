@@ -2,10 +2,8 @@
 {% load smartmin temba i18n %}
 
 {% block modaxes %}
-  <temba-modax header="{{ _("Update Shortcut") |escapejs }}" id="update-shortcut">
-  </temba-modax>
-  <temba-modax header="{{ _("Delete Shortcut") |escapejs }}" id="delete-shortcut">
-  </temba-modax>
+  <temba-modax header='{{ _("Update Shortcut") |escapejs }}' id="update-shortcut"> </temba-modax>
+  <temba-modax header='{{ _("Delete Shortcut") |escapejs }}' id="delete-shortcut"> </temba-modax>
   {% include "tickets/search.html" %}
 {% endblock modaxes %}
 {% block pre-table %}
@@ -20,27 +18,13 @@
     <tbody>
       {% for obj in object_list %}
         <tr onclick="showUpdateShortcutModal('{{ obj.uuid }}')" class="hover-linked update">
-          <td class="whitespace-nowrap"
-              style="min-width: 50px;
-                     max-width:150px;
-                     overflow: hidden;
-                     text-overflow: ellipsis">{{ obj.name }}</td>
+          <td class="whitespace-nowrap" style="min-width: 50px; max-width: 150px; overflow: hidden; text-overflow: ellipsis">{{ obj.name }}</td>
           <td>
-            <div style="overflow: hidden;
-                        text-overflow: ellipsis;
-                        display: -webkit-box;
-                        line-height: 16px;
-                        max-height: 16px;
-                        -webkit-line-clamp: 1;
-                        -webkit-box-orient: vertical">{{ obj.text }}</div>
+            <div style="overflow: hidden; text-overflow: ellipsis; display: -webkit-box; line-height: 16px; max-height: 16px; -webkit-line-clamp: 1; -webkit-box-orient: vertical">{{ obj.text }}</div>
           </td>
           <td class="w-10">
             {% if org_perms.tickets.shortcut_delete %}
-              <temba-icon name="delete"
-                          clickable="true"
-                          style="--icon-color:#bbb"
-                          onclick="event.stopPropagation(); showDeleteShortcutModal('{{ obj.uuid }}');">
-              </temba-icon>
+              <temba-icon name="delete" clickable="true" style="--icon-color: #bbb" onclick="event.stopPropagation(); showDeleteShortcutModal('{{ obj.uuid }}')"> </temba-icon>
             {% endif %}
           </td>
         </tr>

@@ -1,22 +1,23 @@
 {% load compress %}
 
 {% compress js %}
-  <script src="{{ STATIC_URL }}js/formax.js"></script>
+<script src="{{ STATIC_URL }}js/formax.js"></script>
 {% endcompress %}
 <div class="formax">
   {% for section in formax.sections %}
-    <div data-dependents="{{ section.dependents }}"
-         data-button="{{ section.button }}"
-         data-nobutton="{% if section.nobutton %}true{% else %}false{% endif %}"
-         data-fetched="true"
-         data-href="{{ section.url }}"
-         data-action="{{ section.action }}"
-         class="action-{{ section.action }} {% if section.wide %}wide{% endif %} formax-section"
-         id="id-{{ section.name }}">
+    <div
+      data-dependents="{{ section.dependents }}"
+      data-button="{{ section.button }}"
+      data-nobutton="{% if section.nobutton %}true{% else %}false{% endif %}"
+      data-fetched="true"
+      data-href="{{ section.url }}"
+      data-action="{{ section.action }}"
+      class="action-{{ section.action }} {% if section.wide %}wide{% endif %} formax-section"
+      id="id-{{ section.name }}"
+    >
       <div class="formax-icon bg-gray-100 flex flex-row items-stretch" onClick="handleSectionClicked(event)">
         <div class="margin-wrapper">
-          <temba-icon name="{{ section.icon }}">
-          </temba-icon>
+          <temba-icon name="{{ section.icon }}"> </temba-icon>
         </div>
       </div>
       <div class="formax-container flex-grow">{{ section.response|safe }}</div>

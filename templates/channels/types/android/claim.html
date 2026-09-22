@@ -12,15 +12,14 @@
           {% csrf_token %}
           {% render_field 'claim_code' %}
           {% render_field 'phone_number' %}
-          <input type="submit" value="{% trans "Connect" %}" class="mt-4 button-primary">
+          <input type="submit" value='{% trans "Connect" %}' class="mt-4 button-primary">
         </form>
       </div>
     </div>
     <div class="p-12">
       {% blocktrans trimmed with brand=branding.name %}
-        {{ brand }} can use an Android phone to send and receive messages on your behalf. However due to restrictions
-        that Google places on applications that send SMS messages, we cannot distribute the application through the
-        Google Play Store. You will need to download the application manually and install it using the steps below.
+        {{ brand }} can use an Android phone to send and receive messages on your behalf. However due to restrictions that Google places on applications that send SMS messages, we cannot distribute
+        the application through the Google Play Store. You will need to download the application manually and install it using the steps below.
       {% endblocktrans %}
     </div>
   </div>
@@ -152,9 +151,8 @@
             <div class="subtitle">{% trans "Enter Claim Code" %}</div>
             <div class="mt-2">
               {% blocktrans trimmed with branding.name as brand %}
-                When you first open {{ brand }}, the app will register your device with Google and our servers.  Once that is
-                complete, it will display a claim code.  Enter that claim code in the form to the left and click
-                "Add Phone" to connect your device.
+                When you first open {{ brand }}, the app will register your device with Google and our servers. Once that is complete, it will display a claim code. Enter that claim code in the form
+                to the left and click "Add Phone" to connect your device.
               {% endblocktrans %}
             </div>
           </div>
@@ -165,7 +163,7 @@
 {% endblock content %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .release-header {
       font-weight: bold;
     }

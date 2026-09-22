@@ -11,26 +11,22 @@
   <form method="post" id="login-form">
     {% csrf_token %}
     {% for field, errors in form.errors.items %}
-      {% if field == '__all__' %}<div class="alert alert-error my-4">{{ errors }}</div>{% endif %}
+      {% if field == "__all__" %}<div class="alert alert-error my-4">{{ errors }}</div>{% endif %}
     {% endfor %}
     <div class="mt-4">
-      <temba-textinput name="username"
-                       maxlength="254"
-                       placeholder="{{ _("Email Address") |escape }}"
-                       value="{% if form.username.value %}{{ form.username.value|escape }}{% endif %}">
+      <temba-textinput name="username" maxlength="254" placeholder='{{ _("Email Address") |escape }}' value="{% if form.username.value %}{{ form.username.value|escape }}{% endif %}">
       </temba-textinput>
     </div>
     {% if form.username.errors %}<div class="alert alert-error mt-4">{{ form.username.errors }}</div>{% endif %}
     <div class="mt-4">
-      <temba-textinput name="password" placeholder="{{ _("Password") |escape }}" password="true">
-      </temba-textinput>
+      <temba-textinput name="password" placeholder='{{ _("Password") |escape }}' password="true"> </temba-textinput>
     </div>
     {% if form.password.errors %}<div class="alert alert-error mt-4">{{ form.password.errors }}</div>{% endif %}
     <div class="mt-2 text-right">
       <a href="{% url 'orgs.user_forget' %}">{% trans "Forgot your password?" %}</a>
     </div>
     <div class="mt-6">
-      <input type="submit" value="{{ _("Sign In") }}" class="button-primary">
+      <input type="submit" value='{{ _("Sign In") }}' class="button-primary">
     </div>
   </form>
 {% endblock login-content %}

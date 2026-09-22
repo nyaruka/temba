@@ -7,8 +7,8 @@
 {% block content %}
   <div class="mb-4">
     {% blocktrans trimmed with name=branding.name %}
-      To send and receive messages you need to add a channel to your workspace. A channel is a phone number or social network
-      account which {{ name }} can use to send and receive messages on your behalf.
+      To send and receive messages you need to add a channel to your workspace. A channel is a phone number or social network account which {{ name }} can use to send and receive messages on your
+      behalf.
     {% endblocktrans %}
   </div>
   {% if limit_reached %}
@@ -24,12 +24,9 @@
       <div class="mb-4">
         <div class="title">{% trans "Recommendations" %}</div>
         {% for ch_type in recommended_channels %}
-          <div href="{% url 'channels.types.'|add:ch_type.slug|add:'.claim' %}"
-               onclick="goto(event, this)"
-               class="card link">
+          <div href="{% url 'channels.types.'|add:ch_type.slug|add:'.claim' %}" onclick="goto(event, this)" class="card link">
             <div class="relative">
-              <temba-icon name="{{ ch_type.icon }}" class="text-base absolute text-gray-100 bg-icon">
-              </temba-icon>
+              <temba-icon name="{{ ch_type.icon }}" class="text-base absolute text-gray-100 bg-icon"> </temba-icon>
             </div>
             <div class="flex flex-col mx-20 relative">
               <div class="title">{{ ch_type.name }}</div>
@@ -42,12 +39,9 @@
     <div class="mb-4">
       <div class="title">{% trans "Social Network Channels" %}</div>
       {% for ch_type in channel_types.SOCIAL_MEDIA %}
-        <div href="{% url 'channels.types.'|add:ch_type.slug|add:'.claim' %}"
-             onclick="goto(event, this)"
-             class="card link">
+        <div href="{% url 'channels.types.'|add:ch_type.slug|add:'.claim' %}" onclick="goto(event, this)" class="card link">
           <div class="relative">
-            <temba-icon name="{{ ch_type.icon }}" class="text-base absolute text-gray-100 bg-icon">
-            </temba-icon>
+            <temba-icon name="{{ ch_type.icon }}" class="text-base absolute text-gray-100 bg-icon"> </temba-icon>
           </div>
           <div class="flex flex-col mx-20 relative">
             <div class="title">{{ ch_type.name }}</div>
@@ -59,12 +53,9 @@
     <div class="mb-4">
       <div class="title">{% trans "SMS and Voice Channels" %}</div>
       {% for ch_type in channel_types.PHONE %}
-        <div href="{% url 'channels.types.'|add:ch_type.slug|add:'.claim' %}"
-             onclick="goto(event, this)"
-             class="card link">
+        <div href="{% url 'channels.types.'|add:ch_type.slug|add:'.claim' %}" onclick="goto(event, this)" class="card link">
           <div class="relative">
-            <temba-icon name="{{ ch_type.icon }}" class="text-base absolute text-gray-100 bg-icon">
-            </temba-icon>
+            <temba-icon name="{{ ch_type.icon }}" class="text-base absolute text-gray-100 bg-icon"> </temba-icon>
           </div>
           <div class="flex flex-col mx-20 relative">
             <div class="title">{{ ch_type.name }}</div>
@@ -76,12 +67,9 @@
     <div class="mb-4">
       <div class="title">{% trans "API Channels" %}</div>
       {% for ch_type in channel_types.API %}
-        <div href="{% url 'channels.types.'|add:ch_type.slug|add:'.claim' %}"
-             onclick="goto(event, this)"
-             class="card link">
+        <div href="{% url 'channels.types.'|add:ch_type.slug|add:'.claim' %}" onclick="goto(event, this)" class="card link">
           <div class="relative">
-            <temba-icon name="{{ ch_type.icon }}" class="text-base absolute text-gray-100 bg-icon">
-            </temba-icon>
+            <temba-icon name="{{ ch_type.icon }}" class="text-base absolute text-gray-100 bg-icon"> </temba-icon>
           </div>
           <div class="flex flex-col mx-20 relative">
             <div class="title">{{ ch_type.name }}</div>
@@ -104,9 +92,9 @@
 {% endblock form-buttons %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .card:hover .bg-icon {
-      color: rgb(var(--focus-rgb), .3);
+      color: rgb(var(--focus-rgb), 0.3);
     }
 
     .bg-icon {

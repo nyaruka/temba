@@ -2,8 +2,7 @@
 {% load smartmin temba i18n %}
 
 {% block modaxes %}
-  <temba-modax header="{{ _("Cancel Invitation") |escapejs }}" id="delete-invitation">
-  </temba-modax>
+  <temba-modax header='{{ _("Cancel Invitation") |escapejs }}' id="delete-invitation"> </temba-modax>
 {% endblock modaxes %}
 {% block pre-table %}
   <div class="mb-4">
@@ -32,11 +31,7 @@
           </td>
           <td>{{ obj.created_on|day }}</td>
           <td class="w-10">
-            <temba-icon name="delete"
-                        clickable="true"
-                        style="--icon-color:#bbb"
-                        onclick="event.stopPropagation(); showDeleteInvitationModal({{ obj.id }});">
-            </temba-icon>
+            <temba-icon name="delete" clickable="true" style="--icon-color: #bbb" onclick="event.stopPropagation(); showDeleteInvitationModal({{ obj.id }})"> </temba-icon>
           </td>
         </tr>
       {% empty %}

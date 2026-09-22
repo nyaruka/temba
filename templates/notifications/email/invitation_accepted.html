@@ -3,8 +3,8 @@
 
 {% block notification-body %}
   <p>
-    {% blocktrans with email=notification.data.email %}
-    User <b>{{ email }}</b> accepted an invitation to join your workspace.
+    {% blocktrans trimmed with email=notification.data.email %}
+      User <b>{{ email }}</b> accepted an invitation to join your workspace.
     {% endblocktrans %}
   </p>
 {% endblock notification-body %}

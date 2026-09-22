@@ -12,36 +12,39 @@
 {% block content %}
   <div class="shadow flex px-4 rounded-lg mb-6 bg-white">
     <div class="flex-grow"></div>
-    <temba-range-picker min="{{ request.org.created_on|date:"Y-m-d" }}">
-    </temba-range-picker>
+    <temba-range-picker min='{{ request.org.created_on|date:"Y-m-d" }}'> </temba-range-picker>
   </div>
   <div class="shadow p-8 bg-white rounded-lg">
-    <temba-chart header="{% trans "Message History" %}"
-                 url="{% url 'dashboard.dashboard_message_history' %}"
-                 dataname="Messages"
-                 legend
-                 showall
-                 requireWindow
-                 xtype="time"
-                 palette="qualitative-paired"
-                 colorIndex="0">
+    <temba-chart
+      header='{% trans "Message History" %}'
+      url="{% url 'dashboard.dashboard_message_history' %}"
+      dataname="Messages"
+      legend
+      showall
+      requireWindow
+      xtype="time"
+      palette="qualitative-paired"
+      colorIndex="0"
+    >
     </temba-chart>
-    <temba-chart class="pt-8 block"
-                 header="{% trans "Workspace Statistics" %}"
-                 url="{% url 'dashboard.dashboard_workspace_stats' %}"
-                 dataname="Workspaces"
-                 legend
-                 showall
-                 xtype="category"
-                 palette="qualitative-paired"
-                 horizontal
-                 colorIndex="2">
+    <temba-chart
+      class="pt-8 block"
+      header='{% trans "Workspace Statistics" %}'
+      url="{% url 'dashboard.dashboard_workspace_stats' %}"
+      dataname="Workspaces"
+      legend
+      showall
+      xtype="category"
+      palette="qualitative-paired"
+      horizontal
+      colorIndex="2"
+    >
     </temba-chart>
   </div>
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       const rangePicker = document.querySelector("temba-range-picker");
 

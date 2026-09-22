@@ -1,15 +1,14 @@
 {% load i18n %}
 
-<temba-markdown-edit name="{{ widget.name }}"
-                     {% include "django/forms/widgets/attrs.html" %}
-                     {% if hero and hero.value %}hero="{{ hero.value.url }}"{% endif %}
-                     value="{% if widget.value %}{{ widget.value }}{% endif %}">
+<temba-markdown-edit
+  name="{{ widget.name }}"
+  {% include "django/forms/widgets/attrs.html" %}
+  {% if hero and hero.value %}hero="{{ hero.value.url }}"{% endif %}
+  value="{% if widget.value %}{{ widget.value }}{% endif %}"
+>
   {% if hero %}
     {# the editor draws the cover image across the head of the article and clicks this on the author's behalf #}
-    <input type="file"
-           slot="hero"
-           name="{{ hero.html_name }}"
-           {% if widget.attrs.accept %}accept="{{ widget.attrs.accept }}"{% endif %}>
+    <input type="file" slot="hero" name="{{ hero.html_name }}" {% if widget.attrs.accept %}accept="{{ widget.attrs.accept }}"{% endif %}>
     {% if hero.errors %}
       <div slot="hero-errors">
         {% for error in hero.errors %}<div>{{ error }}</div>{% endfor %}
@@ -18,12 +17,8 @@
   {% endif %}
   {% if title %}
     {# a textarea rather than an input so a long title wraps as the site's heading does - the editor keeps it to one line of text and grows it to fit #}
-    <textarea slot="title"
-              name="{{ title.html_name }}"
-              rows="1"
-              {% if title.field.max_length %}maxlength="{{ title.field.max_length }}"{% endif %}
-              placeholder="{% trans "Title" %}"
-              autocomplete="off">{% if title.value != None %}{{ title.value }}{% endif %}</textarea>
+    <textarea slot="title" name="{{ title.html_name }}" rows="1" {% if title.field.max_length %}maxlength="{{ title.field.max_length }}"{% endif %} placeholder='{% trans "Title" %}' autocomplete="off"
+    >{% if title.value != None %}{{ title.value }}{% endif %}</textarea>
     {% if title.errors %}
       <div slot="title-errors">
         {% for error in title.errors %}<div>{{ error }}</div>{% endfor %}
@@ -31,12 +26,14 @@
     {% endif %}
   {% endif %}
   {% if subtitle %}
-    <textarea slot="subtitle"
-              name="{{ subtitle.html_name }}"
-              rows="1"
-              {% if subtitle.field.max_length %}maxlength="{{ subtitle.field.max_length }}"{% endif %}
-              placeholder="{% trans "Subtitle" %}"
-              autocomplete="off">{% if subtitle.value != None %}{{ subtitle.value }}{% endif %}</textarea>
+    <textarea
+      slot="subtitle"
+      name="{{ subtitle.html_name }}"
+      rows="1"
+      {% if subtitle.field.max_length %}maxlength="{{ subtitle.field.max_length }}"{% endif %}
+      placeholder='{% trans "Subtitle" %}'
+      autocomplete="off"
+    >{% if subtitle.value != None %}{{ subtitle.value }}{% endif %}</textarea>
     {% if subtitle.errors %}
       <div slot="subtitle-errors">
         {% for error in subtitle.errors %}<div>{{ error }}</div>{% endfor %}

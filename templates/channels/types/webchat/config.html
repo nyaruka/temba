@@ -23,7 +23,7 @@
   <div class="bleed-x bleed-b text-white bg-black">
     <div class="code p-0 break-all bg-black text-white">
       &lt;script src="{% if bundle|slice:":4" == "http" %}{{ bundle }}{% else %}https://{{ request.get_host }}{{ bundle }}{% endif %}"&gt;&lt;/script&gt;
-      <br />
+      <br>
       &lt;temba-webchat channel="{{ channel.uuid }}" host="https://{{ request.get_host }}"&gt;&lt;/temba-webchat&gt;
     </div>
   </div>
@@ -33,14 +33,12 @@
   <div class="mt-2">
     {% if channel.config.allowed_domains %}
       {% blocktrans trimmed %}
-        Only websites on the following domains can embed this channel's chat widget. This can be changed in the
-        channel settings.
+        Only websites on the following domains can embed this channel's chat widget. This can be changed in the channel settings.
       {% endblocktrans %}
       <div class="code inline-block mt-2">{{ channel.config.allowed_domains|join:", " }}</div>
     {% else %}
       {% blocktrans trimmed %}
-        Currently any website can embed this channel's chat widget. Setting allowed domains in the channel settings
-        stops other websites from embedding it.
+        Currently any website can embed this channel's chat widget. Setting allowed domains in the channel settings stops other websites from embedding it.
       {% endblocktrans %}
     {% endif %}
   </div>

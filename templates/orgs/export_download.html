@@ -15,7 +15,7 @@
       {% if object.start_date or object.end_date %}
         <tr>
           <th>{% trans "Date range" %}</th>
-          <td>{{ object.start_date|day }} &rarr; {{ object.end_date|day }}</td>
+          <td>{{ object.start_date|day }} → {{ object.end_date|day }}</td>
         </tr>
       {% endif %}
       {% block "extra-fields" %}
@@ -29,7 +29,7 @@
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       document.querySelector("temba-content-menu").addEventListener("temba-selection", function(event) {
         var item = event.detail.item;

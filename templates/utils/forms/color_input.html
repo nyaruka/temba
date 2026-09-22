@@ -1,4 +1,1 @@
-<temba-color-input name="{{ widget.name }}"
-                   {% if widget.value != None %}value="{{ widget.value|stringformat:'s' }}"{% endif %}
-                   {% include "django/forms/widgets/attrs.html" %}>
-</temba-color-input>
+<temba-color-input name="{{ widget.name }}" {% if widget.value != None %}value="{{ widget.value|stringformat:'s' }}"{% endif %} {% include "django/forms/widgets/attrs.html" %}> </temba-color-input>

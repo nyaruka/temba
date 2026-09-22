@@ -7,22 +7,22 @@
   <div id="title-text" class="hide">{{ title }}</div>
 {% endblock page-header %}
 {% block content %}
-  <temba-modax header="{{ _("Update Shortcut") |escapejs }}" id="update-shortcut">
-  </temba-modax>
-  <temba-modax header="{{ _("Delete Shortcut") |escapejs }}" id="delete-shortcut">
-  </temba-modax>
-  <temba-shortcut-list id="shortcut-list"
-                       fill-window
-                       list-title="{% trans "Shortcuts" %}"
-                       searchable
-                       endpoint="{{ shortcuts_endpoint }}"
-                       content-menu-endpoint="{{ request.path }}"
-                       -temba-selection="handleContentMenuSelected(event)"
-                       -temba-shortcut-edit="showUpdateShortcutModal(event.detail.item.uuid)"
-                       -temba-shortcut-delete="showDeleteShortcutModal(event.detail.item.uuid)"
-                       {% if org_perms.tickets.shortcut_update %}editable{% endif %}
-                       {% if org_perms.tickets.shortcut_delete %}deletable{% endif %}
-                       empty-message="{% trans "No shortcuts" %}">
+  <temba-modax header='{{ _("Update Shortcut") |escapejs }}' id="update-shortcut"> </temba-modax>
+  <temba-modax header='{{ _("Delete Shortcut") |escapejs }}' id="delete-shortcut"> </temba-modax>
+  <temba-shortcut-list
+    id="shortcut-list"
+    fill-window
+    list-title='{% trans "Shortcuts" %}'
+    searchable
+    endpoint="{{ shortcuts_endpoint }}"
+    content-menu-endpoint="{{ request.path }}"
+    -temba-selection="handleContentMenuSelected(event)"
+    -temba-shortcut-edit="showUpdateShortcutModal(event.detail.item.uuid)"
+    -temba-shortcut-delete="showDeleteShortcutModal(event.detail.item.uuid)"
+    {% if org_perms.tickets.shortcut_update %}editable{% endif %}
+    {% if org_perms.tickets.shortcut_delete %}deletable{% endif %}
+    empty-message='{% trans "No shortcuts" %}'
+  >
     <div slot="subtitle">
       {% blocktrans trimmed %}
         Canned responses that agents can use to quickly reply to tickets.
@@ -49,7 +49,7 @@
 {% endblock extra-script %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     /* The list component fills its container edge to edge and brings
        its own surface, so drop the SPA content padding (and the grey
        page background it would otherwise reveal around the list). */

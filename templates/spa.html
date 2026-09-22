@@ -1,4 +1,4 @@
-<style type="text/css">
+<style>
   .text-container {
     min-height: 2.5em;
   }
@@ -38,8 +38,7 @@
       {% endif %}
     </div>
     <div class="text-lg text-gray-600">
-      {% block subtitle %}
-      {% endblock subtitle %}
+      {% block subtitle %} {% endblock subtitle %}
     </div>
   </div>
 {% endblock page-header %}
@@ -53,6 +52,5 @@
   {% endif %}
 {% endblock alert-messages %}
 {% block page-container %}
-  {% block content %}
-  {% endblock content %}
+  {% block content %} {% endblock content %}
 {% endblock page-container %}

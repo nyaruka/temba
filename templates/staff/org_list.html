@@ -9,23 +9,22 @@
 {% endblock page-header %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     a:hover,
     a:hover * {
-      text-decoration: none;
       color: var(--color-link-primary);
+      text-decoration: none;
     }
 
     .field_created_on {
-      white-space: nowrap;
       width: 64px;
+      white-space: nowrap;
     }
   </style>
 {% endblock extra-style %}
 {% block pre-table %}
   <form method="get" id="search-form">
-    <temba-textinput name="search" value="{{ search }}" placeholder="{% trans "Search" %}">
-    </temba-textinput>
+    <temba-textinput name="search" value="{{ search }}" placeholder='{% trans "Search" %}'> </temba-textinput>
     <input type="submit" value="Submit" class="hidden">
   </form>
 {% endblock pre-table %}

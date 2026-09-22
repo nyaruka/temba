@@ -6,8 +6,7 @@
 {% endblock page-header %}
 {% block pre-table %}
   <form method="get" id="search-form">
-    <temba-textinput name="search" value="{{ search }}" placeholder="{% trans "Search" %}">
-    </temba-textinput>
+    <temba-textinput name="search" value="{{ search }}" placeholder='{% trans "Search" %}'> </temba-textinput>
     <input type="submit" value="Submit" class="hidden">
   </form>
 {% endblock pre-table %}

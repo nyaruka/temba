@@ -10,9 +10,13 @@
           <li>
             <a type="button" title="{{ brand.name }}" href="{{ brand_login_url }}">
               {% if invite %}
-                {% blocktrans with provider=brand.name %}Accept Invitation with {{ provider }}{% endblocktrans %}
+                {% blocktrans trimmed with provider=brand.name %}
+                  Accept Invitation with {{ provider }}
+                {% endblocktrans %}
               {% else %}
-                {% blocktrans with provider=brand.name %}Sign In with {{ provider }}{% endblocktrans %}
+                {% blocktrans trimmed with provider=brand.name %}
+                  Sign In with {{ provider }}
+                {% endblocktrans %}
               {% endif %}
             </a>
           </li>
@@ -22,9 +26,13 @@
         <li>
           <a type="button" title="{{ provider.name }}" href="{{ login_url }}">
             {% if invite %}
-              {% blocktrans with provider=provider.name %}Accept Invitation with {{ provider }}{% endblocktrans %}
+              {% blocktrans trimmed with provider=provider.name %}
+                Accept Invitation with {{ provider }}
+              {% endblocktrans %}
             {% else %}
-              {% blocktrans with provider=provider.name %}Sign In with {{ provider }}{% endblocktrans %}
+              {% blocktrans trimmed with provider=provider.name %}
+                Sign In with {{ provider }}
+              {% endblocktrans %}
             {% endif %}
           </a>
         </li>

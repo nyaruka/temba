@@ -5,11 +5,7 @@
     <td style="min-width: 50px">
       {% if item.url %}
         {# crawled urls are attacker influenced so don't hand the opened page a window.opener handle #}
-        <a href="{{ item.url }}"
-           target="_blank"
-           rel="noopener noreferrer"
-           class="linked"
-           onclick="event.stopPropagation()">{{ item.name }}</a>
+        <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer" class="linked" onclick="event.stopPropagation()">{{ item.name }}</a>
       {% else %}
         {{ item.name }}
       {% endif %}
@@ -26,11 +22,7 @@
     <td class="text-right whitespace-nowrap">{{ item.created_on|timedate }}</td>
     {% if deletable %}
       <td class="w-10">
-        <temba-icon name="delete"
-                    clickable="true"
-                    style="--icon-color:#bbb"
-                    onclick="event.stopPropagation(); showDeleteItemModal('{{ item.uuid }}');">
-        </temba-icon>
+        <temba-icon name="delete" clickable="true" style="--icon-color: #bbb" onclick="event.stopPropagation(); showDeleteItemModal('{{ item.uuid }}')"> </temba-icon>
       </td>
     {% endif %}
   </tr>

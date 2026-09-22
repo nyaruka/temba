@@ -6,7 +6,7 @@
     <th>{% trans "Label" %}</th>
     <td>
       {% if label %}
-        <a href="{% url "msgs.msg_filter" label.uuid %}">{{ label.name }}</a>
+        <a href='{% url "msgs.msg_filter" label.uuid %}'>{{ label.name }}</a>
       {% else %}
         --
       {% endif %}

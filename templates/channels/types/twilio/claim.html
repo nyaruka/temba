@@ -15,8 +15,7 @@
     <div class="card mt-6">
       {% trans "Using account" %}
       <div class="text-lg font-bold inline-block ml-2">{{ current_creds_account }}</div>
-      <a href="{% url "channels.types.twilio.connect" %}?reset_creds=reset&claim_type=twilio"
-         class="inline-block ml-4">{% trans "Change" %}</a>
+      <a href='{% url "channels.types.twilio.connect" %}?reset_creds=reset&claim_type=twilio' class="inline-block ml-4">{% trans "Change" %}</a>
     </div>
   {% endif %}
 {% endblock account-warning %}

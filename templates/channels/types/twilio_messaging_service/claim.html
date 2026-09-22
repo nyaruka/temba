@@ -2,14 +2,14 @@
 {% load i18n %}
 
 {% block pre-form %}
+  {# djangofmt: ignore[format] #}
   {% blocktrans trimmed %}
     You can add your Twilio Messaging SID as a channel. You can get your messaging Service SID
     or create a new messaging service from <a target="_blank" href="https://www.twilio.com/user/account/messaging/services">Twilio Console</a>.
   {% endblocktrans %}
   <div class="mt-2">
     {% blocktrans trimmed with branding.name as brand %}
-      After adding your Twilio Messaging Service SID we will provide you with the URL endpoint for Twilio to call
-      when they want to push a message to {{ brand }}.
+      After adding your Twilio Messaging Service SID we will provide you with the URL endpoint for Twilio to call when they want to push a message to {{ brand }}.
     {% endblocktrans %}
   </div>
   {% if account_trial %}
@@ -25,8 +25,7 @@
     <div class="card mt-6">
       {% trans "Using account" %}
       <div class="text-lg font-bold inline-block ml-2">{{ current_creds_account }}</div>
-      <a href="{% url "channels.types.twilio.connect" %}?reset_creds=reset&claim_type=twilio_messaging_service"
-         class="inline-block ml-4">{% trans "Change" %}</a>
+      <a href='{% url "channels.types.twilio.connect" %}?reset_creds=reset&claim_type=twilio_messaging_service' class="inline-block ml-4">{% trans "Change" %}</a>
     </div>
   {% endif %}
 {% endblock pre-form %}

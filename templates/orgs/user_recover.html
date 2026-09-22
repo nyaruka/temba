@@ -13,10 +13,10 @@
   <form method="post">
     {% csrf_token %}
     {% for field, errors in form.errors.items %}
-      {% if field == '__all__' %}<div class="alert alert-error my-4">{{ errors }}</div>{% endif %}
+      {% if field == "__all__" %}<div class="alert alert-error my-4">{{ errors }}</div>{% endif %}
     {% endfor %}
     {% render_field 'new_password' %}
     {% render_field 'confirm_password' %}
-    <input type="submit" value="{{ _("Reset") }}" class="mt-4 button-primary">
+    <input type="submit" value='{{ _("Reset") }}' class="mt-4 button-primary">
   </form>
 {% endblock login-content %}

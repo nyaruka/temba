@@ -5,7 +5,7 @@
 {% block content %}
   {% autoescape off %}
     {% user_display user as user_display %}
-    <div style="margin-top:1em">
+    <div style="margin-top: 1em">
       {% blocktranslate trimmed with site_name=branding.name site_domain=branding.domain %}
         You're receiving this message because {{ user_display }} has registered your email address on {{ site_name }}.
       {% endblocktranslate %}
@@ -13,7 +13,7 @@
         {% blocktranslate trimmed %}
           Your email verification code is listed below. Please enter it on the site to proceed.
         {% endblocktranslate %}
-        <div style="margin-top:1em;font-weight:bold">{{ code }}</div>
+        <div style="margin-top: 1em; font-weight: bold">{{ code }}</div>
       {% else %}
         {% blocktranslate trimmed %}
           If this was you, <a href="{{ activate_url }}">confirm your email address</a>.

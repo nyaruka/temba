@@ -5,13 +5,12 @@
 {% endblock page-top %}
 {% block modal-extra-style %}
   {{ block.super }}
-  <link rel="stylesheet" href="{{ STATIC_URL }}css/tailwind.css" type="text/css">
+  <link rel="stylesheet" href="{{ STATIC_URL }}css/tailwind.css">
 {% endblock modal-extra-style %}
 {% block modal %}
   {% block delete-message %}
     {% blocktrans trimmed %}
-      Are you sure you want to interrupt this broadcast?
-      Contacts who already have messages in the outbox will still receive it.
+      Are you sure you want to interrupt this broadcast? Contacts who already have messages in the outbox will still receive it.
     {% endblocktrans %}
   {% endblock delete-message %}
   {% block delete-form %}

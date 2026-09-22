@@ -28,46 +28,46 @@
   {% endif %}
   {% setvar link %}
   <a href="{{ login_url }}">
+    {% endsetvar %}
+    {% setvar end_link %}
+  </a>
   {% endsetvar %}
-  {% setvar end_link %}
-</a>
-{% endsetvar %}
-{% element p %}
-{% endelement %}
-{% if invite %}<input class="mt-4" style="color:#999;" type="text" disabled value="{{ invite.email }}" />{% endif %}
-{% if not SOCIALACCOUNT_ONLY %}
-  {% url 'account_signup' as action_url %}
-  {% element form form=form method="post" action=action_url tags="entrance,signup" %}
-    {% slot body %}
-      {% csrf_token %}
-      {% element fields form=form unlabeled=True %}
-      {% endelement %}
-      {{ redirect_field }}
-    {% endslot %}
-    {% slot actions %}
-      {% element button tags="prominent,signup" type="submit" %}
-        {% if invite %}
-          {% trans "Accept Invitation" %}
-        {% else %}
-          {% trans "Sign Up" %}
-        {% endif %}
-      {% endelement %}
-    {% endslot %}
+  {% element p %}
   {% endelement %}
-{% endif %}
-{% if PASSKEY_SIGNUP_ENABLED %}
-  {% element hr %}
-  {% endelement %}
-  {% element button href=signup_by_passkey_url tags="prominent,signup,outline,primary" %}
-    {% trans "Sign up using a passkey" %}
-  {% endelement %}
-{% endif %}
-{% if SOCIALACCOUNT_ENABLED and "sso" in request.branding.features %}
-  {% include "socialaccount/snippets/login.html" with page_layout="entrance" %}
-{% endif %}
-{% if not invite %}
-  <div class="sign-in-notice">{% blocktranslate %}Already have an account? {{ link }}Sign in{{ end_link }}{% endblocktranslate %}</div>
-{% endif %}
+  {% if invite %}<input class="mt-4" style="color: #999" type="text" disabled value="{{ invite.email }}">{% endif %}
+  {% if not SOCIALACCOUNT_ONLY %}
+    {% url 'account_signup' as action_url %}
+    {% element form form=form method="post" action=action_url tags="entrance,signup" %}
+      {% slot body %}
+        {% csrf_token %}
+        {% element fields form=form unlabeled=True %}
+        {% endelement %}
+        {{ redirect_field }}
+      {% endslot %}
+      {% slot actions %}
+        {% element button tags="prominent,signup" type="submit" %}
+          {% if invite %}
+            {% trans "Accept Invitation" %}
+          {% else %}
+            {% trans "Sign Up" %}
+          {% endif %}
+        {% endelement %}
+      {% endslot %}
+    {% endelement %}
+  {% endif %}
+  {% if PASSKEY_SIGNUP_ENABLED %}
+    {% element hr %}
+    {% endelement %}
+    {% element button href=signup_by_passkey_url tags="prominent,signup,outline,primary" %}
+      {% trans "Sign up using a passkey" %}
+    {% endelement %}
+  {% endif %}
+  {% if SOCIALACCOUNT_ENABLED and "sso" in request.branding.features %}
+    {% include "socialaccount/snippets/login.html" with page_layout="entrance" %}
+  {% endif %}
+  {% if not invite %}
+    <div class="sign-in-notice">{% blocktranslate %}Already have an account? {{ link }}Sign in{{ end_link }}{% endblocktranslate %}</div>
+  {% endif %}
 {% endblock content %}
 {% block extra-style %}
   {{ block.super }}
@@ -81,7 +81,7 @@
       margin-top: 1rem;
     }
 
-    button[type="submit"] {
+    button[type='submit'] {
       display: block;
       width: 100%;
     }

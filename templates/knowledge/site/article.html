@@ -8,7 +8,7 @@
   {{ article.excerpt }}
 {% endblock description %}
 {% block content %}
-  <nav class="breadcrumbs" aria-label="{% trans "Breadcrumb" %}">
+  <nav class="breadcrumbs" aria-label='{% trans "Breadcrumb" %}'>
     <a href="{{ prefix }}/">{% trans "Home" %}</a>
     <a href="{{ prefix }}/{{ section.slug }}/">{{ section.title }}</a>
     <span>{{ article.title }}</span>
@@ -23,7 +23,7 @@
         {% endblocktrans %}
       </footer>
     </article>
-    <aside class="sidebar" aria-label="{% trans "In this section" %}">
+    <aside class="sidebar" aria-label='{% trans "In this section" %}'>
       <h2>
         <a href="{{ prefix }}/{{ section.slug }}/">{{ section.title }}</a>
       </h2>
@@ -32,7 +32,7 @@
           <li {% if sibling.id == article.id %}class="current" aria-current="page"{% endif %}>
             <a href="{{ prefix }}/{{ section.slug }}/{{ sibling.slug }}/">{{ sibling.title }}</a>
             {% if sibling.id == article.id and headings %}
-              <ul class="headings" aria-label="{% trans "In this article" %}">
+              <ul class="headings" aria-label="{% trans 'In this article' %}">
                 {% for heading in headings %}
                   <li>
                     <a href="#{{ heading.id }}">{{ heading.text }}</a>

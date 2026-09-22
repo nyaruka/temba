@@ -888,9 +888,13 @@ class OrgDeleteTest(TembaTest):
         # make it look like released orgs were released over a week ago
         Org.objects.exclude(released_on=None).update(released_on=F("released_on") - timedelta(days=8))
 
+        # a membership added after release shouldn't block deletion of the team it references
+        self.org.add_user(self.agent, OrgRole.AGENT, team=Team.objects.get(org=self.org, name="Spam Only"))
+
         delete_released_orgs()
 
         self.assertOrgDeleted(self.org, org1_content)
+        self.assertFalse(self.org.users.exists())
         self.assertOrgDeleted(org1_child1)
         self.assertOrgDeleted(org1_child2)
         self.assertOrgActive(self.org2, org2_content)

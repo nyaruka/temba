@@ -4,14 +4,14 @@
 
 {% block content %}
   {% autoescape off %}
-    <div style="margin-top:1em">
+    <div style="margin-top: 1em">
       {% blocktranslate trimmed %}
         Your sign-in code is listed below. Please enter it in your open browser window.
       {% endblocktranslate %}
     </div>
   {% endautoescape %}
-  <div style="margin-top:1em;font-weight:bold">{{ code }}</div>
-  <div style="margin-top:1em">
+  <div style="margin-top: 1em; font-weight: bold">{{ code }}</div>
+  <div style="margin-top: 1em">
     {% blocktranslate trimmed %}
       If this wasn't you, you can ignore this message.
     {% endblocktranslate %}

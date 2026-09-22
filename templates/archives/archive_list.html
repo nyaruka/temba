@@ -12,33 +12,30 @@
   <table class="list lined scrolled">
     <thead>
       <th>{% trans "Period" %}</th>
-      <th style="text-align:right">{% trans "Records" %}</th>
-      <th style="text-align:right">{% trans "Size" %}</th>
+      <th style="text-align: right">{% trans "Records" %}</th>
+      <th style="text-align: right">{% trans "Size" %}</th>
       <th></th>
     </thead>
     {% for archive in object_list %}
       <tr>
         <td>
-          {% if archive.period == 'D' %}
+          {% if archive.period == "D" %}
             {{ archive.start_date|date:"M j, Y" }}
           {% else %}
             {{ archive.start_date|date:"F Y" }}
           {% endif %}
         </td>
-        <td style="text-align:right">{{ archive.record_count|intcomma }}</td>
-        <td style="text-align:right">
+        <td style="text-align: right">{{ archive.record_count|intcomma }}</td>
+        <td style="text-align: right">
           {% if archive.location %}
             {{ archive.size|filesizeformat }}
           {% else %}
             --
           {% endif %}
         </td>
-        <td class="w-10" style="--icon-color:#bbb">
+        <td class="w-10" style="--icon-color: #bbb">
           {% if archive.location %}
-            <temba-icon clickable="true"
-                        name="download"
-                        onclick="downloadFile(event, '{% url 'archives.archive_read' archive.uuid %}')">
-            </temba-icon>
+            <temba-icon clickable="true" name="download" onclick="downloadFile(event, '{% url 'archives.archive_read' archive.uuid %}')"> </temba-icon>
           {% endif %}
         </td>
       </tr>

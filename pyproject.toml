@@ -1,6 +1,6 @@
 [project]
 name = "temba"
-version = "26.3.106"
+version = "26.3.108"
 description = "Hosted service for visually building interactive messaging applications"
 authors = [
     {"name" = "Nyaruka", "email" = "code@nyaruka.com"}
@@ -28,6 +28,7 @@ dependencies = [
     "markdown ~= 3.10.3",
     "nh3 ~= 0.3.0",
     "python-magic ~= 0.4.27",
+    "regex ~= 2026.9.10",
     "xlsxlite ~= 1.1.1",
     "colorama ~= 0.4.6",
     "gunicorn>=26.1.0,<27.0.0",
@@ -63,12 +64,13 @@ dev = [
     "coverage[toml]>=7.5.4",
     "responses>=0.25.3",
     "ruff>=0.15.6",
-    "djlint>=1.34.1",
+    "djangofmt>=1.0.0",
     "tblib>=3.0",
 ]
 
 [tool.code_check]
 packages = ["temba"]
+templates = ["templates"]
 locale = "locale"
 translated = ["es", "fr", "pt_BR"]
 migrations = true
@@ -96,23 +98,10 @@ section-order = ["future", "standard-library", "third-party", "django", "first-p
 [tool.ruff.lint.isort.sections]
 django = ["django"]
 
-[tool.djlint]
-blank_line_after_tag = "load"
-custom_blocks = "render,element,slot"
-custom_html = "temba-[a-z-]+"
-format_css = true
-format_js = true
-ignore = "H021,H023"
-indent = 2
-max_attribute_length = 100
-max_line_length = 200
-
-[tool.djlint.css]
-indent_size = 2
-
-[tool.djlint.js]
-indent_size = 2
-templating = "django"
+[tool.djangofmt]
+indent-width = 2
+line-length = 200
+custom-blocks = ["render", "element", "slot"]
 
 [tool.coverage.run]
 source = ["./temba"]

@@ -3,7 +3,7 @@
 
 {% block styles %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     input {
       width: 100%;
     }
@@ -15,8 +15,7 @@
 {% endblock styles %}
 {% block content %}
   <div class="page-title mb-2">
-    {% block login-title %}
-    {% endblock login-title %}
+    {% block login-title %} {% endblock login-title %}
   </div>
   {% block login-content %}
   {% endblock login-content %}

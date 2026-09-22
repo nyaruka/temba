@@ -26,7 +26,7 @@
   {% endif %}
   {% if message_packs %}
     <p>
-      {% blocktrans with branding.name as brand %}
+      {% blocktrans trimmed with branding.name as brand %}
         To increase the capacity of messages your phone can send in an hour we recommend you install each of the following {{ brand }} message packs as well.
       {% endblocktrans %}
     </p>
@@ -34,9 +34,8 @@
       {% for msg_pack in message_packs %}
         <br>
         <a href="{% url 'apks.apk_download' msg_pack.id %}" class="btn-download">
-          {% blocktrans with forloop.counter as counter %}
+          {% blocktrans trimmed with forloop.counter as counter %}
             Download Message pack {{ counter }}
-
           {% endblocktrans %}
         </a>
       {% endfor %}
@@ -45,7 +44,7 @@
 {% endblock content %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     body {
       padding: 0;
       font-size: 16px;
@@ -57,16 +56,16 @@
     }
 
     .create-account #header {
-      margin: 0;
-      color: white;
-      padding: 20px;
       height: inherit;
+      margin: 0;
+      padding: 20px;
+      color: white;
     }
 
     .create-account #header .title {
       padding-bottom: 10px;
-      font-size: 20px;
       font-weight: 500;
+      font-size: 20px;
     }
 
     .create-account .content {
@@ -84,23 +83,23 @@
     }
 
     .create-account .content form .fields input {
-      background-color: transparent;
+      width: 98%;
+      margin-top: 8px;
+      padding-left: 1px;
       border: 0px solid;
       border-bottom: 1px solid #ddd;
+      outline: none;
+      background-color: transparent;
       -webkit-box-shadow: none;
       -moz-box-shadow: none;
       box-shadow: none;
-      outline: none;
-      padding-left: 1px;
       font-size: 18px;
-      width: 98%;
-      margin-top: 8px;
     }
 
     .create-account .content form .error {
       width: inherit;
-      text-align: left;
       font-size: 14px;
+      text-align: left;
     }
 
     .create-account .content form .errorlist li {
@@ -109,17 +108,17 @@
 
     .create-account .content form textarea:focus,
     .create-account .content form input:focus {
-      outline: none;
       border-bottom: 1px solid var(--color-primary-dark);
+      outline: none;
     }
 
-    .create-account .content form input[type="submit"] {
-      margin-top: 20px;
-      font-weight: 500;
-      color: #999;
-      font-size: 16px;
-      padding: 8px;
+    .create-account .content form input[type='submit'] {
       width: 100%;
+      margin-top: 20px;
+      padding: 8px;
+      color: #999;
+      font-weight: 500;
+      font-size: 16px;
     }
   </style>
 {% endblock extra-style %}

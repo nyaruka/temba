@@ -17,21 +17,20 @@
     {% blocktranslate count unused_count=unused_codes|length %}There is {{ unused_count }} out of {{ total_count }} recovery codes available.{% plural %}There are {{ unused_count }} out of {{ total_count }} recovery codes available.{% endblocktranslate %}
   {% endelement %}
   {% element field id="recovery_codes" type="textarea" disabled=True rows=unused_codes|length readonly=True %}
-    {% comment %} djlint:off {% endcomment %}
+    {# djangofmt: ignore[format] #}
     {% slot value %}{% for code in unused_codes %}{% if forloop.counter0 %}
 {% endif %}{{ code }}{% endfor %}{% endslot %}
-{% comment %} djlint:on {% endcomment %}
-{% endelement %}
-{% if unused_codes %}
-{% url 'mfa_download_recovery_codes' as download_url %}
-<br />
-{% element button href=download_url %}
-{% translate "Download codes" %}
-{% endelement %}
-{% endif %}
-<br />
-{% url 'mfa_generate_recovery_codes' as generate_url %}
-{% element button href=generate_url %}
-{% translate "Generate new codes" %}
-{% endelement %}
+  {% endelement %}
+  {% if unused_codes %}
+    {% url 'mfa_download_recovery_codes' as download_url %}
+    <br>
+    {% element button href=download_url %}
+      {% translate "Download codes" %}
+    {% endelement %}
+  {% endif %}
+  <br>
+  {% url 'mfa_generate_recovery_codes' as generate_url %}
+  {% element button href=generate_url %}
+    {% translate "Generate new codes" %}
+  {% endelement %}
 {% endblock content %}

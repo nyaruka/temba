@@ -2,12 +2,9 @@
 {% load smartmin temba i18n %}
 
 {% block modaxes %}
-  <temba-modax header="{{ _("Update Model") |escapejs }}" id="update-llm">
-  </temba-modax>
-  <temba-modax header="{{ _("Delete Model") |escapejs }}" id="delete-llm">
-  </temba-modax>
-  <temba-modax header="{{ _("Usages") |escapejs }}" id="usages-llm">
-  </temba-modax>
+  <temba-modax header='{{ _("Update Model") |escapejs }}' id="update-llm"> </temba-modax>
+  <temba-modax header='{{ _("Delete Model") |escapejs }}' id="delete-llm"> </temba-modax>
+  <temba-modax header='{{ _("Usages") |escapejs }}' id="usages-llm"> </temba-modax>
 {% endblock modaxes %}
 {% block pre-table %}
   <div class="mb-4">
@@ -22,8 +19,7 @@
       {% for obj in object_list %}
         <tr {% if org_perms.ai.llm_update and not obj.is_system %}onclick="showUpdateLLMModal('{{ obj.uuid }}')" class="hover-linked update"{% endif %}>
           <td style="width: 32px">
-            <temba-icon class="inline-block mr-1 align-middle" name="{{ obj.type.icon }}">
-            </temba-icon>
+            <temba-icon class="inline-block mr-1 align-middle" name="{{ obj.type.icon }}"> </temba-icon>
           </td>
           <td style="min-width: 50px">{{ obj.name }}</td>
           <td>{{ obj.model }}</td>
@@ -31,7 +27,7 @@
             <div class="flex text-center">
               {% with usage_count=obj.usage_count %}
                 {% if usage_count %}
-                  <div onclick="event.stopPropagation() ; showLLMUsagesModal('{{ obj.uuid }}');" class="uses">
+                  <div onclick="event.stopPropagation() ; showLLMUsagesModal('{{ obj.uuid }}')" class="uses">
                     <div class="lbl linked">
                       {% blocktrans trimmed with counter=usage_count|intcomma count num=usage_count %}
                         {{ counter }} use
@@ -47,11 +43,7 @@
           {% if org_perms.ai.llm_delete %}
             <td class="w-10">
               {% if not obj.is_system %}
-                <temba-icon name="delete"
-                            clickable="true"
-                            style="--icon-color:#bbb"
-                            onclick="event.stopPropagation(); showDeleteLLMModal('{{ obj.uuid }}');">
-                </temba-icon>
+                <temba-icon name="delete" clickable="true" style="--icon-color: #bbb" onclick="event.stopPropagation(); showDeleteLLMModal('{{ obj.uuid }}')"> </temba-icon>
               {% endif %}
             </td>
           {% endif %}
@@ -88,11 +80,11 @@
 {% endblock extra-script %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     td.dependencies {
+      width: 3em;
       text-align: right;
       white-space: nowrap;
-      width: 3em;
     }
   </style>
 {% endblock extra-style %}

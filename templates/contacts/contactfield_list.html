@@ -19,7 +19,7 @@
 {% endblock page-header %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     /* The component renders the same flush header bar as the new list
        pages, so drop the SPA content padding the same way they do. */
     .spa-content {
@@ -28,16 +28,18 @@
   </style>
 {% endblock extra-style %}
 {% block content %}
-  <temba-field-list id="field-list"
-                    header-title="{{ title }}"
-                    content-menu-endpoint="{{ request.path }}?{{ request.GET.urlencode }}"
-                    priority-endpoint="{% url 'contacts.contactfield_update_priority' %}"
-                    detail-endpoint="/contactfield/detail/">
+  <temba-field-list
+    id="field-list"
+    header-title="{{ title }}"
+    content-menu-endpoint="{{ request.path }}?{{ request.GET.urlencode }}"
+    priority-endpoint="{% url 'contacts.contactfield_update_priority' %}"
+    detail-endpoint="/contactfield/detail/"
+  >
   </temba-field-list>
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function handleFieldUpdated() {
       document.querySelector("temba-store").refreshFields();
       refreshMenu();

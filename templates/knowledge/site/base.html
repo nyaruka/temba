@@ -44,18 +44,13 @@
         <a class="brand" href="{{ prefix }}/">{{ site.title }}</a>
         {% block header-search %}
           <form class="search header-search" action="{{ prefix }}/search/" method="get" role="search">
-            <input type="search"
-                   name="q"
-                   value="{{ query|default:'' }}"
-                   placeholder="{% trans "Search articles" %}"
-                   aria-label="{% trans "Search articles" %}">
+            <input type="search" name="q" value="{{ query|default:'' }}" placeholder='{% trans "Search articles" %}' aria-label='{% trans "Search articles" %}'>
           </form>
         {% endblock header-search %}
       </div>
     </header>
     <main class="container">
-      {% block content %}
-      {% endblock content %}
+      {% block content %} {% endblock content %}
     </main>
     <footer class="site-footer">
       <div class="container">
@@ -70,8 +65,7 @@
     {% endblock scripts %}
     {% if chat_channel %}
       <script src="{% static 'components/temba-webchat.js' %}"></script>
-      <temba-webchat channel="{{ chat_channel.uuid }}" host="{{ chat_host }}">
-      </temba-webchat>
+      <temba-webchat channel="{{ chat_channel.uuid }}" host="{{ chat_host }}"> </temba-webchat>
     {% endif %}
   </body>
 </html>

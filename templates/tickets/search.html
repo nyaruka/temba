@@ -54,7 +54,5 @@
     };
     document.addEventListener("temba-ticket-search-show", window.handleTicketSearchShow);
   </script>
-  <temba-ticket-search endpoint="{% url 'tickets.ticket_search' %}"
-                       -temba-search-result-selected="handleTicketSearchSelected(event)">
-  </temba-ticket-search>
+  <temba-ticket-search endpoint="{% url 'tickets.ticket_search' %}" -temba-search-result-selected="handleTicketSearchSelected(event)"> </temba-ticket-search>
 {% endif %}

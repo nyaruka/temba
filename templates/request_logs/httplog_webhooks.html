@@ -8,20 +8,20 @@
       <thead>
         <tr>
           <th>{% trans "URL" %}</th>
-          <th style="width:100px;">{% trans "Status" %}</th>
-          <th style="width:100px;">{% trans "Elapsed" %}</th>
+          <th style="width: 100px">{% trans "Status" %}</th>
+          <th style="width: 100px">{% trans "Elapsed" %}</th>
           <th>{% trans "Flow" %}</th>
-          <th style="width:100px;" class="text-right">{% trans "Time" %}</th>
+          <th style="width: 100px" class="text-right">{% trans "Time" %}</th>
         </tr>
       </thead>
       <tbody>
         {% for obj in object_list %}
           <tr class="{% if obj.is_error %}warning{% endif %}">
             <td class="clickable">
-              <a href="{% url "request_logs.httplog_read" obj.id %}" class="linked">{{ obj.url|truncatechars:128 }}</a>
+              <a href='{% url "request_logs.httplog_read" obj.id %}' class="linked">{{ obj.url|truncatechars:128 }}</a>
             </td>
             <td class="clickable">
-              <a href="{% url "request_logs.httplog_read" obj.id %}" class="linked">{{ obj.status_code|default:"--" }}</a>
+              <a href='{% url "request_logs.httplog_read" obj.id %}' class="linked">{{ obj.status_code|default:"--" }}</a>
             </td>
             <td class="whitespace-nowrap">
               {% if obj.request_time %}
@@ -31,7 +31,7 @@
               {% endif %}
             </td>
             <td class="clickable">
-              <a href="{% url "flows.flow_editor" obj.flow.uuid %}">
+              <a href='{% url "flows.flow_editor" obj.flow.uuid %}'>
                 <temba-label type="flow" primary clickable>
                   {{ obj.flow.name }}
                 </temba-label>

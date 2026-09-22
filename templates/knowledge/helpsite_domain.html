@@ -7,10 +7,7 @@
     The records to add for the domain being typed, kept current by updateHelpSiteRecords as it's typed - only the
     check on them waits for the domain to be saved, so it applies to the saved domain and no other.
   {% endcomment %}
-  <div class="records"
-       id="domain-records"
-       data-saved="{{ object.domain|default:'' }}"
-       {% if not object.domain %}hidden{% endif %}>
+  <div class="records" id="domain-records" data-saved="{{ object.domain|default:'' }}" {% if not object.domain %}hidden{% endif %}>
     <div class="records-title">
       {% trans "Add these records to the DNS for" %} <b class="domain-name">{{ object.domain }}</b>
     </div>
@@ -37,13 +34,11 @@
     </table>
     <div class="records-status" id="domain-status-row">
       {% if object.is_domain_verified %}
-        <temba-icon name="check" class="verified">
-        </temba-icon>
+        <temba-icon name="check" class="verified"> </temba-icon>
         <span>{% trans "Verified. Your help site is served on this domain." %}</span>
       {% else %}
         <span id="domain-status">{% trans "Not verified yet. Once the records are in place, check to have your domain verified and served." %}</span>
-        <temba-button small name="{% trans "Check" %}" onclick="checkHelpSiteDomain(this)">
-        </temba-button>
+        <temba-button small name='{% trans "Check" %}' onclick="checkHelpSiteDomain(this)"> </temba-button>
       {% endif %}
     </div>
     <div class="records-status" id="domain-unsaved" hidden>
@@ -95,7 +90,7 @@
 {% endblock modal-script %}
 {% block modal-extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .records {
       margin: 4px 0 16px;
       padding: 14px 16px;
@@ -105,8 +100,8 @@
     }
 
     .records-title {
-      font-size: 13px;
       margin-bottom: 10px;
+      font-size: 13px;
     }
 
     .records table {
@@ -116,10 +111,10 @@
     }
 
     .records th {
-      text-align: left;
-      font-weight: 600;
-      color: var(--color-text-help);
       padding: 0 8px 6px 0;
+      color: var(--color-text-help);
+      font-weight: 600;
+      text-align: left;
     }
 
     .records td {
@@ -129,9 +124,9 @@
     }
 
     .records td:first-child {
-      white-space: nowrap;
       width: 1%;
       padding-right: 16px;
+      white-space: nowrap;
     }
 
     /* the page styles inline code with padding, which would indent the first line of a wrapped value and not the
@@ -140,17 +135,17 @@
       display: block;
       padding: 0;
       border-radius: 0;
-      user-select: all;
       font-size: 12px;
       overflow-wrap: anywhere;
+      user-select: all;
     }
 
     .records-status {
       display: flex;
       align-items: center;
-      gap: 10px;
       margin-top: 12px;
       padding-top: 12px;
+      gap: 10px;
       border-top: 1px solid var(--color-borders);
       font-size: 13px;
     }

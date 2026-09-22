@@ -1,10 +1,10 @@
-{% if success_url and success_url != 'hide' %}
+{% if success_url and success_url != "hide" %}
   <div class="success-script">
     {% block success-script %}
       {% if success_script %}
         {% include success_script %}
       {% else %}
-        <script type="text/javascript">
+        <script>
           document.location.href = '{{ success_url }}';
         </script>
       {% endif %}
@@ -12,8 +12,7 @@
   </div>
 {% else %}
   <div style="--transition-speed: 150ms" class="animate">
-    {% block modal %}
-    {% endblock modal %}
+    {% block modal %} {% endblock modal %}
   </div>
   {% block modal-script %}
   {% endblock modal-script %}

@@ -3,13 +3,13 @@
 
 {% block styles %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .content-card {
       margin-top: 8em;
       border: none;
-      box-shadow: none;
       border-radius: 0;
       background: transparent;
+      box-shadow: none;
     }
   </style>
 {% endblock styles %}
@@ -23,8 +23,7 @@
   <div class="background"></div>
   <div class="flex flex-col h-full z-10 overflow-y-auto">
     <div class="top flex-shrink flex-grow">
-      {% block top %}
-      {% endblock top %}
+      {% block top %} {% endblock top %}
     </div>
     <div class="middle flex flex-row mb-10">
       <div class="flex-grow"></div>
@@ -32,15 +31,11 @@
         <div class="flex justify-between items-center">
           <div class="brand">
             {% block logo %}
-              <img class="no-nav-logo"
-                   style="max-height:4em;
-                          margin: 1em 0"
-                   src="{{ STATIC_URL }}{{ branding.logos.primary }}">
+              <img class="no-nav-logo" style="max-height: 4em; margin: 1em 0" src="{{ STATIC_URL }}{{ branding.logos.primary }}">
             {% endblock logo %}
           </div>
           <div class="top-right">
-            {% block top-right %}
-            {% endblock top-right %}
+            {% block top-right %} {% endblock top-right %}
           </div>
         </div>
         {% block content-wrapper %}

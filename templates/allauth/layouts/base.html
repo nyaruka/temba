@@ -10,24 +10,24 @@
     }
 
     .menu {
+      margin-right: 4em;
+      padding-top: 1em;
       padding-right: 5em;
       border-right: 1px solid #dee2e6;
-      margin-right: 4em;
       white-space: nowrap;
-      padding-top: 1em;
     }
 
     h1 {
-      font-size: 1.5em;
-      border-bottom: 1px solid #dee2e6;
-      padding-bottom: .25em;
       margin-bottom: 0.5em;
+      padding-bottom: 0.25em;
+      border-bottom: 1px solid #dee2e6;
+      font-size: 1.5em;
     }
 
     h2 {
-      font-size: 1.2em;
-      margin-bottom: 0.5em;
       margin-top: 0.5em;
+      margin-bottom: 0.5em;
+      font-size: 1.2em;
     }
 
     section {
@@ -40,71 +40,68 @@
 
     button {
       display: block;
-      background: var(--color-primary-dark);
-      color: white;
+      margin-top: 0.75em;
       padding: 0.75em 1em;
       border-radius: var(--curvature);
-      margin-top: 0.75em;
+      background: var(--color-primary-dark);
+      color: white;
       font-size: 1em;
     }
 
     label {
+      display: inline-block;
       margin-top: 0.5em;
+      margin-bottom: 0.75em;
       margin-left: 0.25em;
+      padding-top: 1em;
       color: #777;
       font-weight: 400;
       font-size: 0.95em;
       line-height: 0.3em;
-      padding-top: 1em;
-      margin-bottom: 0.75em;
-      display: inline-block;
     }
 
-    input[type="text"],
-    input[type="email"],
-    input[type="password"] {
-      box-shadow: var(--widget-box-shadow);
-      border: 1px solid #dee2e6;
-      border-radius: var(--curvature);
-      padding: .75em 1em;
+    input[type='text'],
+    input[type='email'],
+    input[type='password'] {
       width: 100%;
       margin-bottom: 0.25em;
+      padding: 0.75em 1em;
+      border: 1px solid #dee2e6;
+      border-radius: var(--curvature);
+      box-shadow: var(--widget-box-shadow);
       transition: all ease-in-out 200ms;
     }
 
     input:focus {
-      outline: none;
       border-color: var(--color-focus);
+      outline: none;
       background: var(--color-widget-bg-focused);
       box-shadow: var(--widget-box-shadow-focused);
     }
 
     .help-text {
-      font-size: 0.95em;
-      margin-left: 0.25em;
       margin: 0px;
       color: #999;
-
+      font-size: 0.95em;
     }
 
     form ul {
-      background: #f8f9fa;
       padding: 1em;
-      border-radius: var(--curvature);
       border: 1px solid #dee2e6;
+      border-radius: var(--curvature);
+      background: #f8f9fa;
     }
 
     form ul li {
-      font-size: 0.95em;
       color: #666;
-
+      font-size: 0.95em;
     }
 
     .errorlist {
       margin-top: 1em;
+      padding: 0.5em 0.5em;
       border: 1px solid var(--color-error);
       border-radius: var(--curvature);
-      padding: 0.5em 0.5em;
       background: #fff;
     }
 
@@ -113,27 +110,26 @@
     }
 
     li.active a {
-      font-weight: 600;
       color: #666;
+      font-weight: 600;
       cursor: default;
     }
 
     li.active a:hover {
       text-decoration: none;
       pointer-events: none;
-
     }
   </style>
   {% if not user.is_authenticated %}
     <style>
       .content-card {
-        max-width: 400px
+        max-width: 400px;
       }
     </style>
   {% else %}
     <style>
       .content-card {
-        max-width: 800px
+        max-width: 800px;
       }
 
       @media (max-width: 800px) {
@@ -142,25 +138,23 @@
         }
 
         .menu {
-          border-radius: var(--curvature);
-
-          border-right: none;
-          margin-right: 0;
-          white-space: nowrap;
           margin-top: 1em;
-          padding: 0.5em;
+          margin-right: 0;
           margin-bottom: 2em;
+          padding: 0.5em;
+          border-right: none;
+          border-radius: var(--curvature);
           background: #f8f9fa;
+          white-space: nowrap;
         }
-
 
         .menu ul {
           display: flex;
           flex-direction: row;
-          justify-content: space-around;
-          padding: 0;
-          margin: 0;
           flex-wrap: wrap;
+          justify-content: space-around;
+          margin: 0;
+          padding: 0;
         }
 
         .menu ul li {
@@ -174,8 +168,7 @@
   {% if user.is_authenticated %}
     {% if org %}
       <div class="-mt-10">
-        <temba-button class="inline-block" name="Workspace" href="{% url 'orgs.org_start' %}">
-        </temba-button>
+        <temba-button class="inline-block" name="Workspace" href="{% url 'orgs.org_start' %}"> </temba-button>
       </div>
     {% endif %}
   {% endif %}

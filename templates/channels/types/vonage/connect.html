@@ -7,14 +7,14 @@
 {% block pre-form %}
   <div class="mb-4">
     {% blocktrans trimmed with settings_url='https://dashboard.vonage.com/settings' %}
-      To connect your Vonage Account you will need to provide us your API key and secret. Both values can be found
-      on your <a target="vonage" href="{{ settings_url }}">Vonage settings</a> page in the API Settings section.
+      To connect your Vonage Account you will need to provide us your API key and secret. Both values can be found on your <a target="vonage" href="{{ settings_url }}">Vonage settings</a> page in the
+      API Settings section.
     {% endblocktrans %}
   </div>
 {% endblock pre-form %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     onSpload(function() {
       document.querySelector("form.smartmin-form").setAttribute('autocomplete', 'off');
     });

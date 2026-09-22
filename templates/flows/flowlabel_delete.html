@@ -1,4 +1,4 @@
-{% extends 'includes/modal.html' %}
+{% extends "includes/modal.html" %}
 {% load i18n temba smartmin %}
 
 {% block modal %}
@@ -12,7 +12,7 @@
     {% endblocktrans %}
     <div class="hidden">
       <form method="post">
-        <input type="submit" value="{% trans "Delete" %}">
+        <input type="submit" value='{% trans "Delete" %}'>
       </form>
     </div>
   {% endif %}

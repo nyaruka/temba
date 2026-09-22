@@ -12,7 +12,7 @@
     <div class="flex mb-4">
       <div class="flex-grow page-title">{% trans "API Explorer" %}</div>
       <div>
-        <a class="button-light ml-4" href="{% url "api.v2.root" %}">{% trans "Documentation" %}</a>
+        <a class="button-light ml-4" href='{% url "api.v2.root" %}'>{% trans "Documentation" %}</a>
       </div>
     </div>
     <div class="mb-4">
@@ -24,10 +24,7 @@
     </div>
     {% for endpoint in endpoints %}
       <div class="card hover-box">
-        <div onclick="handleToggle(event)"
-             data-slug="{{ endpoint.slug }}"
-             data-method="{{ endpoint.method }}"
-             class="cursor-pointer endpoint-title">
+        <div onclick="handleToggle(event)" data-slug="{{ endpoint.slug }}" data-method="{{ endpoint.method }}" class="cursor-pointer endpoint-title">
           <div class="md:hidden endpoint-description my-2">{{ endpoint.title }}</div>
           <div class="flex items-center">
             <div class="method-{{ endpoint.method|lower }} endpoint-method font-mono rounded-lg">{{ endpoint.method }}</div>
@@ -81,7 +78,7 @@
               <b class="font-bold">{{ endpoint.method }}</b>
               <div class="md:text-base md:inline whitespace-nowrap text-sm">
                 https://{{ branding.domain }}{{ endpoint.url }}.json<span class="query-display"></span>
-                <br />
+                <br>
               </div>
               <b class="font-bold">Authorization:</b>
               <div class="md:text-base md:inline whitespace-nowrap text-sm">
@@ -92,10 +89,7 @@
               <div class="md:flex form-group items-center">
                 <label class="md:text-right control-label self-start pt-4 w-56 pr-6">{% trans "Query String" %}</label>
                 <div class="flex-grow">
-                  <textarea oninput="handleQueryInput(event)"
-                            rows="1"
-                            class="textinput p-2 rounded request-query"
-                            id="request-query-{{ endpoint.slug }}">{{ endpoint.example.query }}</textarea>
+                  <textarea oninput="handleQueryInput(event)" rows="1" class="textinput p-2 rounded request-query" id="request-query-{{ endpoint.slug }}">{{ endpoint.example.query }}</textarea>
                 </div>
               </div>
             {% endif %}
@@ -112,10 +106,9 @@
             <div class="pull-left">
               <a href="{{ endpoint.url }}">{% trans "View Full Documentation" %}</a>
             </div>
-            <div onclick="javascript:handleRequest('{{ endpoint.slug }}', '{{ endpoint.method }}', '{{ endpoint.url }}.json')"
-                 class="button-primary">{{ endpoint.method|upper }}</div>
+            <div onclick="javascript:handleRequest('{{ endpoint.slug }}', '{{ endpoint.method }}', '{{ endpoint.url }}.json')" class="button-primary">{{ endpoint.method|upper }}</div>
           </div>
-          <pre style="margin-bottom:0;" class="prettyprint result mb-0 mt-4 p-4" id="result-{{ endpoint.slug }}"></pre>
+          <pre style="margin-bottom: 0" class="prettyprint result mb-0 mt-4 p-4" id="result-{{ endpoint.slug }}"></pre>
         </div>
       </div>
     {% endfor %}
@@ -123,7 +116,7 @@
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
-  <script type="text/javascript">
+  <script>
     function handleToggle(event) {
       event.currentTarget.parentElement.classList.toggle("expanded");
     }
@@ -176,7 +169,7 @@
 {% endblock extra-script %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     .main-logo {
       margin: 1.5em;
     }
@@ -216,33 +209,33 @@
     }
 
     .method-get {
-      background-color: #058C40;
-      color: #fff;
-      padding: 3px;
-      text-align: center;
-      width: 60px;
       display: inline-block;
+      width: 60px;
       margin-right: 15px;
+      padding: 3px;
+      background-color: #058c40;
+      color: #fff;
+      text-align: center;
     }
 
     .method-delete {
+      display: inline-block;
+      width: 60px;
+      margin-right: 15px;
+      padding: 3px;
       background-color: #952624;
       color: #fff;
-      padding: 3px;
       text-align: center;
-      width: 60px;
-      display: inline-block;
-      margin-right: 15px;
     }
 
     .method-post {
+      display: inline-block;
+      width: 60px;
+      margin-right: 15px;
+      padding: 3px;
       background-color: #1793cd;
       color: #fff;
-      width: 60px;
       text-align: center;
-      padding: 3px;
-      display: inline-block;
-      margin-right: 15px;
     }
 
     table.list tr td:first-child {
@@ -258,18 +251,18 @@
     }
 
     .request-query {
-      font-family: monospace;
-      min-height: 30px;
-      max-width: 700px;
       width: 100%;
+      max-width: 700px;
+      min-height: 30px;
+      font-family: monospace;
     }
 
     .request-body {
-      font-family: monospace;
-      max-width: 700px;
       width: 100%;
-      min-height: 100px;
+      max-width: 700px;
       height: 110px;
+      min-height: 100px;
+      font-family: monospace;
     }
   </style>
 {% endblock extra-style %}

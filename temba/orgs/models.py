@@ -1166,6 +1166,7 @@ class Org(LegacyIDMixin, SmartModel):
         delete_in_batches(self.shortcuts.all())
         delete_in_batches(self.tickets.all())
         delete_in_batches(self.topics.all())
+        delete_in_batches(OrgMembership.objects.filter(org=self))  # any added since release would block team deletion
         delete_in_batches(self.teams.all())
         delete_in_batches(self.airtime_transfers.all())
 

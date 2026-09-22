@@ -53,7 +53,7 @@
           <td>URN:{{ scheme.0 }}</td>
           <td>{{ scheme.1 }}</td>
           <td>
-            {% if scheme.0 == 'tel' and org_country %}
+            {% if scheme.0 == "tel" and org_country %}
               {% blocktrans trimmed with country=org_country.name %}
                 Numbers without a country code will be treated as local numbers in {{ country }}.
               {% endblocktrans %}
@@ -77,9 +77,8 @@
     </table>
     <div class="mb-4">
       {% blocktrans trimmed with sample_url=STATIC_URL|add:"examples/sample_import.xlsx" code=explicit_clear max=max_records|intcomma %}
-        You can download <a href="{{ sample_url }}">this Excel template</a> as a sample. Imports files can contain a
-        maximum of {{ max }} records. Note that blank values will be ignored. If you want to explicitly clear values
-        use <tt>{{ code }}</tt>.
+        You can download <a href="{{ sample_url }}">this Excel template</a> as a sample. Imports files can contain a maximum of {{ max }} records. Note that blank values will be ignored. If you want
+        to explicitly clear values use <tt>{{ code }}</tt>.
       {% endblocktrans %}
     </div>
     <form method="post" enctype="multipart/form-data" id="import-form" class="mb-4">
@@ -92,11 +91,11 @@
         </div>
         <div class="flex mb-4" id="real-button">
           <input type="text" id="file-field">
-          <div style="margin-top:-1px" class="button-light ml-4">{% trans "Choose File" %}</div>
+          <div style="margin-top: -1px" class="button-light ml-4">{% trans "Choose File" %}</div>
         </div>
       {% endblock fields %}
       <div class="flex form-buttons">
-        <input type="submit" value="{% trans "Preview" %}" class="button-primary">
+        <input type="submit" value='{% trans "Preview" %}' class="button-primary">
       </div>
     </form>
   </div>
@@ -104,7 +103,7 @@
 {% block extra-script %}
   {{ block.super }}
   {% block spa-script %}
-    <script type="text/javascript">
+    <script>
       function onFileChange() {
         var fileInput = document.getElementById('import-file');
         var file = fileInput.value;
@@ -119,41 +118,44 @@
 {% endblock extra-script %}
 {% block extra-style %}
   {{ block.super }}
-  <style type="text/css">
+  <style>
     #file-upload {
       position: relative;
     }
 
     #real-button {
+      z-index: 1;
       position: relative;
       top: 0;
       left: 0;
-      z-index: 1;
     }
 
     #file-field {
       width: 300px;
       height: 35px;
-      font-size: 16px;
       margin-bottom: 0px;
-      border-radius: 5px;
       padding: 9px;
-      cursor: pointer;
       border: 1px solid var(--color-widget-border);
-      box-shadow: rgba(0, 0, 0, 0.1) 0px 0px 0px 1px, rgba(0, 0, 0, 0.04) 0px 3px 20px 0px, rgba(0, 0, 0, 0.02) 0px 1px 2px 0px;
+      border-radius: 5px;
+      box-shadow:
+        rgba(0, 0, 0, 0.1) 0px 0px 0px 1px,
+        rgba(0, 0, 0, 0.04) 0px 3px 20px 0px,
+        rgba(0, 0, 0, 0.02) 0px 1px 2px 0px;
+      font-size: 16px;
+      cursor: pointer;
     }
 
     #import-file {
+      z-index: 2;
       position: absolute;
-      width: 450px;
-      height: 35px;
       top: 0;
       left: 0;
+      width: 450px;
+      height: 35px;
       text-align: right;
-      -moz-opacity: 0;
       filter: alpha(opacity: 0);
+      -moz-opacity: 0;
       opacity: 0;
-      z-index: 2;
     }
   </style>
 {% endblock extra-style %}

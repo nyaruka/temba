@@ -890,8 +890,8 @@ export class MarkdownEditor extends FieldElement {
           var(--color-widget-bg);
       }
 
-      /* The column's padding, one segmented control: the grid at its default density with a minus and plus either
-         side of it, joined so the signs read as steps around the middle rather than three unrelated buttons. */
+      /* The column's padding, one segmented control: its three densities side by side, joined so they read as
+         steps of one setting rather than three unrelated buttons. */
       .popover .pad-group {
         display: flex;
         align-items: stretch;
@@ -3937,12 +3937,12 @@ export class MarkdownEditor extends FieldElement {
         ? current.background
         : '';
 
-    // three densities as one control: the default in the middle, stepped tighter or airier by the minus and plus
-    // flanking it - a group, so the signs read as "less padding" and "more padding" around the grid
+    // three densities as one control, tightest to airiest - each icon the same frame around a block of content,
+    // with the gap between them the size the padding is
     const paddings = [
-      { value: '4px', icon: Icon.minus, title: msg('Less padding') },
-      { value: '', icon: Icon.padding, title: msg('Normal padding') },
-      { value: '28px', icon: Icon.add, title: msg('More padding') }
+      { value: '4px', icon: Icon.padding_less, title: msg('Less padding') },
+      { value: '', icon: Icon.padding_normal, title: msg('Normal padding') },
+      { value: '28px', icon: Icon.padding_more, title: msg('More padding') }
     ];
 
     // the column under edit, traced in blue - every cell at this index and only this index, so one column of a
