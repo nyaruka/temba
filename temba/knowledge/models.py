@@ -695,14 +695,42 @@ class KnowledgeSource(TembaModel):
             article.prerender()
         Article.objects.bulk_update(articles, ("body_html", "headings"), batch_size=100)
 
+    @classmethod
+    def get_system(cls, org, source_type: str):
+        """
+        The org's system source of the given type - its shortcuts or its helpdesk - or None if it hasn't one.
+        """
+        assert source_type in cls.SYSTEM_TYPES
+
+        return org.sources.filter(source_type=source_type, is_system=True, is_active=True).first()
+
     def mark_pending(self):
         """
-        Flags this source as needing (re)indexing so mailroom's sweep picks it up. Called whenever this app changes
-        something mailroom's index is derived from - website config, uploaded files.
+        Flags this source as needing (re)indexing and asks mailroom for one. Called whenever this app changes something
+        mailroom's index is derived from as a whole - website config, uploaded files, an import - rather than one item.
         """
         self.status = self.STATUS_PENDING
         self.error = None
         self.save(update_fields=("status", "error"))
+
+        self.trigger_index()
+
+    def trigger_index(self):
+        """
+        Asks mailroom to (re)index this source once the current transaction commits - so that what it reads includes
+        the change being made, since it indexes only what's changed since it last did. Rapid changes each ask and
+        mailroom collapses them into one run, and a request that doesn't get through is only a delay: mailroom's own
+        sweep re-queues any source whose items have changed since it was indexed.
+        """
+        org = self.org
+
+        def request():
+            try:
+                mailroom.get_client().knowledge_index(org, self)
+            except RequestException as e:
+                logger.error(f"error requesting indexing of knowledge source {self.uuid}: {e}", exc_info=True)
+
+        on_transaction_commit(request)
 
     def release(self, user):
         assert not (self.is_system and self.org.is_active), "can't release system knowledge"
@@ -992,30 +1020,38 @@ class Article(models.Model):
         return text[: cut if cut > length // 2 else length].rstrip() + "\u2026"
 
     def publish(self, user):
+        """
+        Puts the article in reach of the site and of agents, and asks mailroom to index it.
+        """
         self.status = self.STATUS_PUBLISHED
         self.published_on = timezone.now()
         self.modified_by = user
         self.save(update_fields=("status", "published_on", "modified_by", "modified_on"))
 
+        self.source.trigger_index()
+
     def unpublish(self, user):
         """
-        Reverts to a draft. modified_on bumps, so mailroom's sweep sees the helpdesk as stale and drops our chunks.
+        Reverts to a draft. modified_on bumps, so mailroom sees the article as changed and drops our chunks.
         """
         self.status = self.STATUS_DRAFT
         self.published_on = None
         self.modified_by = user
         self.save(update_fields=("status", "published_on", "modified_by", "modified_on"))
 
+        self.source.trigger_index()
+
     def release(self, user):
         """
-        Soft delete - a tombstone, so mailroom's delta sweep notices and drops our chunks. A section goes only once
-        it's empty, since its articles would otherwise be left as sections themselves; the images go for good, since
+        Soft delete - a tombstone, so mailroom's delta notices and drops our chunks. A section goes only once it's
+        empty, since its articles would otherwise be left as sections themselves; the images go for good, since
         nothing will render this body again.
         """
         assert not (self.is_section and self.children.filter(is_active=True).exists()), (
             "a section with articles in it can't be released"
         )
 
+        was_published = self.status == self.STATUS_PUBLISHED
         image_paths = list(self.images.values_list("path", flat=True))
 
         with transaction.atomic():
@@ -1030,6 +1066,10 @@ class Article(models.Model):
         # ATOMIC_REQUESTS means the atomic block above is only a savepoint, so the storage objects can't go until the
         # request's transaction commits - otherwise a later failure restores the article without its screenshots
         on_transaction_commit(lambda: [public_file_storage.delete(p) for p in image_paths])
+
+        # a draft was never in the index, so only a published article's going is something mailroom has to hear about
+        if was_published:
+            self.source.trigger_index()
 
     def __str__(self):
         return self.title

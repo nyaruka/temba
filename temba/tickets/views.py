@@ -103,6 +103,11 @@ class ShortcutCRUDL(SmartCRUDL):
     class Update(BaseUpdateModal):
         form_class = ShortcutForm
 
+        def post_save(self, obj):
+            obj = super().post_save(obj)
+            obj.trigger_index()
+            return obj
+
         def get_success_url(self):
             return shortcuts_url(self.request.org)
 

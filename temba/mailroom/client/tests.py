@@ -6,6 +6,7 @@ from temba.ai.types.openai.type import OpenAIType
 from temba.campaigns.models import Campaign, CampaignEvent
 from temba.contacts.models import ContactField, ContactImport
 from temba.flows.models import Flow, FlowStart
+from temba.knowledge.models import KnowledgeSource
 from temba.schedules.models import Schedule
 from temba.tests import MockJsonResponse, MockResponse, TembaTest
 from temba.tickets.models import Topic
@@ -835,6 +836,19 @@ class MailroomClientTest(TembaTest):
             "http://localhost:8090/mi/msg/resend",
             headers={"User-Agent": "Temba", "Authorization": "Token sesame"},
             json={"org_id": self.org.id, "user_id": self.admin.id, "msg_uuids": [str(msg1.uuid), str(msg2.uuid)]},
+        )
+
+    @patch("requests.post")
+    def test_knowledge_index(self, mock_post):
+        mock_post.return_value = MockJsonResponse(200, {})
+
+        source = self.org.sources.get(source_type=KnowledgeSource.TYPE_HELPDESK)
+        self.client.knowledge_index(self.org, source)
+
+        mock_post.assert_called_once_with(
+            "http://localhost:8090/mi/knowledge/index",
+            headers={"User-Agent": "Temba", "Authorization": "Token sesame"},
+            json={"org_id": self.org.id, "knowledge_uuid": str(source.uuid)},
         )
 
     @patch("requests.post")

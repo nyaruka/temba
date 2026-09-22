@@ -39,7 +39,7 @@ class PreviewView(View):
         ):
             raise PermissionDenied()
 
-        helpdesk = org.sources.filter(source_type=KnowledgeSource.TYPE_HELPDESK, is_system=True, is_active=True).first()
+        helpdesk = KnowledgeSource.get_system(org, KnowledgeSource.TYPE_HELPDESK)
         if not helpdesk:
             raise Http404()
 

@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from django.conf import settings
 from django.urls import reverse
@@ -297,6 +297,17 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("eng", article.language)  # never asked, so unchanged by an edit
         self.assertEqual(Article.STATUS_DRAFT, article.status)  # saving an edit doesn't publish
 
+        # a draft isn't in the index, so editing one is nothing mailroom needs to hear about..
+        self.assertEqual([], self.mr_mocks.calls["knowledge_index"])
+
+        # ..but an edit to a published article is
+        article.publish(self.admin)
+        self.mr_mocks.calls.clear()
+
+        self.assertUpdateSubmit(update_url, self.admin, {"title": "All About Flows", "body": "# Flows\n\nAre great."})
+
+        self.assertEqual([call(self.org, self.helpdesk)], self.mr_mocks.calls["knowledge_index"])
+
         # a section is described rather than written: no editor, and the dialog isn't held open to the window's
         # height for an editor it doesn't have
         section_url = reverse("knowledge.article_update", args=[section.uuid])
@@ -346,6 +357,9 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(Article.STATUS_PUBLISHED, article.status)
         self.assertIsNotNone(article.published_on)
 
+        # and mailroom is asked to index the helpdesk
+        self.assertEqual([call(self.org, self.helpdesk)], self.mr_mocks.calls["knowledge_index"])
+
         modified_on = article.modified_on
 
         response = publish({"uuid": str(article.uuid), "status": "draft"})
@@ -355,8 +369,9 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(Article.STATUS_DRAFT, article.status)
         self.assertIsNone(article.published_on)
 
-        # which has to bump modified_on so that mailroom's sweep drops its chunks
+        # which has to bump modified_on so that mailroom drops its chunks, and asks it to
         self.assertGreater(article.modified_on, modified_on)
+        self.assertEqual(2, len(self.mr_mocks.calls["knowledge_index"]))
 
         # a status we don't have, or a payload that isn't one at all, is refused rather than guessed at
         for payload in ({"uuid": str(article.uuid), "status": "live"}, {"uuid": str(article.uuid)}, {}, "nope"):
@@ -577,9 +592,18 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
         response = self.assertDeleteSubmit(delete_url, self.admin, object_deactivated=article, success_status=302)
         self.assertEqual(reverse("knowledge.article_list"), response.url)
 
+        # a draft was never in the index, so mailroom wasn't asked to reindex the helpdesk
+        self.assertEqual([], self.mr_mocks.calls["knowledge_index"])
+
         # emptied, the section can
         response = self.assertDeleteFetch(section_url, [self.admin])
         self.assertContains(response, "You are about to delete the section")
         self.assertContains(response, 'type="submit"')
 
+        section.publish(self.admin)
+        self.mr_mocks.calls.clear()
+
         self.assertDeleteSubmit(section_url, self.admin, object_deactivated=section, success_status=302)
+
+        # it was published, so mailroom is asked to drop it
+        self.assertEqual([call(self.org, self.helpdesk)], self.mr_mocks.calls["knowledge_index"])

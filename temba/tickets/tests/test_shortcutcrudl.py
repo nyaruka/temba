@@ -1,5 +1,8 @@
+from unittest.mock import call
+
 from django.urls import reverse
 
+from temba.knowledge.models import KnowledgeSource
 from temba.orgs.models import Org
 from temba.tests import CRUDLTestMixin, TembaTest
 from temba.tickets.models import Shortcut
@@ -60,6 +63,10 @@ class ShortcutCRUDLTest(TembaTest, CRUDLTestMixin):
         )
         self.assertEqual(reverse("tickets.shortcut_list"), response.url)
 
+        # mailroom is asked to reindex the org's shortcuts - once for the one created above too
+        shortcuts = KnowledgeSource.get_system(self.org, KnowledgeSource.TYPE_SHORTCUTS)
+        self.assertEqual([call(self.org, shortcuts)] * 2, self.mr_mocks.calls["knowledge_index"])
+
         # for orgs with the agents feature we redirect to the fixed shortcuts page
         self.enable_agents(self.org)
 
@@ -100,6 +107,10 @@ class ShortcutCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(shortcut.name, "Cars")
         self.assertEqual(shortcut.text, "Cars are...")
 
+        # an edit reaches mailroom too
+        shortcuts = KnowledgeSource.get_system(self.org, KnowledgeSource.TYPE_SHORTCUTS)
+        self.assertEqual(call(self.org, shortcuts), self.mr_mocks.calls["knowledge_index"][-1])
+
         # for orgs with the agents feature we redirect to the fixed shortcuts page
         self.enable_agents(self.org)
 
@@ -129,6 +140,10 @@ class ShortcutCRUDLTest(TembaTest, CRUDLTestMixin):
         # other shortcut unaffected
         shortcut2.refresh_from_db()
         self.assertTrue(shortcut2.is_active)
+
+        # and mailroom is asked to drop the deleted one from the index
+        shortcuts = KnowledgeSource.get_system(self.org, KnowledgeSource.TYPE_SHORTCUTS)
+        self.assertEqual(call(self.org, shortcuts), self.mr_mocks.calls["knowledge_index"][-1])
 
         # for orgs with the agents feature we redirect to the fixed shortcuts page
         self.enable_agents(self.org)

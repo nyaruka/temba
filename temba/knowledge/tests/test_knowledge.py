@@ -1,3 +1,4 @@
+from unittest.mock import call, patch
 from xml.etree.ElementTree import Element, SubElement
 
 from django.core.files.storage import default_storage
@@ -18,7 +19,8 @@ from temba.knowledge.models import (
     get_article_image_path,
     parse_column_style,
 )
-from temba.tests import TembaTest, cleanup
+from temba.mailroom.client.exceptions import RequestException
+from temba.tests import MockJsonResponse, TembaTest, cleanup
 from temba.utils.s3 import public_file_storage
 from temba.utils.uuid import uuid4
 
@@ -120,6 +122,21 @@ class KnowledgeSourceTest(TembaTest):
         self.assertTrue(KnowledgeSource.is_limit_reached(self.org))
         self.assertFalse(KnowledgeSource.is_limit_reached(self.org2))
 
+    def test_get_system(self):
+        shortcuts = self.org.sources.get(source_type=KnowledgeSource.TYPE_SHORTCUTS)
+        helpdesk = self.org.sources.get(source_type=KnowledgeSource.TYPE_HELPDESK)
+
+        self.assertEqual(shortcuts, KnowledgeSource.get_system(self.org, KnowledgeSource.TYPE_SHORTCUTS))
+        self.assertEqual(helpdesk, KnowledgeSource.get_system(self.org, KnowledgeSource.TYPE_HELPDESK))
+
+        # only the system ones count, and only while they're active
+        with self.assertRaises(AssertionError):
+            KnowledgeSource.get_system(self.org, KnowledgeSource.TYPE_WEBSITE)
+
+        helpdesk.is_active = False
+        helpdesk.save(update_fields=("is_active",))
+        self.assertIsNone(KnowledgeSource.get_system(self.org, KnowledgeSource.TYPE_HELPDESK))
+
     def test_mark_pending(self):
         docs = KnowledgeSource.create_documents(self.org, self.admin, "Guides")
         docs.status = KnowledgeSource.STATUS_FAILED
@@ -131,6 +148,22 @@ class KnowledgeSourceTest(TembaTest):
         docs.refresh_from_db()
         self.assertEqual(KnowledgeSource.STATUS_PENDING, docs.status)
         self.assertIsNone(docs.error)
+
+        # and mailroom was asked to index it
+        self.assertEqual([call(self.org, docs)], self.mr_mocks.calls["knowledge_index"])
+
+    def test_trigger_index(self):
+        helpdesk = self.org.sources.get(source_type=KnowledgeSource.TYPE_HELPDESK)
+
+        helpdesk.trigger_index()
+
+        self.assertEqual([call(self.org, helpdesk)], self.mr_mocks.calls["knowledge_index"])
+
+        # mailroom being unreachable is logged rather than raised - its own sweep will catch up the source
+        self.mr_mocks.exception(RequestException("knowledge/index", {}, MockJsonResponse(500, {"error": "boom"})))
+        with patch("temba.knowledge.models.logger") as mock_logger:
+            helpdesk.trigger_index()
+        self.assertTrue(mock_logger.error.called)
 
     @cleanup(s3=True)
     def test_release(self):
@@ -758,14 +791,19 @@ class ArticleTest(TembaTest):
         self.assertEqual(self.editor, article.modified_by)
         self.assertGreater(article.modified_on, modified_on)
 
+        # and mailroom was asked to index the helpdesk
+        self.assertEqual([call(self.org, self.helpdesk)], self.mr_mocks.calls["knowledge_index"])
+
         modified_on = article.modified_on
         article.unpublish(self.admin)
 
-        # modified_on bumps so mailroom's sweep sees the source as stale and drops the chunks
+        # modified_on bumps so mailroom sees the article as changed and drops its chunks
         article.refresh_from_db()
         self.assertEqual(Article.STATUS_DRAFT, article.status)
         self.assertIsNone(article.published_on)
         self.assertGreater(article.modified_on, modified_on)
+
+        self.assertEqual(2, len(self.mr_mocks.calls["knowledge_index"]))
 
     def test_body_html(self):
         section = self.create_article(self.helpdesk, "Flows", status=Article.STATUS_PUBLISHED)
@@ -839,7 +877,7 @@ class ArticleTest(TembaTest):
 
         article.release(self.admin)
 
-        # soft deleted, back to draft, and modified_on bumped so mailroom's sweep sees the tombstone
+        # soft deleted, back to draft, and modified_on bumped so mailroom sees the tombstone
         article.refresh_from_db()
         self.assertFalse(article.is_active)
         self.assertEqual(Article.STATUS_DRAFT, article.status)
@@ -850,10 +888,19 @@ class ArticleTest(TembaTest):
         self.assertEqual(0, ArticleImage.objects.count())
         self.assertFalse(public_file_storage.exists(path))
 
+        # it was published, so mailroom was asked to drop it from the index
+        self.assertEqual([call(self.org, self.helpdesk)], self.mr_mocks.calls["knowledge_index"])
+
         # emptied, the section can go too
         section.release(self.admin)
         section.refresh_from_db()
         self.assertFalse(section.is_active)
+
+        # a draft was never in the index, so its going isn't something mailroom needs to hear about
+        draft = self.create_article(self.helpdesk, "Unfinished")
+        draft.release(self.admin)
+
+        self.assertEqual(2, len(self.mr_mocks.calls["knowledge_index"]))
 
 
 class ArticleImageTest(TembaTest):
