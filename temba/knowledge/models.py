@@ -366,8 +366,8 @@ class ArticleLinksProcessor(Treeprocessor):
                 del anchor.attrib["href"]
 
 
-# what an unresolved link to another article is emitted as - exactly this, since it's what the site's renderer looks
-# for when it resolves them - so the rel the sanitizer puts on every link comes off these
+# what an unresolved link to another article is emitted as - exactly this, so that whatever resolves them as it
+# serves the page has one form to look for - so the rel the sanitizer puts on every link comes off these
 ARTICLE_LINK_HTML = re.compile(r'<a href="(article:[0-9a-f-]{36})" rel="noopener noreferrer">')
 
 # and the URL scheme those links carry, which the sanitizer would otherwise strip
@@ -450,11 +450,11 @@ def _sanitize_attribute(element: str, attribute: str, value: str) -> str | None:
 def render_markdown(body: str, colors: dict = None, links: dict = None) -> tuple[str, list[Heading]]:
     """
     Renders authored markdown for display, resolving column backgrounds against the org's palette and article: links
-    against the given map of article uuid to address - or leaving them as article: links, for the site to resolve
-    when it serves the page, when there's no map. Raw HTML is escaped rather than passed through, so that a reader
-    sees what the author saw - the editor renders client side and escapes it too, and text that merely looks like a
-    tag (the `<url>` of our own quick reply syntax, say) survives instead of being quietly swallowed. Sanitizing stays
-    as defense in depth, and still deals with the javascript: URLs markdown will happily make a link out of.
+    against the given map of article uuid to address - or leaving them as article: links, for whatever serves the
+    page to resolve, when there's no map. Raw HTML is escaped rather than passed through, so that a reader sees what
+    the author saw - the editor renders client side and escapes it too, and text that merely looks like a tag (the
+    `<url>` of our own quick reply syntax, say) survives instead of being quietly swallowed. Sanitizing stays as
+    defense in depth, and still deals with the javascript: URLs markdown will happily make a link out of.
 
     Every heading gets an id made from its text, so a page can link to it, and the top level ones come back
     alongside the HTML in the order they appear, for the page to list them.
@@ -955,7 +955,7 @@ class Article(models.Model):
         """
         The article rendered for reading, and its top level headings for the page to link to. Links to other
         articles are resolved against the given map of uuid to address - see HelpSite.get_link_targets. Without one,
-        they're kept as article: links, which is how they're stored for the site to resolve as it serves them.
+        they're kept as article: links for whatever serves the page to resolve.
         """
         return render_markdown(self.body, self.source.colors, links)
 
