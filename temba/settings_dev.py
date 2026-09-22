@@ -40,6 +40,12 @@ MAILROOM_URL = os.environ.get("MAILROOM_URL", "http://localhost:8091")
 MAILROOM_AUTH_TOKEN = os.environ.get("MAILROOM_AUTH_TOKEN")
 
 # -----------------------------------------------------------------------------------
+# Help sites - the service's internal listener as the dev stack names it, no preview token
+# -----------------------------------------------------------------------------------
+HELPSITES_URL = os.environ.get("HELPSITES_URL", "http://helpsites:8031")
+HELPSITES_PREVIEW_TOKEN = os.environ.get("HELPSITES_PREVIEW_TOKEN")
+
+# -----------------------------------------------------------------------------------
 # WebSockets - shared secret for the realtime messaging server (must match its config)
 # -----------------------------------------------------------------------------------
 INTERNAL_AUTH_TOKEN = "topsecret"

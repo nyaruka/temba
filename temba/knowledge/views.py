@@ -384,7 +384,7 @@ class ArticleCRUDL(SmartCRUDL):
             if self.has_org_perm("knowledge.article_create"):
                 context["create_url"] = reverse("knowledge.article_create")
 
-            context["preview_url"] = reverse("knowledge.site_home")
+            context["preview_url"] = reverse("knowledge.helpsite_preview", kwargs={"path": ""})
 
             # the site card heads the page - the domain, so it's plain whether the site is out there and where
             # setting one up or verifying it is picked up, and beside it the site's preview
