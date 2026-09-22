@@ -51,8 +51,22 @@ class FlowTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(f"{'X' * 62} 2", Flow.get_unique_name(self.org, "X" * 64))
 
     @mock_mailroom
-    def test_rename_publishes_asset_changed(self, mr_mocks):
-        self.create_flow("Old Name")
+    def test_publishes_asset_changed(self, mr_mocks):
+        # creating a flow publishes it
+        with self.captureOnCommitCallbacks(execute=True):
+            flow = self.create_flow("Old Name")
+
+        self.assertEqual(
+            [
+                call(
+                    self.org,
+                    {"type": "asset_changed", "asset": {"type": "flow", "uuid": str(flow.uuid), "name": "Old Name"}},
+                )
+            ],
+            mr_mocks.calls["org_publish"],
+        )
+        mr_mocks.calls["org_publish"].clear()
+
         flow = Flow.objects.get(name="Old Name")
 
         # a save which doesn't touch the name publishes nothing, and costs no extra queries

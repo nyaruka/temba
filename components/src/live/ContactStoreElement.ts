@@ -9,6 +9,7 @@ import {
   watchContact
 } from './ContactWatch';
 import { RealtimeSubscription } from './Realtime';
+import { StoreAsset, StoreAssetChangedEvent } from '../store/Store';
 
 /**
  * Returns the URN that will be used to message the given contact — URNs are
@@ -34,6 +35,9 @@ export class ContactStoreElement extends EndpointMonitorElement {
   private watch: RealtimeSubscription = null;
   private watchedContact: string = null;
 
+  // renames of the groups we render arrive as asset events on the store
+  private assetWatch: RealtimeSubscription = null;
+
   // Resolve each URN against a channel while retaining the user's priority
   // order. Consumers can select the first channel-backed URN for messaging.
   @property({ type: String })
@@ -49,6 +53,17 @@ export class ContactStoreElement extends EndpointMonitorElement {
       data = Array.isArray(data) ? data[0] : data;
     }
     if (data) {
+      // a contact response is authoritative for the names of its groups, so
+      // it seeds the store rather than being overwritten by a cached name
+      // that predates it (see syncGroupNames)
+      this.store.cacheAssets(
+        data.groups.map((group: Group) => ({
+          type: 'group',
+          uuid: group.uuid,
+          name: group.name
+        }))
+      );
+
       data.groups.forEach((group: Group) => {
         group.is_dynamic = this.store.isDynamicGroup(group.uuid);
       });
@@ -110,11 +125,22 @@ export class ContactStoreElement extends EndpointMonitorElement {
   public connectedCallback(): void {
     super.connectedCallback();
     this.syncWatch();
+    this.syncAssetWatch();
   }
 
   public disconnectedCallback(): void {
     super.disconnectedCallback();
     this.syncWatch();
+    this.syncAssetWatch();
+  }
+
+  protected updated(changed: PropertyValues): void {
+    super.updated(changed);
+    if (changed.has('data')) {
+      // priming the watch can rename groups, which is a change of our own
+      // data, so it happens outside this update
+      Promise.resolve().then(() => this.syncAssetWatch());
+    }
   }
 
   public willUpdate(changed: PropertyValues): void {
@@ -150,6 +176,50 @@ export class ContactStoreElement extends EndpointMonitorElement {
       this.watch = watchContact(target, this.watchTypes, (event, contact) =>
         this.handleWatchedContact(event, contact)
       );
+    }
+  }
+
+  // keeps our interest in group renames in sync with the groups we render
+  private syncAssetWatch(): void {
+    if (this.assetWatch) {
+      this.assetWatch.unsubscribe();
+      this.assetWatch = null;
+    }
+    const groups: Group[] = (this.isConnected && this.data?.groups) || [];
+    if (groups.length > 0) {
+      this.assetWatch = this.store.watchAssets(
+        groups.map((group) => ({ type: 'group', uuid: group.uuid })),
+        (event: StoreAssetChangedEvent | null) =>
+          this.syncGroupNames(event?.asset)
+      );
+    }
+  }
+
+  /**
+   * Applies a group rename to our data. Without an event, i.e. when the watch
+   * is primed or the store refreshed its cache on a reconnect, every group is
+   * checked against the store's cache.
+   */
+  private syncGroupNames(changed?: StoreAsset): void {
+    if (!this.data) {
+      return;
+    }
+    let renamed = false;
+    const groups = this.data.groups.map((group: Group) => {
+      const asset = changed
+        ? changed.uuid === group.uuid
+          ? changed
+          : null
+        : this.store.getAsset('group', group.uuid);
+      if (asset && asset.name !== group.name) {
+        renamed = true;
+        return { ...group, name: asset.name };
+      }
+      return group;
+    });
+    if (renamed) {
+      // through prepareData so the groups are re-sorted by name
+      this.data = this.prepareData({ ...this.data, groups });
     }
   }
 
