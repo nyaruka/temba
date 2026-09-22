@@ -202,8 +202,9 @@ class SiteViewsTest(TembaTest):
         response = self.public("/search/?q=node")
         self.assertEqual(200, response.status_code)
         self.assertEqual("node", response.context["query"])
-        self.assertEqual([self.nodes], [a for a, _ in response.context["results"]])
-        self.assertContains(response, "1 result for “node”")
+        # the article titled with it first, then the one whose body links to "nodes" - stemmed to match
+        self.assertEqual([self.nodes, self.actions], [a for a, _ in response.context["results"]])
+        self.assertContains(response, "2 results for “node”")
         self.assertContains(response, "<mark>node</mark>")
         self.assertContains(response, 'value="node"')  # the query stays in the box
 

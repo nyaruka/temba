@@ -27,7 +27,7 @@ from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from django.core.cache import cache
 from django.core.files.storage import default_storage
 from django.db import models, transaction
-from django.db.models import Q, Sum
+from django.db.models import Case, CharField, Q, Sum, Value, When
 from django.db.models.functions import Lower
 from django.http.request import split_domain_port
 from django.utils import timezone
@@ -509,6 +509,64 @@ def to_plain_text(body: str) -> str:
     for pattern, replacement in PLAIN_TEXT_RULES:
         text = pattern.sub(replacement, text)
     return text.strip()
+
+
+# the text search configuration Postgres has for each language an article can be in, by ISO-639-3 code - which
+# knows the language's stopwords and how to stem its words. An article in any other language is matched word for word.
+TEXT_SEARCH_CONFIGS = {
+    "ara": "arabic",
+    "hye": "armenian",
+    "eus": "basque",
+    "cat": "catalan",
+    "dan": "danish",
+    "nld": "dutch",
+    "eng": "english",
+    "fin": "finnish",
+    "fra": "french",
+    "deu": "german",
+    "ell": "greek",
+    "hin": "hindi",
+    "hun": "hungarian",
+    "ind": "indonesian",
+    "gle": "irish",
+    "ita": "italian",
+    "lit": "lithuanian",
+    "nep": "nepali",
+    "nor": "norwegian",
+    "nob": "norwegian",
+    "nno": "norwegian",
+    "por": "portuguese",
+    "ron": "romanian",
+    "rus": "russian",
+    "srp": "serbian",
+    "spa": "spanish",
+    "swe": "swedish",
+    "tam": "tamil",
+    "tur": "turkish",
+    "yid": "yiddish",
+}
+
+
+def text_search_config():
+    """
+    The text search configuration for an article's language, as an expression over its language column - so that a
+    query over articles in several languages searches each in its own.
+    """
+    return Case(
+        *[When(language=code, then=Value(config)) for code, config in TEXT_SEARCH_CONFIGS.items()],
+        default=Value("simple"),
+        output_field=CharField(),
+    )
+
+
+def chunk_body(chunk: dict) -> str:
+    """
+    The text of an indexed chunk without the article's title, which mailroom prefixes onto every chunk for the
+    embedding's sake - a result already shows the title, so a snippet shouldn't start by repeating it.
+    """
+    text = chunk["text"]
+    prefix = f"{chunk.get('item_name', '')}\n\n"
+    return text[len(prefix) :] if chunk.get("item_name") and text.startswith(prefix) else text
 
 
 def make_snippet(text: str, terms: list, *, length: int = 200) -> str:
@@ -1584,21 +1642,21 @@ class HelpSite(models.Model):
             for r in results:
                 if r["knowledge_uuid"] == str(self.source.uuid) and r["item_key"] not in keys:
                     keys.append(r["item_key"])
-                    snippets[r["item_key"]] = make_snippet(to_plain_text(r["text"]), terms)
+                    snippets[r["item_key"]] = make_snippet(to_plain_text(chunk_body(r)), terms)
 
             by_uuid = {str(a.uuid): a for a in readable.filter(uuid__in=keys).select_related("parent")}
             ordered.extend(by_uuid[k] for k in keys if k in by_uuid)
 
         if len(ordered) < limit:
-            # simple rather than a language config, since a helpdesk can hold articles in any language
-            vector = SearchVector("title", weight="A", config="simple") + SearchVector(
-                "body", weight="B", config="simple"
-            )
-            search = SearchQuery(query, search_type="websearch", config="simple")
+            # each article is searched in its own language, so its stopwords are ignored and its words stemmed, and
+            # only an article the query actually matches is a result - the rank alone says nothing about that
+            config = text_search_config()
+            vector = SearchVector("title", weight="A", config=config) + SearchVector("body", weight="B", config=config)
+            search = SearchQuery(query, search_type="websearch", config=config)
             matches = (
                 readable.exclude(id__in=[a.id for a in ordered])
-                .annotate(rank=SearchRank(vector, search))
-                .filter(rank__gt=0)
+                .annotate(search=vector, rank=SearchRank(vector, search))
+                .filter(search=search)
                 .order_by("-rank", "title")
                 .select_related("parent")[: limit - len(ordered)]
             )
