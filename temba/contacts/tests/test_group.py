@@ -166,13 +166,15 @@ class ContactGroupTest(TembaTest):
         )
 
         # of the groups created for a new org, the status groups maintained by db triggers aren't published as clients
-        # never see them, but the system smart group and the groups from the sample flows are
+        # never see them, but the system smart group and the groups from the sample flows are (and nothing else is,
+        # i.e. the sample flows themselves don't publish)
         mr_mocks.calls["org_publish"].clear()
 
         with self.captureOnCommitCallbacks(execute=True):
             new_org = Org.create(self.admin, "New Org", ZoneInfo("Africa/Kigali"))
 
-        published = [c.args[1]["asset"] for c in mr_mocks.calls["org_publish"] if c.args[1]["asset"]["type"] == "group"]
+        published = [c.args[1]["asset"] for c in mr_mocks.calls["org_publish"]]
+        self.assertEqual({"group"}, {a["type"] for a in published})
         self.assertEqual(
             sorted(ContactGroup.get_groups(new_org).values_list("name", flat=True)),
             sorted(a["name"] for a in published),

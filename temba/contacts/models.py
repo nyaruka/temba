@@ -1492,6 +1492,7 @@ class ContactGroup(AssetMixin, LegacyIDMixin, TembaModel, DependencyMixin):
     """
 
     asset_type = "group"
+    publish_creations = True  # so clients learn whether a new group is smart before they next fetch groups
 
     TYPE_DB_ACTIVE = "A"  # maintained by db trigger on status=A
     TYPE_DB_BLOCKED = "B"  # maintained by db trigger on status=B

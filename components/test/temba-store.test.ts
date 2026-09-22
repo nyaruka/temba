@@ -539,17 +539,12 @@ describe('temba-store', () => {
       assert.isFalse(store.isDynamicGroup('manual-1'));
       assert.isTrue(store.isDynamicGroup('smart-1'));
 
-      // a rename which doesn't say whether the group has a query only updates a group we already know
-      mockSocket.serverPublish('org:org-uuid', {
-        type: 'asset_changed',
-        asset: { type: 'group', uuid: 'manual-1', name: 'VIPs' }
-      });
+      // an event which doesn't say whether the group has a query can't add it
       mockSocket.serverPublish('org:org-uuid', {
         type: 'asset_changed',
         asset: { type: 'group', uuid: 'manual-2', name: 'Farmers' }
       });
 
-      assert.isFalse(store.isDynamicGroup('manual-1'));
       assert.isTrue(store.isDynamicGroup('manual-2'));
     } finally {
       setRealtimeContext(null);

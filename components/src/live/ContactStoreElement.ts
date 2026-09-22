@@ -35,8 +35,11 @@ export class ContactStoreElement extends EndpointMonitorElement {
   private watch: RealtimeSubscription = null;
   private watchedContact: string = null;
 
-  // renames of the groups we render arrive as asset events on the store
+  // renames of the groups we render arrive as asset events on the store, and
+  // the watch is keyed on which groups those are so an unrelated change to
+  // the contact doesn't churn it
   private assetWatch: RealtimeSubscription = null;
+  private watchedGroups: string = null;
 
   // Resolve each URN against a channel while retaining the user's priority
   // order. Consumers can select the first channel-backed URN for messaging.
@@ -53,6 +56,8 @@ export class ContactStoreElement extends EndpointMonitorElement {
       data = Array.isArray(data) ? data[0] : data;
     }
     if (data) {
+      data.groups = data.groups || [];
+
       // a contact response is authoritative for the names of its groups, so
       // it seeds the store rather than being overwritten by a cached name
       // that predates it (see syncGroupNames)
@@ -181,12 +186,25 @@ export class ContactStoreElement extends EndpointMonitorElement {
 
   // keeps our interest in group renames in sync with the groups we render
   private syncAssetWatch(): void {
+    const groups: Group[] = (this.isConnected && this.data?.groups) || [];
+    const target =
+      groups.length > 0
+        ? groups
+            .map((group) => group.uuid)
+            .sort()
+            .join()
+        : null;
+    if (target === this.watchedGroups) {
+      return;
+    }
+
     if (this.assetWatch) {
       this.assetWatch.unsubscribe();
       this.assetWatch = null;
     }
-    const groups: Group[] = (this.isConnected && this.data?.groups) || [];
-    if (groups.length > 0) {
+    this.watchedGroups = target;
+
+    if (target) {
       this.assetWatch = this.store.watchAssets(
         groups.map((group) => ({ type: 'group', uuid: group.uuid })),
         (event: StoreAssetChangedEvent | null) =>

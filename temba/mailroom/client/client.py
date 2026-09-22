@@ -359,8 +359,8 @@ class MailroomClient:
         return self._request("notification/publish", {"org_id": org.id, "notifications": notifications})
 
     def org_publish(self, org, event: dict):
-        """Publishes a workspace-wide realtime event."""
-        return self._request("org/publish", {"org_id": org.id, "event": event})
+        """Publishes a workspace-wide realtime event. Best effort, so a stalled mailroom shouldn't hold up a commit."""
+        return self._request("org/publish", {"org_id": org.id, "event": event}, timeout=5)
 
     def org_deindex(self, org):
         return self._request("org/deindex", {"org_id": org.id})
@@ -429,7 +429,7 @@ class MailroomClient:
             },
         )
 
-    def _request(self, endpoint, payload=None, post=True, encode_json=False):
+    def _request(self, endpoint, payload=None, post=True, encode_json=False, timeout=None):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("=============== %s request ===============" % endpoint)
             logger.debug(json.dumps(payload, indent=2))
@@ -443,6 +443,9 @@ class MailroomClient:
             kwargs = dict(data=json.dumps(payload))
         else:
             kwargs = dict(json=payload)
+
+        if timeout:
+            kwargs["timeout"] = timeout
 
         req_fn = requests.post if post else requests.get
         response = req_fn("%s/mi/%s" % (self.base_url, endpoint), headers=headers, **kwargs)

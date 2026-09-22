@@ -92,7 +92,7 @@ export interface GroupAsset extends StoreAsset {
  * What isDynamicGroup needs of a group. The initial fetch fills these from
  * the groups endpoint, and socket events add groups created since.
  */
-type CachedGroup = Pick<ContactGroup, 'uuid' | 'name' | 'query'>;
+type CachedGroup = Pick<ContactGroup, 'uuid' | 'query'>;
 
 const isGroupAsset = (asset: StoreAsset): asset is GroupAsset =>
   asset.type === 'group' && 'query' in asset;
@@ -882,21 +882,14 @@ export class Store extends RapidElement {
   }
 
   /**
-   * Keeps the group cache current from a socket event. A group we already
-   * know is renamed. One we don't, i.e. created since the initial fetch, is
-   * added when the event says whether it has a query - without that we'd
-   * still have to guess at isDynamicGroup.
+   * Keeps the group cache current from a socket event: a group created since
+   * the initial fetch is added, with the query that tells isDynamicGroup what
+   * it is. The server sends that with every group event, so one without it
+   * has nothing for this cache.
    */
   private cacheGroup(asset: StoreAsset): void {
-    const known = this.groups[asset.uuid];
     if (isGroupAsset(asset)) {
-      this.groups[asset.uuid] = {
-        uuid: asset.uuid,
-        name: asset.name,
-        query: asset.query
-      };
-    } else if (known) {
-      this.groups[asset.uuid] = { ...known, name: asset.name };
+      this.groups[asset.uuid] = { uuid: asset.uuid, query: asset.query };
     }
   }
 

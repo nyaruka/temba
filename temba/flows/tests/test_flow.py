@@ -52,20 +52,11 @@ class FlowTest(TembaTest, CRUDLTestMixin):
 
     @mock_mailroom
     def test_publishes_asset_changed(self, mr_mocks):
-        # creating a flow publishes it
+        # creating a flow doesn't publish as no client acts on that
         with self.captureOnCommitCallbacks(execute=True):
-            flow = self.create_flow("Old Name")
+            self.create_flow("Old Name")
 
-        self.assertEqual(
-            [
-                call(
-                    self.org,
-                    {"type": "asset_changed", "asset": {"type": "flow", "uuid": str(flow.uuid), "name": "Old Name"}},
-                )
-            ],
-            mr_mocks.calls["org_publish"],
-        )
-        mr_mocks.calls["org_publish"].clear()
+        self.assertEqual([], mr_mocks.calls["org_publish"])
 
         flow = Flow.objects.get(name="Old Name")
 

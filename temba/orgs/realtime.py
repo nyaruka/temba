@@ -2,11 +2,14 @@
 Publishing of workspace-wide realtime events to the ``org:<org-uuid>`` socket, so that clients can keep their caches of
 assets fresh without refetching or reloading.
 
-Phase one deliberately only publishes creations and renames of flows and groups (see `AssetMixin`) as those are the
-references which appear most often in flow definitions, and groups are also cached by the client store to tell smart
-groups from manual ones. The other asset types resolvable via the internal assets endpoint (channels, contacts, labels,
-LLMs, templates, topics, fields, globals and users) don't publish, so clients still fall back to refetching or a page
-reload to see those changes.
+Phase one deliberately only publishes renames of flows and groups (see `AssetMixin`) as those are the references which
+appear most often in flow definitions, and creations of groups, which the client store caches to tell smart groups from
+manual ones. The other asset types resolvable via the internal assets endpoint (channels, contacts, labels, LLMs,
+templates, topics, fields, globals and users) don't publish, so clients still fall back to refetching or a page reload
+to see those changes.
+
+Each publication is a synchronous call to mailroom on commit, so creations are only published where a client acts on
+them: a flow import publishes one event per new group but nothing for its flows.
 """
 
 import logging
@@ -35,8 +38,9 @@ def _publish_org_event(org, event: dict):
 
 class AssetMixin:
     """
-    Mixin for models whose creations and renames are published as `asset_changed` events. Must be listed before the
-    model base classes so that our `save` runs, and `asset_type` must be set to the type name used in flow definitions.
+    Mixin for models whose renames, and optionally creations, are published as `asset_changed` events. Must be listed
+    before the model base classes so that our `save` runs, and `asset_type` must be set to the type name used in flow
+    definitions.
 
     We hook into saving rather than the handful of places which create or rename (the create and update modals, flow
     imports, the API v2 groups endpoint) so that no path can be missed, and we track the loaded name so that detecting
@@ -44,6 +48,7 @@ class AssetMixin:
     """
 
     asset_type = None
+    publish_creations = False
 
     @classmethod
     def from_db(cls, db, field_names, values, *, fetch_mode=None):
@@ -83,7 +88,7 @@ class AssetMixin:
         renamed = loaded_name is not None and loaded_name != self.name
 
         # objects being deactivated aren't published as release() renames to a tombstone
-        if (creating or renamed) and self.is_published_asset():
+        if ((creating and self.publish_creations) or renamed) and self.is_published_asset():
             publish_asset_changed(self.org, self.as_asset())
 
         self._loaded_name = self.name
