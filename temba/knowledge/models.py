@@ -1674,6 +1674,14 @@ class HelpdeskImport(models.Model):
         (STATUS_FAILED, _("Failed")),
     )
 
+    # names of statuses in JSON, since the choice labels are for display
+    STATUS_NAMES = {
+        STATUS_PENDING: "pending",
+        STATUS_PROCESSING: "processing",
+        STATUS_COMPLETE: "complete",
+        STATUS_FAILED: "failed",
+    }
+
     # an import that never finished in this long is taken to have died with its worker rather than to be running
     UNFINISHED_WINDOW = timedelta(hours=4)
 
@@ -1785,7 +1793,7 @@ class HelpdeskImport(models.Model):
     def as_json(self) -> dict:
         return {
             "id": self.id,
-            "status": self.get_status_display(),
+            "status": self.STATUS_NAMES[self.status],
             "created_on": self.created_on.isoformat(),
             "modified_on": self.modified_on.isoformat(),
             "progress": {"total": self.num_items, "current": self.num_imported},

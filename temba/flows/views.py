@@ -1672,16 +1672,6 @@ class FlowStartCRUDL(SmartCRUDL):
     class Status(BaseListView):
         permission = "flows.flowstart_list"
 
-        # same names as the API and the flow socket's start progress events
-        STATUSES = {
-            FlowStart.STATUS_PENDING: "pending",
-            FlowStart.STATUS_QUEUED: "queued",
-            FlowStart.STATUS_STARTED: "started",
-            FlowStart.STATUS_COMPLETED: "completed",
-            FlowStart.STATUS_FAILED: "failed",
-            FlowStart.STATUS_INTERRUPTED: "interrupted",
-        }
-
         def derive_queryset(self, **kwargs):
             qs = super().derive_queryset(**kwargs)
             id = self.request.GET.get("id", None)
@@ -1710,7 +1700,7 @@ class FlowStartCRUDL(SmartCRUDL):
                     {
                         "id": obj.id,
                         "uuid": str(obj.uuid),
-                        "status": self.STATUSES[obj.status],
+                        "status": FlowStart.STATUS_NAMES[obj.status],
                         "created_on": obj.created_on.isoformat(),
                         "modified_on": obj.modified_on.isoformat(),
                         "flow": {

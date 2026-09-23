@@ -114,12 +114,13 @@ class HelpdeskImportTest(ImportTypesMixin, TembaTest):
         self.assertEqual("test", imp.import_type)
         self.assertEqual(self.test_type, imp.type)
         self.assertFalse(imp.is_finished)
-        self.assertEqual("Pending", imp.as_json()["status"])
+        self.assertEqual("pending", imp.as_json()["status"])
 
         imp.perform()
 
         imp.refresh_from_db()
         self.assertEqual(HelpdeskImport.STATUS_COMPLETE, imp.status)
+        self.assertEqual("complete", imp.as_json()["status"])
         self.assertIsNone(imp.error)
         self.assertIsNotNone(imp.started_on)
         self.assertIsNotNone(imp.finished_on)
@@ -240,7 +241,7 @@ class HelpdeskImportCRUDLTest(ImportTypesMixin, TembaTest, CRUDLTestMixin):
         self.assertEqual(
             {
                 "id": imp.id,
-                "status": "Pending",
+                "status": "pending",
                 "created_on": imp.created_on.isoformat(),
                 "modified_on": imp.modified_on.isoformat(),
                 "progress": {"total": 10, "current": 1},

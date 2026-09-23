@@ -1659,6 +1659,16 @@ class FlowStart(LegacyIDMixin, models.Model):
         (STATUS_INTERRUPTED, "Interrupted"),
     )
 
+    # names of statuses in JSON, since the choice labels are for display
+    STATUS_NAMES = {
+        STATUS_PENDING: "pending",
+        STATUS_QUEUED: "queued",
+        STATUS_STARTED: "started",
+        STATUS_COMPLETED: "completed",
+        STATUS_FAILED: "failed",
+        STATUS_INTERRUPTED: "interrupted",
+    }
+
     TYPE_MANUAL = "M"
     TYPE_API = "A"
     TYPE_API_ZAPIER = "Z"
