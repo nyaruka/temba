@@ -7,11 +7,12 @@ from django.conf import settings
 from django.utils import timezone
 
 from temba.utils.crons import cron_task
-from temba.utils.models import delete_in_batches
 
 from .models import FlowActivityCount, FlowResultCount, FlowRevision, FlowSession, FlowStartCount
 
 logger = logging.getLogger(__name__)
+
+TRIM_SESSIONS_BATCH_SIZE = 1000
 
 
 @cron_task(lock_timeout=7200)
@@ -45,6 +46,22 @@ def trim_flow_sessions():
 
     trim_before = timezone.now() - settings.RETENTION_PERIODS["flowsession"]
 
-    num_deleted = delete_in_batches(FlowSession.objects.filter(ended_on__lte=trim_before), order_by="ended_on")
+    # each batch resumes from where the last ended, as rescanning from the start means walking every index entry
+    # deleted so far that vacuum hasn't yet removed, which makes large trims quadratic
+    resume_from = None
+    num_deleted = 0
+
+    while True:
+        batch_qs = FlowSession.objects.filter(ended_on__lte=trim_before)
+        if resume_from:
+            batch_qs = batch_qs.filter(ended_on__gte=resume_from)  # inclusive as other sessions may share this value
+
+        batch = list(batch_qs.order_by("ended_on").values_list("id", "ended_on")[:TRIM_SESSIONS_BATCH_SIZE])
+        if not batch:
+            break
+
+        FlowSession.objects.filter(id__in=[s[0] for s in batch]).delete()
+        num_deleted += len(batch)
+        resume_from = batch[-1][1]
 
     return {"deleted": num_deleted}

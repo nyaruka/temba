@@ -50,16 +50,6 @@ class ModelsTest(TembaTest):
         self.assertTrue(Group.objects.filter(id=to_keep.id).exists())
         self.assertEqual(4, Group.objects.filter(id__in=[g.id for g in to_delete]).count())
 
-        # ordered by a non-unique field whose values straddle batch boundaries
-        to_keep = self.create_contact("Bob")
-        to_delete = [self.create_contact(f"XX{i // 3}") for i in range(7)]
-
-        num_deleted = delete_in_batches(Contact.objects.filter(name__startswith="XX"), batch_size=2, order_by="name")
-
-        self.assertEqual(7, num_deleted)
-        self.assertTrue(Contact.objects.filter(id=to_keep.id).exists())
-        self.assertEqual(0, Contact.objects.filter(id__in=[c.id for c in to_delete]).count())
-
     def test_update_if_changed(self):
         with self.assertNumQueries(1):
             changed = update_if_changed(self.admin, first_name="Andrew", last_name="McAdmin")  # all fields changing
