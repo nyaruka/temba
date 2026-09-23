@@ -25,17 +25,29 @@ def patch_queryset_count(qs, function):
     qs.count = types.MethodType(lambda s: function(), qs)
 
 
-def delete_in_batches(qs, *, batch_size: int = 1000, pk: str = "id", pre_delete=None, post_delete=None) -> int:
+def delete_in_batches(
+    qs, *, batch_size: int = 1000, pk: str = "id", order_by: str = None, pre_delete=None, post_delete=None
+) -> int:
     """
     Deletes objects from the given queryset in batches returning the number deleted. Callback functions can be provided
     as `pre_delete` and `post_delete` which will be called pre and post batch deletion respectively. If `post_delete`
     returns falsey then batch processing stops.
+
+    If `order_by` names an indexed field, each batch resumes from where the last ended, rather than rescanning index
+    entries of rows already deleted but not yet vacuumed - which makes large deletes quadratic.
     """
 
     num_deleted = 0
+    resume_from = None
 
     while True:
-        pk_batch = list(qs.values_list(pk, flat=True)[:batch_size])
+        if order_by:
+            batch_qs = qs.filter(**{f"{order_by}__gte": resume_from}) if resume_from is not None else qs
+            rows = list(batch_qs.order_by(order_by).values_list(pk, order_by)[:batch_size])
+            pk_batch = [r[0] for r in rows]
+        else:
+            pk_batch = list(qs.values_list(pk, flat=True)[:batch_size])
+
         if not pk_batch:
             break
 
@@ -44,6 +56,9 @@ def delete_in_batches(qs, *, batch_size: int = 1000, pk: str = "id", pre_delete=
 
         qs.model.objects.filter(**{f"{pk}__in": pk_batch}).delete()
         num_deleted += len(pk_batch)
+
+        if order_by:
+            resume_from = rows[-1][1]  # inclusive as other rows may share this value
 
         if post_delete and not post_delete():
             break

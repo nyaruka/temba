@@ -45,6 +45,6 @@ def trim_flow_sessions():
 
     trim_before = timezone.now() - settings.RETENTION_PERIODS["flowsession"]
 
-    num_deleted = delete_in_batches(FlowSession.objects.filter(ended_on__lte=trim_before))
+    num_deleted = delete_in_batches(FlowSession.objects.filter(ended_on__lte=trim_before), order_by="ended_on")
 
     return {"deleted": num_deleted}
