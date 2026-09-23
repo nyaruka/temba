@@ -1813,9 +1813,10 @@ class HelpdeskImport(models.Model):
         self.finished_on = timezone.now()
         self.save(update_fields=("status", "error", "config", "finished_on", "modified_on"))
 
-        # even a failed import keeps what it brought in before failing - and this is the one request for all of it,
-        # as the article changes the import made don't request indexing themselves
-        self.source.mark_pending()
+        # a failed import keeps what it brought in before failing - and this is the one request for all of it, as the
+        # article changes the import made don't request indexing themselves
+        if self.status == self.STATUS_COMPLETE or self.num_imported > 0:
+            self.source.mark_pending()
 
     def set_total(self, total: int):
         self.num_items = total

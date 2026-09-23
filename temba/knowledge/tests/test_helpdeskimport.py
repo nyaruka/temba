@@ -35,6 +35,9 @@ class TestImportType(HelpdeskImportType):
     def perform(self, imp):
         imp.set_total(3)
 
+        if imp.config.get("fail_at") == 0:
+            raise HelpdeskImportError("The site went away.")
+
         section = Article.create(imp.source, imp.created_by, "Imported")
         imp.advance()
 
@@ -152,6 +155,20 @@ class HelpdeskImportTest(ImportTypesMixin, TembaTest):
 
         # what it did bring in still gets indexed
         self.assertEqual([call(self.org, self.helpdesk)] * 2, mr_mocks.calls["knowledge_index"])
+
+        # but one that failed before bringing anything in leaves the helpdesk as it was
+        self.helpdesk.status = KnowledgeSource.STATUS_READY
+        self.helpdesk.save(update_fields=("status",))
+
+        imp = self.create_import(fail_at=0)
+        imp.perform()
+
+        imp.refresh_from_db()
+        self.assertEqual(HelpdeskImport.STATUS_FAILED, imp.status)
+        self.assertEqual(0, imp.num_imported)
+        self.helpdesk.refresh_from_db()
+        self.assertEqual(KnowledgeSource.STATUS_READY, self.helpdesk.status)
+        self.assertEqual(2, len(mr_mocks.calls["knowledge_index"]))
 
         # only a pending import can be performed - not one that's finished, nor one already being performed
         with self.assertRaises(AssertionError):
