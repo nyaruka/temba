@@ -170,6 +170,24 @@ export class Options extends RapidElement {
         margin: 0;
         padding: 8px var(--pad);
         border-radius: var(--r-sm);
+        position: relative;
+      }
+
+      /* Optional hairline between adjacent rows, for multi-line rows whose
+         trailing content would otherwise read as belonging to the next
+         row. Drawn in the focus colour so it merges into a focused pill,
+         and dropped below one where it would jut out under its corners. */
+      :host([block]) .option + .option::before {
+        content: '';
+        position: absolute;
+        left: var(--pad);
+        right: var(--pad);
+        top: 0;
+        border-top: var(--temba-options-row-separator, none);
+        pointer-events: none;
+      }
+      :host([block]) .option.focused + .option::before {
+        display: none;
       }
 
       .option * {
