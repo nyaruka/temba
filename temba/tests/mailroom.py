@@ -609,7 +609,7 @@ class TestClient(MailroomClient):
         return {}
 
     @_client_method
-    def knowledge_search(self, org, query: str, limit: int = 10) -> list[dict]:
+    def knowledge_search(self, org, query: str, sources: list = None, limit: int = 10) -> list[dict]:
         assert self.mocks._knowledge_search, "missing knowledge_search mock"
 
         return self.mocks._knowledge_search.pop(0)

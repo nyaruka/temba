@@ -6,6 +6,7 @@ from temba.ai.types.openai.type import OpenAIType
 from temba.campaigns.models import Campaign, CampaignEvent
 from temba.contacts.models import ContactField, ContactImport
 from temba.flows.models import Flow, FlowStart
+from temba.knowledge.models import KnowledgeSource
 from temba.schedules.models import Schedule
 from temba.tests import MockJsonResponse, MockResponse, TembaTest
 from temba.tickets.models import Topic
@@ -844,7 +845,7 @@ class MailroomClientTest(TembaTest):
             {
                 "results": [
                     {
-                        "knowledge_uuid": "97180291-8d95-4a6b-8a1a-63c44bb84b77",
+                        "source_uuid": "97180291-8d95-4a6b-8a1a-63c44bb84b77",
                         "item_key": "e0d47f61-9531-46a5-89dd-8e8437bee883",
                         "item_name": "Refunds",
                         "text": "We offer full refunds within 30 days...",
@@ -863,6 +864,23 @@ class MailroomClientTest(TembaTest):
             "http://localhost:8090/mi/knowledge/search",
             headers={"User-Agent": "Temba", "Authorization": "Token sesame"},
             json={"org_id": self.org.id, "query": "how do I get a refund?", "limit": 5},
+        )
+
+        # can be limited to specific sources
+        helpdesk = self.org.sources.get(source_type=KnowledgeSource.TYPE_HELPDESK)
+        mock_post.reset_mock()
+
+        self.client.knowledge_search(self.org, "how do I get a refund?", sources=[helpdesk], limit=5)
+
+        mock_post.assert_called_once_with(
+            "http://localhost:8090/mi/knowledge/search",
+            headers={"User-Agent": "Temba", "Authorization": "Token sesame"},
+            json={
+                "org_id": self.org.id,
+                "query": "how do I get a refund?",
+                "limit": 5,
+                "source_uuids": [str(helpdesk.uuid)],
+            },
         )
 
     @patch("requests.post")

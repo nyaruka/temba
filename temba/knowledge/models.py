@@ -1556,15 +1556,17 @@ class HelpSite(models.Model):
 
         if self.source.last_indexed_on:
             try:
-                # the org's sources are searched together, so ask for more than we need and keep what's ours
-                results = mailroom.get_client().knowledge_search(self.org, query, limit=limit * 3)
+                # an article can match as several chunks, so ask for more than we need to still fill the limit
+                results = mailroom.get_client().knowledge_search(
+                    self.org, query, sources=[self.source], limit=limit * 3
+                )
             except RequestException as e:
                 logger.error(f"error searching knowledge: {e}", exc_info=True)
                 results = []
 
             keys = []
             for r in results:
-                if r["knowledge_uuid"] == str(self.source.uuid) and r["item_key"] not in keys:
+                if r["item_key"] not in keys:
                     keys.append(r["item_key"])
                     snippets[r["item_key"]] = make_snippet(to_plain_text(r["text"]), terms)
 

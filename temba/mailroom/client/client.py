@@ -219,12 +219,17 @@ class MailroomClient:
 
         return RecipientsPreview(query=resp["query"], total=resp["total"])
 
-    def knowledge_search(self, org, query: str, limit: int = 10) -> list[dict]:
+    def knowledge_search(self, org, query: str, sources: list = None, limit: int = 10) -> list[dict]:
         """
-        Searches the org's indexed knowledge semantically, returning the matching chunks best first - each naming its
-        source (knowledge_uuid) and item (item_key) along with the chunk's text and score.
+        Searches the org's indexed knowledge semantically, or only the given sources of it, returning the matching
+        chunks best first - each naming its source (source_uuid) and item (item_key) along with the chunk's text and
+        score.
         """
-        resp = self._request("knowledge/search", {"org_id": org.id, "query": query, "limit": limit})
+        payload = {"org_id": org.id, "query": query, "limit": limit}
+        if sources:
+            payload["source_uuids"] = [str(s.uuid) for s in sources]
+
+        resp = self._request("knowledge/search", payload)
 
         return resp["results"]
 
