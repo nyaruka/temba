@@ -160,9 +160,7 @@ class KnowledgeSourceCRUDL(SmartCRUDL):
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
 
-            obj = self.request.org.sources.filter(
-                source_type=KnowledgeSource.TYPE_SHORTCUTS, is_system=True, is_active=True
-            ).first()
+            obj = KnowledgeSource.get_system(self.request.org, KnowledgeSource.TYPE_SHORTCUTS)
             if not obj:
                 raise Http404()
 
@@ -216,6 +214,14 @@ class KnowledgeSourceCRUDL(SmartCRUDL):
                     obj.status = KnowledgeSource.STATUS_PENDING
                     obj.error = None
                 obj.config = new_config
+
+            return obj
+
+        def post_save(self, obj):
+            obj = super().post_save(obj)
+
+            if obj.status == KnowledgeSource.STATUS_PENDING:
+                obj.trigger_index()
 
             return obj
 
@@ -289,9 +295,7 @@ class HelpdeskMixin(RequireFeatureMixin):
 
     @cached_property
     def helpdesk(self):
-        obj = self.request.org.sources.filter(
-            source_type=KnowledgeSource.TYPE_HELPDESK, is_system=True, is_active=True
-        ).first()
+        obj = KnowledgeSource.get_system(self.request.org, KnowledgeSource.TYPE_HELPDESK)
         if not obj:
             raise Http404()
         return obj
@@ -534,6 +538,15 @@ class ArticleCRUDL(SmartCRUDL):
 
             # the title is the article's identity on the eventual public site, so the slug follows it
             obj.slug = Article.get_unique_slug(obj.source, obj.title, ignore=obj)
+            return obj
+
+        def post_save(self, obj):
+            obj = super().post_save(obj)
+
+            # an edit to a published article is an edit to what's indexed - a draft isn't in the index to begin with
+            if obj.status == Article.STATUS_PUBLISHED:
+                obj.source.trigger_index()
+
             return obj
 
     class Publish(HelpdeskMixin, PostOnlyMixin, OrgPermsMixin, SmartTemplateView):

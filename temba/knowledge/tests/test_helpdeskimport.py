@@ -1,3 +1,5 @@
+from unittest.mock import call
+
 from django import forms
 from django.test import override_settings
 from django.urls import reverse
@@ -132,6 +134,7 @@ class HelpdeskImportTest(ImportTypesMixin, TembaTest):
         # and the helpdesk is queued for reindexing
         self.helpdesk.refresh_from_db()
         self.assertEqual(KnowledgeSource.STATUS_PENDING, self.helpdesk.status)
+        self.assertIn(call(self.org, self.helpdesk), self.mr_mocks.calls["knowledge_index"])
 
         # an import that can't go on says why, and keeps what it brought before that
         imp = self.create_import(fail_at=2)

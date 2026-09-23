@@ -219,6 +219,14 @@ class MailroomClient:
 
         return RecipientsPreview(query=resp["query"], total=resp["total"])
 
+    def knowledge_index(self, org, source):
+        """
+        Asks mailroom to (re)index the given knowledge source. Indexing happens in a task, so this returns as soon as
+        it's queued - and since the task reads what's changed since the source was last indexed, it must be called on
+        commit of the change rather than during it.
+        """
+        self._request("knowledge/index", {"org_id": org.id, "knowledge_uuid": str(source.uuid)})
+
     def knowledge_search(self, org, query: str, limit: int = 10) -> list[dict]:
         """
         Searches the org's indexed knowledge semantically, returning the matching chunks best first - each naming its

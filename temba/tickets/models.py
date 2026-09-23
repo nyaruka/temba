@@ -39,13 +39,28 @@ class Shortcut(TembaModel):
         assert cls.is_valid_name(name), f"'{name}' is not a valid shortcut name"
         assert not org.shortcuts.filter(name__iexact=name).exists(), f"shortcut with name '{name}' already exists"
 
-        return org.shortcuts.create(name=name, text=text, created_by=user, modified_by=user)
+        obj = org.shortcuts.create(name=name, text=text, created_by=user, modified_by=user)
+        obj.trigger_index()
+        return obj
 
     def release(self, user):
         self.is_active = False
         self.name = self._deleted_name()
         self.modified_by = user
         self.save(update_fields=("name", "is_active", "modified_by", "modified_on"))
+
+        self.trigger_index()
+
+    def trigger_index(self):
+        """
+        Asks mailroom to reindex the org's shortcuts knowledge source, which this is part of. Every change here has
+        to reach it: a create, an edit, and a release - which is a tombstone for mailroom to drop the chunks of.
+        """
+        from temba.knowledge.models import KnowledgeSource
+
+        source = KnowledgeSource.get_system(self.org, KnowledgeSource.TYPE_SHORTCUTS)
+        if source:
+            source.trigger_index()
 
     class Meta:
         constraints = [models.UniqueConstraint("org", Lower("name"), name="unique_shortcut_names")]

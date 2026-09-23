@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from django.conf import settings
 from django.core.files.storage import default_storage
@@ -245,8 +245,12 @@ class KnowledgeSourceCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(KnowledgeSource.STATUS_PENDING, website.status)
         self.assertEqual(reverse("knowledge.knowledgesource_read", args=[website.uuid]), response.url)
 
+        # and asks mailroom to get on with it
+        self.assertEqual([call(self.org, website)], self.mr_mocks.calls["knowledge_index"])
+
         website.status = KnowledgeSource.STATUS_READY
         website.save(update_fields=("status",))
+        self.mr_mocks.calls.clear()
 
         # a name only change doesn't
         self.assertUpdateSubmit(
@@ -257,6 +261,7 @@ class KnowledgeSourceCRUDLTest(TembaTest, CRUDLTestMixin):
         website.refresh_from_db()
         self.assertEqual("Nyaruka Docs", website.name)
         self.assertEqual(KnowledgeSource.STATUS_READY, website.status)
+        self.assertEqual([], self.mr_mocks.calls["knowledge_index"])
 
     @cleanup(s3=True)
     def test_delete(self):

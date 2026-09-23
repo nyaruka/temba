@@ -17,6 +17,7 @@ from temba.knowledge.models import (
     ArticleCount,
     HelpSite,
     KnowledgeSource,
+    chunk_body,
     is_dark_color,
     lookup_txt,
     make_snippet,
@@ -36,8 +37,10 @@ class HelpSiteTest(TembaTest):
         self.org.features = [Org.FEATURE_AGENTS]
         self.org.save(update_fields=("features",))
 
-    def create_article(self, title: str, *, parent=None, body="", description="", published=True):
-        article = Article.create(self.helpdesk, self.admin, title, body=body, description=description, parent=parent)
+    def create_article(self, title: str, *, parent=None, body="", description="", published=True, language=None):
+        article = Article.create(
+            self.helpdesk, self.admin, title, body=body, description=description, parent=parent, language=language
+        )
         if published:
             article.publish(self.admin)
         return article
@@ -416,9 +419,17 @@ class HelpSiteTest(TembaTest):
         self.assertEqual([], site.search("node"))
         nodes.publish(self.admin)
 
-        self.assertEqual([actions], [a for a, _ in site.search("action")])  # no stemming, so not "actions"
+        # an article is searched in its own language, so its words are stemmed - "action" finds the article that has
+        # "actions" in its body, behind the one titled with it - and a question's stopwords are ignored
+        self.assertEqual([actions, nodes], [a for a, _ in site.search("action")])
+        self.assertEqual([nodes], [a for a, _ in site.search("What are the nodes?")])
         self.assertEqual([], site.search("unfinished"))
         self.assertEqual([], site.search("xyzzy"))
+
+        # and one in a language Postgres has no configuration for is matched word for word
+        amakuru = self.create_article("Amakuru", parent=flows, body="Amakuru yose ni meza.", language="kin")
+        self.assertEqual([amakuru], [a for a, _ in site.search("meza")])
+        self.assertEqual([], site.search("the meza"))
         cache.clear()
 
         # once the helpdesk has been indexed, mailroom's semantic search leads, with text search filling in behind
@@ -427,11 +438,11 @@ class HelpSiteTest(TembaTest):
 
         mr_mocks.knowledge_search(
             [
-                {
+                {  # a chunk starts with the article's title, and is markdown - neither of which a snippet shows
                     "knowledge_uuid": str(self.helpdesk.uuid),
                     "item_key": str(actions.uuid),
                     "item_name": "Actions",
-                    "text": "An action does something to a contact.",
+                    "text": "Actions\n\nAn **action** does something to a contact.",
                     "score": 0.9,
                 },
                 {  # a chunk from another source is ignored
@@ -494,6 +505,18 @@ class HelpSiteTest(TembaTest):
 
         self.assertFalse(HelpSite.objects.filter(id=site.id).exists())
         self.assertEqual(0, ArticleCount.objects.count())
+
+    def test_chunk_body(self):
+        for name, text, expected in (
+            ("Flows", "Flows\n\nA flow is a conversation.", "A flow is a conversation."),
+            ("Flows", "Flows\nA flow is a conversation.", "A flow is a conversation."),  # a single newline is accepted
+            ("Flows", "Flows \n\nA flow is a conversation.", "A flow is a conversation."),  # as is trailing whitespace
+            ("Flows", "Flows", ""),  # a chunk that's only the title
+            ("Flow", "Flows are conversations.", "Flows are conversations."),  # a name starting a longer word isn't it
+            ("Flows", "A flow is a conversation.", "A flow is a conversation."),  # no prefix at all
+            (None, "Flows\n\nA flow.", "Flows\n\nA flow."),
+        ):
+            self.assertEqual(expected, chunk_body({"item_name": name, "text": text}), f"{name!r} / {text!r}")
 
     def test_to_plain_text(self):
         self.assertEqual(
