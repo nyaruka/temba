@@ -1,3 +1,9 @@
+v26.3.109 (2026-09-22)
+-------------------------
+ * Render published help site articles at publish time and proxy help site previews to the help sites service
+ * Keep rendered articles free of palette colors and storage addresses
+ * Keep links to other articles as article: links when rendering without a map to resolve them
+
 v26.3.108 (2026-09-22)
 -------------------------
  * Fix attachments in the webchat client and add an emoji picker

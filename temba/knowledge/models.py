@@ -71,8 +71,10 @@ IMAGE_CLASSES = {f"size-{s}" for s in IMAGE_SIZES} | {f"layout-{layout}" for lay
 
 # An uploaded image is referenced by its key in public storage - orgs/1/knowledge/.../shot.png - rather than by the
 # address storage is served from, so an article holds nothing that storage moving would break. The address is put
-# back only as the article is rendered.
+# back only for a page: rendered HTML kept for serving carries the key under the storage: scheme instead, for
+# whatever serves it to resolve.
 RELATIVE_IMAGE = re.compile(r"^(?![a-z][a-z0-9+.-]*:)(?![/#])", re.IGNORECASE)
+IMAGE_STORAGE_SCHEME = "storage:"
 
 
 def resolve_image(reference: str) -> str:
@@ -86,22 +88,40 @@ def resolve_image(reference: str) -> str:
     return public_file_storage.url(key) + hash_ + fragment
 
 
+def reference_image(reference: str) -> str:
+    """
+    The form an image reference is kept in rendered HTML: a storage key under the storage: scheme, fragment and all,
+    and anything with an address of its own as it is.
+    """
+    return IMAGE_STORAGE_SCHEME + reference if RELATIVE_IMAGE.match(reference) else reference
+
+
 class AnnotateImages(Extension):
     """
     Surfaces the size/layout fragment of each image's URL as classes on its <img> - size-small, layout-inline etc -
-    for CSS to act on - and resolves a reference to an uploaded image to where storage serves it from. The fragment
+    for CSS to act on - and resolves a reference to an uploaded image to where storage serves it from, or when not
+    resolving, keeps it as a storage: reference. The fragment
     is left on the src; a fragment on an <img> is harmless, and stripping it would make the served HTML lie about the
     markdown it came from.
     """
 
+    def __init__(self, resolve: bool = True):
+        super().__init__()
+        self.resolve = resolve
+
     def extendMarkdown(self, md):
-        md.treeprocessors.register(AnnotateImagesProcessor(md), "annotate_images", 5)
+        md.treeprocessors.register(AnnotateImagesProcessor(md, self.resolve), "annotate_images", 5)
 
 
 class AnnotateImagesProcessor(Treeprocessor):
+    def __init__(self, md, resolve: bool):
+        super().__init__(md)
+        self.resolve = resolve
+
     def run(self, root):
         for img in root.iter("img"):
-            img.set("src", resolve_image(img.get("src", "")))
+            reference = img.get("src", "")
+            img.set("src", resolve_image(reference) if self.resolve else reference_image(reference))
             params = parse_qs(img.get("src", "").partition("#")[2])
 
             classes = []
@@ -226,11 +246,9 @@ def border_on(background: str) -> str:
     """
     The border a column can ask for, drawn from its own fill the same way its text is - the same hue, stepped a
     fixed distance from the fill's own lightness so it reads against any fill: gently darker over a light one,
-    deeper still over a dark one, so a dark block sits inside a darker edge. A plain neutral when there's no fill
-    to draw from.
+    deeper still over a dark one, so a dark block sits inside a darker edge. A border with no fill to draw from is
+    the stylesheet's own neutral.
     """
-    if not background:
-        return "#d0d5dd"
     h, l, s = _hex_to_hls(background)
     if l > 0.55:
         s, l = min(s, 0.5), max(l - 0.16, 0.1)
@@ -243,22 +261,15 @@ class ColumnStyles(Extension):
     """
     Realizes the column stylesheets in a layout table's header cells as a colgroup, leaving the header genuinely
     empty. Every header cell has to be empty or read as a stylesheet; any real header text leaves the table alone.
-    Backgrounds resolve against the org's palette on the way through.
+    A background stays the palette index it is, as a bubble-<index> class on the column and its cells, and the page
+    says what each index currently looks like - so a palette change restyles every article without rendering any.
     """
 
-    def __init__(self, colors: dict = None):
-        super().__init__()
-        self.colors = colors or {}
-
     def extendMarkdown(self, md):
-        md.treeprocessors.register(ColumnStylesProcessor(md, self.colors), "column_styles", 4)
+        md.treeprocessors.register(ColumnStylesProcessor(md), "column_styles", 4)
 
 
 class ColumnStylesProcessor(Treeprocessor):
-    def __init__(self, md, colors: dict):
-        super().__init__(md)
-        self.colors = colors
-
     def run(self, root):
         for table in root.iter("table"):
             self._decorate(table)
@@ -280,47 +291,51 @@ class ColumnStylesProcessor(Treeprocessor):
         for th in head:
             th.text = ""
 
-        # what each column's embedded palette index currently means - possibly nothing, if it's been removed
-        fills = [self.colors.get(style["background"]) if style.get("background") else None for style in styles]
+        bubbles = [f"bubble-{style['background']}" if style.get("background") else None for style in styles]
 
-        if any(style.get("width") for style in styles) or any(fills):
+        if any(style.get("width") for style in styles) or any(bubbles):
             colgroup = Element("colgroup")
-            for style, fill in zip(styles, fills):
+            for style, bubble in zip(styles, bubbles):
                 col = SubElement(colgroup, "col")
-                parts = []
                 if style.get("width"):
-                    parts.append(f"width: {style['width']}")
-                if fill:
-                    parts.append(f"background: {fill}")
-                if parts:
-                    col.set("style", "; ".join(parts))
+                    col.set("style", f"width: {style['width']}")
+                if bubble:
+                    col.set("class", bubble)
             table.insert(0, colgroup)
 
         # a sized column only holds its size in a fixed layout, where the unsized columns share what's left
         if any(style.get("width") for style in styles):
             table.set("style", "table-layout: fixed; width: 100%")
 
-        # what belongs to the cells themselves: padding, and text drawn from the column's own color - a colgroup
-        # can paint a background but can't reach the text over it. Any alignment the renderer put on a cell stays.
+        # what belongs to the cells themselves: padding, and the column's bubble, since a colgroup can paint a
+        # background but can't reach the text over it or a cell's border. Any alignment the renderer put on a cell
+        # stays.
         tbody = table.find("tbody")
         for tr in tbody.findall("tr") if tbody is not None else []:
             for index, td in enumerate(tr.findall("td")):
                 style = styles[index] if index < len(styles) else {}
-                fill = fills[index] if index < len(fills) else None
+                bubble = bubbles[index] if index < len(bubbles) else None
                 parts = []
                 align = re.search(r"text-align:\s*(left|center|right)", td.get("style") or "")
                 if align:
                     parts.append(f"text-align: {align[1]}")
                 if style.get("padding"):
                     parts.append(f"padding: {style['padding']}")
-                if fill:
-                    parts.append(f"color: {text_on(fill)}")
-                if style.get("border"):
-                    parts.append(f"border: 1px solid {border_on(fill)}")
                 if parts:
                     td.set("style", "; ".join(parts))
                 elif td.get("style"):
                     del td.attrib["style"]
+
+                classes = [c for c in (bubble, "bordered" if style.get("border") else None) if c]
+                if classes:
+                    td.set("class", " ".join(classes))
+
+
+def derive_color_styles(colors: dict) -> dict:
+    """
+    What each palette entry looks like on a page - the fill, and the text and border drawn from it - by its index.
+    """
+    return {key: {"fill": color, "text": text_on(color), "border": border_on(color)} for key, color in colors.items()}
 
 
 # How one article links to another: [text](article:<uuid>), the target's uuid rather than its address - so the link
@@ -370,8 +385,8 @@ class ArticleLinksProcessor(Treeprocessor):
 # serves the page has one form to look for - so the rel the sanitizer puts on every link comes off these
 ARTICLE_LINK_HTML = re.compile(r'<a href="(article:[0-9a-f-]{36})" rel="noopener noreferrer">')
 
-# and the URL scheme those links carry, which the sanitizer would otherwise strip
-SANITIZE_URL_SCHEMES = nh3.ALLOWED_URL_SCHEMES | {"article"}
+# and the URL schemes those links and kept image references carry, which the sanitizer would otherwise strip
+SANITIZE_URL_SCHEMES = nh3.ALLOWED_URL_SCHEMES | {"article", "storage"}
 
 
 # markdown extensions we render article bodies with. Deliberately conservative - no extension that would make markdown
@@ -408,28 +423,29 @@ SANITIZE_ATTRIBUTES = {
     **nh3.ALLOWED_ATTRIBUTES,
     **{tag: {"id"} for tag in HEADING_TAGS},
     "img": nh3.ALLOWED_ATTRIBUTES["img"] | {"class"},
-    "col": nh3.ALLOWED_ATTRIBUTES.get("col", set()) | {"style"},
+    "col": nh3.ALLOWED_ATTRIBUTES.get("col", set()) | {"style", "class"},
     "table": nh3.ALLOWED_ATTRIBUTES.get("table", set()) | {"style"},
-    "td": nh3.ALLOWED_ATTRIBUTES.get("td", set()) | {"style"},
+    "td": nh3.ALLOWED_ATTRIBUTES.get("td", set()) | {"style", "class"},
     "th": nh3.ALLOWED_ATTRIBUTES.get("th", set()) | {"style"},
 }
 
-# the only declarations a cell's style may carry: the alignment the tables extension writes, and the padding and
-# derived text color ColumnStyles writes
-CELL_DECLARATION = re.compile(
-    r"^(text-align:\s*(left|center|right)|padding:\s*\d+px|color:\s*#[0-9a-f]{3,8}|border:\s*1px solid #[0-9a-f]{3,8})$",
-    re.IGNORECASE,
-)
+# the only declarations a cell's style may carry: the alignment the tables extension writes, and the padding
+# ColumnStyles writes
+CELL_DECLARATION = re.compile(r"^(text-align:\s*(left|center|right)|padding:\s*\d+px)$", re.IGNORECASE)
 
-# and the only ones a col's may: the width straight from the stylesheet, and the palette color its index resolved to
-COL_DECLARATION = re.compile(r"^(width:\s*\d+(px|%)|background:\s*#[0-9a-f]{3,8})$", re.IGNORECASE)
+# and the only one a col's may: the width straight from the stylesheet
+COL_DECLARATION = re.compile(r"^width:\s*\d+(px|%)$", re.IGNORECASE)
+
+# the classes ColumnStyles puts on a col or cell: its palette index, and on a cell whether it has a border
+BUBBLE_CLASS = re.compile(r"^bubble-\d+$")
 
 
 def _sanitize_attribute(element: str, attribute: str, value: str) -> str | None:
     """
     Tightens what SANITIZE_ATTRIBUTES lets through: an image's class may only carry the classes AnnotateImages
-    emits, a table, col or cell style only what our own pipeline writes, and a heading's id only what heading_id
-    makes. Nothing else can put those attributes there, so like the sanitizing itself this is defense in depth.
+    emits, a table, col or cell style or class only what our own pipeline writes, and a heading's id only what
+    heading_id makes. Nothing else can put those attributes there, so like the sanitizing itself this is defense in
+    depth.
     """
     if element in HEADING_TAGS and attribute == "id":
         return value if HEADING_ID.match(value) else None
@@ -439,6 +455,9 @@ def _sanitize_attribute(element: str, attribute: str, value: str) -> str | None:
     if element == "col" and attribute == "style":
         kept = [d.strip() for d in value.split(";") if d.strip() and COL_DECLARATION.match(d.strip())]
         return "; ".join(kept) if kept else None
+    if element in ("col", "td") and attribute == "class":
+        kept = [c for c in value.split() if BUBBLE_CLASS.match(c) or (element == "td" and c == "bordered")]
+        return " ".join(kept) if kept else None
     if element == "table" and attribute == "style":
         return value if value == "table-layout: fixed; width: 100%" else None
     if element in ("td", "th") and attribute == "style":
@@ -447,14 +466,15 @@ def _sanitize_attribute(element: str, attribute: str, value: str) -> str | None:
     return value
 
 
-def render_markdown(body: str, colors: dict = None, links: dict = None) -> tuple[str, list[Heading]]:
+def render_markdown(body: str, links: dict = None) -> tuple[str, list[Heading]]:
     """
-    Renders authored markdown for display, resolving column backgrounds against the org's palette and article: links
-    against the given map of article uuid to address - or leaving them as article: links, for whatever serves the
-    page to resolve, when there's no map. Raw HTML is escaped rather than passed through, so that a reader sees what
-    the author saw - the editor renders client side and escapes it too, and text that merely looks like a tag (the
-    `<url>` of our own quick reply syntax, say) survives instead of being quietly swallowed. Sanitizing stays as
-    defense in depth, and still deals with the javascript: URLs markdown will happily make a link out of.
+    Renders authored markdown. Given a map of article uuid to address it's rendered for a page, with links to other
+    articles resolved against the map and uploaded images against storage. Without one it's rendered to be kept for
+    whatever serves it, and holds no address or color at all: links stay article:<uuid>, images storage:<key>, and
+    column colors palette indexes. Raw HTML is escaped rather than passed through, so that a reader sees what the
+    author saw - the editor renders client side and escapes it too, and text that merely looks like a tag (the `<url>`
+    of our own quick reply syntax, say) survives instead of being quietly swallowed. Sanitizing stays as defense in
+    depth, and still deals with the javascript: URLs markdown will happily make a link out of.
 
     Every heading gets an id made from its text, so a page can link to it, and the top level ones come back
     alongside the HTML in the order they appear, for the page to list them.
@@ -463,9 +483,9 @@ def render_markdown(body: str, colors: dict = None, links: dict = None) -> tuple
         extensions=[
             *MARKDOWN_EXTENSIONS,
             EscapeRawHTML(),
-            AnnotateImages(),
+            AnnotateImages(resolve=links is not None),
             CellBreaks(),
-            ColumnStyles(colors),
+            ColumnStyles(),
             ArticleLinks(links),
             TocExtension(marker="", toc_depth=1, slugify=heading_id),  # no marker, so [TOC] in an article is just text
         ]
@@ -658,6 +678,7 @@ class KnowledgeSource(TembaModel):
 
     # config keys for TYPE_HELPDESK
     CONFIG_COLORS = "colors"  # the org's article palette, index -> hex; articles embed the index, never the hex
+    CONFIG_COLOR_STYLES = "color_styles"  # what each palette entry looks like on a page, by index
 
     DEFAULT_MAX_DEPTH = 3
     DEFAULT_MAX_PAGES = 500
@@ -741,17 +762,18 @@ class KnowledgeSource(TembaModel):
         """
         return self.config.get(self.CONFIG_COLORS, {})
 
+    @property
+    def color_styles(self) -> dict:
+        """
+        What each palette entry looks like on a page, kept alongside the palette so that whatever serves a page needs
+        no color math of its own - see derive_color_styles.
+        """
+        return self.config.get(self.CONFIG_COLOR_STYLES, {})
+
     def set_colors(self, colors: dict):
         self.config[self.CONFIG_COLORS] = colors
+        self.config[self.CONFIG_COLOR_STYLES] = derive_color_styles(colors)
         self.save(update_fields=("config", "modified_on"))
-
-        # column styles bake the palette into an article's rendered HTML, so what's published is rendered again with
-        # the new one - without touching modified_on, since what mailroom indexes hasn't changed
-        articles = list(self.articles.filter(is_active=True, status=Article.STATUS_PUBLISHED))
-        for article in articles:
-            article.source = self
-            article.prerender()
-        Article.objects.bulk_update(articles, ("body_html", "headings"), batch_size=100)
 
     @classmethod
     def get_system(cls, org, source_type: str):
@@ -1039,11 +1061,11 @@ class Article(models.Model):
 
     def render(self, links: dict = None) -> tuple[str, list[Heading]]:
         """
-        The article rendered for reading, and its top level headings for the page to link to. Links to other
-        articles are resolved against the given map of uuid to address - see HelpSite.get_link_targets. Without one,
-        they're kept as article: links for whatever serves the page to resolve.
+        The article rendered, and its top level headings for the page to link to - for a page given a map of uuid to
+        address for links to other articles to resolve against (see HelpSite.get_link_targets), and otherwise as it's
+        kept for whatever serves it - see render_markdown.
         """
-        return render_markdown(self.body, self.source.colors, links)
+        return render_markdown(self.body, links)
 
     def prerender(self):
         """

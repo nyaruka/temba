@@ -22,6 +22,15 @@
         --header-text: {{ site.header_text_color }};
       }
 
+      /* what each palette entry the articles embed looks like, for article.css to style columns with */
+      {% for key, style in site.source.color_styles.items %}
+        .bubble-{{ key }} {
+          --bubble-fill: {{ style.fill }};
+          --bubble-text: {{ style.text }};
+          --bubble-border: {{ style.border }};
+        }
+      {% endfor %}
+
       /* the chat widget takes the site's accent */
       temba-webchat {
         --webchat-primary: var(--primary);

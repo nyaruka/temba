@@ -16,6 +16,7 @@ from temba.knowledge.models import (
     KnowledgeItem,
     KnowledgeSource,
     _sanitize_attribute,
+    derive_color_styles,
     get_article_image_path,
     parse_column_style,
 )
@@ -536,10 +537,17 @@ class ArticleTest(TembaTest):
         self.assertEqual('<p><img alt="shot" src="https://example.com/shot.png"></p>', article.as_html())
 
         # an uploaded image is referenced by its storage key, which is resolved to where storage serves it from only
-        # as the article is rendered - the fragment riding along
+        # when rendering for a page - the fragment riding along
         article.body = "![shot](orgs/1/knowledge/shot.png#size=small) ![abs](/local/shot.png)"
         self.assertEqual(
             f'<p><img alt="shot" class="size-small" src="{public_file_storage.url("orgs/1/knowledge/shot.png")}#size=small"> '
+            '<img alt="abs" src="/local/shot.png"></p>',
+            article.as_html(links={}),
+        )
+
+        # and otherwise kept as the key, under the storage: scheme, for whatever serves the page to resolve
+        self.assertEqual(
+            '<p><img alt="shot" class="size-small" src="storage:orgs/1/knowledge/shot.png#size=small"> '
             '<img alt="abs" src="/local/shot.png"></p>',
             article.as_html(),
         )
@@ -630,16 +638,30 @@ class ArticleTest(TembaTest):
 
         # a helpdesk starts with no palette at all
         self.assertEqual({}, self.helpdesk.colors)
+        self.assertEqual({}, self.helpdesk.color_styles)
 
+        # setting one keeps what each entry looks like on a page alongside it: the fill, and the text and border
+        # drawn from it - deep over a light fill, pale over a dark one
         self.helpdesk.set_colors({"1": "#ffe8a3", "2": "#123456"})
 
         self.helpdesk.refresh_from_db()
         self.assertEqual({"1": "#ffe8a3", "2": "#123456"}, self.helpdesk.colors)
+        self.assertEqual(
+            {
+                "1": {"fill": "#ffe8a3", "text": "#6b581f", "border": "#d4be7d"},
+                "2": {"fill": "#123456", "text": "#edf2f8", "border": "#07101a"},
+            },
+            self.helpdesk.color_styles,
+        )
+
+        # short palette hexes derive the same way
+        self.assertEqual("#f8f6ed", derive_color_styles({"1": "#fc0"})["1"]["text"])
 
         # the stylesheets in a layout table's header cells are realized as a colgroup, leaving the header genuinely
-        # empty: widths and palette fills belong to the columns, while what a colgroup can't reach - padding, text
-        # drawn from the column's own fill, a border drawn from it - goes on the cells. Alignment stays where the
-        # renderer put it, and a sized column only holds its size in a fixed layout.
+        # empty: widths and palette indexes belong to the columns, while what a colgroup can't reach - padding, the
+        # index the text over it is drawn from, a border - goes on the cells. An index is a class the page styles, so
+        # the article holds no colors of its own. Alignment stays where the renderer put it, and a sized column only
+        # holds its size in a fixed layout.
         article.body = (
             "| width: 40%; padding: 8px | background: 1; border: solid | background: 2; border: solid |\n"
             "| - | :-: | - |\n"
@@ -647,52 +669,33 @@ class ArticleTest(TembaTest):
         )
         self.assertEqual(
             '<table style="table-layout: fixed; width: 100%">\n'
-            '<colgroup><col style="width: 40%"><col style="background: #ffe8a3">'
-            '<col style="background: #123456"></colgroup>'
+            '<colgroup><col style="width: 40%"><col class="bubble-1"><col class="bubble-2"></colgroup>'
             '<thead>\n<tr>\n<th></th>\n<th style="text-align: center"></th>\n<th></th>\n</tr>\n</thead>\n'
             '<tbody>\n<tr>\n<td style="padding: 8px">one</td>\n'
-            '<td style="text-align: center; color: #6b581f; border: 1px solid #d4be7d">two</td>\n'
-            '<td style="color: #edf2f8; border: 1px solid #07101a">three</td>\n</tr>\n</tbody>\n</table>',
+            '<td class="bubble-1 bordered" style="text-align: center">two</td>\n'
+            '<td class="bubble-2 bordered">three</td>\n</tr>\n</tbody>\n</table>',
             article.as_html(),
         )
 
-        # the article embeds the palette index, so recoloring the entry restyles its every use - text and border
-        # included, since both are drawn from the fill
-        article.body = "| background: 1 |\n| - |\n| one |"
-        self.assertEqual(
-            '<table>\n<colgroup><col style="background: #ffe8a3"></colgroup>'
-            "<thead>\n<tr>\n<th></th>\n</tr>\n</thead>\n"
-            '<tbody>\n<tr>\n<td style="color: #6b581f">one</td>\n</tr>\n</tbody>\n</table>',
-            article.as_html(),
-        )
+        # and there's nothing about a column to resolve for a page
+        self.assertEqual(article.as_html(), article.as_html(links={}))
 
-        self.helpdesk.set_colors({"1": "#fc0"})
-
-        # short palette hexes resolve the same way, and a light fill takes deep text where a dark one takes pale
-        self.assertEqual(
-            '<table>\n<colgroup><col style="background: #fc0"></colgroup>'
-            "<thead>\n<tr>\n<th></th>\n</tr>\n</thead>\n"
-            '<tbody>\n<tr>\n<td style="color: #f8f6ed">one</td>\n</tr>\n</tbody>\n</table>',
-            article.as_html(),
-        )
-
-        # an index the palette no longer answers for paints nothing, while the rest of the stylesheet still holds
+        # an index the palette doesn't answer for is kept all the same - the page just has nothing to paint it with
         article.body = "| background: 9 | width: 10px |\n| - | - |\n| one | two |"
         self.assertEqual(
             '<table style="table-layout: fixed; width: 100%">\n'
-            '<colgroup><col><col style="width: 10px"></colgroup>'
+            '<colgroup><col class="bubble-9"><col style="width: 10px"></colgroup>'
             "<thead>\n<tr>\n<th></th>\n<th></th>\n</tr>\n</thead>\n"
-            "<tbody>\n<tr>\n<td>one</td>\n<td>two</td>\n</tr>\n</tbody>\n</table>",
+            '<tbody>\n<tr>\n<td class="bubble-9">one</td>\n<td>two</td>\n</tr>\n</tbody>\n</table>',
             article.as_html(),
         )
 
-        # a border with no fill to draw from takes a plain neutral
+        # a border with no index is still a border, which the page draws in a neutral color - and columns that ask
+        # for nothing a column can carry get no colgroup and no fixed layout
         article.body = "| border: solid | padding: 12px |\n| - | - |\n| one | two |"
-
-        # and columns that ask for nothing a column can carry get no colgroup and no fixed layout
         self.assertEqual(
             "<table>\n<thead>\n<tr>\n<th></th>\n<th></th>\n</tr>\n</thead>\n"
-            '<tbody>\n<tr>\n<td style="border: 1px solid #d0d5dd">one</td>\n'
+            '<tbody>\n<tr>\n<td class="bordered">one</td>\n'
             '<td style="padding: 12px">two</td>\n</tr>\n</tbody>\n</table>',
             article.as_html(),
         )
@@ -703,6 +706,7 @@ class ArticleTest(TembaTest):
             article.body = f"{header}\n| - | - |\n| one | two |"
             self.assertNotIn("<colgroup>", article.as_html(), f"for header {header}")
             self.assertNotIn("style", article.as_html(), f"for header {header}")
+            self.assertNotIn("class", article.as_html(), f"for header {header}")
 
     def test_parse_column_style(self):
         self.assertEqual({}, parse_column_style(""))
@@ -745,7 +749,7 @@ class ArticleTest(TembaTest):
         td2 = SubElement(SubElement(SubElement(styled, "tbody"), "tr"), "td")
         td2.set("style", "color: red")
 
-        ColumnStylesProcessor(None, {}).run(root)
+        ColumnStylesProcessor(None).run(root)
 
         # a table with no header carries no stylesheet, so it's left exactly as it was
         self.assertEqual("color: red", td1.get("style"))
@@ -761,10 +765,10 @@ class ArticleTest(TembaTest):
         self.assertIsNone(_sanitize_attribute("img", "class", "sneaky"))
         self.assertEqual("https://x.com", _sanitize_attribute("a", "href", "https://x.com"))
 
-        # and a table, col or cell style only carries what our own pipeline writes
-        self.assertEqual(
-            "width: 40%; background: #ffe8a3", _sanitize_attribute("col", "style", "width: 40%; background: #ffe8a3")
-        )
+        # and a table, col or cell style only carries what our own pipeline writes - never a color, which the page
+        # gives a column by its palette index
+        self.assertEqual("width: 40%", _sanitize_attribute("col", "style", "width: 40%"))
+        self.assertEqual("width: 40%", _sanitize_attribute("col", "style", "width: 40%; background: #ffe8a3"))
         self.assertEqual("width: 40%", _sanitize_attribute("col", "style", "width: 40%; position: fixed"))
         self.assertIsNone(_sanitize_attribute("col", "style", "background: url(x)"))
 
@@ -774,10 +778,17 @@ class ArticleTest(TembaTest):
         )
         self.assertIsNone(_sanitize_attribute("table", "style", "position: fixed"))
 
-        cell_style = "text-align: left; padding: 8px; color: #6b581f; border: 1px solid #d0d5dd"
-        self.assertEqual(cell_style, _sanitize_attribute("td", "style", cell_style))
+        self.assertEqual(
+            "text-align: left; padding: 8px", _sanitize_attribute("td", "style", "text-align: left; padding: 8px")
+        )
+        self.assertEqual("padding: 8px", _sanitize_attribute("td", "style", "padding: 8px; color: #6b581f"))
         self.assertEqual("text-align: center", _sanitize_attribute("th", "style", "text-align: center; width: 40%"))
         self.assertIsNone(_sanitize_attribute("td", "style", "position: fixed"))
+
+        # and a col or cell's classes are only its palette index, and for a cell whether it has a border
+        self.assertEqual("bubble-1", _sanitize_attribute("col", "class", "bubble-1 bordered"))
+        self.assertEqual("bubble-12 bordered", _sanitize_attribute("td", "class", "bubble-12 bordered sneaky"))
+        self.assertIsNone(_sanitize_attribute("td", "class", "bubble-x"))
 
     def test_publishing(self):
         article = self.create_article(self.helpdesk, "Getting Started")
@@ -826,34 +837,26 @@ class ArticleTest(TembaTest):
         )
         self.assertEqual([{"id": "nodes", "text": "Nodes"}], article.headings)
 
-        # and so does saving it once it's published, however it's saved - here with a column colored by a palette
-        # entry the helpdesk doesn't have yet, so it paints nothing
-        article.body = "# Steps\n\nA node is a step.\n\n| background: 1 |\n| - |\n| one |"
+        # and so does saving it once it's published, however it's saved - keeping a column's palette index as a
+        # class and an uploaded image as its storage key, so that nothing in it changes when the palette or storage do
+        article.body = "# Steps\n\n![shot](orgs/1/knowledge/shot.png)\n\n| background: 1 |\n| - |\n| one |"
         article.save()
         article.refresh_from_db()
         self.assertEqual(
-            '<h1 id="steps">Steps</h1>\n<p>A node is a step.</p>\n'
-            "<table>\n<thead>\n<tr>\n<th></th>\n</tr>\n</thead>\n"
-            "<tbody>\n<tr>\n<td>one</td>\n</tr>\n</tbody>\n</table>",
+            '<h1 id="steps">Steps</h1>\n<p><img alt="shot" src="storage:orgs/1/knowledge/shot.png"></p>\n'
+            '<table>\n<colgroup><col class="bubble-1"></colgroup><thead>\n<tr>\n<th></th>\n</tr>\n</thead>\n'
+            '<tbody>\n<tr>\n<td class="bubble-1">one</td>\n</tr>\n</tbody>\n</table>',
             article.body_html,
         )
         self.assertEqual([{"id": "steps", "text": "Steps"}], article.headings)
 
-        # column styles bake in the helpdesk's palette, so a change to it renders every published article again -
-        # without bumping modified_on, since nothing the indexer reads has changed
+        # so a palette change is just the palette - no article is rendered again
         modified_on = article.modified_on
-        self.helpdesk.set_colors({"1": "#ffe8a3"})
+        with self.assertNumQueries(1):
+            self.helpdesk.set_colors({"1": "#ffe8a3"})
 
         article.refresh_from_db()
-        self.assertIn('<col style="background: #ffe8a3">', article.body_html)
-        self.assertEqual([{"id": "steps", "text": "Steps"}], article.headings)
         self.assertEqual(modified_on, article.modified_on)
-
-        # a draft still isn't
-        article.unpublish(self.editor)
-        self.helpdesk.set_colors({"1": "#123456"})
-        article.refresh_from_db()
-        self.assertIn('<col style="background: #ffe8a3">', article.body_html)  # as it was last published
 
     @cleanup(s3=True)
     def test_release(self):

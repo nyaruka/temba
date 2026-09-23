@@ -237,6 +237,25 @@
   text-decoration: underline;
 }
 
+/* a column's palette index, as a bubble-<index> class, styled by what the page says that index looks like - so a
+   removed entry paints nothing and its border falls back to a neutral one */
+.doc col[class*="bubble-"] {
+  background: var(--bubble-fill);
+}
+
+.doc td[class*="bubble-"] {
+  color: var(--bubble-text);
+}
+
+.doc td[class*="bubble-"] a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.doc table:not(:has(th:not(:empty))) td.bordered {
+  border: 1px solid var(--bubble-border, #d0d5dd);
+}
+
 /* on a narrow screen the card gives up most of its padding to the text */
 @media (max-width: 860px) {
   .article {

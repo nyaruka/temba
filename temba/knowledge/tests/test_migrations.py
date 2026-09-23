@@ -78,10 +78,10 @@ class BackfillSystemKnowledgeTest(MigrationTest):
         self.assertEqual(num_rows, Knowledge.objects.count())
 
 
-class BackfillArticleHtmlTest(MigrationTest):
+class KeepArticleHtmlAddresslessTest(MigrationTest):
     app = "knowledge"
-    migrate_from = "0008_article_body_html_headings"
-    migrate_to = "0009_backfill_article_html"
+    migrate_from = "0009_backfill_article_html"
+    migrate_to = "0010_keep_article_html_addressless"
 
     def setUpBeforeMigration(self, apps):
         KnowledgeSource = apps.get_model("knowledge", "KnowledgeSource")
@@ -90,38 +90,52 @@ class BackfillArticleHtmlTest(MigrationTest):
         helpdesk = KnowledgeSource.objects.get(org_id=self.org.id, source_type="helpdesk")
         helpdesk.config = {"colors": {"1": "#ffe8a3"}}
         helpdesk.save(update_fields=("config",))
+        self.helpdesk_id = helpdesk.id
 
-        def create_article(title, body, status):
+        def create_article(title, body, status, body_html=""):
             return Article.objects.create(
                 source=helpdesk,
                 title=title,
                 slug=title.lower(),
                 body=body,
+                body_html=body_html,
                 status=status,
                 created_by_id=self.admin.id,
                 modified_by_id=self.admin.id,
             )
 
-        self.published = create_article("Nodes", "# Nodes\n\nA **node**.\n\n| background: 1 |\n| - |\n| one |", "P")
+        # published with colors and addresses baked in, as it was before
+        self.published = create_article(
+            "Nodes",
+            "# Nodes\n\n![shot](orgs/1/knowledge/shot.png)\n\n| background: 1 |\n| - |\n| one |",
+            "P",
+            '<col style="background: #ffe8a3">',
+        )
         self.draft = create_article("Drafting", "# Drafting\n\nNot yet.", "D")
         self.modified_on = self.published.modified_on
 
     def test_migration(self):
+        KnowledgeSource = self.apps.get_model("knowledge", "KnowledgeSource")
         Article = self.apps.get_model("knowledge", "Article")
 
-        # a published article is rendered with the helpdesk's palette, without looking any more recently modified
+        # what each palette entry looks like on a page is kept alongside the palette
+        helpdesk = KnowledgeSource.objects.get(id=self.helpdesk_id)
+        self.assertEqual(
+            {"1": {"fill": "#ffe8a3", "text": "#6b581f", "border": "#d4be7d"}}, helpdesk.config["color_styles"]
+        )
+
+        # and published articles are kept with palette indexes and storage keys, without looking any more recently
+        # modified
         published = Article.objects.get(id=self.published.id)
         self.assertEqual(
-            '<h1 id="nodes">Nodes</h1>\n<p>A <strong>node</strong>.</p>\n'
-            '<table>\n<colgroup><col style="background: #ffe8a3"></colgroup>'
-            "<thead>\n<tr>\n<th></th>\n</tr>\n</thead>\n"
-            '<tbody>\n<tr>\n<td style="color: #6b581f">one</td>\n</tr>\n</tbody>\n</table>',
+            '<h1 id="nodes">Nodes</h1>\n<p><img alt="shot" src="storage:orgs/1/knowledge/shot.png"></p>\n'
+            '<table>\n<colgroup><col class="bubble-1"></colgroup><thead>\n<tr>\n<th></th>\n</tr>\n</thead>\n'
+            '<tbody>\n<tr>\n<td class="bubble-1">one</td>\n</tr>\n</tbody>\n</table>',
             published.body_html,
         )
         self.assertEqual([{"id": "nodes", "text": "Nodes"}], published.headings)
         self.assertEqual(self.modified_on, published.modified_on)
 
-        # a draft isn't
+        # a draft isn't rendered
         draft = Article.objects.get(id=self.draft.id)
         self.assertEqual("", draft.body_html)
-        self.assertEqual([], draft.headings)

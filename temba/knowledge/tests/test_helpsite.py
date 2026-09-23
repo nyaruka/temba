@@ -263,6 +263,7 @@ class HelpSiteTest(TembaTest):
         site.set_bubbles({"1": "#ABCDEF", "2": "", "3": "#123456"})
         self.helpdesk.refresh_from_db()
         self.assertEqual({"1": "#abcdef", "3": "#123456"}, self.helpdesk.colors)
+        self.assertEqual({"1", "3"}, set(self.helpdesk.color_styles))
         self.assertEqual({"1": "#abcdef", "3": "#123456"}, site.bubbles)
 
     def test_sections_and_articles(self):

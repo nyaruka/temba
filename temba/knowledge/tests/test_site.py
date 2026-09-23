@@ -82,6 +82,14 @@ class SiteViewsTest(TembaTest):
         self.assertContains(response, "--header-bg: #1f2937;")
         self.assertContains(response, "--header-text: #ffffff;")
 
+        # and so does what each palette entry looks like, for the columns of its articles
+        self.site.set_bubbles({"1": "#ffe8a3"})
+        response = self.public("/")
+        self.assertContains(response, ".bubble-1 {")
+        self.assertContains(response, "--bubble-fill: #ffe8a3;")
+        self.assertContains(response, "--bubble-text: #6b581f;")
+        self.assertContains(response, "--bubble-border: #d4be7d;")
+
         # there's no chat widget until the site has a chat channel
         self.assertNotContains(response, "<temba-webchat")
 
