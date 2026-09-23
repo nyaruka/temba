@@ -17,6 +17,7 @@ from temba.knowledge.models import (
     ArticleCount,
     HelpSite,
     KnowledgeSource,
+    chunk_body,
     is_dark_color,
     lookup_txt,
     make_snippet,
@@ -504,6 +505,18 @@ class HelpSiteTest(TembaTest):
 
         self.assertFalse(HelpSite.objects.filter(id=site.id).exists())
         self.assertEqual(0, ArticleCount.objects.count())
+
+    def test_chunk_body(self):
+        for name, text, expected in (
+            ("Flows", "Flows\n\nA flow is a conversation.", "A flow is a conversation."),
+            ("Flows", "Flows\nA flow is a conversation.", "A flow is a conversation."),  # a single newline is accepted
+            ("Flows", "Flows \n\nA flow is a conversation.", "A flow is a conversation."),  # as is trailing whitespace
+            ("Flows", "Flows", ""),  # a chunk that's only the title
+            ("Flow", "Flows are conversations.", "Flows are conversations."),  # a name starting a longer word isn't it
+            ("Flows", "A flow is a conversation.", "A flow is a conversation."),  # no prefix at all
+            (None, "Flows\n\nA flow.", "Flows\n\nA flow."),
+        ):
+            self.assertEqual(expected, chunk_body({"item_name": name, "text": text}), f"{name!r} / {text!r}")
 
     def test_to_plain_text(self):
         self.assertEqual(

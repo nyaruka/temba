@@ -582,11 +582,17 @@ def text_search_config():
 def chunk_body(chunk: dict) -> str:
     """
     The text of an indexed chunk without the article's title, which mailroom prefixes onto every chunk for the
-    embedding's sake - a result already shows the title, so a snippet shouldn't start by repeating it.
+    embedding's sake - a result already shows the title, so a snippet shouldn't start by repeating it. The prefix is
+    the item's name and a blank line (see chunkArticle in mailroom's knowledge package); any whitespace after the name
+    is accepted, while a name that merely starts a longer first word is left alone.
     """
-    text = chunk["text"]
-    prefix = f"{chunk.get('item_name', '')}\n\n"
-    return text[len(prefix) :] if chunk.get("item_name") and text.startswith(prefix) else text
+    text, name = chunk["text"], chunk.get("item_name")
+    if not name or not text.startswith(name):
+        return text
+    rest = text[len(name) :]
+    if rest and not rest[0].isspace():
+        return text
+    return rest.lstrip()
 
 
 def make_snippet(text: str, terms: list, *, length: int = 200) -> str:
