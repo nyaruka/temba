@@ -39,13 +39,27 @@ class Shortcut(TembaModel):
         assert cls.is_valid_name(name), f"'{name}' is not a valid shortcut name"
         assert not org.shortcuts.filter(name__iexact=name).exists(), f"shortcut with name '{name}' already exists"
 
-        return org.shortcuts.create(name=name, text=text, created_by=user, modified_by=user)
+        shortcut = org.shortcuts.create(name=name, text=text, created_by=user, modified_by=user)
+        shortcut.request_indexing()
+        return shortcut
+
+    def request_indexing(self):
+        """
+        Asks mailroom to index the org's shortcuts knowledge, which is derived from its shortcuts.
+        """
+        from temba.knowledge.models import KnowledgeSource
+
+        source = KnowledgeSource.get_system(self.org, KnowledgeSource.TYPE_SHORTCUTS)
+        if source:
+            source.request_indexing()
 
     def release(self, user):
         self.is_active = False
         self.name = self._deleted_name()
         self.modified_by = user
         self.save(update_fields=("name", "is_active", "modified_by", "modified_on"))
+
+        self.request_indexing()
 
     class Meta:
         constraints = [models.UniqueConstraint("org", Lower("name"), name="unique_shortcut_names")]

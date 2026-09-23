@@ -570,8 +570,10 @@ class KnowledgeSource(TembaModel):
     """
     A source of knowledge that AI agents can search semantically.
 
-    Indexing - crawling, extracting, chunking and embedding - is performed entirely by mailroom, which sweeps for rows
-    needing work. This app owns the schema, the CRUD UI and document uploads only; it never calls an embeddings service.
+    Indexing - crawling, extracting, chunking and embedding - is performed entirely by mailroom, which this app asks to
+    index a source whenever it changes what that source's index is derived from, and which also sweeps for rows needing
+    work in case a request is lost. This app owns the schema, the CRUD UI and document uploads only; it never calls an
+    embeddings service.
     """
 
     # authored types - items live in their own Django-owned table, mailroom only reads
@@ -590,7 +592,7 @@ class KnowledgeSource(TembaModel):
     SYSTEM_TYPES = (TYPE_SHORTCUTS, TYPE_HELPDESK)  # one of each per org, created in Org.initialize()
     SYSTEM_NAMES = {TYPE_SHORTCUTS: "Shortcuts", TYPE_HELPDESK: "Helpdesk"}
 
-    STATUS_PENDING = "P"  # needs (re)indexing, mailroom's sweep will pick it up
+    STATUS_PENDING = "P"  # needs (re)indexing
     STATUS_INDEXING = "I"  # mailroom is working on it
     STATUS_READY = "R"  # indexed and searchable
     STATUS_FAILED = "F"  # last indexing attempt failed, see error
@@ -661,11 +663,15 @@ class KnowledgeSource(TembaModel):
         ]
 
     @classmethod
+    def get_system(cls, org, source_type: str):
+        return org.sources.filter(source_type=source_type, is_system=True, is_active=True).first()
+
+    @classmethod
     def create_website(cls, org, user, name: str, url: str, *, max_depth=None, max_pages=None, refresh=None):
         assert cls.is_valid_name(name), f"'{name}' is not a valid knowledge name"
         assert not org.sources.filter(name__iexact=name, is_active=True).exists()
 
-        return org.sources.create(
+        source = org.sources.create(
             name=name,
             source_type=cls.TYPE_WEBSITE,
             config={
@@ -677,6 +683,8 @@ class KnowledgeSource(TembaModel):
             created_by=user,
             modified_by=user,
         )
+        source.request_indexing()
+        return source
 
     @classmethod
     def create_documents(cls, org, user, name: str):
@@ -719,12 +727,29 @@ class KnowledgeSource(TembaModel):
 
     def mark_pending(self):
         """
-        Flags this source as needing (re)indexing so mailroom's sweep picks it up. Called whenever this app changes
-        something mailroom's index is derived from - website config, uploaded files.
+        Flags this source as needing (re)indexing and asks mailroom to do it. Called whenever this app changes
+        something mailroom's index is derived from - website config, uploaded files, imported articles.
         """
         self.status = self.STATUS_PENDING
         self.error = None
         self.save(update_fields=("status", "error"))
+
+        self.request_indexing()
+
+    def request_indexing(self):
+        """
+        Asks mailroom to index this source's changes. That waits for the commit because mailroom indexes whatever has
+        changed since it last indexed and then moves that watermark on - so if it ran first, it would skip the change.
+        Mailroom collapses repeated requests for a source, but bulk changes should still make only one.
+        """
+        on_transaction_commit(self._request_indexing)
+
+    def _request_indexing(self):
+        # best effort - a lost request only delays indexing until mailroom's sweep finds the source stale
+        try:
+            mailroom.get_client().knowledge_index(self.org, self)
+        except Exception:
+            logger.exception("error requesting knowledge indexing from mailroom", extra={"source_id": self.id})
 
     def release(self, user):
         assert not (self.is_system and self.org.is_active), "can't release system knowledge"
@@ -791,7 +816,7 @@ class Article(models.Model):
     articles.
 
     Deliberately not a TembaModel: TembaModel.name is capped at 64 chars and NameValidator rejects " and \\, which real
-    help titles routinely contain. Soft-deleted like Shortcut so mailroom's delta sweep sees the tombstone - a hard
+    help titles routinely contain. Soft-deleted like Shortcut so mailroom's delta index sees the tombstone - a hard
     delete would leave its chunks stranded until a full reindex.
     """
 
@@ -1021,7 +1046,7 @@ class Article(models.Model):
 
     def unpublish(self, user):
         """
-        Reverts to a draft. modified_on bumps, so mailroom's sweep sees the helpdesk as stale and drops our chunks.
+        Reverts to a draft. modified_on bumps, so mailroom's next index of the helpdesk drops our chunks.
         """
         self.status = self.STATUS_DRAFT
         self.published_on = None
@@ -1030,7 +1055,7 @@ class Article(models.Model):
 
     def release(self, user):
         """
-        Soft delete - a tombstone, so mailroom's delta sweep notices and drops our chunks. A section goes only once
+        Soft delete - a tombstone, so mailroom's next index of the helpdesk drops our chunks. A section goes only once
         it's empty, since its articles would otherwise be left as sections themselves; the images go for good, since
         nothing will render this body again.
         """
@@ -1039,6 +1064,7 @@ class Article(models.Model):
         )
 
         image_paths = list(self.images.values_list("path", flat=True))
+        was_published = self.status == self.STATUS_PUBLISHED
 
         with transaction.atomic():
             self.images.all().delete()
@@ -1052,6 +1078,10 @@ class Article(models.Model):
         # ATOMIC_REQUESTS means the atomic block above is only a savepoint, so the storage objects can't go until the
         # request's transaction commits - otherwise a later failure restores the article without its screenshots
         on_transaction_commit(lambda: [public_file_storage.delete(p) for p in image_paths])
+
+        # a draft was never indexed so there's nothing to drop
+        if was_published:
+            self.source.request_indexing()
 
     def __str__(self):
         return self.title
@@ -1777,12 +1807,15 @@ class HelpdeskImport(models.Model):
             self.error = _("Something went wrong. Please try again later.")
         else:
             self.status = self.STATUS_COMPLETE
-            self.source.mark_pending()
 
         secrets = imp_type.secret_config_keys if imp_type else ()
         self.config = {k: v for k, v in self.config.items() if k not in secrets}
         self.finished_on = timezone.now()
         self.save(update_fields=("status", "error", "config", "finished_on", "modified_on"))
+
+        # even a failed import keeps what it brought in before failing - and this is the one request for all of it,
+        # as the article changes the import made don't request indexing themselves
+        self.source.mark_pending()
 
     def set_total(self, total: int):
         self.num_items = total

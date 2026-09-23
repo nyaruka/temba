@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from django.conf import settings
 from django.urls import reverse
@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from temba.knowledge.models import Article, HelpSite, KnowledgeSource
 from temba.orgs.models import Org
-from temba.tests import CRUDLTestMixin, TembaTest, cleanup
+from temba.tests import CRUDLTestMixin, TembaTest, cleanup, mock_mailroom
 from temba.utils import json
 from temba.utils.s3 import public_file_storage
 
@@ -227,7 +227,8 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
             self.assertEqual(200, response.status_code)
             self.assertFalse(Article.objects.filter(title="Nope").exists())
 
-    def test_update(self):
+    @mock_mailroom
+    def test_update(self, mr_mocks):
         section = Article.create(self.helpdesk, self.admin, "Flows", description="All about flows.")
         article = Article.create(self.helpdesk, self.admin, "Nodes", parent=section)
 
@@ -297,6 +298,14 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("eng", article.language)  # never asked, so unchanged by an edit
         self.assertEqual(Article.STATUS_DRAFT, article.status)  # saving an edit doesn't publish
 
+        # a draft isn't indexed so its edits needn't be, but a published article's are
+        self.assertEqual([], mr_mocks.calls["knowledge_index"])
+
+        article.publish(self.admin)
+        self.assertUpdateSubmit(update_url, self.admin, {"title": "All About Flows", "body": "# Flows!"})
+
+        self.assertEqual([call(self.org, self.helpdesk)], mr_mocks.calls["knowledge_index"])
+
         # a section is described rather than written: no editor, and the dialog isn't held open to the window's
         # height for an editor it doesn't have
         section_url = reverse("knowledge.article_update", args=[section.uuid])
@@ -314,7 +323,8 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("The basics.", section.description)
         self.assertEqual("flow-basics", section.slug)
 
-    def test_publish(self):
+    @mock_mailroom
+    def test_publish(self, mr_mocks):
         article = Article.create(self.helpdesk, self.admin, "Flows")
         other_org = Article.create(
             self.org2.sources.get(source_type=KnowledgeSource.TYPE_HELPDESK), self.admin2, "Other"
@@ -355,8 +365,11 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(Article.STATUS_DRAFT, article.status)
         self.assertIsNone(article.published_on)
 
-        # which has to bump modified_on so that mailroom's sweep drops its chunks
+        # which has to bump modified_on so that mailroom's next index drops its chunks
         self.assertGreater(article.modified_on, modified_on)
+
+        # and each change asks mailroom to index the helpdesk
+        self.assertEqual([call(self.org, self.helpdesk)] * 2, mr_mocks.calls["knowledge_index"])
 
         # a status we don't have, or a payload that isn't one at all, is refused rather than guessed at
         for payload in ({"uuid": str(article.uuid), "status": "live"}, {"uuid": str(article.uuid)}, {}, "nope"):
@@ -368,6 +381,7 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
 
         article.refresh_from_db()
         self.assertEqual(Article.STATUS_DRAFT, article.status)
+        self.assertEqual(2, len(mr_mocks.calls["knowledge_index"]))
 
     def test_sort(self):
         flows = Article.create(self.helpdesk, self.admin, "Flows")

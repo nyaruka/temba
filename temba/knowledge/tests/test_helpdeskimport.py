@@ -1,3 +1,5 @@
+from unittest.mock import call
+
 from django import forms
 from django.test import override_settings
 from django.urls import reverse
@@ -6,7 +8,7 @@ from temba.knowledge.forms import HelpdeskImportForm
 from temba.knowledge.imports import register_import_type, reload_import_types
 from temba.knowledge.models import Article, HelpdeskImport, HelpdeskImportError, HelpdeskImportType, KnowledgeSource
 from temba.orgs.models import Org
-from temba.tests import CRUDLTestMixin, TembaTest
+from temba.tests import CRUDLTestMixin, TembaTest, mock_mailroom
 
 
 class TestImportForm(HelpdeskImportForm):
@@ -39,7 +41,8 @@ class TestImportType(HelpdeskImportType):
         for i in (1, 2):
             if imp.config.get("fail_at") == i:
                 raise HelpdeskImportError("The site went away.")
-            Article.create(imp.source, imp.created_by, f"Article {i}", parent=section)
+            article = Article.create(imp.source, imp.created_by, f"Article {i}", parent=section)
+            article.publish(imp.created_by)
             imp.advance()
 
 
@@ -106,7 +109,8 @@ class HelpdeskImportTest(ImportTypesMixin, TembaTest):
         reload_import_types()
         self.assertEqual(["test", "elsewhere"], [t.slug for t in HelpdeskImport.get_types()])
 
-    def test_perform(self):
+    @mock_mailroom
+    def test_perform(self, mr_mocks):
         self.helpdesk.status = KnowledgeSource.STATUS_READY
         self.helpdesk.save(update_fields=("status",))
 
@@ -130,9 +134,10 @@ class HelpdeskImportTest(ImportTypesMixin, TembaTest):
         # what was lent for the import isn't kept
         self.assertEqual({}, imp.config)
 
-        # and the helpdesk is queued for reindexing
+        # and the helpdesk is queued for reindexing, with one request to mailroom for the whole import
         self.helpdesk.refresh_from_db()
         self.assertEqual(KnowledgeSource.STATUS_PENDING, self.helpdesk.status)
+        self.assertEqual([call(self.org, self.helpdesk)], mr_mocks.calls["knowledge_index"])
 
         # an import that can't go on says why, and keeps what it brought before that
         imp = self.create_import(fail_at=2)
@@ -144,6 +149,9 @@ class HelpdeskImportTest(ImportTypesMixin, TembaTest):
         self.assertEqual({"total": 3, "current": 2}, imp.as_json()["progress"])
         self.assertEqual({"fail_at": 2}, imp.config)
         self.assertEqual(5, self.helpdesk.articles.count())
+
+        # what it did bring in still gets indexed
+        self.assertEqual([call(self.org, self.helpdesk)] * 2, mr_mocks.calls["knowledge_index"])
 
         # only a pending import can be performed - not one that's finished, nor one already being performed
         with self.assertRaises(AssertionError):

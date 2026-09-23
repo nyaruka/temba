@@ -839,6 +839,20 @@ class MailroomClientTest(TembaTest):
         )
 
     @patch("requests.post")
+    def test_knowledge_index(self, mock_post):
+        source = self.org.sources.get(source_type="shortcuts")
+        mock_post.return_value = MockJsonResponse(200, {})
+
+        response = self.client.knowledge_index(self.org, source)
+
+        self.assertEqual({}, response)
+        mock_post.assert_called_once_with(
+            "http://localhost:8090/mi/knowledge/index",
+            headers={"User-Agent": "Temba", "Authorization": "Token sesame"},
+            json={"org_id": self.org.id, "source_uuid": str(source.uuid)},
+        )
+
+    @patch("requests.post")
     def test_knowledge_search(self, mock_post):
         mock_post.return_value = MockJsonResponse(
             200,

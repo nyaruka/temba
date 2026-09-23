@@ -1,3 +1,4 @@
+from unittest.mock import call, patch
 from xml.etree.ElementTree import Element, SubElement
 
 from django.core.files.storage import default_storage
@@ -19,7 +20,8 @@ from temba.knowledge.models import (
     get_article_image_path,
     parse_column_style,
 )
-from temba.tests import TembaTest, cleanup
+from temba.mailroom.client.exceptions import RequestException
+from temba.tests import MockJsonResponse, TembaTest, cleanup, mock_mailroom
 from temba.utils.s3 import public_file_storage
 from temba.utils.uuid import uuid4
 
@@ -56,7 +58,14 @@ class KnowledgeSourceTest(TembaTest):
         with self.assertRaises(AssertionError):
             KnowledgeSource.create_system(self.org)
 
-    def test_create_website(self):
+    def test_get_system(self):
+        shortcuts = self.org.sources.get(source_type=KnowledgeSource.TYPE_SHORTCUTS)
+
+        self.assertEqual(shortcuts, KnowledgeSource.get_system(self.org, KnowledgeSource.TYPE_SHORTCUTS))
+        self.assertIsNone(KnowledgeSource.get_system(self.org, KnowledgeSource.TYPE_WEBSITE))
+
+    @mock_mailroom
+    def test_create_website(self, mr_mocks):
         website = KnowledgeSource.create_website(self.org, self.admin, "Nyaruka", "https://nyaruka.com")
 
         self.assertEqual("Nyaruka", website.name)
@@ -67,6 +76,7 @@ class KnowledgeSourceTest(TembaTest):
         )
         self.assertEqual(KnowledgeSource.STATUS_PENDING, website.status)
         self.assertFalse(website.is_system)
+        self.assertEqual([call(self.org, website)], mr_mocks.calls["knowledge_index"])
 
         # explicit settings are used as given
         custom = KnowledgeSource.create_website(
@@ -121,7 +131,8 @@ class KnowledgeSourceTest(TembaTest):
         self.assertTrue(KnowledgeSource.is_limit_reached(self.org))
         self.assertFalse(KnowledgeSource.is_limit_reached(self.org2))
 
-    def test_mark_pending(self):
+    @mock_mailroom
+    def test_mark_pending(self, mr_mocks):
         docs = KnowledgeSource.create_documents(self.org, self.admin, "Guides")
         docs.status = KnowledgeSource.STATUS_FAILED
         docs.error = "boom"
@@ -132,6 +143,25 @@ class KnowledgeSourceTest(TembaTest):
         docs.refresh_from_db()
         self.assertEqual(KnowledgeSource.STATUS_PENDING, docs.status)
         self.assertIsNone(docs.error)
+        self.assertEqual([call(self.org, docs)], mr_mocks.calls["knowledge_index"])
+
+    @mock_mailroom
+    def test_request_indexing(self, mr_mocks):
+        shortcuts = self.org.sources.get(source_type=KnowledgeSource.TYPE_SHORTCUTS)
+
+        shortcuts.request_indexing()
+
+        self.assertEqual([call(self.org, shortcuts)], mr_mocks.calls["knowledge_index"])
+
+        # a failed request is logged rather than failing whatever made the change
+        mr_mocks.exception(RequestException("knowledge/index", {}, MockJsonResponse(500, {"error": "boom"})))
+
+        with patch("temba.knowledge.models.logger.exception") as mock_log:
+            shortcuts.request_indexing()
+
+        mock_log.assert_called_once_with(
+            "error requesting knowledge indexing from mailroom", extra={"source_id": shortcuts.id}
+        )
 
     @cleanup(s3=True)
     def test_release(self):
@@ -772,7 +802,7 @@ class ArticleTest(TembaTest):
         modified_on = article.modified_on
         article.unpublish(self.admin)
 
-        # modified_on bumps so mailroom's sweep sees the source as stale and drops the chunks
+        # modified_on bumps so mailroom's next index of the source drops the chunks
         article.refresh_from_db()
         self.assertEqual(Article.STATUS_DRAFT, article.status)
         self.assertIsNone(article.published_on)
@@ -821,7 +851,8 @@ class ArticleTest(TembaTest):
         self.assertEqual(modified_on, article.modified_on)
 
     @cleanup(s3=True)
-    def test_release(self):
+    @mock_mailroom
+    def test_release(self, mr_mocks):
         section = self.create_article(self.helpdesk, "Flows", status=Article.STATUS_PUBLISHED)
         article = self.create_article(self.helpdesk, "Nodes", parent=section, status=Article.STATUS_PUBLISHED)
         modified_on = article.modified_on
@@ -842,7 +873,7 @@ class ArticleTest(TembaTest):
 
         article.release(self.admin)
 
-        # soft deleted, back to draft, and modified_on bumped so mailroom's sweep sees the tombstone
+        # soft deleted, back to draft, and modified_on bumped so mailroom's next index sees the tombstone
         article.refresh_from_db()
         self.assertFalse(article.is_active)
         self.assertEqual(Article.STATUS_DRAFT, article.status)
@@ -852,6 +883,15 @@ class ArticleTest(TembaTest):
         # and its images are gone for good - rows first, then the storage objects
         self.assertEqual(0, ArticleImage.objects.count())
         self.assertFalse(public_file_storage.exists(path))
+
+        # and mailroom is asked to drop its chunks
+        self.assertEqual([call(self.org, self.helpdesk)], mr_mocks.calls["knowledge_index"])
+
+        # but a draft was never indexed, so releasing one doesn't need it
+        draft = self.create_article(self.helpdesk, "Drafty", parent=section)
+        draft.release(self.admin)
+
+        self.assertEqual(1, len(mr_mocks.calls["knowledge_index"]))
 
         # emptied, the section can go too
         section.release(self.admin)
