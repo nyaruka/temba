@@ -202,8 +202,8 @@ class Broadcast(LegacyIDMixin, models.Model):
         (STATUS_INTERRUPTED, "Interrupted"),
     )
 
-    # names of statuses in JSON, since the choice labels are for display
-    STATUS_NAMES = {
+    # slugs used for statuses in JSON, since the choice labels are for display
+    STATUS_SLUGS = {
         STATUS_PENDING: "pending",
         STATUS_QUEUED: "queued",
         STATUS_STARTED: "started",
@@ -401,7 +401,7 @@ class Broadcast(LegacyIDMixin, models.Model):
 
         return {
             "uuid": str(self.uuid),
-            "status": self.STATUS_NAMES[self.status],
+            "status": self.STATUS_SLUGS[self.status],
             "text": translation["text"],
             "attachments": translation["attachments"],
             "quick_replies": translation["quick_replies"],

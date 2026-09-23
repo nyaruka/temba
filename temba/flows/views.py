@@ -1700,7 +1700,7 @@ class FlowStartCRUDL(SmartCRUDL):
                     {
                         "id": obj.id,
                         "uuid": str(obj.uuid),
-                        "status": FlowStart.STATUS_NAMES[obj.status],
+                        "status": FlowStart.STATUS_SLUGS[obj.status],
                         "created_on": obj.created_on.isoformat(),
                         "modified_on": obj.modified_on.isoformat(),
                         "flow": {

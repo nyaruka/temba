@@ -1674,8 +1674,8 @@ class HelpdeskImport(models.Model):
         (STATUS_FAILED, _("Failed")),
     )
 
-    # names of statuses in JSON, since the choice labels are for display
-    STATUS_NAMES = {
+    # slugs used for statuses in JSON, since the choice labels are for display
+    STATUS_SLUGS = {
         STATUS_PENDING: "pending",
         STATUS_PROCESSING: "processing",
         STATUS_COMPLETE: "complete",
@@ -1793,7 +1793,7 @@ class HelpdeskImport(models.Model):
     def as_json(self) -> dict:
         return {
             "id": self.id,
-            "status": self.STATUS_NAMES[self.status],
+            "status": self.STATUS_SLUGS[self.status],
             "created_on": self.created_on.isoformat(),
             "modified_on": self.modified_on.isoformat(),
             "progress": {"total": self.num_items, "current": self.num_imported},

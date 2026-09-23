@@ -157,8 +157,6 @@ class ArchiveReadSerializer(ReadSerializer):
 
 
 class BroadcastReadSerializer(ReadSerializer):
-    STATUSES = Broadcast.STATUS_NAMES
-
     status = serializers.SerializerMethodField()
     progress = serializers.SerializerMethodField()
     urns = serializers.SerializerMethodField()
@@ -180,7 +178,7 @@ class BroadcastReadSerializer(ReadSerializer):
         return {lang: trans.get("quick_replies", []) for lang, trans in obj.translations.items()}
 
     def get_status(self, obj):
-        return self.STATUSES[obj.status]
+        return Broadcast.STATUS_SLUGS[obj.status]
 
     def get_progress(self, obj):
         return {"total": obj.contact_count or -1, "started": obj.msg_count}
@@ -1115,8 +1113,6 @@ class FlowRunReadSerializer(ReadSerializer):
 
 
 class FlowStartReadSerializer(ReadSerializer):
-    STATUSES = FlowStart.STATUS_NAMES
-
     flow = fields.FlowField()
     status = serializers.SerializerMethodField()
     progress = serializers.SerializerMethodField()
@@ -1132,7 +1128,7 @@ class FlowStartReadSerializer(ReadSerializer):
     exclude_active = serializers.SerializerMethodField()
 
     def get_status(self, obj):
-        return self.STATUSES.get(obj.status)
+        return FlowStart.STATUS_SLUGS[obj.status]
 
     def get_progress(self, obj):
         return {"total": obj.contact_count or -1, "started": obj.run_count}
