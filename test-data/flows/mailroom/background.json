@@ -47,7 +47,7 @@
         }
       ],
       "revision": 6,
-      "spec_version": "14.4.1",
+      "spec_version": "14.5.0",
       "type": "messaging_background",
       "uuid": "1ff89517-5735-466b-be31-682b49521cbf"
     }

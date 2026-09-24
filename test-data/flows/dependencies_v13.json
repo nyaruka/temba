@@ -154,7 +154,7 @@
         }
       ],
       "revision": 6,
-      "spec_version": "14.4.1",
+      "spec_version": "14.5.0",
       "type": "messaging",
       "uuid": "f310f98f-abd7-42ce-92d5-fca1cb100e7a"
     },
@@ -361,7 +361,7 @@
               }
             ],
             "default_category_uuid": "64e6d7eb-a335-4aae-90f2-24bfd82dd0ae",
-            "operand": "@webhook.status",
+            "operand": "@(default(webhook.status, 0))",
             "type": "switch"
           },
           "uuid": "3a6f263f-6e6e-4aa3-9126-0f2c562aec9d"
@@ -582,14 +582,11 @@
         {
           "actions": [
             {
-              "classifier": {
-                "name": "Feelings",
-                "uuid": "891a1c5d-1140-4fd0-bd0d-a919ea25abb6"
-              },
-              "input": "@input.text",
-              "result_name": "_Result Classification",
-              "type": "call_classifier",
-              "uuid": "7ebd7be9-18d4-4d06-b69e-63d11d7bb72e"
+              "category": "Failure",
+              "name": "_Result Classification",
+              "type": "set_run_result",
+              "uuid": "7ebd7be9-18d4-4d06-b69e-63d11d7bb72e",
+              "value": "0"
             }
           ],
           "exits": [
@@ -700,7 +697,7 @@
         }
       ],
       "revision": 22,
-      "spec_version": "14.4.1",
+      "spec_version": "14.5.0",
       "type": "messaging",
       "uuid": "89894985-f68d-4a1b-b49e-4ea6dfc5e76a"
     }
