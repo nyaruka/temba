@@ -29,7 +29,7 @@ from temba.channels.models import Channel
 from temba.locations.models import AdminBoundary
 from temba.mailroom import ContactSpec, modifiers
 from temba.orgs.models import DependencyMixin, Export, ExportType, Org, OrgRole
-from temba.orgs.realtime import AssetNameMixin
+from temba.orgs.realtime import AssetMixin
 from temba.utils import dynamo, format_number, on_transaction_commit
 from temba.utils.export import MultiSheetExporter
 from temba.utils.models import JSONField, LegacyIDMixin, LegacyUUIDMixin, TembaModel, delete_in_batches
@@ -1486,12 +1486,13 @@ class ContactURN(LegacyIDMixin, models.Model):
         ]
 
 
-class ContactGroup(AssetNameMixin, LegacyIDMixin, TembaModel, DependencyMixin):
+class ContactGroup(AssetMixin, LegacyIDMixin, TembaModel, DependencyMixin):
     """
     A group of contacts whose membership can be manual or query based
     """
 
     asset_type = "group"
+    publish_creations = True  # so clients learn whether a new group is smart before they next fetch groups
 
     TYPE_DB_ACTIVE = "A"  # maintained by db trigger on status=A
     TYPE_DB_BLOCKED = "B"  # maintained by db trigger on status=B
@@ -1667,6 +1668,14 @@ class ContactGroup(AssetNameMixin, LegacyIDMixin, TembaModel, DependencyMixin):
 
     def get_attrs(self):
         return {"icon": self.icon, "type": "group"}
+
+    def as_asset(self) -> dict:
+        # the query is what lets a client tell a new smart group from a manual one
+        return {**super().as_asset(), "query": self.query}
+
+    def is_published_asset(self) -> bool:
+        # the status groups maintained by db triggers are never referenced by clients
+        return self.group_type in (self.TYPE_MANUAL, self.TYPE_SMART) and super().is_published_asset()
 
     def update_query(self, query, reevaluate=True, parsed=None):
         """

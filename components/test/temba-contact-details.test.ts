@@ -1,4 +1,4 @@
-import { assert, expect, oneEvent, waitUntil } from '@open-wc/testing';
+import { assert, expect, fixture, oneEvent, waitUntil } from '@open-wc/testing';
 import { SinonStub, stub } from 'sinon';
 import { CustomEventType, URN } from '../src/interfaces';
 import { TextInput } from '../src/form/TextInput';
@@ -15,6 +15,8 @@ import {
 } from './utils.test';
 import { resetContactWatches } from '../src/live/ContactWatch';
 import { setSocketProvider, SocketProvider } from '../src/live/SocketService';
+import { setRealtimeContext } from '../src/live/Realtime';
+import { Store } from '../src/store/Store';
 
 const TAG = 'temba-contact-details';
 const CONTACT_ID = 'contact-dave-active';
@@ -79,6 +81,69 @@ describe(TAG, () => {
     });
 
     await waitUntil(() => details.data.name === 'David J. Matthews');
+  });
+
+  it('renames groups live from the workspace socket', async () => {
+    // a store with a workspace identity subscribes to the org channel
+    const store = (await fixture(`
+      <temba-store
+        org="org-uuid"
+        user="user-uuid"
+        groups="/test-assets/store/groups.json"
+        fields="/test-assets/store/fields.json"
+        workspace="/test-assets/store/workspace.json"
+      ></temba-store>`)) as Store;
+    await store.initialHttpComplete;
+
+    try {
+      const details = await getContactDetails({ contact: CONTACT_ID });
+      const smart = '12e583b3-46f5-4d9d-85ca-15fb6153c1a0';
+      const manual = '3da236a9-9eed-4db3-a18e-cfb58030c249';
+      const groupName = (uuid: string) =>
+        details.data.groups.find((group) => group.uuid === uuid)?.name;
+
+      expect(groupName(smart)).to.equal('Open Tickets');
+      expect(groupName(manual)).to.equal('Completed');
+
+      mockSocket.serverPublish('org:org-uuid', {
+        type: 'asset_changed',
+        asset: {
+          type: 'group',
+          uuid: smart,
+          name: 'Pending',
+          query: 'tickets > 0'
+        }
+      });
+      mockSocket.serverPublish('org:org-uuid', {
+        type: 'asset_changed',
+        asset: { type: 'group', uuid: manual, name: 'Done', query: null }
+      });
+
+      await waitUntil(() => groupName(manual) === 'Done');
+      expect(groupName(smart)).to.equal('Pending');
+      await details.updateComplete;
+
+      const rows = details.shadowRoot;
+      expect(rows.querySelector('.smart-groups').textContent).to.contain(
+        'Pending'
+      );
+      expect(rows.querySelector('.smart-groups').textContent).not.to.contain(
+        'Open Tickets'
+      );
+      expect(
+        rows.querySelector('.row:not(.smart-groups)').textContent
+      ).to.contain('Done');
+
+      // an unrelated group leaves us alone
+      const before = details.data;
+      mockSocket.serverPublish('org:org-uuid', {
+        type: 'asset_changed',
+        asset: { type: 'group', uuid: 'other', name: 'Other', query: null }
+      });
+      expect(details.data).to.equal(before);
+    } finally {
+      setRealtimeContext(null);
+    }
   });
 
   it('renders default', async () => {

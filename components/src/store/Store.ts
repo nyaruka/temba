@@ -82,6 +82,21 @@ export interface StoreAsset extends StoreAssetReference {
   name: string;
 }
 
+/** A group as published on the socket: null query for a manual group. */
+export interface GroupAsset extends StoreAsset {
+  type: 'group';
+  query: string | null;
+}
+
+/**
+ * What isDynamicGroup needs of a group. The initial fetch fills these from
+ * the groups endpoint, and socket events add groups created since.
+ */
+type CachedGroup = Pick<ContactGroup, 'uuid' | 'query'>;
+
+const isGroupAsset = (asset: StoreAsset): asset is GroupAsset =>
+  asset.type === 'group' && 'query' in asset;
+
 export interface StoreAssetChangedEvent {
   type: 'asset_changed';
   asset: StoreAsset;
@@ -208,7 +223,7 @@ export class Store extends RapidElement {
   private locale = [...navigator.languages];
 
   private fields: { [key: string]: ContactField } = {};
-  private groups: { [uuid: string]: ContactGroup } = {};
+  private groups: { [uuid: string]: CachedGroup } = {};
   private shortcuts: Shortcut[] = [];
   private workspace: Workspace;
   private featuredFields: ContactField[] = [];
@@ -844,17 +859,9 @@ export class Store extends RapidElement {
     );
     const previouslyResolved = this.resolvedAssetIdentities.has(identity);
     const pending = this.pendingAssetRequests.has(identity);
-    const legacyGroup =
-      changed.type === 'group' &&
-      changed.uuid &&
-      Object.prototype.hasOwnProperty.call(this.groups, changed.uuid);
 
-    if (legacyGroup) {
-      this.groups[changed.uuid] = {
-        ...this.groups[changed.uuid],
-        uuid: changed.uuid,
-        name: changed.name
-      };
+    if (changed.type === 'group' && changed.uuid) {
+      this.cacheGroup(changed);
     }
     if (!previouslyResolved && !pending && !interested) {
       return;
@@ -874,18 +881,24 @@ export class Store extends RapidElement {
     );
   }
 
+  /**
+   * Keeps the group cache current from a socket event: a group created since
+   * the initial fetch is added, with the query that tells isDynamicGroup what
+   * it is. The server sends that with every group event, so one without it
+   * has nothing for this cache.
+   */
+  private cacheGroup(asset: StoreAsset): void {
+    if (isGroupAsset(asset)) {
+      this.groups[asset.uuid] = { uuid: asset.uuid, query: asset.query };
+    }
+  }
+
   public isDynamicGroup(uuid: string): boolean {
     const group = this.groups[uuid];
-    // we treat missing groups as dynamic since the
-    // api excludes initializing groups
-    if (!group) {
-      // console.warn('No group for ' + uuid);
-    }
-
-    if (!group || group.query) {
-      return true;
-    }
-    return false;
+    // a group we don't know is treated as dynamic, since the groups endpoint
+    // excludes smart groups still initializing and a manual group created
+    // since our fetch would have arrived on the socket
+    return !group || !!group.query;
   }
 
   public getWorkspace(): Workspace {
