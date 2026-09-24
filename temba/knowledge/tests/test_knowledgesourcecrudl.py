@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from django.conf import settings
 from django.core.files.storage import default_storage
@@ -8,7 +8,7 @@ from django.urls import reverse
 
 from temba.knowledge.models import KnowledgeChunk, KnowledgeItem, KnowledgeSource
 from temba.orgs.models import Org
-from temba.tests import CRUDLTestMixin, TembaTest, cleanup
+from temba.tests import CRUDLTestMixin, TembaTest, cleanup, mock_mailroom
 
 
 class KnowledgeSourceCRUDLTest(TembaTest, CRUDLTestMixin):
@@ -190,9 +190,11 @@ class KnowledgeSourceCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(KnowledgeSource.STATUS_READY, docs.status)
         self.assertEqual(reverse("knowledge.knowledgesource_read", args=[docs.uuid]), response.url)
 
-    def test_update(self):
+    @mock_mailroom
+    def test_update(self, mr_mocks):
         website = KnowledgeSource.create_website(self.org, self.admin, "Nyaruka", "https://nyaruka.com")
         docs = KnowledgeSource.create_documents(self.org, self.admin, "Guides")
+        mr_mocks.calls["knowledge_index"].clear()
 
         update_url = reverse("knowledge.knowledgesource_update", args=[website.uuid])
 
@@ -244,6 +246,7 @@ class KnowledgeSourceCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("https://nyaruka.com/docs", website.url)
         self.assertEqual(KnowledgeSource.STATUS_PENDING, website.status)
         self.assertEqual(reverse("knowledge.knowledgesource_read", args=[website.uuid]), response.url)
+        self.assertEqual([call(self.org, website)], mr_mocks.calls["knowledge_index"])
 
         website.status = KnowledgeSource.STATUS_READY
         website.save(update_fields=("status",))
@@ -257,6 +260,7 @@ class KnowledgeSourceCRUDLTest(TembaTest, CRUDLTestMixin):
         website.refresh_from_db()
         self.assertEqual("Nyaruka Docs", website.name)
         self.assertEqual(KnowledgeSource.STATUS_READY, website.status)
+        self.assertEqual(1, len(mr_mocks.calls["knowledge_index"]))
 
     @cleanup(s3=True)
     def test_delete(self):

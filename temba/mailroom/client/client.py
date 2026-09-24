@@ -219,6 +219,12 @@ class MailroomClient:
 
         return RecipientsPreview(query=resp["query"], total=resp["total"])
 
+    def knowledge_index(self, org, source):
+        """
+        Queues indexing of the given knowledge source's changes since it was last indexed.
+        """
+        return self._request("knowledge/index", {"org_id": org.id, "source_uuid": str(source.uuid)})
+
     def knowledge_search(self, org, query: str, sources: list = None, limit: int = 10) -> list[dict]:
         """
         Searches the org's indexed knowledge semantically, or only the given sources of it, returning the matching
