@@ -45,13 +45,16 @@ def _temba_init_worker(counter, *args, **kwargs):
 
     caches["default"].clear()  # in case a previous test run left anything behind in this worker's valkey database
 
-    settings.DYNAMO_TABLE_PREFIX = f"Test{worker_id}"
-    settings.BUCKET_PREFIX = f"test{worker_id}"
+    # derive the worker's names from the configured test ones (e.g. Test -> Test3) so that settings can namespace
+    # them, e.g. for separate environments sharing one DynamoDB or S3 service
+    base_bucket_prefix = settings.BUCKET_PREFIX
+    settings.DYNAMO_TABLE_PREFIX = f"{settings.DYNAMO_TABLE_PREFIX}{worker_id}"
+    settings.BUCKET_PREFIX = f"{base_bucket_prefix}{worker_id}"
 
     for alias, config in settings.STORAGES.items():
         bucket_name = config.get("OPTIONS", {}).get("bucket_name")
         if bucket_name:
-            new_name = bucket_name.replace("test-", f"{settings.BUCKET_PREFIX}-", 1)
+            new_name = bucket_name.replace(f"{base_bucket_prefix}-", f"{settings.BUCKET_PREFIX}-", 1)
             config["OPTIONS"]["bucket_name"] = new_name
 
             # some storage backends are instantiated during django.setup() above (e.g. model field storages) so
@@ -73,3 +76,11 @@ class TembaParallelTestSuite(ParallelTestSuite):
 
 class TembaTestRunner(DiscoverRunner):
     parallel_test_suite = TembaParallelTestSuite
+
+    def setup_test_environment(self, **kwargs):
+        super().setup_test_environment(**kwargs)
+
+        # a serial run uses the test tables and buckets themselves, so make sure they exist (parallel workers also
+        # create their own)
+        call_command("migrate_dynamo", stdout=io.StringIO())
+        call_command("create_buckets", stdout=io.StringIO())
