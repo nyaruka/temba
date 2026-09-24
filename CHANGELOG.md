@@ -1,3 +1,8 @@
+v26.3.113 (2026-09-24)
+-------------------------
+ * Request knowledge indexing from mailroom when knowledge content changes
+ * Don't mark a helpdesk pending after an import that failed before bringing anything in
+
 v26.3.112 (2026-09-24)
 -------------------------
  * Bump flow spec version to 14.5.0 and migrate bundled flow exports
