@@ -1,3 +1,10 @@
+v26.3.112 (2026-09-24)
+-------------------------
+ * Bump flow spec version to 14.5.0 and migrate bundled flow exports
+ * Add --noinput option to migrate_flows command
+ * Separate tickets in the ticket list with a hairline
+ * Limit help site knowledge searches to the site's source in mailroom
+
 v26.3.111 (2026-09-23)
 -------------------------
  * Move template tag tests out of templatetags packages
