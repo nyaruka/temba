@@ -53,6 +53,20 @@ export class ContactStoreElement extends EndpointMonitorElement {
         group.is_dynamic = this.store.isDynamicGroup(group.uuid);
       });
 
+      // groups the store hasn't loaded yet read as smart, so classify them
+      // again once it has
+      if (!this.store.ready && this.store.initialHttpComplete) {
+        const uuid = data.uuid;
+        this.store.initialHttpComplete.then(() => {
+          if (this.data?.uuid === uuid) {
+            this.data = this.prepareData({
+              ...this.data,
+              groups: this.data.groups.map((group: Group) => ({ ...group }))
+            });
+          }
+        });
+      }
+
       data.groups.sort((a: Group, b: Group) => {
         if (!a.is_dynamic || !b.is_dynamic) {
           if (a.is_dynamic) {
