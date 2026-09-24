@@ -99,6 +99,64 @@ describe('Localization Editing', () => {
     await flowEditor.updateComplete;
   };
 
+  // Mounts an editor on a flow of `count` send_msg actions, each with a
+  // unique ~600 char text so dedup doesn't collapse them, and selects French
+  // so auto translate has something to do. Three such texts fit in a batch.
+  const setupBatchFlow = async (
+    uuid: string,
+    count: number,
+    filler: string
+  ): Promise<void> => {
+    editor?.remove();
+    setupWorkspace();
+
+    const nodes = [];
+    for (let i = 0; i < count; i++) {
+      nodes.push({
+        uuid: `node-${i}`,
+        actions: [
+          {
+            type: 'send_msg',
+            uuid: `action-${i}`,
+            text: `${i} ${filler.repeat(600)}`
+          } as SendMsg
+        ],
+        exits: [{ uuid: `exit-${i}` }]
+      });
+    }
+
+    const flowDefinition: FlowDefinition = {
+      uuid,
+      name: uuid,
+      language: 'eng',
+      type: 'messaging',
+      revision: 1,
+      spec_version: '14.3',
+      localization: {},
+      nodes,
+      _ui: {
+        nodes: Object.fromEntries(
+          nodes.map((n) => [n.uuid, { position: { left: 0, top: 0 } }])
+        ),
+        languages: []
+      }
+    };
+
+    zustand.getState().setFlowContents({
+      definition: flowDefinition,
+      info: {
+        results: [],
+        dependencies: [],
+        counts: { nodes: count, languages: 2 },
+        locals: []
+      }
+    });
+
+    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
+    await editor.updateComplete;
+    await selectLanguageInToolbar(editor, 'French', 'fra');
+  };
+
   before(() => {
     storeElement = document.createElement('temba-store');
     document.body.appendChild(storeElement);
@@ -465,17 +523,17 @@ describe('Localization Editing', () => {
     setupWorkspace();
 
     // build a flow with enough send_msg actions that the total serialized
-    // payload exceeds the 10,000-char batch threshold. Each text needs to
+    // payload exceeds the 2,000-char batch threshold. Each text needs to
     // be unique or dedup will collapse them into a single payload entry.
     const nodes = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 8; i++) {
       nodes.push({
         uuid: `node-${i}`,
         actions: [
           {
             type: 'send_msg',
             uuid: `action-${i}`,
-            text: `${i} ${'x'.repeat(3000)}`
+            text: `${i} ${'x'.repeat(700)}`
           } as SendMsg
         ],
         exits: [{ uuid: `exit-${i}` }]
@@ -504,7 +562,7 @@ describe('Localization Editing', () => {
       info: {
         results: [],
         dependencies: [],
-        counts: { nodes: 5, languages: 2 },
+        counts: { nodes: 8, languages: 2 },
         locals: []
       }
     });
@@ -524,17 +582,19 @@ describe('Localization Editing', () => {
 
     await at.runAutoTranslation();
 
-    expect(calls.length).to.be.greaterThan(1);
+    // 8 texts of ~700 chars pack two to a batch
+    expect(calls.length).to.equal(4);
     for (const c of calls) {
       const itemKeys = Object.keys(c.body.items as Record<string, string[]>);
+      expect(itemKeys.length).to.equal(2);
       // each batch's full serialized payload stays within the limit
-      // (individual oversize items are still shipped on their own; the
-      // fixture values are each ~3000 chars which fits)
       const serialized = JSON.stringify(c.body).length;
-      if (itemKeys.length > 1) {
-        expect(serialized).to.be.at.most(10000);
-      }
+      expect(serialized).to.be.at.most(2000);
     }
+
+    // every text was translated exactly once
+    const localization = zustand.getState().flowDefinition?.localization?.fra;
+    expect(Object.keys(localization || {}).length).to.equal(8);
   });
 
   it('should interrupt translation between batches', async () => {
@@ -543,60 +603,20 @@ describe('Localization Editing', () => {
     setupWorkspace();
 
     // Each text is unique so dedup doesn't collapse them — we want enough
-    // distinct entries to span multiple batches and verify interrupt.
-    const nodes = [];
-    for (let i = 0; i < 6; i++) {
-      nodes.push({
-        uuid: `node-${i}`,
-        actions: [
-          {
-            type: 'send_msg',
-            uuid: `action-${i}`,
-            text: `${i} ${'y'.repeat(600)}`
-          } as SendMsg
-        ],
-        exits: [{ uuid: `exit-${i}` }]
-      });
-    }
-
-    const flowDefinition: FlowDefinition = {
-      uuid: 'interrupt-flow',
-      name: 'Interrupt Flow',
-      language: 'eng',
-      type: 'messaging',
-      revision: 1,
-      spec_version: '14.3',
-      localization: {},
-      nodes,
-      _ui: {
-        nodes: Object.fromEntries(
-          nodes.map((n) => [n.uuid, { position: { left: 0, top: 0 } }])
-        ),
-        languages: []
-      }
-    };
-
-    zustand.getState().setFlowContents({
-      definition: flowDefinition,
-      info: {
-        results: [],
-        dependencies: [],
-        counts: { nodes: 6, languages: 2 },
-        locals: []
-      }
-    });
-
-    editor = await fixture(html`<temba-flow-editor></temba-flow-editor>`);
-    await editor.updateComplete;
-    await selectLanguageInToolbar(editor, 'French', 'fra');
+    // distinct entries (8 batches of 3) to span well beyond the number of
+    // batches sent concurrently.
+    await setupBatchFlow('interrupt-flow', 24, 'y');
     const at = editor.querySelector('temba-auto-translate') as any;
     at.selectedModel = { uuid: 'llm-1', name: 'GPT-4' };
 
+    // each worker reaches postJSON before any of these timeouts resolve, so
+    // the first three calls are always in flight together
     let callCount = 0;
     (storeElement as any).postJSON = async (url: string, body: any) => {
-      callCount += 1;
-      if (callCount === 1) {
-        // request interrupt after first batch completes
+      const call = (callCount += 1);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      if (call === 1) {
+        // request interrupt while the first batches are in flight
         at.interrupt = true;
       }
       return { status: 200, json: { items: body.items } };
@@ -604,7 +624,116 @@ describe('Localization Editing', () => {
 
     await at.runAutoTranslation();
 
+    // the batches already in flight (one per concurrent worker) complete
+    // and land, but no more are sent
+    expect(callCount).to.equal(3);
+    expect(at.running).to.be.false;
+    expect(at.progress.done).to.equal(3);
+    const localization = zustand.getState().flowDefinition?.localization?.fra;
+    expect(Object.keys(localization || {}).length).to.equal(9);
+  });
+
+  it('should stop sending batches after one fails', async () => {
+    await setupBatchFlow('error-flow', 24, 'z');
+    const at = editor.querySelector('temba-auto-translate') as any;
+    at.selectedModel = { uuid: 'llm-1', name: 'GPT-4' };
+
+    let callCount = 0;
+    const errorsSeenInFlight: (string | null)[] = [];
+    (storeElement as any).postJSON = async (url: string, body: any) => {
+      const call = (callCount += 1);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      // the failure isn't surfaced while other batches are still in flight
+      errorsSeenInFlight.push(at.error);
+      if (call === 1) {
+        // the first batch fails while the others are still in flight
+        return { status: 400, json: { error: 'rate limit exceeded' } };
+      }
+      return { status: 200, json: { items: body.items } };
+    };
+
+    await at.runAutoTranslation();
+
+    // the other batches in flight still land, but no more are sent
+    expect(callCount).to.equal(3);
+    expect(errorsSeenInFlight).to.deep.equal([null, null, null]);
+    expect(at.error).to.equal('rate limit exceeded');
+    expect(at.running).to.be.false;
+    expect(at.progress.done).to.equal(2);
+    const localization = zustand.getState().flowDefinition?.localization?.fra;
+    expect(Object.keys(localization || {}).length).to.equal(6);
+
+    // a subsequent run starts afresh rather than being blocked by the old error
+    (storeElement as any).postJSON = async (url: string, body: any) => {
+      callCount += 1;
+      return { status: 200, json: { items: body.items } };
+    };
+    await at.runAutoTranslation();
+
+    expect(at.error).to.be.null;
+    expect(callCount).to.equal(9);
+    expect(
+      Object.keys(zustand.getState().flowDefinition?.localization?.fra || {})
+        .length
+    ).to.equal(24);
+  });
+
+  it('should split a batch the LLM could not translate in time', async () => {
+    // 2 batches of 3
+    await setupBatchFlow('timeout-flow', 6, 'w');
+    const at = editor.querySelector('temba-auto-translate') as any;
+    at.selectedModel = { uuid: 'llm-1', name: 'GPT-4' };
+
+    // the model only manages one entry at a time
+    const calls: number[] = [];
+    (storeElement as any).postJSON = async (url: string, body: any) => {
+      const size = Object.keys(body.items).length;
+      calls.push(size);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      if (size > 1) {
+        return {
+          status: 400,
+          json: {
+            error: 'LLM took longer than 20s to respond',
+            code: 'timeout'
+          }
+        };
+      }
+      return { status: 200, json: { items: body.items } };
+    };
+
+    await at.runAutoTranslation();
+
+    // each batch of 3 splits into 2 + 1, and each 2 into 1 + 1
+    expect(calls.filter((s) => s === 3).length).to.equal(2);
+    expect(calls.filter((s) => s === 2).length).to.equal(2);
+    expect(calls.filter((s) => s === 1).length).to.equal(6);
+    expect(at.error).to.be.null;
+    expect(at.running).to.be.false;
+    expect(at.progress).to.deep.equal({ done: 6, total: 6 });
+    const localization = zustand.getState().flowDefinition?.localization?.fra;
+    expect(Object.keys(localization || {}).length).to.equal(6);
+  });
+
+  it('should report a single entry the LLM could not translate in time', async () => {
+    await setupBatchFlow('timeout-flow', 1, 'v');
+    const at = editor.querySelector('temba-auto-translate') as any;
+    at.selectedModel = { uuid: 'llm-1', name: 'GPT-4' };
+
+    let callCount = 0;
+    (storeElement as any).postJSON = async () => {
+      callCount += 1;
+      return {
+        status: 400,
+        json: { error: 'LLM took longer than 20s to respond', code: 'timeout' }
+      };
+    };
+
+    await at.runAutoTranslation();
+
+    // nothing left to split so the failure is reported
     expect(callCount).to.equal(1);
+    expect(at.error).to.equal('LLM took longer than 20s to respond');
     expect(at.running).to.be.false;
   });
 
