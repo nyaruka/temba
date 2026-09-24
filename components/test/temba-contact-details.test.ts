@@ -952,6 +952,35 @@ describe(TAG, () => {
     expect(event.detail).to.deep.equal({ key: 'name', value: 'Dave Matthews' });
   });
 
+  it('classifies groups again once the store has loaded them', async () => {
+    // a store that's still loading, so doesn't know any groups yet
+    const store = await loadStore();
+    const groups = store['groups'];
+    store['groups'] = {};
+    store.ready = false;
+    let finishLoading: () => void;
+    store.initialHttpComplete = new Promise((resolve) => {
+      finishLoading = resolve;
+    });
+
+    const contactDetails = await getContactDetails({ contact: CONTACT_ID });
+    contactDetails.setContact({
+      ...contactDetails.data,
+      groups: [
+        { uuid: '512e36c1-9101-4ca2-aceb-e638c520bf0c', name: 'Reminders' }
+      ]
+    });
+
+    // an unknown group reads as smart until the store has loaded
+    expect(contactDetails.data.groups[0].is_dynamic).to.equal(true);
+
+    store['groups'] = groups;
+    store.ready = true;
+    finishLoading();
+
+    await waitUntil(() => contactDetails.data.groups[0].is_dynamic === false);
+  });
+
   it('updates selected manual groups', async () => {
     await loadStore();
     const contactDetails = await getContactDetails({
