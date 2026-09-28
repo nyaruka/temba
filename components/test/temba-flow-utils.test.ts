@@ -119,7 +119,8 @@ describe('shouldExcludeFlow', () => {
 describe('hasLLMRole', () => {
   it('returns true when the model has the role', () => {
     expect(hasLLMRole({ roles: ['generation'] }, 'generation')).to.be.true;
-    expect(hasLLMRole({ roles: ['translation', 'generation'] }, 'translation')).to.be.true;
+    expect(hasLLMRole({ roles: ['translation', 'generation'] }, 'translation'))
+      .to.be.true;
   });
 
   it('returns false when the model lacks the role', () => {

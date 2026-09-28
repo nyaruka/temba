@@ -114,7 +114,8 @@ describe('split_by_llm_categorize node config', () => {
 
     it('includes options that have the generation role', () => {
       expect(shouldExclude({ roles: ['generation'] })).to.be.false;
-      expect(shouldExclude({ roles: ['generation', 'translation'] })).to.be.false;
+      expect(shouldExclude({ roles: ['generation', 'translation'] })).to.be
+        .false;
     });
 
     it('excludes options without the generation role', () => {
