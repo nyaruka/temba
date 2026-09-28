@@ -1488,19 +1488,19 @@ class EndpointsTest(APITestMixin, TembaTest):
                     "uuid": str(anthropic.uuid),
                     "name": "Claude",
                     "type": "anthropic",
-                    "roles": ["translation", "editing", "generation", "engine", "classification"],
+                    "roles": ["translation", "generation", "classification"],
                 },
                 {
                     "uuid": str(openai.uuid),
                     "name": "GPT-4",
                     "type": "openai",
-                    "roles": ["translation", "editing"],
+                    "roles": ["translation"],
                 },
                 {
                     "uuid": str(system.uuid),
                     "name": "System",
                     "type": "openai",
-                    "roles": ["translation", "editing", "generation", "engine", "classification"],
+                    "roles": ["translation", "generation", "classification"],
                 },
             ],
         )
