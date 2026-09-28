@@ -5,7 +5,6 @@ from unittest.mock import call, patch
 import dns.exception
 import dns.resolver
 
-from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from django.test import RequestFactory
 from django.test.utils import override_settings
@@ -396,32 +395,15 @@ class HelpSiteTest(TembaTest):
         actions = self.create_article("Actions", parent=flows, body="An action does something to a contact.")
         draft = self.create_article("Node Drafting", parent=flows, body="Unfinished node notes", published=False)
         hidden = self.create_article("Hidden", published=False)
-        self.create_article("Hidden Nodes", parent=hidden, body="nodes nodes nodes")
+        hidden_nodes = self.create_article("Hidden Nodes", parent=hidden, body="nodes nodes nodes")
 
         self.assertEqual([], site.search(""))
         self.assertEqual([], site.search("   "))
 
-        # nothing indexed yet, so text search alone answers - titles outrank bodies, and the drafts and the hidden
-        # section aren't searched
-        results = site.search("node")
-        self.assertEqual([nodes], [a for a, _ in results])
-        self.assertEqual("A <mark>node</mark> is a step in a flow. <mark>Node</mark>s have actions.", results[0][1])
-
-        # the site is public, so the same search again is answered from the last time - one query to check the
-        # articles are still readable, rather than a scan of every body
-        with self.assertNumQueries(1):
-            self.assertEqual(results, site.search("  Node "))
-
-        nodes.unpublish(self.admin)
+        # nothing is found until the helpdesk has been indexed
         self.assertEqual([], site.search("node"))
-        nodes.publish(self.admin)
+        self.assertEqual(0, len(mr_mocks.calls["knowledge_search"]))
 
-        self.assertEqual([actions], [a for a, _ in site.search("action")])  # no stemming, so not "actions"
-        self.assertEqual([], site.search("unfinished"))
-        self.assertEqual([], site.search("xyzzy"))
-        cache.clear()
-
-        # once the helpdesk has been indexed, mailroom's semantic search leads, with text search filling in behind
         self.helpdesk.last_indexed_on = timezone.now()
         self.helpdesk.save(update_fields=("last_indexed_on",))
 
@@ -429,52 +411,87 @@ class HelpSiteTest(TembaTest):
             [
                 {
                     "source_uuid": str(self.helpdesk.uuid),
-                    "item_key": str(actions.uuid),
-                    "item_name": "Actions",
-                    "text": "An action does something to a contact.",
+                    "item_key": str(nodes.uuid),
+                    "item_name": "Nodes",
+                    "text": "A **node** is a step in a flow. Nodes have actions.",
                     "score": 0.9,
                 },
-                {  # and so is one for an article that isn't published
+                {  # an article that isn't published isn't listed
                     "source_uuid": str(self.helpdesk.uuid),
                     "item_key": str(draft.uuid),
                     "item_name": "Node Drafting",
                     "text": "Unfinished node notes",
                     "score": 0.8,
                 },
+                {  # nor is one in a section that isn't
+                    "source_uuid": str(self.helpdesk.uuid),
+                    "item_key": str(hidden_nodes.uuid),
+                    "item_name": "Hidden Nodes",
+                    "text": "nodes nodes nodes",
+                    "score": 0.75,
+                },
                 {  # a second chunk from an article already listed doesn't list it twice
+                    "source_uuid": str(self.helpdesk.uuid),
+                    "item_key": str(nodes.uuid),
+                    "item_name": "Nodes",
+                    "text": "More about nodes.",
+                    "score": 0.7,
+                },
+                {
                     "source_uuid": str(self.helpdesk.uuid),
                     "item_key": str(actions.uuid),
                     "item_name": "Actions",
-                    "text": "More about actions.",
-                    "score": 0.7,
+                    "text": "An action does something to a contact.",
+                    "score": 0.6,
                 },
             ]
         )
 
         results = site.search("what is a node")
-        self.assertEqual([actions, nodes], [a for a, _ in results])
-        self.assertEqual("An action does something to a contact.", results[0][1])  # the chunk's own text
-        self.assertEqual(
-            "A <mark>node</mark> is a step in a flow. <mark>Node</mark>s have actions.", results[1][1]
-        )  # from the text search
+        self.assertEqual([nodes, actions], [a for a, _ in results])
+        self.assertEqual("A <mark>node</mark> is a step in a flow. <mark>Node</mark>s have actions.", results[0][1])
+        self.assertEqual("An action does something to a contact.", results[1][1])
         self.assertEqual(
             call(self.org, "what is a node", sources=[self.helpdesk], limit=HelpSite.SEARCH_LIMIT * 3),
             mr_mocks.calls["knowledge_search"][0],
         )
 
-        # and isn't asked again for the same search while the answer is fresh
-        self.assertEqual([actions, nodes], [a for a, _ in site.search("what is a node")])
+        # the site is public, so the same search again is answered from the last time - one query to check the
+        # articles are still readable, rather than asking mailroom again
+        with self.assertNumQueries(1):
+            self.assertEqual(results, site.search("  What is a Node "))
         self.assertEqual(1, len(mr_mocks.calls["knowledge_search"]))
 
-        # mailroom being down doesn't take search with it
+        # less anything unpublished since
+        nodes.unpublish(self.admin)
+        self.assertEqual([actions], [a for a, _ in site.search("what is a node")])
+        nodes.publish(self.admin)
+
+        # mailroom being down finds nothing, and isn't remembered
         mr_mocks.exception(RequestException("knowledge/search", {}, MockJsonResponse(500, {"error": "boom"})))
         with patch("temba.knowledge.models.logger") as mock_logger:
-            self.assertEqual([nodes], [a for a, _ in site.search("node")])
+            self.assertEqual([], site.search("node"))
         self.assertTrue(mock_logger.error.called)
 
-        # a limit is a limit whichever search filled it
-        mr_mocks.knowledge_search([])
-        self.assertEqual([actions], [a for a, _ in site.search("action", limit=1)])
+        mr_mocks.knowledge_search(
+            [
+                {
+                    "source_uuid": str(self.helpdesk.uuid),
+                    "item_key": str(nodes.uuid),
+                    "item_name": "Nodes",
+                    "text": "A node is a step in a flow.",
+                    "score": 0.9,
+                },
+                {
+                    "source_uuid": str(self.helpdesk.uuid),
+                    "item_key": str(actions.uuid),
+                    "item_name": "Actions",
+                    "text": "An action does something to a contact.",
+                    "score": 0.6,
+                },
+            ]
+        )
+        self.assertEqual([nodes], [a for a, _ in site.search("node", limit=1)])  # a limit is a limit
 
     def test_delete(self):
         site = HelpSite.get_or_create(self.helpdesk, self.admin)

@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from temba.knowledge.models import Article, ArticleCount, HelpSite, KnowledgeSource
 from temba.orgs.models import Org
-from temba.tests import TembaTest
+from temba.tests import TembaTest, mock_mailroom
 from temba.tests.requests import MockResponse
 
 
@@ -206,7 +206,25 @@ class SiteViewsTest(TembaTest):
         self.assertEqual(404, self.public("/hidden/visible/").status_code)
         self.assertEqual(404, self.public("/nope/nodes/").status_code)
 
-    def test_public_search(self):
+    @mock_mailroom
+    def test_public_search(self, mr_mocks):
+        self.helpdesk.last_indexed_on = timezone.now()
+        self.helpdesk.save(update_fields=("last_indexed_on",))
+
+        mr_mocks.knowledge_search(
+            [
+                {
+                    "source_uuid": str(self.helpdesk.uuid),
+                    "item_key": str(self.nodes.uuid),
+                    "item_name": "Nodes",
+                    "text": "A **node** is a step in a flow.",
+                    "score": 0.9,
+                }
+            ]
+        )
+        mr_mocks.knowledge_search([])
+        mr_mocks.knowledge_search([])
+
         response = self.public("/search/?q=node")
         self.assertEqual(200, response.status_code)
         self.assertEqual("node", response.context["query"])

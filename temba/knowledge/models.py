@@ -23,7 +23,6 @@ from pgvector.django import HnswIndex, VectorField
 
 from django.conf import settings
 from django.contrib.postgres.indexes import OpClass
-from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from django.core.cache import cache
 from django.core.files.storage import default_storage
 from django.db import models, transaction
@@ -1562,63 +1561,40 @@ class HelpSite(models.Model):
 
     def search(self, query: str, limit: int = SEARCH_LIMIT) -> list:
         """
-        Searches the site's articles, returning (article, snippet) pairs, best first. Semantic search through mailroom
-        leads when the helpdesk has been indexed, and text search over titles and bodies fills in behind it - so a
-        search works before the first index, and still finds an exact phrase the embeddings rank low.
+        Searches the site's articles through mailroom's semantic search, returning (article, snippet) pairs, best
+        first. Nothing is found until the helpdesk has been indexed.
         """
         query = query.strip()
-        if not query:
+        if not query or not self.source.last_indexed_on:
             return []
 
         readable = self._published().filter(parent__in=self._published().filter(parent=None))
 
-        # the site is public, and a search costs an embedding and a scan of every body - so the same question asked
-        # again within a few minutes is answered from the last time, less anything unpublished since
+        # the site is public, and a search costs an embedding - so the same question asked again within a few minutes
+        # is answered from the last time, less anything unpublished since
         cache_key = self.SEARCH_CACHE_KEY % (self.id, hashlib.md5(f"{query.lower()}|{limit}".encode()).hexdigest())
         cached = cache.get(cache_key)
         if cached is not None:
             by_id = {a.id: a for a in readable.filter(id__in=[i for i, _ in cached]).select_related("parent")}
             return [(by_id[i], snippet) for i, snippet in cached if i in by_id]
 
+        try:
+            # an article can match as several chunks, so ask for more than we need to still fill the limit
+            hits = mailroom.get_client().knowledge_search(self.org, query, sources=[self.source], limit=limit * 3)
+        except RequestException as e:
+            logger.error(f"error searching knowledge: {e}", exc_info=True)
+            return []
+
         terms = [t for t in re.split(r"\W+", query) if len(t) > 2]  # worth marking in a snippet
 
-        ordered, snippets = [], {}
+        snippets = {}
+        for h in hits:
+            if h["item_key"] not in snippets:
+                snippets[h["item_key"]] = make_snippet(to_plain_text(h["text"]), terms)
 
-        if self.source.last_indexed_on:
-            try:
-                # an article can match as several chunks, so ask for more than we need to still fill the limit
-                results = mailroom.get_client().knowledge_search(
-                    self.org, query, sources=[self.source], limit=limit * 3
-                )
-            except RequestException as e:
-                logger.error(f"error searching knowledge: {e}", exc_info=True)
-                results = []
+        by_uuid = {str(a.uuid): a for a in readable.filter(uuid__in=snippets.keys()).select_related("parent")}
+        results = [(by_uuid[k], snippet) for k, snippet in snippets.items() if k in by_uuid][:limit]
 
-            keys = []
-            for r in results:
-                if r["item_key"] not in keys:
-                    keys.append(r["item_key"])
-                    snippets[r["item_key"]] = make_snippet(to_plain_text(r["text"]), terms)
-
-            by_uuid = {str(a.uuid): a for a in readable.filter(uuid__in=keys).select_related("parent")}
-            ordered.extend(by_uuid[k] for k in keys if k in by_uuid)
-
-        if len(ordered) < limit:
-            # simple rather than a language config, since a helpdesk can hold articles in any language
-            vector = SearchVector("title", weight="A", config="simple") + SearchVector(
-                "body", weight="B", config="simple"
-            )
-            search = SearchQuery(query, search_type="websearch", config="simple")
-            matches = (
-                readable.exclude(id__in=[a.id for a in ordered])
-                .annotate(rank=SearchRank(vector, search))
-                .filter(rank__gt=0)
-                .order_by("-rank", "title")
-                .select_related("parent")[: limit - len(ordered)]
-            )
-            ordered.extend(matches)
-
-        results = [(a, snippets.get(str(a.uuid)) or make_snippet(a.as_plain_text(), terms)) for a in ordered[:limit]]
         cache.set(cache_key, [(a.id, snippet) for a, snippet in results], self.SEARCH_CACHE_TTL)
         return results
 
