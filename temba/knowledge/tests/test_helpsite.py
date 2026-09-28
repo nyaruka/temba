@@ -470,8 +470,10 @@ class HelpSiteTest(TembaTest):
         # mailroom being down finds nothing, and isn't remembered
         mr_mocks.exception(RequestException("knowledge/search", {}, MockJsonResponse(500, {"error": "boom"})))
         with patch("temba.knowledge.models.logger") as mock_logger:
-            self.assertEqual([], site.search("node"))
+            self.assertEqual([], site.search("node", limit=1))
         self.assertTrue(mock_logger.error.called)
+
+        # so the same search again asks mailroom again, and a limit is a limit
 
         mr_mocks.knowledge_search(
             [
@@ -491,7 +493,7 @@ class HelpSiteTest(TembaTest):
                 },
             ]
         )
-        self.assertEqual([nodes], [a for a, _ in site.search("node", limit=1)])  # a limit is a limit
+        self.assertEqual([nodes], [a for a, _ in site.search("node", limit=1)])
 
     def test_delete(self):
         site = HelpSite.get_or_create(self.helpdesk, self.admin)
