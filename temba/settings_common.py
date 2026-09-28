@@ -734,9 +734,11 @@ DATABASES = {"default": _default_database_config, "readonly": _default_database_
 # -----------------------------------------------------------------------------------
 _valkey_url = f"redis://{_valkey_host}:6379/{10 if TESTING else 15}"
 
-# the valkey databases test processes claim for themselves, one each (see temba.testrunner) - clear of the ones apps
-# use, so valkey needs more than its default 16 (e.g. --databases 128)
-TEST_VALKEY_DBS = range(32, 64)
+# the database coordinating claims on the pool of valkey databases test processes claim for themselves, one each (see
+# temba.testrunner) - shared with other projects' tests so must match theirs, and valkey needs more than its default 16
+# databases (e.g. --databases 128)
+TEST_VALKEY_COORD_DB = 16
+TEST_VALKEY_POOL = (17, 63)
 
 CACHES = {
     "default": {

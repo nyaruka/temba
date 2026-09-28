@@ -2,11 +2,17 @@
 # that imports) anything requiring the app registry, e.g. models or temba.tests
 
 import io
+import multiprocessing
+import multiprocessing.util
 import os
 import re
+import signal
+import socket
+import sys
+import threading
 import time
 
-import psycopg
+import valkey
 
 from django.conf import settings
 from django.core.cache import caches
@@ -15,19 +21,64 @@ from django.core.management import call_command
 from django.test.runner import DiscoverRunner, ParallelTestSuite, _init_worker
 
 # Each test process - a serial run, or each worker of a parallel one - claims a slot: one of the valkey databases in
-# settings.TEST_VALKEY_DBS, after which its DynamoDB tables and S3 buckets are also named, so that concurrent runs
-# sharing one set of services, e.g. from different checkouts, can't see or clear each other's state. The claim is an
-# advisory lock in Postgres held for the life of the process, so it evaporates if the process dies, and the slot's
-# valkey database is flushed on claim to clear anything a dead run left behind. If every slot is taken, claiming
-# waits for one to free up rather than failing.
-SLOT_LOCK_CLASS = 0x74656D62  # the first key of each slot's advisory lock ("temb"), the second being the slot
+# settings.TEST_VALKEY_POOL, after which its DynamoDB tables and S3 buckets are also named, so that concurrent runs
+# sharing one set of services, e.g. from different checkouts, can't see or clear each other's state. Claims follow
+# the protocol of vkutil's assertvk package, so they're also safe from the tests of other projects sharing the pool:
+# they live in the coordination database settings.TEST_VALKEY_COORD_DB and expire unless renewed, so a dead run's
+# evaporate. If every slot is taken, claiming waits for one to free up rather than failing.
 SLOT_CLAIM_TIMEOUT = 180  # seconds
+SLOT_CLAIM_TTL = 30_000  # milliseconds
+SLOT_RENEW_INTERVAL = 10  # seconds
 
-# the (connection, slot) of each claim, by the pid of the process holding it
+CLAIMS_KEY = "testdbs:claims"
+OWNERS_KEY = "testdbs:owners"
+
+# the Lua scripts of assertvk's claim protocol, which every client sharing the pool must use as-is
+CLAIM_SCRIPT = """
+local t = redis.call("TIME")
+local now = tonumber(t[1]) * 1000 + math.floor(tonumber(t[2]) / 1000)
+for _, db in ipairs(redis.call("ZRANGEBYSCORE", KEYS[1], "-inf", now)) do
+	redis.call("ZREM", KEYS[1], db)
+	redis.call("HDEL", KEYS[2], db)
+end
+for db = tonumber(ARGV[1]), tonumber(ARGV[2]) do
+	if not redis.call("ZSCORE", KEYS[1], db) then
+		redis.call("ZADD", KEYS[1], now + tonumber(ARGV[4]), db)
+		redis.call("HSET", KEYS[2], db, ARGV[3])
+		return db
+	end
+end
+return -1
+"""
+
+RENEW_SCRIPT = """
+if redis.call("HGET", KEYS[2], ARGV[1]) ~= ARGV[2] then
+	return 0
+end
+local t = redis.call("TIME")
+local now = tonumber(t[1]) * 1000 + math.floor(tonumber(t[2]) / 1000)
+redis.call("ZADD", KEYS[1], "XX", now + tonumber(ARGV[3]), ARGV[1])
+return 1
+"""
+
+RELEASE_SCRIPT = """
+if redis.call("HGET", KEYS[2], ARGV[1]) ~= ARGV[2] then
+	return 0
+end
+redis.call("ZREM", KEYS[1], ARGV[1])
+redis.call("HDEL", KEYS[2], ARGV[1])
+return 1
+"""
+
+# the (slot, owner, renewer stop event, renewer) of each claim, by the pid of the process holding it
 _claims = {}  # thread-safe: only test processes use it, each from its main thread
 
 # the configured test table and bucket prefixes, from before any slot's were derived from them
 _base_prefixes = {}  # thread-safe: only test processes use it, each from its main thread
+
+
+def _valkey(db: int) -> valkey.Valkey:
+    return valkey.Valkey.from_url(re.sub(r"/\d+$", f"/{db}", settings.CACHES["default"]["LOCATION"]))
 
 
 def claim_slot() -> int:
@@ -35,34 +86,73 @@ def claim_slot() -> int:
     Claims a slot for this process if it doesn't already hold one, and returns it (its valkey database)
     """
 
-    # a forked worker inherits its parent's claim, which isn't its own (and psycopg won't close the inherited
-    # connection, so the parent keeps its lock)
+    # a forked worker inherits its parent's claim, which isn't its own
     if claim := _claims.get(os.getpid()):
-        return claim[1]
+        return claim[0]
 
-    # advisory locks are scoped to a database, so every run must lock in the same one, whatever its test database
-    db = settings.DATABASES["default"]
-    conn = psycopg.connect(
-        host=db["HOST"],
-        port=db["PORT"] or None,
-        user=db["USER"],
-        password=db["PASSWORD"],
-        dbname="postgres",
-        autocommit=True,
-    )
+    coord_db, (first, last) = settings.TEST_VALKEY_COORD_DB, settings.TEST_VALKEY_POOL
+    owner = f"{socket.gethostname()}:{os.getpid()}"
 
-    deadline = time.monotonic() + SLOT_CLAIM_TIMEOUT
-    while True:
-        for slot in settings.TEST_VALKEY_DBS:
-            if conn.execute("SELECT pg_try_advisory_lock(%s, %s)", (SLOT_LOCK_CLASS, slot)).fetchone()[0]:
-                _claims[os.getpid()] = (conn, slot)
-                return slot
+    with _valkey(coord_db) as conn:
+        num_dbs = int(conn.config_get("databases")["databases"])
+        if num_dbs <= max(coord_db, first):
+            raise RuntimeError(f"valkey has too few databases ({num_dbs}) for test slots, e.g. use --databases 128")
+        last = min(last, num_dbs - 1)
 
-        if time.monotonic() > deadline:
-            conn.close()
-            raise RuntimeError(f"timed out waiting for an unclaimed test slot ({settings.TEST_VALKEY_DBS})")
+        deadline = time.monotonic() + SLOT_CLAIM_TIMEOUT
+        while (slot := conn.eval(CLAIM_SCRIPT, 2, CLAIMS_KEY, OWNERS_KEY, first, last, owner, SLOT_CLAIM_TTL)) < 0:
+            if time.monotonic() > deadline:
+                raise RuntimeError(f"timed out waiting for an unclaimed test slot ({first}-{last})")
 
-        time.sleep(0.25)
+            time.sleep(0.25)
+
+    with _valkey(slot) as conn:
+        conn.flushdb()  # in case a previous run left anything behind in this slot's valkey database
+
+    stop = threading.Event()
+    renewer = threading.Thread(target=_renew_slot, args=(slot, owner, stop), daemon=True)
+    renewer.start()
+    _claims[os.getpid()] = (slot, owner, stop, renewer)
+
+    # atexit handlers don't run in parallel workers, but multiprocessing's finalizers run in them and at exit
+    multiprocessing.util.Finalize(None, release_slot, exitpriority=10)
+
+    return slot
+
+
+def _renew_slot(slot: int, owner: str, stop: threading.Event):
+    while not stop.wait(SLOT_RENEW_INTERVAL):
+        try:
+            with _valkey(settings.TEST_VALKEY_COORD_DB) as conn:
+                held = conn.eval(RENEW_SCRIPT, 2, CLAIMS_KEY, OWNERS_KEY, slot, owner, SLOT_CLAIM_TTL)
+        except valkey.ValkeyError:
+            continue  # the claim can survive a missed renewal
+
+        if not held:
+            # another process may now be using our slot, so nothing this run asserts can be trusted
+            sys.stderr.write(f"lost claim on test slot {slot}\n")
+            if multiprocessing.parent_process():  # a parallel worker, so don't leave the run waiting on it forever
+                os.kill(os.getppid(), signal.SIGTERM)
+            os._exit(1)
+
+
+def release_slot():
+    """
+    Flushes and releases this process's slot if it holds one
+    """
+
+    claim = _claims.pop(os.getpid(), None)
+    if not claim:
+        return
+
+    slot, owner, stop, renewer = claim
+    stop.set()
+    renewer.join()  # so a renewal can't race the release and find the claim gone
+
+    with _valkey(slot) as conn:
+        conn.flushdb()  # while we still own it
+    with _valkey(settings.TEST_VALKEY_COORD_DB) as conn:
+        conn.eval(RELEASE_SCRIPT, 2, CLAIMS_KEY, OWNERS_KEY, slot, owner)
 
 
 def use_slot(slot: int):
@@ -85,8 +175,6 @@ def use_slot(slot: int):
             delattr(caches._connections, alias)
         except AttributeError:
             pass
-
-    caches["default"].clear()  # in case a previous run left anything behind in this slot's valkey database
 
     # derive the slot's names from the configured test ones (e.g. Test -> Test32) so that settings can namespace
     # them, e.g. for separate environments sharing one DynamoDB or S3 service. A forked worker inherits the names its
@@ -155,3 +243,8 @@ class TembaTestRunner(DiscoverRunner):
             create_slot_storage()
 
         return super().run_suite(suite, **kwargs)
+
+    def teardown_test_environment(self, **kwargs):
+        super().teardown_test_environment(**kwargs)
+
+        release_slot()

@@ -92,7 +92,7 @@ jobs:
       valkey:
         image: valkey/valkey:8.1-alpine
         env:
-          # enough databases for the ones test processes claim (see TEST_VALKEY_DBS)
+          # enough databases for the ones test processes claim (see TEST_VALKEY_POOL)
           VALKEY_EXTRA_FLAGS: --databases 128
         ports:
           - 6379:6379
