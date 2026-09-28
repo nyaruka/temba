@@ -27,7 +27,7 @@ from temba.contacts.models import Contact, ContactField, ContactGroup
 from temba.globals.models import Global
 from temba.msgs.models import Label
 from temba.orgs.models import DependencyMixin, Export, ExportType, Org
-from temba.orgs.realtime import AssetNameMixin
+from temba.orgs.realtime import AssetMixin
 from temba.templates.models import Template
 from temba.tickets.models import Topic
 from temba.users.models import User
@@ -61,7 +61,7 @@ FLOW_LOCK_TTL = 60  # 1 minute
 FLOW_LOCK_KEY = "org:%d:lock:flow:%d:definition"
 
 
-class Flow(AssetNameMixin, LegacyIDMixin, TembaModel, DependencyMixin):
+class Flow(AssetMixin, LegacyIDMixin, TembaModel, DependencyMixin):
     asset_type = "flow"
 
     org_limit_key = Org.LIMIT_FLOWS
@@ -109,7 +109,7 @@ class Flow(AssetNameMixin, LegacyIDMixin, TembaModel, DependencyMixin):
 
     FINAL_LEGACY_VERSION = legacy.VERSIONS[-1]
     INITIAL_GOFLOW_VERSION = "13.0.0"  # initial version of flow spec to use new engine
-    CURRENT_SPEC_VERSION = "14.4.1"  # current flow spec version
+    CURRENT_SPEC_VERSION = "14.5.0"  # current flow spec version
 
     EXPIRES_CHOICES = {
         TYPE_MESSAGE: (

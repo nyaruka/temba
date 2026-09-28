@@ -428,28 +428,21 @@ class HelpSiteTest(TembaTest):
         mr_mocks.knowledge_search(
             [
                 {
-                    "knowledge_uuid": str(self.helpdesk.uuid),
+                    "source_uuid": str(self.helpdesk.uuid),
                     "item_key": str(actions.uuid),
                     "item_name": "Actions",
                     "text": "An action does something to a contact.",
                     "score": 0.9,
                 },
-                {  # a chunk from another source is ignored
-                    "knowledge_uuid": "e4b8a5e4-5d09-4a8b-9d44-8d5e2f2f4f2c",
-                    "item_key": str(nodes.uuid),
-                    "item_name": "Nodes",
-                    "text": "...",
-                    "score": 0.85,
-                },
                 {  # and so is one for an article that isn't published
-                    "knowledge_uuid": str(self.helpdesk.uuid),
+                    "source_uuid": str(self.helpdesk.uuid),
                     "item_key": str(draft.uuid),
                     "item_name": "Node Drafting",
                     "text": "Unfinished node notes",
                     "score": 0.8,
                 },
                 {  # a second chunk from an article already listed doesn't list it twice
-                    "knowledge_uuid": str(self.helpdesk.uuid),
+                    "source_uuid": str(self.helpdesk.uuid),
                     "item_key": str(actions.uuid),
                     "item_name": "Actions",
                     "text": "More about actions.",
@@ -465,7 +458,8 @@ class HelpSiteTest(TembaTest):
             "A <mark>node</mark> is a step in a flow. <mark>Node</mark>s have actions.", results[1][1]
         )  # from the text search
         self.assertEqual(
-            call(self.org, "what is a node", limit=HelpSite.SEARCH_LIMIT * 3), mr_mocks.calls["knowledge_search"][0]
+            call(self.org, "what is a node", sources=[self.helpdesk], limit=HelpSite.SEARCH_LIMIT * 3),
+            mr_mocks.calls["knowledge_search"][0],
         )
 
         # and isn't asked again for the same search while the answer is fresh

@@ -25,6 +25,9 @@ class LLMType:
     # help text to show for the API key field
     api_key_help = None
 
+    # roles models of this type can perform, if not all, e.g. a type that can classify but not generate text
+    roles = None
+
     @property
     def settings(self) -> dict:
         """
@@ -57,17 +60,18 @@ class LLM(TembaModel, DependencyMixin):
     A language model that can be used for AI tasks
     """
 
-    ROLE_EDITING = "T"
-    ROLE_ENGINE = "F"
-    ROLE_NAMES = {ROLE_EDITING: "editing", ROLE_ENGINE: "engine"}
-    DEFAULT_ROLES = ROLE_EDITING + ROLE_ENGINE
+    ROLE_TRANSLATION = "T"
+    ROLE_GENERATION = "G"
+    ROLE_CLASSIFICATION = "C"
+    ROLE_NAMES = {ROLE_TRANSLATION: "translation", ROLE_GENERATION: "generation", ROLE_CLASSIFICATION: "classification"}
+    ALL_ROLES = ROLE_TRANSLATION + ROLE_GENERATION + ROLE_CLASSIFICATION
 
     org = models.ForeignKey(Org, related_name="llms", on_delete=models.PROTECT)
     llm_type = models.CharField(max_length=16)
     model = models.CharField(max_length=64)
     max_output_tokens = models.PositiveIntegerField(default=4_096)
     config = models.JSONField()
-    roles = models.CharField(max_length=2, default=DEFAULT_ROLES)
+    roles = models.CharField(max_length=3, default=ALL_ROLES)
 
     org_limit_key = Org.LIMIT_LLMS
 
@@ -79,14 +83,14 @@ class LLM(TembaModel, DependencyMixin):
         return models_settings.get(model, LLM._meta.get_field("max_output_tokens").get_default())
 
     @classmethod
-    def create(cls, org, user, typ, model: str, name: str, config: dict, roles: str = DEFAULT_ROLES):
+    def create(cls, org, user, typ, model: str, name: str, config: dict, roles: str = None):
         kwargs = dict(
             org=org,
             name=name,
             llm_type=typ.slug,
             model=model,
             config=config,
-            roles=roles,
+            roles=roles or typ.roles or cls.ALL_ROLES,
             created_by=user,
             modified_by=user,
             max_output_tokens=cls._get_max_output_tokens(typ, model),
@@ -95,6 +99,9 @@ class LLM(TembaModel, DependencyMixin):
         return cls.objects.create(**kwargs)
 
     def update_config(self, user, typ: LLMType, model: str, name: str, config: dict):
+        if typ.slug != self.llm_type:
+            self.roles = typ.roles or self.ALL_ROLES
+
         self.llm_type = typ.slug
         self.model = model
         self.name = name
@@ -104,6 +111,7 @@ class LLM(TembaModel, DependencyMixin):
         self.save(
             update_fields=(
                 "llm_type",
+                "roles",
                 "model",
                 "name",
                 "config",

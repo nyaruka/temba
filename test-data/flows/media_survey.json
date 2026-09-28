@@ -269,7 +269,7 @@
         }
       ],
       "revision": 169,
-      "spec_version": "14.4.1",
+      "spec_version": "14.5.0",
       "type": "messaging_offline",
       "uuid": "9097ec00-3af0-4eef-988d-26c5094ce4ec"
     }

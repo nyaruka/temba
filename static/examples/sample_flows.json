@@ -930,7 +930,7 @@
               }
             ],
             "default_category_uuid": "4150fd2f-bb57-4c9d-b8eb-78a775b282df",
-            "operand": "@webhook.status",
+            "operand": "@(default(webhook.status, 0))",
             "type": "switch"
           },
           "uuid": "5b58e207-c30e-4c90-89c0-39b230915bd1"
@@ -989,7 +989,7 @@
         }
       ],
       "revision": 2,
-      "spec_version": "14.4.1",
+      "spec_version": "14.5.0",
       "type": "messaging",
       "uuid": "5ba7e03b-1dfd-446c-a6d0-c23ed83f6d8d"
     },
@@ -1174,7 +1174,7 @@
         }
       ],
       "revision": 1,
-      "spec_version": "14.4.1",
+      "spec_version": "14.5.0",
       "type": "messaging",
       "uuid": "89382414-8096-435b-8e2b-184b1c6229f6"
     },
@@ -1400,7 +1400,7 @@
               }
             ],
             "default_category_uuid": "16f1638a-4161-473a-bd67-bd8b2607a1c2",
-            "operand": "@webhook.status",
+            "operand": "@(default(webhook.status, 0))",
             "type": "switch"
           },
           "uuid": "525aee83-21a1-4b50-9f84-38c4077b6198"
@@ -1646,7 +1646,7 @@
         }
       ],
       "revision": 26,
-      "spec_version": "14.4.1",
+      "spec_version": "14.5.0",
       "type": "messaging",
       "uuid": "0d55fdc1-f3ed-465f-a9bd-88908b0d592c"
     }

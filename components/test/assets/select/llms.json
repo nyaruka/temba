@@ -7,14 +7,14 @@
       "name": "GPT 4.1",
       "value": "2399e7d6-fcdf-4e47-a835-f3bdb7f80938",
       "type": "openai",
-      "roles": ["engine", "editing"]
+      "roles": ["translation", "generation", "classification"]
     },
     {
       "uuid": "4399e7d6-fcdf-4e47-a835-f3bdb7f80938",
       "name": "GPT 5",
       "value": "4399e7d6-fcdf-4e47-a835-f3bdb7f80938",
       "type": "openai",
-      "roles": ["engine"]
+      "roles": ["generation", "classification"]
     }
   ]
 }

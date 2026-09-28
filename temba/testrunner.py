@@ -26,6 +26,9 @@ SLOT_CLAIM_TIMEOUT = 180  # seconds
 # the (connection, slot) of each claim, by the pid of the process holding it
 _claims = {}  # thread-safe: only test processes use it, each from its main thread
 
+# the configured test table and bucket prefixes, from before any slot's were derived from them
+_base_prefixes = {}  # thread-safe: only test processes use it, each from its main thread
+
 
 def claim_slot() -> int:
     """
@@ -85,11 +88,15 @@ def use_slot(slot: int):
 
     caches["default"].clear()  # in case a previous run left anything behind in this slot's valkey database
 
-    # bucket names are renamed from whatever prefix they have now - not always the settings' own "test", as a forked
-    # worker inherits the names its parent already renamed to its own slot
+    # derive the slot's names from the configured test ones (e.g. Test -> Test32) so that settings can namespace
+    # them, e.g. for separate environments sharing one DynamoDB or S3 service. A forked worker inherits the names its
+    # parent already derived for its own slot, so derive from the prefixes as configured, and rename buckets from
+    # whatever prefix they have now.
+    _base_prefixes.setdefault("dynamo", settings.DYNAMO_TABLE_PREFIX)
+    _base_prefixes.setdefault("bucket", settings.BUCKET_PREFIX)
     old_bucket_prefix = settings.BUCKET_PREFIX
-    settings.DYNAMO_TABLE_PREFIX = f"Test{slot}"
-    settings.BUCKET_PREFIX = f"test{slot}"
+    settings.DYNAMO_TABLE_PREFIX = f"{_base_prefixes['dynamo']}{slot}"
+    settings.BUCKET_PREFIX = f"{_base_prefixes['bucket']}{slot}"
 
     for alias, config in settings.STORAGES.items():
         bucket_name = config.get("OPTIONS", {}).get("bucket_name")
@@ -142,6 +149,8 @@ class TembaTestRunner(DiscoverRunner):
         use_slot(claim_slot())
 
     def run_suite(self, suite, **kwargs):
+        # a serial run's tests use the main process's slot, so make sure its tables and buckets exist (parallel
+        # workers create their own)
         if not isinstance(suite, ParallelTestSuite):
             create_slot_storage()
 

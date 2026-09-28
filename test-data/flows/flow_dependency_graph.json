@@ -71,7 +71,7 @@
         }
       ],
       "revision": 5,
-      "spec_version": "14.4.1",
+      "spec_version": "14.5.0",
       "type": "messaging",
       "uuid": "b4af4237-3a0d-4ee2-9ef3-01658c9215e4"
     },
@@ -175,7 +175,7 @@
         }
       ],
       "revision": 5,
-      "spec_version": "14.4.1",
+      "spec_version": "14.5.0",
       "type": "messaging",
       "uuid": "70212996-6bea-4229-bbd3-55e5cd607049"
     }

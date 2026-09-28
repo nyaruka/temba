@@ -145,7 +145,7 @@
         }
       ],
       "revision": 0,
-      "spec_version": "14.4.1",
+      "spec_version": "14.5.0",
       "type": "messaging",
       "uuid": "198b20a2-c389-4cf6-8ccb-b45c959f3de1"
     },
@@ -328,7 +328,7 @@
         }
       ],
       "revision": 0,
-      "spec_version": "14.4.1",
+      "spec_version": "14.5.0",
       "type": "messaging",
       "uuid": "ad22ba89-68af-4e2d-9d06-13e0b61193d2"
     },
@@ -604,7 +604,7 @@
         }
       ],
       "revision": 0,
-      "spec_version": "14.4.1",
+      "spec_version": "14.5.0",
       "type": "messaging",
       "uuid": "4b2a34bb-2da8-49df-97d2-7347804dec92"
     },
@@ -1104,7 +1104,7 @@
         }
       ],
       "revision": 0,
-      "spec_version": "14.4.1",
+      "spec_version": "14.5.0",
       "type": "messaging",
       "uuid": "fb505d32-93e3-4aad-b69a-7d3318131f78"
     },
@@ -1148,7 +1148,7 @@
         }
       ],
       "revision": 0,
-      "spec_version": "14.4.1",
+      "spec_version": "14.5.0",
       "type": "messaging",
       "uuid": "8f0ab307-2c36-4eaf-baf2-597af539a2c0"
     },
@@ -1192,7 +1192,7 @@
         }
       ],
       "revision": 0,
-      "spec_version": "14.4.1",
+      "spec_version": "14.5.0",
       "type": "messaging",
       "uuid": "eb0d5a69-756a-4c05-88eb-5e84fbd2dd9c"
     },
@@ -1231,7 +1231,7 @@
         }
       ],
       "revision": 0,
-      "spec_version": "14.4.1",
+      "spec_version": "14.5.0",
       "type": "messaging",
       "uuid": "8d21a7da-dd20-4460-911e-ab579c7f55a3"
     },
@@ -1270,7 +1270,7 @@
         }
       ],
       "revision": 0,
-      "spec_version": "14.4.1",
+      "spec_version": "14.5.0",
       "type": "messaging",
       "uuid": "16f33155-9ef7-478f-8a05-365eb05d29f7"
     }

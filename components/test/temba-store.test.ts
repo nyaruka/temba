@@ -495,6 +495,63 @@ describe('temba-store', () => {
     }
   });
 
+  it('caches groups created since its fetch from the socket', async () => {
+    const mockSocket = new MockSocketProvider();
+    const previousProvider = setSocketProvider(mockSocket);
+
+    try {
+      const store = await createStore(`
+        <temba-store
+          org="org-uuid"
+          user="user-uuid"
+          groups="/test-assets/store/groups.json"
+        ></temba-store>
+      `);
+      const reminders = '512e36c1-9101-4ca2-aceb-e638c520bf0c';
+      const openTickets = '12e583b3-46f5-4d9d-85ca-15fb6153c1a0';
+
+      assert.isFalse(store.isDynamicGroup(reminders));
+      assert.isTrue(store.isDynamicGroup(openTickets));
+
+      // a group we've never heard of can only be assumed smart
+      assert.isTrue(store.isDynamicGroup('manual-1'));
+      assert.isTrue(store.isDynamicGroup('smart-1'));
+
+      mockSocket.serverPublish('org:org-uuid', {
+        type: 'asset_changed',
+        asset: {
+          type: 'group',
+          uuid: 'manual-1',
+          name: 'Customers',
+          query: null
+        }
+      });
+      mockSocket.serverPublish('org:org-uuid', {
+        type: 'asset_changed',
+        asset: {
+          type: 'group',
+          uuid: 'smart-1',
+          name: 'Adults',
+          query: 'age > 18'
+        }
+      });
+
+      assert.isFalse(store.isDynamicGroup('manual-1'));
+      assert.isTrue(store.isDynamicGroup('smart-1'));
+
+      // an event which doesn't say whether the group has a query can't add it
+      mockSocket.serverPublish('org:org-uuid', {
+        type: 'asset_changed',
+        asset: { type: 'group', uuid: 'manual-2', name: 'Farmers' }
+      });
+
+      assert.isTrue(store.isDynamicGroup('manual-2'));
+    } finally {
+      setRealtimeContext(null);
+      setSocketProvider(previousProvider);
+    }
+  });
+
   it('leaves the live resolver alone when an unrendered store is removed', async () => {
     const store = await createStore('<temba-store></temba-store>');
     const installed = getDependencyResolver();

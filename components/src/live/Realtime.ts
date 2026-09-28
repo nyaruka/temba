@@ -1,6 +1,6 @@
 import { Notification, ObjectReference, User } from '../interfaces';
 import { Events } from '../events/eventRenderers';
-import type { StoreAsset } from '../store/Store';
+import type { GroupAsset, StoreAsset } from '../store/Store';
 import {
   onSocketDenied,
   PublicationHandler,
@@ -42,11 +42,13 @@ export interface RealtimeEvent {
 
 /**
  * org:<org-uuid> - workspace-wide state every component on the page shares.
- * An asset changed somewhere, so anything displaying it can update.
+ * An asset was created or renamed somewhere, so anything displaying it can
+ * update. A group carries its query as well, so the store can cache one it
+ * has never fetched.
  */
 export interface AssetChangedEvent extends RealtimeEvent {
   type: 'asset_changed';
-  asset: StoreAsset;
+  asset: StoreAsset | GroupAsset;
 }
 
 export type OrganizationEvent = AssetChangedEvent;

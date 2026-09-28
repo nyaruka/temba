@@ -1,3 +1,22 @@
+v26.3.114 (2026-09-28)
+-------------------------
+ * Split LLM engine role into generation and classification, and rename editing role to translation
+ * Publish group creations on the workspace socket and keep contact group names and types current
+ * Classify a contact's groups again once the store has loaded them
+ * Derive test bucket and table names from the configured prefixes so runs sharing S3 or DynamoDB don't collide
+
+v26.3.113 (2026-09-24)
+-------------------------
+ * Request knowledge indexing from mailroom when knowledge content changes
+ * Don't mark a helpdesk pending after an import that failed before bringing anything in
+
+v26.3.112 (2026-09-24)
+-------------------------
+ * Bump flow spec version to 14.5.0 and migrate bundled flow exports
+ * Add --noinput option to migrate_flows command
+ * Separate tickets in the ticket list with a hairline
+ * Limit help site knowledge searches to the site's source in mailroom
+
 v26.3.111 (2026-09-23)
 -------------------------
  * Move template tag tests out of templatetags packages

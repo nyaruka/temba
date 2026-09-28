@@ -178,7 +178,7 @@
               }
             ],
             "default_category_uuid": "8652c49e-45ad-4919-9f9c-b4f812d655a7",
-            "operand": "@webhook.status",
+            "operand": "@(default(webhook.status, 0))",
             "type": "switch"
           },
           "uuid": "2eefb600-d52d-4cab-8636-67d4d923b630"
@@ -385,7 +385,7 @@
         }
       ],
       "revision": 1,
-      "spec_version": "14.4.1",
+      "spec_version": "14.5.0",
       "type": "messaging",
       "uuid": "845f5a05-e92e-46fa-9444-cde06fb53ea0"
     },
@@ -538,7 +538,7 @@
         }
       ],
       "revision": 1,
-      "spec_version": "14.4.1",
+      "spec_version": "14.5.0",
       "type": "messaging",
       "uuid": "2b118e66-960f-4ba5-abb9-2b250916d4ff"
     }

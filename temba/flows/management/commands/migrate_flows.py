@@ -19,11 +19,14 @@ class Command(BaseCommand):
             help="Delay in milliseconds between flow migrations",
             default=100,
         )
+        parser.add_argument(
+            "--noinput", "--no-input", action="store_false", dest="interactive", help="Do not prompt for confirmation."
+        )
 
-    def handle(self, delay_ms: int, *args, **options):
-        self.migrate_flows(delay_ms)
+    def handle(self, delay_ms: int, interactive: bool, *args, **options):
+        self.migrate_flows(delay_ms, interactive)
 
-    def migrate_flows(self, delay_ms: int):
+    def migrate_flows(self, delay_ms: int, interactive: bool):
         flow_ids = list(
             Flow.objects.filter(is_active=True, org__is_active=True)
             .exclude(version_number=Flow.CURRENT_SPEC_VERSION)
@@ -35,7 +38,10 @@ class Command(BaseCommand):
         if total == 0:
             self.stdout.write("All flows up to date")
             return
-        elif input(f"Migrate {total} flows? [y/N]: ") != "y":
+
+        self.stdout.write(f"Found {total} flows to migrate")
+
+        if interactive and input("Continue? [y/N]: ") != "y":
             return
 
         num_updated = 0

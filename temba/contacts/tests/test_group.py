@@ -1,4 +1,5 @@
 from unittest.mock import call
+from zoneinfo import ZoneInfo
 
 from django.urls import reverse
 from django.utils import timezone
@@ -7,6 +8,7 @@ from temba import mailroom
 from temba.campaigns.models import Campaign, CampaignEvent
 from temba.contacts.models import Contact, ContactField, ContactGroup, ContactGroupCount
 from temba.contacts.tasks import squash_group_counts
+from temba.orgs.models import Org
 from temba.schedules.models import Schedule
 from temba.tests import TembaTest, mock_mailroom
 
@@ -137,26 +139,78 @@ class ContactGroupTest(TembaTest):
         self.assertEqual(f"{'X' * 62} 2", ContactGroup.get_unique_name(self.org, "X" * 64))
 
     @mock_mailroom
-    def test_rename_publishes_asset_changed(self, mr_mocks):
-        self.create_group("Customers", contacts=[])
-        group = ContactGroup.objects.get(name="Customers")
+    def test_publishes_asset_changed(self, mr_mocks):
+        # creating a group publishes it, including its query so clients can tell smart groups from manual ones
+        with self.captureOnCommitCallbacks(execute=True):
+            group = self.create_group("Customers", contacts=[])
+            smart = self.create_group("Adults", query="age > 18")
+
+        self.assertEqual(
+            [
+                call(
+                    self.org,
+                    {
+                        "type": "asset_changed",
+                        "asset": {"type": "group", "uuid": str(group.uuid), "name": "Customers", "query": None},
+                    },
+                ),
+                call(
+                    self.org,
+                    {
+                        "type": "asset_changed",
+                        "asset": {"type": "group", "uuid": str(smart.uuid), "name": "Adults", "query": "age > 18"},
+                    },
+                ),
+            ],
+            mr_mocks.calls["org_publish"],
+        )
+
+        # of the groups created for a new org, the status groups maintained by db triggers aren't published as clients
+        # never see them, but the system smart group and the groups from the sample flows are (and nothing else is,
+        # i.e. the sample flows themselves don't publish)
+        mr_mocks.calls["org_publish"].clear()
+
+        with self.captureOnCommitCallbacks(execute=True):
+            new_org = Org.create(self.admin, "New Org", ZoneInfo("Africa/Kigali"))
+
+        published = [c.args[1]["asset"] for c in mr_mocks.calls["org_publish"]]
+        self.assertEqual({"group"}, {a["type"] for a in published})
+        self.assertEqual(
+            sorted(ContactGroup.get_groups(new_org).values_list("name", flat=True)),
+            sorted(a["name"] for a in published),
+        )
+        self.assertIn(
+            {
+                "type": "group",
+                "uuid": str(new_org.groups.get(name="Open Tickets").uuid),
+                "name": "Open Tickets",
+                "query": "tickets > 0",
+            },
+            published,
+        )
+        mr_mocks.calls["org_publish"].clear()
+
+        group = ContactGroup.objects.get(id=group.id)
 
         with self.captureOnCommitCallbacks(execute=True):
             group.name = "VIPs"
             group.save(update_fields=("name",))
 
         self.assertEqual(
-            [
-                call(
-                    self.org,
-                    {"type": "asset_changed", "asset": {"type": "group", "uuid": str(group.uuid), "name": "VIPs"}},
-                )
-            ],
-            mr_mocks.calls["org_publish"],
+            call(
+                self.org,
+                {
+                    "type": "asset_changed",
+                    "asset": {"type": "group", "uuid": str(group.uuid), "name": "VIPs", "query": None},
+                },
+            ),
+            mr_mocks.calls["org_publish"][-1],
         )
+        self.assertEqual(1, len(mr_mocks.calls["org_publish"]))
 
         # releasing renames the group to a tombstone but that isn't published
-        group.release(self.admin)
+        with self.captureOnCommitCallbacks(execute=True):
+            group.release(self.admin)
 
         self.assertEqual(1, len(mr_mocks.calls["org_publish"]))
 

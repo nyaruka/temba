@@ -1,4 +1,4 @@
-import { html, TemplateResult } from 'lit';
+import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { msg } from '@lit/localize';
 import { TembaList } from './TembaList';
@@ -8,6 +8,16 @@ import { Icon } from '../Icons';
 export class TicketList extends TembaList {
   @property({ type: String })
   agent = '';
+
+  static get styles() {
+    return css`
+      ${super.styles}
+      temba-options {
+        --temba-options-row-separator: 1px solid
+          var(--temba-options-option-focus-bg, var(--color-selection));
+      }
+    `;
+  }
 
   public getRefreshEndpoint() {
     // open tickets sort above closed ones, so the newest activity can be

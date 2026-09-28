@@ -219,12 +219,23 @@ class MailroomClient:
 
         return RecipientsPreview(query=resp["query"], total=resp["total"])
 
-    def knowledge_search(self, org, query: str, limit: int = 10) -> list[dict]:
+    def knowledge_index(self, org, source):
         """
-        Searches the org's indexed knowledge semantically, returning the matching chunks best first - each naming its
-        source (knowledge_uuid) and item (item_key) along with the chunk's text and score.
+        Queues indexing of the given knowledge source's changes since it was last indexed.
         """
-        resp = self._request("knowledge/search", {"org_id": org.id, "query": query, "limit": limit})
+        return self._request("knowledge/index", {"org_id": org.id, "source_uuid": str(source.uuid)})
+
+    def knowledge_search(self, org, query: str, sources: list = None, limit: int = 10) -> list[dict]:
+        """
+        Searches the org's indexed knowledge semantically, or only the given sources of it, returning the matching
+        chunks best first - each naming its source (source_uuid) and item (item_key) along with the chunk's text and
+        score.
+        """
+        payload = {"org_id": org.id, "query": query, "limit": limit}
+        if sources:
+            payload["source_uuids"] = [str(s.uuid) for s in sources]
+
+        resp = self._request("knowledge/search", payload)
 
         return resp["results"]
 
@@ -359,8 +370,8 @@ class MailroomClient:
         return self._request("notification/publish", {"org_id": org.id, "notifications": notifications})
 
     def org_publish(self, org, event: dict):
-        """Publishes a workspace-wide realtime event."""
-        return self._request("org/publish", {"org_id": org.id, "event": event})
+        """Publishes a workspace-wide realtime event. Best effort, so a stalled mailroom shouldn't hold up a commit."""
+        return self._request("org/publish", {"org_id": org.id, "event": event}, timeout=5)
 
     def org_deindex(self, org):
         return self._request("org/deindex", {"org_id": org.id})
@@ -429,7 +440,7 @@ class MailroomClient:
             },
         )
 
-    def _request(self, endpoint, payload=None, post=True, encode_json=False):
+    def _request(self, endpoint, payload=None, post=True, encode_json=False, timeout=None):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("=============== %s request ===============" % endpoint)
             logger.debug(json.dumps(payload, indent=2))
@@ -443,6 +454,9 @@ class MailroomClient:
             kwargs = dict(data=json.dumps(payload))
         else:
             kwargs = dict(json=payload)
+
+        if timeout:
+            kwargs["timeout"] = timeout
 
         req_fn = requests.post if post else requests.get
         response = req_fn("%s/mi/%s" % (self.base_url, endpoint), headers=headers, **kwargs)

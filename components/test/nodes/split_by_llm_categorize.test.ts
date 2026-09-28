@@ -112,13 +112,15 @@ describe('split_by_llm_categorize node config', () => {
       split_by_llm_categorize.form.llm as SelectFieldConfig
     ).shouldExclude!;
 
-    it('includes options that have the engine role', () => {
-      expect(shouldExclude({ roles: ['engine'] })).to.be.false;
-      expect(shouldExclude({ roles: ['engine', 'editing'] })).to.be.false;
+    it('includes options that have the generation role', () => {
+      expect(shouldExclude({ roles: ['generation'] })).to.be.false;
+      expect(shouldExclude({ roles: ['generation', 'translation'] })).to.be
+        .false;
     });
 
-    it('excludes options without the engine role', () => {
-      expect(shouldExclude({ roles: ['editing'] })).to.be.true;
+    it('excludes options without the generation role', () => {
+      expect(shouldExclude({ roles: ['translation'] })).to.be.true;
+      expect(shouldExclude({ roles: ['classification'] })).to.be.true;
       expect(shouldExclude({ roles: [] })).to.be.true;
     });
   });
