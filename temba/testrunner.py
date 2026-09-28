@@ -96,7 +96,7 @@ def claim_slot() -> int:
     with _valkey(coord_db) as conn:
         num_dbs = int(conn.config_get("databases")["databases"])
         if num_dbs <= max(coord_db, first):
-            raise RuntimeError(f"valkey has too few databases ({num_dbs}) for test slots, e.g. use --databases 128")
+            raise RuntimeError(f"valkey has too few databases ({num_dbs}) for test slots, e.g. use --databases 64")
         last = min(last, num_dbs - 1)
 
         deadline = time.monotonic() + SLOT_CLAIM_TIMEOUT
