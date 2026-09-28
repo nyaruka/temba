@@ -1453,8 +1453,17 @@ class EndpointsTest(APITestMixin, TembaTest):
     def test_llms(self):
         endpoint_url = reverse("api.internal.llms") + ".json"
 
-        openai = LLM.create(self.org, self.admin, OpenAIType(), "gpt-4o", "GPT-4", {}, roles=LLM.ROLE_EDITING)
+        openai = LLM.create(self.org, self.admin, OpenAIType(), "gpt-4o", "GPT-4", {}, roles=LLM.ROLE_TRANSLATION)
         anthropic = LLM.create(self.org, self.admin, AnthropicType(), "claude-haiku-4-5-20251001", "Claude", {})
+        classifier = LLM.create(
+            self.org,
+            self.admin,
+            AnthropicType(),
+            "claude-haiku-4-5-20251001",
+            "Classifier",
+            {},
+            roles=LLM.ROLE_CLASSIFICATION,
+        )
         deleted = LLM.create(self.org, self.admin, AnthropicType(), "claude-haiku-4-5-20251001", "Deleted", {})
         deleted.release(self.admin)
         system = LLM.create(self.org, self.admin, OpenAIType(), "gpt-4o", "System", {})
@@ -1470,22 +1479,28 @@ class EndpointsTest(APITestMixin, TembaTest):
             [self.admin],
             results=[
                 {
+                    "uuid": str(classifier.uuid),
+                    "name": "Classifier",
+                    "type": "anthropic",
+                    "roles": ["classification"],
+                },
+                {
                     "uuid": str(anthropic.uuid),
                     "name": "Claude",
                     "type": "anthropic",
-                    "roles": ["editing", "engine"],
+                    "roles": ["translation", "editing", "generation", "engine", "classification"],
                 },
                 {
                     "uuid": str(openai.uuid),
                     "name": "GPT-4",
                     "type": "openai",
-                    "roles": ["editing"],
+                    "roles": ["translation", "editing"],
                 },
                 {
                     "uuid": str(system.uuid),
                     "name": "System",
                     "type": "openai",
-                    "roles": ["editing", "engine"],
+                    "roles": ["translation", "editing", "generation", "engine", "classification"],
                 },
             ],
         )

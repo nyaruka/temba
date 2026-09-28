@@ -213,7 +213,7 @@ export class AutoTranslate extends RapidElement {
         ? ((await store.getResults(MODELS_ENDPOINT, { force: true })) ?? [])
         : [];
       this.models = results
-        .filter((r) => hasLLMRole(r, 'editing'))
+        .filter((r) => hasLLMRole(r, 'translation'))
         .map((r) => ({
           uuid: r.uuid,
           name: r.name
@@ -727,7 +727,7 @@ export class AutoTranslate extends RapidElement {
             valueKey="uuid"
             .values=${selected}
             .shouldExclude=${(option: LLMModel) =>
-              !hasLLMRole(option, 'editing')}
+              !hasLLMRole(option, 'translation')}
             ?searchable=${true}
             placeholder=${msg('Select an AI model')}
             @change=${this.handleModelChange}

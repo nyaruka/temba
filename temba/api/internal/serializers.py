@@ -44,8 +44,16 @@ class LLMReadSerializer(serializers.ModelSerializer):
     type = serializers.CharField(source="llm_type")
     roles = serializers.SerializerMethodField()
 
+    # old names for editor pages loaded before the roles were renamed
+    LEGACY_ROLE_NAMES = {LLM.ROLE_TRANSLATION: "editing", LLM.ROLE_GENERATION: "engine"}
+
     def get_roles(self, obj):
-        return [LLM.ROLE_NAMES[r] for r in obj.roles]
+        names = []
+        for r in obj.roles:
+            names.append(LLM.ROLE_NAMES[r])
+            if r in self.LEGACY_ROLE_NAMES:
+                names.append(self.LEGACY_ROLE_NAMES[r])
+        return names
 
     class Meta:
         model = LLM

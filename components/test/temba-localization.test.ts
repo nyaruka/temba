@@ -302,12 +302,12 @@ describe('Localization Editing', () => {
   it('should open auto translate dialog when clicking auto translate', async () => {
     await selectLanguageInToolbar(editor, 'French', 'fra');
 
-    // Includes an engine-only model that should be filtered out of the
-    // auto-translate picker, plus two valid editing models.
+    // Includes an generation-only model that should be filtered out of the
+    // auto-translate picker, plus two valid translation models.
     (storeElement as any).getResults = async () => [
-      { uuid: 'llm-1', name: 'GPT-4', roles: ['editing'] },
-      { uuid: 'llm-2', name: 'Claude', roles: ['editing', 'engine'] },
-      { uuid: 'llm-engine', name: 'EngineOnly', roles: ['engine'] }
+      { uuid: 'llm-1', name: 'GPT-4', roles: ['translation'] },
+      { uuid: 'llm-2', name: 'Claude', roles: ['translation', 'generation'] },
+      { uuid: 'llm-generation', name: 'GenerationOnly', roles: ['generation'] }
     ];
 
     const autoTranslateBtn = editor
@@ -325,7 +325,7 @@ describe('Localization Editing', () => {
     await at.updateComplete;
 
     expect(at.dialogOpen).to.be.true;
-    // loadModels should have dropped the engine-only model
+    // loadModels should have dropped the generation-only model
     expect(at.models.map((m: any) => m.uuid)).to.deep.equal(['llm-1', 'llm-2']);
 
     const dialog = at.shadowRoot.querySelector('.auto-translate-body');
@@ -337,10 +337,10 @@ describe('Localization Editing', () => {
     expect(modelSelect.getAttribute('endpoint')).to.equal(
       '/api/internal/llms.json'
     );
-    // and the temba-select shouldExclude predicate also rejects engine-only
+    // and the temba-select shouldExclude predicate also rejects generation-only
     const shouldExclude = (modelSelect as any).shouldExclude;
-    expect(shouldExclude({ roles: ['engine'] })).to.be.true;
-    expect(shouldExclude({ roles: ['editing'] })).to.be.false;
+    expect(shouldExclude({ roles: ['generation'] })).to.be.true;
+    expect(shouldExclude({ roles: ['translation'] })).to.be.false;
   });
 
   it('should keep auto translate visible when everything is translated', async () => {
@@ -359,11 +359,11 @@ describe('Localization Editing', () => {
   it('should auto-skip picker when only one LLM is available', async () => {
     await selectLanguageInToolbar(editor, 'French', 'fra');
 
-    // Engine-only model is present but should be filtered out, leaving a
-    // single editing-capable model — the picker should still auto-skip.
+    // Generation-only model is present but should be filtered out, leaving a
+    // single translation-capable model — the picker should still auto-skip.
     (storeElement as any).getResults = async () => [
-      { uuid: 'llm-only', name: 'SoloGPT', roles: ['editing'] },
-      { uuid: 'llm-engine', name: 'EngineOnly', roles: ['engine'] }
+      { uuid: 'llm-only', name: 'SoloGPT', roles: ['translation'] },
+      { uuid: 'llm-generation', name: 'GenerationOnly', roles: ['generation'] }
     ];
 
     const autoTranslateBtn = editor
@@ -389,7 +389,7 @@ describe('Localization Editing', () => {
       await selectLanguageInToolbar(editor, 'French', 'fra');
 
       (storeElement as any).getResults = async () => [
-        { uuid: 'llm-only', name: 'SoloGPT', roles: ['editing'] }
+        { uuid: 'llm-only', name: 'SoloGPT', roles: ['translation'] }
       ];
 
       const autoTranslateBtn = editor
@@ -416,7 +416,7 @@ describe('Localization Editing', () => {
     await selectLanguageInToolbar(editor, 'French', 'fra');
 
     (storeElement as any).getResults = async () => [
-      { uuid: 'llm-only', name: 'SoloGPT', roles: ['editing'] }
+      { uuid: 'llm-only', name: 'SoloGPT', roles: ['translation'] }
     ];
 
     const autoTranslateBtn = editor
@@ -1813,7 +1813,7 @@ describe('Localization Editing', () => {
     await selectLanguageInToolbar(editor, 'French', 'fra');
 
     (storeElement as any).getResults = async () => [
-      { uuid: 'llm-only', name: 'SoloGPT', roles: ['editing'] }
+      { uuid: 'llm-only', name: 'SoloGPT', roles: ['translation'] }
     ];
 
     const autoTranslateBtn = editor
