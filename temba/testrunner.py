@@ -88,7 +88,7 @@ def use_slot(slot: int):
 
     caches["default"].clear()  # in case a previous run left anything behind in this slot's valkey database
 
-    # derive the slot's names from the configured test ones (e.g. Test -> Test32) so that settings can namespace
+    # derive the slot's names from the configured test ones (e.g. Test -> Test16) so that settings can namespace
     # them, e.g. for separate environments sharing one DynamoDB or S3 service. A forked worker inherits the names its
     # parent already derived for its own slot, so derive from the prefixes as configured, and rename buckets from
     # whatever prefix they have now.
