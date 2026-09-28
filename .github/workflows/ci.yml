@@ -91,6 +91,9 @@ jobs:
     services:
       valkey:
         image: valkey/valkey:8.1-alpine
+        env:
+          # enough databases for the ones test processes claim (see TEST_VALKEY_DBS)
+          VALKEY_EXTRA_FLAGS: --databases 128
         ports:
           - 6379:6379
       postgres:
@@ -144,8 +147,6 @@ jobs:
           bun install --frozen-lockfile
           uv run python manage.py compilemessages --ignore='.venv' --ignore='node_modules'
           uv run python manage.py migrate
-          uv run python manage.py migrate_dynamo --testing
-          uv run python manage.py create_buckets --testing
 
       - name: Run pre-test checks
         run: |
