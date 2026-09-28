@@ -89,9 +89,9 @@ describe(TAG, () => {
       <temba-store
         org="org-uuid"
         user="user-uuid"
-        groups="/test-assets/store/groups.json"
-        fields="/test-assets/store/fields.json"
-        workspace="/test-assets/store/workspace.json"
+        groups="/test/assets/store/groups.json"
+        fields="/test/assets/store/fields.json"
+        workspace="/test/assets/store/workspace.json"
       ></temba-store>`)) as Store;
     await store.initialHttpComplete;
 

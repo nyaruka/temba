@@ -504,7 +504,7 @@ describe('temba-store', () => {
         <temba-store
           org="org-uuid"
           user="user-uuid"
-          groups="/test-assets/store/groups.json"
+          groups="/test/assets/store/groups.json"
         ></temba-store>
       `);
       const reminders = '512e36c1-9101-4ca2-aceb-e638c520bf0c';
