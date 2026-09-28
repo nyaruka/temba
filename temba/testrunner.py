@@ -131,8 +131,10 @@ def _renew_slot(slot: int, owner: str, stop: threading.Event):
         if not held:
             # another process may now be using our slot, so nothing this run asserts can be trusted
             sys.stderr.write(f"lost claim on test slot {slot}\n")
-            if multiprocessing.parent_process():  # a parallel worker, so don't leave the run waiting on it forever
-                os.kill(os.getppid(), signal.SIGTERM)
+            # a parallel worker, so don't leave the run waiting on it forever - its parent is the run's main process
+            # whatever the start method, unlike its OS parent which may be a forkserver
+            if parent := multiprocessing.parent_process():
+                os.kill(parent.pid, signal.SIGTERM)
             os._exit(1)
 
 
