@@ -734,6 +734,10 @@ DATABASES = {"default": _default_database_config, "readonly": _default_database_
 # -----------------------------------------------------------------------------------
 _valkey_url = f"redis://{_valkey_host}:6379/{10 if TESTING else 15}"
 
+# the valkey databases test processes claim for themselves, one each (see temba.testrunner) - a stock valkey's 16 but
+# for the one local dev uses
+TEST_VALKEY_DBS = range(15)
+
 CACHES = {
     "default": {
         "BACKEND": "django_valkey.cache.ValkeyCache",
