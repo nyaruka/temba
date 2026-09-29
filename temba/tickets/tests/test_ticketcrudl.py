@@ -164,6 +164,25 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         ticket.save(update_fields=("status",))
         self.assertContentMenu(deep_link, self.admin, [])
 
+    def test_list_legacy_status_redirect(self):
+        ticket = self.create_ticket(self.contact, assignee=self.admin)
+
+        self.login(self.admin)
+
+        # links with an open/closed status segment redirect to the folder, keeping the ticket and query string
+        response = self.client.get(f"/ticket/mine/open/{ticket.uuid}/?tab=0")
+        self.assertEqual(301, response.status_code)
+        self.assertEqual(f"/ticket/mine/{ticket.uuid}/?tab=0", response.url)
+
+        response = self.client.get(f"/ticket/{self.support.uuid}/closed/")
+        self.assertEqual(301, response.status_code)
+        self.assertEqual(f"/ticket/{self.support.uuid}/", response.url)
+
+        # and the redirected link resolves as normal
+        response = self.client.get(f"/ticket/mine/open/{ticket.uuid}/", follow=True)
+        self.assertEqual("mine", response.context["folder"])
+        self.assertEqual(str(ticket.uuid), response.context["nextUUID"])
+
     def test_update(self):
         ticket = self.create_ticket(self.contact, assignee=self.admin)
 
