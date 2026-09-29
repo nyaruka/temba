@@ -5,7 +5,7 @@ from datetime import datetime, timezone as tzone
 from django.db import migrations
 
 
-def fix_bad_last_seen_ons(apps, schema_editor):
+def fix_bad_last_seen_ons(apps, schema_editor):  # pragma: no cover
     Contact = apps.get_model("contacts", "Contact")
 
     zero_date = datetime(1, 1, 1, 0, 0, tzinfo=tzone.utc)

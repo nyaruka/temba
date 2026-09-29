@@ -56,7 +56,7 @@ WHERE COALESCE(c.total, 0) != COALESCE(a.total, 0)
 """
 
 
-def fix_activity_counts(apps, schema_editor):
+def fix_activity_counts(apps, schema_editor):  # pragma: no cover
     Flow = apps.get_model("flows", "Flow")
 
     # schema_editor is None when this is run out of band via apply_manual
