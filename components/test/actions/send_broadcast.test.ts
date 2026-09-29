@@ -85,6 +85,21 @@ describe('send_broadcast action config', () => {
       true
     );*/
 
+    helper.testRender(
+      {
+        uuid: 'test-action-5',
+        type: 'send_broadcast',
+        text: 'Broadcast with attachments',
+        groups: [{ uuid: 'group-1', name: 'Members' }],
+        contacts: [],
+        attachments: [
+          'image/jpeg:https://example.com/photo.jpg',
+          'application/pdf:https://example.com/document.pdf'
+        ]
+      } as SendBroadcast,
+      'with-attachments-render'
+    );
+
     helper.testAction(
       {
         uuid: 'test-action-6',

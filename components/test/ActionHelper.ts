@@ -132,6 +132,21 @@ export class ActionTest<T extends Action> {
   }
 
   /**
+   * Renders the action in a flow node and screenshots it, without opening the
+   * editor - for canvas-only rendering such as attachments, whose editor
+   * previews load remote media
+   */
+  async testRender(action: T, testName: string) {
+    it(`${testName}`, async () => {
+      const flowNode = await this.renderAction(action);
+      await assertScreenshot(
+        `actions/${this.actionName}/render/${testName}`,
+        getClip(flowNode)
+      );
+    });
+  }
+
+  /**
    * Run basic property tests
    */
   testBasicProperties() {

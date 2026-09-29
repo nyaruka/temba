@@ -262,10 +262,6 @@ export class CanvasNode extends RapidElement {
         overflow: hidden;
       }
 
-      .node.execute-actions temba-sortable-list .action:last-child .body {
-        padding-bottom: 1.5em;
-      }
-
       /* Localization indicators */
       .action.localizable:not(.has-localization) .action-content {
         background: #fff8dc !important; /* Light yellow background for localizable but not yet localized */
@@ -340,8 +336,8 @@ export class CanvasNode extends RapidElement {
         background: white;
         border: 1px solid var(--color-quick-reply, rgb(60, 146, 221));
         border-radius: 18px;
-        padding: 4px 8px;
-        font-size: 11px;
+        padding: 3px 7px;
+        font-size: 10px;
         color: var(--color-quick-reply, rgb(60, 146, 221));
         margin: 0.2em;
         flex: 0 1 auto;
@@ -350,6 +346,46 @@ export class CanvasNode extends RapidElement {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+      }
+
+      .cn-attachments {
+        margin-top: 0.5em;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25em;
+      }
+
+      .cn-msg-footer {
+        display: flex;
+        align-items: center;
+        gap: 0.5em;
+        margin-top: 0.5em;
+      }
+
+      /* quick reply pills already carry their own bottom margin */
+      .quick-replies + .cn-msg-footer {
+        margin-top: 0.2em;
+      }
+
+      .cn-msg-footer .cn-attachments {
+        margin-top: 0;
+        min-width: 0;
+      }
+
+      /* the counter keeps its size and sits at the bottom right, attachments wrap around it */
+      .cn-msg-footer temba-charcount {
+        margin-left: auto;
+        align-self: flex-end;
+        flex-shrink: 0;
+      }
+
+      .cn-attachment {
+        display: flex;
+        background: #f3f4f6;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        padding: 3px;
+        color: #666;
       }
 
       .router-section {
@@ -535,10 +571,11 @@ export class CanvasNode extends RapidElement {
       }
 
       /* Add action button */
+      /* straddles the node's bottom-right corner so it never covers action content */
       .add-action-button {
         position: absolute;
-        bottom: 0.5em;
-        right: 0.5em;
+        bottom: -0.6em;
+        right: -0.6em;
         width: 1.2em;
         height: 1.2em;
         border-radius: 50%;

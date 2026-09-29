@@ -216,6 +216,7 @@ export class CharCount extends RapidElement {
           var(--transition-speed);
         visibility: hidden;
         text-align: left;
+        white-space: normal;
         position: fixed;
         z-index: 1000003;
       }
@@ -246,6 +247,7 @@ export class CharCount extends RapidElement {
         transition: all cubic-bezier(0.71, 0.18, 0.61, 1.33) 200ms;
         transform: scale(0.9);
         display: inline-block;
+        white-space: nowrap;
         padding: 2px 6px;
         border-radius: var(--curvature);
         margin-top: var(--temba-charcount-counts-margin-top);

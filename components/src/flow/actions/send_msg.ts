@@ -9,6 +9,7 @@ import {
 import { Node, SendMsg } from '../../store/flow-definition';
 import { titleCase } from '../../utils';
 import {
+  renderAttachments,
   renderClamped,
   renderHighlightedText,
   validateTemplateVariables
@@ -29,6 +30,14 @@ export const send_msg: ActionConfig = {
   hideFromActions: true,
   render: (_node: Node, action: SendMsg) => {
     const sms = splitSMS(action.text);
+    const attachments = renderAttachments(action.attachments);
+    const counter =
+      sms.parts.length > 1
+        ? html`<temba-charcount
+            .text="${action.text}"
+            style="font-size: 1em; --temba-charcount-background: var(--color-overlay-light, rgba(0,0,0,0.05)); --temba-charcount-color: var(--color-overlay-light-text, #666);"
+          ></temba-charcount>`
+        : null;
 
     return html`
       ${action.template
@@ -43,20 +52,15 @@ export const send_msg: ActionConfig = {
           </div>`
         : null}
       ${renderClamped(renderHighlightedText(action.text, true), action.text, 6)}
-      ${sms.parts.length > 1
-        ? html`<div style="text-align: right;">
-            <temba-charcount
-              .text="${action.text}"
-              style="font-size: 1em; --temba-charcount-background: var(--color-overlay-light, rgba(0,0,0,0.05)); --temba-charcount-color: var(--color-overlay-light-text, #666);"
-            ></temba-charcount>
-          </div>`
-        : null}
       ${(action.quick_replies || [])?.length > 0
         ? html`<div class="quick-replies">
             ${(action.quick_replies || []).map((reply) => {
               return html`<div class="quick-reply">${reply}</div>`;
             })}
           </div>`
+        : null}
+      ${attachments || counter
+        ? html`<div class="cn-msg-footer">${attachments}${counter}</div>`
         : null}
     `;
   },

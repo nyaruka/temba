@@ -98,6 +98,43 @@ describe('send_msg action config', () => {
       } as SendMsg,
       'text-without-quick-replies'
     );
+
+    helper.testRender(
+      {
+        uuid: 'test-action-8',
+        type: 'send_msg',
+        text: 'Here is your receipt',
+        attachments: [
+          'image/jpeg:https://example.com/media/photo%20one.jpg',
+          'application/pdf:https://example.com/media/receipt.pdf',
+          'image:@contact.photo'
+        ],
+        quick_replies: ['Thanks']
+      } as SendMsg,
+      'text-with-attachments'
+    );
+
+    helper.testRender(
+      {
+        uuid: 'test-action-9',
+        type: 'send_msg',
+        text: 'This message is long enough that it will be split into more than one SMS when it is sent, so the node shows a character count below everything else in the message.',
+        attachments: ['image/jpeg:https://example.com/media/photo.jpg'],
+        quick_replies: ['Yes', 'No']
+      } as SendMsg,
+      'multipart-with-attachments'
+    );
+
+    helper.testRender(
+      {
+        uuid: 'test-action-10',
+        type: 'send_msg',
+        text: 'This message is long enough that it will be split into more than one SMS when it is sent, and it also has enough attachments that their icons wrap onto a second row.',
+        attachments: Array(9).fill('image/jpeg:https://example.com/photo.jpg'),
+        quick_replies: ['red', 'blue', 'green']
+      } as SendMsg,
+      'multipart-with-many-attachments'
+    );
   });
 
   describe('validation edge cases', () => {

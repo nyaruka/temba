@@ -287,6 +287,37 @@ export const renderClamped = (
   </div>`;
 };
 
+const ATTACHMENT_ICONS: Record<string, string> = {
+  image: 'attachment_image',
+  audio: 'attachment_audio',
+  video: 'attachment_video'
+};
+
+/**
+ * Renders a message's attachments as a compact row of type icons so they're
+ * visible on the canvas. Attachments are `content-type:url` for uploads or
+ * `type:expression` for runtime attachments; hovering shows the URL or expression.
+ */
+export const renderAttachments = (attachments: string[] = []) => {
+  if (attachments.length === 0) {
+    return null;
+  }
+
+  return html`<div class="cn-attachments">
+    ${attachments.map((attachment) => {
+      const idx = attachment.indexOf(':');
+      const contentType = idx > 0 ? attachment.substring(0, idx) : '';
+      const value = idx > 0 ? attachment.substring(idx + 1) : attachment;
+      const icon =
+        ATTACHMENT_ICONS[contentType.split('/')[0]] || 'attachment_document';
+
+      return html`<div class="cn-attachment" title="${value}">
+        <temba-icon name="${icon}" size="0.9"></temba-icon>
+      </div>`;
+    })}
+  </div>`;
+};
+
 /**
  * Inline margin for stacked pills — the previous implementation used
  * `class="mr-1 mb-1"` (Tailwind utility classes), but this package

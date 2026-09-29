@@ -3,6 +3,7 @@ import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, SendBroadcast } from '../../store/flow-definition';
 import {
   renderMixedList,
+  renderAttachments,
   renderClamped,
   renderHighlightedText,
   validateRecipients,
@@ -52,6 +53,7 @@ export const send_broadcast: ActionConfig = {
             </div>`
           : null}
         ${renderClamped(renderHighlightedText(action.text, true), action.text)}
+        ${renderAttachments(action.attachments)}
       </div>
     </div>`;
   },
