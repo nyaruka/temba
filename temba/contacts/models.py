@@ -593,6 +593,11 @@ class Contact(LegacyIDMixin, LegacyUUIDMixin, SmartModel):
     fields = JSONField(null=True)  # custom field values for this contact, keyed by field UUID
     status = models.CharField(max_length=1, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
 
+    # an address is a claim until it's verified - by the contact proving they control the mailbox - so any number of
+    # contacts can hold the same address but only one can hold it verified
+    email = models.EmailField(null=True)
+    email_verified_on = models.DateTimeField(null=True)
+
     current_session_uuid = models.UUIDField(null=True)  # waiting session if any
     current_flow = models.ForeignKey("flows.Flow", on_delete=models.PROTECT, null=True, db_index=False)
     ticket_count = models.IntegerField(default=0)
@@ -1409,9 +1414,16 @@ class Contact(LegacyIDMixin, LegacyUUIDMixin, SmartModel):
             models.Index(
                 name="contacts_by_org_deleted", fields=("org", "-modified_on", "-id"), condition=Q(is_active=False)
             ),
+            # for finding every contact claiming an address
+            models.Index(name="contacts_by_email", fields=("org", "email"), condition=Q(email__isnull=False)),
         ]
         constraints = [
             models.CheckConstraint(condition=Q(status__in=("A", "B", "S", "V")), name="contact_status_valid"),
+            models.UniqueConstraint(
+                fields=("org", "email"),
+                condition=Q(email_verified_on__isnull=False),
+                name="unique_verified_contact_emails",
+            ),
         ]
 
 

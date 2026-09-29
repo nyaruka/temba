@@ -3,6 +3,7 @@ from decimal import Decimal
 from unittest.mock import call, patch
 from uuid import UUID
 
+from django.db import IntegrityError, transaction
 from django.db.models import Value as DbValue
 from django.db.models.functions import Concat, Substr
 from django.urls import reverse
@@ -54,6 +55,32 @@ class ContactTest(TembaTest):
         self.assertEqual("F6UQQW", Contact(id=2000).ref)
         self.assertEqual("NVQ26R", Contact(id=1_073_741_823).ref)
         self.assertEqual("GQENS3N", Contact(id=1_073_741_824).ref)
+
+    def test_email(self):
+        # any number of contacts can claim an address
+        self.joe.email = "joe@nyaruka.com"
+        self.joe.save(update_fields=("email",))
+        self.frank.email = "joe@nyaruka.com"
+        self.frank.save(update_fields=("email",))
+
+        # but only one in a workspace can hold it verified
+        self.joe.email_verified_on = timezone.now()
+        self.joe.save(update_fields=("email_verified_on",))
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                self.frank.email_verified_on = timezone.now()
+                self.frank.save(update_fields=("email_verified_on",))
+
+        # which doesn't stop a contact in another workspace verifying it
+        self.other_org_contact.email = "joe@nyaruka.com"
+        self.other_org_contact.email_verified_on = timezone.now()
+        self.other_org_contact.save(update_fields=("email", "email_verified_on"))
+
+        # or the same contact verifying a different address
+        self.frank.email = "frank@nyaruka.com"
+        self.frank.email_verified_on = timezone.now()
+        self.frank.save(update_fields=("email", "email_verified_on"))
 
     def test_contact_notes(self):
         note_text = "This is note"
