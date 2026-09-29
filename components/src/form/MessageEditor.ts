@@ -55,8 +55,14 @@ export class MessageEditor extends FieldElement {
       }
 
       .completion-wrapper {
-        --temba-textinput-padding: 9px 9px 30px 9px;
         position: relative;
+      }
+
+      /* set on the element itself, since its :host design tokens would win over an
+         inherited value; the bottom padding keeps text clear of the attachment button
+         and counter */
+      .completion-wrapper temba-rich-edit {
+        --temba-textinput-padding: 7px var(--pad) 40px var(--pad);
       }
 
       ::slotted([slot='icons']) {
