@@ -40,7 +40,7 @@ class Migration(migrations.Migration):
         ),
         migrations.RunSQL(
             sql="""
-            CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "unique_verified_contact_emails"
+            CREATE UNIQUE INDEX CONCURRENTLY "unique_verified_contact_emails"
             ON "contacts_contact" ("org_id", "email") WHERE "email_verified_on" IS NOT NULL
             """,
             reverse_sql='DROP INDEX IF EXISTS "unique_verified_contact_emails"',
