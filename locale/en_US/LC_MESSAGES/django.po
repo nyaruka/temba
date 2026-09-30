@@ -2207,6 +2207,9 @@ msgstr ""
 msgid "View"
 msgstr ""
 
+msgid "This contact has an open ticket. Close their ticket first if you need to start them in a flow."
+msgstr ""
+
 msgid "Initializing"
 msgstr ""
 

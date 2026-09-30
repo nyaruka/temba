@@ -159,7 +159,12 @@ class ContextMenuMixin:
             primary: bool = False,
             as_button: bool = False,
             disabled: bool = False,
+            unavailable: str = None,
         ):
+            """
+            Adds an item which opens a modal. If `disabled` the modal's submit button starts disabled. If `unavailable`
+            is given, the item can't be used and that is shown as the reason why.
+            """
             self.groups[-1].append(
                 {
                     "type": "modax",
@@ -172,6 +177,7 @@ class ContextMenuMixin:
                     "primary": primary,
                     "as_button": as_button,
                     "disabled": disabled,
+                    "unavailable": unavailable,
                 }
             )
 

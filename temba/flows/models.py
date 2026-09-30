@@ -688,6 +688,13 @@ class Flow(AssetMixin, LegacyIDMixin, TembaModel, DependencyMixin):
         deps = self.info["dependencies"]
         return [d for d in deps if d["type"] == type_name]
 
+    @property
+    def excludes_ticketed(self) -> bool:
+        """
+        Whether contacts with open tickets are excluded from starts of this flow
+        """
+        return self.flow_type in (Flow.TYPE_MESSAGE, Flow.TYPE_VOICE)
+
     def is_legacy(self) -> bool:
         """
         Returns whether this flow still uses a legacy definition

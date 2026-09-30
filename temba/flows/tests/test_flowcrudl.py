@@ -11,7 +11,7 @@ from django.urls import reverse
 from temba import mailroom
 from temba.api.models import Resthook
 from temba.campaigns.models import Campaign, CampaignEvent
-from temba.contacts.models import URN
+from temba.contacts.models import URN, Contact
 from temba.flows.models import (
     Flow,
     FlowLabel,
@@ -29,6 +29,7 @@ from temba.templates.models import TemplateTranslation
 from temba.tests import CRUDLTestMixin, MockResponse, TembaTest, matchers, mock_mailroom
 from temba.tests.base import get_contact_search, override_brand
 from temba.tests.requests import MockJsonResponse
+from temba.tickets.models import Ticket
 from temba.triggers.models import Trigger
 from temba.utils import json
 from temba.utils.uuid import uuid4
@@ -1637,6 +1638,81 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         other_org_url = f"{reverse('flows.flow_start', args=[])}?c={other_org_contact.uuid}"
         response = self.assertUpdateFetch(other_org_url, [self.admin], form_fields=["flow", "contact_search"])
         self.assertNotIn("fixed", response.context["form"].fields["contact_search"].widget.attrs)
+
+    @mock_mailroom
+    def test_start_contacts_with_tickets(self, mr_mocks):
+        contact = self.create_contact("Bob", phone="+593979099111")
+        messaging = self.create_flow("Messaging")
+        voice = self.create_flow("Voice", flow_type=Flow.TYPE_VOICE)
+        background = self.create_flow("Background", flow_type=Flow.TYPE_BACKGROUND)
+        start_url = reverse("flows.flow_start")
+
+        # messaging and voice flow starts note that contacts with open tickets are excluded, background ones don't
+        for flow, excludes in ((messaging, True), (voice, True), (background, False)):
+            response = self.assertUpdateFetch(
+                f"{start_url}?flow={flow.id}", [self.admin], form_fields=["flow", "contact_search"]
+            )
+            attrs = response.context["form"].fields["contact_search"].widget.attrs
+            self.assertEqual(excludes, attrs.get("excludes_tickets", False))
+            self.assertNotIn("blocked_by_ticket", response.context)
+
+        # a single contact without an open ticket can be started as normal
+        response = self.assertUpdateFetch(
+            f"{start_url}?c={contact.uuid}", [self.admin], form_fields=["flow", "contact_search"]
+        )
+        self.assertNotIn("blocked_by_ticket", response.context)
+        self.assertContains(response, 'type="submit"')
+
+        ticket = self.create_ticket(contact)
+        contact.refresh_from_db()
+
+        # but a single contact with an open ticket can't be, and the start form isn't shown
+        for url in (f"{start_url}?c={contact.uuid}", f"{start_url}?flow={messaging.id}&c={contact.uuid}"):
+            response = self.requestView(url, self.admin)
+            self.assertEqual(Contact.START_BLOCKED_BY_TICKET, response.context["blocked_by_ticket"])
+            self.assertContains(response, "This contact has an open ticket.")
+            self.assertNotContains(response, "<temba-contact-search")
+            self.assertNotContains(response, 'type="submit"')
+
+        # unless that's in a background flow
+        response = self.assertUpdateFetch(
+            f"{start_url}?flow={background.id}&c={contact.uuid}", [self.admin], form_fields=["flow", "contact_search"]
+        )
+        self.assertNotIn("blocked_by_ticket", response.context)
+        self.assertContains(response, 'type="submit"')
+
+        # and submitting a start for them is rejected too
+        for flow in (messaging, voice):
+            self.assertUpdateSubmit(
+                f"{start_url}?c={contact.uuid}",
+                self.admin,
+                {"flow": flow.id, "contact_search": get_contact_search(contacts=[contact])},
+                form_errors={"__all__": Contact.START_BLOCKED_BY_TICKET},
+                object_unchanged=flow,
+            )
+
+        self.assertEqual([], mr_mocks.calls["flow_start"])
+
+        self.assertUpdateSubmit(
+            f"{start_url}?c={contact.uuid}",
+            self.admin,
+            {"flow": background.id, "contact_search": get_contact_search(contacts=[contact])},
+        )
+        self.assertEqual([contact], mr_mocks.calls["flow_start"][-1].kwargs["contacts"])
+
+        # once their ticket is closed, they can be started again
+        ticket.status = Ticket.STATUS_CLOSED
+        ticket.save(update_fields=("status",))
+
+        response = self.requestView(f"{start_url}?c={contact.uuid}", self.admin)
+        self.assertNotIn("blocked_by_ticket", response.context)
+
+        self.assertUpdateSubmit(
+            f"{start_url}?c={contact.uuid}",
+            self.admin,
+            {"flow": messaging.id, "contact_search": get_contact_search(contacts=[contact])},
+        )
+        self.assertEqual(messaging, mr_mocks.calls["flow_start"][-1].kwargs["flow"])
 
     @mock_mailroom
     def test_start_background_flow(self, mr_mocks):

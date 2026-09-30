@@ -582,6 +582,11 @@ class Contact(LegacyIDMixin, LegacyUUIDMixin, SmartModel):
         STATUS_ARCHIVED: "archived",
     }
 
+    # why a contact with an open ticket can't be started in a messaging or voice flow
+    START_BLOCKED_BY_TICKET = _(
+        "This contact has an open ticket. Close their ticket first if you need to start them in a flow."
+    )
+
     org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="contacts")
     name = models.CharField(verbose_name=_("Name"), max_length=128, blank=True, null=True)
     language = models.CharField(

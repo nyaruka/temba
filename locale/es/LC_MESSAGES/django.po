@@ -2221,6 +2221,9 @@ msgstr "Oculto"
 msgid "View"
 msgstr "Ver"
 
+msgid "This contact has an open ticket. Close their ticket first if you need to start them in a flow."
+msgstr "Este contacto tiene un ticket abierto. Cierre su ticket primero si necesita iniciarlo en un flujo."
+
 msgid "Initializing"
 msgstr "Inicializando"
 

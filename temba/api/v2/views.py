@@ -3000,6 +3000,9 @@ class FlowStartsEndpoint(ListAPIMixin, WriteAPIMixin, BaseEndpoint):
      * **exclude_active** - whether to exclude contacts currently in other flow (optional, defaults to false)
      * **params** - extra parameters to pass to the flow start (object, must be at most 10K characters, accessible via `@trigger.params` in the flow)
 
+    Contacts with an open ticket are not started in messaging or voice flows. A request which only specifies contacts,
+    all of whom have open tickets, is rejected.
+
     Example:
 
         POST /api/v2/flow_starts.json

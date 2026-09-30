@@ -30,7 +30,7 @@ from django.views.decorators.csrf import csrf_exempt
 from temba import mailroom
 from temba.campaigns.models import CampaignEvent
 from temba.channels.models import Channel
-from temba.contacts.models import URN
+from temba.contacts.models import URN, Contact
 from temba.flows.models import Flow, FlowStart
 from temba.ivr.models import Call
 from temba.mailroom.client.types import Exclusions
@@ -1332,6 +1332,7 @@ class FlowCRUDL(SmartCRUDL):
             def __init__(self, org, flow, contact, **kwargs):
                 super().__init__(**kwargs)
                 self.org = org
+                self.contact = contact
 
                 self.fields["flow"].queryset = org.flows.filter(
                     flow_type__in=(Flow.TYPE_MESSAGE, Flow.TYPE_VOICE, Flow.TYPE_BACKGROUND),
@@ -1358,6 +1359,17 @@ class FlowCRUDL(SmartCRUDL):
                     search_attrs["not_seen_since_days"] = True
                     if flow.flow_type != Flow.TYPE_BACKGROUND:
                         search_attrs["in_a_flow"] = True
+                    if flow.excludes_ticketed:
+                        search_attrs["excludes_tickets"] = True
+
+            def clean(self):
+                cleaned_data = super().clean()
+                flow = cleaned_data.get("flow")
+
+                if self.contact and self.contact.ticket_count > 0 and flow and flow.excludes_ticketed:
+                    raise ValidationError(Contact.START_BLOCKED_BY_TICKET)
+
+                return cleaned_data
 
             def clean_contact_search(self):
                 contact_search = self.cleaned_data.get("contact_search")
@@ -1441,6 +1453,15 @@ class FlowCRUDL(SmartCRUDL):
             kwargs["flow"] = self.flow
             kwargs["contact"] = self.contact
             return kwargs
+
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+
+            # a single contact with an open ticket can only be started in a flow type that doesn't exclude them
+            if self.contact and self.contact.ticket_count > 0 and (not self.flow or self.flow.excludes_ticketed):
+                context["blocked_by_ticket"] = Contact.START_BLOCKED_BY_TICKET
+
+            return context
 
         def form_valid(self, form):
             contact_search = form.cleaned_data["contact_search"]

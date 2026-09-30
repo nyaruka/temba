@@ -303,6 +303,7 @@ class ContactCRUDL(SmartCRUDL):
                         f"{reverse('flows.flow_start')}?c={obj.uuid}",
                         on_submit="contactUpdated()",
                         disabled=True,
+                        unavailable=Contact.START_BLOCKED_BY_TICKET if obj.ticket_count > 0 else None,
                     )
                 if self.has_org_perm("contacts.contact_open_ticket") and obj.ticket_count == 0:
                     menu.add_modax(

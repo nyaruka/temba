@@ -85,6 +85,34 @@ describe('temba-contact-search', () => {
     expect(search.shadowRoot.querySelector('temba-button.edit')).to.not.exist;
   });
 
+  it('notes that contacts with open tickets are excluded', async () => {
+    const search: ContactSearch = await fixture(
+      getHTML('temba-contact-search', { in_a_flow: true })
+    );
+    await search.updateComplete;
+
+    // no note unless the flow being started excludes them
+    expect(search.shadowRoot.querySelector('.tickets-note')).to.not.exist;
+
+    search.excludes_tickets = true;
+    await search.updateComplete;
+
+    const note = search.shadowRoot.querySelector('.tickets-note');
+    expect(note).to.exist;
+    expect(note.textContent).to.contain(
+      'Contacts with an open ticket are not included.'
+    );
+
+    // it's a fixed rule, not a filter the user can change
+    expect(note.querySelector('temba-checkbox')).to.not.exist;
+    expect(search.exclusions).to.not.have.property('excludes_tickets');
+
+    // and it's not shown when starting a single fixed contact
+    search.fixed = true;
+    await search.updateComplete;
+    expect(search.shadowRoot.querySelector('.tickets-note')).to.not.exist;
+  });
+
   it('excludes a contact in a flow from first render', async () => {
     const search: ContactSearch = await fixture(
       getHTML('temba-contact-search', {

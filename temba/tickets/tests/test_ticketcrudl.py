@@ -4,6 +4,7 @@ from unittest.mock import call, patch
 from django.urls import reverse
 from django.utils import timezone
 
+from temba.contacts.models import Contact
 from temba.orgs.models import Export, Org, OrgRole
 from temba.tests import CRUDLTestMixin, TembaTest, matchers, mock_mailroom
 from temba.tickets.models import Team, Ticket, TicketExport, Topic
@@ -87,8 +88,11 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         # our ticket exists on the first page, so it'll get flagged to be focused
         self.assertEqual(str(ticket.uuid), response.context["nextUUID"])
 
-        # we have a specific ticket so we should show context menu for it
-        self.assertContentMenu(deep_link, self.admin, ["Add Note", "Start Flow"])
+        # we have a specific ticket so we should show context menu for it, but the contact can't be started in a flow
+        # while their ticket is open
+        items = self.assertContentMenu(deep_link, self.admin, ["Add Note", "Start Flow"])
+        self.assertIsNone(items[0]["unavailable"])
+        self.assertEqual(Contact.START_BLOCKED_BY_TICKET, items[1]["unavailable"])
 
         with self.assertNumQueries(10):
             self.client.get(deep_link)

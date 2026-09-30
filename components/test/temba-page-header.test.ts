@@ -44,4 +44,43 @@ describe('temba-page-header', () => {
     expect(event.detail.item.label).to.equal('Start Flow');
     expect(event.detail.item.disabled).to.be.true;
   });
+
+  it('shows unavailable items with their reason and ignores clicks', async () => {
+    mockGET(/\/menu\/unavailable/, {
+      items: [
+        {
+          type: 'modax',
+          label: 'Start Flow',
+          url: '/flow/start/',
+          unavailable: 'This contact has an open ticket.'
+        },
+        { type: 'link', label: 'Export', url: '/export/' }
+      ]
+    });
+
+    const header = (await fixture(html`
+      <temba-page-header
+        header-title="Test"
+        content-menu-endpoint="/menu/unavailable"
+      ></temba-page-header>
+    `)) as PageHeader;
+
+    await waitUntil(() => !!header.shadowRoot.querySelector('.menu-item'));
+
+    const [startFlow, exportItem] = Array.from(
+      header.shadowRoot.querySelectorAll('.menu-item')
+    ) as HTMLElement[];
+    expect(startFlow.classList.contains('unavailable')).to.be.true;
+    expect(startFlow.title).to.equal('This contact has an open ticket.');
+    expect(exportItem.classList.contains('unavailable')).to.be.false;
+
+    const selected = [];
+    header.addEventListener(CustomEventType.Selection, (e: Event) =>
+      selected.push((e as CustomEvent).detail.item.label)
+    );
+    startFlow.click();
+    exportItem.click();
+
+    expect(selected).to.deep.equal(['Export']);
+  });
 });

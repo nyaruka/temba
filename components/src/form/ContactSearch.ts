@@ -240,6 +240,18 @@ export class ContactSearch extends FieldElement {
         margin-left: 0.6em;
         cursor: pointer;
       }
+
+      .tickets-note {
+        display: flex;
+        align-items: center;
+        margin-top: 0.5em;
+        color: var(--color-text-help);
+        --icon-color: var(--color-text-help);
+      }
+
+      .tickets-note temba-icon {
+        margin-right: 0.5em;
+      }
     `;
   }
 
@@ -258,6 +270,10 @@ export class ContactSearch extends FieldElement {
   // whether the user has explicitly confirmed interrupting the current flow
   @property({ type: Boolean })
   interruptConfirmed = false;
+
+  // contacts with open tickets won't be started, which is a fixed rule rather than a filter
+  @property({ type: Boolean })
+  excludes_tickets: boolean;
 
   @property({ type: Boolean })
   started_previously: boolean;
@@ -752,6 +768,18 @@ export class ContactSearch extends FieldElement {
                   : null} `
       }
               </div>
+      ${
+        this.excludes_tickets && !this.fixed
+          ? html`<div class="tickets-note">
+              <temba-icon name="tickets"></temba-icon>
+              <div>
+                ${msg(
+                  'Contacts with an open ticket are not included. Close their ticket first if you need to start them in a flow.'
+                )}
+              </div>
+            </div>`
+          : null
+      }
       ${interruptConfirm}
       ${
         this.fixed

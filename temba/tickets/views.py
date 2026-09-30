@@ -17,7 +17,7 @@ from django.utils.translation import gettext_lazy as _
 
 from temba import mailroom
 from temba.channels.models import ChannelLog
-from temba.contacts.models import URN
+from temba.contacts.models import URN, Contact
 from temba.msgs.models import Msg
 from temba.orgs.models import Org, OrgRole
 from temba.orgs.views.base import (
@@ -455,6 +455,7 @@ class TicketCRUDL(SmartCRUDL):
                         f"{reverse('flows.flow_start')}?c={ticket.contact.uuid}",
                         disabled=True,
                         on_submit="handleFlowStarted()",
+                        unavailable=Contact.START_BLOCKED_BY_TICKET,
                     )
 
         def get_queryset(self, **kwargs):

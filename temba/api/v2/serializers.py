@@ -1194,6 +1194,11 @@ class FlowStartWriteSerializer(WriteSerializer):
         if not args:
             raise serializers.ValidationError("Must specify at least one group, contact or URN")
 
+        # contacts with open tickets won't be started so reject a start that could only include such contacts
+        contacts = data.get("contacts", [])
+        if data["flow"].excludes_ticketed and len(contacts) == len(args) and all(c.ticket_count > 0 for c in contacts):
+            raise serializers.ValidationError("All of the specified contacts have open tickets and can't be started.")
+
         return data
 
     def save(self):

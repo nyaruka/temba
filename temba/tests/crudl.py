@@ -195,6 +195,7 @@ class CRUDLTestMixin:
             HTTP_X_TEMBA_SPA=1,
         )
         self.assertEqual(items, [item.get("label", "-") for item in response.json()["items"]])
+        return response.json()["items"]
 
     def assertBulkActions(self, response, keys: list):
         """

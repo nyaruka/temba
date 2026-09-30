@@ -1,7 +1,7 @@
 import { assert, expect } from '@open-wc/testing';
 import { CustomEventType } from '../src/interfaces';
 import { ContentMenu } from '../src/list/ContentMenu';
-import { assertScreenshot, getClip, getComponent } from './utils.test';
+import { assertScreenshot, getClip, getComponent, mockGET } from './utils.test';
 
 const TAG = 'temba-content-menu';
 const getContentMenu = async (attrs: any = {}, width = 0) => {
@@ -138,5 +138,41 @@ describe('temba-content-menu', () => {
 
     const event = await selection;
     expect(event.detail.item.label).to.equal(contentMenu.items[0].label);
+  });
+
+  it('shows unavailable items with their reason and ignores clicks', async () => {
+    mockGET(/\/menu\/unavailable/, {
+      items: [
+        {
+          type: 'modax',
+          label: 'Start Flow',
+          url: '/flow/start/',
+          unavailable: 'This contact has an open ticket.'
+        },
+        { type: 'link', label: 'Export', url: '/export/' }
+      ]
+    });
+
+    const contentMenu: ContentMenu = await getContentMenu({
+      endpoint: '/menu/unavailable'
+    });
+    await contentMenu.updateComplete;
+
+    const [startFlow, exportItem] = Array.from(
+      contentMenu.shadowRoot.querySelectorAll('.item')
+    ) as HTMLElement[];
+    expect(startFlow.classList.contains('unavailable')).to.be.true;
+    expect(startFlow.title).to.equal('This contact has an open ticket.');
+    expect(exportItem.classList.contains('unavailable')).to.be.false;
+    expect(exportItem.hasAttribute('title')).to.be.false;
+
+    const selected = [];
+    contentMenu.addEventListener(CustomEventType.Selection, (e: Event) =>
+      selected.push((e as CustomEvent).detail.item.label)
+    );
+    startFlow.click();
+    exportItem.click();
+
+    expect(selected).to.deep.equal(['Export']);
   });
 });

@@ -1,4 +1,4 @@
-import { css, html, PropertyValues, TemplateResult } from 'lit';
+import { css, html, nothing, PropertyValues, TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
@@ -186,6 +186,12 @@ export class PageHeader extends RapidElement {
         background: var(--accent-50);
         color: var(--accent-800);
       }
+      .menu-item.unavailable,
+      .menu-item.unavailable:hover {
+        background: none;
+        color: var(--text-3);
+        cursor: default;
+      }
       .menu-divider {
         height: 1px;
         background: var(--border);
@@ -287,6 +293,9 @@ export class PageHeader extends RapidElement {
    * origin — same payload the standalone content menu emits, so the
    * host's existing menu handling keeps working. */
   private handleItemClicked(item: ContentMenuItem, event: MouseEvent): void {
+    if (item.unavailable) {
+      return;
+    }
     // note: item.disabled does NOT make the item inert — in the content
     // menu contract it means the opened modal starts with its submit
     // disabled (hosts pass it through to showModax)
@@ -324,7 +333,10 @@ export class PageHeader extends RapidElement {
                   item.type === ContentMenuItemType.DIVIDER
                     ? html`<div class="menu-divider"></div>`
                     : html`<div
-                        class="menu-item"
+                        class="menu-item ${item.unavailable
+                          ? 'unavailable'
+                          : ''}"
+                        title=${item.unavailable || nothing}
                         @click=${(e: MouseEvent) =>
                           this.handleItemClicked(item, e)}
                       >

@@ -1,4 +1,4 @@
-import { TemplateResult, html, css } from 'lit';
+import { TemplateResult, html, css, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 
@@ -21,6 +21,8 @@ export interface ContentMenuItem {
   title: string;
   on_click: null;
   link_class: string;
+  // why the item can't be used right now, if it can't - shown greyed out with this as its tooltip
+  unavailable?: string;
 }
 
 export enum ContentMenuItemType {
@@ -93,6 +95,11 @@ export class ContentMenu extends RapidElement {
 
       .item:hover {
         color: var(--color-link-primary);
+      }
+
+      .item.unavailable {
+        color: rgb(170, 170, 170);
+        cursor: default;
       }
     `;
   }
@@ -170,6 +177,9 @@ export class ContentMenu extends RapidElement {
   }
 
   private handleItemClicked(item: ContentMenuItem, event: MouseEvent) {
+    if (item.unavailable) {
+      return;
+    }
     const el = event.currentTarget as Element;
     const origin = el
       ? this.getTopCenter(el)
@@ -205,8 +215,9 @@ export class ContentMenu extends RapidElement {
                     return html` <div class="divider"></div>`;
                   } else {
                     return html` <div
-                      class="item"
+                      class="item ${item.unavailable ? 'unavailable' : ''}"
                       name=${item.label}
+                      title=${item.unavailable || nothing}
                       @click=${(event) => this.handleItemClicked(item, event)}
                     >
                       ${item.label}

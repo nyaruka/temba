@@ -449,12 +449,20 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
 
         self.assertRequestDisallowed(read_url, [None, self.agent])
 
-        self.assertContentMenu(read_url, self.editor, ["Start Flow", "Open Ticket"])
+        items = self.assertContentMenu(read_url, self.editor, ["Start Flow", "Open Ticket"])
+        self.assertIsNone(items[0]["unavailable"])
         self.assertContentMenu(read_url, self.admin, ["Start Flow", "Open Ticket"])
 
-        # if there's an open ticket already, don't show open ticket option
-        self.create_ticket(joe)
-        self.assertContentMenu(read_url, self.editor, ["Start Flow"])
+        # if there's an open ticket already, don't show open ticket option, and starting a flow isn't available
+        ticket = self.create_ticket(joe)
+        items = self.assertContentMenu(read_url, self.editor, ["Start Flow"])
+        self.assertEqual(Contact.START_BLOCKED_BY_TICKET, items[0]["unavailable"])
+
+        # once the ticket is closed they can be started again
+        ticket.status = Ticket.STATUS_CLOSED
+        ticket.save(update_fields=("status",))
+        items = self.assertContentMenu(read_url, self.editor, ["Start Flow", "Open Ticket"])
+        self.assertIsNone(items[0]["unavailable"])
 
         # login as admin
         self.login(self.admin)

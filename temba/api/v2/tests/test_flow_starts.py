@@ -3,7 +3,7 @@ from unittest.mock import call
 from django.urls import reverse
 
 from temba.api.v2.serializers import format_datetime
-from temba.flows.models import FlowStart
+from temba.flows.models import Flow, FlowStart
 from temba.mailroom.client.types import Exclusions
 from temba.tests import mock_mailroom
 
@@ -303,3 +303,49 @@ class FlowStartsEndpointTest(APITest):
         self.assertGet(
             endpoint_url + "?uuid=xyz", [self.editor], errors={None: "Param 'uuid': xyz is not a valid UUID."}
         )
+
+    @mock_mailroom
+    def test_contacts_with_tickets(self, mr_mocks):
+        endpoint_url = reverse("api.v2.flow_starts") + ".json"
+
+        # docs note that contacts with open tickets are excluded
+        response = self.client.get(reverse("api.v2.flow_starts"))
+        self.assertContains(response, "Contacts with an open ticket are not started in messaging or voice flows.")
+
+        messaging = self.create_flow("Messaging")
+        voice = self.create_flow("Voice", flow_type=Flow.TYPE_VOICE)
+        background = self.create_flow("Background", flow_type=Flow.TYPE_BACKGROUND)
+        joe = self.create_contact("Joe", phone="+250788000001")
+        ann = self.create_contact("Ann", phone="+250788000002")
+        bob = self.create_contact("Bob", phone="+250788000003")
+        group = self.create_group("Bobs", contacts=[bob])
+        self.create_ticket(joe)
+        self.create_ticket(ann)
+
+        # a messaging or voice flow start of only contacts with open tickets is rejected
+        for flow in (messaging, voice):
+            self.assertPost(
+                endpoint_url,
+                self.admin,
+                {"flow": flow.uuid, "contacts": [joe.uuid, ann.uuid]},
+                errors={"non_field_errors": "All of the specified contacts have open tickets and can't be started."},
+            )
+
+        self.assertEqual([], mr_mocks.calls["flow_start"])
+
+        # but not if there are other contacts, groups or URNs which might be started
+        for data in (
+            {"contacts": [joe.uuid, bob.uuid]},
+            {"contacts": [joe.uuid], "groups": [group.uuid]},
+            {"contacts": [joe.uuid], "urns": ["tel:+12067791212"]},
+        ):
+            self.assertPost(endpoint_url, self.admin, {"flow": messaging.uuid, **data}, status=201)
+
+        # and background flows don't exclude them
+        self.assertPost(
+            endpoint_url, self.admin, {"flow": background.uuid, "contacts": [joe.uuid, ann.uuid]}, status=201
+        )
+
+        self.assertEqual(4, len(mr_mocks.calls["flow_start"]))
+        self.assertEqual(background, mr_mocks.calls["flow_start"][-1].kwargs["flow"])
+        self.assertEqual([joe, ann], mr_mocks.calls["flow_start"][-1].kwargs["contacts"])
