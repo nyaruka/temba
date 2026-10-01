@@ -391,6 +391,29 @@ describe(TAG, () => {
         'temba-contact-field.email'
       ) as ContactFieldEditor;
 
+    // hovers the email's status badge and screenshots its tooltip
+    const assertTipScreenshot = async (filename: string) => {
+      const tip = getEmail().shadowRoot.querySelector('.value-prefix') as any;
+      const slot = tip.shadowRoot.querySelector('.slot');
+      slot.dispatchEvent(new Event('mouseenter'));
+      await waitUntil(() => tip.visible);
+      await waitFor(300);
+      const tipBounds = tip.shadowRoot
+        .querySelector('.tip')
+        .getBoundingClientRect();
+      expect(tipBounds.width).to.be.lessThan(contactDetails.offsetWidth);
+      const emailBounds = getEmail().getBoundingClientRect();
+      const left = Math.max(0, Math.min(tipBounds.x, emailBounds.x) - 10);
+      await assertScreenshot(filename, {
+        x: left,
+        y: tipBounds.y - 10,
+        width: emailBounds.right + 10 - left,
+        height: emailBounds.bottom - tipBounds.y + 20
+      });
+      slot.dispatchEvent(new Event('mouseleave'));
+      await waitUntil(() => !tip.visible);
+    };
+
     // no email, no row
     expect(getEmail()).to.be.null;
 
@@ -412,27 +435,7 @@ describe(TAG, () => {
     );
 
     // the badge explains itself on hover
-    const tip = getEmail().shadowRoot.querySelector('.value-prefix') as any;
-    tip.shadowRoot
-      .querySelector('.slot')
-      .dispatchEvent(new Event('mouseenter'));
-    await waitUntil(() => tip.visible);
-    await waitFor(300);
-    const tipBounds = tip.shadowRoot
-      .querySelector('.tip')
-      .getBoundingClientRect();
-    expect(tipBounds.width).to.be.lessThan(contactDetails.offsetWidth);
-    const emailBounds = getEmail().getBoundingClientRect();
-    const left = Math.max(0, Math.min(tipBounds.x, emailBounds.x) - 10);
-    await assertScreenshot('contacts/details-email-unverified-tip', {
-      x: left,
-      y: tipBounds.y - 10,
-      width: emailBounds.right + 10 - left,
-      height: emailBounds.bottom - tipBounds.y + 20
-    });
-    tip.shadowRoot
-      .querySelector('.slot')
-      .dispatchEvent(new Event('mouseleave'));
+    await assertTipScreenshot('contacts/details-email-unverified-tip');
 
     contactDetails.setContact({
       ...contactDetails.data,
@@ -448,6 +451,7 @@ describe(TAG, () => {
       'contacts/details-email-verified',
       getClip(contactDetails)
     );
+    await assertTipScreenshot('contacts/details-email-verified-tip');
 
     // editable, even without an email, but never on anon workspaces
     contactDetails.editable = true;
