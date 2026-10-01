@@ -96,17 +96,17 @@ class OrgTest(TembaTest):
 
         org = Org.objects.get(id=self.org.id)
 
-        # a regular member's membership is the same via groups, fetched along with the admin group check
+        # a regular member's membership is the same either way, fetched along with the admin group check
         with self.assertNumQueries(1):
-            membership = org.get_membership(self.editor)
+            membership = org.get_membership(self.editor, explicit_only=True)
             self.assertEqual(OrgRole.EDITOR, membership.role)
-            self.assertEqual(membership, org.get_membership(self.editor, via_groups=True))
+            self.assertEqual(membership, org.get_membership(self.editor))
             self.assertEqual(OrgRole.EDITOR, org.get_user_role(self.editor))
 
-        # admin group members are administrators via groups, even if they have an explicit membership
+        # admin group members are administrators, even if they have an explicit membership
         with self.assertNumQueries(1):
-            self.assertEqual(OrgRole.AGENT, org.get_membership(self.agent).role)
-            membership = org.get_membership(self.agent, via_groups=True)
+            self.assertEqual(OrgRole.AGENT, org.get_membership(self.agent, explicit_only=True).role)
+            membership = org.get_membership(self.agent)
             self.assertIsNone(membership.id)
             self.assertEqual(OrgRole.ADMINISTRATOR, membership.role)
             self.assertIsNone(membership.team)
@@ -114,13 +114,13 @@ class OrgTest(TembaTest):
             self.assertTrue(membership.can_reply_non_own)
             self.assertEqual(OrgRole.ADMINISTRATOR, org.get_user_role(self.agent))
 
-        self.assertIsNone(org.get_membership(group_admin))
-        self.assertEqual(OrgRole.ADMINISTRATOR, org.get_membership(group_admin, via_groups=True).role)
+        self.assertIsNone(org.get_membership(group_admin, explicit_only=True))
+        self.assertEqual(OrgRole.ADMINISTRATOR, org.get_membership(group_admin).role)
         self.assertEqual(OrgRole.ADMINISTRATOR, org.get_user_role(group_admin))
 
         # users with no access to the org have no membership either way
+        self.assertIsNone(org.get_membership(self.admin2, explicit_only=True))
         self.assertIsNone(org.get_membership(self.admin2))
-        self.assertIsNone(org.get_membership(self.admin2, via_groups=True))
         self.assertIsNone(org.get_user_role(self.admin2))
 
     def test_get_owner(self):

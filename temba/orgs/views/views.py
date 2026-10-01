@@ -148,7 +148,7 @@ class UserCRUDL(SmartCRUDL):
 
             # annotate the users with their roles and teams
             for user in context["object_list"]:
-                membership = self.request.org.get_membership(user)
+                membership = self.request.org.get_membership(user, explicit_only=True)
                 user.role = membership.role
                 user.team = membership.team
 
@@ -250,14 +250,14 @@ class UserCRUDL(SmartCRUDL):
             exclude = [] if Org.FEATURE_TEAMS in self.request.org.features else ["team"]
 
             # only show agent-specific fields if the current user being edited is an agent
-            membership = self.request.org.get_membership(self.object)
+            membership = self.request.org.get_membership(self.object, explicit_only=True)
             if membership.role != OrgRole.AGENT:
                 exclude.extend(["can_assign", "can_reply_non_own"])
 
             return exclude
 
         def derive_initial(self):
-            membership = self.request.org.get_membership(self.object)
+            membership = self.request.org.get_membership(self.object, explicit_only=True)
             return {
                 "role": membership.role.code,
                 "team": membership.team,

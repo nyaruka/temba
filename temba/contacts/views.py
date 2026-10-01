@@ -373,7 +373,7 @@ class ContactCRUDL(SmartCRUDL):
 
             # check if user has permission to reply to tickets not assigned to them
             if ticket and ticket.assignee != request.user:
-                membership = request.org.get_membership(request.user, via_groups=True)
+                membership = request.org.get_membership(request.user)
                 if membership and not membership.can_reply_non_own:
                     return JsonResponse(
                         {"error": "You do not have permission to reply to tickets not assigned to you."}, status=403

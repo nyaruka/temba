@@ -74,7 +74,7 @@ class UserTest(TembaTest):
 
         # and have the administrator role in those orgs without needing a membership
         self.assertEqual(OrgRole.ADMINISTRATOR, self.org.get_user_role(admin))
-        self.assertIsNone(self.org.get_membership(admin))
+        self.assertIsNone(self.org.get_membership(admin, explicit_only=True))
         self.assertNotIn(admin, self.org.get_users())
         self.assertIsNone(self.org2.get_user_role(admin))
 

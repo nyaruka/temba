@@ -170,7 +170,7 @@ class OrgMiddleware:
                 org = Org.objects.filter(is_active=True, id=org_id).select_related(*self.select_related).first()
 
                 if org:
-                    membership = org.get_membership(user)
+                    membership = org.get_membership(user, explicit_only=True)
                     if membership:
                         membership.record_seen()
                         return org, False
