@@ -6,7 +6,9 @@ import { TextInput } from '../src/form/TextInput';
 import { ContactFieldEditor } from '../src/live/ContactFieldEditor';
 import { ContactDetails } from '../src/live/ContactDetails';
 import {
+  assertScreenshot,
   clearMockPosts,
+  getClip,
   getComponent,
   loadStore,
   mockGET,
@@ -408,12 +410,20 @@ describe(TAG, () => {
     await contactDetails.updateComplete;
     expect(getEmail().valueIcon).to.equal(Icon.contact_verified);
     expect(getEmail().valueIconLabel).to.equal('Verified');
+    await assertScreenshot(
+      'contacts/details-email-verified',
+      getClip(contactDetails)
+    );
 
     // editable, even without an email, but never on anon workspaces
     contactDetails.editable = true;
     await contactDetails.updateComplete;
     expect(getEmail().disabled).to.be.false;
     expect(getEmail().valueIcon).to.equal(Icon.contact_verified);
+    await assertScreenshot(
+      'contacts/details-email-editable',
+      getClip(contactDetails)
+    );
 
     contactDetails.setContact({ ...contactDetails.data, email: null });
     await contactDetails.updateComplete;

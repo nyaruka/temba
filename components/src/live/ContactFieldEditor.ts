@@ -144,7 +144,6 @@ export class ContactFieldEditor extends RapidElement {
       .value-prefix {
         display: flex;
         align-items: center;
-        --icon-color: var(--contact-field-value-icon-color, var(--text-3));
       }
 
       temba-textinput .value-prefix {
@@ -180,6 +179,13 @@ export class ContactFieldEditor extends RapidElement {
       temba-icon {
         cursor: pointer;
         --icon-color: rgba(0, 0, 0, 0.3);
+      }
+
+      /* set on the icon itself, since the generic icon rules above would beat an inherited color */
+      .value-prefix temba-icon,
+      .value-prefix temba-icon:hover {
+        cursor: default;
+        --icon-color: var(--contact-field-value-icon-color, var(--text-3));
       }
 
       temba-textinput:focus .popper,
