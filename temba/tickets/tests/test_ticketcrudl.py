@@ -98,6 +98,16 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("All", response.context["title"])
         self.assertEqual("all", response.context["folder"])
         self.assertNotIn("nextUUID", response.context)
+        self.assertEqual(OrgRole.AGENT.code, response.context["user_role"])
+
+        # an agent who is also in one of the workspace's admin groups is an administrator
+        self.create_admin_group("Global Admins", orgs=[self.org], users=[self.agent2])
+        response = self.assertListFetch(deep_link, [self.agent2])
+        self.assertEqual(str(ticket.uuid), response.context["nextUUID"])
+        self.assertEqual(OrgRole.ADMINISTRATOR.code, response.context["user_role"])
+        self.assertTrue(response.context["can_assign"])
+        self.assertTrue(response.context["can_reply_non_own"])
+        self.agent2.groups.clear()
 
         # can also link to our ticket within the Support topic
         deep_link = f"{list_url}{self.support.uuid}/{ticket.uuid}/"
@@ -242,6 +252,12 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(self.sales_only, response.context["team"])
         self.assertFalse(response.context["has_teams"])
         self.assertNotContains(response, 'dataname="Teams"')
+
+        # unless they're also in one of the workspace's admin groups, which makes them an administrator
+        self.create_admin_group("Global Admins", orgs=[self.org], users=[self.agent2])
+        response = self.assertReadFetch(analytics_url, [self.agent2])
+        self.assertIsNone(response.context["team"])
+        self.assertTrue(response.context["has_teams"])
 
         # should not be able to post to it
         response = self.client.post(analytics_url)
