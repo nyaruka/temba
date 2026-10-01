@@ -233,8 +233,14 @@ export class FieldRenderer {
       showLabel = true,
       flavor,
       extraClasses,
-      style
+      style,
+      formData = {}
     } = context;
+
+    const helpText =
+      typeof config.helpText === 'function'
+        ? config.helpText(formData)
+        : config.helpText;
 
     // Get options - use dynamic options if available, otherwise use static options
     const optionsToRender = config.getDynamicOptions
@@ -259,7 +265,7 @@ export class FieldRenderer {
       nameKey="${config.nameKey || 'name'}"
       endpoint="${config.endpoint || ''}"
       queryParam="${config.queryParam || ''}"
-      .helpText="${config.helpText || ''}"
+      .helpText="${helpText || ''}"
       flavor="${flavor || config.flavor || 'small'}"
       class="${extraClasses}"
       style="${style}"

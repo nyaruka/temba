@@ -858,11 +858,11 @@ describe('temba-node-editor', () => {
       actions: [
         {
           uuid: 'call-llm-uuid',
-          type: 'call_llm',
-          llm: { uuid: 'llm-123', name: 'Test LLM' },
+          type: 'call_classifier',
+          model: { uuid: 'llm-123', name: 'Test LLM' },
           input: '@input',
-          instructions:
-            '@(prompt("categorize", slice(node.categories, 0, -2)))',
+          options: [{ name: 'Greeting' }, { name: 'Question' }],
+          required_confidence: 'medium',
           output_local: '_llm_output'
         }
       ],
@@ -920,9 +920,12 @@ describe('temba-node-editor', () => {
     const richEditComponents =
       el.shadowRoot.querySelectorAll('temba-rich-edit');
 
-    // Should have LLM select field
-    expect(selectComponents.length).to.equal(1);
-    expect(selectComponents[0].getAttribute('label')).to.equal('LLM');
+    // Should have model and confidence select fields
+    expect(selectComponents.length).to.equal(2);
+    expect(selectComponents[0].getAttribute('label')).to.equal('Model');
+    expect(selectComponents[1].getAttribute('name')).to.equal(
+      'required_confidence'
+    );
 
     // Should have input rich edit field
     expect(richEditComponents.length).to.equal(1);
@@ -983,11 +986,11 @@ describe('temba-node-editor', () => {
       actions: [
         {
           uuid: 'call-llm-uuid',
-          type: 'call_llm',
-          llm: { uuid: 'llm-123', name: 'Test LLM' },
+          type: 'call_classifier',
+          model: { uuid: 'llm-123', name: 'Test LLM' },
           input: '@input',
-          instructions:
-            '@(prompt("categorize", slice(node.categories, 0, -2)))',
+          options: [{ name: 'Greeting' }, { name: 'Question' }],
+          required_confidence: 'medium',
           output_local: '_llm_output'
         }
       ],
@@ -1034,8 +1037,8 @@ describe('temba-node-editor', () => {
     const arrayComponents =
       el.shadowRoot.querySelectorAll('temba-array-editor');
 
-    // Should have LLM select and categories array (node config fields)
-    expect(selectComponents.length).to.equal(1);
+    // Should have model and confidence selects and categories array (node config fields)
+    expect(selectComponents.length).to.equal(2);
     expect(arrayComponents.length).to.equal(1);
   });
 
@@ -1045,11 +1048,11 @@ describe('temba-node-editor', () => {
       actions: [
         {
           uuid: 'call-llm-uuid',
-          type: 'call_llm',
-          llm: { uuid: 'llm-123', name: 'Test LLM' },
+          type: 'call_classifier',
+          model: { uuid: 'llm-123', name: 'Test LLM' },
           input: '@input',
-          instructions:
-            '@(prompt("categorize", slice(node.categories, 0, -2)))',
+          options: [{ name: 'Greeting' }, { name: 'Question' }],
+          required_confidence: 'medium',
           output_local: '_llm_output'
         }
       ],
@@ -1092,10 +1095,10 @@ describe('temba-node-editor', () => {
     const formData = (el as any).formData;
 
     // Should have 2 categories (Greeting and Question, excluding Other and Failure)
-    expect(formData.categories).to.be.an('array');
-    expect(formData.categories.length).to.equal(2);
-    expect(formData.categories[0].name).to.equal('Greeting');
-    expect(formData.categories[1].name).to.equal('Question');
+    expect(formData.options).to.be.an('array');
+    expect(formData.options.length).to.equal(2);
+    expect(formData.options[0].name).to.equal('Greeting');
+    expect(formData.options[1].name).to.equal('Question');
 
     // Check that the array editor component receives the correct value
     const arrayEditor = el.shadowRoot.querySelector('temba-array-editor');
@@ -1106,13 +1109,14 @@ describe('temba-node-editor', () => {
     await el.updateComplete;
 
     // Check the values of the textinput components within the array items
-    const textInputs =
-      arrayEditor.shadowRoot?.querySelectorAll('temba-textinput');
+    const nameInputs = arrayEditor.shadowRoot?.querySelectorAll(
+      'temba-textinput[name="name"]'
+    );
 
-    if (textInputs && textInputs.length >= 2) {
-      // The first two textinputs should have the category names
-      expect((textInputs[0] as any).value).to.equal('Greeting');
-      expect((textInputs[1] as any).value).to.equal('Question');
+    if (nameInputs && nameInputs.length >= 2) {
+      // The first two name inputs should have the category names
+      expect((nameInputs[0] as any).value).to.equal('Greeting');
+      expect((nameInputs[1] as any).value).to.equal('Question');
     }
   });
 
@@ -1130,11 +1134,11 @@ describe('temba-node-editor', () => {
       actions: [
         {
           uuid: 'call-llm-uuid',
-          type: 'call_llm',
-          llm: { uuid: 'llm-123', name: 'Test LLM' },
+          type: 'call_classifier',
+          model: { uuid: 'llm-123', name: 'Test LLM' },
           input: '@input',
-          instructions:
-            '@(prompt("categorize", slice(node.categories, 0, -2)))',
+          options: [{ name: 'Greeting' }, { name: 'Question' }],
+          required_confidence: 'medium',
           output_local: '_llm_output'
         }
       ],
@@ -1172,20 +1176,21 @@ describe('temba-node-editor', () => {
     // Check that the form data is properly initialized
     const formData = (el as any).formData;
 
-    expect(formData.categories).to.be.an('array');
-    expect(formData.categories.length).to.equal(2);
-    expect(formData.categories[0].name).to.equal('Greeting');
-    expect(formData.categories[1].name).to.equal('Question');
+    expect(formData.options).to.be.an('array');
+    expect(formData.options.length).to.equal(2);
+    expect(formData.options[0].name).to.equal('Greeting');
+    expect(formData.options[1].name).to.equal('Question');
 
     // Check that array editor gets the correct values
     const arrayEditor = el.shadowRoot.querySelector('temba-array-editor');
     expect(arrayEditor).to.not.be.null;
 
-    const textInputs =
-      arrayEditor.shadowRoot?.querySelectorAll('temba-textinput');
-    if (textInputs && textInputs.length >= 2) {
-      expect((textInputs[0] as any).value).to.equal('Greeting');
-      expect((textInputs[1] as any).value).to.equal('Question');
+    const nameInputs = arrayEditor.shadowRoot?.querySelectorAll(
+      'temba-textinput[name="name"]'
+    );
+    if (nameInputs && nameInputs.length >= 2) {
+      expect((nameInputs[0] as any).value).to.equal('Greeting');
+      expect((nameInputs[1] as any).value).to.equal('Question');
     }
   });
 
@@ -1195,11 +1200,11 @@ describe('temba-node-editor', () => {
       actions: [
         {
           uuid: 'existing-call-llm-uuid',
-          type: 'call_llm',
-          llm: { uuid: 'llm-123', name: 'Test LLM' },
+          type: 'call_classifier',
+          model: { uuid: 'llm-123', name: 'Test LLM' },
           input: '@input',
-          instructions:
-            '@(prompt("categorize", slice(node.categories, 0, -2)))',
+          options: [{ name: 'Greeting' }, { name: 'Question' }],
+          required_confidence: 'medium',
           output_local: '_llm_output'
         }
       ],
@@ -1264,9 +1269,10 @@ describe('temba-node-editor', () => {
 
     // Test with same categories - should preserve UUIDs
     const formDataSame = {
-      llm: [{ value: 'llm-123', name: 'Test LLM' }],
+      model: [{ value: 'llm-123', name: 'Test LLM' }],
       input: '@input',
-      categories: [{ name: 'Greeting' }, { name: 'Question' }],
+      required_confidence: [{ value: 'medium', name: 'Medium' }],
+      options: [{ name: 'Greeting' }, { name: 'Question' }],
       result_name: 'Intent'
     };
 
@@ -1310,9 +1316,10 @@ describe('temba-node-editor', () => {
 
     // Test with changed categories - should generate new UUIDs for new categories
     const formDataChanged = {
-      llm: [{ value: 'llm-123', name: 'Test LLM' }],
+      model: [{ value: 'llm-123', name: 'Test LLM' }],
       input: '@input',
-      categories: [
+      required_confidence: [{ value: 'medium', name: 'Medium' }],
+      options: [
         { name: 'Greeting' }, // unchanged - should keep UUID
         { name: 'NewCategory' } // new - should get new UUID
       ],

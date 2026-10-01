@@ -171,9 +171,19 @@ export interface TransferAirtime extends Action {
   amounts: Record<string, number>;
 }
 
+export interface ClassifierOption {
+  name: string;
+  description?: string;
+}
+
+export type ClassifierConfidence = 'none' | 'low' | 'medium' | 'high';
+
 export interface CallClassifier extends Action {
-  classifier: NamedObject;
+  model: NamedObject;
   input: string;
+  options: ClassifierOption[];
+  required_confidence: ClassifierConfidence;
+  output_local: string;
 }
 
 export interface CallResthook extends Action {

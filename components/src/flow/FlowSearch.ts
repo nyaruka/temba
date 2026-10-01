@@ -191,8 +191,11 @@ function getActionSearchTexts(action: Action): string[] {
     }
     case 'call_classifier': {
       const a = action as CallClassifier;
-      if (a.classifier?.name) texts.push(a.classifier.name);
+      if (a.model?.name) texts.push(a.model.name);
       if (a.input) texts.push(a.input);
+      a.options?.forEach((o) => {
+        if (o.description) texts.push(o.description);
+      });
       break;
     }
     case 'open_ticket': {

@@ -1,4 +1,5 @@
-import { expect } from '@open-wc/testing';
+import { expect, fixture, html } from '@open-wc/testing';
+import { render } from 'lit';
 import { split_by_llm_categorize } from '../../src/flow/nodes/split_by_llm_categorize';
 import { Node } from '../../src/store/flow-definition';
 import { SelectFieldConfig } from '../../src/flow/types';
@@ -107,20 +108,20 @@ describe('split_by_llm_categorize node config', () => {
     });
   });
 
-  describe('llm shouldExclude', () => {
+  describe('model shouldExclude', () => {
     const shouldExclude = (
-      split_by_llm_categorize.form.llm as SelectFieldConfig
+      split_by_llm_categorize.form.model as SelectFieldConfig
     ).shouldExclude!;
 
-    it('includes options that have the generation role', () => {
-      expect(shouldExclude({ roles: ['generation'] })).to.be.false;
-      expect(shouldExclude({ roles: ['generation', 'translation'] })).to.be
+    it('includes options that have the classification role', () => {
+      expect(shouldExclude({ roles: ['classification'] })).to.be.false;
+      expect(shouldExclude({ roles: ['classification', 'generation'] })).to.be
         .false;
     });
 
-    it('excludes options without the generation role', () => {
+    it('excludes options without the classification role', () => {
       expect(shouldExclude({ roles: ['translation'] })).to.be.true;
-      expect(shouldExclude({ roles: ['classification'] })).to.be.true;
+      expect(shouldExclude({ roles: ['generation'] })).to.be.true;
       expect(shouldExclude({ roles: [] })).to.be.true;
     });
   });
@@ -134,11 +135,11 @@ describe('split_by_llm_categorize node config', () => {
           actions: [
             {
               uuid: 'call-llm-uuid',
-              type: 'call_llm',
-              llm: { uuid: 'llm-123', name: 'Claude' },
+              type: 'call_classifier',
+              model: { uuid: 'llm-123', name: 'Claude' },
               input: '@input',
-              instructions:
-                '@(prompt("categorize", slice(node.categories, 0, -2)))',
+              options: [{ name: 'Greeting' }, { name: 'Question' }],
+              required_confidence: 'medium',
               output_local: '_llm_output'
             } as any
           ],
@@ -158,11 +159,15 @@ describe('split_by_llm_categorize node config', () => {
           actions: [
             {
               uuid: 'call-llm-uuid-2',
-              type: 'call_llm',
-              llm: { uuid: 'llm-456', name: 'GPT-4' },
+              type: 'call_classifier',
+              model: { uuid: 'llm-456', name: 'GPT-4' },
               input: '@contact.name',
-              instructions:
-                '@(prompt("categorize", slice(node.categories, 0, -2)))',
+              options: [
+                { name: 'Premium' },
+                { name: 'Regular' },
+                { name: 'VIP' }
+              ],
+              required_confidence: 'medium',
               output_local: '_llm_output'
             } as any
           ],
@@ -188,11 +193,17 @@ describe('split_by_llm_categorize node config', () => {
           actions: [
             {
               uuid: 'call-llm-uuid-3',
-              type: 'call_llm',
-              llm: { uuid: 'llm-789', name: 'Gemini' },
+              type: 'call_classifier',
+              model: { uuid: 'llm-789', name: 'Gemini' },
               input: '@fields.priority',
-              instructions:
-                '@(prompt("categorize", slice(node.categories, 0, -2)))',
+              options: [
+                { name: 'High' },
+                { name: 'Medium' },
+                { name: 'Low' },
+                { name: 'Critical' },
+                { name: 'Urgent' }
+              ],
+              required_confidence: 'medium',
               output_local: '_llm_output'
             } as any
           ],
@@ -212,11 +223,11 @@ describe('split_by_llm_categorize node config', () => {
           actions: [
             {
               uuid: 'call-llm-uuid-4',
-              type: 'call_llm',
-              llm: { uuid: 'llm-minimal', name: 'Basic LLM' },
+              type: 'call_classifier',
+              model: { uuid: 'llm-minimal', name: 'Basic LLM' },
               input: '@input',
-              instructions:
-                '@(prompt("categorize", slice(node.categories, 0, -2)))',
+              options: [{ name: 'Yes' }],
+              required_confidence: 'medium',
               output_local: '_llm_output'
             } as any
           ],
@@ -241,11 +252,22 @@ describe('split_by_llm_categorize node config', () => {
           actions: [
             {
               uuid: 'call-llm-uuid-5',
-              type: 'call_llm',
-              llm: { uuid: 'llm-special', name: 'Special Characters LLM' },
+              type: 'call_classifier',
+              model: { uuid: 'llm-special', name: 'Special Characters LLM' },
               input: '@contact.fields.feedback',
-              instructions:
-                '@(prompt("categorize", slice(node.categories, 0, -2)))',
+              options: [
+                {
+                  name: 'Bug Report',
+                  description: 'Something is broken or not working as expected'
+                },
+                {
+                  name: 'Feature Request',
+                  description: 'Asking for something new'
+                },
+                { name: 'General Feedback' },
+                { name: 'Support Request' }
+              ],
+              required_confidence: 'medium',
               output_local: '_llm_output'
             } as any
           ],
@@ -266,11 +288,14 @@ describe('split_by_llm_categorize node config', () => {
         actions: [
           {
             uuid: 'call-llm-uuid',
-            type: 'call_llm',
-            llm: { uuid: 'llm-123', name: 'Test LLM' },
+            type: 'call_classifier',
+            model: { uuid: 'llm-123', name: 'Test LLM' },
             input: '@input',
-            instructions:
-              '@(prompt("categorize", slice(node.categories, 0, -2)))',
+            options: [
+              { name: 'Greeting', description: 'Saying hello' },
+              { name: 'Question' }
+            ],
+            required_confidence: 'high',
             output_local: '_llm_output'
           } as any
         ],
@@ -281,22 +306,106 @@ describe('split_by_llm_categorize node config', () => {
       const formData = split_by_llm_categorize.toFormData!(node);
 
       expect(formData.uuid).to.equal('test-node');
-      expect(formData.llm).to.deep.equal([
+      expect(formData.model).to.deep.equal([
         { uuid: 'llm-123', name: 'Test LLM' }
       ]);
       expect(formData.input).to.equal('@input');
-      expect(formData.categories).to.deep.equal([
-        { name: 'Greeting' },
-        { name: 'Question' }
+      expect(formData.options).to.deep.equal([
+        { name: 'Greeting', description: 'Saying hello' },
+        { name: 'Question', description: '' }
       ]);
+      expect(formData.required_confidence).to.deep.equal([
+        { value: 'high', name: 'High' }
+      ]);
+    });
+
+    it('creates new nodes without an Other category', () => {
+      const blank: Node = { uuid: 'new-node', actions: [], exits: [] };
+      const formData = split_by_llm_categorize.toFormData!(blank);
+      formData.model = [{ value: 'llm-123', name: 'Claude' }];
+      formData.options = [{ name: 'Yes' }, { name: 'No' }];
+
+      const result = split_by_llm_categorize.fromFormData!(formData, blank);
+      expect((result.actions[0] as any).required_confidence).to.equal('none');
+      expect(result.router!.categories.map((c) => c.name)).to.deep.equal([
+        'Yes',
+        'No',
+        'Failure'
+      ]);
+    });
+
+    it('treats a missing required_confidence as none', () => {
+      const testRouter = createSplitRouter(['Greeting']);
+      const formData = split_by_llm_categorize.toFormData!({
+        uuid: 'test-node',
+        actions: [
+          {
+            uuid: 'classifier-uuid',
+            type: 'call_classifier',
+            model: { uuid: 'llm-123', name: 'Test LLM' },
+            input: '@input',
+            options: [{ name: 'Greeting' }],
+            output_local: '_classification'
+          } as any
+        ],
+        router: testRouter.router,
+        exits: testRouter.exits
+      });
+
+      expect(formData.required_confidence).to.deep.equal([
+        { value: 'none', name: 'Always pick a category' }
+      ]);
+    });
+
+    it('reads each saved level', () => {
+      const testRouter = createSplitRouter(['Greeting']);
+      const levels = {
+        none: 'Always pick a category',
+        low: 'Low',
+        medium: 'Medium',
+        high: 'High'
+      };
+      Object.entries(levels).forEach(([value, name]) => {
+        const formData = split_by_llm_categorize.toFormData!({
+          uuid: 'test-node',
+          actions: [
+            {
+              uuid: 'classifier-uuid',
+              type: 'call_classifier',
+              model: { uuid: 'llm-123', name: 'Test LLM' },
+              input: '@input',
+              options: [{ name: 'Greeting' }],
+              required_confidence: value,
+              output_local: '_classification'
+            } as any
+          ],
+          router: testRouter.router,
+          exits: testRouter.exits
+        });
+        expect(formData.required_confidence).to.deep.equal([{ value, name }]);
+      });
+    });
+
+    it('defaults new nodes to always picking a category', () => {
+      const formData = split_by_llm_categorize.toFormData!({
+        uuid: 'test-node',
+        actions: [],
+        exits: []
+      });
+
+      expect(formData.required_confidence).to.deep.equal([
+        { value: 'none', name: 'Always pick a category' }
+      ]);
+      expect(formData.options).to.deep.equal([]);
     });
 
     it('converts from form data correctly', () => {
       const formData = {
         uuid: 'test-node',
-        llm: [{ value: 'llm-456', name: 'GPT-4' }],
+        model: [{ value: 'llm-456', name: 'GPT-4' }],
         input: '@contact.name',
-        categories: [{ name: 'Premium' }, { name: 'Regular' }]
+        options: [{ name: 'Premium' }, { name: 'Regular' }],
+        required_confidence: [{ value: 'medium', name: 'Medium' }]
       };
 
       const originalNode: Node = {
@@ -312,9 +421,9 @@ describe('split_by_llm_categorize node config', () => {
 
       expect(result.uuid).to.equal('test-node');
       expect(result.actions).to.have.length(1);
-      expect(result.actions[0].type).to.equal('call_llm');
-      expect((result.actions[0] as any).llm.uuid).to.equal('llm-456');
-      expect((result.actions[0] as any).llm.name).to.equal('GPT-4');
+      expect(result.actions[0].type).to.equal('call_classifier');
+      expect((result.actions[0] as any).model.uuid).to.equal('llm-456');
+      expect((result.actions[0] as any).model.name).to.equal('GPT-4');
       expect((result.actions[0] as any).input).to.equal('@contact.name');
 
       // Should have user categories plus Other and Failure
@@ -336,9 +445,9 @@ describe('split_by_llm_categorize node config', () => {
     it('handles categories with empty names correctly', () => {
       const formData = {
         uuid: 'test-node-uuid',
-        llm: [{ value: 'llm-uuid-123', name: 'Claude' }],
+        model: [{ value: 'llm-uuid-123', name: 'Claude' }],
         input: '@input',
-        categories: [
+        options: [
           { name: 'Valid Category' },
           { name: '' }, // empty name
           { name: '   ' }, // only whitespace
@@ -372,9 +481,9 @@ describe('split_by_llm_categorize node config', () => {
     it('handles categories with special characters', () => {
       const formData = {
         uuid: 'test-node-uuid',
-        llm: [{ value: 'llm-uuid-123', name: 'Claude' }],
+        model: [{ value: 'llm-uuid-123', name: 'Claude' }],
         input: '@input',
-        categories: [
+        options: [
           { name: 'Category-1' },
           { name: 'Category_2' },
           { name: 'Category@3' },
@@ -421,9 +530,9 @@ describe('split_by_llm_categorize node config', () => {
     it('maintains UUID consistency between categories, cases, and exits', () => {
       const formData = {
         uuid: 'test-node-uuid',
-        llm: [{ value: 'llm-uuid-123', name: 'Claude' }],
+        model: [{ value: 'llm-uuid-123', name: 'Claude' }],
         input: '@input',
-        categories: [{ name: 'Test Category' }],
+        options: [{ name: 'Test Category' }],
         result_name: 'Intent'
       };
 
@@ -457,9 +566,9 @@ describe('split_by_llm_categorize node config', () => {
     it('generates unique UUIDs for each run', () => {
       const formData = {
         uuid: 'test-node-uuid',
-        llm: [{ value: 'llm-uuid-123', name: 'Claude' }],
+        model: [{ value: 'llm-uuid-123', name: 'Claude' }],
         input: '@input',
-        categories: [{ name: 'Test' }],
+        options: [{ name: 'Test' }],
         result_name: 'Intent'
       };
 
@@ -489,9 +598,13 @@ describe('split_by_llm_categorize node config', () => {
     it('roundtrip conversion (fromFormData -> toFormData) works correctly', () => {
       const originalFormData = {
         uuid: 'test-node-uuid',
-        llm: [{ value: 'llm-uuid-123', name: 'Claude' }],
+        model: [{ value: 'llm-uuid-123', name: 'Claude' }],
         input: '@custom.input',
-        categories: [{ name: 'Category1' }, { name: 'Category2' }],
+        options: [
+          { name: 'Category1', description: 'The first one' },
+          { name: 'Category2', description: '' }
+        ],
+        required_confidence: [{ value: 'high', name: 'High' }],
         result_name: 'CustomResult'
       };
 
@@ -512,12 +625,167 @@ describe('split_by_llm_categorize node config', () => {
 
       // Should match original data
       expect(recoveredFormData.uuid).to.equal(originalFormData.uuid);
-      expect(recoveredFormData.llm).to.deep.equal([
+      expect(recoveredFormData.model).to.deep.equal([
         { uuid: 'llm-uuid-123', name: 'Claude' }
       ]);
       expect(recoveredFormData.input).to.equal(originalFormData.input);
-      expect(recoveredFormData.categories).to.deep.equal(
-        originalFormData.categories
+      expect(recoveredFormData.options).to.deep.equal(originalFormData.options);
+      expect(recoveredFormData.required_confidence).to.deep.equal(
+        originalFormData.required_confidence
+      );
+      expect(recoveredFormData.result_name).to.equal('CustomResult');
+    });
+
+    it('treats an unknown level as none', () => {
+      const testRouter = createSplitRouter(['Greeting']);
+      const formData = split_by_llm_categorize.toFormData!({
+        uuid: 'test-node',
+        actions: [
+          {
+            uuid: 'classifier-uuid',
+            type: 'call_classifier',
+            model: { uuid: 'llm-123', name: 'Test LLM' },
+            input: '@input',
+            options: [{ name: 'Greeting' }],
+            required_confidence: 'any',
+            output_local: '_classification'
+          } as any
+        ],
+        router: testRouter.router,
+        exits: testRouter.exits
+      });
+
+      expect(formData.required_confidence).to.deep.equal([
+        { value: 'none', name: 'Always pick a category' }
+      ]);
+    });
+
+    it('drops the Other category when always picking a category', () => {
+      const testRouter = createSplitRouter(['Greeting', 'Question']);
+      const originalNode: Node = {
+        uuid: 'test-node-uuid',
+        actions: [
+          {
+            uuid: 'existing-action-uuid',
+            type: 'call_classifier',
+            model: { uuid: 'llm-123', name: 'Claude' },
+            input: '@input',
+            options: [{ name: 'Greeting' }, { name: 'Question' }],
+            required_confidence: 'medium',
+            output_local: '_classification'
+          } as any
+        ],
+        router: testRouter.router,
+        exits: testRouter.exits
+      };
+
+      const formData = split_by_llm_categorize.toFormData!(originalNode);
+      formData.required_confidence = [
+        { value: 'none', name: 'Always pick a category' }
+      ];
+      const result = split_by_llm_categorize.fromFormData!(
+        formData,
+        originalNode
+      );
+
+      expect((result.actions[0] as any).required_confidence).to.equal('none');
+      expect(result.router!.categories.map((c) => c.name)).to.deep.equal([
+        'Greeting',
+        'Question',
+        'Failure'
+      ]);
+      expect(result.router!.default_category_uuid).to.equal('category-failure');
+      expect(result.exits.map((e) => e.uuid)).to.deep.equal([
+        'exit-greeting',
+        'exit-question',
+        'exit-failure'
+      ]);
+
+      // and reading it back keeps the level and the same categories
+      const recovered = split_by_llm_categorize.toFormData!(result);
+      expect(recovered.required_confidence).to.deep.equal([
+        { value: 'none', name: 'Always pick a category' }
+      ]);
+      expect(recovered.options.map((o: any) => o.name)).to.deep.equal([
+        'Greeting',
+        'Question'
+      ]);
+
+      // switching back to a real confidence brings Other back as the default
+      recovered.required_confidence = [{ value: 'high', name: 'High' }];
+      const restored = split_by_llm_categorize.fromFormData!(recovered, result);
+      expect((restored.actions[0] as any).required_confidence).to.equal('high');
+      const other = restored.router!.categories.find((c) => c.name === 'Other');
+      expect(other).to.exist;
+      expect(restored.router!.default_category_uuid).to.equal(other!.uuid);
+      expect(restored.exits).to.have.length(4);
+    });
+
+    it('explains the missing Other category when always picking a category', () => {
+      const helpText = split_by_llm_categorize.form!.required_confidence
+        .helpText as (formData: any) => string;
+      expect(
+        helpText({
+          required_confidence: [
+            { value: 'none', name: 'Always pick a category' }
+          ]
+        })
+      ).to.include('no **Other** category');
+      expect(
+        helpText({ required_confidence: [{ value: 'medium', name: 'Medium' }] })
+      ).to.include('go to **Other**');
+    });
+
+    it('puts confidence in the accordion, flagged when a minimum is set', () => {
+      const accordion = split_by_llm_categorize.layout!.find(
+        (item: any) => item.type === 'accordion'
+      ) as any;
+      const section = accordion.sections[0];
+      expect(section.label).to.equal('Confidence');
+      expect(section.items).to.deep.equal(['required_confidence']);
+      expect(
+        section.getValueCount({
+          required_confidence: [
+            { value: 'none', name: 'Always pick a category' }
+          ]
+        })
+      ).to.be.false;
+      expect(
+        section.getValueCount({
+          required_confidence: [{ value: 'high', name: 'High' }]
+        })
+      ).to.be.true;
+    });
+
+    it('preserves the output local of an existing action', () => {
+      const testRouter = createSplitRouter(['Greeting']);
+      const originalNode: Node = {
+        uuid: 'test-node-uuid',
+        actions: [
+          {
+            uuid: 'existing-action-uuid',
+            type: 'call_classifier',
+            model: { uuid: 'llm-123', name: 'Claude' },
+            input: '@input',
+            options: [{ name: 'Greeting' }],
+            required_confidence: 'medium',
+            output_local: '_llm_output'
+          } as any
+        ],
+        router: testRouter.router,
+        exits: testRouter.exits
+      };
+
+      const result = split_by_llm_categorize.fromFormData!(
+        split_by_llm_categorize.toFormData!(originalNode),
+        originalNode
+      );
+
+      expect(result.actions[0].uuid).to.equal('existing-action-uuid');
+      expect((result.actions[0] as any).output_local).to.equal('_llm_output');
+      expect(result.router!.operand).to.equal('@locals._llm_output');
+      expect(result.router!.categories.map((c) => c.uuid)).to.deep.equal(
+        testRouter.router.categories.map((c) => c.uuid)
       );
     });
 
@@ -529,9 +797,9 @@ describe('split_by_llm_categorize node config', () => {
 
       const formData = {
         uuid: 'test-node-uuid',
-        llm: [{ value: 'llm-uuid-123', name: 'Claude' }],
+        model: [{ value: 'llm-uuid-123', name: 'Claude' }],
         input: '@input',
-        categories: categories,
+        options: categories,
         result_name: 'Intent'
       };
 
@@ -559,9 +827,9 @@ describe('split_by_llm_categorize node config', () => {
     it('preserves original node UUID', () => {
       const formData = {
         uuid: 'should-be-ignored',
-        llm: [{ value: 'llm-uuid-123', name: 'Claude' }],
+        model: [{ value: 'llm-uuid-123', name: 'Claude' }],
         input: '@input',
-        categories: [{ name: 'Test' }],
+        options: [{ name: 'Test' }],
         result_name: 'Intent'
       };
 
@@ -585,9 +853,9 @@ describe('split_by_llm_categorize node config', () => {
     it('should validate duplicate category names', () => {
       const formData = {
         uuid: 'test-node-uuid',
-        llm: [{ value: 'llm-uuid-123', name: 'Claude' }],
+        model: [{ value: 'llm-uuid-123', name: 'Claude' }],
         input: '@input',
-        categories: [
+        options: [
           { name: 'Category1' },
           { name: 'Category2' },
           { name: 'Category1' }, // duplicate
@@ -599,20 +867,20 @@ describe('split_by_llm_categorize node config', () => {
       const validationResult = split_by_llm_categorize.validate!(formData);
 
       expect(validationResult.valid).to.be.false;
-      expect(validationResult.errors.categories).to.include(
+      expect(validationResult.errors.options).to.include(
         'Duplicate category names found'
       );
-      expect(validationResult.errors.categories).to.include('Category1');
-      expect(validationResult.errors.categories).to.include('Category2');
-      expect(validationResult.errors.categories).to.include('category2');
+      expect(validationResult.errors.options).to.include('Category1');
+      expect(validationResult.errors.options).to.include('Category2');
+      expect(validationResult.errors.options).to.include('category2');
     });
 
     it('should pass validation with unique category names', () => {
       const formData = {
         uuid: 'test-node-uuid',
-        llm: [{ value: 'llm-uuid-123', name: 'Claude' }],
+        model: [{ value: 'llm-uuid-123', name: 'Claude' }],
         input: '@input',
-        categories: [
+        options: [
           { name: 'Category1' },
           { name: 'Category2' },
           { name: 'Category3' }
@@ -625,12 +893,38 @@ describe('split_by_llm_categorize node config', () => {
       expect(Object.keys(validationResult.errors)).to.have.length(0);
     });
 
+    it('should reject reserved category names', () => {
+      const validationResult = split_by_llm_categorize.validate!({
+        uuid: 'test-node-uuid',
+        model: [{ value: 'llm-uuid-123', name: 'Claude' }],
+        input: '@input',
+        options: [{ name: 'Yes' }, { name: '<none>' }]
+      });
+
+      expect(validationResult.valid).to.be.false;
+      expect(validationResult.errors.options).to.include('<none>');
+    });
+
+    it('should require a name for categories with descriptions', () => {
+      const validationResult = split_by_llm_categorize.validate!({
+        uuid: 'test-node-uuid',
+        model: [{ value: 'llm-uuid-123', name: 'Claude' }],
+        input: '@input',
+        options: [{ name: 'Yes' }, { name: '', description: 'Agreeing' }]
+      });
+
+      expect(validationResult.valid).to.be.false;
+      expect(validationResult.errors.options).to.equal(
+        'Every category with a description needs a name'
+      );
+    });
+
     it('should ignore empty categories in validation', () => {
       const formData = {
         uuid: 'test-node-uuid',
-        llm: [{ value: 'llm-uuid-123', name: 'Claude' }],
+        model: [{ value: 'llm-uuid-123', name: 'Claude' }],
         input: '@input',
-        categories: [
+        options: [
           { name: 'Category1' },
           { name: '' }, // empty
           { name: '   ' }, // whitespace only
@@ -649,11 +943,15 @@ describe('split_by_llm_categorize node config', () => {
     it('generates JSON matching the exact format from the issue', () => {
       const formData = {
         uuid: '145eb3d3-b841-4e66-abac-297ae525c7ad',
-        llm: [
+        model: [
           { value: '1c06c884-39dd-4ce4-ad9f-9a01cbe6c000', name: 'Claude' }
         ],
         input: '@input',
-        categories: [{ name: 'Flights' }, { name: 'Hotels' }],
+        options: [
+          { name: 'Flights', description: 'Booking or changing flights' },
+          { name: 'Hotels', description: '  ' }
+        ],
+        required_confidence: [{ value: 'medium', name: 'Medium' }],
         result_name: 'Intent'
       };
 
@@ -668,23 +966,24 @@ describe('split_by_llm_categorize node config', () => {
         originalNode
       );
 
-      // Verify the call_llm action
-      const callLlmAction = result.actions[0] as any;
-      expect(callLlmAction.type).to.equal('call_llm');
-      expect(callLlmAction.llm.uuid).to.equal(
-        '1c06c884-39dd-4ce4-ad9f-9a01cbe6c000'
-      );
-      expect(callLlmAction.llm.name).to.equal('Claude');
-      expect(callLlmAction.instructions).to.equal(
-        '@(prompt("categorize", slice(node.categories, 0, -2)))'
-      );
-      expect(callLlmAction.input).to.equal('@input');
-      expect(callLlmAction.output_local).to.equal('_llm_output');
+      // Verify the call_classifier action
+      expect(result.actions[0]).to.deep.equal({
+        type: 'call_classifier',
+        uuid: result.actions[0].uuid,
+        model: { uuid: '1c06c884-39dd-4ce4-ad9f-9a01cbe6c000', name: 'Claude' },
+        input: '@input',
+        options: [
+          { name: 'Flights', description: 'Booking or changing flights' },
+          { name: 'Hotels' }
+        ],
+        required_confidence: 'medium',
+        output_local: '_classification'
+      });
 
       // Verify the router structure
       const router = result.router!;
       expect(router.type).to.equal('switch');
-      expect(router.operand).to.equal('@locals._llm_output');
+      expect(router.operand).to.equal('@locals._classification');
 
       // Verify categories structure
       expect(router.categories).to.have.length(4);
@@ -724,6 +1023,58 @@ describe('split_by_llm_categorize node config', () => {
         (cat) => cat.name === 'Other'
       );
       expect(router.default_category_uuid).to.equal(otherCategory!.uuid);
+    });
+  });
+
+  // runs last since the model types it loads are cached for the rest of the page
+  describe('render', () => {
+    const renderToText = async (model: any) => {
+      const router = createSplitRouter(['Yes']);
+      const container = document.createElement('div');
+      render(
+        split_by_llm_categorize.render!({
+          uuid: 'render-node',
+          actions: [
+            {
+              uuid: 'render-action',
+              type: 'call_classifier',
+              model,
+              input: '@input',
+              options: [{ name: 'Yes' }],
+              output_local: '_classification'
+            } as any
+          ],
+          router: router.router,
+          exits: router.exits
+        }),
+        container
+      );
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      return container.textContent.trim();
+    };
+
+    it('renders nothing without a model', async () => {
+      expect(await renderToText(undefined)).to.equal('');
+      expect(await renderToText({ uuid: '', name: '' })).to.equal('');
+    });
+
+    it('hides the built-in model but names others', async () => {
+      const store: any = await fixture(html`<temba-store></temba-store>`);
+      store.getResults = async () => [
+        { uuid: 'builtin-uuid', name: 'Included', type: 'builtin' },
+        { uuid: 'claude-uuid', name: 'Claude', type: 'anthropic' }
+      ];
+
+      expect(
+        await renderToText({ uuid: 'builtin-uuid', name: 'Included' })
+      ).to.equal('');
+      expect(
+        await renderToText({ uuid: 'claude-uuid', name: 'Claude' })
+      ).to.equal('Classify with Claude');
+      // a model the workspace no longer has still gets named
+      expect(
+        await renderToText({ uuid: 'deleted-uuid', name: 'Old Model' })
+      ).to.equal('Classify with Old Model');
     });
   });
 });
