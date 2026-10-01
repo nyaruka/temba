@@ -1,6 +1,6 @@
 from django.test.utils import override_settings
 
-from temba.orgs.models import OrgRole
+from temba.orgs.models import Org, OrgRole
 from temba.tests import TembaTest, matchers
 from temba.tickets.models import Team, Topic
 
@@ -138,6 +138,14 @@ class TopicTest(TembaTest):
         self.assertEqual(
             {self.org.default_topic, topic1, topic2}, set(Topic.get_accessible(self.org, self.customer_support))
         )
+
+        # members of the org's admin groups can access all topics without a membership
+        group_admin = self.create_user("groupadmin@textit.com")
+        self.assertEqual(set(), set(Topic.get_accessible(self.org, group_admin)))
+
+        self.create_admin_group("Global Admins", orgs=[self.org], users=[group_admin])
+        org = Org.objects.get(id=self.org.id)  # fresh instance without cached memberships
+        self.assertEqual({self.org.default_topic, topic1, topic2}, set(Topic.get_accessible(org, group_admin)))
 
     def test_release(self):
         topic1 = Topic.create(self.org, self.admin, "Sales")

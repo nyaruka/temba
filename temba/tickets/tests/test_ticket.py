@@ -2,7 +2,7 @@ from datetime import date
 from unittest.mock import call
 
 from temba.contacts.models import Contact
-from temba.orgs.models import OrgRole
+from temba.orgs.models import Org, OrgRole
 from temba.orgs.tasks import squash_item_counts
 from temba.tests import TembaTest, mock_mailroom
 from temba.tickets.models import Team, Ticket, Topic, export_ticket_stats
@@ -87,6 +87,14 @@ class TicketTest(TembaTest):
 
         # a non-staff user with no membership in the org sees nothing (fails closed)
         self.assertEqual(set(), set(Ticket.get_accessible(self.org, self.admin2)))
+
+        # unless they're in one of the org's admin groups, which makes them an administrator even if they're also a
+        # member on a topic-restricted team
+        group_admin = self.create_user("groupadmin@textit.com")
+        self.create_admin_group("Global Admins", orgs=[self.org], users=[group_admin, agent2])
+        org = Org.objects.get(id=self.org.id)  # fresh instance without cached memberships
+        self.assertEqual(all_tickets, set(Ticket.get_accessible(org, group_admin)))
+        self.assertEqual(all_tickets, set(Ticket.get_accessible(org, agent2)))
 
     def test_counts(self):
         general = self.org.default_topic
