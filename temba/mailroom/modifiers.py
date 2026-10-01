@@ -44,6 +44,12 @@ class Language(Modifier):
 
 
 @dataclass(frozen=True)
+class Email(Modifier):
+    type: str = field(default="email", init=False)
+    email: str
+
+
+@dataclass(frozen=True)
 class Field(Modifier):
     type: str = field(default="field", init=False)
     field: FieldRef

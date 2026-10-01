@@ -544,6 +544,8 @@ class ContactReadSerializer(ReadSerializer):
     language = serializers.SerializerMethodField()
     flow = fields.FlowField(source="current_flow")
     urns = serializers.SerializerMethodField()
+    email = serializers.SerializerMethodField()
+    email_verified_on = serializers.SerializerMethodField()
     groups = serializers.SerializerMethodField()
     fields = serializers.SerializerMethodField("get_contact_fields")
     notes = serializers.SerializerMethodField()
@@ -583,6 +585,15 @@ class ContactReadSerializer(ReadSerializer):
         urns = obj.expanded_urns if hasattr(obj, "expanded_urns") else obj.get_urns()
 
         return [fields.serialize_urn(self.context["org"], urn) for urn in urns]
+
+    def get_email(self, obj):
+        if not obj.is_active or not obj.email:
+            return None
+
+        return ContactURN.ANON_MASK if self.context["org"].is_anon else obj.email
+
+    def get_email_verified_on(self, obj):
+        return format_datetime(obj.email_verified_on) if obj.is_active else None
 
     def get_groups(self, obj):
         if not obj.is_active:
@@ -628,6 +639,8 @@ class ContactReadSerializer(ReadSerializer):
             "status",
             "language",
             "urns",
+            "email",
+            "email_verified_on",
             "groups",
             "notes",
             "fields",
@@ -720,27 +733,9 @@ class ContactWriteSerializer(WriteSerializer):
         custom_fields = self.validated_data.get("fields")
         note = self.validated_data.get("note")
 
-        mods = []
-
         # update an existing contact
         if self.instance:
-            # update our name and language
-            if "name" in self.validated_data and name != self.instance.name:
-                mods.append(modifiers.Name(name=name))
-            if "language" in self.validated_data and language != self.instance.language:
-                mods.append(modifiers.Language(language=language))
-
-            if "urns" in self.validated_data and urns is not None:
-                mods += self.instance.update_urns(urns)
-
-            # update our fields
-            if custom_fields is not None:
-                mods += self.instance.update_fields(values=custom_fields)
-
-            # update our groups
-            if groups is not None:
-                mods += self.instance.update_static_groups(groups)
-
+            mods = self.get_modifiers()
             if mods:
                 self.instance.modify(self.context["user"], mods, via_api=True)
 
@@ -762,6 +757,37 @@ class ContactWriteSerializer(WriteSerializer):
             )
 
         return self.instance
+
+    def get_modifiers(self) -> list:
+        """
+        Gets the modifiers needed to apply this update to the existing contact
+        """
+        name = self.validated_data.get("name")
+        language = self.validated_data.get("language")
+        urns = self.validated_data.get("urns")
+        groups = self.validated_data.get("groups")
+        custom_fields = self.validated_data.get("fields")
+
+        mods = []
+
+        # update our name and language
+        if "name" in self.validated_data and name != self.instance.name:
+            mods.append(modifiers.Name(name=name))
+        if "language" in self.validated_data and language != self.instance.language:
+            mods.append(modifiers.Language(language=language))
+
+        if "urns" in self.validated_data and urns is not None:
+            mods += self.instance.update_urns(urns)
+
+        # update our fields
+        if custom_fields is not None:
+            mods += self.instance.update_fields(values=custom_fields)
+
+        # update our groups
+        if groups is not None:
+            mods += self.instance.update_static_groups(groups)
+
+        return mods
 
     def urn_exception(self, ex):
         return {"urns": {ex.index: [self.urn_errors[ex.code]]}}

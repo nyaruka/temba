@@ -1,6 +1,7 @@
 import { assert, expect, fixture, oneEvent, waitUntil } from '@open-wc/testing';
 import { SinonStub, stub } from 'sinon';
 import { CustomEventType, URN } from '../src/interfaces';
+import { Icon } from '../src/Icons';
 import { TextInput } from '../src/form/TextInput';
 import { ContactFieldEditor } from '../src/live/ContactFieldEditor';
 import { ContactDetails } from '../src/live/ContactDetails';
@@ -302,12 +303,13 @@ describe(TAG, () => {
       .querySelector('temba-textinput')
       .shadowRoot.querySelector('.input-container')
       .getBoundingClientRect();
-    const groupsLabel = contactDetails.shadowRoot
-      .querySelector('.editable-row > label')
+    const emailLabel = contactDetails.shadowRoot
+      .querySelector('temba-contact-field[key="email"]')
+      .shadowRoot.querySelector('.field-label')
       .getBoundingClientRect();
     const urnToNameGap = nameLabel.top - primaryValue.bottom;
-    const nameToGroupsGap = groupsLabel.top - nameInput.bottom;
-    expect(urnToNameGap).to.be.closeTo(nameToGroupsGap, 3);
+    const nameToEmailGap = emailLabel.top - nameInput.bottom;
+    expect(urnToNameGap).to.be.closeTo(nameToEmailGap, 3);
 
     contactDetails.setContact({
       ...contactDetails.data,
@@ -377,6 +379,95 @@ describe(TAG, () => {
     contactDetails.editable = false;
     await contactDetails.updateComplete;
     expect(contactDetails.shadowRoot.querySelector('.urn-display')).to.be.null;
+  });
+
+  it('shows the email and whether it is verified', async () => {
+    await loadStore();
+    const contactDetails = await getContactDetails({ contact: CONTACT_ID });
+    const getEmail = () =>
+      contactDetails.shadowRoot.querySelector(
+        'temba-contact-field.email'
+      ) as ContactFieldEditor;
+
+    // no email, no row
+    expect(getEmail()).to.be.null;
+
+    contactDetails.setContact({
+      ...contactDetails.data,
+      email: 'dave@example.com'
+    });
+    await contactDetails.updateComplete;
+    expect(getEmail().name).to.equal('Email');
+    expect(getEmail().value).to.equal('dave@example.com');
+    expect(getEmail().valueIcon).to.equal('');
+
+    contactDetails.setContact({
+      ...contactDetails.data,
+      email_verified_on: '2026-09-30T12:00:00Z'
+    });
+    await contactDetails.updateComplete;
+    expect(getEmail().valueIcon).to.equal(Icon.contact_verified);
+    expect(getEmail().valueIconLabel).to.equal('Verified');
+
+    // editable, even without an email, but never on anon workspaces
+    contactDetails.editable = true;
+    await contactDetails.updateComplete;
+    expect(getEmail().disabled).to.be.false;
+    expect(getEmail().valueIcon).to.equal(Icon.contact_verified);
+
+    contactDetails.setContact({ ...contactDetails.data, email: null });
+    await contactDetails.updateComplete;
+    expect(getEmail().value).to.equal('');
+
+    contactDetails.anon = true;
+    await contactDetails.updateComplete;
+    expect(getEmail()).to.be.null;
+  });
+
+  it('saves email changes', async () => {
+    await loadStore();
+    const contactDetails = await getContactDetails({
+      contact: CONTACT_ID,
+      editable: true
+    });
+    mockPOST(/\/api\/internal\/contacts\.json\?uuid=/, {
+      ...contactDetails.data,
+      email: 'dave@example.com',
+      email_verified_on: null
+    });
+
+    const email = contactDetails.shadowRoot.querySelector(
+      'temba-contact-field[key="email"]'
+    ) as ContactFieldEditor;
+    email.value = ' Dave@Example.com';
+    await contactDetails.handleTextChanged({
+      currentTarget: email
+    } as unknown as Event);
+
+    expect(getContactPosts()).to.deep.equal([{ email: ' Dave@Example.com' }]);
+    expect(contactDetails.data.email).to.equal('dave@example.com');
+    expect(email.value).to.equal('dave@example.com');
+  });
+
+  it('updates live when the email changes', async () => {
+    await loadStore();
+    const details: ContactDetails = await getContactDetails({
+      contact: CONTACT_ID
+    });
+    details.setContact({
+      ...details.data,
+      email: 'dave@example.com',
+      email_verified_on: '2026-09-30T12:00:00Z'
+    });
+
+    await waitForWatchedContact(CONTACT_ID);
+    mockSocket.serverPublish(`history:${CONTACT_ID}`, {
+      type: 'contact_email_changed',
+      email: 'david@example.com'
+    });
+
+    await waitUntil(() => details.data.email === 'david@example.com');
+    expect(details.data.email_verified_on).to.be.null;
   });
 
   it('updates status immediately and preserves manual groups', async () => {

@@ -105,6 +105,11 @@ export interface ContactNameChangedEvent extends ContactHistoryEvent {
   name: string;
 }
 
+export interface ContactEmailChangedEvent extends ContactHistoryEvent {
+  type: Events.CONTACT_EMAIL_CHANGED;
+  email: string;
+}
+
 export interface ContactLanguageChangedEvent extends ContactHistoryEvent {
   type: Events.CONTACT_LANGUAGE_CHANGED;
   language: string;
@@ -146,6 +151,7 @@ export interface ContactURNsChangedEvent extends ContactHistoryEvent {
 
 export type ContactStateEvent =
   | ContactNameChangedEvent
+  | ContactEmailChangedEvent
   | ContactLanguageChangedEvent
   | ContactStatusChangedEvent
   | ContactFlowChangedEvent

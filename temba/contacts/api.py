@@ -9,6 +9,7 @@ from temba.api.internal.views import BaseEndpoint
 from temba.api.support import ListPagination, SearchLengthMixin
 from temba.api.v2 import serializers as v2
 from temba.api.views import ListAPIMixin, WriteAPIMixin
+from temba.mailroom import modifiers
 from temba.utils.models.base import patch_queryset_count
 from temba.utils.models.es import SearchSliceQuerySet
 from temba.utils.uuid import is_uuid
@@ -36,6 +37,11 @@ class ContactWriteSerializer(v2.ContactWriteSerializer):
     }
 
     status = serializers.ChoiceField(required=False, choices=tuple(STATUSES))
+    email = serializers.EmailField(required=False, allow_blank=True, allow_null=True)
+
+    def validate_email(self, value):
+        # normalized as mailroom will store it, so that we can tell when it's unchanged
+        return value.strip().lower() if value else None
 
     def validate_groups(self, value):
         # the public API rejects groups on any non-active contact - here that check needs to consider a status
@@ -52,7 +58,18 @@ class ContactWriteSerializer(v2.ContactWriteSerializer):
             if self.instance.status != Contact.STATUS_ACTIVE and new_status != Contact.STATUS_ACTIVE:
                 raise serializers.ValidationError({"groups": "Non-active contacts can't be added to groups"})
 
+        if self.instance and "email" in data and self.context["org"].is_anon:
+            raise serializers.ValidationError({"email": "Updating email not allowed for anonymous workspaces"})
+
         return data
+
+    def get_modifiers(self) -> list:
+        mods = super().get_modifiers()
+
+        if "email" in self.validated_data and self.validated_data["email"] != self.instance.email:
+            mods.append(modifiers.Email(email=self.validated_data["email"] or ""))
+
+        return mods
 
     def save(self):
         # apply any status change first so that a restore to active happens before any group mods

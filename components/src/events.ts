@@ -86,6 +86,10 @@ export interface NameChangedEvent extends ContactEvent {
   name: string;
 }
 
+export interface ContactEmailChangedEvent extends ContactEvent {
+  email: string;
+}
+
 export interface UpdateFieldEvent extends ContactEvent {
   field: { key: string; name: string };
   // engine field values always carry text; typed representations are

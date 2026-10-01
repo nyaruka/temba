@@ -7,6 +7,7 @@ import {
   ContactFlowChangedEvent,
   ContactGroupsChangedEvent,
   ContactHistoryEvent,
+  ContactEmailChangedEvent,
   ContactLanguageChangedEvent,
   ContactLastSeenChangedEvent,
   ContactNameChangedEvent,
@@ -68,6 +69,7 @@ const FETCH_RETRY_DELAY = 1000;
 // for components that render contact data
 export const CONTACT_STATE_TYPES = [
   Events.CONTACT_NAME_CHANGED,
+  Events.CONTACT_EMAIL_CHANGED,
   Events.CONTACT_URNS_CHANGED,
   Events.CONTACT_FIELD_CHANGED,
   Events.CONTACT_GROUPS_CHANGED,
@@ -139,6 +141,14 @@ const appliers: {
 } = {
   [Events.CONTACT_NAME_CHANGED]: (contact, event: ContactNameChangedEvent) => {
     contact.name = event.name;
+  },
+  [Events.CONTACT_EMAIL_CHANGED]: (
+    contact,
+    event: ContactEmailChangedEvent
+  ) => {
+    contact.email = event.email || null;
+    // a changed address is never verified
+    contact.email_verified_on = null;
   },
   [Events.CONTACT_LANGUAGE_CHANGED]: (
     contact,

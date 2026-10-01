@@ -489,6 +489,44 @@ class EndpointsTest(APITestMixin, TembaTest):
             errors={"fields": "Editing of 'nickname' values disallowed for current user."},
         )
 
+        # email can be set, normalized, and changing it clears any verification
+        joe.email, joe.email_verified_on = "joe@example.com", timezone.now()
+        joe.save(update_fields=("email", "email_verified_on"))
+
+        response = self.assertPost(endpoint_url + f"?uuid={joe.uuid}", self.editor, {"email": " Joseph@Example.com "})
+        joe.refresh_from_db()
+        self.assertEqual("joseph@example.com", joe.email)
+        self.assertIsNone(joe.email_verified_on)
+        self.assertEqual("joseph@example.com", response.json()["email"])
+        self.assertIsNone(response.json()["email_verified_on"])
+
+        # resubmitting the same address isn't a change, so doesn't clear verification
+        joe.email_verified_on = timezone.now()
+        joe.save(update_fields=("email_verified_on",))
+        self.assertPost(endpoint_url + f"?uuid={joe.uuid}", self.editor, {"email": "JOSEPH@example.com"})
+        joe.refresh_from_db()
+        self.assertIsNotNone(joe.email_verified_on)
+
+        self.assertPost(
+            endpoint_url + f"?uuid={joe.uuid}",
+            self.editor,
+            {"email": "joseph"},
+            errors={"email": "Enter a valid email address."},
+        )
+
+        # and cleared
+        self.assertPost(endpoint_url + f"?uuid={joe.uuid}", self.editor, {"email": ""})
+        joe.refresh_from_db()
+        self.assertIsNone(joe.email)
+
+        with self.anonymous(self.org):
+            self.assertPost(
+                endpoint_url + f"?uuid={joe.uuid}",
+                self.editor,
+                {"email": "joe@example.com"},
+                errors={"email": "Updating email not allowed for anonymous workspaces"},
+            )
+
         # deleted contacts can't be modified
         deleted = self.create_contact("Del", phone="+250788000000")
         deleted.release(self.admin)

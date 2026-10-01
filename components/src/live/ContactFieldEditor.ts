@@ -1,4 +1,4 @@
-import { css, html, TemplateResult } from 'lit';
+import { css, html, nothing, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { CustomEventType } from '../interfaces';
 import { RapidElement } from '../RapidElement';
@@ -145,6 +145,10 @@ export class ContactFieldEditor extends RapidElement {
         display: flex;
         align-items: center;
         --icon-color: var(--contact-field-value-icon-color, var(--text-3));
+      }
+
+      temba-textinput .value-prefix {
+        margin: 0 0 0 10px;
       }
 
       .postfix {
@@ -453,6 +457,21 @@ export class ContactFieldEditor extends RapidElement {
     `;
   }
 
+  private renderValueIcon(slot?: string): TemplateResult {
+    if (!this.valueIcon) return null;
+    return html`<temba-tip
+      class="value-prefix"
+      text=${this.valueIconLabel}
+      position="top"
+      slot=${slot || nothing}
+    >
+      <temba-icon
+        name=${this.valueIcon}
+        aria-label=${this.valueIconLabel}
+      ></temba-icon>
+    </temba-tip>`;
+  }
+
   private renderTextField(state: TemplateResult) {
     return html`
       <label id="field-label" class="field-label">${this.name}</label>
@@ -465,6 +484,7 @@ export class ContactFieldEditor extends RapidElement {
         type=${this.getInputType(this.type)}
         ?disabled=${this.disabled}
       >
+        ${this.renderValueIcon('prefix')}
         <div class="postfix">
           <div
             class="popper ${this.iconClass} ${this.status}  ${this.dirty
@@ -551,18 +571,7 @@ export class ContactFieldEditor extends RapidElement {
       >
         <div class="label"><div class="name">${this.name}</div></div>
         <div class="value">
-          ${this.valueIcon
-            ? html`<temba-tip
-                class="value-prefix"
-                text=${this.valueIconLabel}
-                position="top"
-              >
-                <temba-icon
-                  name=${this.valueIcon}
-                  aria-label=${this.valueIconLabel}
-                ></temba-icon>
-              </temba-tip>`
-            : null}
+          ${this.renderValueIcon()}
           ${this.type === 'datetime'
             ? this.value
               ? html`<temba-date

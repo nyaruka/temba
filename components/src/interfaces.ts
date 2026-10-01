@@ -416,6 +416,8 @@ export interface Contact {
   stopped: boolean;
   blocked: boolean;
   urns: URN[];
+  email?: string;
+  email_verified_on?: string;
   language?: string;
   fields: { [key: string]: string };
   groups: Group[];

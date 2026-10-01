@@ -65,6 +65,7 @@ export enum Icon {
   contact_import = 'upload-cloud-01',
   contact_stopped = 'slash-octagon',
   contact_updated = 'user-edit',
+  contact_verified = 'check-verified-02',
   contacts = 'user-01',
   copy = 'copy-04',
   dashboard = 'pie-chart-01',

@@ -771,6 +771,9 @@ def apply_modifiers(org, user, contacts, modifiers: list):
         if mod.type == "language":
             fields = dict(language=mod.language)
 
+        if mod.type == "email":
+            fields = dict(email=mod.email.strip().lower() or None, email_verified_on=None)
+
         if mod.type == "field":
             for c in contacts:
                 update_field_locally(user, c, mod.field.key, mod.value, name=mod.field.name)

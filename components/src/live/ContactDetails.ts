@@ -29,6 +29,7 @@ export class ContactDetails extends ContactStoreElement {
   // through the central watcher
   protected watchTypes = [
     Events.CONTACT_NAME_CHANGED,
+    Events.CONTACT_EMAIL_CHANGED,
     Events.CONTACT_URNS_CHANGED,
     Events.CONTACT_LANGUAGE_CHANGED,
     Events.CONTACT_STATUS_CHANGED,
@@ -167,6 +168,10 @@ export class ContactDetails extends ContactStoreElement {
 
       .urn-display.only-unsendable temba-contact-field {
         --contact-field-value-icon-color: rgb(var(--error-rgb));
+      }
+
+      temba-contact-field.email.verified {
+        --contact-field-value-icon-color: rgb(var(--success-rgb));
       }
 
       .urn-more-count {
@@ -929,6 +934,22 @@ export class ContactDetails extends ContactStoreElement {
       ${editable ? this.renderUrnDialog() : null}`;
   }
 
+  private renderEmail(editable: boolean): TemplateResult {
+    if (this.anon || (!editable && !this.data.email)) return null;
+    const verified = !!this.data.email_verified_on;
+    return html`<temba-contact-field
+      class="email ${verified ? 'verified' : ''}"
+      key="email"
+      name=${msg('Email')}
+      value=${this.data.email || ''}
+      valueIcon=${verified ? Icon.contact_verified : ''}
+      valueIconLabel=${verified ? msg('Verified') : ''}
+      ?disabled=${!editable}
+      @change=${this.handleTextChanged}
+      @temba-button-clicked=${this.handleSearch}
+    ></temba-contact-field>`;
+  }
+
   private renderEditable(): TemplateResult {
     const manualGroups = this.getManualGroups();
     return html`
@@ -940,6 +961,7 @@ export class ContactDetails extends ContactStoreElement {
         @change=${this.handleTextChanged}
         @temba-button-clicked=${this.handleSearch}
       ></temba-contact-field>
+      ${this.renderEmail(true)}
       ${this.anon && this.data.ref
         ? html`<temba-contact-field
             name=${msg('Ref')}
@@ -988,7 +1010,7 @@ export class ContactDetails extends ContactStoreElement {
     const lang = getLanguageName(this.data.language);
     const manualGroups = this.getManualGroups();
     return html`
-      ${this.renderPrimaryUrn(false)}
+      ${this.renderPrimaryUrn(false)} ${this.renderEmail(false)}
       ${manualGroups.length
         ? html`<div class="row">
             <div class="label">${msg('Groups')}</div>

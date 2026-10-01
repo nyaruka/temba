@@ -51,7 +51,9 @@ class ContactsEndpointTest(APITest):
         contact4.modified_on = timezone.now()
         contact4.last_seen_on = datetime(2020, 8, 12, 13, 30, 45, 123456, tzone.utc)
         contact4.current_flow = survey
-        contact4.save(update_fields=("modified_on", "last_seen_on", "current_flow"))
+        contact4.email = "don@example.com"
+        contact4.email_verified_on = datetime(2020, 8, 10, 9, 15, 0, 0, tzone.utc)
+        contact4.save(update_fields=("modified_on", "last_seen_on", "current_flow", "email", "email_verified_on"))
 
         contact1.refresh_from_db()
         contact4.refresh_from_db()
@@ -74,6 +76,8 @@ class ContactsEndpointTest(APITest):
                 "status": "active",
                 "language": "fra",
                 "urns": ["tel:+250788000004"],
+                "email": "don@example.com",
+                "email_verified_on": "2020-08-10T09:15:00.000000Z",
                 "groups": [{"uuid": str(group.uuid), "name": group.name}],
                 "notes": [],
                 "fields": {"nickname": "Donnie", "gender": "male"},
@@ -116,6 +120,8 @@ class ContactsEndpointTest(APITest):
                         "display": None,
                     }
                 ],
+                "email": "don@example.com",
+                "email_verified_on": "2020-08-10T09:15:00.000000Z",
                 "groups": [{"uuid": str(group.uuid), "name": group.name}],
                 "notes": [],
                 "fields": {"nickname": "Donnie", "gender": "male"},
@@ -151,6 +157,8 @@ class ContactsEndpointTest(APITest):
                     "status": "active",
                     "language": "fra",
                     "urns": ["tel:********"],
+                    "email": "********",
+                    "email_verified_on": "2020-08-10T09:15:00.000000Z",
                     "groups": [{"uuid": str(group.uuid), "name": group.name}],
                     "notes": [],
                     "fields": {"nickname": "Donnie", "gender": "male"},
@@ -187,6 +195,8 @@ class ContactsEndpointTest(APITest):
                             "display": None,
                         }
                     ],
+                    "email": "********",
+                    "email_verified_on": "2020-08-10T09:15:00.000000Z",
                     "groups": [{"uuid": str(group.uuid), "name": group.name}],
                     "notes": [],
                     "fields": {"nickname": "Donnie", "gender": "male"},
@@ -241,6 +251,8 @@ class ContactsEndpointTest(APITest):
                     "status": None,
                     "language": None,
                     "urns": [],
+                    "email": None,
+                    "email_verified_on": None,
                     "groups": [],
                     "notes": [],
                     "fields": {},
@@ -270,6 +282,8 @@ class ContactsEndpointTest(APITest):
                 "status": "active",
                 "language": None,
                 "urns": [],
+                "email": None,
+                "email_verified_on": None,
                 "groups": [],
                 "notes": [],
                 "fields": {"nickname": None, "gender": None},
@@ -664,6 +678,8 @@ class ContactsEndpointTest(APITest):
                     "status": "active",
                     "language": None,
                     "urns": ["telegram:12345"],
+                    "email": None,
+                    "email_verified_on": None,
                     "groups": [],
                     "notes": [],
                     "fields": {"age": "40", "height": "180"},

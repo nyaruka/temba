@@ -869,21 +869,9 @@
   <source>Chat</source>
   <target>Chat</target>
 </trans-unit>
-<trans-unit id="sd5116418e3e4905f">
-  <source>This chat is not currently connected.</source>
-  <target>Este chat no está conectado actualmente.</target>
-</trans-unit>
-<trans-unit id="s07c6ef114873e1c5">
-  <source>Click here to reconnect</source>
-  <target>Haga clic aquí para volver a conectar</target>
-</trans-unit>
 <trans-unit id="s4b052cb287d81da7">
   <source>Connecting</source>
   <target>Conectando</target>
-</trans-unit>
-<trans-unit id="sec459d377167f650">
-  <source>Message..</source>
-  <target>Mensaje..</target>
 </trans-unit>
 <trans-unit id="s4fa8414c37c75316">
   <source>No broadcasts</source>
@@ -1596,6 +1584,80 @@
 </trans-unit>
 <trans-unit id="s8fc556c37b60845d">
   <source>Add a cover image</source>
+</trans-unit>
+<trans-unit id="sd1f44f1a8bc20e67">
+  <source>Email</source>
+  <target>Correo electrónico</target>
+</trans-unit>
+<trans-unit id="sca4fb8fafd9b52e5">
+  <source>Verified</source>
+  <target>Verificado</target>
+</trans-unit>
+<trans-unit id="s1104a7eac4dac164">
+  <source>Unable to connect to chat</source>
+</trans-unit>
+<trans-unit id="s7c459993827517b8">
+  <source>Your message could not be sent</source>
+</trans-unit>
+<trans-unit id="se3ed881a961f14bd">
+  <source>Emoji</source>
+</trans-unit>
+<trans-unit id="s97f6e6b329f62301">
+  <source>Frequently used</source>
+</trans-unit>
+<trans-unit id="sa9d13f71e8de590f">
+  <source>Search emoji</source>
+</trans-unit>
+<trans-unit id="sf50402600c3d5dac">
+  <source>No emoji found</source>
+</trans-unit>
+<trans-unit id="s67cc427214876d96">
+  <source>Too many attachments</source>
+</trans-unit>
+<trans-unit id="s2c613f55190525c2">
+  <source>File type not supported</source>
+</trans-unit>
+<trans-unit id="sfa99679af4c07130">
+  <source>File is too large</source>
+</trans-unit>
+<trans-unit id="sa361fcab60d93eba">
+  <source>Unable to upload file</source>
+</trans-unit>
+<trans-unit id="s82a4e28ab5b56670">
+  <source>Connected</source>
+</trans-unit>
+<trans-unit id="scde3342a428aaee8">
+  <source>Offline</source>
+</trans-unit>
+<trans-unit id="s7cca8a9dbdc4f5e6">
+  <source>The chat is not connected.</source>
+</trans-unit>
+<trans-unit id="s31853dc46cf19846">
+  <source>Reconnect</source>
+</trans-unit>
+<trans-unit id="sac72064efd7b3464">
+  <source>Add an attachment</source>
+</trans-unit>
+<trans-unit id="s3ab33766abd1267c">
+  <source>Write a message</source>
+</trans-unit>
+<trans-unit id="se87720a0d34ad7b9">
+  <source>Add an emoji</source>
+</trans-unit>
+<trans-unit id="s57adf424d57c8a0f">
+  <source>Send</source>
+</trans-unit>
+<trans-unit id="s2d9a6ca558b0444d">
+  <source>Drop files to attach them</source>
+</trans-unit>
+<trans-unit id="s5d47d9945079dcc7">
+  <source>Close chat</source>
+</trans-unit>
+<trans-unit id="s268292503b5b4aef">
+  <source>Send a message and we'll reply here.</source>
+</trans-unit>
+<trans-unit id="s8739101d033ef475">
+  <source>Open chat</source>
 </trans-unit>
 </body>
 </file>

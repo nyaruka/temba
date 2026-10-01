@@ -1049,6 +1049,8 @@ class ContactsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseEndpoint
      * **status** - the status of the contact, one of `active`, `blocked`, `stopped` or `archived`.
      * **language** - the preferred language of the contact (string).
      * **urns** - the URNs associated with the contact (string array), filterable as `urn`.
+     * **email** - the email address of the contact (string).
+     * **email_verified_on** - when the email address was verified as belonging to this contact (datetime).
      * **groups** - the UUIDs of any groups the contact is part of (array of objects), filterable as `group` with group name or UUID.
      * **fields** - any contact fields on this contact (object).
      * **flow** - the flow that the contact is currently in, if any (object).
@@ -1072,6 +1074,8 @@ class ContactsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseEndpoint
                 "status": "active",
                 "language": null,
                 "urns": ["tel:+250788123123"],
+                "email": "ben@example.com",
+                "email_verified_on": null,
                 "groups": [{"name": "Customers", "uuid": "5a4eb79e-1b1f-4ae3-8700-09384cca385f"}],
                 "fields": {
                   "nickname": "Macklemore",

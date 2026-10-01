@@ -154,6 +154,7 @@ const CONDENSED_EVENT_TYPES = new Set([
   'call_missed',
   'call_received',
   'chat_started',
+  'contact_email_changed',
   'contact_field_changed',
   'contact_groups_changed',
   'contact_language_changed',
