@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 // for cache busting we dynamically generate a fingerprint, use bun run svg to update
-export const SVG_FINGERPRINT = '546693811e9ab53aa693f3f21ed185cf';
+export const SVG_FINGERPRINT = 'ce10cf207bc8b678f7c04e7e30c5976a';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -65,6 +65,7 @@ export enum Icon {
   contact_import = 'upload-cloud-01',
   contact_stopped = 'slash-octagon',
   contact_updated = 'user-edit',
+  contact_unverified = 'badge-unverified',
   contact_verified = 'check-verified-02',
   contacts = 'user-01',
   copy = 'copy-04',

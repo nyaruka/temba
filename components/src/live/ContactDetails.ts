@@ -171,7 +171,11 @@ export class ContactDetails extends ContactStoreElement {
       }
 
       temba-contact-field.email.verified {
-        --contact-field-value-icon-color: rgb(var(--success-rgb));
+        --contact-field-value-icon-color: var(--success, #16a34a);
+      }
+
+      temba-contact-field.email.unverified {
+        --contact-field-value-icon-color: var(--warning, #b45309);
       }
 
       .urn-more-count {
@@ -937,13 +941,31 @@ export class ContactDetails extends ContactStoreElement {
   private renderEmail(editable: boolean): TemplateResult {
     if (this.anon || (!editable && !this.data.email)) return null;
     const verified = !!this.data.email_verified_on;
+    const status = this.data.email
+      ? verified
+        ? 'verified'
+        : 'unverified'
+      : '';
     return html`<temba-contact-field
-      class="email ${verified ? 'verified' : ''}"
+      class="email ${status}"
       key="email"
       name=${msg('Email')}
       value=${this.data.email || ''}
-      valueIcon=${verified ? Icon.contact_verified : ''}
-      valueIconLabel=${verified ? msg('Verified') : ''}
+      valueIcon=${status
+        ? verified
+          ? Icon.contact_verified
+          : Icon.contact_unverified
+        : ''}
+      valueIconLabel=${status
+        ? verified
+          ? msg('Verified')
+          : msg('Not verified')
+        : ''}
+      valueIconDetail=${status
+        ? verified
+          ? msg('This contact has proven they own this address')
+          : msg('This address may not belong to this contact')
+        : ''}
       ?disabled=${!editable}
       @change=${this.handleTextChanged}
       @temba-button-clicked=${this.handleSearch}

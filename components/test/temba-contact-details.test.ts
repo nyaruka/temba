@@ -401,7 +401,38 @@ describe(TAG, () => {
     await contactDetails.updateComplete;
     expect(getEmail().name).to.equal('Email');
     expect(getEmail().value).to.equal('dave@example.com');
-    expect(getEmail().valueIcon).to.equal('');
+    expect(getEmail().valueIcon).to.equal(Icon.contact_unverified);
+    expect(getEmail().valueIconLabel).to.equal('Not verified');
+    expect(getEmail().valueIconDetail).to.equal(
+      'This address may not belong to this contact'
+    );
+    await assertScreenshot(
+      'contacts/details-email-unverified',
+      getClip(contactDetails)
+    );
+
+    // the badge explains itself on hover
+    const tip = getEmail().shadowRoot.querySelector('.value-prefix') as any;
+    tip.shadowRoot
+      .querySelector('.slot')
+      .dispatchEvent(new Event('mouseenter'));
+    await waitUntil(() => tip.visible);
+    await waitFor(300);
+    const tipBounds = tip.shadowRoot
+      .querySelector('.tip')
+      .getBoundingClientRect();
+    expect(tipBounds.width).to.be.lessThan(contactDetails.offsetWidth);
+    const emailBounds = getEmail().getBoundingClientRect();
+    const left = Math.max(0, Math.min(tipBounds.x, emailBounds.x) - 10);
+    await assertScreenshot('contacts/details-email-unverified-tip', {
+      x: left,
+      y: tipBounds.y - 10,
+      width: emailBounds.right + 10 - left,
+      height: emailBounds.bottom - tipBounds.y + 20
+    });
+    tip.shadowRoot
+      .querySelector('.slot')
+      .dispatchEvent(new Event('mouseleave'));
 
     contactDetails.setContact({
       ...contactDetails.data,
@@ -410,6 +441,9 @@ describe(TAG, () => {
     await contactDetails.updateComplete;
     expect(getEmail().valueIcon).to.equal(Icon.contact_verified);
     expect(getEmail().valueIconLabel).to.equal('Verified');
+    expect(getEmail().valueIconDetail).to.equal(
+      'This contact has proven they own this address'
+    );
     await assertScreenshot(
       'contacts/details-email-verified',
       getClip(contactDetails)
@@ -425,9 +459,15 @@ describe(TAG, () => {
       getClip(contactDetails)
     );
 
-    contactDetails.setContact({ ...contactDetails.data, email: null });
+    // no address, no status
+    contactDetails.setContact({
+      ...contactDetails.data,
+      email: null,
+      email_verified_on: null
+    });
     await contactDetails.updateComplete;
     expect(getEmail().value).to.equal('');
+    expect(getEmail().valueIcon).to.equal('');
 
     contactDetails.anon = true;
     await contactDetails.updateComplete;

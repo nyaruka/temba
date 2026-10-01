@@ -43,6 +43,10 @@ export class ContactFieldEditor extends RapidElement {
   @property({ type: String })
   valueIconLabel = '';
 
+  // a longer explanation shown under the label in the icon's tooltip
+  @property({ type: String })
+  valueIconDetail = '';
+
   @property({ type: String })
   status: Status = Status.Ready;
 
@@ -465,16 +469,23 @@ export class ContactFieldEditor extends RapidElement {
 
   private renderValueIcon(slot?: string): TemplateResult {
     if (!this.valueIcon) return null;
+    const label = this.valueIconDetail
+      ? `${this.valueIconLabel}: ${this.valueIconDetail}`
+      : this.valueIconLabel;
     return html`<temba-tip
       class="value-prefix"
       text=${this.valueIconLabel}
+      .content=${this.valueIconDetail
+        ? // tip content renders in the tip's own shadow root, so is styled inline
+          html`<div style="font-weight: 600">${this.valueIconLabel}</div>
+            <div style="font-size: 13px; color: var(--text-2, #4d5664)">
+              ${this.valueIconDetail}
+            </div>`
+        : null}
       position="top"
       slot=${slot || nothing}
     >
-      <temba-icon
-        name=${this.valueIcon}
-        aria-label=${this.valueIconLabel}
-      ></temba-icon>
+      <temba-icon name=${this.valueIcon} aria-label=${label}></temba-icon>
     </temba-tip>`;
   }
 

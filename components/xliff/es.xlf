@@ -1589,10 +1589,6 @@
   <source>Email</source>
   <target>Correo electrónico</target>
 </trans-unit>
-<trans-unit id="sca4fb8fafd9b52e5">
-  <source>Verified</source>
-  <target>Verificado</target>
-</trans-unit>
 <trans-unit id="s1104a7eac4dac164">
   <source>Unable to connect to chat</source>
 </trans-unit>
@@ -1658,6 +1654,22 @@
 </trans-unit>
 <trans-unit id="s8739101d033ef475">
   <source>Open chat</source>
+</trans-unit>
+<trans-unit id="sca4fb8fafd9b52e5">
+  <source>Verified</source>
+  <target>Verificado</target>
+</trans-unit>
+<trans-unit id="sf10c96d1fe5eddee">
+  <source>Not verified</source>
+  <target>No verificado</target>
+</trans-unit>
+<trans-unit id="s8d7303914c642e6d">
+  <source>This contact has proven they own this address</source>
+  <target>Este contacto ha demostrado que es el dueño de esta dirección</target>
+</trans-unit>
+<trans-unit id="s776c9901ec5a724b">
+  <source>This address may not belong to this contact</source>
+  <target>Es posible que esta dirección no pertenezca a este contacto</target>
 </trans-unit>
 </body>
 </file>
