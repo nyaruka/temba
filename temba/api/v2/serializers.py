@@ -593,7 +593,10 @@ class ContactReadSerializer(ReadSerializer):
         return ContactURN.ANON_MASK if self.context["org"].is_anon else obj.email
 
     def get_email_verified_on(self, obj):
-        return format_datetime(obj.email_verified_on) if obj.is_active else None
+        if not obj.is_active or self.context["org"].is_anon:
+            return None
+
+        return format_datetime(obj.email_verified_on)
 
     def get_groups(self, obj):
         if not obj.is_active:

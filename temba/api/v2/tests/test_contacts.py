@@ -158,7 +158,7 @@ class ContactsEndpointTest(APITest):
                     "language": "fra",
                     "urns": ["tel:********"],
                     "email": "********",
-                    "email_verified_on": "2020-08-10T09:15:00.000000Z",
+                    "email_verified_on": None,
                     "groups": [{"uuid": str(group.uuid), "name": group.name}],
                     "notes": [],
                     "fields": {"nickname": "Donnie", "gender": "male"},
@@ -196,7 +196,7 @@ class ContactsEndpointTest(APITest):
                         }
                     ],
                     "email": "********",
-                    "email_verified_on": "2020-08-10T09:15:00.000000Z",
+                    "email_verified_on": None,
                     "groups": [{"uuid": str(group.uuid), "name": group.name}],
                     "notes": [],
                     "fields": {"nickname": "Donnie", "gender": "male"},
