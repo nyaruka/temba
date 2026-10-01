@@ -926,18 +926,30 @@ class Org(LegacyIDMixin, SmartModel):
             self._group_admin_cache[user] = self.admin_groups.filter(user=user).exists()
         return self._group_admin_cache[user]
 
+    def get_effective_membership(self, user: User):
+        """
+        Gets the membership of the given user that decides what they can do in this org. Members of the org's admin
+        groups are administrators regardless of any explicit membership, so for them this is None - the same as for a
+        user with no membership at all, so callers that need to tell those apart should also check has_group_admin.
+        Use get_membership instead where the actual membership record is needed.
+        """
+
+        membership = self.get_membership(user)  # fetched first as it also caches the admin group check
+        if membership and self.has_group_admin(user):
+            return None
+
+        return membership
+
     def get_user_role(self, user: User):
         """
         Gets the role of the given user in this org (if any). Members of the org's admin groups always have the
         administrator role regardless of any explicit membership.
         """
 
-        membership = self.get_membership(user)  # fetched first as it also caches the admin group check
+        if membership := self.get_effective_membership(user):
+            return membership.role
 
-        if self.has_group_admin(user):
-            return OrgRole.ADMINISTRATOR
-
-        return membership.role if membership else None
+        return OrgRole.ADMINISTRATOR if self.has_group_admin(user) else None
 
     def create_sample_flows(self, api_url):
         # get our sample dir

@@ -1664,7 +1664,7 @@ class TicketBulkActionSerializer(WriteSerializer):
         if action == self.ACTION_ASSIGN:
             org = self.context["org"]
             user = self.context["user"]
-            membership = org.get_membership(user)
+            membership = org.get_effective_membership(user)
             if membership and not membership.can_assign:
                 raise serializers.ValidationError("You do not have permission to assign tickets.")
 

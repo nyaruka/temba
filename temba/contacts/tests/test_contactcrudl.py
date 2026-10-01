@@ -655,6 +655,16 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
         )
         self.assertEqual(403, response.status_code)
 
+        # unless they're also in one of the workspace's admin groups, which makes them an administrator
+        group = self.create_admin_group("Global Admins", orgs=[self.org], users=[self.agent])
+
+        response = self.client.post(
+            chat_url, {"text": "Hello", "ticket": str(ticket.uuid)}, content_type="application/json"
+        )
+        self.assertEqual(200, response.status_code)
+
+        self.agent.groups.remove(group)
+
         # restore permission
         OrgMembership.objects.filter(org=self.org, user=self.agent).update(can_reply_non_own=True)
         self.org._membership_cache = {}

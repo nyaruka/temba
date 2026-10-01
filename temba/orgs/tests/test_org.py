@@ -90,6 +90,31 @@ class OrgTest(TembaTest):
         self.assertEqual([self.admin, admin3], list(self.org.get_admins().order_by("id")))
         self.assertEqual([self.admin, self.admin2], list(self.org2.get_admins().order_by("id")))
 
+    def test_get_effective_membership(self):
+        group_admin = self.create_user("gad@textit.com")
+        self.create_admin_group("Global Admins", orgs=[self.org], users=[group_admin, self.agent])
+
+        org = Org.objects.get(id=self.org.id)
+
+        # a regular member's effective membership is their membership, fetched along with the admin group check
+        with self.assertNumQueries(1):
+            self.assertEqual(org.get_membership(self.editor), org.get_effective_membership(self.editor))
+            self.assertEqual(OrgRole.EDITOR, org.get_user_role(self.editor))
+
+        # admin group members have no effective membership, even if they have an explicit membership
+        with self.assertNumQueries(1):
+            self.assertIsNone(org.get_effective_membership(self.agent))
+            self.assertIsNotNone(org.get_membership(self.agent))
+            self.assertEqual(OrgRole.ADMINISTRATOR, org.get_user_role(self.agent))
+
+        self.assertIsNone(org.get_effective_membership(group_admin))
+        self.assertIsNone(org.get_membership(group_admin))
+        self.assertEqual(OrgRole.ADMINISTRATOR, org.get_user_role(group_admin))
+
+        # and neither do users with no access to the org
+        self.assertIsNone(org.get_effective_membership(self.admin2))
+        self.assertIsNone(org.get_user_role(self.admin2))
+
     def test_get_owner(self):
         self.org.created_by = self.agent
         self.org.save(update_fields=("created_by",))

@@ -171,6 +171,18 @@ class TicketActionsEndpointTest(APITest):
             errors={"non_field_errors": "You do not have permission to assign tickets."},
         )
 
+        # unless they're also in one of the workspace's admin groups, which makes them an administrator
+        group = self.create_admin_group("Global Admins", orgs=[self.org], users=[self.agent])
+
+        self.assertPost(
+            endpoint_url,
+            self.agent,
+            {"tickets": [str(ticket1.uuid)], "action": "assign", "assignee": "admin@textit.com"},
+            status=204,
+        )
+
+        self.agent.groups.remove(group)
+
         # restore permission and verify it works again
         OrgMembership.objects.filter(org=self.org, user=self.agent).update(can_assign=True)
         self.org._membership_cache = {}
