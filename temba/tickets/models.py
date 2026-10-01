@@ -114,9 +114,9 @@ class Topic(TembaModel, DependencyMixin):
         if user.is_staff:
             return None
 
-        membership = org.get_effective_membership(user)
+        membership = org.get_membership(user, via_groups=True)
         if not membership:
-            return None if org.has_group_admin(user) else cls.objects.none()
+            return cls.objects.none()
 
         if membership.team and not membership.team.all_topics:
             return membership.team.topics.all()

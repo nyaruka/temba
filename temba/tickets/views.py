@@ -224,7 +224,7 @@ class TeamScopedMixin:
 
     @cached_property
     def team(self):
-        membership = self.request.org.get_effective_membership(self.request.user)
+        membership = self.request.org.get_membership(self.request.user, via_groups=True)
         return membership.team if membership else None  # only agent memberships have a team
 
 
@@ -431,7 +431,7 @@ class TicketCRUDL(SmartCRUDL):
                 context["assignee_uuid"] = assignee_uuid
 
             # pass agent permission flags to template
-            membership = self.request.org.get_effective_membership(self.request.user)
+            membership = self.request.org.get_membership(self.request.user, via_groups=True)
             context["user_role"] = membership.role_code if membership else OrgRole.ADMINISTRATOR.code
             context["can_assign"] = membership.can_assign if membership else True
             context["can_reply_non_own"] = membership.can_reply_non_own if membership else True
