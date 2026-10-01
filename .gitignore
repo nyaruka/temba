@@ -4,8 +4,6 @@
 .vscode/
 .devcontainer
 devcontainer-lock.json
-deploy
-fabfile.py
 
 # AI
 .claude/
