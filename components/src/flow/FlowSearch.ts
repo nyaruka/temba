@@ -8,6 +8,7 @@ import {
   SetRunResult,
   SetContactField,
   SetContactName,
+  SetContactEmail,
   SendEmail,
   SendBroadcast,
   EnterFlow,
@@ -104,6 +105,11 @@ function getActionSearchTexts(action: Action): string[] {
     case 'set_contact_name': {
       const a = action as SetContactName;
       if (a.name) texts.push(a.name);
+      break;
+    }
+    case 'set_contact_email': {
+      const a = action as SetContactEmail;
+      if (a.email) texts.push(a.email);
       break;
     }
     case 'set_contact_field': {

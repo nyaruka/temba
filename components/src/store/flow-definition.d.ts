@@ -16,6 +16,7 @@ export type ActionType =
   | 'set_contact_channel'
   | 'set_contact_field'
   | 'set_contact_name'
+  | 'set_contact_email'
   | 'set_contact_language'
   | 'set_contact_status'
   | 'set_run_result'
@@ -97,6 +98,10 @@ export interface SetRunResult extends Action {
 
 export interface SetContactName extends Action {
   name: string;
+}
+
+export interface SetContactEmail extends Action {
+  email: string;
 }
 
 export interface CallWebhook extends Action {

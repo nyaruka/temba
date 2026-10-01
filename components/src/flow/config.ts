@@ -15,6 +15,7 @@ import { send_msg } from './actions/send_msg';
 import { send_email } from './actions/send_email';
 import { start_session } from './actions/start_session';
 import { set_contact_name } from './actions/set_contact_name';
+import { set_contact_email } from './actions/set_contact_email';
 import { add_contact_groups } from './actions/add_contact_groups';
 import { remove_contact_groups } from './actions/remove_contact_groups';
 import { request_optin } from './actions/request_optin';
@@ -56,6 +57,7 @@ export const ACTION_CONFIG: {
   send_email,
   start_session,
   set_contact_name,
+  set_contact_email,
   add_contact_groups,
   remove_contact_groups,
   set_contact_channel,
