@@ -2,12 +2,6 @@
   "name": "rapidpro",
   "repository": "git@github.com:nyaruka/temba.git",
   "license": "AGPL-3.0",
-  "lint-staged": {
-    "*.{js,jsx,css,md}": [
-      "prettier --write",
-      "git add"
-    ]
-  },
   "scripts": {
     "tw-build": "postcss static/scss/tailwind.scss -o static/css/tailwind.css",
     "tw-watch": "watch 'bun run tw-build' ./static/scss"
@@ -16,15 +10,9 @@
     "autoprefixer": "10.2.5",
     "postcss": "8.5.23",
     "postcss-cli": "11.0.0",
-    "postcss-import": "14.0.2",
-    "postcss-loader": "5.3.0",
     "postcss-nested": "5.0.6",
-    "postcss-scss": "3.0.5",
     "postcss-simple-vars": "6.0.3",
     "tailwindcss": "2.0.4",
     "watch": "0.13.0"
-  },
-  "vaadin": {
-    "disableUsageStatistics": true
   }
 }

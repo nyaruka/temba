@@ -144,7 +144,6 @@ jobs:
         run: |
           uv venv
           uv sync --frozen
-          bun install --frozen-lockfile
           uv run python manage.py compilemessages --ignore='.venv' --ignore='node_modules'
           uv run python manage.py migrate
 
