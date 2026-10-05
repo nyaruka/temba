@@ -29,10 +29,14 @@ function getComposedRange(
   try {
     ranges = sel.getComposedRanges({ shadowRoots: [root] });
   } catch {
-    // older Safari only takes the shadow roots as arguments
-    ranges = sel.getComposedRanges(root);
+    try {
+      // older Safari only takes the shadow roots as arguments
+      ranges = sel.getComposedRanges(root);
+    } catch {
+      return null;
+    }
   }
-  return ranges[0] || null;
+  return ranges?.[0] || null;
 }
 
 /**
