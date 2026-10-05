@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from temba.channels.models import Channel
 from temba.orgs.models import DependencyMixin, Org
 from temba.utils.languages import alpha2_to_alpha3
-from temba.utils.models import TembaModel, update_if_changed
+from temba.utils.models import OrgAsset, update_if_changed
 
 
 class TemplateType:
@@ -31,7 +31,7 @@ class TemplateType:
         return f"{language}-{country}" if country else language
 
 
-class Template(TembaModel, DependencyMixin):
+class Template(OrgAsset, DependencyMixin):
     """
     Templates represent messages that can be used in flows and have template variables substituted into them. These
     are currently only used for WhatsApp channels.

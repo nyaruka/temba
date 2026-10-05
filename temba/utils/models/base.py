@@ -201,7 +201,7 @@ class NameMixin(models.Model):
 class OrgLimitMixin:
     """
     Mixin for things which are limited per org. Deliberately not a model mixin - it adds no fields of its own, so it
-    can be mixed into models which don't have the rest of the `TembaModel` machinery (e.g. things without a name).
+    can be mixed into models which don't have the rest of the `OrgAsset` machinery (e.g. things without a name).
     """
 
     org_limit_key = None
@@ -225,9 +225,10 @@ class OrgLimitMixin:
         return False
 
 
-class TembaModel(UUIDMixin, NameMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin, OrgLimitMixin):
+class OrgAsset(UUIDMixin, NameMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin, OrgLimitMixin):
     """
-    Base for models which have UUID, name, soft deletion and auditing fields
+    Base for the named things users manage in a workspace, such as flows, groups and channels, which other things
+    (e.g. flow definitions and exports) reference by UUID and name
     """
 
     class ImportResult(Enum):

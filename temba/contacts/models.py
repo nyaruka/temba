@@ -28,7 +28,7 @@ from temba.channels.models import Channel
 from temba.locations.models import AdminBoundary
 from temba.mailroom import ContactSpec, modifiers
 from temba.orgs.models import DependencyMixin, Export, ExportType, Org, OrgRole
-from temba.orgs.realtime import AssetMixin
+from temba.orgs.realtime import PublishedAssetMixin
 from temba.utils import dynamo, format_number, on_transaction_commit
 from temba.utils.export import MultiSheetExporter
 from temba.utils.models import (
@@ -37,8 +37,8 @@ from temba.utils.models import (
     LegacyIDMixin,
     LegacyUUIDMixin,
     ModifiedByMixin,
+    OrgAsset,
     SoftDeleteMixin,
-    TembaModel,
     delete_in_batches,
 )
 from temba.utils.models.counts import BaseSquashableCount
@@ -333,7 +333,7 @@ class UserContactFieldsManager(models.Manager):
         return UserContactFieldsQuerySet(self.model, using=self._db).filter(is_system=False)
 
 
-class ContactField(TembaModel, DependencyMixin):
+class ContactField(OrgAsset, DependencyMixin):
     """
     A custom user field for contacts.
     """
@@ -1506,7 +1506,7 @@ class ContactURN(LegacyIDMixin, models.Model):
         ]
 
 
-class ContactGroup(AssetMixin, LegacyIDMixin, TembaModel, DependencyMixin):
+class ContactGroup(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
     """
     A group of contacts whose membership can be manual or query based
     """

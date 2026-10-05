@@ -18,14 +18,14 @@ from temba.utils import json, languages, on_transaction_commit
 from temba.utils.models import (
     CreatedByMixin,
     ModifiedByMixin,
+    OrgAsset,
     SoftDeleteMixin,
-    TembaModel,
     UUIDMixin,
     delete_in_batches,
 )
 
 
-class Campaign(TembaModel):
+class Campaign(OrgAsset):
     org = models.ForeignKey(Org, related_name="campaigns", on_delete=models.PROTECT)
     group = models.ForeignKey(ContactGroup, on_delete=models.PROTECT, related_name="campaigns")
     is_archived = models.BooleanField(default=False)

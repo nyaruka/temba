@@ -20,13 +20,13 @@ from temba.users.models import User
 from temba.utils.dates import date_range
 from temba.utils.db.functions import SplitPart
 from temba.utils.export import MultiSheetExporter
-from temba.utils.models import TembaModel
+from temba.utils.models import OrgAsset
 from temba.utils.uuid import is_uuid
 
 logger = logging.getLogger(__name__)
 
 
-class Shortcut(TembaModel):
+class Shortcut(OrgAsset):
     """
     A canned response available from the ticketing interface.
     """
@@ -69,7 +69,7 @@ class Shortcut(TembaModel):
         ]
 
 
-class Topic(TembaModel, DependencyMixin):
+class Topic(OrgAsset, DependencyMixin):
     """
     The topic of a ticket which controls who can access that ticket.
     """
@@ -157,7 +157,7 @@ class Topic(TembaModel, DependencyMixin):
         constraints = [models.UniqueConstraint("org", Lower("name"), name="unique_topic_names")]
 
 
-class Team(TembaModel):
+class Team(OrgAsset):
     """
     Agent users are assigned to a team which controls which topics they can access.
     """

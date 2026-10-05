@@ -28,7 +28,7 @@ from temba.orgs.models import DependencyMixin, Export, ExportType, Org
 from temba.schedules.models import Schedule
 from temba.utils import languages, on_transaction_commit
 from temba.utils.export.models import MultiSheetExporter
-from temba.utils.models import CreatedByMixin, LegacyIDMixin, ModifiedByMixin, SoftDeleteMixin, TembaModel
+from temba.utils.models import CreatedByMixin, LegacyIDMixin, ModifiedByMixin, OrgAsset, SoftDeleteMixin
 from temba.utils.models.counts import BaseSquashableCount
 from temba.utils.s3 import public_file_storage
 from temba.utils.uuid import uuid4, uuid7_range
@@ -993,7 +993,7 @@ def msg_uuid_bounds(after, before) -> tuple:
     return lower, upper
 
 
-class Label(TembaModel, DependencyMixin):
+class Label(OrgAsset, DependencyMixin):
     """
     Labels represent both user defined labels and folders of labels. User defined labels that can be applied to messages
     much the same way labels or tags apply to messages in web-based email services.

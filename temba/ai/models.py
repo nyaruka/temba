@@ -6,7 +6,7 @@ from django.db.models.functions import Lower
 
 from temba import mailroom
 from temba.orgs.models import DependencyMixin, Org
-from temba.utils.models import TembaModel, delete_in_batches
+from temba.utils.models import OrgAsset, delete_in_batches
 from temba.utils.models.counts import BaseDailyCount
 
 
@@ -55,7 +55,7 @@ class LLMType:
         return {"api_key": api_key}
 
 
-class LLM(TembaModel, DependencyMixin):
+class LLM(OrgAsset, DependencyMixin):
     """
     A language model that can be used for AI tasks
     """

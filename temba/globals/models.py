@@ -5,11 +5,11 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from temba.orgs.models import DependencyMixin, Org
-from temba.utils.models import TembaModel
+from temba.utils.models import OrgAsset
 from temba.utils.text import unsnakify
 
 
-class Global(TembaModel, DependencyMixin):
+class Global(OrgAsset, DependencyMixin):
     """
     A global is a constant value that can be used in templates in flows and messages.
     """

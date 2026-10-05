@@ -27,7 +27,7 @@ from temba.contacts.models import Contact, ContactField, ContactGroup
 from temba.globals.models import Global
 from temba.msgs.models import Label
 from temba.orgs.models import DependencyMixin, Export, ExportType, Org
-from temba.orgs.realtime import AssetMixin
+from temba.orgs.realtime import PublishedAssetMixin
 from temba.templates.models import Template
 from temba.tickets.models import Topic
 from temba.users.models import User
@@ -37,7 +37,7 @@ from temba.utils.models import (
     JSONAsTextField,
     LegacyIDMixin,
     ModifiedByMixin,
-    TembaModel,
+    OrgAsset,
     delete_in_batches,
 )
 from temba.utils.models.counts import BaseScopedCount, BaseSquashableCount
@@ -68,7 +68,7 @@ FLOW_LOCK_TTL = 60  # 1 minute
 FLOW_LOCK_KEY = "org:%d:lock:flow:%d:definition"
 
 
-class Flow(AssetMixin, LegacyIDMixin, TembaModel, DependencyMixin):
+class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
     asset_type = "flow"
 
     org_limit_key = Org.LIMIT_FLOWS
@@ -1830,7 +1830,7 @@ class FlowStartCount(BaseSquashableCount):
         indexes = [models.Index(fields=("start",), condition=Q(is_squashed=False), name="flowstartcounts_unsquashed")]
 
 
-class FlowLabel(TembaModel):
+class FlowLabel(OrgAsset):
     """
     A label applied to a flow rather than a message
     """

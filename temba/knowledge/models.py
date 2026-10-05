@@ -39,7 +39,7 @@ from temba import mailroom
 from temba.mailroom.client.exceptions import RequestException
 from temba.orgs.models import Org
 from temba.utils import on_transaction_commit
-from temba.utils.models import CreatedByMixin, ModifiedByMixin, SoftDeleteMixin, TembaModel, delete_in_batches
+from temba.utils.models import CreatedByMixin, ModifiedByMixin, OrgAsset, SoftDeleteMixin, delete_in_batches
 from temba.utils.models.counts import BaseDailyCount
 from temba.utils.s3 import public_file_storage
 from temba.utils.text import generate_secret
@@ -565,7 +565,7 @@ def make_snippet(text: str, terms: list, *, length: int = 200) -> str:
     return mark_safe(html)
 
 
-class KnowledgeSource(TembaModel):
+class KnowledgeSource(OrgAsset):
     """
     A source of knowledge that AI agents can search semantically.
 
@@ -816,7 +816,7 @@ class Article(CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     An article in an org's helpdesk. Written by this app, read by mailroom, which indexes only published, active
     articles.
 
-    Deliberately not a TembaModel: TembaModel.name is capped at 64 chars and NameValidator rejects " and \\, which real
+    Deliberately not an OrgAsset: OrgAsset.name is capped at 64 chars and NameValidator rejects " and \\, which real
     help titles routinely contain. Soft-deleted like Shortcut so mailroom's delta index sees the tombstone - a hard
     delete would leave its chunks stranded until a full reindex.
     """

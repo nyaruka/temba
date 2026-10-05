@@ -15,7 +15,7 @@ from temba import mailroom
 from temba.api.support import InvalidQueryError
 from temba.contacts.models import URN
 from temba.orgs.views.base import BaseDeleteModal, BaseListView
-from temba.utils.models import OrgLimitMixin, TembaModel
+from temba.utils.models import OrgAsset, OrgLimitMixin
 from temba.utils.views.mixins import ContextMenuMixin, NonAtomicMixin, SpaMixin
 
 from .models import APIToken, BulkActionFailure
@@ -241,7 +241,7 @@ class WriteAPIMixin:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def is_system_instance(self, obj):
-        return obj.is_system if isinstance(obj, TembaModel) else False
+        return obj.is_system if isinstance(obj, OrgAsset) else False
 
     def render_write_response(self, write_output, context):
         response_serializer = self.serializer_class(instance=write_output, context=context)

@@ -2,9 +2,9 @@
 Publishing of workspace-wide realtime events to the ``org:<org-uuid>`` socket, so that clients can keep their caches of
 assets fresh without refetching or reloading.
 
-Phase one deliberately only publishes renames of flows and groups (see `AssetMixin`) as those are the references which
-appear most often in flow definitions, and creations of groups, which the client store caches to tell smart groups from
-manual ones. The other asset types resolvable via the internal assets endpoint (channels, contacts, labels, LLMs,
+Phase one deliberately only publishes renames of flows and groups (see `PublishedAssetMixin`) as those are the
+references which appear most often in flow definitions, and creations of groups, which the client store caches to tell
+smart groups from manual ones. The other asset types resolvable via the internal assets endpoint (channels, contacts, labels, LLMs,
 templates, topics, fields, globals and users) don't publish, so clients still fall back to refetching or a page reload
 to see those changes.
 
@@ -36,7 +36,7 @@ def _publish_org_event(org, event: dict):
         logger.exception("error publishing workspace event to mailroom")
 
 
-class AssetMixin:
+class PublishedAssetMixin:
     """
     Mixin for models whose renames, and optionally creations, are published as `asset_changed` events. Must be listed
     before the model base classes so that our `save` runs, and `asset_type` must be set to the type name used in flow
