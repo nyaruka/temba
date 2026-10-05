@@ -2112,7 +2112,7 @@ def get_import_upload_path(instance: Any, filename: str):
     return f"orgs/{instance.org_id}/contact_imports/{instance.uuid}{ext}"
 
 
-class ContactImport(CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
+class ContactImport(CreatedByMixin):
     MAX_RECORDS = 25_000
     BATCH_SIZE = 100
     URN_VALIDATION_CHUNK = 1000  # how many URNs we ask mailroom to validate per request

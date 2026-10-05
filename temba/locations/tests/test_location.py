@@ -220,9 +220,7 @@ class LocationTest(TembaTest):
 
         self.assertEqual(200, response.status_code)
 
-        BoundaryAlias.objects.create(
-            boundary=self.state1, org=self.org2, name="KGL", created_by=self.admin2, modified_by=self.admin2
-        )
+        BoundaryAlias.objects.create(boundary=self.state1, org=self.org2, name="KGL", created_by=self.admin2)
 
         # fetch our aliases again
         response = self.client.get(reverse("locations.adminboundary_boundaries", args=[self.country.osm_id]))
@@ -256,12 +254,8 @@ class LocationTest(TembaTest):
 
         self.assertEqual(200, response.status_code)
 
-        BoundaryAlias.objects.create(
-            boundary=self.country, org=self.org2, name="SameRwanda", created_by=self.admin2, modified_by=self.admin2
-        )
-        BoundaryAlias.objects.create(
-            boundary=self.country, org=self.org, name="MyRwanda", created_by=self.admin2, modified_by=self.admin2
-        )
+        BoundaryAlias.objects.create(boundary=self.country, org=self.org2, name="SameRwanda", created_by=self.admin2)
+        BoundaryAlias.objects.create(boundary=self.country, org=self.org, name="MyRwanda", created_by=self.admin2)
 
         # fetch our aliases again
         response = self.client.get(reverse("locations.adminboundary_boundaries", args=[self.country.osm_id]))

@@ -227,9 +227,7 @@ class NotificationTest(TembaTest):
         self.assertEqual(["editor@textit.com"], mail.outbox[0].recipients())
 
     def test_import_finished(self):
-        imp = ContactImport.objects.create(
-            org=self.org, mappings={}, num_records=5, created_by=self.editor, modified_by=self.editor
-        )
+        imp = ContactImport.objects.create(org=self.org, mappings={}, num_records=5, created_by=self.editor)
 
         # mailroom will create these notifications when it's complete
         Notification.create_all(
@@ -492,9 +490,7 @@ class NotificationTest(TembaTest):
         self.assertEqual(0, self.admin.notifications.filter(is_seen=True).count())
 
     def test_counts(self):
-        imp = ContactImport.objects.create(
-            org=self.org, mappings={}, num_records=5, created_by=self.editor, modified_by=self.editor
-        )
+        imp = ContactImport.objects.create(org=self.org, mappings={}, num_records=5, created_by=self.editor)
         Notification.create_all(
             imp.org, "import:finished", scope=f"contact:{imp.id}", users=[self.editor], contact_import=imp, medium="UE"
         )

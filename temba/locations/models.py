@@ -6,7 +6,7 @@ from django.db.models import F, Value
 from django.db.models.functions import Concat, Upper
 from django.utils.translation import gettext_lazy as _
 
-from temba.utils.models import CreatedByMixin, ModifiedByMixin, SoftDeleteMixin
+from temba.utils.models import CreatedByMixin
 
 
 class AdminBoundary(MPTTModel, models.Model):
@@ -150,7 +150,7 @@ class AdminBoundary(MPTTModel, models.Model):
         indexes = [models.Index(Upper("name"), name="adminboundaries_by_name")]
 
 
-class BoundaryAlias(CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
+class BoundaryAlias(CreatedByMixin):
     """
     An org specific alias for a boundary name
     """
@@ -161,7 +161,7 @@ class BoundaryAlias(CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
     @classmethod
     def create(cls, org, user, boundary, name):
-        return cls.objects.create(org=org, boundary=boundary, name=name, created_by=user, modified_by=user)
+        return cls.objects.create(org=org, boundary=boundary, name=name, created_by=user)
 
     class Meta:
         indexes = [models.Index(Upper("name"), name="boundaryaliases_by_name")]

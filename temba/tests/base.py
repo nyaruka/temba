@@ -707,7 +707,6 @@ class TembaTest(SmartminTest):
                 num_records=num_records,
                 group_name=Path(path).stem.title(),
                 created_by=self.admin,
-                modified_by=self.admin,
             )
 
     def create_channel(

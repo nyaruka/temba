@@ -1296,7 +1296,7 @@ def get_import_upload_path(instance: Any, filename: str):
     return f"orgs/{instance.org_id}/org_imports/{instance.uuid}{ext}"
 
 
-class OrgImport(CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
+class OrgImport(CreatedByMixin):
     STATUS_PENDING = "P"
     STATUS_PROCESSING = "O"
     STATUS_COMPLETE = "C"
@@ -1339,7 +1339,7 @@ class OrgImport(CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
         else:
             self.status = self.STATUS_COMPLETE
-            self.save(update_fields=("status", "modified_on"))
+            self.save(update_fields=("status",))
 
 
 class Invitation(CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):

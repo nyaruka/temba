@@ -673,7 +673,7 @@ class OrgDeleteTest(TembaTest):
         # create a contact import
         group3 = add(self.create_group("Imported", contacts=[], org=org))
         imp = ContactImport.objects.create(
-            org=self.org, group=group3, mappings={}, num_records=0, created_by=self.admin, modified_by=self.admin
+            org=self.org, group=group3, mappings={}, num_records=0, created_by=self.admin
         )
         ContactImportBatch.objects.create(contact_import=imp, specs={}, record_start=0, record_end=0)
 
