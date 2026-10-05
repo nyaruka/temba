@@ -227,8 +227,8 @@ class OrgLimitMixin:
 
 class OrgAsset(UUIDMixin, NameMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin, OrgLimitMixin):
     """
-    Base for the named things users manage in a workspace, such as flows, groups and channels, which other things
-    (e.g. flow definitions and exports) reference by UUID and name
+    Base for the named things users manage in a workspace, such as flows, groups and channels, most of which can be
+    referenced by UUID and name (e.g. from flow definitions and exports)
     """
 
     class ImportResult(Enum):

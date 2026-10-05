@@ -4,9 +4,9 @@ assets fresh without refetching or reloading.
 
 Phase one deliberately only publishes renames of flows and groups (see `PublishedAssetMixin`) as those are the
 references which appear most often in flow definitions, and creations of groups, which the client store caches to tell
-smart groups from manual ones. The other asset types resolvable via the internal assets endpoint (channels, contacts, labels, LLMs,
-templates, topics, fields, globals and users) don't publish, so clients still fall back to refetching or a page reload
-to see those changes.
+smart groups from manual ones. The other asset types resolvable via the internal assets endpoint (channels, contacts,
+labels, LLMs, templates, topics, fields, globals and users) don't publish, so clients still fall back to refetching or a
+page reload to see those changes.
 
 Each publication is a synchronous call to mailroom on commit, so creations are only published where a client acts on
 them: a flow import publishes one event per new group but nothing for its flows.
