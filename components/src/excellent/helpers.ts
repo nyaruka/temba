@@ -264,16 +264,6 @@ const findDomPosition = (root, targetOffset) => {
  * at the target offset and measuring with getBoundingClientRect.
  */
 const getCursorXYContentEditable = (element, offset) => {
-  // Save current selection
-  const sel = element.getRootNode() as ShadowRoot;
-  const selection = (sel as any).getSelection
-    ? (sel as any).getSelection()
-    : window.getSelection();
-  const savedRange =
-    selection && selection.rangeCount > 0
-      ? selection.getRangeAt(0).cloneRange()
-      : null;
-
   const pos = findDomPosition(element, offset);
 
   if (!pos) {
@@ -287,12 +277,6 @@ const getCursorXYContentEditable = (element, offset) => {
   range.setStart(pos.node, pos.offset);
   range.collapse(true);
   const rect = range.getBoundingClientRect();
-
-  // Restore original selection
-  if (savedRange && selection) {
-    selection.removeAllRanges();
-    selection.addRange(savedRange);
-  }
 
   return {
     left: rect.left - element.getBoundingClientRect().left + element.offsetLeft,

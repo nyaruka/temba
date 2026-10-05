@@ -16,6 +16,7 @@ import { msg } from '@lit/localize';
 import {
   getCaretOffset,
   getCaretEndOffset,
+  getSelectionRange,
   setCaretOffset,
   setCaretRange,
   getTextFromEditableDiv
@@ -647,13 +648,10 @@ export class RichEditor extends FieldElement {
 
   public getCaretScreenPosition(): { top: number; left: number } | null {
     if (!this.editableDiv) return null;
-    const sel = this.editableDiv.getRootNode() as ShadowRoot;
-    const selection = (sel as any).getSelection
-      ? (sel as any).getSelection()
-      : window.getSelection();
-    if (!selection || selection.rangeCount === 0) return null;
-    const range = selection.getRangeAt(0).cloneRange();
-    range.collapse(true);
+    const selected = getSelectionRange(this.editableDiv);
+    if (!selected) return null;
+    const range = document.createRange();
+    range.setStart(selected.startContainer, selected.startOffset);
     const rect = range.getBoundingClientRect();
     if (rect.top === 0 && rect.left === 0) return null;
     return { top: rect.bottom, left: rect.left };

@@ -4,6 +4,7 @@ import {
   getTextFromEditableDiv,
   getCaretOffset,
   getCaretEndOffset,
+  getSelectionRange,
   setCaretOffset,
   setCaretRange
 } from '../src/excellent/caret-utils';
@@ -180,5 +181,65 @@ describe('excellent/caret-utils', () => {
       setCaretRange(element, 0, 99);
       expect(getCaretEndOffset(element)).to.equal(1);
     });
+  });
+
+  describe('inside a shadow root', () => {
+    // builds the editable inside a shadow root, optionally without
+    // ShadowRoot.getSelection the way Safari has it
+    const shadowEditable = async (
+      inner: string,
+      withGetSelection: boolean
+    ): Promise<HTMLElement> => {
+      const host = (await fixture('<div></div>')) as HTMLElement;
+      const root = host.attachShadow({ mode: 'open' });
+      if (!withGetSelection) {
+        Object.defineProperty(root, 'getSelection', { value: undefined });
+      }
+      root.innerHTML = `<div contenteditable="true">${inner}</div>`;
+      const element = root.firstElementChild as HTMLElement;
+      element.focus();
+      return element;
+    };
+
+    for (const withGetSelection of [true, false]) {
+      const label = withGetSelection
+        ? 'with ShadowRoot.getSelection'
+        : 'without ShadowRoot.getSelection';
+
+      it(`round trips caret offsets ${label}`, async () => {
+        const element = await shadowEditable(
+          spans('hello', ' ', 'world'),
+          withGetSelection
+        );
+        for (const offset of [0, 3, 5, 6, 11]) {
+          setCaretOffset(element, offset);
+          expect(getCaretOffset(element), `offset ${offset}`).to.equal(offset);
+        }
+      });
+
+      it(`reads a selected range ${label}`, async () => {
+        const element = await shadowEditable(
+          spans('hello', ' ', 'world'),
+          withGetSelection
+        );
+        setCaretRange(element, 3, 8);
+        expect(getCaretOffset(element)).to.equal(3);
+        expect(getCaretEndOffset(element)).to.equal(8);
+        expect(element.contains(getSelectionRange(element).startContainer)).to
+          .be.true;
+      });
+
+      it(`keeps focus after the content is rebuilt ${label}`, async () => {
+        const element = await shadowEditable(spans('hel'), withGetSelection);
+        setCaretOffset(element, 3);
+
+        // what RichEditor does on every input
+        element.textContent = 'hell';
+        setCaretOffset(element, 4);
+
+        expect(element.getRootNode()['activeElement']).to.equal(element);
+        expect(getCaretOffset(element)).to.equal(4);
+      });
+    }
   });
 });

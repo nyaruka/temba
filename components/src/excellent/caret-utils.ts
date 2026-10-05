@@ -20,6 +20,57 @@ export function getSelectionFromRoot(element: HTMLElement): Selection | null {
   return window.getSelection();
 }
 
+function getComposedRange(
+  selection: Selection,
+  root: ShadowRoot
+): StaticRange | null {
+  const sel = selection as any;
+  let ranges: StaticRange[];
+  try {
+    ranges = sel.getComposedRanges({ shadowRoots: [root] });
+  } catch {
+    // older Safari only takes the shadow roots as arguments
+    ranges = sel.getComposedRanges(root);
+  }
+  return ranges[0] || null;
+}
+
+/**
+ * Gets the selection's first range with its boundaries inside the element's
+ * shadow tree. Safari has no ShadowRoot.getSelection and retargets the window
+ * selection's ranges to the shadow host, so there the range is read through
+ * getComposedRanges instead.
+ */
+export function getSelectionRange(element: HTMLElement): AbstractRange | null {
+  const selection = getSelectionFromRoot(element);
+  if (!selection || selection.rangeCount === 0) return null;
+
+  const root = element.getRootNode();
+  if (
+    root instanceof ShadowRoot &&
+    !(root as any).getSelection &&
+    (selection as any).getComposedRanges
+  ) {
+    return getComposedRange(selection, root);
+  }
+  return selection.getRangeAt(0);
+}
+
+/**
+ * Selects between two DOM positions. Uses setBaseAndExtent because Safari
+ * ignores addRange for ranges inside a shadow tree, and clearing the
+ * selection first would drop the caret from the editor.
+ */
+function select(
+  element: HTMLElement,
+  start: { node: Node; offset: number },
+  end: { node: Node; offset: number }
+): void {
+  const selection = getSelectionFromRoot(element);
+  if (!selection) return;
+  selection.setBaseAndExtent(start.node, start.offset, end.node, end.offset);
+}
+
 function isSentinelBr(node: Node): boolean {
   return (
     node.nodeName === 'BR' &&
@@ -246,9 +297,8 @@ export function getTextFromEditableDiv(element: HTMLElement): string {
 
 /** Gets the caret (selection start) as a plain-text offset. */
 export function getCaretOffset(element: HTMLElement): number {
-  const selection = getSelectionFromRoot(element);
-  if (!selection || selection.rangeCount === 0) return 0;
-  const range = selection.getRangeAt(0);
+  const range = getSelectionRange(element);
+  if (!range) return 0;
   return domPositionToTextOffset(
     element,
     range.startContainer,
@@ -258,9 +308,8 @@ export function getCaretOffset(element: HTMLElement): number {
 
 /** Gets the selection end as a plain-text offset. */
 export function getCaretEndOffset(element: HTMLElement): number {
-  const selection = getSelectionFromRoot(element);
-  if (!selection || selection.rangeCount === 0) return 0;
-  const range = selection.getRangeAt(0);
+  const range = getSelectionRange(element);
+  if (!range) return 0;
   return domPositionToTextOffset(element, range.endContainer, range.endOffset);
 }
 
@@ -268,13 +317,7 @@ export function getCaretEndOffset(element: HTMLElement): number {
 export function setCaretOffset(element: HTMLElement, offset: number): void {
   const pos = textOffsetToDomPosition(element, offset);
   if (!pos) return;
-  const selection = getSelectionFromRoot(element);
-  if (!selection) return;
-  const range = document.createRange();
-  range.setStart(pos.node, pos.offset);
-  range.collapse(true);
-  selection.removeAllRanges();
-  selection.addRange(range);
+  select(element, pos, pos);
 }
 
 /** Sets a selection range by plain-text offsets. */
@@ -286,11 +329,5 @@ export function setCaretRange(
   const startPos = textOffsetToDomPosition(element, start);
   const endPos = textOffsetToDomPosition(element, end);
   if (!startPos || !endPos) return;
-  const selection = getSelectionFromRoot(element);
-  if (!selection) return;
-  const range = document.createRange();
-  range.setStart(startPos.node, startPos.offset);
-  range.setEnd(endPos.node, endPos.offset);
-  selection.removeAllRanges();
-  selection.addRange(range);
+  select(element, startPos, endPos);
 }
