@@ -13,18 +13,15 @@ class Migration(migrations.Migration):
             state_operations=[
                 migrations.RemoveField(model_name="orgimport", name="is_active"),
                 migrations.RemoveField(model_name="orgimport", name="modified_by"),
-                migrations.RemoveField(model_name="orgimport", name="modified_on"),
             ],
             database_operations=[
                 migrations.RunSQL(
                     """
                     ALTER TABLE orgs_orgimport ALTER COLUMN modified_by_id DROP NOT NULL;
-                    ALTER TABLE orgs_orgimport ALTER COLUMN modified_on DROP NOT NULL;
                     ALTER TABLE orgs_orgimport ALTER COLUMN is_active SET DEFAULT TRUE;
                     """,
                     reverse_sql="""
                     ALTER TABLE orgs_orgimport ALTER COLUMN is_active DROP DEFAULT;
-                    ALTER TABLE orgs_orgimport ALTER COLUMN modified_on SET NOT NULL;
                     ALTER TABLE orgs_orgimport ALTER COLUMN modified_by_id SET NOT NULL;
                     """,
                 ),

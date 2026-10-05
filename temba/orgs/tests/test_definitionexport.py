@@ -1,10 +1,13 @@
 import io
+from datetime import timedelta
 from unittest.mock import patch
 
 from django.conf import settings
 from django.core.files.storage import default_storage
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
 from django.urls import reverse
+from django.utils import timezone
 
 from temba import mailroom
 from temba.campaigns.models import Campaign, CampaignEvent
@@ -151,6 +154,30 @@ class DefinitionExportTest(TembaTest, CRUDLTestMixin):
             response.context["form"], "file", "This file contains more flows than this workspace has room for."
         )
         self.assertEqual(0, self.org.flows.filter(is_active=True).count())
+
+    def test_import_records_when_finished(self):
+        long_ago = timezone.now() - timedelta(days=1)
+
+        def perform(content: bytes):
+            imp = OrgImport.objects.create(
+                org=self.org,
+                file=SimpleUploadedFile("import.json", content),
+                created_by=self.admin,
+                created_on=long_ago,
+                modified_on=long_ago,
+            )
+            imp.perform()
+            imp.refresh_from_db()
+            return imp
+
+        with open(f"{settings.TESTDATA_DIR}/flows/favorites.json", "rb") as f:
+            imp = perform(f.read())
+        self.assertEqual(OrgImport.STATUS_COMPLETE, imp.status)
+        self.assertGreater(imp.modified_on, long_ago)
+
+        imp = perform(b"not json")
+        self.assertEqual(OrgImport.STATUS_FAILED, imp.status)
+        self.assertGreater(imp.modified_on, long_ago)
 
     def test_import_errors(self):
         self.login(self.admin)
