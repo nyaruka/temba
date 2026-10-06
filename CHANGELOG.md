@@ -1,3 +1,6 @@
+## v26.3.128 (2026-10-06)
+ * Store user emails lowercased and compare them case-insensitively for basic auth, invitations and staff updates
+
 ## v26.3.127 (2026-10-06)
  * Match existing users case-insensitively when connecting social logins by email
 

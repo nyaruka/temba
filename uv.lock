@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.14.5, <3.15"
 
 [[package]]
@@ -1593,7 +1593,7 @@ wheels = [
 
 [[package]]
 name = "temba"
-version = "26.3.127"
+version = "26.3.128"
 source = { editable = "." }
 dependencies = [
     { name = "anthropic" },
