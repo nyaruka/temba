@@ -159,7 +159,11 @@ class UserAuthTest(TembaTest):
 
         return request
 
-    @override_settings(SOCIALACCOUNT_PROVIDERS={"google": {"APPS": [{"client_id": "1234", "secret": "sesame"}]}})
+    @override_settings(
+        SOCIALACCOUNT_PROVIDERS={
+            "google": {"EMAIL_AUTHENTICATION": True, "APPS": [{"client_id": "1234", "secret": "sesame"}]}
+        }
+    )
     @patch("temba.users.models.User.fetch_avatar")
     def test_social_login(self, mock_fetch_avatar):
         def social_login(uid: str, email: str):
@@ -193,7 +197,11 @@ class UserAuthTest(TembaTest):
                         "name": "Corp",
                         "client_id": "1234",
                         "secret": "sesame",
-                        "settings": {"server_url": "https://sso.corp.com"},
+                        "settings": {
+                            "server_url": "https://sso.corp.com",
+                            "email_authentication": True,
+                            "verified_email": ["temba.io"],
+                        },
                     }
                 ]
             }
@@ -242,7 +250,21 @@ class UserAuthTest(TembaTest):
         self.assertEqual(str(user4.id), request.session["_auth_user_id"])
         self.assertTrue(SocialAccount.objects.filter(user=user4, uid="2005").exists())
 
-        # but an email without an existing user still finds signup closed
+        # but not for an email outside the domains the provider is trusted to verify
+        user5 = create_user("eve@other.com")
+        request = social_login("2006", {"email": "eve@other.com"})
+        self.assertNotIn("_auth_user_id", request.session)
+        self.assertFalse(SocialAccount.objects.filter(user=user5).exists())
+
+        # or when email authentication isn't enabled for the provider
+        app_settings = settings.SOCIALACCOUNT_PROVIDERS["openid_connect"]["APPS"][0]["settings"]
+        with patch.dict(app_settings, {"email_authentication": False}):
+            user6 = create_user("fay@temba.io")
+            request = social_login("2007", {"email": "fay@temba.io"})
+            self.assertNotIn("_auth_user_id", request.session)
+            self.assertFalse(SocialAccount.objects.filter(user=user6).exists())
+
+        # and an email without an existing user still finds signup closed
         request = social_login("2004", {"email": "nobody@temba.io"})
         self.assertNotIn("_auth_user_id", request.session)
         self.assertFalse(SocialAccount.objects.filter(uid="2004").exists())

@@ -135,15 +135,31 @@ class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter)
             )
         return user
 
+    def _is_trusted_email(self, sociallogin, email: str) -> bool:
+        """
+        Whether the provider can be trusted to vouch for this email, so that the login can be connected to an existing
+        user with it. Claims like upn are only as trustworthy as the provider and tenant issuing them, so this requires
+        email authentication to be enabled for the provider, and the email to be verified by the provider itself or
+        by the provider's verified_email setting.
+        """
+        if not self.can_authenticate_by_email(sociallogin, email):
+            return False
+
+        verified_by_provider = any(
+            e.verified and e.email.lower() == email.lower() for e in sociallogin.email_addresses if e.email
+        )
+        return verified_by_provider or self.is_email_verified(sociallogin.provider, email)
+
     def pre_social_login(self, request, sociallogin):
         email = self._get_email(sociallogin)
 
         # if we have an email but no email_addresses set, create one
         if email and not sociallogin.email_addresses:
-            sociallogin.email_addresses = [EmailAddress(email=email, verified=True, primary=True)]
+            verified = self.is_email_verified(sociallogin.provider, email)
+            sociallogin.email_addresses = [EmailAddress(email=email, verified=verified, primary=True)]
 
-        # if user exists, connect the social account
-        if email and not sociallogin.is_existing:
+        # if user exists and the provider can vouch for their email, connect the social account
+        if email and not sociallogin.is_existing and self._is_trusted_email(sociallogin, email):
             user = User.get_by_email(email)
             if user:
                 sociallogin.connect(request, user)
