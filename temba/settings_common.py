@@ -1058,7 +1058,9 @@ SOCIALACCOUNT_ADAPTER = "temba.users.adapter.TembaSocialAccountAdapter"
 
 MFA_ADAPTER = "temba.users.adapter.TembaMFAAdapter"
 
-SOCIALACCOUNT_PROVIDERS = {}
+# existing users are only logged in by a social login with a matching verified email if its provider is trusted for
+# this via EMAIL_AUTHENTICATION - which Google is, as it only reports addresses its users own as verified
+SOCIALACCOUNT_PROVIDERS = {"google": {"EMAIL_AUTHENTICATION": True}}
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 SOCIALACCOUNT_LOGIN_ON_GET = True
 

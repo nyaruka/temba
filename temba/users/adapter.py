@@ -5,6 +5,7 @@ from allauth.account.models import EmailAddress
 from allauth.core import context as allauth_context
 from allauth.mfa.adapter import DefaultMFAAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+from allauth.socialaccount.providers.base import AuthProcess
 from allauth.socialaccount.signals import social_account_added
 
 from django.conf import settings
@@ -55,11 +56,19 @@ class InviteAdapterMixin:
             redirect_url=redirect_url,
         )
 
-    def is_open_for_signup(self, request, sociallogin=None):
-        # only users with a valid invite can create accounts
+    def get_invite(self, request):
         secret = request.GET.get("invite", request.session.get("invite_secret", None))
 
-        return bool(secret and Invitation.objects.filter(secret=secret, is_active=True).exists())
+        return Invitation.objects.filter(secret=secret, is_active=True).first() if secret else None
+
+    def is_open_for_signup(self, request, sociallogin=None):
+        # only users with a valid invite can create accounts, and with SSO only for the email the invite was sent to
+        invite = self.get_invite(request)
+        if invite and sociallogin:
+            invite_email = User.objects.normalize_email(invite.email)
+            return any(User.objects.normalize_email(a.email) == invite_email for a in sociallogin.email_addresses)
+
+        return bool(invite)
 
 
 class TembaAccountAdapter(InviteAdapterMixin, DefaultAccountAdapter):
@@ -100,7 +109,7 @@ class TembaAccountAdapter(InviteAdapterMixin, DefaultAccountAdapter):
         sender.send([email], template_prefix, context)
 
 
-class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter):  # pragma: no cover
+class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter):
     @staticmethod
     def _get_email(sociallogin) -> str | None:
         # providers like OpenID Connect nest the user's claims inside extra_data, so read them via the provider account
@@ -120,31 +129,45 @@ class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter)
 
     def save_user(self, request, sociallogin, form=None):
         user = super().save_user(request, sociallogin, form)
-        email = user.email
-        if email:
-            EmailAddress.objects.update_or_create(
-                user=user,
-                email=email,
-                defaults={"verified": True, "primary": True},
-            )
+
+        # signup requires an invite to the email, so it's verified even if the provider didn't say so
+        invite = self.get_invite(request)
+        if invite:
+            user.emailaddress_set.filter(email=User.objects.normalize_email(invite.email)).update(verified=True)
+
         return user
 
+    def authenticate_by_email(self, sociallogin):
+        # we connect by email ourselves in pre_social_login, as allauth assumes its email addresses are stored lowercase
+        # which older ones may not be, and would then wipe the passwords of users whose addresses are verified
+        return None
+
     def pre_social_login(self, request, sociallogin):
-        email = self._get_email(sociallogin)
+        # providers that don't report email addresses (e.g. Azure AD may only give a upn) may still give us one in
+        # other fields, but it's only verified if the provider is configured as verifying emails (VERIFIED_EMAIL)
+        if not sociallogin.email_addresses:
+            email = self._get_email(sociallogin)
+            if email:
+                verified = self.is_email_verified(sociallogin.provider, email)
+                sociallogin.email_addresses = [EmailAddress(email=email, verified=verified, primary=True)]
 
-        # if we have an email but no email_addresses set, create one
-        if email and not sociallogin.email_addresses:
-            sociallogin.email_addresses = [EmailAddress(email=email, verified=True, primary=True)]
+        # connect to an existing user with a matching email, but only if that email is verified and the provider is
+        # trusted for email authentication (EMAIL_AUTHENTICATION), as otherwise anyone could take over an account by
+        # putting its email on their provider account. Not when the logged in user is connecting an account to
+        # themselves, as that might be another user's email.
+        if sociallogin.is_existing or sociallogin.state.get("process") == AuthProcess.CONNECT:
+            return
 
-        # if user exists, connect the social account
-        if email and not sociallogin.is_existing:
-            user = User.get_by_email(email)
-            if user:
-                sociallogin.connect(request, user)
+        for address in sociallogin.email_addresses:
+            if address.verified and self.can_authenticate_by_email(sociallogin, address.email):
+                user = User.get_by_email(address.email)
+                if user:
+                    sociallogin.connect(request, user)
+                    return
 
 
 @receiver(social_account_added)
-def update_user_profile_picture(request, sociallogin, **kwargs):  # pragma: no cover
+def update_user_profile_picture(request, sociallogin, **kwargs):
     user = sociallogin.user
     user.fetch_avatar(sociallogin.account.get_avatar_url())
 
