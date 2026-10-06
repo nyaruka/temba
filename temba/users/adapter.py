@@ -103,11 +103,17 @@ class TembaAccountAdapter(InviteAdapterMixin, DefaultAccountAdapter):
 class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter):  # pragma: no cover
     @staticmethod
     def _get_email(sociallogin) -> str | None:
-        # providers like OpenID Connect nest the user's claims inside extra_data, so read them via the provider account
-        data = sociallogin.account.get_provider_account().get_user_data() or {}
+        # OpenID Connect keeps userinfo and id_token claims apart, and providers like Azure AD only include upn and
+        # preferred_username in the id_token, so check both
+        extra = sociallogin.account.extra_data or {}
+        claims = [c for c in (extra.get("userinfo"), extra.get("id_token")) if isinstance(c, dict)] or [extra]
 
         # azure ad may only provide the email as upn or preferred_username
-        return data.get("email") or data.get("upn") or data.get("preferred_username")
+        for key in ("email", "upn", "preferred_username"):
+            for c in claims:
+                if c.get(key):
+                    return c[key]
+        return None
 
     def populate_user(self, request, sociallogin, data):
         user = super().populate_user(request, sociallogin, data)

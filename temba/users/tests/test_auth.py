@@ -207,9 +207,10 @@ class UserAuthTest(TembaTest):
 
         # OIDC nests the claims under userinfo and id_token, and some providers (e.g. Azure AD) don't send
         # email_verified, so allauth itself won't match the email to an existing user
-        def social_login(uid: str, claims: dict):
+        def social_login(uid: str, claims: dict, id_token_claims: dict = None):
             claims = {"sub": uid, **claims}
-            return self._social_login("corp", {"userinfo": claims, "id_token": claims})
+            id_token = {"sub": uid, **id_token_claims} if id_token_claims is not None else claims
+            return self._social_login("corp", {"userinfo": claims, "id_token": id_token})
 
         def create_user(email: str):
             user = self.create_user(email)
@@ -234,6 +235,12 @@ class UserAuthTest(TembaTest):
         request = social_login("2003", {"preferred_username": "cat@temba.io"})
         self.assertEqual(str(user3.id), request.session["_auth_user_id"])
         self.assertTrue(SocialAccount.objects.filter(user=user3, uid="2003").exists())
+
+        # or when the userinfo has no email and the upn is only in the id_token, as with Azure AD
+        user4 = create_user("dan@temba.io")
+        request = social_login("2005", {"name": "Dan"}, {"upn": "dan@temba.io"})
+        self.assertEqual(str(user4.id), request.session["_auth_user_id"])
+        self.assertTrue(SocialAccount.objects.filter(user=user4, uid="2005").exists())
 
         # but an email without an existing user still finds signup closed
         request = social_login("2004", {"email": "nobody@temba.io"})
