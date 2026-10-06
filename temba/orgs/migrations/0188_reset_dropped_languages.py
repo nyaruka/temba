@@ -7,7 +7,7 @@ LANGUAGES = ["en-us", "es", "fr", "pt-br"]
 DEFAULT_LANGUAGE = "en-us"
 
 
-def reset_dropped_languages(apps, schema_editor):
+def reset_dropped_languages(apps, schema_editor):  # pragma: no cover
     Org = apps.get_model("orgs", "Org")
 
     # note that language is nullable on orgs so null values are left as they are
