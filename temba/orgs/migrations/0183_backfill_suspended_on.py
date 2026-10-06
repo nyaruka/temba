@@ -8,7 +8,7 @@ from django.db import migrations
 SUSPENDED_ON_ADDED = datetime(2024, 11, 15, 0, 0, 0, 0, tzone.utc)
 
 
-def backfill_suspended_on(apps, schema_editor):
+def backfill_suspended_on(apps, schema_editor):  # pragma: no cover
     Org = apps.get_model("orgs", "Org")
     Incident = apps.get_model("notifications", "Incident")
 

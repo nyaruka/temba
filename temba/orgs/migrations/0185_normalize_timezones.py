@@ -22,7 +22,7 @@ TIMEZONE_ALIASES = {
 }
 
 
-def normalize_timezones(apps, schema_editor):
+def normalize_timezones(apps, schema_editor):  # pragma: no cover
     Org = apps.get_model("orgs", "Org")
 
     for alias, canonical in TIMEZONE_ALIASES.items():

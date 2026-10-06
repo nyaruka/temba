@@ -14,5 +14,6 @@ class Migration(migrations.Migration):
             ALTER TABLE locations_boundaryalias DROP COLUMN modified_on;
             ALTER TABLE locations_boundaryalias DROP COLUMN is_active;
             """,
+            migrations.RunSQL.noop,
         ),
     ]

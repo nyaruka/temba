@@ -14,5 +14,6 @@ class Migration(migrations.Migration):
             ALTER TABLE contacts_contactimport DROP COLUMN modified_on;
             ALTER TABLE contacts_contactimport DROP COLUMN is_active;
             """,
+            migrations.RunSQL.noop,
         ),
     ]
