@@ -411,8 +411,11 @@ class NotificationTest(TembaTest):
 
         self.assertTrue(self.editor.notifications.filter(export=export2).exists())
 
-        # a type that fans out to multiple users is published as a single batched call with one entry per user
+        # a type that fans out to multiple users is published as a single batched call with one entry per user, each
+        # in that user's language
         self.org.add_user(self.editor, OrgRole.ADMINISTRATOR)  # so the incident notifies both admin and editor
+        self.editor.language = "es"
+        self.editor.save(update_fields=("language",))
         before = len(mr_mocks.calls["notification_publish"])
 
         with self.captureOnCommitCallbacks(execute=True):
@@ -422,7 +425,10 @@ class NotificationTest(TembaTest):
         self.assertEqual(1, len(new_calls))  # one batched publish, not one per user
         org_arg, items = new_calls[0].args
         self.assertEqual(self.org, org_arg)
-        self.assertEqual({str(self.admin.uuid), str(self.editor.uuid)}, {item["user_uuid"] for item in items})
+        self.assertEqual(
+            {str(self.admin.uuid): "Channel Disconnected", str(self.editor.uuid): "Canal desconectado"},
+            {item["user_uuid"]: item["data"]["incident"]["title"] for item in items},
+        )
 
     def test_channel_disconnected(self):
         self.org.add_user(self.editor, OrgRole.ADMINISTRATOR)  # upgrade editor to administrator

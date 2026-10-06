@@ -5,7 +5,7 @@ from django.conf import settings
 from django.db import models, transaction
 from django.db.models import Q
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import timezone, translation
 
 from temba.channels.models import Channel
 from temba.contacts.models import ContactImport
@@ -237,7 +237,12 @@ class Notification(models.Model):
         """
         from temba.mailroom import get_client
 
-        items = [{"user_uuid": str(n.user.uuid), "data": n.as_json()} for n in notifications]
+        # each user gets their notification in their own language, which needn't be the one active here
+        items = []
+        for n in notifications:
+            with translation.override(n.user.language):
+                items.append({"user_uuid": str(n.user.uuid), "data": n.as_json()})
+
         try:
             get_client().notification_publish(org, items)
         except Exception:
