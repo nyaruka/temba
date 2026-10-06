@@ -56,8 +56,12 @@ class InviteAdapterMixin:
             redirect_url=redirect_url,
         )
 
+    def get_invite_secret(self, request):
+        # the query string takes precedence over the invite stored in the session by an earlier GET
+        return request.GET.get("invite", request.session.get("invite_secret", None))
+
     def get_invite(self, request):
-        secret = request.GET.get("invite", request.session.get("invite_secret", None))
+        secret = self.get_invite_secret(request)
 
         return Invitation.objects.filter(secret=secret, is_active=True).first() if secret else None
 

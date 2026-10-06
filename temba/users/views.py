@@ -1,5 +1,6 @@
 import json
 
+from allauth.account.adapter import get_adapter
 from allauth.account.views import LoginView, SignupView
 
 from django.contrib import messages
@@ -8,8 +9,6 @@ from django.http import JsonResponse
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.views import View
-
-from temba.orgs.models import Invitation
 
 
 class TembaInviteMixin:
@@ -22,16 +21,13 @@ class TembaInviteMixin:
 
     @property
     def invite_secret(self):
-        # read the same way as the adapter's is_open_for_signup, so we enforce the invite that opened signup, even when
-        # it's only in the query string of a POST
-        return self.request.GET.get("invite", self.request.session.get("invite_secret", None))
+        # read by the adapter, so we enforce the invite that opened signup, even when it's only in the query string of
+        # a POST
+        return get_adapter(self.request).get_invite_secret(self.request)
 
     @cached_property
     def invite(self):
-        secret = self.invite_secret
-        if secret:
-            return Invitation.objects.filter(secret=secret, is_active=True).first()
-        return None
+        return get_adapter(self.request).get_invite(self.request)
 
     def get_initial(self):
         initial = super().get_initial()
