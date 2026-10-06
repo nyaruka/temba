@@ -15,6 +15,12 @@ describe('start_session action config', () => {
     it('has correct name', () => {
       expect(start_session.name).to.equal('Start Flow');
     });
+
+    it('only offers flows that are not archived', () => {
+      expect((start_session.form.flow as any).endpoint).to.equal(
+        '/api/v2/flows.json?archived=false'
+      );
+    });
   });
 
   describe('action scenarios', () => {
