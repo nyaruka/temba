@@ -1,3 +1,6 @@
+## v26.3.131 (2026-10-06)
+ * Require a trusted provider and verified id_token claims when matching social logins to users by email
+
 ## v26.3.130 (2026-10-06)
  * Fix connecting OpenID Connect logins to existing users by email
 
