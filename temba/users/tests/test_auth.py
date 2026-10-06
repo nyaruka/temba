@@ -167,7 +167,7 @@ class UserAuthTest(TembaTest):
     @patch("temba.users.models.User.fetch_avatar")
     def test_social_login(self, mock_fetch_avatar):
         def google_settings(**kwargs):
-            google = {**settings.SOCIALACCOUNT_PROVIDERS["google"], "APPS": [{"client_id": "1234", "secret": "sesame"}]}
+            google = {"EMAIL_AUTHENTICATION": True, "APPS": [{"client_id": "1234", "secret": "sesame"}]}
             return override_settings(SOCIALACCOUNT_PROVIDERS={"google": {**google, **kwargs}})
 
         def social_login(data: dict, **kwargs):
@@ -254,8 +254,21 @@ class UserAuthTest(TembaTest):
         self.assertTrue(sid.emailaddress_set.get(email__iexact="sid@temba.io").verified)
         self.assertEqual(OrgRole.EDITOR, self.org.get_user_role(sid))
 
-        # if the invite is for an email other than the provider's primary, that becomes the user's email
+        # if the invite is for an email other than the provider's primary, that becomes the user's email.. but signup is
+        # closed if that email already belongs to someone else
         invite = Invitation.create(self.org, self.admin, "tom@temba.io", OrgRole.EDITOR)
+        other = self.create_user("other@temba.io")
+        EmailAddress.objects.create(user=other, email="tom@temba.io", verified=False, primary=False)
+        request = social_login(
+            {"sub": "1005", "email": "tom@gmail.com", "email_verified": True},
+            invite=invite,
+            extra_emails=["tom@temba.io"],
+        )
+        self.assertNotIn("_auth_user_id", request.session)
+        self.assertFalse(SocialAccount.objects.filter(uid="1005").exists())
+
+        EmailAddress.objects.filter(user=other).delete()
+
         request = social_login(
             {"sub": "1005", "email": "tom@gmail.com", "email_verified": True},
             invite=invite,
@@ -265,6 +278,18 @@ class UserAuthTest(TembaTest):
         self.assertEqual(str(tom.id), request.session["_auth_user_id"])
         self.assertEqual("tom@temba.io", tom.emailaddress_set.get(primary=True, verified=True).email)
         self.assertEqual(OrgRole.EDITOR, self.org.get_user_role(tom))
+
+        # an existing user invited to another workspace, but logging in via a provider that can't connect them by
+        # email, also finds signup closed
+        invite = Invitation.create(self.org2, self.admin2, "tom@temba.io", OrgRole.EDITOR)
+        with google_settings(EMAIL_AUTHENTICATION=False):
+            request = social_login(
+                {"sub": "1007", "email": "tom@gmail.com", "email_verified": True},
+                invite=invite,
+                extra_emails=["tom@temba.io"],
+            )
+        self.assertNotIn("_auth_user_id", request.session)
+        self.assertFalse(SocialAccount.objects.filter(uid="1007").exists())
 
         # a user whose email was never verified may have been signed up by someone else, so connecting a social login
         # to them removes their password
@@ -413,3 +438,11 @@ class UserAuthTest(TembaTest):
         )
         self.assertFalse(User.objects.filter(email="victim@burgers.com").exists())
         self.assertTrue(User.objects.filter(email="sam@textit.com").exists())
+
+        # and the page shows that invite, rather than one in the session
+        self.client.logout()
+        invitation2 = Invitation.create(self.org, self.admin, "tim@textit.com", OrgRole.EDITOR)
+        invitation3 = Invitation.create(self.org, self.admin, "tia@textit.com", OrgRole.EDITOR)
+        self.client.get(f"{signup_url}?invite={invitation2.secret}")
+        response = self.client.post(f"{signup_url}?invite={invitation3.secret}", {"first_name": "Tia"})
+        self.assertEqual(invitation3, response.context["invite"])

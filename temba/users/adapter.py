@@ -66,6 +66,11 @@ class InviteAdapterMixin:
         invite = self.get_invite(request)
         if invite and sociallogin:
             invite_email = User.objects.normalize_email(invite.email)
+
+            # and not if that email already belongs to someone, as the new user couldn't then be given it
+            if User.get_by_email(invite_email) or EmailAddress.objects.filter(email__iexact=invite_email).exists():
+                return False
+
             return any(User.objects.normalize_email(a.email) == invite_email for a in sociallogin.email_addresses)
 
         return bool(invite)
