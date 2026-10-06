@@ -100,7 +100,7 @@ class TembaAccountAdapter(InviteAdapterMixin, DefaultAccountAdapter):
         sender.send([email], template_prefix, context)
 
 
-class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter):  # pragma: no cover
+class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter):
     @staticmethod
     def _get_email(sociallogin) -> str | None:
         # providers like OpenID Connect nest the user's claims inside extra_data, so read them via the provider account
@@ -118,7 +118,7 @@ class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter)
             data["email"] = email
         return user
 
-    def save_user(self, request, sociallogin, form=None):
+    def save_user(self, request, sociallogin, form=None):  # pragma: no cover
         user = super().save_user(request, sociallogin, form)
         email = user.email
         if email:
@@ -136,8 +136,9 @@ class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter)
         if email and not sociallogin.email_addresses:
             sociallogin.email_addresses = [EmailAddress(email=email, verified=True, primary=True)]
 
-        # if user exists, connect the social account
-        if email and not sociallogin.is_existing:
+        # if user exists, connect the social account, but only if the provider is trusted to authenticate by email as
+        # its claims may be unverified or editable by the user
+        if email and not sociallogin.is_existing and self.can_authenticate_by_email(sociallogin, email):
             user = User.get_by_email(email)
             if user:
                 sociallogin.connect(request, user)

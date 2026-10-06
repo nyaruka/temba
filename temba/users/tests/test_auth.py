@@ -159,7 +159,11 @@ class UserAuthTest(TembaTest):
 
         return request
 
-    @override_settings(SOCIALACCOUNT_PROVIDERS={"google": {"APPS": [{"client_id": "1234", "secret": "sesame"}]}})
+    @override_settings(
+        SOCIALACCOUNT_PROVIDERS={
+            "google": {"APPS": [{"client_id": "1234", "secret": "sesame"}], "EMAIL_AUTHENTICATION": True}
+        }
+    )
     @patch("temba.users.models.User.fetch_avatar")
     def test_social_login(self, mock_fetch_avatar):
         def social_login(uid: str, email: str):
@@ -184,26 +188,21 @@ class UserAuthTest(TembaTest):
         self.assertFalse(User.objects.filter(email__iexact="nobody@temba.io").exists())
         self.assertFalse(SocialAccount.objects.filter(uid="1002").exists())
 
-    @override_settings(
-        SOCIALACCOUNT_PROVIDERS={
-            "openid_connect": {
-                "APPS": [
-                    {
-                        "provider_id": "corp",
-                        "name": "Corp",
-                        "client_id": "1234",
-                        "secret": "sesame",
-                        "settings": {"server_url": "https://sso.corp.com"},
-                    }
-                ]
-            }
-        }
-    )
     @patch("temba.users.models.User.fetch_avatar")
     def test_social_login_oidc(self, mock_fetch_avatar):
         # the openid_connect provider isn't an installed app, so register it for this test only
         registry.load()
         self.enterContext(patch.dict(registry.provider_map, {OpenIDConnectProvider.id: OpenIDConnectProvider}))
+
+        def providers(email_authentication: bool) -> dict:
+            app = {
+                "provider_id": "corp",
+                "name": "Corp",
+                "client_id": "1234",
+                "secret": "sesame",
+                "settings": {"server_url": "https://sso.corp.com", "email_authentication": email_authentication},
+            }
+            return {"openid_connect": {"APPS": [app]}}
 
         # OIDC nests the claims under userinfo and id_token, and some providers (e.g. Azure AD) don't send
         # email_verified, so allauth itself won't match the email to an existing user
@@ -218,7 +217,15 @@ class UserAuthTest(TembaTest):
 
         user = create_user("Bob.Smith@temba.io")
 
-        # the social account is still connected to the existing user with that email
+        # if the provider isn't trusted to authenticate by email, its claims aren't used to connect an existing user
+        with override_settings(SOCIALACCOUNT_PROVIDERS=providers(email_authentication=False)):
+            request = social_login("2000", {"email": "bob.smith@temba.io"})
+            self.assertNotIn("_auth_user_id", request.session)
+            self.assertFalse(SocialAccount.objects.filter(uid="2000").exists())
+
+        self.enterContext(override_settings(SOCIALACCOUNT_PROVIDERS=providers(email_authentication=True)))
+
+        # but if it is, the social account is connected to the existing user with that email
         request = social_login("2001", {"email": "bob.smith@temba.io"})
         self.assertEqual(str(user.id), request.session["_auth_user_id"])
         self.assertEqual({"2001"}, set(SocialAccount.objects.filter(user=user).values_list("uid", flat=True)))
@@ -235,10 +242,18 @@ class UserAuthTest(TembaTest):
         self.assertEqual(str(user3.id), request.session["_auth_user_id"])
         self.assertTrue(SocialAccount.objects.filter(user=user3, uid="2003").exists())
 
+        # when several are provided, email takes precedence over upn, which takes precedence over preferred_username
+        claims = {"email": "bob.smith@temba.io", "upn": "ann@temba.io", "preferred_username": "cat@temba.io"}
+        request = social_login("2004", claims)
+        self.assertEqual(str(user.id), request.session["_auth_user_id"])
+
+        request = social_login("2005", {"upn": "ann@temba.io", "preferred_username": "cat@temba.io"})
+        self.assertEqual(str(user2.id), request.session["_auth_user_id"])
+
         # but an email without an existing user still finds signup closed
-        request = social_login("2004", {"email": "nobody@temba.io"})
+        request = social_login("2006", {"email": "nobody@temba.io"})
         self.assertNotIn("_auth_user_id", request.session)
-        self.assertFalse(SocialAccount.objects.filter(uid="2004").exists())
+        self.assertFalse(SocialAccount.objects.filter(uid="2006").exists())
 
     def test_signup(self):
         signup_url = reverse("account_signup")
