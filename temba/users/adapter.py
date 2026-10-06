@@ -2,6 +2,7 @@ from urllib.parse import urlencode
 
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.account.models import EmailAddress
+from allauth.account.utils import filter_users_by_email
 from allauth.core import context as allauth_context
 from allauth.mfa.adapter import DefaultMFAAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
@@ -100,14 +101,20 @@ class TembaAccountAdapter(InviteAdapterMixin, DefaultAccountAdapter):
         sender.send([email], template_prefix, context)
 
 
-class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter):  # pragma: no cover
+class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter):
     @staticmethod
     def _get_email(sociallogin) -> str | None:
-        # providers like OpenID Connect nest the user's claims inside extra_data, so read them via the provider account
-        data = sociallogin.account.get_provider_account().get_user_data() or {}
+        # OpenID Connect keeps userinfo and id_token claims apart, and providers like Azure AD only include upn and
+        # preferred_username in the id_token, so check both
+        extra = sociallogin.account.extra_data or {}
+        claims = [c for c in (extra.get("userinfo"), extra.get("id_token")) if isinstance(c, dict)] or [extra]
 
         # azure ad may only provide the email as upn or preferred_username
-        return data.get("email") or data.get("upn") or data.get("preferred_username")
+        for key in ("email", "upn", "preferred_username"):
+            for c in claims:
+                if c.get(key):
+                    return c[key]
+        return None
 
     def populate_user(self, request, sociallogin, data):
         user = super().populate_user(request, sociallogin, data)
@@ -129,18 +136,35 @@ class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter)
             )
         return user
 
+    def _is_trusted_email(self, sociallogin, email: str) -> bool:
+        """
+        Whether the provider can be trusted to vouch for this email, so that the login can be connected to an existing
+        user with it. Claims like upn are only as trustworthy as the provider and tenant issuing them, so this requires
+        email authentication to be enabled for the provider, and the email to be verified by the provider itself or
+        by the provider's verified_email setting.
+        """
+        if not self.can_authenticate_by_email(sociallogin, email):
+            return False
+
+        verified_by_provider = any(
+            e.verified and e.email.lower() == email.lower() for e in sociallogin.email_addresses if e.email
+        )
+        return verified_by_provider or self.is_email_verified(sociallogin.provider, email)
+
     def pre_social_login(self, request, sociallogin):
         email = self._get_email(sociallogin)
 
         # if we have an email but no email_addresses set, create one
         if email and not sociallogin.email_addresses:
-            sociallogin.email_addresses = [EmailAddress(email=email, verified=True, primary=True)]
+            verified = self.is_email_verified(sociallogin.provider, email)
+            sociallogin.email_addresses = [EmailAddress(email=email, verified=verified, primary=True)]
 
-        # if user exists, connect the social account
-        if email and not sociallogin.is_existing:
-            user = User.get_by_email(email)
-            if user:
-                sociallogin.connect(request, user)
+        # if user exists and the provider can vouch for their email, connect the social account
+        if email and not sociallogin.is_existing and self._is_trusted_email(sociallogin, email):
+            # match case-insensitively, as providers like Azure AD return addresses in whatever case they were entered
+            users = filter_users_by_email(email, prefer_verified=True)
+            if users:
+                sociallogin.connect(request, users[0])
 
 
 @receiver(social_account_added)
