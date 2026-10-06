@@ -11,7 +11,7 @@ class AddIndexConcurrentlyPlainReverse(AddIndexConcurrently):
     backwards inside a transaction - can unapply it.
     """
 
-    def database_backwards(self, app_label, schema_editor, from_state, to_state):
+    def database_backwards(self, app_label, schema_editor, from_state, to_state):  # pragma: no cover
         AddIndex.database_backwards(self, app_label, schema_editor, from_state, to_state)
 
 
@@ -21,7 +21,7 @@ class RemoveIndexConcurrentlyPlainReverse(RemoveIndexConcurrently):
     backwards inside a transaction - can unapply it.
     """
 
-    def database_backwards(self, app_label, schema_editor, from_state, to_state):
+    def database_backwards(self, app_label, schema_editor, from_state, to_state):  # pragma: no cover
         RemoveIndex.database_backwards(self, app_label, schema_editor, from_state, to_state)
 
 
