@@ -951,6 +951,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     def create_sample_flows(self, api_url):
         # use the static finders so that a deployment's static dirs can override the samples
         filename = finders.find("examples/sample_flows.json")
+        assert filename, "unable to find examples/sample_flows.json in static files"
 
         with open(filename, "r") as example_file:
             samples = example_file.read()

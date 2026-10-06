@@ -1,8 +1,11 @@
 import io
+import tempfile
 from datetime import date, datetime, timedelta, timezone as tzone
+from pathlib import Path
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
+from django.conf import settings
 from django.db.models import F, Model
 from django.test.utils import override_settings
 from django.urls import reverse
@@ -471,6 +474,32 @@ class OrgTest(TembaTest):
 
         # default values should be the same as parent
         self.assertEqual(self.org.timezone, sub_org.timezone)
+
+    @patch("temba.orgs.models.Org.import_app")
+    def test_create_sample_flows(self, mock_import_app):
+        with tempfile.TemporaryDirectory() as static_dir:
+            # a static dir without its own samples falls back to the bundled ones
+            with override_settings(STATICFILES_DIRS=(static_dir, *settings.STATICFILES_DIRS)):
+                self.org.create_sample_flows("https://example.com")
+
+            definition = mock_import_app.call_args[0][0]
+            self.assertIn("Sample Flow - Order Status Checker", [f["name"] for f in definition["flows"]])
+
+            # but if it has its own, they take precedence
+            examples_dir = Path(static_dir) / "examples"
+            examples_dir.mkdir()
+            (examples_dir / "sample_flows.json").write_text('{"version": "13", "flows": [], "site": "{{API_URL}}"}')
+
+            with override_settings(STATICFILES_DIRS=(static_dir, *settings.STATICFILES_DIRS)):
+                self.org.create_sample_flows("https://example.com")
+
+            mock_import_app.assert_called_with(
+                {"version": "13", "flows": [], "site": "https://example.com"}, self.admin
+            )
+
+        with patch("django.contrib.staticfiles.finders.find", return_value=None):
+            with self.assertRaises(AssertionError):
+                self.org.create_sample_flows("https://example.com")
 
     @patch("temba.orgs.tasks.perform_export.delay")
     def test_restart_stalled_exports(self, mock_org_export_task):
