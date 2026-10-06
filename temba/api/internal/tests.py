@@ -748,6 +748,7 @@ class EndpointsTest(APITestMixin, TembaTest):
                     "is_seen": False,
                     "incident": {
                         "type": "org:suspended",
+                        "title": "Workspace Suspended",
                         "started_on": matchers.ISODatetime(),
                         "ended_on": None,
                     },

@@ -89,6 +89,10 @@ export class NotificationList extends TembaList {
         } else if (notification.incident.type === 'webhooks:unhealthy') {
           icon = Icon.webhook;
           body = msg('Your webhook calls are not working properly.');
+        } else {
+          // incident types registered outside of this project show their title
+          icon = Icon.incidents;
+          body = notification.incident.title;
         }
       } else if (notification.type === 'import:finished') {
         if (notification.import.type === 'contact') {

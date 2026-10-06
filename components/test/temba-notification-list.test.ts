@@ -1,4 +1,5 @@
 import { expect, oneEvent } from '@open-wc/testing';
+import { render } from 'lit';
 import { useFakeTimers } from 'sinon';
 import { CustomEventType, Notification } from '../src/interfaces';
 import { NotificationList } from '../src/list/NotificationList';
@@ -125,6 +126,31 @@ describe('temba-notification-list', () => {
     expect(list.items.length).to.equal(4);
     expect(list.items[0].url).to.equal('/notification/read/4/');
     await assertScreenshot('list/notifications-published', getClip(list));
+  });
+
+  it('shows the title of incident types it has no message for', async () => {
+    const list = await getList();
+    const container = document.createElement('div');
+    render(
+      list.renderOption(
+        {
+          type: 'incident:started',
+          created_on: '2021-03-31T00:00:00.000000Z',
+          url: '/notification/read/5/',
+          is_seen: false,
+          incident: {
+            type: 'custom:problem',
+            title: 'Something Went Wrong',
+            started_on: '2021-03-31T00:00:00.000000Z'
+          }
+        },
+        false
+      ),
+      container
+    );
+
+    expect(container.textContent).to.contain('Something Went Wrong');
+    expect(container.querySelector('temba-icon')).to.exist;
   });
 
   it('dedupes publications by url', async () => {

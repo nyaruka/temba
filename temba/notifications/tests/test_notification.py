@@ -291,6 +291,7 @@ class NotificationTest(TembaTest):
                 "is_seen": False,
                 "incident": {
                     "type": "channel:templates_failed",
+                    "title": "WhatsApp Templates Sync Failed",
                     "started_on": matchers.ISODatetime(),
                     "ended_on": None,
                 },
@@ -322,6 +323,7 @@ class NotificationTest(TembaTest):
                 "is_seen": False,
                 "incident": {
                     "type": "org:flagged",
+                    "title": "Workspace Flagged",
                     "started_on": matchers.ISODatetime(),
                     "ended_on": None,
                 },
@@ -434,6 +436,7 @@ class NotificationTest(TembaTest):
                 "is_seen": False,
                 "incident": {
                     "type": "channel:disconnected",
+                    "title": "Channel Disconnected",
                     "started_on": matchers.ISODatetime(),
                     "ended_on": None,
                 },

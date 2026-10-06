@@ -33,6 +33,7 @@ export interface Notification {
   };
   incident?: {
     type: string;
+    title?: string;
     started_on: string;
     ended_on?: string;
   };

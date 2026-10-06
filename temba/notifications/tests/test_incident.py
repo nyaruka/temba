@@ -42,7 +42,13 @@ class IncidentTest(TembaTest):
         self.assertEqual({self.admin}, set(n.user for n in incident.notifications.all()))
 
         self.assertEqual(
-            {"type": "org:flagged", "started_on": matchers.ISODatetime(), "ended_on": None}, incident.as_json()
+            {
+                "type": "org:flagged",
+                "title": "Workspace Flagged",
+                "started_on": matchers.ISODatetime(),
+                "ended_on": None,
+            },
+            incident.as_json(),
         )
 
         self.org.unflag()
@@ -59,7 +65,13 @@ class IncidentTest(TembaTest):
         self.assertEqual({self.admin}, set(n.user for n in incident.notifications.all()))
 
         self.assertEqual(
-            {"type": "org:suspended", "started_on": matchers.ISODatetime(), "ended_on": None}, incident.as_json()
+            {
+                "type": "org:suspended",
+                "title": "Workspace Suspended",
+                "started_on": matchers.ISODatetime(),
+                "ended_on": None,
+            },
+            incident.as_json(),
         )
 
         self.org.unsuspend()
@@ -79,6 +91,7 @@ class IncidentTest(TembaTest):
         self.assertEqual(
             {
                 "type": "webhooks:unhealthy",
+                "title": "Webhooks Unhealthy",
                 "started_on": "2021-11-12T14:23:30.123456+00:00",
                 "ended_on": None,
             },
@@ -92,6 +105,7 @@ class IncidentTest(TembaTest):
         self.assertEqual(
             {
                 "type": "channel:disconnected",
+                "title": "Channel Disconnected",
                 "started_on": matchers.ISODatetime(),
                 "ended_on": None,
             },

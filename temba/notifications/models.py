@@ -29,6 +29,7 @@ class IncidentType:
     def as_json(self, incident) -> dict:
         return {
             "type": incident.incident_type,
+            "title": str(self.title),
             "started_on": incident.started_on.isoformat(),
             "ended_on": incident.ended_on.isoformat() if incident.ended_on else None,
         }
