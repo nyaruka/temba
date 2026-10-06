@@ -1361,7 +1361,12 @@ class Invitation(CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         assert not team or org == team.org
 
         return cls.objects.create(
-            org=org, email=email, role_code=role.code, team=team, created_by=user, modified_by=user
+            org=org,
+            email=User.objects.normalize_email(email),
+            role_code=role.code,
+            team=team,
+            created_by=user,
+            modified_by=user,
         )
 
     def save(self, *args, **kwargs):

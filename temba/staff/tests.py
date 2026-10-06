@@ -367,12 +367,14 @@ class UserCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("", self.editor.last_name)
         self.assertEqual({global_admins, editors}, set(self.editor.groups.all()))
 
-        # submit with one less group
+        self.editor.set_verified(True)
+
+        # submit with one less group, and the same email in a different case which shouldn't unverify them
         response = self.requestView(
             update_url,
             self.customer_support,
             post_data={
-                "email": "eddy@textit.com",
+                "email": "Eddy@TextIt.com",
                 "new_password": "Asdf1234",
                 "first_name": "Edward",
                 "last_name": "",
@@ -386,6 +388,7 @@ class UserCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("Edward", self.editor.first_name)
         self.assertEqual("", self.editor.last_name)
         self.assertEqual({global_admins}, set(self.editor.groups.all()))
+        self.assertTrue(self.editor.is_verified())
 
         # unverify user
         self.client.post(update_url, {"action": "unverify"})
