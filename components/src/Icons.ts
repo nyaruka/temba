@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 // for cache busting we dynamically generate a fingerprint, use bun run svg to update
-export const SVG_FINGERPRINT = 'ce10cf207bc8b678f7c04e7e30c5976a';
+export const SVG_FINGERPRINT = '43754ae9b9c0725131d2db1f01084489';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -298,6 +298,7 @@ export enum Icon {
   ai_google = 'gemini',
   ai_microsoft = 'azure',
   ai_deepseek = 'deepseek',
+  ai_typesafe = 'typesafe',
 
   // classifiers
   classifier_wit = 'classifier-wit',

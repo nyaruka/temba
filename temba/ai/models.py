@@ -20,7 +20,7 @@ class LLMType:
     """
 
     # icon to show in UI
-    icon = "icon-llm"
+    icon = "ai"
 
     # help text to show for the API key field
     api_key_help = None
