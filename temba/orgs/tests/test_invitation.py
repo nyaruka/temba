@@ -12,7 +12,8 @@ from temba.users.models import User
 
 class InvitationTest(TembaTest):
     def test_model(self):
-        invitation = Invitation.create(self.org, self.admin, "invitededitor@textit.com", OrgRole.EDITOR)
+        invitation = Invitation.create(self.org, self.admin, "InvitedEditor@TextIt.com", OrgRole.EDITOR)
+        self.assertEqual("invitededitor@textit.com", invitation.email)
 
         self.assertEqual(OrgRole.EDITOR, invitation.role)
 

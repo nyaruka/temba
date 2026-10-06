@@ -103,6 +103,8 @@ class EndpointsTest(APITest):
 
         response = request_by_basic_auth(fields_url, self.admin.email, token1.key)
         self.assertEqual(200, response.status_code)
+        response = request_by_basic_auth(fields_url, self.admin.email.upper(), token1.key)
+        self.assertEqual(200, response.status_code)
 
         # can GET using session auth for admins, editors and servicing staff
         response = request_by_session(fields_url, self.admin)

@@ -12,6 +12,7 @@ from django.conf import settings
 from django.http import HttpResponse, HttpResponseServerError
 from django.utils import timezone
 
+from temba.users.models import User
 from temba.utils import str_to_bool
 
 from .models import APIToken
@@ -101,7 +102,7 @@ class APIBasicAuthentication(RequestAttributesMixin, BasicAuthentication):
         except APIToken.DoesNotExist:
             raise exceptions.AuthenticationFailed("Invalid token or email")
 
-        if token.user.email != userid:
+        if token.user.email != User.objects.normalize_email(userid):
             raise exceptions.AuthenticationFailed("Invalid token or email")
 
         if token.user.is_active:
