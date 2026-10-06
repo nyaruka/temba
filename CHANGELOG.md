@@ -1,3 +1,6 @@
+## v26.3.130 (2026-10-06)
+ * Fix connecting OpenID Connect logins to existing users by email
+
 ## v26.3.129 (2026-10-06)
  * Drop columns for removed audit fields on imports and boundary aliases
 
