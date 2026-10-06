@@ -2,10 +2,10 @@ from urllib.parse import urlencode
 
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.account.models import EmailAddress
-from allauth.account.utils import filter_users_by_email
 from allauth.core import context as allauth_context
 from allauth.mfa.adapter import DefaultMFAAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+from allauth.socialaccount.providers.base import AuthProcess
 from allauth.socialaccount.signals import social_account_added
 
 from django.conf import settings
@@ -56,11 +56,28 @@ class InviteAdapterMixin:
             redirect_url=redirect_url,
         )
 
-    def is_open_for_signup(self, request, sociallogin=None):
-        # only users with a valid invite can create accounts
-        secret = request.GET.get("invite", request.session.get("invite_secret", None))
+    def get_invite_secret(self, request):
+        # the query string takes precedence over the invite stored in the session by an earlier GET
+        return request.GET.get("invite", request.session.get("invite_secret", None))
 
-        return bool(secret and Invitation.objects.filter(secret=secret, is_active=True).exists())
+    def get_invite(self, request):
+        secret = self.get_invite_secret(request)
+
+        return Invitation.objects.filter(secret=secret, is_active=True).first() if secret else None
+
+    def is_open_for_signup(self, request, sociallogin=None):
+        # only users with a valid invite can create accounts, and with SSO only for the email the invite was sent to
+        invite = self.get_invite(request)
+        if invite and sociallogin:
+            invite_email = User.objects.normalize_email(invite.email)
+
+            # and not if that email already belongs to someone, as the new user couldn't then be given it
+            if User.get_by_email(invite_email) or EmailAddress.objects.filter(email__iexact=invite_email).exists():
+                return False
+
+            return any(User.objects.normalize_email(a.email) == invite_email for a in sociallogin.email_addresses)
+
+        return bool(invite)
 
 
 class TembaAccountAdapter(InviteAdapterMixin, DefaultAccountAdapter):
@@ -127,48 +144,55 @@ class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter)
 
     def save_user(self, request, sociallogin, form=None):
         user = super().save_user(request, sociallogin, form)
-        email = user.email
-        if email:
-            EmailAddress.objects.update_or_create(
-                user=user,
-                email=email,
-                defaults={"verified": True, "primary": True},
-            )
+
+        # signup requires an invite to one of the emails, so it's verified even if the provider didn't say so, and it
+        # becomes the user's email even if the provider's primary is another, so that the invite can be accepted
+        invite = self.get_invite(request)
+        if invite:
+            address = user.emailaddress_set.get(email=User.objects.normalize_email(invite.email))
+            address.verified = True
+            address.set_as_primary()
+
         return user
 
-    def _is_trusted_email(self, sociallogin, email: str) -> bool:
-        """
-        Whether the provider can be trusted to vouch for this email, so that the login can be connected to an existing
-        user with it. Claims like upn are only as trustworthy as the provider and tenant issuing them, so this requires
-        email authentication to be enabled for the provider, and the email to be verified by the provider itself or
-        by the provider's verified_email setting.
-        """
-        if not self.can_authenticate_by_email(sociallogin, email):
-            return False
-
-        verified_by_provider = any(
-            e.verified and e.email.lower() == email.lower() for e in sociallogin.email_addresses if e.email
-        )
-        return verified_by_provider or self.is_email_verified(sociallogin.provider, email)
+    def authenticate_by_email(self, sociallogin):
+        # we connect by email ourselves in pre_social_login instead, including wiping passwords like allauth does, as
+        # allauth assumes its email addresses are stored lowercase, which older ones may not be, and would then wipe
+        # the passwords of users whose addresses are verified
+        return None
 
     def pre_social_login(self, request, sociallogin):
-        email = self._get_email(sociallogin)
+        # providers that don't report email addresses (e.g. Azure AD may only give a upn) may still give us one in
+        # other fields, but it's only verified if the provider is configured as verifying emails (VERIFIED_EMAIL)
+        if not sociallogin.email_addresses:
+            email = self._get_email(sociallogin)
+            if email:
+                verified = self.is_email_verified(sociallogin.provider, email)
+                sociallogin.email_addresses = [EmailAddress(email=email, verified=verified, primary=True)]
 
-        # if we have an email but no email_addresses set, create one
-        if email and not sociallogin.email_addresses:
-            verified = self.is_email_verified(sociallogin.provider, email)
-            sociallogin.email_addresses = [EmailAddress(email=email, verified=verified, primary=True)]
+        # connect to an existing user with a matching email, but only if that email is verified and the provider is
+        # trusted for email authentication (EMAIL_AUTHENTICATION), as otherwise anyone could take over an account by
+        # putting its email on their provider account. Not when the logged in user is connecting an account to
+        # themselves, as that might be another user's email.
+        if sociallogin.is_existing or sociallogin.state.get("process") == AuthProcess.CONNECT:
+            return
 
-        # if user exists and the provider can vouch for their email, connect the social account
-        if email and not sociallogin.is_existing and self._is_trusted_email(sociallogin, email):
-            # match case-insensitively, as providers like Azure AD return addresses in whatever case they were entered
-            users = filter_users_by_email(email, prefer_verified=True)
-            if users:
-                sociallogin.connect(request, users[0])
+        for address in sociallogin.email_addresses:
+            if address.verified and self.can_authenticate_by_email(sociallogin, address.email):
+                user = User.get_by_email(address.email)
+                if user:
+                    # if the user never verified their email, it may have been signed up by someone else who could
+                    # still login with its password, so remove that
+                    if not user.emailaddress_set.filter(email__iexact=address.email, verified=True).exists():
+                        user.set_unusable_password()
+                        user.save(update_fields=("password",))
+
+                    sociallogin.connect(request, user)
+                    return
 
 
 @receiver(social_account_added)
-def update_user_profile_picture(request, sociallogin, **kwargs):  # pragma: no cover
+def update_user_profile_picture(request, sociallogin, **kwargs):
     user = sociallogin.user
     user.fetch_avatar(sociallogin.account.get_avatar_url())
 

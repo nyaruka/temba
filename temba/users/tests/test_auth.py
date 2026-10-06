@@ -143,52 +143,164 @@ class UserAuthTest(TembaTest):
         self.assertFormError(response.context["form"], "email", "Use <b>Sign In with SSO Corp</b> instead.")
         self.assertFalse(User.objects.filter(email="sid@sso-corp.com").exists())
 
-    def _social_login(self, provider_id: str, response: dict, invite_secret: str = None):
+    def _social_login(
+        self, provider_id: str, response: dict, *, process: str = "login", user=None, invite=None, extra_emails=()
+    ):
         request = RequestFactory().get("/")
         SessionMiddleware(lambda r: None).process_request(request)
-        if invite_secret:
-            request.session["invite_secret"] = invite_secret
+        if invite:
+            request.session["invite_secret"] = invite.secret
         request._messages = FallbackStorage(request)
-        request.user = AnonymousUser()
+        request.user = user or AnonymousUser()
         request.branding = settings.BRAND
         request.org = None
 
         with allauth_context.request_context(request):
             provider = get_social_adapter().get_provider(request, provider_id)
             sociallogin = provider.sociallogin_from_response(request, response)
-            sociallogin.state = {"process": "login"}
+            sociallogin.email_addresses += [EmailAddress(email=e, verified=True, primary=False) for e in extra_emails]
+            sociallogin.state = {"process": process}
             complete_social_login(request, sociallogin)
 
         return request
 
-    @override_settings(
-        SOCIALACCOUNT_PROVIDERS={
-            "google": {"EMAIL_AUTHENTICATION": True, "APPS": [{"client_id": "1234", "secret": "sesame"}]}
-        }
-    )
     @patch("temba.users.models.User.fetch_avatar")
     def test_social_login(self, mock_fetch_avatar):
-        def social_login(uid: str, email: str):
-            return self._social_login("google", {"sub": uid, "email": email, "email_verified": True})
+        def google_settings(**kwargs):
+            google = {"EMAIL_AUTHENTICATION": True, "APPS": [{"client_id": "1234", "secret": "sesame"}]}
+            return override_settings(SOCIALACCOUNT_PROVIDERS={"google": {**google, **kwargs}})
 
-        # social login for an email with an existing user connects the social account to that user and logs them in,
-        # even if the email case differs
-        user = self.create_user("Bob.Smith@temba.io")
-        EmailAddress.objects.create(user=user, email=user.email, verified=True, primary=True)
-        request = social_login("1001", "bob.smith@temba.io")
+        def social_login(data: dict, **kwargs):
+            return self._social_login("google", data, **kwargs)
+
+        # google is trusted for email authentication by default
+        self.assertTrue(settings.SOCIALACCOUNT_PROVIDERS["google"]["EMAIL_AUTHENTICATION"])
+
+        self.enterContext(google_settings())
+
+        # older email addresses may not be stored lowercase
+        user = self.create_user("bob.smith@temba.io")
+        EmailAddress.objects.create(user=user, email="Bob.Smith@temba.io", verified=True, primary=True)
+
+        # social login with an email the provider hasn't verified doesn't connect to the existing user with that email
+        request = social_login({"sub": "1001", "email": "bob.smith@temba.io", "email_verified": False})
+        self.assertNotIn("_auth_user_id", request.session)
+        self.assertFalse(SocialAccount.objects.filter(user=user).exists())
+
+        # unless the provider is configured as verifying emails
+        with google_settings(VERIFIED_EMAIL=True):
+            request = social_login({"sub": "1001", "email": "bob.smith@temba.io", "email_verified": False})
+            self.assertEqual(str(user.id), request.session["_auth_user_id"])
+
+        SocialAccount.objects.filter(user=user).delete()
+
+        # providers that don't report an email (Google always does, but others like Azure AD may not) are checked for
+        # one in other fields, which again is only considered verified if the provider is configured that way
+        request = social_login({"sub": "1001", "upn": "bob.smith@temba.io"})
+        self.assertNotIn("_auth_user_id", request.session)
+        self.assertFalse(SocialAccount.objects.filter(user=user).exists())
+
+        with google_settings(VERIFIED_EMAIL=True):
+            request = social_login({"sub": "1001", "upn": "bob.smith@temba.io"})
+            self.assertEqual(str(user.id), request.session["_auth_user_id"])
+
+        SocialAccount.objects.filter(user=user).delete()
+        mock_fetch_avatar.reset_mock()
+
+        # social login with a verified email connects the social account to the existing user with that email and logs
+        # them in, even if the email case differs
+        request = social_login({"sub": "1001", "email": "bob.smith@temba.io", "email_verified": True})
         self.assertEqual(str(user.id), request.session["_auth_user_id"])
         self.assertEqual({"1001"}, set(SocialAccount.objects.filter(user=user).values_list("uid", flat=True)))
+        self.assertEqual(1, mock_fetch_avatar.call_count)
+
+        self.assertTrue(User.objects.get(id=user.id).has_usable_password())
 
         # and next time that social account is found directly
-        request = social_login("1001", "bob.smith@temba.io")
+        request = social_login({"sub": "1001", "email": "bob.smith@temba.io", "email_verified": True})
         self.assertEqual(str(user.id), request.session["_auth_user_id"])
         self.assertEqual(1, SocialAccount.objects.filter(user=user).count())
+        self.assertEqual(1, mock_fetch_avatar.call_count)
 
-        # but social login for an email without an existing user doesn't create one, as signup is closed
-        request = social_login("1002", "nobody@temba.io")
+        # a provider not trusted for email authentication can't log in as an existing user, even with a verified email
+        with google_settings(EMAIL_AUTHENTICATION=False):
+            request = social_login({"sub": "1004", "email": "bob.smith@temba.io", "email_verified": True})
+            self.assertNotIn("_auth_user_id", request.session)
+            self.assertFalse(SocialAccount.objects.filter(uid="1004").exists())
+
+        # a logged in user connecting a social account with another user's email gets it connected to themselves
+        social_login(
+            {"sub": "1002", "email": "bob.smith@temba.io", "email_verified": True}, process="connect", user=self.admin
+        )
+        self.assertEqual(self.admin, SocialAccount.objects.get(uid="1002").user)
+        self.assertEqual(1, SocialAccount.objects.filter(user=user).count())
+
+        # social login for an email without an existing user doesn't create one, as signup is closed
+        request = social_login({"sub": "1003", "email": "sid@temba.io", "email_verified": True})
         self.assertNotIn("_auth_user_id", request.session)
-        self.assertFalse(User.objects.filter(email__iexact="nobody@temba.io").exists())
-        self.assertFalse(SocialAccount.objects.filter(uid="1002").exists())
+        self.assertFalse(User.objects.filter(email__iexact="sid@temba.io").exists())
+        self.assertFalse(SocialAccount.objects.filter(uid="1003").exists())
+
+        # even with an invite, if that's for a different email
+        invite = Invitation.create(self.org, self.admin, "Sid@temba.io", OrgRole.EDITOR)
+        request = social_login({"sub": "1003", "email": "eve@temba.io", "email_verified": True}, invite=invite)
+        self.assertNotIn("_auth_user_id", request.session)
+        self.assertFalse(User.objects.filter(email__iexact="eve@temba.io").exists())
+        self.assertFalse(SocialAccount.objects.filter(uid="1003").exists())
+
+        # but with an invite for that email, signup creates the user, with the email verified by the invite even if the
+        # provider didn't verify it, and accepts the invite
+        request = social_login({"sub": "1003", "email": "sid@temba.io", "email_verified": False}, invite=invite)
+        sid = User.objects.get(email__iexact="sid@temba.io")
+        self.assertEqual(str(sid.id), request.session["_auth_user_id"])
+        self.assertEqual(sid, SocialAccount.objects.get(uid="1003").user)
+        self.assertTrue(sid.emailaddress_set.get(email__iexact="sid@temba.io").verified)
+        self.assertEqual(OrgRole.EDITOR, self.org.get_user_role(sid))
+
+        # if the invite is for an email other than the provider's primary, that becomes the user's email.. but signup is
+        # closed if that email already belongs to someone else
+        invite = Invitation.create(self.org, self.admin, "tom@temba.io", OrgRole.EDITOR)
+        other = self.create_user("other@temba.io")
+        EmailAddress.objects.create(user=other, email="tom@temba.io", verified=False, primary=False)
+        request = social_login(
+            {"sub": "1005", "email": "tom@gmail.com", "email_verified": True},
+            invite=invite,
+            extra_emails=["tom@temba.io"],
+        )
+        self.assertNotIn("_auth_user_id", request.session)
+        self.assertFalse(SocialAccount.objects.filter(uid="1005").exists())
+
+        EmailAddress.objects.filter(user=other).delete()
+
+        request = social_login(
+            {"sub": "1005", "email": "tom@gmail.com", "email_verified": True},
+            invite=invite,
+            extra_emails=["tom@temba.io"],
+        )
+        tom = User.objects.get(email="tom@temba.io")
+        self.assertEqual(str(tom.id), request.session["_auth_user_id"])
+        self.assertEqual("tom@temba.io", tom.emailaddress_set.get(primary=True, verified=True).email)
+        self.assertEqual(OrgRole.EDITOR, self.org.get_user_role(tom))
+
+        # an existing user invited to another workspace, but logging in via a provider that can't connect them by
+        # email, also finds signup closed
+        invite = Invitation.create(self.org2, self.admin2, "tom@temba.io", OrgRole.EDITOR)
+        with google_settings(EMAIL_AUTHENTICATION=False):
+            request = social_login(
+                {"sub": "1007", "email": "tom@gmail.com", "email_verified": True},
+                invite=invite,
+                extra_emails=["tom@temba.io"],
+            )
+        self.assertNotIn("_auth_user_id", request.session)
+        self.assertFalse(SocialAccount.objects.filter(uid="1007").exists())
+
+        # a user whose email was never verified may have been signed up by someone else, so connecting a social login
+        # to them removes their password
+        ann = self.create_user("ann@temba.io")
+        EmailAddress.objects.create(user=ann, email=ann.email, verified=False, primary=True)
+        social_login({"sub": "1006", "email": "ann@temba.io", "email_verified": True})
+        self.assertEqual(ann, SocialAccount.objects.get(uid="1006").user)
+        self.assertFalse(User.objects.get(id=ann.id).has_usable_password())
 
     @override_settings(
         SOCIALACCOUNT_PROVIDERS={
@@ -216,11 +328,12 @@ class UserAuthTest(TembaTest):
         self.enterContext(patch.dict(registry.provider_map, {OpenIDConnectProvider.id: OpenIDConnectProvider}))
 
         # OIDC nests the claims under userinfo and id_token, and some providers (e.g. Azure AD) don't send
-        # email_verified, so allauth itself won't match the email to an existing user
-        def social_login(uid: str, claims: dict, id_token_claims: dict = None, invite_secret: str = None):
+        # email_verified, so this app is configured as trusted for email authentication and as verifying emails for
+        # its own domain
+        def social_login(uid: str, claims: dict, id_token_claims: dict = None, invite=None):
             claims = {"sub": uid, **claims}
             id_token = {"sub": uid, **id_token_claims} if id_token_claims is not None else claims
-            return self._social_login("corp", {"userinfo": claims, "id_token": id_token}, invite_secret)
+            return self._social_login("corp", {"userinfo": claims, "id_token": id_token}, invite=invite)
 
         def create_user(email: str):
             user = self.create_user(email)
@@ -229,7 +342,7 @@ class UserAuthTest(TembaTest):
 
         user = create_user("Bob.Smith@temba.io")
 
-        # the social account is still connected to the existing user with that email
+        # the social account is connected to the existing user with that email
         request = social_login("2001", {"email": "bob.smith@temba.io"})
         self.assertEqual(str(user.id), request.session["_auth_user_id"])
         self.assertEqual({"2001"}, set(SocialAccount.objects.filter(user=user).values_list("uid", flat=True)))
@@ -278,13 +391,29 @@ class UserAuthTest(TembaTest):
 
         # but an invited user can signup, with the email from their claims marked as verified
         invitation = Invitation.create(self.org, self.admin, "gus@temba.io", OrgRole.EDITOR)
-        request = social_login("2009", {"name": "Gus"}, {"upn": "gus@temba.io"}, invite_secret=invitation.secret)
+        request = social_login("2009", {"name": "Gus"}, {"upn": "gus@temba.io"}, invite=invitation)
         gus = User.objects.get(email="gus@temba.io")
         self.assertEqual(str(gus.id), request.session["_auth_user_id"])
         self.assertTrue(SocialAccount.objects.filter(user=gus, uid="2009").exists())
         self.assertTrue(
             EmailAddress.objects.filter(user=gus, email="gus@temba.io", verified=True, primary=True).exists()
         )
+
+        # without that configuration, emails aren't trusted to connect to existing users
+        app = settings.SOCIALACCOUNT_PROVIDERS["openid_connect"]["APPS"][0]
+        with override_settings(
+            SOCIALACCOUNT_PROVIDERS={
+                "openid_connect": {"APPS": [{**app, "settings": {"server_url": "https://sso.corp.com"}}]}
+            }
+        ):
+            user7 = create_user("hal@temba.io")
+            request = social_login("2010", {"email": "hal@temba.io"})
+            self.assertNotIn("_auth_user_id", request.session)
+            self.assertFalse(SocialAccount.objects.filter(user=user7).exists())
+
+            request = social_login("2010", {"upn": "hal@temba.io"})
+            self.assertNotIn("_auth_user_id", request.session)
+            self.assertFalse(SocialAccount.objects.filter(user=user7).exists())
 
     def test_signup(self):
         signup_url = reverse("account_signup")
@@ -338,3 +467,22 @@ class UserAuthTest(TembaTest):
 
         email = user.emailaddress_set.all().first()
         self.assertTrue(email.verified)
+
+        # posting with the invite only in the query string, without the GET that stores it in the session, still
+        # enforces its email
+        self.client.logout()
+        invitation = Invitation.create(self.org, self.admin, "sam@textit.com", OrgRole.EDITOR)
+        self.client.post(
+            f"{signup_url}?invite={invitation.secret}",
+            {"first_name": "Sam", "last_name": "Spoof", "email": "victim@burgers.com", "password1": "arstqwfp"},
+        )
+        self.assertFalse(User.objects.filter(email="victim@burgers.com").exists())
+        self.assertTrue(User.objects.filter(email="sam@textit.com").exists())
+
+        # and the page shows that invite, rather than one in the session
+        self.client.logout()
+        invitation2 = Invitation.create(self.org, self.admin, "tim@textit.com", OrgRole.EDITOR)
+        invitation3 = Invitation.create(self.org, self.admin, "tia@textit.com", OrgRole.EDITOR)
+        self.client.get(f"{signup_url}?invite={invitation2.secret}")
+        response = self.client.post(f"{signup_url}?invite={invitation3.secret}", {"first_name": "Tia"})
+        self.assertEqual(invitation3, response.context["invite"])

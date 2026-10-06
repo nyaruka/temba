@@ -1,5 +1,6 @@
 import json
 
+from allauth.account.adapter import get_adapter
 from allauth.account.views import LoginView, SignupView
 
 from django.contrib import messages
@@ -9,8 +10,6 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.views import View
 
-from temba.orgs.models import Invitation
-
 
 class TembaInviteMixin:
     def get_form_kwargs(self):
@@ -18,18 +17,21 @@ class TembaInviteMixin:
             # update our session invite on GET
             self.request.session["invite_secret"] = self.request.GET.get("invite", None)
 
-        return {"secret": self.request.session.get("invite_secret", None), **super().get_form_kwargs()}
+        return {"secret": self.invite_secret, **super().get_form_kwargs()}
+
+    @property
+    def invite_secret(self):
+        # read by the adapter, so we enforce the invite that opened signup, even when it's only in the query string of
+        # a POST
+        return get_adapter(self.request).get_invite_secret(self.request)
 
     @cached_property
     def invite(self):
-        secret = self.request.session.get("invite_secret", None)
-        if secret:
-            return Invitation.objects.filter(secret=secret, is_active=True).first()
-        return None
+        return get_adapter(self.request).get_invite(self.request)
 
     def get_initial(self):
         initial = super().get_initial()
-        if self.request.session.get("invite_secret", None) and not self.invite:
+        if self.invite_secret and not self.invite:
             messages.add_message(
                 self.request,
                 messages.WARNING,
