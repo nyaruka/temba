@@ -282,7 +282,9 @@ class UserAuthTest(TembaTest):
         gus = User.objects.get(email="gus@temba.io")
         self.assertEqual(str(gus.id), request.session["_auth_user_id"])
         self.assertTrue(SocialAccount.objects.filter(user=gus, uid="2009").exists())
-        self.assertTrue(EmailAddress.objects.filter(user=gus, email="gus@temba.io", verified=True, primary=True).exists())
+        self.assertTrue(
+            EmailAddress.objects.filter(user=gus, email="gus@temba.io", verified=True, primary=True).exists()
+        )
 
     def test_signup(self):
         signup_url = reverse("account_signup")
