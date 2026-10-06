@@ -43,6 +43,16 @@ class UserTest(TembaTest):
 
         self.assertEqual(user, User.objects.get_by_natural_key("jim@rapidpro.io"))
         self.assertEqual(user, User.objects.get_by_natural_key("JIM@rapidpro.io"))
+        self.assertEqual(user, User.get_by_email("Jim@RapidPro.io"))
+
+        # emails are stored lowercased however they're given
+        bob = User.create("Bob.Smith@RapidPro.io", "Bob", "Smith", password="super")
+        self.assertEqual("bob.smith@rapidpro.io", bob.email)
+
+        bob.email = "Robert.Smith@RapidPro.io"
+        bob.save(update_fields=("email",))
+        bob.refresh_from_db()
+        self.assertEqual("robert.smith@rapidpro.io", bob.email)
 
         # remove emailaddress object
         user.emailaddress_set.all().delete()

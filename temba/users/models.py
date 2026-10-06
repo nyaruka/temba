@@ -15,12 +15,13 @@ from temba.utils.uuid import uuid4
 
 
 class UserManager(AuthUserManager):
-    """
-    Overrides the default user manager to make email lookups case insensitive
-    """
+    @classmethod
+    def normalize_email(cls, email: str) -> str:
+        # treat the whole address as case insensitive, not just the domain part, so it can be matched exactly
+        return super().normalize_email(email).lower()
 
     def get_by_natural_key(self, email: str):
-        return self.get(**{f"{self.model.USERNAME_FIELD}__iexact": email})
+        return self.get(email=self.normalize_email(email))
 
     def create_user(self, email: str, password: str, **extra_fields):
         """
@@ -73,6 +74,11 @@ class User(LegacyIDMixin, UUIDMixin, AbstractBaseUser, PermissionsMixin):
 
         self.email = self.__class__.objects.normalize_email(self.email)
 
+    def save(self, *args, **kwargs):
+        self.email = self.__class__.objects.normalize_email(self.email)
+
+        super().save(*args, **kwargs)
+
     @classmethod
     def create(cls, email: str, first_name: str, last_name: str, password: str, language: str = None):
         assert not cls.get_by_email(email), "user with this email already exists"
@@ -98,7 +104,7 @@ class User(LegacyIDMixin, UUIDMixin, AbstractBaseUser, PermissionsMixin):
 
     @classmethod
     def get_by_email(cls, email: str):
-        return cls.objects.filter(email__iexact=email).first()
+        return cls.objects.filter(email=cls.objects.normalize_email(email)).first()
 
     @classmethod
     def get_system_user(cls):

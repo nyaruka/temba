@@ -35,7 +35,7 @@ class InviteAdapterMixin:
             invite = Invitation.objects.filter(secret=secret, is_active=True).first()
             if invite:
                 # this can happen if a SSO with a different email address is used
-                if user.email != invite.email:  # pragma: no cover
+                if user.email != User.objects.normalize_email(invite.email):  # pragma: no cover
                     messages.add_message(
                         self.request,
                         messages.WARNING,
