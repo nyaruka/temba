@@ -1,3 +1,6 @@
+## v26.3.134 (2026-10-06)
+ * Add another AI provider icon and fix default LLM type icon
+
 ## v26.3.133 (2026-10-06)
  * Require verified emails from trusted providers to connect SSO logins to existing users, and the invited email for SSO signup
  * Enforce signup via the query string invite, making its email the user's email, closing signup if that email already belongs to someone, and showing the invite on the form
