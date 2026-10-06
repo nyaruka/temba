@@ -314,7 +314,7 @@ class UserAuthTest(TembaTest):
                         "settings": {
                             "server_url": "https://sso.corp.com",
                             "email_authentication": True,
-                            "verified_email": True,
+                            "verified_email": ["temba.io"],
                         },
                     }
                 ]
@@ -328,10 +328,12 @@ class UserAuthTest(TembaTest):
         self.enterContext(patch.dict(registry.provider_map, {OpenIDConnectProvider.id: OpenIDConnectProvider}))
 
         # OIDC nests the claims under userinfo and id_token, and some providers (e.g. Azure AD) don't send
-        # email_verified, so this app is configured as trusted for email authentication and as verifying emails
-        def social_login(uid: str, claims: dict):
+        # email_verified, so this app is configured as trusted for email authentication and as verifying emails for
+        # its own domain
+        def social_login(uid: str, claims: dict, id_token_claims: dict = None, invite=None):
             claims = {"sub": uid, **claims}
-            return self._social_login("corp", {"userinfo": claims, "id_token": claims})
+            id_token = {"sub": uid, **id_token_claims} if id_token_claims is not None else claims
+            return self._social_login("corp", {"userinfo": claims, "id_token": id_token}, invite=invite)
 
         def create_user(email: str):
             user = self.create_user(email)
@@ -357,26 +359,61 @@ class UserAuthTest(TembaTest):
         self.assertEqual(str(user3.id), request.session["_auth_user_id"])
         self.assertTrue(SocialAccount.objects.filter(user=user3, uid="2003").exists())
 
-        # but an email without an existing user still finds signup closed
+        # or when the userinfo has no email and the upn is only in the id_token, as with Azure AD, whatever its case
+        user4 = create_user("dan@temba.io")
+        request = social_login("2005", {"name": "Dan"}, {"upn": "Dan@temba.io"})
+        self.assertEqual(str(user4.id), request.session["_auth_user_id"])
+        self.assertTrue(SocialAccount.objects.filter(user=user4, uid="2005").exists())
+
+        # but not for an email outside the domains the provider is trusted to verify
+        user5 = create_user("eve@other.com")
+        request = social_login("2006", {"email": "eve@other.com"})
+        self.assertNotIn("_auth_user_id", request.session)
+        self.assertFalse(SocialAccount.objects.filter(user=user5).exists())
+
+        # or when email authentication isn't enabled for the provider
+        app_settings = settings.SOCIALACCOUNT_PROVIDERS["openid_connect"]["APPS"][0]["settings"]
+        with patch.dict(app_settings, {"email_authentication": False}):
+            user6 = create_user("fay@temba.io")
+            request = social_login("2007", {"email": "fay@temba.io"})
+            self.assertNotIn("_auth_user_id", request.session)
+            self.assertFalse(SocialAccount.objects.filter(user=user6).exists())
+
+        # and an email without an existing user still finds signup closed
         request = social_login("2004", {"email": "nobody@temba.io"})
         self.assertNotIn("_auth_user_id", request.session)
         self.assertFalse(SocialAccount.objects.filter(uid="2004").exists())
 
-        # and without that configuration, emails aren't trusted to connect to existing users
+        # as does a login without any email claims
+        request = social_login("2008", {"name": "Nobody"})
+        self.assertNotIn("_auth_user_id", request.session)
+        self.assertFalse(SocialAccount.objects.filter(uid="2008").exists())
+
+        # but an invited user can signup, with the email from their claims marked as verified
+        invitation = Invitation.create(self.org, self.admin, "gus@temba.io", OrgRole.EDITOR)
+        request = social_login("2009", {"name": "Gus"}, {"upn": "gus@temba.io"}, invite=invitation)
+        gus = User.objects.get(email="gus@temba.io")
+        self.assertEqual(str(gus.id), request.session["_auth_user_id"])
+        self.assertTrue(SocialAccount.objects.filter(user=gus, uid="2009").exists())
+        self.assertTrue(
+            EmailAddress.objects.filter(user=gus, email="gus@temba.io", verified=True, primary=True).exists()
+        )
+
+        # without that configuration, emails aren't trusted to connect to existing users
         app = settings.SOCIALACCOUNT_PROVIDERS["openid_connect"]["APPS"][0]
         with override_settings(
             SOCIALACCOUNT_PROVIDERS={
                 "openid_connect": {"APPS": [{**app, "settings": {"server_url": "https://sso.corp.com"}}]}
             }
         ):
-            user4 = create_user("dan@temba.io")
-            request = social_login("2005", {"email": "dan@temba.io"})
+            user7 = create_user("hal@temba.io")
+            request = social_login("2010", {"email": "hal@temba.io"})
             self.assertNotIn("_auth_user_id", request.session)
-            self.assertFalse(SocialAccount.objects.filter(user=user4).exists())
+            self.assertFalse(SocialAccount.objects.filter(user=user7).exists())
 
-            request = social_login("2005", {"upn": "dan@temba.io"})
+            request = social_login("2010", {"upn": "hal@temba.io"})
             self.assertNotIn("_auth_user_id", request.session)
-            self.assertFalse(SocialAccount.objects.filter(user=user4).exists())
+            self.assertFalse(SocialAccount.objects.filter(user=user7).exists())
 
     def test_signup(self):
         signup_url = reverse("account_signup")
