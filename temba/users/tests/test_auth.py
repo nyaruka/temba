@@ -143,9 +143,11 @@ class UserAuthTest(TembaTest):
         self.assertFormError(response.context["form"], "email", "Use <b>Sign In with SSO Corp</b> instead.")
         self.assertFalse(User.objects.filter(email="sid@sso-corp.com").exists())
 
-    def _social_login(self, provider_id: str, response: dict):
+    def _social_login(self, provider_id: str, response: dict, invite_secret: str = None):
         request = RequestFactory().get("/")
         SessionMiddleware(lambda r: None).process_request(request)
+        if invite_secret:
+            request.session["invite_secret"] = invite_secret
         request._messages = FallbackStorage(request)
         request.user = AnonymousUser()
         request.branding = settings.BRAND
@@ -215,10 +217,10 @@ class UserAuthTest(TembaTest):
 
         # OIDC nests the claims under userinfo and id_token, and some providers (e.g. Azure AD) don't send
         # email_verified, so allauth itself won't match the email to an existing user
-        def social_login(uid: str, claims: dict, id_token_claims: dict = None):
+        def social_login(uid: str, claims: dict, id_token_claims: dict = None, invite_secret: str = None):
             claims = {"sub": uid, **claims}
             id_token = {"sub": uid, **id_token_claims} if id_token_claims is not None else claims
-            return self._social_login("corp", {"userinfo": claims, "id_token": id_token})
+            return self._social_login("corp", {"userinfo": claims, "id_token": id_token}, invite_secret)
 
         def create_user(email: str):
             user = self.create_user(email)
@@ -244,9 +246,9 @@ class UserAuthTest(TembaTest):
         self.assertEqual(str(user3.id), request.session["_auth_user_id"])
         self.assertTrue(SocialAccount.objects.filter(user=user3, uid="2003").exists())
 
-        # or when the userinfo has no email and the upn is only in the id_token, as with Azure AD
+        # or when the userinfo has no email and the upn is only in the id_token, as with Azure AD, whatever its case
         user4 = create_user("dan@temba.io")
-        request = social_login("2005", {"name": "Dan"}, {"upn": "dan@temba.io"})
+        request = social_login("2005", {"name": "Dan"}, {"upn": "Dan@temba.io"})
         self.assertEqual(str(user4.id), request.session["_auth_user_id"])
         self.assertTrue(SocialAccount.objects.filter(user=user4, uid="2005").exists())
 
@@ -268,6 +270,19 @@ class UserAuthTest(TembaTest):
         request = social_login("2004", {"email": "nobody@temba.io"})
         self.assertNotIn("_auth_user_id", request.session)
         self.assertFalse(SocialAccount.objects.filter(uid="2004").exists())
+
+        # as does a login without any email claims
+        request = social_login("2008", {"name": "Nobody"})
+        self.assertNotIn("_auth_user_id", request.session)
+        self.assertFalse(SocialAccount.objects.filter(uid="2008").exists())
+
+        # but an invited user can signup, with the email from their claims marked as verified
+        invitation = Invitation.create(self.org, self.admin, "gus@temba.io", OrgRole.EDITOR)
+        request = social_login("2009", {"name": "Gus"}, {"upn": "gus@temba.io"}, invite_secret=invitation.secret)
+        gus = User.objects.get(email="gus@temba.io")
+        self.assertEqual(str(gus.id), request.session["_auth_user_id"])
+        self.assertTrue(SocialAccount.objects.filter(user=gus, uid="2009").exists())
+        self.assertTrue(EmailAddress.objects.filter(user=gus, email="gus@temba.io", verified=True, primary=True).exists())
 
     def test_signup(self):
         signup_url = reverse("account_signup")

@@ -2,6 +2,7 @@ from urllib.parse import urlencode
 
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.account.models import EmailAddress
+from allauth.account.utils import filter_users_by_email
 from allauth.core import context as allauth_context
 from allauth.mfa.adapter import DefaultMFAAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
@@ -100,7 +101,7 @@ class TembaAccountAdapter(InviteAdapterMixin, DefaultAccountAdapter):
         sender.send([email], template_prefix, context)
 
 
-class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter):  # pragma: no cover
+class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter):
     @staticmethod
     def _get_email(sociallogin) -> str | None:
         # OpenID Connect keeps userinfo and id_token claims apart, and providers like Azure AD only include upn and
@@ -160,9 +161,10 @@ class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter)
 
         # if user exists and the provider can vouch for their email, connect the social account
         if email and not sociallogin.is_existing and self._is_trusted_email(sociallogin, email):
-            user = User.get_by_email(email)
-            if user:
-                sociallogin.connect(request, user)
+            # match case-insensitively, as providers like Azure AD return addresses in whatever case they were entered
+            users = filter_users_by_email(email, prefer_verified=True)
+            if users:
+                sociallogin.connect(request, users[0])
 
 
 @receiver(social_account_added)
