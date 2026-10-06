@@ -16,6 +16,12 @@ describe('split_by_subflow node config', () => {
       expect(split_by_subflow.name).to.equal('Enter a Flow');
     });
 
+    it('only offers flows that are not archived', () => {
+      expect((split_by_subflow.form.flow as any).endpoint).to.equal(
+        '/api/v2/flows.json?archived=false'
+      );
+    });
+
     it('has correct type', () => {
       expect(split_by_subflow.type).to.equal('split_by_subflow');
     });

@@ -119,7 +119,7 @@ export const start_session: ActionConfig = {
       helpText: 'Select the flow to start',
       required: true,
       searchable: true,
-      endpoint: '/api/v2/flows.json',
+      endpoint: '/api/v2/flows.json?archived=false',
       valueKey: 'uuid',
       nameKey: 'name',
       placeholder: 'Select a flow...'

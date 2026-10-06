@@ -15,6 +15,12 @@ describe('enter_flow action config', () => {
     it('has correct name', () => {
       expect(enter_flow.name).to.equal('Enter a Flow');
     });
+
+    it('only offers flows that are not archived', () => {
+      expect((enter_flow.form.flow as any).endpoint).to.equal(
+        '/api/v2/flows.json?archived=false'
+      );
+    });
   });
 
   describe('action scenarios', () => {
