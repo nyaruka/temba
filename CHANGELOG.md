@@ -1,3 +1,9 @@
+## v26.3.133 (2026-10-06)
+ * Require verified emails from trusted providers to connect SSO logins to existing users, and the invited email for SSO signup
+ * Enforce signup via the query string invite, making its email the user's email, closing signup if that email already belongs to someone, and showing the invite on the form
+ * Wipe passwords of unverified users when connecting social logins
+ * Drop unused email authentication auto connect setting
+
 ## v26.3.132 (2026-10-06)
  * Exclude archived flows from flow pickers in the flow editor
  * Find sample flows via the static file finders
