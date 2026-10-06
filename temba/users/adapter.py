@@ -101,10 +101,17 @@ class TembaAccountAdapter(InviteAdapterMixin, DefaultAccountAdapter):
 
 
 class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter):  # pragma: no cover
+    @staticmethod
+    def _get_email(sociallogin) -> str | None:
+        # providers like OpenID Connect nest the user's claims inside extra_data, so read them via the provider account
+        data = sociallogin.account.get_provider_account().get_user_data() or {}
+
+        # azure ad may only provide the email as upn or preferred_username
+        return data.get("email") or data.get("upn") or data.get("preferred_username")
+
     def populate_user(self, request, sociallogin, data):
         user = super().populate_user(request, sociallogin, data)
-        extra = sociallogin.account.extra_data
-        email = extra.get("email") or extra.get("preferred_username") or extra.get("upn")
+        email = self._get_email(sociallogin)
         if not user.email:
             user.email = email
         if "email" not in data and email:
@@ -123,16 +130,7 @@ class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter)
         return user
 
     def pre_social_login(self, request, sociallogin):
-        # extract email from various possible fields
-        email = None
-        if hasattr(sociallogin, "account") and hasattr(sociallogin.account, "extra_data"):
-            extra_data = sociallogin.account.extra_data
-            # check multiple possible email fields
-            email = (
-                extra_data.get("email")
-                or extra_data.get("upn")  # azure ad uses upn
-                or extra_data.get("preferred_username")
-            )
+        email = self._get_email(sociallogin)
 
         # if we have an email but no email_addresses set, create one
         if email and not sociallogin.email_addresses:
