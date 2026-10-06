@@ -1059,7 +1059,9 @@ SOCIALACCOUNT_ADAPTER = "temba.users.adapter.TembaSocialAccountAdapter"
 MFA_ADAPTER = "temba.users.adapter.TembaMFAAdapter"
 
 # existing users are only logged in by a social login with a matching verified email if its provider is trusted for
-# this via EMAIL_AUTHENTICATION - which Google is, as it only reports addresses its users own as verified
+# this via EMAIL_AUTHENTICATION - which Google is, as it only reports addresses its users own as verified. Settings that
+# replace SOCIALACCOUNT_PROVIDERS should keep this for google. Providers that don't report whether emails are verified
+# (e.g. Azure AD) also need VERIFIED_EMAIL, ideally as a list of the domains they're trusted for.
 SOCIALACCOUNT_PROVIDERS = {"google": {"EMAIL_AUTHENTICATION": True}}
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 SOCIALACCOUNT_LOGIN_ON_GET = True

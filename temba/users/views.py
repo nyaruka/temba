@@ -18,7 +18,11 @@ class TembaInviteMixin:
             # update our session invite on GET
             self.request.session["invite_secret"] = self.request.GET.get("invite", None)
 
-        return {"secret": self.request.session.get("invite_secret", None), **super().get_form_kwargs()}
+        # read the invite the same way as the adapter's is_open_for_signup, so the form enforces the invite that opened
+        # signup, even when it's only in the query string of a POST
+        secret = self.request.GET.get("invite", self.request.session.get("invite_secret", None))
+
+        return {"secret": secret, **super().get_form_kwargs()}
 
     @cached_property
     def invite(self):

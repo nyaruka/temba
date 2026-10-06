@@ -130,16 +130,20 @@ class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter)
     def save_user(self, request, sociallogin, form=None):
         user = super().save_user(request, sociallogin, form)
 
-        # signup requires an invite to the email, so it's verified even if the provider didn't say so
+        # signup requires an invite to one of the emails, so it's verified even if the provider didn't say so, and it
+        # becomes the user's email even if the provider's primary is another, so that the invite can be accepted
         invite = self.get_invite(request)
         if invite:
-            user.emailaddress_set.filter(email=User.objects.normalize_email(invite.email)).update(verified=True)
+            address = user.emailaddress_set.get(email=User.objects.normalize_email(invite.email))
+            address.verified = True
+            address.set_as_primary()
 
         return user
 
     def authenticate_by_email(self, sociallogin):
-        # we connect by email ourselves in pre_social_login, as allauth assumes its email addresses are stored lowercase
-        # which older ones may not be, and would then wipe the passwords of users whose addresses are verified
+        # we connect by email ourselves in pre_social_login instead, including wiping passwords like allauth does, as
+        # allauth assumes its email addresses are stored lowercase, which older ones may not be, and would then wipe
+        # the passwords of users whose addresses are verified
         return None
 
     def pre_social_login(self, request, sociallogin):
@@ -162,6 +166,12 @@ class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter)
             if address.verified and self.can_authenticate_by_email(sociallogin, address.email):
                 user = User.get_by_email(address.email)
                 if user:
+                    # if the user never verified their email, it may have been signed up by someone else who could
+                    # still login with its password, so remove that
+                    if not user.emailaddress_set.filter(email__iexact=address.email, verified=True).exists():
+                        user.set_unusable_password()
+                        user.save(update_fields=("password",))
+
                     sociallogin.connect(request, user)
                     return
 

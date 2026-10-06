@@ -143,7 +143,9 @@ class UserAuthTest(TembaTest):
         self.assertFormError(response.context["form"], "email", "Use <b>Sign In with SSO Corp</b> instead.")
         self.assertFalse(User.objects.filter(email="sid@sso-corp.com").exists())
 
-    def _social_login(self, provider_id: str, response: dict, *, process: str = "login", user=None, invite=None):
+    def _social_login(
+        self, provider_id: str, response: dict, *, process: str = "login", user=None, invite=None, extra_emails=()
+    ):
         request = RequestFactory().get("/")
         SessionMiddleware(lambda r: None).process_request(request)
         if invite:
@@ -156,6 +158,7 @@ class UserAuthTest(TembaTest):
         with allauth_context.request_context(request):
             provider = get_social_adapter().get_provider(request, provider_id)
             sociallogin = provider.sociallogin_from_response(request, response)
+            sociallogin.email_addresses += [EmailAddress(email=e, verified=True, primary=False) for e in extra_emails]
             sociallogin.state = {"process": process}
             complete_social_login(request, sociallogin)
 
@@ -250,6 +253,26 @@ class UserAuthTest(TembaTest):
         self.assertEqual(sid, SocialAccount.objects.get(uid="1003").user)
         self.assertTrue(sid.emailaddress_set.get(email__iexact="sid@temba.io").verified)
         self.assertEqual(OrgRole.EDITOR, self.org.get_user_role(sid))
+
+        # if the invite is for an email other than the provider's primary, that becomes the user's email
+        invite = Invitation.create(self.org, self.admin, "tom@temba.io", OrgRole.EDITOR)
+        request = social_login(
+            {"sub": "1005", "email": "tom@gmail.com", "email_verified": True},
+            invite=invite,
+            extra_emails=["tom@temba.io"],
+        )
+        tom = User.objects.get(email="tom@temba.io")
+        self.assertEqual(str(tom.id), request.session["_auth_user_id"])
+        self.assertEqual("tom@temba.io", tom.emailaddress_set.get(primary=True, verified=True).email)
+        self.assertEqual(OrgRole.EDITOR, self.org.get_user_role(tom))
+
+        # a user whose email was never verified may have been signed up by someone else, so connecting a social login
+        # to them removes their password
+        ann = self.create_user("ann@temba.io")
+        EmailAddress.objects.create(user=ann, email=ann.email, verified=False, primary=True)
+        social_login({"sub": "1006", "email": "ann@temba.io", "email_verified": True})
+        self.assertEqual(ann, SocialAccount.objects.get(uid="1006").user)
+        self.assertFalse(User.objects.get(id=ann.id).has_usable_password())
 
     @override_settings(
         SOCIALACCOUNT_PROVIDERS={
@@ -379,3 +402,14 @@ class UserAuthTest(TembaTest):
 
         email = user.emailaddress_set.all().first()
         self.assertTrue(email.verified)
+
+        # posting with the invite only in the query string, without the GET that stores it in the session, still
+        # enforces its email
+        self.client.logout()
+        invitation = Invitation.create(self.org, self.admin, "sam@textit.com", OrgRole.EDITOR)
+        self.client.post(
+            f"{signup_url}?invite={invitation.secret}",
+            {"first_name": "Sam", "last_name": "Spoof", "email": "victim@burgers.com", "password1": "arstqwfp"},
+        )
+        self.assertFalse(User.objects.filter(email="victim@burgers.com").exists())
+        self.assertTrue(User.objects.filter(email="sam@textit.com").exists())
