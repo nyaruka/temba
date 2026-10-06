@@ -1,3 +1,6 @@
+## v26.3.127 (2026-10-06)
+ * Match existing users case-insensitively when connecting social logins by email
+
 ## v26.3.126 (2026-10-05)
  * Keep the rich editor caret in place in Safari
 
