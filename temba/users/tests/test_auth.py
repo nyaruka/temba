@@ -173,6 +173,9 @@ class UserAuthTest(TembaTest):
         def social_login(data: dict, **kwargs):
             return self._social_login("google", data, **kwargs)
 
+        # google is trusted for email authentication by default
+        self.assertTrue(settings.SOCIALACCOUNT_PROVIDERS["google"]["EMAIL_AUTHENTICATION"])
+
         self.enterContext(google_settings())
 
         # older email addresses may not be stored lowercase
