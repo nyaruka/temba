@@ -1,3 +1,7 @@
+## v26.3.132 (2026-10-06)
+ * Exclude archived flows from flow pickers in the flow editor
+ * Find sample flows via the static file finders
+
 ## v26.3.131 (2026-10-06)
  * Require a trusted provider and verified id_token claims when matching social logins to users by email
 
