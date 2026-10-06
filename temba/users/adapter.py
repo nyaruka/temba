@@ -140,7 +140,7 @@ class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter)
 
         # if user exists, connect the social account
         if email and not sociallogin.is_existing:
-            user = User.objects.filter(email=email).first()
+            user = User.get_by_email(email)
             if user:
                 sociallogin.connect(request, user)
 
