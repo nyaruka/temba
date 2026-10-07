@@ -319,8 +319,8 @@ export class Card extends RapidElement {
     }
 
     return html`
-      <div class="frame">
-        <div class="card-header" @click=${this.handleHeaderClick}>
+      <div class="frame" part="frame">
+        <div class="card-header" part="header" @click=${this.handleHeaderClick}>
           <temba-icon
             name=${this.gripIcon}
             class="grip"
@@ -344,6 +344,7 @@ export class Card extends RapidElement {
           <temba-icon
             name=${Icon.arrow_down}
             class="toggle ${this.collapsed ? 'collapsed' : ''}"
+            part="toggle"
           ></temba-icon>
         </div>
         <div
@@ -354,7 +355,7 @@ export class Card extends RapidElement {
           @transitionend=${this.handleTransitionEnd}
         >
           <div class="inner">
-            <div class="content">
+            <div class="content" part="content">
               <slot @temba-details-changed=${this.handleDetailsChanged}></slot>
             </div>
           </div>

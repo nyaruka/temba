@@ -309,10 +309,10 @@ describe(TAG, () => {
     expect(elements[0].getAttribute('label')).to.equal('Getting Started');
     expect(elements[1].getAttribute('label')).to.equal('Flows');
 
-    // a section is picked up by its folder rather than the card's usual grip
+    // each card says how much is in it, whether or not it's open
     expect(
-      elements[0].shadowRoot.querySelector('.grip').getAttribute('name')
-    ).to.equal('folder');
+      elements[0].querySelector('.meta .count').textContent.trim()
+    ).to.equal('2 articles');
 
     // sections arrive shut - a helpdesk is scanned by its sections first
     elements.forEach((card: any) => expect(card.collapsed).to.be.true);
@@ -416,10 +416,55 @@ describe(TAG, () => {
     expect(description.textContent.trim()).to.equal(
       'Setting up and finding your way around.'
     );
-    expect(description.getAttribute('slot')).to.equal('description');
-    expect(gettingStarted.classList.contains('described')).to.be.true;
-    expect(flows.classList.contains('described')).to.be.false;
+    expect(description.closest('[slot]').getAttribute('slot')).to.equal(
+      'description'
+    );
     expect(flows.querySelector('.description')).to.not.exist;
+  });
+
+  it('jumps to a section from the overview, opening its card', async () => {
+    // wide enough for the overview to stand beside the outline
+    const cards = await getCards({}, 1200);
+    const overview = cards.shadowRoot.querySelector('.overview');
+    expect(getComputedStyle(overview).display).to.equal('block');
+
+    const items = Array.from(
+      overview.querySelectorAll('.toc-item')
+    ) as HTMLElement[];
+    expect(
+      items.map((item) => item.querySelector('.toc-title').textContent.trim())
+    ).to.deep.equal(['Getting Started', 'Flows']);
+
+    const flows = getCardElements(cards)[1] as any;
+    expect(flows.collapsed).to.be.true;
+    items[1].click();
+    expect(flows.collapsed).to.be.false;
+    expect(flows.classList.contains('flash')).to.be.true;
+  });
+
+  it('opens and shuts every card from the overview', async () => {
+    const cards = await getCards({}, 1200);
+    const button = cards.shadowRoot.querySelector('.expand-all') as HTMLElement;
+    expect(button.textContent.trim()).to.equal('Expand all');
+
+    button.click();
+    await cards.updateComplete;
+    getCardElements(cards).forEach(
+      (card: any) => expect(card.collapsed).to.be.false
+    );
+    expect(button.textContent.trim()).to.equal('Collapse all');
+
+    button.click();
+    await cards.updateComplete;
+    getCardElements(cards).forEach(
+      (card: any) => expect(card.collapsed).to.be.true
+    );
+  });
+
+  it('keeps the overview out of a narrow page', async () => {
+    const cards = await getCards();
+    const overview = cards.shadowRoot.querySelector('.overview');
+    expect(getComputedStyle(overview).display).to.equal('none');
   });
 
   it('offers to add an article only with somewhere to create one', async () => {

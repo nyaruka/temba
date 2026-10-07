@@ -270,10 +270,10 @@
       margin-bottom: 12px;
       padding: 12px 14px;
       gap: 12px;
-      border: 1px solid var(--border-strong);
-      border-radius: var(--r-sm);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
       background: var(--surface);
-      box-shadow: var(--shadow-2);
+      box-shadow: var(--shadow-1);
       color: var(--text-1);
     }
 
@@ -339,10 +339,10 @@
       align-items: center;
       padding: 12px 14px;
       gap: 12px;
-      border: 1px solid var(--border-strong);
-      border-radius: var(--r-sm);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
       background: var(--surface);
-      box-shadow: var(--shadow-2);
+      box-shadow: var(--shadow-1);
       color: var(--text-1);
       text-decoration: none;
       transition: box-shadow 150ms ease, border-color 150ms ease;
@@ -431,6 +431,27 @@
 
     a.domain-card:hover .domain-arrow {
       --icon-color: var(--accent-500);
+    }
+
+    /* in the rail beside the outline the card is too narrow for one line - what's said of the domain keeps the
+       first, and its badges drop beneath it, lined up under the text */
+    @container helpdesk-aside (max-width: 420px) {
+      .domain-card {
+        row-gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .domain-text {
+        flex-basis: calc(100% - 40px);
+      }
+
+      .domain-text + * {
+        margin-left: 32px;
+      }
+
+      .domain-arrow {
+        margin-left: auto;
+      }
     }
 
     /* the preview pill - a button in its own right, riding the card */
