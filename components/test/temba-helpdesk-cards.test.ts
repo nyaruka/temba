@@ -435,6 +435,8 @@ describe(TAG, () => {
       items.map((item) => item.querySelector('.toc-title').textContent.trim())
     ).to.deep.equal(['Getting Started', 'Flows']);
 
+    await assertScreenshot('helpdesk-cards/overview', getClip(cards));
+
     const flows = getCardElements(cards)[1] as any;
     expect(flows.collapsed).to.be.true;
     items[1].click();
