@@ -3,6 +3,7 @@ import { property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { Icon } from '../Icons';
 import { RapidElement } from '../RapidElement';
+import { Card } from '../layout/Card';
 import { Article, CustomEventType } from '../interfaces';
 import { designTokens } from '../styles/designTokens';
 import { fetchResults, getClasses, postJSON } from '../utils';
@@ -157,86 +158,373 @@ export class HelpdeskCards extends RapidElement {
         padding: 0 12px;
       }
 
+      /* the scrollport, and what the layout below sizes itself against -
+         the page, not the window, since the menu beside it can be open or
+         shut */
       .cards {
         flex: 1 1 auto;
         min-height: 0;
         overflow-y: auto;
-        /* room for card shadows, and a bottom inset so the last row of
-           cards doesn't rest on the edge of the scrollport */
-        padding: 4px 12px 12px;
+        padding: 8px 16px 32px;
+        container: helpdesk / inline-size;
       }
 
-      /* one card per section, stacked in a single comfortable column */
-      .stack {
-        display: block;
+      /* one comfortable column on a narrow page: whatever the host puts
+         above the cards, then the outline of sections */
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
         margin: 0 auto;
-        max-width: 800px;
-        width: 100%;
+        max-width: 880px;
       }
 
-      /* whatever the host puts above the cards sits in the same column, and scrolls away with them */
+      .aside {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        min-width: 0;
+        container: helpdesk-aside / inline-size;
+      }
+
+      /* the overview only earns its place beside the outline - stacked
+         above it, it would just push the sections down */
+      .overview {
+        display: none;
+      }
+
+      .aside.bare {
+        display: none;
+      }
+
+      /* a wide page splits in two: the outline, and a rail beside it that
+         stays put while the outline scrolls */
+      @container helpdesk (min-width: 1060px) {
+        .layout {
+          grid-template-columns: minmax(0, 1fr) 320px;
+          grid-template-areas: 'main aside';
+          column-gap: 32px;
+          max-width: 1280px;
+        }
+
+        .main {
+          grid-area: main;
+        }
+
+        .aside,
+        .aside.bare {
+          display: flex;
+          grid-area: aside;
+          align-self: start;
+          position: sticky;
+          top: 0;
+        }
+
+        .overview {
+          display: block;
+        }
+      }
+
       .banner {
         display: block;
-        margin: 0 auto 12px;
-        max-width: 800px;
-        width: 100%;
       }
 
-      .rows {
+      .main {
+        min-width: 0;
+      }
+
+      /* ==========================================================
+         The outline: a rail down the left joins the sections into
+         the one ordered whole the help site presents, each card
+         hanging off a numbered stop on it. The numbers are counters,
+         so they follow a drag as the cards reflow.
+         ========================================================== */
+
+      .stack {
         display: block;
+        margin: 0;
+        width: 100%;
+        box-sizing: border-box;
+        padding-left: 44px;
+        counter-reset: section;
+      }
+
+      temba-card {
+        position: relative;
+        counter-increment: section;
+        --card-border: var(--border);
+      }
+
+      /* the stop - a numbered disc level with the card's title */
+      temba-card::before {
+        content: counter(section);
+        position: absolute;
+        left: -44px;
+        top: 14px;
+        z-index: 1;
+        box-sizing: border-box;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        border: 1.5px solid var(--accent-300);
+        background: var(--surface);
+        color: var(--accent-700);
+        font-size: 12px;
+        font-weight: var(--w-semibold);
+        font-variant-numeric: tabular-nums;
+        transition:
+          background 150ms ease,
+          color 150ms ease,
+          border-color 150ms ease;
+      }
+
+      temba-card:hover::before {
+        background: var(--accent-500);
+        border-color: var(--accent-500);
+        color: #fff;
+      }
+
+      /* the rail - from this stop down through the gap to the next one */
+      temba-card::after {
+        content: '';
+        position: absolute;
+        left: -31px;
+        width: 2px;
+        top: 42px;
+        bottom: -28px;
+        background: var(--accent-200);
+        border-radius: 2px;
+      }
+
+      temba-card:last-of-type::after {
+        display: none;
+      }
+
+      /* a card being carried is clipped to itself - no stop, no rail */
+      temba-card.ghost::before,
+      temba-card.ghost::after {
+        display: none;
+      }
+
+      .stack > .drop-placeholder {
+        border-radius: var(--r) !important;
+        background: var(--accent-50) !important;
+        outline-color: var(--accent-300) !important;
+      }
+
+      temba-card::part(frame) {
+        border-radius: var(--r);
+        box-shadow: var(--shadow-1);
+        transition:
+          box-shadow 150ms ease,
+          border-color 150ms ease;
+      }
+
+      temba-card:hover::part(frame) {
+        border-color: var(--border-strong);
+        box-shadow: var(--shadow-2);
+      }
+
+      temba-card::part(header) {
+        align-items: flex-start;
+        padding: 14px 14px 14px 18px;
+        border-radius: var(--r);
+      }
+
+      /* the stop says what the card is and the whole header picks it up,
+         so the card's own grip is surplus */
+      temba-card::part(grip) {
+        display: none;
+      }
+
+      temba-card::part(toggle) {
+        align-self: flex-start;
+        margin-top: 6px;
+        --icon-color: var(--text-4);
+      }
+
+      temba-card::part(content) {
+        padding: 0 10px 10px;
+      }
+
+      /* the section's name leads its card: heavier and darker than the
+         articles under it, so the page reads as sections first */
+      temba-card::part(title) {
+        color: var(--text-1);
+        font-size: 15px;
+        font-weight: var(--w-semibold);
+        letter-spacing: -0.01em;
+        line-height: 1.35;
       }
 
       /* an unpublished section takes its whole card with it, whatever
          its articles say for themselves: the section is the unit the
          user publishes, so it's the unit that reads as off. The controls
          stay live: this is a state, not a lock. */
-      temba-card[unpublished] {
-        opacity: 0.55;
+      temba-card[unpublished]::part(frame),
+      temba-card[unpublished] .rows {
+        opacity: 0.6;
+      }
+
+      temba-card[unpublished]::part(frame) {
+        border-style: dashed;
+        box-shadow: none;
+      }
+
+      temba-card[unpublished]::before {
+        border-style: dashed;
+        border-color: var(--text-4);
+        color: var(--text-3);
       }
 
       /* a drop landing on a shut card files into it, so the whole card
          reads as the landing place */
-      temba-card[drop-into] {
-        outline: 2px solid var(--accent-400);
-        outline-offset: 1px;
-        border-radius: var(--r-sm);
+      temba-card[drop-into]::part(frame) {
+        border-color: var(--accent-400);
+        box-shadow: 0 0 0 3px var(--accent-100);
       }
 
-      /* the slot a cross-card drop would land in, matching the
-         placeholder the row's own list shows within a card */
-      .drop-placeholder {
-        background: #f3f4f6;
-        border-radius: var(--r-sm);
-        height: 34px;
-        outline: 2px dashed #d1d5db;
-        outline-offset: -2px;
+      /* a section the overview just jumped to, picked out for a moment */
+      temba-card.flash::part(frame) {
+        border-color: var(--accent-400);
+        box-shadow: 0 0 0 4px var(--accent-100);
+      }
+
+      /* what the section holds - its description, then how much is in it */
+      .summary {
+        margin-top: 3px;
+        font-weight: normal;
+      }
+
+      .description {
+        color: var(--text-2);
+        font-size: 13px;
+        line-height: 1.45;
+        text-wrap: pretty;
+        overflow-wrap: anywhere;
+      }
+
+      /* two lines while the card is shut, so a long one can't make the
+         outline ragged, and all of it once the card is open */
+      temba-card[collapsed] .description {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+      }
+
+      .meta {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 6px;
+        color: var(--text-3);
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .meta .sep {
+        color: var(--text-4);
+      }
+
+      .meta .drafts {
+        color: var(--warning);
+      }
+
+      /* the section's own controls, riding the card header */
+      .section-actions {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        margin: 0 8px 0 12px;
+        min-height: 26px;
+      }
+
+      .section-edit,
+      .section-add {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        cursor: pointer;
+        --icon-color: var(--text-3);
+        transition:
+          background 120ms ease,
+          opacity 120ms ease;
+      }
+
+      .section-edit:hover,
+      .section-add:hover {
+        background: var(--sunken);
+        --icon-color: var(--text-1);
+      }
+
+      .section-edit:focus-visible,
+      .section-add:focus-visible {
+        outline: 2px solid var(--accent-400);
+        outline-offset: 1px;
+      }
+
+      /* where there's a pointer to hover with, the controls wait for it
+         rather than crowding every header at once */
+      @media (hover: hover) {
+        .section-edit,
+        .section-add {
+          opacity: 0;
+        }
+
+        temba-card:hover .section-edit,
+        temba-card:hover .section-add,
+        temba-card:focus-within .section-edit,
+        temba-card:focus-within .section-add {
+          opacity: 1;
+        }
+      }
+
+      .section-actions temba-toggle {
+        margin-left: 8px;
+      }
+
+      /* ==========================================================
+         Articles - numbered within their section, the number giving
+         way to a grip under the pointer
+         ========================================================== */
+
+      .rows {
+        display: block;
+        counter-reset: article;
+      }
+
+      /* a hairline between what names the section and the articles in
+         it - not over an empty card's landing place, which is already
+         its own box */
+      .rows:not(.empty) {
+        border-top: 1px solid var(--border);
+        padding-top: 6px;
       }
 
       .row {
         display: flex;
         align-items: center;
-        gap: 6px;
-        min-height: 34px;
-        padding: 0 2px;
-        border-radius: var(--r-sm);
+        gap: 8px;
+        min-height: 38px;
+        padding: 0 8px 0 4px;
+        border-radius: 6px;
         cursor: pointer;
+        counter-increment: article;
         /* rows ghost and reflow while dragging - keep their surface
            opaque so a ghosted row reads over whatever it crosses */
         background: var(--surface);
+        transition: background 100ms ease;
       }
 
       .row:hover {
         background: var(--sunken);
-      }
-
-      /* a draft article recedes the way an unpublished section does -
-         but not on top of it, or rows in a dimmed card would fade twice */
-      .row.draft {
-        opacity: 0.55;
-      }
-
-      temba-card[unpublished] .row.draft {
-        opacity: 1;
       }
 
       .row .title {
@@ -245,36 +533,67 @@ export class HelpdeskCards extends RapidElement {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        font-size: 13px;
+        font-size: 13.5px;
         color: var(--text-1);
       }
 
-      /* faint at rest so the rows don't read as busy, and solid under
-         the pointer that's about to use it */
-      .drag-handle {
-        --icon-color: var(--text-3);
-        cursor: grab;
-        flex: 0 0 auto;
-        opacity: 0.35;
+      .row:hover .title {
+        color: var(--accent-700);
       }
 
-      .row:hover .drag-handle {
+      /* a draft article recedes the way an unpublished section does -
+         but not on top of it, or rows in a dimmed card would fade twice */
+      .row.draft .title,
+      .row.draft .position {
+        opacity: 0.55;
+      }
+
+      temba-card[unpublished] .row.draft .title,
+      temba-card[unpublished] .row.draft .position {
         opacity: 1;
       }
 
-      /* a little more room between a handle and the title it moves than
-         the row's own gap or the card's default gives - for the rows and
-         for the sections alike, set so the two titles still line up */
-      .drag-handle {
-        margin-right: 4px;
+      /* where the article sits in its section - and, sortable, where it's
+         picked up from */
+      .position {
+        position: relative;
+        flex: 0 0 auto;
+        width: 34px;
+        height: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 5px;
+        color: var(--text-4);
+        font-size: 11.5px;
+        font-weight: var(--w-medium);
+        font-variant-numeric: tabular-nums;
       }
 
-      /* a section is picked up by its folder - which says what the card is
-         as well as where to grab it, so it's drawn a step darker than a
-         plain grip would be */
-      temba-card::part(grip) {
-        margin-right: 12px;
+      .position::before {
+        content: counter(section) '.' counter(article);
+      }
+
+      .position temba-icon {
+        position: absolute;
+        opacity: 0;
         --icon-color: var(--text-3);
+      }
+
+      .drag-handle {
+        cursor: grab;
+      }
+
+      .row:hover .drag-handle::before {
+        opacity: 0;
+      }
+
+      .row:hover .drag-handle temba-icon {
+        opacity: 1;
+      }
+
+      .drag-handle:hover {
+        background: var(--border);
       }
 
       .pill {
@@ -283,8 +602,9 @@ export class HelpdeskCards extends RapidElement {
         padding: 1px 8px;
         font-size: 11px;
         font-weight: var(--w-medium);
-        background: var(--sunken);
-        color: var(--text-3);
+        background: var(--warning-bg);
+        border: 1px solid var(--warning-border);
+        color: var(--warning);
       }
 
       /* a control rather than text - don't let the row's cursor imply
@@ -294,97 +614,203 @@ export class HelpdeskCards extends RapidElement {
         cursor: default;
       }
 
-      /* the section's own controls, riding the card header */
-      .section-actions {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-right: 0.5em;
-      }
-
-      .section-edit,
-      .section-add {
-        display: inline-flex;
-        border-radius: var(--r-sm);
-        padding: 2px;
-        --icon-color: var(--text-3);
-      }
-
-      .section-edit:hover,
-      .section-add:hover {
-        background: var(--sunken);
-        --icon-color: var(--text-1);
-      }
-
-      /* the section's name leads its card: heavier and darker than the
-         articles under it, so the page reads as sections first */
-      temba-card::part(title) {
-        color: var(--text-1);
-        font-size: 14px;
-        font-weight: var(--w-bold);
-        letter-spacing: -0.005em;
-      }
-
-      /* what the section holds, in the section's own words - a subtitle
-         under its name in the card's header, so it's there to read
-         whether or not the card is open. Two lines while the card is
-         shut, so a long one can't make the stack ragged, and all of it
-         once the card is open. */
-      .description {
-        margin-top: 2px;
-        color: var(--text-3);
-        font-size: 12.5px;
-        font-weight: normal;
-        line-height: 1.45;
-        text-wrap: pretty;
-        overflow-wrap: anywhere;
-      }
-
-      temba-card[collapsed] .description {
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
-        overflow: hidden;
-      }
-
-      /* a two line header wants a touch more room than the card gives
-         a single line */
-      temba-card.described::part(title) {
-        padding-top: 2px;
-      }
-
-      temba-card.described .description {
-        padding-bottom: 2px;
-      }
-
-      /* a hairline between what names the section and the articles in
-         it - not over an empty card's dashed landing place, which is
-         already its own box */
-      .rows:not(.empty) {
-        border-top: 1px solid var(--border);
-        margin-top: 2px;
-        padding-top: 6px;
+      /* the slot a cross-card drop would land in, matching the
+         placeholder the row's own list shows within a card */
+      .drop-placeholder {
+        background: var(--accent-50);
+        border-radius: 6px;
+        height: 38px;
+        outline: 2px dashed var(--accent-300);
+        outline-offset: -2px;
       }
 
       /* an empty card still needs a place for a drop to land */
       .rows.empty {
-        border: 1px dashed var(--border);
-        border-radius: var(--r-sm);
+        border: 1.5px dashed var(--border-strong);
+        border-radius: 6px;
       }
 
       .empty-note {
-        color: var(--text-3);
-        font-size: 12px;
-        min-height: 34px;
         display: flex;
         align-items: center;
         justify-content: center;
+        gap: 10px;
+        min-height: 52px;
+        color: var(--text-3);
+        font-size: 12.5px;
+      }
+
+      .empty-add {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px 3px 6px;
+        border-radius: 999px;
+        border: 1px solid var(--accent-200);
+        background: var(--accent-50);
+        color: var(--accent-700);
+        font-weight: var(--w-medium);
+        cursor: pointer;
+        --icon-color: currentColor;
+      }
+
+      .empty-add:hover {
+        background: var(--accent-100);
       }
 
       .empty-message {
         color: var(--text-3);
-        padding: 2em;
+        padding: 3em 2em;
         text-align: center;
+        border: 1.5px dashed var(--border-strong);
+        border-radius: var(--r);
+      }
+
+      /* ==========================================================
+         The overview - the outline at a glance, beside it
+         ========================================================== */
+
+      .overview {
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        background: var(--surface);
+        box-shadow: var(--shadow-1);
+        overflow: hidden;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .stat {
+        padding: 14px 16px 12px;
+      }
+
+      .stat + .stat {
+        border-left: 1px solid var(--border);
+      }
+
+      .stat-value {
+        color: var(--text-1);
+        font-size: 22px;
+        font-weight: var(--w-semibold);
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .stat.drafts .stat-value.some {
+        color: var(--warning);
+      }
+
+      .stat-label {
+        margin-top: 2px;
+        color: var(--text-3);
+        font-size: 11.5px;
+      }
+
+      .overview-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px 6px;
+        color: var(--text-3);
+        font-size: 11px;
+        font-weight: var(--w-semibold);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .expand-all {
+        border: none;
+        background: none;
+        padding: 2px 4px;
+        border-radius: 4px;
+        color: var(--accent-600);
+        font: inherit;
+        font-size: 12px;
+        font-weight: var(--w-medium);
+        letter-spacing: normal;
+        text-transform: none;
+        cursor: pointer;
+      }
+
+      .expand-all:hover {
+        background: var(--accent-50);
+      }
+
+      .toc {
+        list-style: none;
+        margin: 0;
+        padding: 0 8px 10px;
+      }
+
+      .toc-item {
+        width: 100%;
+        border: none;
+        background: none;
+        font: inherit;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 8px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        color: var(--text-2);
+      }
+
+      .toc-item:hover {
+        background: var(--sunken);
+        color: var(--text-1);
+      }
+
+      .toc-item:focus-visible {
+        outline: 2px solid var(--accent-400);
+        outline-offset: -2px;
+      }
+
+      .toc-num {
+        flex: none;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        background: var(--accent-100);
+        color: var(--accent-700);
+        font-size: 11px;
+        font-weight: var(--w-semibold);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .toc-item.draft .toc-num {
+        background: none;
+        border: 1px dashed var(--text-4);
+        color: var(--text-3);
+      }
+
+      .toc-item.draft .toc-title {
+        color: var(--text-3);
+      }
+
+      .toc-title {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .toc-count {
+        flex: none;
+        color: var(--text-4);
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
       }
     `;
   }
@@ -685,6 +1111,9 @@ export class HelpdeskCards extends RapidElement {
     if (this.sortEndpoint) classes.push('sortable');
     if (article.status === 'draft') classes.push('draft');
 
+    // the position is drawn by a counter, so it follows the row as a drag
+    // reflows its card; sortable, it doubles as the handle the row is
+    // picked up by
     return html`
       <div
         class=${classes.join(' ')}
@@ -692,13 +1121,12 @@ export class HelpdeskCards extends RapidElement {
         @click=${() => this.handleArticleClick(article)}
       >
         ${this.sortEndpoint
-          ? html`<temba-icon
-              class="drag-handle"
-              name=${Icon.drag}
-              size="1"
+          ? html`<span
+              class="position drag-handle"
               @click=${(event: MouseEvent) => event.stopPropagation()}
-            ></temba-icon>`
-          : null}
+              ><temba-icon name=${Icon.drag} size="1"></temba-icon
+            ></span>`
+          : html`<span class="position"></span>`}
         <div class="title" title=${article.title || ''}>
           ${article.title || ''}
         </div>
@@ -747,7 +1175,25 @@ export class HelpdeskCards extends RapidElement {
         )}
         ${group.articles.length || placeholder
           ? null
-          : html`<div class="empty-note">No articles</div>`}
+          : html`<div class="empty-note">
+              No articles yet
+              ${this.createEndpoint
+                ? html`<span
+                    class="empty-add"
+                    role="button"
+                    tabindex="0"
+                    @click=${() => this.handleAddArticle(group.section)}
+                    @keydown=${(event: KeyboardEvent) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        this.handleAddArticle(group.section);
+                      }
+                    }}
+                    ><temba-icon name=${Icon.add} size="0.9"></temba-icon> Add
+                    article</span
+                  >`
+                : null}
+            </div>`}
       </temba-sortable-list>
     `;
   }
@@ -759,6 +1205,38 @@ export class HelpdeskCards extends RapidElement {
     return group.section.status === 'draft';
   }
 
+  private countDrafts(articles: Article[]): number {
+    return articles.filter((article) => article.status === 'draft').length;
+  }
+
+  /** How much the section holds, beneath what it says about itself. */
+  private renderSummary(group: Section): TemplateResult {
+    const count = group.articles.length;
+    const drafts = this.countDrafts(group.articles);
+
+    return html`<div slot="description" class="summary">
+      ${group.section.description
+        ? html`<div class="description">${group.section.description}</div>`
+        : null}
+      <div class="meta">
+        <span class="count"
+          >${count
+            ? `${count} ${count === 1 ? 'article' : 'articles'}`
+            : 'No articles'}</span
+        >
+        ${drafts
+          ? html`<span class="sep">·</span
+              ><span class="drafts"
+                >${drafts} ${drafts === 1 ? 'draft' : 'drafts'}</span
+              >`
+          : null}
+        ${this.isUnpublished(group)
+          ? html`<span class="sep">·</span><span>Hidden from the site</span>`
+          : null}
+      </div>
+    </div>`;
+  }
+
   private renderCard(group: Section, index: number): TemplateResult {
     const target = this.dropTarget;
 
@@ -768,14 +1246,9 @@ export class HelpdeskCards extends RapidElement {
     return html`
       <temba-card
         collapsed
-        grip-icon=${Icon.section}
-        class=${getClasses({
-          sortable: !!this.sortEndpoint,
-          described: !!group.section.description
-        })}
+        class=${getClasses({ sortable: !!this.sortEndpoint })}
         id=${group.section.uuid}
         label=${group.section.title}
-        count=${group.articles.length}
         ?drop-into=${target && target.section === index && target.into}
         ?unpublished=${this.isUnpublished(group)}
       >
@@ -785,6 +1258,7 @@ export class HelpdeskCards extends RapidElement {
             role="button"
             tabindex="0"
             aria-label="Edit section"
+            title="Edit section"
             @click=${(event: MouseEvent) => {
               // opening the section for writing isn't collapsing its card
               event.stopPropagation();
@@ -805,6 +1279,7 @@ export class HelpdeskCards extends RapidElement {
                 role="button"
                 tabindex="0"
                 aria-label="Add article"
+                title="Add article"
                 @click=${(event: MouseEvent) => {
                   // asking for an article isn't collapsing the card
                   event.stopPropagation();
@@ -822,13 +1297,94 @@ export class HelpdeskCards extends RapidElement {
             : null}
           ${this.renderStatus(group.section)}
         </div>
-        ${group.section.description
-          ? html`<div slot="description" class="description">
-              ${group.section.description}
-            </div>`
-          : null}
-        ${this.renderRows(group, index)}
+        ${this.renderSummary(group)} ${this.renderRows(group, index)}
       </temba-card>
+    `;
+  }
+
+  // ==========================================================
+  // Overview - the outline at a glance, for a page wide enough
+  // to show it beside the cards
+  // ==========================================================
+
+  private getCards(): Card[] {
+    return Array.from(
+      this.shadowRoot.querySelectorAll('.stack > temba-card')
+    ) as Card[];
+  }
+
+  /** Opens the section's card and brings it into view, picked out for a
+   * moment so the eye lands on it. */
+  private jumpToSection(group: Section): void {
+    const card = this.getCards().find((card) => card.id === group.section.uuid);
+    if (!card) {
+      return;
+    }
+    card.setCollapsed(false);
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    card.classList.add('flash');
+    setTimeout(() => card.classList.remove('flash'), 1200);
+    this.requestUpdate();
+  }
+
+  private toggleAll(): void {
+    const cards = this.getCards();
+    const open = cards.some((card) => card.collapsed);
+    cards.forEach((card) => card.setCollapsed(!open));
+    this.requestUpdate();
+  }
+
+  private renderOverview(): TemplateResult {
+    if (!this.loaded || this.sections.length === 0) {
+      return null;
+    }
+
+    const articles = this.sections.flatMap((group) => group.articles);
+    // articles only, the same as each card counts - a hidden section is
+    // called out as hidden rather than as a draft
+    const drafts = this.countDrafts(articles);
+    const anyCollapsed =
+      this.getCards().length === 0 ||
+      this.getCards().some((card) => card.collapsed);
+
+    return html`
+      <div class="overview">
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-value">${this.sections.length}</div>
+            <div class="stat-label">Sections</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">${articles.length}</div>
+            <div class="stat-label">Articles</div>
+          </div>
+          <div class="stat drafts">
+            <div class="stat-value ${drafts ? 'some' : ''}">${drafts}</div>
+            <div class="stat-label">Drafts</div>
+          </div>
+        </div>
+        <div class="overview-head">
+          <span>Contents</span>
+          <button class="expand-all" @click=${this.toggleAll}>
+            ${anyCollapsed ? 'Expand all' : 'Collapse all'}
+          </button>
+        </div>
+        <ol class="toc">
+          ${this.sections.map(
+            (group, index) =>
+              html`<li>
+                <button
+                  class="toc-item ${this.isUnpublished(group) ? 'draft' : ''}"
+                  @click=${() => this.jumpToSection(group)}
+                >
+                  <span class="toc-num">${index + 1}</span>
+                  <span class="toc-title">${group.section.title}</span>
+                  <span class="toc-count">${group.articles.length}</span>
+                </button>
+              </li>`
+          )}
+        </ol>
+      </div>
     `;
   }
 
@@ -838,7 +1394,9 @@ export class HelpdeskCards extends RapidElement {
     // so only forward when the host actually gave us one
     const hasSubtitle = this.querySelector('[slot="subtitle"]');
 
-    // anything the host wants shown above the cards - the site's domain, say - goes at the top of the column
+    // anything the host wants shown alongside the cards - the site's
+    // domain, say - goes above them on a narrow page and in the rail
+    // beside them on a wide one
     const hasBanner = this.querySelector('[slot="banner"]');
 
     return html`
@@ -849,28 +1407,36 @@ export class HelpdeskCards extends RapidElement {
           : null}
       </temba-page-header>
       <div class="cards">
-        ${hasBanner
-          ? html`<div class="banner"><slot name="banner"></slot></div>`
-          : null}
-        ${this.loaded && this.sections.length === 0
-          ? html`<div class="empty-message">${this.emptyMessage}</div>`
-          : html`
-              <temba-sortable-list
-                class="stack"
-                gap="12px"
-                dragHandle="card-header"
-                .ghostContainer=${this.renderRoot}
-                .overlapDrop=${true}
-                .prepareGhost=${this.prepareGhost}
-                @temba-order-changed=${this.handleCardSwap}
-              >
-                ${repeat(
-                  this.sections,
-                  (group) => group.section.uuid,
-                  (group, index) => this.renderCard(group, index)
-                )}
-              </temba-sortable-list>
-            `}
+        <div class="layout">
+          <div class="aside ${hasBanner ? '' : 'bare'}">
+            ${hasBanner
+              ? html`<div class="banner"><slot name="banner"></slot></div>`
+              : null}
+            ${this.renderOverview()}
+          </div>
+          <div class="main">
+            ${this.loaded && this.sections.length === 0
+              ? html`<div class="empty-message">${this.emptyMessage}</div>`
+              : html`
+                  <temba-sortable-list
+                    class="stack"
+                    gap="14px"
+                    dragHandle="card-header"
+                    .ghostContainer=${this.renderRoot}
+                    .overlapDrop=${true}
+                    .prepareGhost=${this.prepareGhost}
+                    @temba-order-changed=${this.handleCardSwap}
+                    @toggle=${() => this.requestUpdate()}
+                  >
+                    ${repeat(
+                      this.sections,
+                      (group) => group.section.uuid,
+                      (group, index) => this.renderCard(group, index)
+                    )}
+                  </temba-sortable-list>
+                `}
+          </div>
+        </div>
       </div>
     `;
   }
