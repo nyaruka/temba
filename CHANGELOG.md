@@ -1,3 +1,7 @@
+## v26.3.135 (2026-10-08)
+ * Redesign helpdesk editor as a numbered outline with an overview rail
+ * Keep the full featured set when starring fields during a field list search
+
 ## v26.3.134 (2026-10-06)
  * Add another AI provider icon and fix default LLM type icon
 
