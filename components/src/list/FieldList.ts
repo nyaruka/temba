@@ -84,6 +84,8 @@ export class FieldList extends EndpointMonitorElement {
   @property({ type: String, attribute: 'detail-endpoint' })
   detailEndpoint = '';
 
+  // the full ordered featured set, regardless of any search query -
+  // this is what gets saved, so it must never be narrowed by a filter
   @property({ type: Object, attribute: false })
   featuredFields: ContactField[];
 
@@ -492,15 +494,13 @@ export class FieldList extends EndpointMonitorElement {
         .label.localeCompare(this.store.getContactField(b).label);
     });
 
-    const featured: ContactField[] = [];
-    this.store.getFeaturedFields().forEach((field) => {
-      if (matches(field, this.query)) {
-        featured.push(field);
-      }
-    });
-
     this.otherFieldKeys = filteredKeys;
-    this.featuredFields = featured;
+    this.featuredFields = [...this.store.getFeaturedFields()];
+  }
+
+  // the featured fields matching the current search query
+  private getVisibleFeaturedFields(): ContactField[] {
+    return this.featuredFields.filter((field) => matches(field, this.query));
   }
 
   // the featured set + order is saved as one atomic list; the server
@@ -784,8 +784,9 @@ export class FieldList extends EndpointMonitorElement {
   }
 
   private renderFeaturedPanel(): TemplateResult {
+    const visible = this.getVisibleFeaturedFields();
     let body: TemplateResult;
-    if (this.featuredFields.length === 0) {
+    if (visible.length === 0) {
       body = html`
         <div class="empty-note">
           ${this.query
@@ -796,7 +797,7 @@ export class FieldList extends EndpointMonitorElement {
     } else if (this.query) {
       body = html`
         <div class="rows">
-          ${this.featuredFields.map((field) => this.renderField(field))}
+          ${visible.map((field) => this.renderField(field))}
         </div>
       `;
     } else {

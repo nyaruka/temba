@@ -204,8 +204,13 @@ describe(TAG, () => {
     input.dispatchEvent(new InputEvent('input', { bubbles: true }));
     await list.updateComplete;
 
-    expect(list.featuredFields.length).to.equal(1);
+    expect(
+      list.shadowRoot.querySelectorAll('#featured-panel .field').length
+    ).to.equal(1);
     expect(list.otherFieldKeys.length).to.equal(2);
+
+    // the full featured set is kept regardless of the filter
+    expect(list.featuredFields.length).to.equal(2);
 
     // searching disables featured reordering
     expect(list.shadowRoot.querySelector('#featured-list')).to.not.exist;
@@ -264,6 +269,36 @@ describe(TAG, () => {
     ).to.not.equal(true);
 
     await assertScreenshot('list/field-list-starred', getClip(list));
+  });
+
+  it('keeps featured fields hidden by search when featuring', async () => {
+    const list = await getList();
+    mockFieldsRefresh(['rating', 'ward', 'age']);
+
+    (
+      list.shadowRoot.querySelector('.header-actions .action') as HTMLElement
+    ).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await list.updateComplete;
+
+    // neither featured field matches, so the featured panel is empty
+    const input = list.shadowRoot.querySelector(
+      '.searchbar input'
+    ) as HTMLInputElement;
+    input.value = 'age';
+    input.dispatchEvent(new InputEvent('input', { bubbles: true }));
+    await list.updateComplete;
+    expect(
+      list.shadowRoot.querySelectorAll('#featured-panel .field').length
+    ).to.equal(0);
+
+    getRowStar(list, 'age').dispatchEvent(
+      new MouseEvent('click', { bubbles: true })
+    );
+    await list.updateComplete;
+
+    // the save carries the full featured set, not just the visible one
+    await waitForCondition(() => getPriorityPosts().length > 0);
+    expect(getPriorityPosts()[0]).to.deep.equal(['rating', 'ward', 'age']);
   });
 
   it('features a field with the keyboard', async () => {
