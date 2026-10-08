@@ -263,10 +263,20 @@ export class Card extends RapidElement {
 
   private animating = false;
 
-  private handleHeaderClick() {
-    this.collapsed = !this.collapsed;
+  /** Opens or shuts the card the way a click on its header does, so the
+   * body stays clipped while it animates rather than spilling over
+   * whatever sits below it. */
+  public setCollapsed(collapsed: boolean): void {
+    if (collapsed === this.collapsed) {
+      return;
+    }
+    this.collapsed = collapsed;
     this.animating = true;
     this.requestUpdate();
+  }
+
+  private handleHeaderClick() {
+    this.setCollapsed(!this.collapsed);
     this.dispatchEvent(
       new CustomEvent('toggle', {
         bubbles: true,

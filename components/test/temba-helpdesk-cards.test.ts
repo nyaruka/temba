@@ -428,8 +428,9 @@ describe(TAG, () => {
     const overview = cards.shadowRoot.querySelector('.overview');
     expect(getComputedStyle(overview).display).to.equal('block');
 
+    // each one a button, so it's announced and activated as one
     const items = Array.from(
-      overview.querySelectorAll('.toc-item')
+      overview.querySelectorAll('button.toc-item')
     ) as HTMLElement[];
     expect(
       items.map((item) => item.querySelector('.toc-title').textContent.trim())
@@ -487,6 +488,37 @@ describe(TAG, () => {
 
     // and asking doesn't collapse the card
     expect((getCardElements(creating)[1] as any).collapsed).to.be.true;
+  });
+
+  it('offers an empty section its first article', async () => {
+    // Flows with nothing filed under it yet
+    clearMockGets();
+    mockGET(/\/api\/internal\/articles\.json/, {
+      results: ARTICLES.filter((row) => row.uuid !== 'nodes')
+    });
+
+    const cards = await getCards();
+    await expandAll(cards);
+    const flows = getCardElements(cards)[1];
+    expect(flows.querySelector('.empty-note')).to.exist;
+    expect(flows.querySelector('.empty-add')).to.not.exist;
+
+    const creating = await getCards({ 'create-endpoint': CREATE_URL });
+    const add = getCardElements(creating)[1].querySelector(
+      '.empty-add'
+    ) as HTMLElement;
+    expect(add).to.exist;
+
+    let requested = oneEvent(creating, 'temba-article-add-requested', false);
+    add.click();
+    expect((await requested).detail.section.uuid).to.equal('flows');
+
+    // and from the keyboard, by either key a button answers to
+    for (const key of ['Enter', ' ']) {
+      requested = oneEvent(creating, 'temba-article-add-requested', false);
+      add.dispatchEvent(new KeyboardEvent('keydown', { key }));
+      expect((await requested).detail.section.uuid).to.equal('flows');
+    }
   });
 
   it('opens an article from its row', async () => {

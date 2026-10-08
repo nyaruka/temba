@@ -748,6 +748,11 @@ export class HelpdeskCards extends RapidElement {
       }
 
       .toc-item {
+        width: 100%;
+        border: none;
+        background: none;
+        font: inherit;
+        text-align: left;
         display: flex;
         align-items: center;
         gap: 10px;
@@ -1315,7 +1320,7 @@ export class HelpdeskCards extends RapidElement {
     if (!card) {
       return;
     }
-    card.collapsed = false;
+    card.setCollapsed(false);
     card.scrollIntoView({ behavior: 'smooth', block: 'start' });
     card.classList.add('flash');
     setTimeout(() => card.classList.remove('flash'), 1200);
@@ -1325,7 +1330,7 @@ export class HelpdeskCards extends RapidElement {
   private toggleAll(): void {
     const cards = this.getCards();
     const open = cards.some((card) => card.collapsed);
-    cards.forEach((card) => (card.collapsed = !open));
+    cards.forEach((card) => card.setCollapsed(!open));
     this.requestUpdate();
   }
 
@@ -1335,9 +1340,9 @@ export class HelpdeskCards extends RapidElement {
     }
 
     const articles = this.sections.flatMap((group) => group.articles);
-    const drafts =
-      this.countDrafts(articles) +
-      this.countDrafts(this.sections.map((group) => group.section));
+    // articles only, the same as each card counts - a hidden section is
+    // called out as hidden rather than as a draft
+    const drafts = this.countDrafts(articles);
     const anyCollapsed =
       this.getCards().length === 0 ||
       this.getCards().some((card) => card.collapsed);
@@ -1367,20 +1372,15 @@ export class HelpdeskCards extends RapidElement {
         <ol class="toc">
           ${this.sections.map(
             (group, index) =>
-              html`<li
-                class="toc-item ${this.isUnpublished(group) ? 'draft' : ''}"
-                tabindex="0"
-                @click=${() => this.jumpToSection(group)}
-                @keydown=${(event: KeyboardEvent) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    this.jumpToSection(group);
-                  }
-                }}
-              >
-                <span class="toc-num">${index + 1}</span>
-                <span class="toc-title">${group.section.title}</span>
-                <span class="toc-count">${group.articles.length}</span>
+              html`<li>
+                <button
+                  class="toc-item ${this.isUnpublished(group) ? 'draft' : ''}"
+                  @click=${() => this.jumpToSection(group)}
+                >
+                  <span class="toc-num">${index + 1}</span>
+                  <span class="toc-title">${group.section.title}</span>
+                  <span class="toc-count">${group.articles.length}</span>
+                </button>
               </li>`
           )}
         </ol>
