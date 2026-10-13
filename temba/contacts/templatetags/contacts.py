@@ -61,7 +61,9 @@ def format_urn(urn, org):
     if org and org.is_anon:
         return ContactURN.ANON_MASK_HTML
 
-    return urn.get_display(org=org, international=True)
+    if isinstance(urn, ContactURN):
+        return urn.get_display(org=org, international=True)
+    return URN.format(urn, international=True)
 
 
 @register.filter
