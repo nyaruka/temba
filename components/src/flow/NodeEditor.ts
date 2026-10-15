@@ -43,7 +43,7 @@ import {
   fromStore,
   zustand
 } from '../store/AppState';
-import { getLanguageName } from '../languages';
+import { getLanguageLabel } from '../languages';
 
 const isEmptyFormValue = (value: any): boolean =>
   value === null ||
@@ -3408,7 +3408,7 @@ export class NodeEditor extends RapidElement {
     const dialogSize = config?.dialogSize || 'medium'; // Default to 'large' if not specified
 
     const languageName = this.isTranslating
-      ? getLanguageName(this.languageCode)
+      ? getLanguageLabel(this.languageCode)
       : '';
 
     let header = config?.name || msg('Edit');

@@ -16,7 +16,7 @@ import {
   UpdateFieldEvent,
   URNsChangedEvent
 } from '../events';
-import { getLanguageName } from '../languages';
+import { getLanguageLabel } from '../languages';
 import { formatCount } from '../utils';
 
 export enum Events {
@@ -603,7 +603,7 @@ export const renderAirtimeCreatedEvent = (
 export const renderContactLanguageChangedEvent = (
   event: ContactLanguageChangedEvent
 ): TemplateResult => {
-  const language = event.language ? getLanguageName(event.language) : null;
+  const language = event.language ? getLanguageLabel(event.language) : null;
   return html`<div style=${eventLineStyle}>
     ${attributePill('Language', language, { icon: 'language' })}
   </div>`;

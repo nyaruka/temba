@@ -1,5 +1,5 @@
 import { expect } from '@open-wc/testing';
-import { getLanguageName } from '../src/languages';
+import { getLanguageLabel, getLanguageName } from '../src/languages';
 
 describe('getLanguageName', () => {
   it('returns "Unknown" for the "und" code', () => {
@@ -50,5 +50,22 @@ describe('getLanguageName', () => {
   it('returns an empty string for empty or undefined input', () => {
     expect(getLanguageName('')).to.equal('');
     expect(getLanguageName(undefined as unknown as string)).to.equal('');
+  });
+});
+
+describe('getLanguageLabel', () => {
+  it('capitalizes names that the page language writes in lowercase', () => {
+    const original = document.documentElement.lang;
+    try {
+      document.documentElement.lang = 'fr';
+      expect(getLanguageName('eng')).to.equal('anglais');
+      expect(getLanguageLabel('eng')).to.equal('Anglais');
+
+      document.documentElement.lang = 'en';
+      expect(getLanguageLabel('eng')).to.equal('English');
+      expect(getLanguageLabel('')).to.equal('');
+    } finally {
+      document.documentElement.lang = original;
+    }
   });
 });

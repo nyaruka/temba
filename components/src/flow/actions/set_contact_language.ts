@@ -9,7 +9,7 @@ import {
 import { Node, SetContactLanguage } from '../../store/flow-definition';
 import { getStore } from '../../store/Store';
 import { renderClamped } from '../utils';
-import { getLanguageName } from '../../languages';
+import { getLanguageLabel, getLanguageName } from '../../languages';
 
 export const set_contact_language: ActionConfig = {
   name: 'Update Language',
@@ -39,7 +39,7 @@ export const set_contact_language: ActionConfig = {
         if (workspace?.languages && Array.isArray(workspace.languages)) {
           return workspace.languages.map((languageCode: string) => ({
             value: languageCode,
-            name: getLanguageName(languageCode)
+            name: getLanguageLabel(languageCode)
           }));
         }
         return [];
@@ -53,7 +53,7 @@ export const set_contact_language: ActionConfig = {
         language: [
           {
             value: action.language,
-            name: getLanguageName(action.language)
+            name: getLanguageLabel(action.language)
           }
         ],
         uuid: action.uuid

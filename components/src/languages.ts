@@ -129,3 +129,13 @@ export function getLanguageName(code: string): string {
 
   return ADDITIONAL_LANGUAGE_NAMES[code] || code;
 }
+
+/**
+ * Gets a language name for use on its own, e.g. as an option or tab. Locales
+ * like French and Spanish lowercase language names, which is right mid-sentence
+ * but reads as an error in a label.
+ */
+export function getLanguageLabel(code: string): string {
+  const name = getLanguageName(code);
+  return name.charAt(0).toLocaleUpperCase(getPageLocale()) + name.slice(1);
+}

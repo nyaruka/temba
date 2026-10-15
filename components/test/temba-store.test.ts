@@ -36,6 +36,22 @@ describe('temba-store', () => {
     assert.instanceOf(store, Store);
   });
 
+  it('takes its locale from the page language', async () => {
+    const original = document.documentElement.lang;
+    try {
+      document.documentElement.lang = 'pt-br';
+      const store = await createStore('<temba-store></temba-store>');
+      assert.equal(store.getLocale(), 'pt-br');
+      assert.equal(store.getLanguageCode(), 'pt');
+
+      // without a page language it falls back to the browser's
+      document.documentElement.lang = '';
+      assert.equal(store.getLocale(), navigator.language);
+    } finally {
+      document.documentElement.lang = original;
+    }
+  });
+
   it('completion schema', async () => {
     const store: Store = await createStore(
       "<temba-store completion='/test/assets/store/editor.json'></temba-store>"
