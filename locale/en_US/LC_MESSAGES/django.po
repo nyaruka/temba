@@ -3365,6 +3365,9 @@ msgstr ""
 msgid "Your selection is no longer valid. Please refresh and try again."
 msgstr ""
 
+msgid "Is a reserved name."
+msgstr ""
+
 msgid "Edit Team"
 msgstr ""
 

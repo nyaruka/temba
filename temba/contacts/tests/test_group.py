@@ -138,6 +138,21 @@ class ContactGroupTest(TembaTest):
 
         self.assertEqual(f"{'X' * 62} 2", ContactGroup.get_unique_name(self.org, "X" * 64))
 
+        # reserved names are treated as taken
+        self.assertEqual("Archived 2", ContactGroup.get_unique_name(self.org, "Archived"))
+
+    def test_is_valid_name(self):
+        self.assertTrue(ContactGroup.is_valid_name("Customers"))
+        self.assertTrue(ContactGroup.is_valid_name("Active Users"))
+        self.assertFalse(ContactGroup.is_valid_name("Active"))
+        self.assertFalse(ContactGroup.is_valid_name("BLOCKED"))
+        self.assertFalse(ContactGroup.is_valid_name('"Customers"'))
+
+    def test_create_with_reserved_name(self):
+        # e.g. from an import, gets a unique name instead
+        group = ContactGroup.create_manual(self.org, self.admin, "Active")
+        self.assertEqual("Active 2", group.name)
+
     @mock_mailroom
     def test_publishes_asset_changed(self, mr_mocks):
         # creating a group publishes it, including its query so clients can tell smart groups from manual ones

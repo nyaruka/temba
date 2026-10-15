@@ -157,6 +157,14 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
             form_errors={"name": "Must be unique."},
         )
 
+        # try to submit with a reserved name
+        self.assertCreateSubmit(
+            create_url,
+            self.admin,
+            {"name": "Ticket", "flow_type": "M", "base_language": "eng"},
+            form_errors={"name": "Is a reserved name."},
+        )
+
         response = self.assertCreateSubmit(
             create_url,
             self.admin,

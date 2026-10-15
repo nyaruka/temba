@@ -949,6 +949,12 @@ class ContactGroupWriteSerializer(WriteSerializer):
         ],
     )
 
+    def validate_name(self, value):
+        is_unchanged = self.instance and self.instance.name.lower() == value.lower()
+        if not is_unchanged and ContactGroup.is_reserved_name(value):
+            raise serializers.ValidationError("Is a reserved name.")
+        return value
+
     def save(self):
         name = self.validated_data.get("name")
 

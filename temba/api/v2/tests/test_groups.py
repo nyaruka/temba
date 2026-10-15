@@ -120,6 +120,9 @@ class GroupsEndpointTest(APITest):
             endpoint_url, self.admin, {"name": '"People"'}, errors={"name": 'Cannot contain the character: "'}
         )
 
+        # try to create a group with a reserved name
+        self.assertPost(endpoint_url, self.admin, {"name": "Active"}, errors={"name": "Is a reserved name."})
+
         # try to create a group with name that's too long
         self.assertPost(
             endpoint_url,
@@ -133,6 +136,19 @@ class GroupsEndpointTest(APITest):
 
         reporters.refresh_from_db()
         self.assertEqual(reporters.name, "U-Reporters")
+
+        # can't rename to a reserved name...
+        self.assertPost(
+            endpoint_url + f"?uuid={reporters.uuid}",
+            self.admin,
+            {"name": "blocked"},
+            errors={"name": "Is a reserved name."},
+        )
+
+        # ...but a group that already has one can keep it
+        ContactGroup.objects.filter(id=reporters.id).update(name="Blocked")
+        self.assertPost(endpoint_url + f"?uuid={reporters.uuid}", self.admin, {"name": "BLOCKED"})
+        ContactGroup.objects.filter(id=reporters.id).update(name="U-Reporters")
 
         # can't update a system group
         self.assertPost(

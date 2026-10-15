@@ -156,6 +156,7 @@ class NameMixin(models.Model):
     """
 
     MAX_NAME_LEN = 64
+    RESERVED_NAMES = frozenset()  # lowercase names users can't use, e.g. as they'd be confused with system ones
 
     name = models.CharField(max_length=MAX_NAME_LEN, validators=[NameValidator(MAX_NAME_LEN)])
 
@@ -172,15 +173,19 @@ class NameMixin(models.Model):
         while True:
             count_str = f" {count}"
             name = f"{base_name[: cls.MAX_NAME_LEN - len(count_str)]}{count_str}" if count > 1 else base_name
-            if not qs.filter(name__iexact=name).exists():
+            if not cls.is_reserved_name(name) and not qs.filter(name__iexact=name).exists():
                 return name
             count += 1
+
+    @classmethod
+    def is_reserved_name(cls, value: str) -> bool:
+        return value.lower() in cls.RESERVED_NAMES
 
     @classmethod
     def is_valid_name(cls, value: str) -> bool:
         try:
             NameValidator(max_length=cls.MAX_NAME_LEN)(value)
-            return True
+            return not cls.is_reserved_name(value)
         except ValidationError:
             return False
 

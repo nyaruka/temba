@@ -50,6 +50,11 @@ class FlowTest(TembaTest, CRUDLTestMixin):
 
         self.assertEqual(f"{'X' * 62} 2", Flow.get_unique_name(self.org, "X" * 64))
 
+        # reserved names are treated as taken
+        self.assertEqual("Ticket 2", Flow.get_unique_name(self.org, "Ticket"))
+        self.assertTrue(Flow.is_valid_name("Tickets"))
+        self.assertFalse(Flow.is_valid_name("ticket"))
+
     @mock_mailroom
     def test_publishes_asset_changed(self, mr_mocks):
         # creating a flow doesn't publish as no client acts on that

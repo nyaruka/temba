@@ -302,11 +302,16 @@ class DependencyMixin:
 
 class UniqueNameMixin:
     """
-    Model form mixin that ensures the name field is unique within the org.
+    Model form mixin that ensures the name field is unique within the org and isn't reserved.
     """
 
     def clean_name(self):
         name = self.cleaned_data["name"]
+
+        # allow existing objects to keep names that predate them being reserved
+        is_unchanged = self.instance and self.instance.pk and self.instance.name.lower() == name.lower()
+        if not is_unchanged and name.lower() in getattr(self.Meta.model, "RESERVED_NAMES", ()):
+            raise forms.ValidationError(_("Is a reserved name."))
 
         # make sure the name isn't already taken
         conflicts = self.Meta.model.objects.filter(org=self.org, is_active=True, name__iexact=name)

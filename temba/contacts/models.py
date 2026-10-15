@@ -1514,6 +1514,8 @@ class ContactGroup(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin
     asset_type = "group"
     publish_creations = True  # so clients learn whether a new group is smart before they next fetch groups
 
+    RESERVED_NAMES = frozenset({"active", "blocked", "stopped", "archived"})
+
     TYPE_DB_ACTIVE = "A"  # maintained by db trigger on status=A
     TYPE_DB_BLOCKED = "B"  # maintained by db trigger on status=B
     TYPE_DB_STOPPED = "S"  # maintained by db trigger on status=S
@@ -1666,10 +1668,10 @@ class ContactGroup(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin
 
     @classmethod
     def _create(cls, org, user, name, status, query=None):
-        assert cls.is_valid_name(name), f"'{name}' is not a valid group name"
-
         # look for name collision and append count if necessary
         name = cls.get_unique_name(org, base_name=name)
+
+        assert cls.is_valid_name(name), f"'{name}' is not a valid group name"
 
         return cls.objects.create(
             org=org,

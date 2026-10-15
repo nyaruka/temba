@@ -114,6 +114,10 @@ class ContactGroupCRUDLTest(TembaTest, CRUDLTestMixin):
         )
         self.assertFormError(response.context["form"], "name", "Must be unique.")
 
+        # try to create a group with a reserved name
+        response = self.client.post(reverse("contacts.contactgroup_create"), dict(name="active"))
+        self.assertFormError(response.context["form"], "name", "Is a reserved name.")
+
     @mock_mailroom
     def test_update(self, mr_mocks):
         manual = self.create_group("Customers", [self.joe, self.frank])
@@ -149,6 +153,19 @@ class ContactGroupCRUDLTest(TembaTest, CRUDLTestMixin):
 
         manual.refresh_from_db()
         self.assertEqual(manual.name, "new name")
+
+        # try to update name to a reserved name
+        self.assertUpdateSubmit(
+            update_url,
+            self.admin,
+            {"name": "Stopped"},
+            form_errors={"name": "Is a reserved name."},
+            object_unchanged=manual,
+        )
+
+        # but a group which already has a reserved name can keep it
+        ContactGroup.objects.filter(id=manual.id).update(name="Stopped")
+        self.assertUpdateSubmit(update_url, self.admin, {"name": "Stopped"})
 
         # now try a smart group
         update_url = reverse("contacts.contactgroup_update", args=[smart.uuid])
