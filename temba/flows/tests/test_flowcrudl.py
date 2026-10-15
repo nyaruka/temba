@@ -425,6 +425,18 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(302, response.status_code)
         self.assertEqual(language_flow.base_language, "eng")
 
+    def test_update_with_reserved_name(self):
+        # a flow which already has a reserved name can keep it
+        flow = self.create_flow("Tickets")
+        Flow.objects.filter(id=flow.id).update(name="Ticket")
+        update_url = reverse("flows.flow_update", args=[flow.uuid])
+
+        self.assertUpdateSubmit(update_url, self.admin, {"name": "Ticket", "expires_after_minutes": 10})
+
+        flow.refresh_from_db()
+        self.assertEqual("Ticket", flow.name)
+        self.assertEqual(10, flow.expires_after_minutes)
+
     def test_update_messaging_flow(self):
         flow = self.create_flow("Test")
         update_url = reverse("flows.flow_update", args=[flow.uuid])
@@ -470,6 +482,15 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("New Name", flow.name)
         self.assertEqual(10, flow.expires_after_minutes)
         self.assertTrue(flow.ignore_triggers)
+
+        # try to rename to a reserved name
+        self.assertUpdateSubmit(
+            update_url,
+            self.admin,
+            {"name": "Ticket", "expires_after_minutes": 10},
+            form_errors={"name": "Is a reserved name."},
+            object_unchanged=flow,
+        )
 
         assert_triggers([{"keywords": ["test", "help"], "is_archived": False}])
 

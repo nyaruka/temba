@@ -1316,6 +1316,8 @@ class ContactImportCRUDL(SmartCRUDL):
                         new_group_name = self.cleaned_data.get("new_group_name")
                         if not new_group_name:
                             self.add_error("new_group_name", _("Required."))
+                        elif ContactGroup.is_reserved_name(new_group_name):
+                            self.add_error("new_group_name", _("Is a reserved name."))
                         elif not ContactGroup.is_valid_name(new_group_name):
                             self.add_error("new_group_name", _("Invalid group name."))
                         elif ContactGroup.get_group_by_name(self.org, new_group_name):

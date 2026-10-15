@@ -169,11 +169,15 @@ class NameMixin(models.Model):
         if ignore:
             qs = qs.exclude(id=ignore.id)
 
+        def is_reserved(name: str) -> bool:
+            # the ignored object can keep a reserved name it already has
+            return cls.is_reserved_name(name) and not (ignore and ignore.name.lower() == name.lower())
+
         count = 1
         while True:
             count_str = f" {count}"
             name = f"{base_name[: cls.MAX_NAME_LEN - len(count_str)]}{count_str}" if count > 1 else base_name
-            if not cls.is_reserved_name(name) and not qs.filter(name__iexact=name).exists():
+            if not is_reserved(name) and not qs.filter(name__iexact=name).exists():
                 return name
             count += 1
 

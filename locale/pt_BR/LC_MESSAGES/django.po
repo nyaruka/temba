@@ -2425,6 +2425,9 @@ msgstr "Esta área de trabalho atingiu seu limite de grupos."
 msgid "Required."
 msgstr "Obrigatório."
 
+msgid "Is a reserved name."
+msgstr "É um nome reservado."
+
 msgid "Invalid group name."
 msgstr "Nome de grupo inválido."
 
@@ -3382,9 +3385,6 @@ msgstr "Um erro ocorreu enquanto realizava suas alterações. Por favor, tente n
 
 msgid "Your selection is no longer valid. Please refresh and try again."
 msgstr "Sua seleção não é mais válida. Por favor atualize a página e tente novamente."
-
-msgid "Is a reserved name."
-msgstr "É um nome reservado."
 
 msgid "Edit Team"
 msgstr "Editar equipe"

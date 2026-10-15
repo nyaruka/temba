@@ -2407,6 +2407,9 @@ msgstr ""
 msgid "Required."
 msgstr ""
 
+msgid "Is a reserved name."
+msgstr ""
+
 msgid "Invalid group name."
 msgstr ""
 
@@ -3363,9 +3366,6 @@ msgid "An error occurred while making your changes. Please try again."
 msgstr ""
 
 msgid "Your selection is no longer valid. Please refresh and try again."
-msgstr ""
-
-msgid "Is a reserved name."
 msgstr ""
 
 msgid "Edit Team"

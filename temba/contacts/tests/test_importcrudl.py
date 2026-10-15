@@ -74,6 +74,10 @@ class ContactImportCRUDLTest(TembaTest, CRUDLTestMixin):
         response = self.client.post(preview_url, {"add_to_group": True, "group_mode": "N", "new_group_name": '"Foo"'})
         self.assertFormError(response.context["form"], "new_group_name", "Invalid group name.")
 
+        # try creating new group but providing a reserved name
+        response = self.client.post(preview_url, {"add_to_group": True, "group_mode": "N", "new_group_name": "Active"})
+        self.assertFormError(response.context["form"], "new_group_name", "Is a reserved name.")
+
         # try creating new group but providing a name of an existing group
         response = self.client.post(preview_url, {"add_to_group": True, "group_mode": "N", "new_group_name": "testERs"})
         self.assertFormError(response.context["form"], "new_group_name", "Already exists.")

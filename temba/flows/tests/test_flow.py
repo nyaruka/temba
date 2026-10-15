@@ -55,6 +55,27 @@ class FlowTest(TembaTest, CRUDLTestMixin):
         self.assertTrue(Flow.is_valid_name("Tickets"))
         self.assertFalse(Flow.is_valid_name("ticket"))
 
+        # unless they're the ignored object's existing name
+        ticket = self.create_flow("Tickets")
+        Flow.objects.filter(id=ticket.id).update(name="Ticket")
+        ticket.refresh_from_db()
+        self.assertEqual("TICKET", Flow.get_unique_name(self.org, "TICKET", ignore=ticket))
+        self.assertEqual("Ticket 2", Flow.get_unique_name(self.org, "Ticket", ignore=testing))
+
+    def test_reimport_with_reserved_name(self):
+        # a flow which already has a reserved name keeps it when re-imported
+        flow = self.create_flow("Tickets")
+        Flow.objects.filter(id=flow.id).update(name="Ticket")
+        components = self.org.resolve_dependencies([flow], [], include_triggers=False)
+        export_def = self.org.export_definitions("http://rapidpro.io", components)
+        export_def["flows"][0]["name"] = "Ticket"
+
+        self.org.import_app(export_def, self.admin)
+
+        flow.refresh_from_db()
+        self.assertEqual("Ticket", flow.name)
+        self.assertEqual(1, self.org.flows.filter(is_active=True, name__istartswith="Ticket").count())
+
     @mock_mailroom
     def test_publishes_asset_changed(self, mr_mocks):
         # creating a flow doesn't publish as no client acts on that
