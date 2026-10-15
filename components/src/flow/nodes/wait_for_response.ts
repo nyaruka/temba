@@ -113,7 +113,6 @@ export const wait_for_response: NodeConfig = {
         {
           // timeout_enabled isn't a field, adding or removing this section toggles it
           label: 'Time Limit',
-          chip: 'Set Time Limit',
           sentence: () =>
             msg("If there's no reply after {duration} go to **No Response**", {
               desc: '{duration} is a dropdown of times, e.g. "5 minutes". Keep {duration} and the ** markers as they are.'

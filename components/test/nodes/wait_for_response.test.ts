@@ -37,7 +37,6 @@ describe('wait_for_response node config', () => {
       const sections = (wait_for_response.layout[1] as any).sections;
       const timeout = sections[sections.length - 1];
       expect(timeout.label).to.equal('Time Limit');
-      expect(timeout.chip).to.equal('Set Time Limit');
       expect(timeout.items).to.deep.equal(['timeout_duration']);
       expect(timeout.sentence()).to.equal(
         "If there's no reply after {duration} go to **No Response**"

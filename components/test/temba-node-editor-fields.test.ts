@@ -261,7 +261,7 @@ describe('temba-node-editor fields', () => {
     };
 
     const templateSection = {
-      label: 'Use WhatsApp Template',
+      label: 'WhatsApp Template',
       items: ['template']
     };
 

@@ -139,13 +139,13 @@ export const send_msg: ActionConfig = {
           items: ['quick_replies']
         },
         {
-          label: 'Use WhatsApp Template',
+          label: 'WhatsApp Template',
           localizable: false,
           items: ['template'],
           onRemove: () => ({ template: null, template_variables: [] })
         },
         {
-          label: 'Attach from Expression',
+          label: 'Runtime Attachments',
           hasValue: (formData: FormData) =>
             (formData.runtime_attachments || []).some(
               (item: any) =>

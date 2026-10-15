@@ -389,8 +389,6 @@ export interface AccordionLayoutConfig {
 export interface ExtrasSection {
   label: string;
   items: LayoutItem[];
-  // the label of the chip that adds the section (default: the section's label)
-  chip?: string;
   // renders the section as a line of text instead of a heading over its fields, e.g.
   // () => msg("If there's no reply after {duration} go to **No Response**"). Each {token}
   // becomes its field and **text** is bold, so the string has no markup to translate.

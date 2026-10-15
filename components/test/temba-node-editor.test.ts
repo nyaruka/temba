@@ -808,8 +808,8 @@ describe('temba-node-editor', () => {
     await el.updateComplete;
 
     expect(getExtras(el)).to.deep.equal({
-      shown: ['Quick Replies', 'Attach from Expression'],
-      offered: ['Use WhatsApp Template']
+      shown: ['Quick Replies', 'Runtime Attachments'],
+      offered: ['WhatsApp Template']
     });
   });
 
@@ -838,10 +838,10 @@ describe('temba-node-editor', () => {
     await el.updateComplete;
 
     expect((el as any).formData.timeout_enabled).to.be.false;
-    expect(getExtras(el).offered).to.include('Set Time Limit');
+    expect(getExtras(el).offered).to.include('Time Limit');
 
     const chip = Array.from(el.shadowRoot.querySelectorAll('.extra-chip')).find(
-      (c) => c.textContent.trim() === 'Set Time Limit'
+      (c) => c.textContent.trim() === 'Time Limit'
     ) as HTMLElement;
     chip.click();
     await el.updateComplete;
@@ -866,7 +866,7 @@ describe('temba-node-editor', () => {
     await el.updateComplete;
 
     expect((el as any).formData.timeout_enabled).to.be.false;
-    expect(getExtras(el).offered).to.include('Set Time Limit');
+    expect(getExtras(el).offered).to.include('Time Limit');
   });
 
   it('shows require translations as one sentence with its checkboxes', async () => {
@@ -895,13 +895,13 @@ describe('temba-node-editor', () => {
     await el.updateComplete;
 
     const chip = Array.from(el.shadowRoot.querySelectorAll('.extra-chip')).find(
-      (c) => c.textContent.trim() === 'Require Translations'
+      (c) => c.textContent.trim() === 'Translations'
     ) as HTMLElement;
     chip.click();
     await el.updateComplete;
 
     const section = el.shadowRoot.querySelector(
-      '.extra-section[data-extra="Require Translations"]'
+      '.extra-section[data-extra="Translations"]'
     );
     expect(section.querySelector('.extra-label')).to.not.exist;
 
@@ -944,11 +944,7 @@ describe('temba-node-editor', () => {
 
     expect(getExtras(el)).to.deep.equal({
       shown: [],
-      offered: [
-        'Quick Replies',
-        'Use WhatsApp Template',
-        'Attach from Expression'
-      ]
+      offered: ['Quick Replies', 'WhatsApp Template', 'Runtime Attachments']
     });
 
     // adding a section shows it in place, even while it's empty
@@ -960,7 +956,7 @@ describe('temba-node-editor', () => {
 
     expect(getExtras(el)).to.deep.equal({
       shown: ['Quick Replies'],
-      offered: ['Use WhatsApp Template', 'Attach from Expression']
+      offered: ['WhatsApp Template', 'Runtime Attachments']
     });
 
     // removing it clears its value and offers it again
@@ -975,11 +971,7 @@ describe('temba-node-editor', () => {
     expect((el as any).formData.quick_replies).to.deep.equal([]);
     expect(getExtras(el)).to.deep.equal({
       shown: [],
-      offered: [
-        'Quick Replies',
-        'Use WhatsApp Template',
-        'Attach from Expression'
-      ]
+      offered: ['Quick Replies', 'WhatsApp Template', 'Runtime Attachments']
     });
   });
 

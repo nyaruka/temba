@@ -103,7 +103,7 @@ export const send_broadcast: ActionConfig = {
       type: 'extras',
       sections: [
         {
-          label: 'Use WhatsApp Template',
+          label: 'WhatsApp Template',
           localizable: false,
           items: ['template'],
           onRemove: () => ({ template: null, template_variables: [] })

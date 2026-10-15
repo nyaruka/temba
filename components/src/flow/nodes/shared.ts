@@ -30,7 +30,7 @@ export const resultNameField: TextFieldConfig = {
 
 /**
  * Shared localization requirement fields for router nodes.
- * These provide the checkboxes in the optional Require Translations sentence,
+ * These provide the checkboxes in the optional Translations sentence,
  * so their labels are single words that read as part of it.
  */
 export const localizeRulesField: CheckboxFieldConfig = {
@@ -93,7 +93,7 @@ export const resultNameSection: ExtrasSection = {
 };
 
 const advancedSection: ExtrasSection = {
-  label: 'Require Translations',
+  label: 'Translations',
   localizable: false,
   items: ['localizeRules', 'localizeCategories'],
   sentence: () =>
@@ -104,7 +104,7 @@ const advancedSection: ExtrasSection = {
 };
 
 const categoriesLocalizationSection: ExtrasSection = {
-  label: 'Require Translations',
+  label: 'Translations',
   localizable: false,
   items: ['localizeCategories'],
   sentence: () =>

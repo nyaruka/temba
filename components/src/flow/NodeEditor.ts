@@ -2850,7 +2850,7 @@ export class NodeEditor extends RapidElement {
                     @click=${() => this.handleExtraAdd(section)}
                   >
                     <temba-icon name="add" size="0.9"></temba-icon>
-                    ${section.chip || section.label}
+                    ${section.label}
                   </button>
                 `
               )}
