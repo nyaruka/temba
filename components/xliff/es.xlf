@@ -282,21 +282,6 @@
   <source>Manage AI models</source>
   <target>Administrar modelos de IA</target>
 </trans-unit>
-<trans-unit id="he300070d2bbe90b2">
-  <source><x id="0" equiv-text="${this.brand}"/> uses AI for automatic translation, which can make
-          mistakes,</source>
-  <target><x id="0" equiv-text="${this.brand}"/> utiliza IA para la traducción automática, la cual puede cometer errores,</target>
-</trans-unit>
-<trans-unit id="hdecb189d6744e811">
-  <source>Automatic translation uses AI, which can make mistakes,</source>
-  <target>La traducción automática utiliza IA, la cual puede cometer errores,</target>
-</trans-unit>
-<trans-unit id="hca6320b0951b742e">
-  <source>All remaining text for <x id="0" equiv-text="&lt;strong&gt;${languageName}&lt;/strong&gt;"/> will be
-            translated automatically. <x id="1" equiv-text="${aiClause}"/> so it is important to review
-            all of your translations to verify they are correct.</source>
-  <target>Todo el texto restante para <x id="0" equiv-text="&lt;strong&gt;${languageName}&lt;/strong&gt;"/> se traducirá automáticamente. <x id="1" equiv-text="${aiClause}"/> por lo que es importante revisar todas sus traducciones para verificar que sean correctas.</target>
-</trans-unit>
 <trans-unit id="s41a09142cb4913db">
   <source>Select an AI model</source>
   <target>Seleccione un modelo de IA</target>
@@ -1717,6 +1702,11 @@
 <trans-unit id="s74b6c3618d370674">
   <source>Require {confidence} confidence or higher, or go to **Other**</source>
   <note from="lit-localize">{confidence} is a dropdown of "low", "medium" and "high". Keep {confidence} and the ** markers as they are.</note>
+</trans-unit>
+<trans-unit id="hc4a0a6ca14ac7c56">
+  <source>Text will be translated into <x id="0" equiv-text="&lt;strong&gt;${languageName}&lt;/strong&gt;"/>
+            automatically. Translations can contain mistakes, so review them.</source>
+  <target>El texto se traducirá al <x id="0" equiv-text="&lt;strong&gt;${languageName}&lt;/strong&gt;"/> automáticamente. Las traducciones pueden contener errores, así que revíselas.</target>
 </trans-unit>
 </body>
 </file>
