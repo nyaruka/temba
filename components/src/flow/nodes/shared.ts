@@ -67,10 +67,22 @@ export const localizeCategoriesField: CheckboxFieldConfig = {
 
 /**
  * A result name not yet used in the flow: Result, Result 2, Result 3, ...
+ * Names used only by the given node don't count, since it's the one being named.
  */
-export const getDefaultResultName = (): string => {
+export const getDefaultResultName = (nodeUuid?: string): string => {
   const results = zustand.getState().flowInfo?.results || [];
-  const used = new Set(results.map((result) => result.name));
+  const used = new Set(
+    results
+      .filter((result) => {
+        const nodes = result.node_uuids || [];
+        return !(
+          nodeUuid &&
+          nodes.length > 0 &&
+          nodes.every((uuid) => uuid === nodeUuid)
+        );
+      })
+      .map((result) => result.name)
+  );
   let candidate = 'Result';
   let number = 2;
   while (used.has(candidate)) {
@@ -84,7 +96,9 @@ export const resultNameSection: ExtrasSection = {
   label: 'Save Result',
   localizable: false,
   items: ['result_name'],
-  onAdd: () => ({ result_name: getDefaultResultName() }),
+  onAdd: (formData: FormData) => ({
+    result_name: getDefaultResultName(formData.uuid)
+  }),
   sentence: () =>
     msg('Save the result as {name}', {
       desc: '{name} is a text box for the result name. Keep {name} as it is.'

@@ -2878,10 +2878,6 @@ export class NodeEditor extends RapidElement {
           </button>`
         : '';
 
-    const items = section.items.map((item) =>
-      this.renderLayoutItem(item, config, renderedFields)
-    );
-
     if (section.sentence) {
       return html`
         <div class="extra-section sentence" data-extra=${section.label}>
@@ -2902,7 +2898,11 @@ export class NodeEditor extends RapidElement {
           <span class="extra-label">${section.label}</span>
           ${removeButton}
         </div>
-        <div class="extra-items">${items}</div>
+        <div class="extra-items">
+          ${section.items.map((item) =>
+            this.renderLayoutItem(item, config, renderedFields)
+          )}
+        </div>
       </div>
     `;
   }

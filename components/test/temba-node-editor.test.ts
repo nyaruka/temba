@@ -4,6 +4,7 @@ import * as sinon from 'sinon';
 import { assertScreenshot, getClip } from './utils.test';
 import { Dialog } from '../src/layout/Dialog';
 import { zustand } from '../src/store/AppState';
+import { getDefaultResultName } from '../src/flow/nodes/shared';
 
 // Define interface for NodeEditor component
 interface NodeEditorElement extends HTMLElement {
@@ -1561,6 +1562,14 @@ describe('temba-node-editor', () => {
       ]);
       const el = await createNewWaitNode();
       expect((el as any).formData.result_name).to.equal('Result 4');
+    });
+
+    it("doesn't count the node's own result when naming it", () => {
+      setupStore([{ name: 'Result', key: 'result' }]);
+      // setupStore attributes every result to 'some-node'
+      expect(getDefaultResultName('some-node')).to.equal('Result');
+      expect(getDefaultResultName('other-node')).to.equal('Result 2');
+      expect(getDefaultResultName()).to.equal('Result 2');
     });
 
     it('fills in a name when save result is added', async () => {
