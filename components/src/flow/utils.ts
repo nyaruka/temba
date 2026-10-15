@@ -188,8 +188,7 @@ export function snapToGrid(value: number): number {
   return Math.max(snapped, 0);
 }
 
-const MONO =
-  "font-family:SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;font-size:0.95em";
+const MONO = 'font-family:var(--font-mono, monospace);font-size:0.95em';
 
 const TOKEN_STYLES: Record<string, string> = {
   [TokenType.ExpressionPrefix]: `color:${TOKEN_COLORS.expression};font-weight:600;${MONO}`,

@@ -132,14 +132,7 @@ export const tokenCss = css`
   }
 
   .tok-mono {
-    font-family: var(
-      --expression-font-family,
-      'SFMono-Regular',
-      'Consolas',
-      'Liberation Mono',
-      'Menlo',
-      monospace
-    );
+    font-family: var(--expression-font-family, var(--font-mono, monospace));
     font-size: 0.95em;
   }
 `;
