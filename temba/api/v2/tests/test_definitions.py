@@ -90,6 +90,13 @@ class DefinitionsEndpointTest(APITest):
             ),
         )
 
+        # campaign + no dependencies by default
+        self.assertGet(
+            endpoint_url + f"?campaign={campaign1.uuid}",
+            [self.editor],
+            raw=lambda j: len(j["flows"]) == 0 and len(j["campaigns"]) == 1 and len(j["triggers"]) == 0,
+        )
+
         # campaign + all dependencies
         self.assertGet(
             endpoint_url + f"?campaign={campaign1.uuid}&dependencies=all",
