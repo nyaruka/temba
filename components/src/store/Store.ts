@@ -218,7 +218,6 @@ export class Store extends RapidElement {
   @property({ type: Object, attribute: false })
   private keyedAssets: KeyedAssets = {};
 
-
   private fields: { [key: string]: ContactField } = {};
   private groups: { [uuid: string]: CachedGroup } = {};
   private shortcuts: Shortcut[] = [];
