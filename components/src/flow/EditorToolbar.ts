@@ -20,6 +20,11 @@ export class EditorToolbar extends RapidElement {
         display: block;
       }
 
+      /* buttons take the browser's own font unless told otherwise */
+      button {
+        font-family: var(--font-family);
+      }
+
       .editor-toolbar {
         --toolbar-control-height: 28px;
         --toolbar-translation-control-height: 28px;

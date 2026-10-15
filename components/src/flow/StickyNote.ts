@@ -70,8 +70,7 @@ export class StickyNote extends RapidElement {
         border: 1px solid var(--sticky-border-color);
         border-radius: var(--curvature);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        font-family:
-          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-family: var(--font-family);
         font-size: 12px;
         overflow: hidden;
         transition:

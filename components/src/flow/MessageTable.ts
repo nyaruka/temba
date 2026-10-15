@@ -42,8 +42,7 @@ export class MessageTable extends RapidElement {
         overflow: auto;
         flex: 1;
         background: #fff;
-        font-family:
-          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-family: var(--font-family);
       }
 
       .message-table {
