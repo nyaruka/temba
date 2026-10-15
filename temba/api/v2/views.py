@@ -1395,7 +1395,7 @@ class DefinitionsEndpoint(BaseEndpoint):
         params = request.query_params
         flow_uuids = params.getlist("flow")
         campaign_uuids = params.getlist("campaign")
-        include = params.get("dependencies", "all")
+        include = params.get("dependencies", "none")
 
         if include not in DefinitionsEndpoint.Depends.__members__:
             raise InvalidQueryError(

@@ -46,14 +46,14 @@ class DefinitionsEndpointTest(APITest):
         self.assertEqual(200, response.status_code)
         self.assertDeprecatedRecorded("definitions#get", 1)
 
-        # flow + all dependencies by default
+        # flow + no dependencies by default
         self.assertGet(
             endpoint_url + f"?flow={flow1.uuid}",
             [self.editor],
             raw=lambda j: (
-                {f["name"] for f in j["flows"]} == {"Parent Flow", "Child Flow 1", "Child Flow 2"}
-                and len(j["campaigns"]) == 1
-                and len(j["triggers"]) == 1
+                {f["name"] for f in j["flows"]} == {"Parent Flow"}
+                and len(j["campaigns"]) == 0
+                and len(j["triggers"]) == 0
             ),
         )
 
@@ -92,7 +92,7 @@ class DefinitionsEndpointTest(APITest):
 
         # campaign + all dependencies
         self.assertGet(
-            endpoint_url + f"?campaign={campaign1.uuid}",
+            endpoint_url + f"?campaign={campaign1.uuid}&dependencies=all",
             [self.editor],
             raw=lambda j: len(j["flows"]) == 3 and len(j["campaigns"]) == 1 and len(j["triggers"]) == 1,
         )
