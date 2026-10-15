@@ -18,6 +18,77 @@ describe('split_by_webhook node config', () => {
     });
   });
 
+  describe('extras', () => {
+    const section = (label: string) =>
+      (
+        split_by_webhook.layout!.find(
+          (item: any) => item.type === 'extras'
+        ) as any
+      ).sections.find((s: any) => s.label === label);
+
+    it('only shows headers that differ from the defaults', () => {
+      const headers = section('Headers');
+      expect(
+        headers.hasValue({
+          headers: [
+            { key: 'Accept', value: 'application/json' },
+            { key: 'Content-Type', value: 'application/json' }
+          ]
+        })
+      ).to.be.false;
+      expect(
+        headers.hasValue({
+          headers: [{ key: 'Authorization', value: 'Token abc' }]
+        })
+      ).to.be.true;
+    });
+
+    it('restores the default headers and body when removed', () => {
+      const post = { method: [{ value: 'POST', name: 'POST' }] };
+      expect(section('Headers').onRemove(post)).to.deep.equal({
+        headers: [
+          { key: 'Accept', value: 'application/json' },
+          { key: 'Content-Type', value: 'application/json' }
+        ]
+      });
+      expect(section('Body').onRemove(post).body).to.contain('@(json(');
+      expect(section('Body').onRemove({ method: 'GET' })).to.deep.equal({
+        body: ''
+      });
+      expect(section('Body').hasValue(section('Body').onRemove(post))).to.be
+        .false;
+    });
+
+    it('offers the result name as an extra', () => {
+      expect(section('Save Result').items).to.deep.equal(['result_name']);
+    });
+  });
+
+  describe('node scenarios', () => {
+    it('renders custom headers', async () => {
+      const node = split_by_webhook.fromFormData!(
+        {
+          uuid: 'webhook-node',
+          method: [{ value: 'GET', name: 'GET' }],
+          url: 'https://example.com/lookup?phone=@urns.tel',
+          headers: [
+            { key: 'Accept', value: 'application/json' },
+            { key: 'Authorization', value: 'Token @globals.api_token' }
+          ],
+          body: '',
+          result_name: 'lookup'
+        },
+        { uuid: 'webhook-node', actions: [], exits: [] }
+      );
+
+      await helper.testNode(
+        node,
+        { type: 'split_by_webhook' },
+        'custom-headers'
+      );
+    });
+  });
+
   describe('round-trip transformation', () => {
     it('should transform from flow definition to form data', () => {
       const node: Node = {

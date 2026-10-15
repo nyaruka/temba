@@ -39,13 +39,9 @@ describe('split_by_subflow node config', () => {
       expect(split_by_subflow.form.params.type).to.equal('key-value');
     });
 
-    it('has layout with accordion for parameters', () => {
-      expect(split_by_subflow.layout).to.exist;
-      expect(split_by_subflow.layout[0]).to.equal('flow');
-      expect((split_by_subflow.layout[1] as any).type).to.equal('accordion');
-      expect((split_by_subflow.layout[1] as any).sections[0].label).to.equal(
-        'Parameters'
-      );
+    it('has layout with the parameters below the flow', () => {
+      expect(split_by_subflow.layout).to.deep.equal(['flow', 'params']);
+      expect(split_by_subflow.form.params.label).to.equal('Parameters');
     });
   });
 

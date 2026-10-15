@@ -11,7 +11,7 @@ import {
   resultNameField,
   localizeRulesField,
   localizeCategoriesField,
-  nodeOptionsAccordion
+  nodeOptions
 } from './shared';
 import {
   createRulesArrayConfig,
@@ -124,7 +124,7 @@ export const split_by_run_result: NodeConfig = {
       items: ['result', 'delimit_by', 'delimit_index']
     },
     'rules',
-    nodeOptionsAccordion
+    nodeOptions
   ],
   validate: validateWith((formData, errors) => {
     if (!formData.result || formData.result.length === 0) {

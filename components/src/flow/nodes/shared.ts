@@ -2,13 +2,15 @@ import { msg, str } from '@lit/localize';
 import {
   FormData,
   TextFieldConfig,
-  AccordionLayoutConfig,
+  ExtrasLayoutConfig,
+  ExtrasSection,
   CheckboxFieldConfig
 } from '../types';
 import { Node, Category, Exit, Case } from '../../store/flow-definition';
 import { getOperatorConfig } from '../operators';
 import { generateUUID } from '../../utils';
 import { categoryNamesEqual, findCategoryByName } from '../categoryUtils';
+import { zustand } from '../../store/AppState';
 
 /**
  * Shared result_name field configuration for router nodes.
@@ -28,18 +30,24 @@ export const resultNameField: TextFieldConfig = {
 
 /**
  * Shared localization requirement fields for router nodes.
- * These provide checkboxes for "Require rules to be localized" and
- * "Require categories to be localized" in a collapsible accordion.
+ * These provide the checkboxes in the optional Require Translations sentence,
+ * so their labels are single words that read as part of it.
  */
 export const localizeRulesField: CheckboxFieldConfig = {
   type: 'checkbox',
-  label: 'Require rules to be localized',
-  helpText: 'Each language must specify its own rules for this node'
+  label: () =>
+    msg('rules', {
+      desc: 'A checkbox in "Each language must translate its {rules} {categories}"'
+    }),
+  helpText: () => msg('Each language must specify its own rules for this node')
 };
 
 export const localizeCategoriesField: CheckboxFieldConfig = {
   type: 'checkbox',
-  label: 'Require categories to be localized',
+  label: () =>
+    msg('categories', {
+      desc: 'A checkbox in "Each language must translate its {rules} {categories}"'
+    }),
   helpText: (formData: FormData) => {
     const name = formData.result_name?.trim();
     if (name) {
@@ -57,46 +65,67 @@ export const localizeCategoriesField: CheckboxFieldConfig = {
   }
 };
 
-const resultNameSection = {
+/**
+ * A result name not yet used in the flow: Result, Result 2, Result 3, ...
+ */
+export const getDefaultResultName = (): string => {
+  const results = zustand.getState().flowInfo?.results || [];
+  const used = new Set(results.map((result) => result.name));
+  let candidate = 'Result';
+  let number = 2;
+  while (used.has(candidate)) {
+    candidate = `Result ${number}`;
+    number++;
+  }
+  return candidate;
+};
+
+export const resultNameSection: ExtrasSection = {
   label: 'Save Result',
   localizable: false,
   items: ['result_name'],
-  collapsed: (formData: FormData) => !(formData._isNew && formData.result_name),
-  getValueCount: (formData: FormData) => !!formData.result_name
+  onAdd: () => ({ result_name: getDefaultResultName() }),
+  sentence: () =>
+    msg('Save the result as {name}', {
+      desc: '{name} is a text box for the result name. Keep {name} as it is.'
+    }),
+  tokens: { name: 'result_name' }
 };
 
-const advancedSection = {
-  label: 'Localization',
+const advancedSection: ExtrasSection = {
+  label: 'Require Translations',
   localizable: false,
   items: ['localizeRules', 'localizeCategories'],
-  collapsed: true,
-  getValueCount: (formData: FormData) =>
-    !!(formData.localizeRules || formData.localizeCategories)
+  sentence: () =>
+    msg('Each language must translate its {rules} {categories}', {
+      desc: '{rules} and {categories} are checkboxes labeled "rules" and "categories". Keep them as they are.'
+    }),
+  tokens: { rules: 'localizeRules', categories: 'localizeCategories' }
 };
 
-const categoriesLocalizationSection = {
-  label: 'Localization',
+const categoriesLocalizationSection: ExtrasSection = {
+  label: 'Require Translations',
   localizable: false,
   items: ['localizeCategories'],
-  collapsed: true,
-  getValueCount: (formData: FormData) => !!formData.localizeCategories
+  sentence: () =>
+    msg('Each language must translate its {categories}', {
+      desc: '{categories} is a checkbox labeled "categories". Keep it as it is.'
+    }),
+  tokens: { categories: 'localizeCategories' }
 };
 
-export const nodeOptionsAccordion: AccordionLayoutConfig = {
-  type: 'accordion',
-  multi: true,
+export const nodeOptions: ExtrasLayoutConfig = {
+  type: 'extras',
   sections: [resultNameSection, advancedSection]
 };
 
-export const nodeOptionsAccordionSimple: AccordionLayoutConfig = {
-  type: 'accordion',
-  multi: true,
+export const nodeOptionsSimple: ExtrasLayoutConfig = {
+  type: 'extras',
   sections: [resultNameSection]
 };
 
-export const nodeOptionsAccordionCategoriesOnly: AccordionLayoutConfig = {
-  type: 'accordion',
-  multi: true,
+export const nodeOptionsCategoriesOnly: ExtrasLayoutConfig = {
+  type: 'extras',
   sections: [resultNameSection, categoriesLocalizationSection]
 };
 

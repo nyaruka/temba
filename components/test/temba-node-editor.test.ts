@@ -779,7 +779,16 @@ describe('temba-node-editor', () => {
     expect(result.errors.subject).to.exist;
   });
 
-  it('displays bubble count for accordion value counts', async () => {
+  const getExtras = (el: HTMLElement) => ({
+    shown: Array.from(el.shadowRoot.querySelectorAll('.extra-section')).map(
+      (section) => section.getAttribute('data-extra')
+    ),
+    offered: Array.from(el.shadowRoot.querySelectorAll('.extra-chip')).map(
+      (chip) => chip.textContent.trim()
+    )
+  });
+
+  it('shows extras that have values and offers the rest as chips', async () => {
     const action = {
       uuid: 'test-action-uuid',
       type: 'send_msg',
@@ -798,32 +807,131 @@ describe('temba-node-editor', () => {
     await new Promise((resolve) => setTimeout(resolve, 200));
     await el.updateComplete;
 
-    // Check that bubble counts are displayed in accordion sections
-    // Bubbles are now inside temba-accordion-section shadow DOMs
-    const sections = el.shadowRoot.querySelectorAll('temba-accordion-section');
-    const bubbles: Element[] = [];
-    sections.forEach((section) => {
-      const sectionBubbles =
-        section.shadowRoot.querySelectorAll('.count-bubble');
-      sectionBubbles.forEach((b) => bubbles.push(b));
+    expect(getExtras(el)).to.deep.equal({
+      shown: ['Quick Replies', 'Attach from Expression'],
+      offered: ['Use WhatsApp Template']
     });
-
-    // Should have bubbles for sections with values
-    expect(bubbles.length).to.be.greaterThan(0);
-
-    // Check specific bubble values (trim to handle whitespace in rendered text)
-    const bubbleTexts = bubbles.map((bubble) => bubble.textContent?.trim());
-
-    // Runtime attachments section should show bubble when collapsed and has values
-    expect(bubbleTexts).to.include('2'); // 2 runtime attachments
   });
 
-  it('shows arrow when accordion section has no values', async () => {
+  it('enables the timeout from its chip and disables it when removed', async () => {
+    const node = {
+      uuid: 'test-wait-node-uuid',
+      actions: [],
+      router: {
+        type: 'switch',
+        wait: { type: 'msg' },
+        categories: []
+      },
+      exits: []
+    };
+
+    const el = (await fixture(html`
+      <temba-node-editor
+        .node=${node}
+        .nodeUI=${{ type: 'wait_for_response' }}
+        .isOpen=${true}
+      ></temba-node-editor>
+    `)) as NodeEditorElement;
+
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    await el.updateComplete;
+
+    expect((el as any).formData.timeout_enabled).to.be.false;
+    expect(getExtras(el).offered).to.include('Set Time Limit');
+
+    const chip = Array.from(el.shadowRoot.querySelectorAll('.extra-chip')).find(
+      (c) => c.textContent.trim() === 'Set Time Limit'
+    ) as HTMLElement;
+    chip.click();
+    await el.updateComplete;
+
+    expect((el as any).formData.timeout_enabled).to.be.true;
+    expect(getExtras(el).shown).to.include('Time Limit');
+
+    // it reads as a sentence with the duration select inside it
+    const timeout = el.shadowRoot.querySelector(
+      '.extra-section[data-extra="Time Limit"]'
+    );
+    const sentence = timeout.querySelector('.extra-sentence');
+    expect(sentence.textContent.replace(/\s+/g, ' ').trim()).to.equal(
+      "If there's no reply after go to No Response"
+    );
+    expect(sentence.querySelector('b').textContent).to.equal('No Response');
+    expect(sentence.querySelector('temba-select[name="timeout_duration"]')).to
+      .exist;
+    expect(timeout.querySelector('.extra-label')).to.not.exist;
+
+    (timeout.querySelector('.extra-remove') as HTMLElement).click();
+    await el.updateComplete;
+
+    expect((el as any).formData.timeout_enabled).to.be.false;
+    expect(getExtras(el).offered).to.include('Set Time Limit');
+  });
+
+  it('shows require translations as one sentence with its checkboxes', async () => {
+    const node = {
+      uuid: 'test-wait-node-uuid',
+      actions: [],
+      router: {
+        type: 'switch',
+        wait: { type: 'msg' },
+        result_name: 'color',
+        categories: []
+      },
+      exits: []
+    };
+
+    const el = (await fixture(html`
+      <temba-node-editor
+        .node=${node}
+        .nodeUI=${{ type: 'wait_for_response' }}
+        .isOpen=${true}
+      ></temba-node-editor>
+    `)) as NodeEditorElement;
+
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    await el.updateComplete;
+
+    const chip = Array.from(el.shadowRoot.querySelectorAll('.extra-chip')).find(
+      (c) => c.textContent.trim() === 'Require Translations'
+    ) as HTMLElement;
+    chip.click();
+    await el.updateComplete;
+
+    const section = el.shadowRoot.querySelector(
+      '.extra-section[data-extra="Require Translations"]'
+    );
+    expect(section.querySelector('.extra-label')).to.not.exist;
+
+    // one sentence with the checkboxes inside it, their help on hover
+    const sentence = section.querySelector('.extra-sentence');
+    expect(sentence.textContent.replace(/\s+/g, ' ').trim()).to.equal(
+      'Each language must translate its'
+    );
+    expect(
+      Array.from(sentence.querySelectorAll('temba-checkbox')).map((c: any) =>
+        c.label.trim()
+      )
+    ).to.deep.equal(['rules', 'categories']);
+    expect(
+      sentence
+        .querySelector('temba-checkbox[name="localizeCategories"]')
+        .closest('.inline-field')
+        .getAttribute('title')
+    ).to.equal(
+      'Only enable if you plan to use @results.color.category_localized'
+    );
+
+    await assertDialogScreenshot(el, 'editor/wait-require-translations');
+  });
+
+  it('adds an extra from its chip and clears it when removed', async () => {
     const action = {
       uuid: 'test-action-uuid',
       type: 'send_msg',
       text: 'Hello world'
-      // No quick_replies or attachments provided
     };
 
     const el = (await fixture(html`
@@ -831,30 +939,48 @@ describe('temba-node-editor', () => {
     `)) as NodeEditorElement;
 
     await el.updateComplete;
-
-    // Wait for form data initialization
     await new Promise((resolve) => setTimeout(resolve, 200));
     await el.updateComplete;
 
-    // Check that arrows are displayed instead of bubbles
-    // Elements are now inside temba-accordion-section shadow DOMs
-    const sections = el.shadowRoot.querySelectorAll('temba-accordion-section');
-    const bubbles: Element[] = [];
-    const arrows: Element[] = [];
-    sections.forEach((section) => {
-      section.shadowRoot
-        .querySelectorAll('.count-bubble')
-        .forEach((b) => bubbles.push(b));
-      section.shadowRoot
-        .querySelectorAll('.toggle-icon')
-        .forEach((a) => arrows.push(a));
+    expect(getExtras(el)).to.deep.equal({
+      shown: [],
+      offered: [
+        'Quick Replies',
+        'Use WhatsApp Template',
+        'Attach from Expression'
+      ]
     });
 
-    // Should have no bubbles when counts are 0
-    expect(bubbles.length).to.equal(0);
+    // adding a section shows it in place, even while it's empty
+    const chip = Array.from(el.shadowRoot.querySelectorAll('.extra-chip')).find(
+      (c) => c.textContent.trim() === 'Quick Replies'
+    ) as HTMLElement;
+    chip.click();
+    await el.updateComplete;
 
-    // Should have arrows for accordion sections
-    expect(arrows.length).to.be.greaterThan(0);
+    expect(getExtras(el)).to.deep.equal({
+      shown: ['Quick Replies'],
+      offered: ['Use WhatsApp Template', 'Attach from Expression']
+    });
+
+    // removing it clears its value and offers it again
+    (el as any).formData = {
+      ...(el as any).formData,
+      quick_replies: [{ name: 'Yes', value: 'Yes' }]
+    };
+    await el.updateComplete;
+    (el.shadowRoot.querySelector('.extra-remove') as HTMLElement).click();
+    await el.updateComplete;
+
+    expect((el as any).formData.quick_replies).to.deep.equal([]);
+    expect(getExtras(el)).to.deep.equal({
+      shown: [],
+      offered: [
+        'Quick Replies',
+        'Use WhatsApp Template',
+        'Attach from Expression'
+      ]
+    });
   });
 
   it('renders split_by_llm_categorize node', async () => {
@@ -977,9 +1103,8 @@ describe('temba-node-editor', () => {
     expect(dialog).to.not.be.null;
     expect(dialog.getAttribute('header')).to.equal('Wait for Response');
 
-    // Check that result name field is rendered inside accordion
-    const accordion = el.shadowRoot.querySelector('temba-accordion');
-    expect(accordion).to.not.be.null;
+    // The result name has a value, so its section is shown
+    expect(getExtras(el).shown).to.include('Save Result');
     const textInput = el.shadowRoot.querySelector('temba-textinput');
     expect(textInput).to.not.be.null;
   });
@@ -1444,6 +1569,45 @@ describe('temba-node-editor', () => {
       ]);
       const el = await createNewWaitNode();
       expect((el as any).formData.result_name).to.equal('Result 4');
+    });
+
+    it('fills in a name when save result is added', async () => {
+      setupStore([{ name: 'Result', key: 'result' }]);
+      const el = (await fixture(html`
+        <temba-node-editor
+          .node=${{
+            uuid: 'digits-node-uuid',
+            actions: [],
+            exits: [],
+            router: {
+              type: 'switch',
+              wait: { type: 'msg', hint: { type: 'digits' } },
+              categories: [],
+              cases: [],
+              operand: '@input.text'
+            }
+          }}
+          .nodeUI=${{ type: 'wait_for_digits' }}
+          .isOpen=${true}
+        ></temba-node-editor>
+      `)) as NodeEditorElement;
+      await el.updateComplete;
+      expect((el as any).formData.result_name).to.equal('');
+
+      const chip = Array.from(
+        el.shadowRoot.querySelectorAll('.extra-chip')
+      ).find((c) => c.textContent.trim() === 'Save Result') as HTMLElement;
+      chip.click();
+      await el.updateComplete;
+
+      expect((el as any).formData.result_name).to.equal('Result 2');
+      expect(
+        (
+          el.shadowRoot.querySelector(
+            'temba-textinput[name="result_name"]'
+          ) as any
+        ).value
+      ).to.equal('Result 2');
     });
   });
 

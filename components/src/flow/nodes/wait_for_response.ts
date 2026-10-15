@@ -1,3 +1,4 @@
+import { msg } from '@lit/localize';
 import { SPLIT_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { Node, Category, Exit, Case } from '../../store/flow-definition';
 import { generateUUID, createRulesRouter } from '../../utils';
@@ -10,7 +11,7 @@ import {
   resultNameField,
   localizeRulesField,
   localizeCategoriesField,
-  nodeOptionsAccordion
+  nodeOptions
 } from './shared';
 import {
   createRulesArrayConfig,
@@ -93,39 +94,38 @@ export const wait_for_response: NodeConfig = {
       operatorsToSelectOptions(getWaitForResponseOperators()),
       'If the message from the contact...'
     ),
-    timeout_enabled: {
-      type: 'checkbox',
-      label: (formData: Record<string, any>) => {
-        return formData.timeout_enabled
-          ? 'Continue when there is no response for'
-          : 'Continue when there is no response..';
-      },
-      labelPadding: '4px 8px'
-    },
     timeout_duration: {
       type: 'select',
       placeholder: '5 minutes',
       multi: false,
-      maxWidth: '130px',
-      flavor: 'xsmall',
-      options: TIMEOUT_OPTIONS,
-
-      conditions: {
-        visible: (formData: Record<string, any>) => {
-          return formData.timeout_enabled === true;
-        }
-      }
+      options: TIMEOUT_OPTIONS
     },
     result_name: resultNameField,
     localizeRules: localizeRulesField,
     localizeCategories: localizeCategoriesField
   },
-  layout: ['rules', nodeOptionsAccordion],
-  gutter: [
+  layout: [
+    'rules',
     {
-      type: 'row',
-      items: ['timeout_enabled', 'timeout_duration'],
-      gap: '0.5rem'
+      ...nodeOptions,
+      sections: [
+        ...nodeOptions.sections,
+        {
+          // timeout_enabled isn't a field, adding or removing this section toggles it
+          label: 'Time Limit',
+          chip: 'Set Time Limit',
+          sentence: () =>
+            msg("If there's no reply after {duration} go to **No Response**", {
+              desc: '{duration} is a dropdown of times, e.g. "5 minutes". Keep {duration} and the ** markers as they are.'
+            }),
+          tokens: { duration: 'timeout_duration' },
+          localizable: false,
+          items: ['timeout_duration'],
+          hasValue: (formData: FormData) => !!formData.timeout_enabled,
+          onAdd: () => ({ timeout_enabled: true }),
+          onRemove: () => ({ timeout_enabled: false })
+        }
+      ]
     }
   ],
   validate: validateWith(() => {

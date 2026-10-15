@@ -41,13 +41,13 @@ export class Checkbox extends FieldElement {
         position: relative;
         cursor: pointer;
         display: flex;
-        align-items: flex-start;
+        align-items: var(--checkbox-align, flex-start);
         user-select: none;
         -webkit-user-select: none;
       }
 
       .checkbox-container temba-icon {
-        align-self: flex-start;
+        align-self: var(--checkbox-align, flex-start);
         vertical-align: top;
         line-height: 1;
       }
@@ -61,7 +61,7 @@ export class Checkbox extends FieldElement {
         font-family: var(--font-family);
         padding: 0px;
         margin: 0px;
-        font-size: 14px;
+        font-size: var(--checkbox-label-font-size, 14px);
         line-height: 19px;
       }
 

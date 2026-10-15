@@ -314,7 +314,7 @@ describe('split_by_llm_categorize node config', () => {
         { name: 'Question', description: '' }
       ]);
       expect(formData.required_confidence).to.deep.equal([
-        { value: 'high', name: 'High' }
+        { value: 'high', name: 'high' }
       ]);
     });
 
@@ -360,9 +360,9 @@ describe('split_by_llm_categorize node config', () => {
       const testRouter = createSplitRouter(['Greeting']);
       const levels = {
         none: 'Always pick a category',
-        low: 'Low',
-        medium: 'Medium',
-        high: 'High'
+        low: 'low',
+        medium: 'medium',
+        high: 'high'
       };
       Object.entries(levels).forEach(([value, name]) => {
         const formData = split_by_llm_categorize.toFormData!({
@@ -404,7 +404,7 @@ describe('split_by_llm_categorize node config', () => {
         model: [{ value: 'llm-456', name: 'GPT-4' }],
         input: '@contact.name',
         options: [{ name: 'Premium' }, { name: 'Regular' }],
-        required_confidence: [{ value: 'medium', name: 'Medium' }]
+        required_confidence: [{ value: 'medium', name: 'medium' }]
       };
 
       const originalNode: Node = {
@@ -603,7 +603,7 @@ describe('split_by_llm_categorize node config', () => {
           { name: 'Category1', description: 'The first one' },
           { name: 'Category2', description: '' }
         ],
-        required_confidence: [{ value: 'high', name: 'High' }],
+        required_confidence: [{ value: 'high', name: 'high' }],
         result_name: 'CustomResult'
       };
 
@@ -711,7 +711,7 @@ describe('split_by_llm_categorize node config', () => {
       ]);
 
       // switching back to a real confidence brings Other back as the default
-      recovered.required_confidence = [{ value: 'high', name: 'High' }];
+      recovered.required_confidence = [{ value: 'high', name: 'high' }];
       const restored = split_by_llm_categorize.fromFormData!(recovered, result);
       expect((restored.actions[0] as any).required_confidence).to.equal('high');
       const other = restored.router!.categories.find((c) => c.name === 'Other');
@@ -720,40 +720,54 @@ describe('split_by_llm_categorize node config', () => {
       expect(restored.exits).to.have.length(4);
     });
 
-    it('explains the missing Other category when always picking a category', () => {
-      const helpText = split_by_llm_categorize.form!.required_confidence
-        .helpText as (formData: any) => string;
+    it('reads confidence as a sentence, starting at medium when added', () => {
+      const section = (
+        split_by_llm_categorize.layout!.find(
+          (item: any) => item.type === 'extras'
+        ) as any
+      ).sections[0];
+      expect(section.sentence()).to.equal(
+        'Require {confidence} confidence or higher, or go to **Other**'
+      );
+      expect(section.tokens).to.deep.equal({
+        confidence: 'required_confidence'
+      });
+      expect(section.onAdd({})).to.deep.equal({
+        required_confidence: [{ value: 'medium', name: 'medium' }]
+      });
+
+      // not requiring confidence is removing the section, not an option
       expect(
-        helpText({
-          required_confidence: [
-            { value: 'none', name: 'Always pick a category' }
-          ]
-        })
-      ).to.include('no **Other** category');
-      expect(
-        helpText({ required_confidence: [{ value: 'medium', name: 'Medium' }] })
-      ).to.include('go to **Other**');
+        (split_by_llm_categorize.form!.required_confidence as any).options.map(
+          (o: any) => o.value
+        )
+      ).to.deep.equal(['low', 'medium', 'high']);
     });
 
-    it('puts confidence in the accordion, flagged when a minimum is set', () => {
-      const accordion = split_by_llm_categorize.layout!.find(
-        (item: any) => item.type === 'accordion'
+    it('offers confidence as an extra, shown when a minimum is set', () => {
+      const extras = split_by_llm_categorize.layout!.find(
+        (item: any) => item.type === 'extras'
       ) as any;
-      const section = accordion.sections[0];
-      expect(section.label).to.equal('Confidence');
+      const section = extras.sections[0];
+      expect(section.label).to.equal('Require Confidence');
       expect(section.items).to.deep.equal(['required_confidence']);
       expect(
-        section.getValueCount({
+        section.hasValue({
           required_confidence: [
             { value: 'none', name: 'Always pick a category' }
           ]
         })
       ).to.be.false;
       expect(
-        section.getValueCount({
-          required_confidence: [{ value: 'high', name: 'High' }]
+        section.hasValue({
+          required_confidence: [{ value: 'high', name: 'high' }]
         })
       ).to.be.true;
+
+      // removing it goes back to always picking a category
+      expect(section.onRemove({})).to.deep.equal({
+        required_confidence: [{ value: 'none', name: 'Always pick a category' }]
+      });
     });
 
     it('preserves the output local of an existing action', () => {
@@ -950,7 +964,7 @@ describe('split_by_llm_categorize node config', () => {
           { name: 'Flights', description: 'Booking or changing flights' },
           { name: 'Hotels', description: '  ' }
         ],
-        required_confidence: [{ value: 'medium', name: 'Medium' }],
+        required_confidence: [{ value: 'medium', name: 'medium' }],
         result_name: 'Intent'
       };
 

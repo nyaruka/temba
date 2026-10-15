@@ -100,16 +100,13 @@ export const send_broadcast: ActionConfig = {
     'recipients',
     'text',
     {
-      type: 'accordion',
+      type: 'extras',
       sections: [
         {
-          label: 'WhatsApp Template',
-          collapsed: true,
+          label: 'Use WhatsApp Template',
           localizable: false,
-          getValueCount: (formData: FormData) => {
-            return !!formData.template;
-          },
-          items: ['template']
+          items: ['template'],
+          onRemove: () => ({ template: null, template_variables: [] })
         }
       ]
     }

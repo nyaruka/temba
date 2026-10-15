@@ -4,7 +4,7 @@ import { Node } from '../../store/flow-definition.d';
 import { validateWith } from '../utils';
 import {
   resultNameField,
-  nodeOptionsAccordionSimple,
+  nodeOptionsSimple,
   buildCategoriesExitsCases
 } from './shared';
 
@@ -37,7 +37,7 @@ export const split_by_random: NodeConfig = {
     },
     result_name: resultNameField
   },
-  layout: ['categories', nodeOptionsAccordionSimple],
+  layout: ['categories', nodeOptionsSimple],
   validate: validateWith((formData, errors) => {
     if (!formData.categories || !Array.isArray(formData.categories)) return;
 

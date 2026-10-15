@@ -30,7 +30,27 @@ describe('wait_for_response node config', () => {
       expect(wait_for_response.layout).to.exist;
       expect(wait_for_response.layout).to.have.lengthOf(2);
       expect(wait_for_response.layout[0]).to.equal('rules');
-      expect((wait_for_response.layout[1] as any).type).to.equal('accordion');
+      expect((wait_for_response.layout[1] as any).type).to.equal('extras');
+    });
+
+    it('offers the timeout as the last extra, toggling it on and off', () => {
+      const sections = (wait_for_response.layout[1] as any).sections;
+      const timeout = sections[sections.length - 1];
+      expect(timeout.label).to.equal('Time Limit');
+      expect(timeout.chip).to.equal('Set Time Limit');
+      expect(timeout.items).to.deep.equal(['timeout_duration']);
+      expect(timeout.sentence()).to.equal(
+        "If there's no reply after {duration} go to **No Response**"
+      );
+      expect(timeout.tokens).to.deep.equal({ duration: 'timeout_duration' });
+      expect(timeout.hasValue({ timeout_enabled: false })).to.be.false;
+      expect(timeout.hasValue({ timeout_enabled: true })).to.be.true;
+      expect(timeout.onAdd({})).to.deep.equal({ timeout_enabled: true });
+      expect(timeout.onRemove({})).to.deep.equal({ timeout_enabled: false });
+
+      // there's no separate checkbox for it any more
+      expect(wait_for_response.form.timeout_enabled).to.be.undefined;
+      expect(wait_for_response.gutter).to.be.undefined;
     });
   });
 

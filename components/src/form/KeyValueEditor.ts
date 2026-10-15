@@ -188,6 +188,7 @@ export class KeyValueEditor extends BaseListEditor<KeyValueItem> {
             (item, index) => html`
               <div class="key-label">${item.key}</div>
               <temba-textinput
+                flavor="xsmall"
                 .value=${item.value}
                 .placeholder=${this.valuePlaceholder}
                 @change=${(e: any) =>
@@ -202,30 +203,25 @@ export class KeyValueEditor extends BaseListEditor<KeyValueItem> {
   }
 
   renderItem(item: KeyValueItem, index: number): TemplateResult {
-    const canRemove = this.canRemoveItem(index);
     const keyError =
       this.showValidation && this.keyErrors[index] ? this.keyErrors[index] : '';
 
     return html`
       <div class="row">
         <temba-textinput
+          flavor="xsmall"
           .value=${item.key}
           .placeholder=${this.keyPlaceholder}
           .errors=${keyError ? [keyError] : []}
           @change=${(e: any) => this.handleKeyChange(index, e.target.value)}
         ></temba-textinput>
         <temba-textinput
+          flavor="xsmall"
           .value=${item.value}
           .placeholder=${this.valuePlaceholder}
           @change=${(e: any) => this.handleValueChange(index, e.target.value)}
         ></temba-textinput>
-        ${canRemove
-          ? html`
-              <button class="remove-btn" @click=${() => this.removeItem(index)}>
-                ×
-              </button>
-            `
-          : html`<div class="remove-btn-spacer"></div>`}
+        ${this.renderRemoveButton(index)}
       </div>
     `;
   }
@@ -263,7 +259,7 @@ export class KeyValueEditor extends BaseListEditor<KeyValueItem> {
         display: grid;
         grid-template-columns: 1fr 1fr auto;
         align-items: center;
-        column-gap: 6px;
+        column-gap: 12px;
       }
 
       .readonly-keys-grid {
@@ -274,38 +270,10 @@ export class KeyValueEditor extends BaseListEditor<KeyValueItem> {
       }
 
       .key-label {
-        font-size: 14px;
+        font-size: 13px;
         color: #555;
         padding: 6px 10px;
         white-space: nowrap;
-      }
-
-      .remove-btn {
-        width: 32px;
-        height: 32px;
-        border: 1px solid var(--color-widget-border);
-        border-radius: var(--curvature-widget);
-        background: var(--sunken);
-        color: var(--text-2);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 18px;
-      }
-
-      .remove-btn:hover:not(:disabled) {
-        background: #f0f0f0;
-      }
-
-      .remove-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      .remove-btn-spacer {
-        width: 32px;
-        height: 32px;
       }
     `;
   }

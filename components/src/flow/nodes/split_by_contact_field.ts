@@ -11,7 +11,7 @@ import {
   resultNameField,
   localizeRulesField,
   localizeCategoriesField,
-  nodeOptionsAccordion
+  nodeOptions
 } from './shared';
 import {
   createRulesArrayConfig,
@@ -99,7 +99,7 @@ export const split_by_contact_field: NodeConfig = {
     localizeRules: localizeRulesField,
     localizeCategories: localizeCategoriesField
   },
-  layout: ['field', 'rules', nodeOptionsAccordion],
+  layout: ['field', 'rules', nodeOptions],
   validate: validateWith((formData, errors) => {
     if (!formData.field || formData.field.length === 0) {
       errors.field = msg('A field is required');

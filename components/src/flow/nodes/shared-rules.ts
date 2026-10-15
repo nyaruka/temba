@@ -166,7 +166,6 @@ export const createRulesItemConfig = () => ({
       const features = zustand.getState().features;
       return operatorsToSelectOptions(getWaitForResponseOperators(features));
     },
-    flavor: 'xsmall' as const,
     width: '220px'
   },
   value1: {
@@ -174,7 +173,6 @@ export const createRulesItemConfig = () => ({
     placeholder: value1Placeholder,
     evaluated: true,
     maxLength: 10000,
-    flavor: 'xsmall' as const,
     conditions: {
       visible: value1VisibilityCondition
     }
@@ -184,7 +182,6 @@ export const createRulesItemConfig = () => ({
     placeholder: value2Placeholder,
     evaluated: true,
     maxLength: 10000,
-    flavor: 'xsmall' as const,
     conditions: {
       visible: value2VisibilityCondition
     }
@@ -194,8 +191,7 @@ export const createRulesItemConfig = () => ({
     placeholder: 'Category',
     required: true,
     maxLength: 36,
-    maxWidth: '120px',
-    flavor: 'xsmall' as const
+    maxWidth: '120px'
   }
 });
 

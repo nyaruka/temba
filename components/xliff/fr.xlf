@@ -1687,6 +1687,37 @@
   <source>Unable to load the flow. Please try again.</source>
   <target>Impossible de charger le flux. Veuillez réessayer.</target>
 </trans-unit>
+<trans-unit id="s33d494d91061e06d">
+  <source>Save the result as {name}</source>
+  <note from="lit-localize">{name} is a text box for the result name. Keep {name} as it is.</note>
+</trans-unit>
+<trans-unit id="se94c8ac46fa79972">
+  <source>Each language must specify its own rules for this node</source>
+</trans-unit>
+<trans-unit id="s2f1345908b7598ed">
+  <source>Each language must translate its {categories}</source>
+  <note from="lit-localize">{categories} is a checkbox labeled "categories". Keep it as it is.</note>
+</trans-unit>
+<trans-unit id="s07638cdeb02122f4">
+  <source>Each language must translate its {rules} {categories}</source>
+  <note from="lit-localize">{rules} and {categories} are checkboxes labeled "rules" and "categories". Keep them as they are.</note>
+</trans-unit>
+<trans-unit id="s67124f6a285153c0">
+  <source>rules</source>
+  <note from="lit-localize">A checkbox in "Each language must translate its {rules} {categories}"</note>
+</trans-unit>
+<trans-unit id="sa9b45f49b577aded">
+  <source>categories</source>
+  <note from="lit-localize">A checkbox in "Each language must translate its {rules} {categories}"</note>
+</trans-unit>
+<trans-unit id="s1c0a25d505a394f0">
+  <source>If there's no reply after {duration} go to **No Response**</source>
+  <note from="lit-localize">{duration} is a dropdown of times, e.g. "5 minutes". Keep {duration} and the ** markers as they are.</note>
+</trans-unit>
+<trans-unit id="s74b6c3618d370674">
+  <source>Require {confidence} confidence or higher, or go to **Other**</source>
+  <note from="lit-localize">{confidence} is a dropdown of "low", "medium" and "high". Keep {confidence} and the ** markers as they are.</note>
+</trans-unit>
 </body>
 </file>
 </xliff>

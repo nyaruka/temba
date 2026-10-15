@@ -106,7 +106,7 @@ describe('Field Configuration System', () => {
       });
     });
 
-    it('should hide remove button for empty rows', async () => {
+    it('should disable remove button for empty rows', async () => {
       const initialValue = {
         'Content-Type': 'application/json'
       };
@@ -119,26 +119,30 @@ describe('Field Configuration System', () => {
       const rows = el.shadowRoot?.querySelectorAll('.row');
       expect(rows?.length).to.equal(2); // 1 data row + 1 empty row
 
-      // First row (with data) should have remove button
-      const firstRowRemoveBtn = rows?.[0]?.querySelector('.remove-btn');
-      expect(firstRowRemoveBtn).to.exist;
+      // First row (with data) can be removed
+      const firstRowRemoveBtn = rows?.[0]?.querySelector(
+        '.remove-btn'
+      ) as HTMLButtonElement;
+      expect(firstRowRemoveBtn.disabled).to.be.false;
 
-      // Second row (empty) should have spacer instead of remove button
-      const secondRowRemoveBtn = rows?.[1]?.querySelector('.remove-btn');
-      const secondRowSpacer = rows?.[1]?.querySelector('.remove-btn-spacer');
-      expect(secondRowRemoveBtn).to.not.exist;
-      expect(secondRowSpacer).to.exist;
+      // Second row (empty) can't be
+      const secondRowRemoveBtn = rows?.[1]?.querySelector(
+        '.remove-btn'
+      ) as HTMLButtonElement;
+      expect(secondRowRemoveBtn.disabled).to.be.true;
     });
 
-    it('should show remove button when empty row gets content', async () => {
+    it('should enable remove button when empty row gets content', async () => {
       const el = await fixture(html`
         <temba-key-value-editor></temba-key-value-editor>
       `);
 
-      // Initially should have no remove button (empty row)
+      const removeDisabled = (row: Element) =>
+        (row.querySelector('.remove-btn') as HTMLButtonElement).disabled;
+
+      // Initially the empty row can't be removed
       let rows = el.shadowRoot?.querySelectorAll('.row');
-      expect(rows?.[0]?.querySelector('.remove-btn')).to.not.exist;
-      expect(rows?.[0]?.querySelector('.remove-btn-spacer')).to.exist;
+      expect(removeDisabled(rows[0])).to.be.true;
 
       // Simulate adding content by setting value and triggering update
       (el as any).value = { 'test-key': '' };
@@ -148,8 +152,8 @@ describe('Field Configuration System', () => {
       // Now should have remove button for the row with content
       rows = el.shadowRoot?.querySelectorAll('.row');
       expect(rows?.length).to.equal(2); // row with content + empty row
-      expect(rows?.[0]?.querySelector('.remove-btn')).to.exist;
-      expect(rows?.[1]?.querySelector('.remove-btn-spacer')).to.exist;
+      expect(removeDisabled(rows[0])).to.be.false;
+      expect(removeDisabled(rows[1])).to.be.true;
     });
   });
 

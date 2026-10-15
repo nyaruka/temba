@@ -10,7 +10,7 @@ import {
   resultNameField,
   localizeRulesField,
   localizeCategoriesField,
-  nodeOptionsAccordion
+  nodeOptions
 } from './shared';
 import {
   createRulesArrayConfig,
@@ -40,7 +40,7 @@ export const wait_for_digits: NodeConfig = {
       text: 'Rules match against all digits pressed by the caller followed by the # sign.'
     },
     'rules',
-    nodeOptionsAccordion
+    nodeOptions
   ],
   validate: (_formData: FormData) => {
     return {

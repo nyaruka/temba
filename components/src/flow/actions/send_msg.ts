@@ -132,36 +132,25 @@ export const send_msg: ActionConfig = {
   layout: [
     'text',
     {
-      type: 'accordion',
+      type: 'extras',
       sections: [
         {
           label: 'Quick Replies',
-          collapsed: true,
-          getValueCount: (formData: FormData) => {
-            return formData.quick_replies?.length || 0;
-          },
           items: ['quick_replies']
         },
         {
-          label: 'WhatsApp Template',
-          collapsed: true,
+          label: 'Use WhatsApp Template',
           localizable: false,
-          getValueCount: (formData: FormData) => {
-            return !!formData.template;
-          },
-          items: ['template']
+          items: ['template'],
+          onRemove: () => ({ template: null, template_variables: [] })
         },
         {
-          label: 'Runtime Attachments',
-          collapsed: true,
-          getValueCount: (formData: FormData) => {
-            return (
-              formData.runtime_attachments?.filter(
-                (item: any) =>
-                  item && item.expression && item.expression.trim() !== ''
-              ).length || 0
-            );
-          },
+          label: 'Attach from Expression',
+          hasValue: (formData: FormData) =>
+            (formData.runtime_attachments || []).some(
+              (item: any) =>
+                item && item.expression && item.expression.trim() !== ''
+            ),
           items: ['runtime_attachments']
         }
       ]
@@ -231,12 +220,11 @@ export const send_msg: ActionConfig = {
           expression: string;
         }) => item && item.type && item.expression
       ) // Filter out invalid items
-      .map(
-        (item: {
-          type: [{ name: string; value: string }];
-          expression: string;
-        }) => `${item.type[0].value}:${item.expression}`
-      );
+      .map((item: { type: any; expression: string }) => {
+        // a select gives a list, unedited form data has the option itself
+        const type = Array.isArray(item.type) ? item.type[0] : item.type;
+        return `${type.value}:${item.expression}`;
+      });
 
     result.attachments = [...staticAttachments, ...runtimeAttachments];
 
@@ -403,12 +391,11 @@ export const send_msg: ActionConfig = {
         }) =>
           item && item.type && item.expression && item.expression.trim() !== ''
       )
-      .map(
-        (item: {
-          type: [{ name: string; value: string }];
-          expression: string;
-        }) => `${item.type[0].value}:${item.expression}`
-      );
+      .map((item: { type: any; expression: string }) => {
+        // a select gives a list, unedited form data has the option itself
+        const type = Array.isArray(item.type) ? item.type[0] : item.type;
+        return `${type.value}:${item.expression}`;
+      });
 
     const allAttachments = [...staticAttachments, ...runtimeAttachments];
 

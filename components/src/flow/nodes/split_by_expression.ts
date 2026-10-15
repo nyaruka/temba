@@ -11,7 +11,7 @@ import {
   resultNameField,
   localizeRulesField,
   localizeCategoriesField,
-  nodeOptionsAccordion
+  nodeOptions
 } from './shared';
 import {
   createRulesArrayConfig,
@@ -45,7 +45,7 @@ export const split_by_expression: NodeConfig = {
     localizeRules: localizeRulesField,
     localizeCategories: localizeCategoriesField
   },
-  layout: ['operand', 'rules', nodeOptionsAccordion],
+  layout: ['operand', 'rules', nodeOptions],
   validate: validateWith((formData, errors) => {
     if (!formData.operand || formData.operand.trim() === '') {
       errors.operand = msg('Expression is required');

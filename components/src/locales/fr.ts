@@ -436,5 +436,13 @@
 'scc1db59d292cbc4c': `Section`,
 'sf8377ceea7083edf': `Change cover image`,
 's8fc556c37b60845d': `Add a cover image`,
+'s67124f6a285153c0': `rules`,
+'se94c8ac46fa79972': `Each language must specify its own rules for this node`,
+'sa9b45f49b577aded': `categories`,
+'s33d494d91061e06d': `Save the result as {name}`,
+'s07638cdeb02122f4': `Each language must translate its {rules} {categories}`,
+'s2f1345908b7598ed': `Each language must translate its {categories}`,
+'s74b6c3618d370674': `Require {confidence} confidence or higher, or go to **Other**`,
+'s1c0a25d505a394f0': `If there's no reply after {duration} go to **No Response**`,
     };
   

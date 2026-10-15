@@ -486,11 +486,11 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
     fieldName: string,
     config: FieldConfig
   ): TemplateResult {
-    const computedValue = this.computeFieldValue(item, fieldName, config);
+    // rows are compact unless their fields ask otherwise
+    config = { flavor: 'xsmall', ...config } as FieldConfig;
+    const flavor = (config as any).flavor;
 
-    // Extract flavor from select config if available
-    const flavor =
-      config.type === 'select' ? (config as any).flavor || 'small' : 'small';
+    const computedValue = this.computeFieldValue(item, fieldName, config);
 
     // Build container style with width/maxWidth if specified
     let containerStyle = '';
@@ -598,23 +598,7 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
                 class="drag-handle"
               ></temba-icon>`
             : null}
-          ${fieldElements}
-          <button
-            @click=${canRemove ? () => this.removeItem(index) : undefined}
-            class="remove-btn"
-            style="
-              padding: 4px;
-              border: 1px solid var(--color-widget-border);
-              border-radius: var(--curvature-widget);
-              background: var(--surface);
-              cursor: pointer;
-              color: var(--text-3);
-              font-size: 14px;
-            "
-            ?disabled=${!canRemove}
-          >
-            <temba-icon name="x"></temba-icon>
-          </button>
+          ${fieldElements} ${this.renderRemoveButton(index)}
         </div>
       </div>
     `;
@@ -647,8 +631,7 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
         /* Empty spacer to maintain layout alignment */
       }
 
-      .add-btn,
-      .remove-btn {
+      .add-btn {
         padding: 4px;
         border: 1px solid var(--color-widget-border);
         border-radius: var(--curvature-widget);
@@ -657,19 +640,8 @@ export class TembaArrayEditor extends BaseListEditor<ListItem> {
         font-size: 14px;
       }
 
-      .add-btn:hover,
-      .remove-btn:hover {
+      .add-btn:hover {
         background: var(--sunken);
-      }
-
-      .remove-btn {
-        color: var(--text-3);
-      }
-
-      .removable .remove-btn {
-        opacity: 0.3;
-        cursor: default;
-        pointer-events: none;
       }
 
       .removable .drag-handle {

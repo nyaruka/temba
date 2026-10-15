@@ -14,7 +14,7 @@ import { LLMModel, hasLLMRole } from '../flow-utils';
 import {
   resultNameField,
   localizeCategoriesField,
-  nodeOptionsAccordionCategoriesOnly
+  nodeOptionsCategoriesOnly
 } from './shared';
 
 // local the classifier writes the chosen option (or <NONE> / <ERROR>) to
@@ -50,10 +50,15 @@ const loadModelTypes = (): Promise<Map<string, string>> => {
 // the confidence levels the model's choice can be required to meet, below which it routes to Other
 const CONFIDENCE_LEVELS: { value: ClassifierConfidence; name: string }[] = [
   { value: 'none', name: 'Always pick a category' },
-  { value: 'low', name: 'Low' },
-  { value: 'medium', name: 'Medium' },
-  { value: 'high', name: 'High' }
+  { value: 'low', name: 'low' },
+  { value: 'medium', name: 'medium' },
+  { value: 'high', name: 'high' }
 ];
+
+// requiring no confidence is the section being removed, so it isn't an option in the sentence
+const REQUIRED_CONFIDENCE_OPTIONS = CONFIDENCE_LEVELS.filter(
+  (level) => level.value !== 'none'
+);
 
 const toConfidenceLevel = (confidence: ClassifierConfidence) => [
   CONFIDENCE_LEVELS.find((level) => level.value === confidence) ||
@@ -129,12 +134,8 @@ export const split_by_llm_categorize: NodeConfig = {
     },
     required_confidence: {
       type: 'select',
-      helpText: (formData: FormData) =>
-        fromConfidenceLevel(formData.required_confidence) === 'none'
-          ? 'The model always picks one of the categories, so there is no **Other** category.'
-          : 'How sure the model must be of its choice. Less confident answers go to **Other**.',
       required: true,
-      options: CONFIDENCE_LEVELS,
+      options: REQUIRED_CONFIDENCE_OPTIONS,
       searchable: false,
       clearable: false
     },
@@ -146,18 +147,29 @@ export const split_by_llm_categorize: NodeConfig = {
     'input',
     'options',
     {
-      ...nodeOptionsAccordionCategoriesOnly,
+      ...nodeOptionsCategoriesOnly,
       sections: [
         {
-          label: 'Confidence',
+          label: 'Require Confidence',
           localizable: false,
           items: ['required_confidence'],
-          collapsed: true,
-          // flag it when a confidence is required
-          getValueCount: (formData: FormData) =>
-            fromConfidenceLevel(formData.required_confidence) !== 'none'
+          sentence: () =>
+            msg(
+              'Require {confidence} confidence or higher, or go to **Other**',
+              {
+                desc: '{confidence} is a dropdown of "low", "medium" and "high". Keep {confidence} and the ** markers as they are.'
+              }
+            ),
+          tokens: { confidence: 'required_confidence' },
+          onAdd: () => ({ required_confidence: toConfidenceLevel('medium') }),
+          // shown when a minimum confidence is required
+          hasValue: (formData: FormData) =>
+            fromConfidenceLevel(formData.required_confidence) !== 'none',
+          onRemove: () => ({
+            required_confidence: toConfidenceLevel('none')
+          })
         },
-        ...nodeOptionsAccordionCategoriesOnly.sections
+        ...nodeOptionsCategoriesOnly.sections
       ]
     }
   ],

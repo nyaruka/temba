@@ -16,6 +16,8 @@ import {
   RowLayoutConfig,
   GroupLayoutConfig,
   AccordionLayoutConfig,
+  ExtrasLayoutConfig,
+  ExtrasSection,
   FormData,
   ACTION_GROUP_METADATA,
   SPLIT_GROUP_METADATA
@@ -31,6 +33,8 @@ import {
 import { getTranslatableCategoriesForNode } from './categoryLocalization';
 import { collectReservedCategoryErrors } from './categoryUtils';
 import { FieldRenderer } from '../form/FieldRenderer';
+import { parseSentence } from './sentences';
+import { getDefaultResultName } from './nodes/shared';
 import { renderMarkdownInline } from '../markdown';
 import {
   AppState,
@@ -40,6 +44,21 @@ import {
   zustand
 } from '../store/AppState';
 import { getLanguageName } from '../languages';
+
+const isEmptyFormValue = (value: any): boolean =>
+  value === null ||
+  value === undefined ||
+  value === false ||
+  (typeof value === 'string' && value.trim() === '') ||
+  (Array.isArray(value) && value.length === 0);
+
+// the empty value for a field, judged by the shape of its current value
+const emptyFormValue = (value: any): any => {
+  if (Array.isArray(value)) return [];
+  if (typeof value === 'boolean') return false;
+  if (typeof value === 'string') return '';
+  return null;
+};
 
 export class NodeEditor extends RapidElement {
   static get styles() {
@@ -377,6 +396,165 @@ export class NodeEditor extends RapidElement {
         min-width: 150px;
       }
 
+      .extras {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .extra-section {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .extra-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .extra-label {
+        font-weight: var(--w-medium, 500);
+        font-size: 12.5px;
+        color: var(--color-label);
+      }
+
+      .extra-remove {
+        display: flex;
+        align-items: center;
+        border: none;
+        background: transparent;
+        padding: 3px;
+        border-radius: 6px;
+        cursor: pointer;
+        color: var(--text-3, #7b8593);
+        opacity: 0;
+        transition: opacity 0.15s ease;
+      }
+
+      /* the remove button only appears while hovering its section (or
+         focusing it), and always on devices that can't hover */
+      .extra-section:hover .extra-remove,
+      .extra-remove:focus-visible {
+        opacity: 1;
+      }
+
+      @media (hover: none) {
+        .extra-remove {
+          opacity: 1;
+        }
+      }
+
+      .extra-remove:hover {
+        background: rgba(0, 0, 0, 0.05);
+        color: var(--text-1, #1a1f26);
+      }
+
+      .extra-remove:focus-visible,
+      .extra-chip:focus-visible {
+        outline: none;
+        box-shadow: var(--widget-box-shadow-focused);
+      }
+
+      .extra-items {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      /* a section that reads as one line, on its own strip with its × at the end */
+      /* padded enough that a widget's focus ring stays inside the strip */
+      .extra-line {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px 6px 14px;
+        border-radius: 10px;
+        background: var(--bg, #f6f7f9);
+        --checkbox-hover-bg: rgba(0, 0, 0, 0.05);
+      }
+
+      /* neighboring strips sit closer together than other extras */
+      .extra-section.sentence + .extra-section.sentence {
+        margin-top: -9px;
+      }
+
+      /* inline flow rather than flex, so long translations wrap like text */
+      .extra-sentence {
+        flex-grow: 1;
+        font-size: 13px;
+        line-height: 32px;
+        color: var(--text-2, #4d5664);
+      }
+
+      .extra-sentence b {
+        font-weight: var(--w-medium, 500);
+        color: var(--text-1, #1a1f26);
+      }
+
+      .extra-sentence .inline-field {
+        display: inline-block;
+        vertical-align: middle;
+        margin: 0 2px;
+        line-height: normal;
+      }
+
+      .extra-sentence .inline-text {
+        width: 180px;
+      }
+
+      .extra-sentence .inline-select {
+        width: 150px;
+      }
+
+      .extra-sentence .inline-checkbox .form-field {
+        display: inline-block;
+      }
+
+      .extra-sentence .inline-checkbox temba-checkbox {
+        --checkbox-padding: 5px 6px;
+        --checkbox-label-font-size: 13px;
+        --checkbox-align: center;
+        --checkbox-background: transparent;
+      }
+
+      .extra-errors {
+        font-size: 12px;
+        color: var(--color-error, tomato);
+      }
+
+      .extra-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .extra-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 11px 4px 8px;
+        border: 1px dashed var(--border-strong, #d2d6dc);
+        border-radius: 999px;
+        background: transparent;
+        font-family: inherit;
+        font-size: 12.5px;
+        color: var(--text-2, #4d5664);
+        cursor: pointer;
+        transition:
+          border-color 0.15s ease,
+          background 0.15s ease,
+          color 0.15s ease;
+      }
+
+      .extra-chip:hover {
+        border-color: var(--focus, rgb(var(--primary-rgb)));
+        background: var(--focus-50, rgba(var(--primary-rgb), 0.08));
+        color: var(--focus-700, var(--text-1, #1a1f26));
+      }
+
       .optional-field-link {
         margin: 10px 0;
       }
@@ -495,6 +673,10 @@ export class NodeEditor extends RapidElement {
 
   @state()
   private revealedOptionalFields: Set<string> = new Set();
+
+  // labels of extras sections that were added and haven't been removed
+  @state()
+  private revealedExtras: Set<string> = new Set();
 
   @fromStore(zustand, (state: AppState) => state.languageCode)
   private languageCode!: string;
@@ -678,6 +860,7 @@ export class NodeEditor extends RapidElement {
 
   private initializeFormData(): void {
     this.groupCollapseState = {};
+    this.revealedExtras = new Set();
     const nodeConfig = this.getNodeConfig();
 
     // Temporary: terminal nodes defer to action configs, same as execute_actions
@@ -790,14 +973,7 @@ export class NodeEditor extends RapidElement {
         this.flowInfo?.results &&
         !this.flowDefinition?._ui?.nodes?.[this.node.uuid]
       ) {
-        const existingNames = new Set(this.flowInfo.results.map((r) => r.name));
-        let candidate = 'Result';
-        let i = 2;
-        while (existingNames.has(candidate)) {
-          candidate = `Result ${i}`;
-          i++;
-        }
-        this.formData.result_name = candidate;
+        this.formData.result_name = getDefaultResultName();
         this.formData._isNew = true;
       }
 
@@ -1758,6 +1934,10 @@ export class NodeEditor extends RapidElement {
         item.sections.forEach((section) => {
           this.updateGroupCollapseStatesRecursive(section.items);
         });
+      } else if (typeof item === 'object' && item.type === 'extras') {
+        item.sections.forEach((section) => {
+          this.updateGroupCollapseStatesRecursive(section.items);
+        });
       }
     });
   }
@@ -2144,6 +2324,11 @@ export class NodeEditor extends RapidElement {
           }
           this.expandGroupsWithErrorsRecursive(section.items, errorFields);
         });
+      } else if (typeof item === 'object' && item.type === 'extras') {
+        // extras sections show themselves while they have errors
+        item.sections.forEach((section) => {
+          this.expandGroupsWithErrorsRecursive(section.items, errorFields);
+        });
       }
     });
   }
@@ -2202,6 +2387,9 @@ export class NodeEditor extends RapidElement {
 
       case 'accordion':
         return this.renderAccordion(item, config, renderedFields);
+
+      case 'extras':
+        return this.renderExtras(item, config, renderedFields);
 
       case 'spacer':
         return html``;
@@ -2507,7 +2695,7 @@ export class NodeEditor extends RapidElement {
     config: ActionConfig | NodeConfig,
     renderedFields: Set<string>
   ): TemplateResult {
-    const { sections, multi = false } = accordionConfig;
+    const { sections, multi = true } = accordionConfig;
 
     // Filter out sections where all fields are invisible
     const visibleSections = sections.filter((section) => {
@@ -2537,7 +2725,12 @@ export class NodeEditor extends RapidElement {
         @toggle=${this.handleAccordionSectionToggle}
       >
         ${visibleSections.map((section) => {
-          const { label, collapsed = true, getValueCount } = section;
+          const {
+            label,
+            collapsed = true,
+            getValueCount,
+            getSummary
+          } = section;
           const stateKey = `accordion:${label}`;
 
           // Initialize collapse state if not set
@@ -2577,9 +2770,20 @@ export class NodeEditor extends RapidElement {
             }
           }
 
+          let summary = '';
+          if (getSummary) {
+            try {
+              summary = getSummary(this.formData) || '';
+            } catch (error) {
+              // ignore
+            }
+          }
+
           return html`
             <temba-accordion-section
               label=${label}
+              summary=${summary}
+              emptySummary=${section.emptySummary || 'None'}
               icon=${section.icon || ''}
               .count=${valueCount}
               ?checked=${isChecked}
@@ -2594,6 +2798,262 @@ export class NodeEditor extends RapidElement {
         })}
       </temba-accordion>
     `;
+  }
+
+  private renderExtras(
+    extrasConfig: ExtrasLayoutConfig,
+    config: ActionConfig | NodeConfig,
+    renderedFields: Set<string>
+  ): TemplateResult {
+    const sections = extrasConfig.sections.filter((section) => {
+      const fieldsInSection = this.collectFieldsFromItems(section.items);
+
+      // When translating, leave out sections marked as not localizable
+      if (this.isTranslating && section.localizable === false) {
+        fieldsInSection.forEach((f) => renderedFields.add(f));
+        return false;
+      }
+
+      if (fieldsInSection.length === 0) return true;
+      return fieldsInSection.some((fieldName) => {
+        const fieldConfig = config.form?.[fieldName];
+        return fieldConfig ? this.isFieldVisible(fieldName, fieldConfig) : true;
+      });
+    });
+
+    const shown = sections.filter((section) => this.isExtraShown(section));
+    const offered = sections.filter((section) => !shown.includes(section));
+
+    // fields of sections that aren't shown mustn't fall through to the end of the form
+    offered.forEach((section) =>
+      this.collectFieldsFromItems(section.items).forEach((f) =>
+        renderedFields.add(f)
+      )
+    );
+
+    if (sections.length === 0) {
+      return html``;
+    }
+
+    return html`
+      <div class="extras">
+        ${shown.map((section) =>
+          this.renderExtraSection(section, config, renderedFields)
+        )}
+        ${offered.length > 0
+          ? html`<div class="extra-chips">
+              ${offered.map(
+                (section) => html`
+                  <button
+                    type="button"
+                    class="extra-chip"
+                    @click=${() => this.handleExtraAdd(section)}
+                  >
+                    <temba-icon name="add" size="0.9"></temba-icon>
+                    ${section.chip || section.label}
+                  </button>
+                `
+              )}
+            </div>`
+          : ''}
+      </div>
+    `;
+  }
+
+  private renderExtraSection(
+    section: ExtrasSection,
+    config: ActionConfig | NodeConfig,
+    renderedFields: Set<string>
+  ): TemplateResult {
+    const removeButton =
+      section.removable !== false
+        ? html`<button
+            type="button"
+            class="extra-remove"
+            title=${msg('Remove')}
+            aria-label=${`${msg('Remove')} ${section.label}`}
+            @click=${() => this.handleExtraRemove(section)}
+          >
+            <temba-icon name="close" size="0.9"></temba-icon>
+          </button>`
+        : '';
+
+    const items = section.items.map((item) =>
+      this.renderLayoutItem(item, config, renderedFields)
+    );
+
+    if (section.sentence) {
+      return html`
+        <div class="extra-section sentence" data-extra=${section.label}>
+          <div class="extra-line">
+            <div class="extra-sentence">
+              ${this.renderSentence(section, config, renderedFields)}
+            </div>
+            ${removeButton}
+          </div>
+          ${this.renderSectionErrors(section)}
+        </div>
+      `;
+    }
+
+    return html`
+      <div class="extra-section" data-extra=${section.label}>
+        <div class="extra-header">
+          <span class="extra-label">${section.label}</span>
+          ${removeButton}
+        </div>
+        <div class="extra-items">${items}</div>
+      </div>
+    `;
+  }
+
+  private renderSentence(
+    section: ExtrasSection,
+    config: ActionConfig | NodeConfig,
+    renderedFields: Set<string>
+  ): TemplateResult {
+    const sectionFields = this.collectFieldsFromItems(section.items);
+    const placed = new Set<string>();
+
+    const parts = parseSentence(section.sentence()).map((part) => {
+      if (part.type === 'text') {
+        return part.text;
+      }
+      if (part.type === 'bold') {
+        return html`<b>${part.text}</b>`;
+      }
+      const fieldName = section.tokens?.[part.name] ?? part.name;
+      if (!sectionFields.includes(fieldName) || placed.has(fieldName)) {
+        return '';
+      }
+      placed.add(fieldName);
+      return this.renderInlineField(fieldName, config, renderedFields);
+    });
+
+    // a translation that lost a token still gets its field, at the end
+    const missing = sectionFields.filter((fieldName) => !placed.has(fieldName));
+    if (missing.length > 0) {
+      console.warn(
+        `Sentence for "${section.label}" is missing fields: ${missing.join(', ')}`
+      );
+    }
+
+    return html`${parts}${missing.map(
+      (fieldName) =>
+        html` ${this.renderInlineField(fieldName, config, renderedFields)}`
+    )}`;
+  }
+
+  private renderInlineField(
+    fieldName: string,
+    config: ActionConfig | NodeConfig,
+    renderedFields: Set<string>
+  ): TemplateResult {
+    const fieldConfig = config.form?.[fieldName] as FieldConfig;
+    renderedFields.add(fieldName);
+    if (!fieldConfig || !this.isFieldVisible(fieldName, fieldConfig)) {
+      return html``;
+    }
+
+    // the sentence is the field's label, its help shows on hover and errors show below it
+    const helpText =
+      typeof fieldConfig.helpText === 'function'
+        ? fieldConfig.helpText(this.formData)
+        : fieldConfig.helpText;
+
+    return html`<span
+      class="inline-field inline-${fieldConfig.type}"
+      title=${helpText || ''}
+      >${FieldRenderer.renderField(
+        fieldName,
+        {
+          ...fieldConfig,
+          helpText: undefined,
+          flavor: 'xsmall',
+          // a box sized for the sentence's smaller text
+          ...(fieldConfig.type === 'checkbox' ? { size: 1 } : {})
+        } as FieldConfig,
+        this.formData[fieldName],
+        {
+          errors: [],
+          onChange: (e: Event) => this.handleFormFieldChange(fieldName, e),
+          showLabel: false,
+          formData: this.formData
+        }
+      )}</span
+    >`;
+  }
+
+  private renderSectionErrors(section: ExtrasSection): TemplateResult {
+    const errors = this.collectFieldsFromItems(section.items)
+      .map((fieldName) => this.errors[fieldName])
+      .filter((error) => !!error);
+    return errors.length > 0
+      ? html`<div class="extra-errors">${errors.join(', ')}</div>`
+      : html``;
+  }
+
+  private isExtraShown(section: ExtrasSection): boolean {
+    if (this.revealedExtras.has(section.label)) {
+      return true;
+    }
+
+    const fieldsInSection = this.collectFieldsFromItems(section.items);
+    if (fieldsInSection.some((fieldName) => this.errors[fieldName])) {
+      return true;
+    }
+
+    if (section.hasValue) {
+      try {
+        return section.hasValue(this.formData);
+      } catch (error) {
+        return false;
+      }
+    }
+
+    return fieldsInSection.some(
+      (fieldName) => !isEmptyFormValue(this.formData[fieldName])
+    );
+  }
+
+  private handleExtraAdd(section: ExtrasSection): void {
+    if (section.onAdd) {
+      const values = section.onAdd(this.formData);
+      this.formData = { ...this.formData, ...values };
+      Object.keys(values).forEach((fieldName) =>
+        this.updateComputedFields(fieldName)
+      );
+      this.updateGroupCollapseStates();
+    }
+    this.revealedExtras = new Set([...this.revealedExtras, section.label]);
+  }
+
+  private handleExtraRemove(section: ExtrasSection): void {
+    const fieldsInSection = this.collectFieldsFromItems(section.items);
+
+    const values: FormData = section.onRemove
+      ? section.onRemove(this.formData)
+      : Object.fromEntries(
+          fieldsInSection.map((fieldName) => [
+            fieldName,
+            emptyFormValue(this.formData[fieldName])
+          ])
+        );
+    this.formData = { ...this.formData, ...values };
+
+    const errors = { ...this.errors };
+    fieldsInSection.forEach((fieldName) => delete errors[fieldName]);
+    this.errors = errors;
+
+    const revealed = new Set(this.revealedExtras);
+    revealed.delete(section.label);
+    this.revealedExtras = revealed;
+
+    Object.keys(values).forEach((fieldName) =>
+      this.updateComputedFields(fieldName)
+    );
+    this.updateGroupCollapseStates();
+    this.requestUpdate();
   }
 
   private handleAccordionSectionToggle(evt: CustomEvent): void {
@@ -2618,7 +3078,7 @@ export class NodeEditor extends RapidElement {
         fields.push(...this.collectFieldsFromItems(item.items));
       } else if (item.type === 'group') {
         fields.push(...this.collectFieldsFromItems(item.items));
-      } else if (item.type === 'accordion') {
+      } else if (item.type === 'accordion' || item.type === 'extras') {
         item.sections.forEach((section) => {
           fields.push(...this.collectFieldsFromItems(section.items));
         });

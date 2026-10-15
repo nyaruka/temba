@@ -5,129 +5,97 @@ import { formatCount } from '../utils';
 export class AccordionSection extends LitElement {
   static get styles() {
     return css`
+      /* flat rows separated by hairlines; the accordion draws the rule below the last row */
       :host {
         display: block;
-        border-bottom: 1px solid #e0e0e0;
-      }
-
-      :host(:last-child) {
-        border-bottom: none;
+        border-top: 1px solid var(--border, #e6e8ec);
       }
 
       .accordion-header {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        padding: 6px 10px;
+        gap: 10px;
+        padding: 10px 2px;
         cursor: pointer;
         user-select: none;
-        background: #f8f9fa;
-        transition: background 0.15s ease;
+        border-radius: 6px;
+        outline: none;
       }
 
-      .accordion-header:hover {
-        background: #f0f1f2;
-      }
-
-      :host(.expanded) > .accordion-header {
-        border-bottom: 1px solid #e0e0e0;
+      .accordion-header:focus-visible {
+        box-shadow: var(--widget-box-shadow-focused);
       }
 
       .accordion-title {
         display: flex;
         align-items: center;
-        font-weight: 500;
+        flex-shrink: 0;
+        font-weight: var(--w-medium, 500);
         font-size: 13px;
-        color: var(--color-label, #777);
+        color: var(--text-1, #1a1f26);
       }
 
-      .toggle-container {
-        position: relative;
+      .summary {
+        flex-grow: 1;
+        min-width: 0;
         display: flex;
         align-items: center;
+        justify-content: flex-end;
+        gap: 5px;
+        font-size: 13px;
+        color: var(--text-3, #7b8593);
+      }
+
+      .summary-text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .summary.has-value {
+        color: var(--text-2, #4d5664);
+      }
+
+      .summary-text.empty {
+        font-style: italic;
+        color: var(--text-4, #a2abb8);
+      }
+
+      .has-error .accordion-title,
+      .has-error .summary {
+        color: var(--color-error, tomato);
       }
 
       .toggle-icon {
-        color: #999;
-        transition:
-          transform 0.2s ease,
-          opacity 0.3s ease;
+        flex-shrink: 0;
+        color: var(--text-3, #7b8593);
+        transition: transform 0.2s ease;
+      }
+
+      .accordion-header:hover .toggle-icon {
+        color: var(--text-1, #1a1f26);
       }
 
       .toggle-icon.expanded {
         transform: rotate(90deg);
       }
 
-      .toggle-icon.faded {
-        opacity: 0;
-      }
-
-      .count-bubble {
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 10px;
-        font-weight: 600;
-        padding: 3px;
-        min-width: 10px;
-        min-height: 10px;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        line-height: 0px;
-        opacity: 1;
-        transition: opacity 0.3s ease;
-        background: var(--color-bubble-bg, #fff);
-        border: 1px solid var(--color-bubble-border, #777);
-        color: var(--color-bubble-text, #000);
-      }
-
-      .count-bubble.hidden {
-        opacity: 0;
-        pointer-events: none;
-      }
-
-      .checkmark-icon {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        opacity: 1;
-        transition: opacity 0.3s ease;
-        border-radius: 50%;
-        color: var(--color-bubble-text, #000);
-        background: var(--color-bubble-bg, #fff);
-        border: 1px solid var(--color-bubble-border, #777);
-        padding: 0.15em;
-      }
-
-      .checkmark-icon.hidden {
-        opacity: 0;
-        pointer-events: none;
-      }
-
       .accordion-content {
-        padding: 8px 10px;
+        padding: 0 2px 12px 2px;
         display: flex;
         flex-direction: column;
         gap: 8px;
-        overflow: hidden;
         transition: all 0.2s ease-in-out;
         opacity: 1;
       }
 
+      /* only clip while collapsed, so focus rings on fields aren't cut off */
       .accordion-content.collapsed {
+        overflow: hidden;
         max-height: 0;
         padding-top: 0;
         padding-bottom: 0;
         opacity: 0;
-      }
-
-      .error-icon {
-        color: var(--color-error, tomato);
-        margin-right: 6px;
       }
     `;
   }
@@ -137,6 +105,13 @@ export class AccordionSection extends LitElement {
 
   @property({ type: String })
   icon = '';
+
+  @property({ type: String })
+  summary = '';
+
+  // shown, muted, in place of the summary when the section has no value
+  @property({ type: String })
+  emptySummary = 'None';
 
   @property({ type: Number })
   count: number;
@@ -150,8 +125,6 @@ export class AccordionSection extends LitElement {
   @property({ type: Boolean })
   hasError = false;
 
-  private hovered = false;
-
   private handleClick() {
     this.collapsed = !this.collapsed;
     this.dispatchEvent(
@@ -163,14 +136,11 @@ export class AccordionSection extends LitElement {
     );
   }
 
-  private handleMouseEnter() {
-    this.hovered = true;
-    this.requestUpdate();
-  }
-
-  private handleMouseLeave() {
-    this.hovered = false;
-    this.requestUpdate();
+  private handleKeyDown(evt: KeyboardEvent) {
+    if (evt.key === 'Enter' || evt.key === ' ') {
+      evt.preventDefault();
+      this.handleClick();
+    }
   }
 
   public updated() {
@@ -183,53 +153,55 @@ export class AccordionSection extends LitElement {
     }
   }
 
+  private renderSummary(): TemplateResult | string {
+    if (this.summary) {
+      return html`<span class="summary-text">${this.summary}</span>`;
+    }
+    if (typeof this.count === 'number' && this.count > 0) {
+      return html`<span class="summary-text">${formatCount(this.count)}</span>`;
+    }
+    if (this.checked) {
+      return html`<temba-icon name="check" size="1"></temba-icon>`;
+    }
+    return html`<span class="summary-text empty">${this.emptySummary}</span>`;
+  }
+
   public render(): TemplateResult {
-    const hasCount = typeof this.count === 'number' && this.count > 0;
-    const showBubble = hasCount && this.collapsed && !this.hovered;
-    const showCheckmark = this.checked && this.collapsed && !this.hovered;
+    const hasValue =
+      !!this.summary ||
+      this.checked ||
+      (typeof this.count === 'number' && this.count > 0);
 
     return html`
       <div
-        class="accordion-header"
+        class="accordion-header ${this.hasError ? 'has-error' : ''}"
+        role="button"
+        tabindex="0"
+        aria-expanded=${!this.collapsed}
         @click=${this.handleClick}
-        @mouseenter=${this.handleMouseEnter}
-        @mouseleave=${this.handleMouseLeave}
+        @keydown=${this.handleKeyDown}
       >
         <div class="accordion-title">
           ${this.icon
             ? html`<temba-icon
                 name=${this.icon}
                 size="1"
-                style="margin-right:6px;color:#999;"
+                style="margin-right:6px;"
               ></temba-icon>`
             : ''}${this.label}
         </div>
-        ${this.hasError
-          ? html`<temba-icon
-              name="alert_warning"
-              class="error-icon"
-              size="1.2"
-            ></temba-icon>`
-          : html`<div class="toggle-container">
-              <temba-icon
-                name="arrow_right"
-                size="1.2"
-                class="toggle-icon ${this.collapsed
-                  ? 'collapsed'
-                  : 'expanded'} ${showBubble || showCheckmark ? 'faded' : ''}"
-              ></temba-icon>
-              ${showCheckmark
-                ? html`<temba-icon
-                    name="check"
-                    size="0.8"
-                    class="checkmark-icon"
-                  ></temba-icon>`
-                : showBubble
-                  ? html`<div class="count-bubble">
-                      ${formatCount(this.count)}
-                    </div>`
-                  : ''}
-            </div>`}
+        <div class="summary ${hasValue ? 'has-value' : ''}">
+          ${this.collapsed
+            ? html`${this.hasError
+                ? html`<temba-icon name="alert_warning" size="1"></temba-icon>`
+                : ''}${this.renderSummary()}`
+            : ''}
+        </div>
+        <temba-icon
+          name="arrow_right"
+          size="1.2"
+          class="toggle-icon ${this.collapsed ? 'collapsed' : 'expanded'}"
+        ></temba-icon>
       </div>
       <div class="accordion-content ${this.collapsed ? 'collapsed' : ''}">
         <slot></slot>

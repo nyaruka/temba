@@ -246,7 +246,7 @@ describe('temba-node-editor fields', () => {
   });
 
   describe('expandGroupsWithErrors', () => {
-    // send_broadcast puts its template field in a collapsed accordion section
+    // send_broadcast offers its template field as an extra
     const createBroadcastEditor = async (): Promise<NodeEditor> => {
       const editor = (await fixture(
         '<temba-node-editor></temba-node-editor>'
@@ -260,25 +260,23 @@ describe('temba-node-editor fields', () => {
       return editor;
     };
 
-    it('expands the accordion section holding the failing field', async () => {
+    const templateSection = {
+      label: 'Use WhatsApp Template',
+      items: ['template']
+    };
+
+    it('shows the extra holding the failing field', async () => {
       const editor = await createBroadcastEditor();
-      (editor as any).expandGroupsWithErrors({ template: 'Required' });
-      expect(
-        (editor as any).groupCollapseState['accordion:WhatsApp Template']
-      ).to.equal(false);
+      expect((editor as any).isExtraShown(templateSection)).to.be.false;
+
+      (editor as any).errors = { template: 'Required' };
+      expect((editor as any).isExtraShown(templateSection)).to.be.true;
     });
 
-    it('leaves sections collapsed when their fields are fine', async () => {
+    it('leaves extras offered when their fields are fine', async () => {
       const editor = await createBroadcastEditor();
-      // the section starts collapsed and an unrelated error does not open it
-      expect(
-        (editor as any).groupCollapseState['accordion:WhatsApp Template']
-      ).to.equal(true);
-
-      (editor as any).expandGroupsWithErrors({ text: 'Required' });
-      expect(
-        (editor as any).groupCollapseState['accordion:WhatsApp Template']
-      ).to.equal(true);
+      (editor as any).errors = { text: 'Required' };
+      expect((editor as any).isExtraShown(templateSection)).to.be.false;
     });
 
     it('does nothing when there are no errors', async () => {

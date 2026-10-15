@@ -5,7 +5,7 @@ import { generateUUID } from '../../utils';
 import { validateWith } from '../utils';
 import {
   resultNameField,
-  nodeOptionsAccordionSimple,
+  nodeOptionsSimple,
   buildCategoriesExitsCases,
   appendOtherCategory
 } from './shared';
@@ -48,7 +48,7 @@ export const split_by_groups: NodeConfig = {
     },
     result_name: resultNameField
   },
-  layout: ['groups', nodeOptionsAccordionSimple],
+  layout: ['groups', nodeOptionsSimple],
   validate: validateWith((formData, errors) => {
     if (
       !formData.groups ||

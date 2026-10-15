@@ -5,7 +5,7 @@ import {
   resultNameField,
   localizeRulesField,
   localizeCategoriesField,
-  nodeOptionsAccordion
+  nodeOptions
 } from './shared';
 
 // Menu digits in display order: 1-9 then 0
@@ -70,7 +70,7 @@ export const wait_for_menu: NodeConfig = {
       gap: '2rem',
       inlineLabels: { digit_0: '0' }
     },
-    nodeOptionsAccordion
+    nodeOptions
   ],
   toFormData: (node: Node, nodeUI?: any) => {
     const formData: FormData = {

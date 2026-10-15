@@ -796,6 +796,9 @@ export class Compose extends FieldElement {
                 ? html`<temba-accordion-section
                     label="Quick Replies"
                     .count=${this.currentQuickReplies.length}
+                    summary=${this.currentQuickReplies
+                      .map((reply) => reply.name)
+                      .join(', ')}
                   >
                     <temba-select
                       @change=${this.handleQuickReplyChange}
@@ -816,6 +819,7 @@ export class Compose extends FieldElement {
                 ? html`<temba-accordion-section
                     label="WhatsApp Template"
                     ?checked=${!!this.currentTemplate}
+                    summary=${this.currentTemplate?.name || ''}
                     ?hasError=${this.errors &&
                     !!this.errors.find((error) => error.includes('template'))}
                   >

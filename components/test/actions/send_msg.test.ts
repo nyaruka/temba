@@ -40,6 +40,17 @@ describe('send_msg action config', () => {
 
     helper.testAction(
       {
+        uuid: 'test-action-attachments',
+        type: 'send_msg',
+        text: 'Here are your documents',
+        attachments: ['image:@contact.photo', 'application:@results.invoice'],
+        quick_replies: []
+      } as SendMsg,
+      'expression-attachments'
+    );
+
+    helper.testAction(
+      {
         uuid: 'test-action-3',
         type: 'send_msg',
         text: 'Choose an option:',

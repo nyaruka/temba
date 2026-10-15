@@ -7,9 +7,7 @@ export class Accordion extends LitElement {
     return css`
       :host {
         display: block;
-        border: 1px solid var(--color-widget-border);
-        border-radius: var(--curvature-widget);
-        overflow: hidden;
+        border-bottom: 1px solid var(--border, #e6e8ec);
       }
     `;
   }

@@ -38,7 +38,7 @@ describe('wait_for_digits node config', () => {
         text: 'Rules match against all digits pressed by the caller followed by the # sign.'
       });
       expect(wait_for_digits.layout[1]).to.equal('rules');
-      expect((wait_for_digits.layout[2] as any).type).to.equal('accordion');
+      expect((wait_for_digits.layout[2] as any).type).to.equal('extras');
     });
 
     it('has large dialog size', () => {
