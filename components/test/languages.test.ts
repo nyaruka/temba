@@ -12,6 +12,23 @@ describe('getLanguageName', () => {
     expect(getLanguageName('spa')).to.equal('Spanish');
   });
 
+  it('names languages in the language of the page', () => {
+    const original = document.documentElement.lang;
+    try {
+      document.documentElement.lang = 'fr';
+      expect(getLanguageName('eng')).to.equal('anglais');
+      expect(getLanguageName('kin')).to.equal('kinyarwanda');
+
+      // codes Intl can't name fall back to the English table
+      expect(getLanguageName('aar')).to.equal('Afar');
+
+      document.documentElement.lang = 'es';
+      expect(getLanguageName('fra')).to.equal('francés');
+    } finally {
+      document.documentElement.lang = original;
+    }
+  });
+
   it('falls back to the additional lookup map for unsupported codes', () => {
     expect(getLanguageName('prd')).to.equal('Parsi-Dari');
     expect(getLanguageName('pst')).to.equal('Central Pashto');
