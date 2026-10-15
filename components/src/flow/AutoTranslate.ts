@@ -706,8 +706,9 @@ export class AutoTranslate extends RapidElement {
     return html`
       <p>
         ${msg(
-          html`Text will be translated into <strong>${languageName}</strong>
-            automatically. Translations can contain mistakes, so review them.`
+          html`Text will be translated into
+            <strong>${languageName}</strong> automatically. Translations can
+            contain mistakes, so review them.`
         )}
       </p>
       ${this.models.length > 1
