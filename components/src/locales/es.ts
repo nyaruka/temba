@@ -16,7 +16,7 @@
 'h5371085a2e3ecbbd': html`Se copió <span class="expression">${0}</span> al portapapeles`,
 'h73c8b185fc25e721': html`<strong>${0}</strong> intento`,
 'h7476e5219a8bbf1b': html`<kbd>Enter</kbd> para buscar`,
-'hc4a0a6ca14ac7c56': html`El texto se traducirá al <strong>${0}</strong> automáticamente. Las traducciones pueden contener errores, así que revíselas.`,
+'ha37d55c66580b850': html`El texto se traducirá al <strong>${0}</strong> automáticamente. Las traducciones pueden contener errores, así que revíselas.`,
 'hcfbbcde7201230d4': html`¿Hacer de <b>${0}</b> el idioma predeterminado de este flujo? <b>${1}</b> se conservará como traducción.`,
 'he3ecf8ab74681056': html`<strong>${0}</strong> intentos`,
 's000b93e04482d2b7': `Eliminar nota`,

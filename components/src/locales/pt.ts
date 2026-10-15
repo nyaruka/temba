@@ -16,7 +16,7 @@
 'h5371085a2e3ecbbd': html`<span class="expression">${0}</span> copiado para a área de transferência`,
 'h73c8b185fc25e721': html`<strong>${0}</strong> tentativa`,
 'h7476e5219a8bbf1b': html`<kbd>Enter</kbd> para pesquisar`,
-'hc4a0a6ca14ac7c56': html`O texto será traduzido para <strong>${0}</strong> automaticamente. As traduções podem conter erros, então revise-as.`,
+'ha37d55c66580b850': html`O texto será traduzido para <strong>${0}</strong> automaticamente. As traduções podem conter erros, então revise-as.`,
 'hcfbbcde7201230d4': html`Tornar <b>${0}</b> o idioma padrão deste fluxo? <b>${1}</b> será mantido como tradução.`,
 'he3ecf8ab74681056': html`<strong>${0}</strong> tentativas`,
 's000b93e04482d2b7': `Remover nota`,

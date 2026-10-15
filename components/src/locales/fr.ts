@@ -16,7 +16,7 @@
 'h5371085a2e3ecbbd': html`<span class="expression">${0}</span> copié dans le presse-papiers`,
 'h73c8b185fc25e721': html`<strong>${0}</strong> tentative`,
 'h7476e5219a8bbf1b': html`<kbd>Entrée</kbd> pour rechercher`,
-'hc4a0a6ca14ac7c56': html`Le texte sera traduit en <strong>${0}</strong> automatiquement. Les traductions peuvent contenir des erreurs, alors vérifiez-les.`,
+'ha37d55c66580b850': html`Le texte sera traduit en <strong>${0}</strong> automatiquement. Les traductions peuvent contenir des erreurs, alors vérifiez-les.`,
 'hcfbbcde7201230d4': html`Faire de <b>${0}</b> la langue par défaut de ce flux ? <b>${1}</b> sera conservée comme traduction.`,
 'he3ecf8ab74681056': html`<strong>${0}</strong> tentatives`,
 's000b93e04482d2b7': `Supprimer la note`,

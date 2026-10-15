@@ -1703,9 +1703,10 @@
   <source>Require {confidence} confidence or higher, or go to **Other**</source>
   <note from="lit-localize">{confidence} is a dropdown of "low", "medium" and "high". Keep {confidence} and the ** markers as they are.</note>
 </trans-unit>
-<trans-unit id="hc4a0a6ca14ac7c56">
-  <source>Text will be translated into <x id="0" equiv-text="&lt;strong&gt;${languageName}&lt;/strong&gt;"/>
-            automatically. Translations can contain mistakes, so review them.</source>
+<trans-unit id="ha37d55c66580b850">
+  <source>Text will be translated into
+            <x id="0" equiv-text="&lt;strong&gt;${languageName}&lt;/strong&gt;"/> automatically. Translations can
+            contain mistakes, so review them.</source>
   <target>O texto será traduzido para <x id="0" equiv-text="&lt;strong&gt;${languageName}&lt;/strong&gt;"/> automaticamente. As traduções podem conter erros, então revise-as.</target>
 </trans-unit>
 </body>
