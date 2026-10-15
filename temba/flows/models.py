@@ -71,7 +71,7 @@ FLOW_LOCK_KEY = "org:%d:lock:flow:%d:definition"
 class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
     asset_type = "flow"
 
-    RESERVED_NAMES = frozenset({"ticket"})
+    RESERVED_NAMES = {"ticket"}
 
     org_limit_key = Org.LIMIT_FLOWS
 

@@ -1514,7 +1514,7 @@ class ContactGroup(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin
     asset_type = "group"
     publish_creations = True  # so clients learn whether a new group is smart before they next fetch groups
 
-    RESERVED_NAMES = frozenset({"active", "blocked", "stopped", "archived"})
+    RESERVED_NAMES = {"active", "blocked", "stopped", "archived"}
 
     TYPE_DB_ACTIVE = "A"  # maintained by db trigger on status=A
     TYPE_DB_BLOCKED = "B"  # maintained by db trigger on status=B

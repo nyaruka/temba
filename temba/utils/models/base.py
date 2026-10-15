@@ -156,7 +156,7 @@ class NameMixin(models.Model):
     """
 
     MAX_NAME_LEN = 64
-    RESERVED_NAMES = frozenset()  # lowercase names users can't use, e.g. as they'd be confused with system ones
+    RESERVED_NAMES = set()  # lowercase names users can't use, e.g. as they'd be confused with system ones
 
     name = models.CharField(max_length=MAX_NAME_LEN, validators=[NameValidator(MAX_NAME_LEN)])
 
