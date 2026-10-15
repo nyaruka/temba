@@ -186,11 +186,10 @@
                    shortcuts="/api/internal/shortcuts.json"
                    users="/api/v2/users.json"
                    org="{{ user_org.uuid }}"
-                   user="{{ request.user.uuid }}"
-                   brand="{{ branding.name }}">
+                   user="{{ request.user.uuid }}">
       </temba-store>
     {% else %}
-      <temba-store brand="{{ branding.name }}">
+      <temba-store>
       </temba-store>
     {% endif %}
     <div class="flex flex-col h-full">
