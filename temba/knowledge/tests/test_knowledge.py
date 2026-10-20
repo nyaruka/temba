@@ -592,16 +592,13 @@ class ArticleTest(TembaTest):
             ("One\n// not a note\nTwo", "One\n// not a note\nTwo"),
             # a /* that's never closed isn't a comment
             ("/* never closed\nTwo", "/* never closed\nTwo"),
-            # code is code, fenced or indented
-            ("```\n/* code */\n```\n/* note */", "```\n/* code */\n```"),
-            ("~~~~js\n/* code */\n~~~\n/* still code */\n~~~~", "~~~~js\n/* code */\n~~~\n/* still code */\n~~~~"),
-            ("Text\n\n    /* code */\n\n    /* code */\n/* note */", "Text\n\n    /* code */\n\n    /* code */"),
-            # though a paragraph's indented continuation isn't
+            # whatever the indent, so a note in a list item is still one
             ("Text\n    /* note */", "Text"),
+            ("- item\n\n    /* note */\n\n- two", "- item\n\n\n- two"),
             ("", ""),
         )
         for body, expected in cases:
-            self.assertEqual(expected, strip_comments(body), f"for {body!r}")
+            self.assertEqual(expected, "\n".join(strip_comments(body.split("\n"))), f"for {body!r}")
 
     def test_as_html_comments(self):
         article = self.create_article(self.helpdesk, "Notes")
@@ -614,6 +611,27 @@ class ArticleTest(TembaTest):
         self.assertEqual('<h1 id="shown">Shown</h1>\n<p>Text.</p>\n<p>More <code>// code</code> text.</p>', html)
         self.assertEqual(["Shown"], [h.text for h in headings])
         self.assertEqual("Shown Text. More // code text.", article.as_plain_text())
+
+        # code is whatever the renderer takes for code, so a /* or */ in it is never part of a comment
+        cases = (
+            ("```\n/* code */\n```\n/* note */", "<pre><code>/* code */\n</code></pre>", ""),
+            (
+                "~~~js\n/* code */\n~~~\n\nText",
+                "<pre><code>/* code */\n</code></pre>\n<p>Text</p>",
+                "Text",
+            ),
+            (
+                "/* never closed\n\nText\n\n```\nx = 1 */\n```",
+                "<p>/* never closed</p>\n<p>Text</p>\n<pre><code>x = 1 */\n</code></pre>",
+                "/ never closed Text",
+            ),
+            # an unclosed fence isn't code, so a comment after it is still one
+            ("```\nunclosed\n\n/* note */\n\nText", "<p>```\nunclosed</p>\n<p>Text</p>", "unclosed Text"),
+        )
+        for body, expected_html, expected_text in cases:
+            article.body = body
+            self.assertEqual(expected_html, article.render()[0], f"for {body!r}")
+            self.assertEqual(expected_text, article.as_plain_text(), f"for {body!r}")
 
     def test_render_headings(self):
         article = self.create_article(self.helpdesk, "Getting Started")

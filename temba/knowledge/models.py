@@ -18,7 +18,9 @@ import markdown
 import nh3
 from markdown.extensions import Extension
 from markdown.extensions.toc import TocExtension, slugify_unicode
+from markdown.preprocessors import Preprocessor
 from markdown.treeprocessors import Treeprocessor
+from markdown.util import HTML_PLACEHOLDER_RE
 from pgvector.django import HnswIndex, VectorField
 
 from django.conf import settings
@@ -467,59 +469,57 @@ def _sanitize_attribute(element: str, attribute: str, value: str) -> str | None:
 
 # An article can carry notes for its authors - what to check, what's still to do - as comments in its markdown, which
 # are never shown or indexed: from a /* that starts a line to the next */, which can be lines later. Only at the start
-# of a line, so a /* in a sentence is just text, and never in code, where it's as likely to mean what it does in code.
-# A /* that's never closed isn't a comment, so a stray one can't swallow the rest of an article.
-FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+# of a line, so a /* in a sentence is just text. A /* that's never closed isn't a comment, so a stray one can't swallow
+# the rest of an article.
 BLOCK_COMMENT = re.compile(r"^\s*/\*")
 
 
-def strip_comments(body: str) -> str:
+def strip_comments(lines: list[str]) -> list[str]:
     """
-    The markdown less its comments. A comment takes the lines it fills with it, and what follows the */ that closes
-    one stays on its line.
+    The lines of markdown less its comments. A comment takes the lines it fills with it, and what follows the */ that
+    closes one stays on its line.
     """
-    lines = body.split("\n")
     kept = []
-    fence = None  # the marker of the fenced code block we're in
-    code = False  # whether the last line was indented code, which a blank line can't start mid-paragraph
+    unclosed = False  # once a /* has no */ after it, no later one can either
 
     i = 0
     while i < len(lines):
         line = lines[i]
         i += 1
 
-        if fence:
-            if re.match(rf"^ {{0,3}}{re.escape(fence[0])}{{{len(fence)},}}\s*$", line):
-                fence = None
-            kept.append(line)
-            continue
-        if match := FENCE.match(line):
-            fence = match.group(1)
-            kept.append(line)
-            continue
+        if not unclosed and BLOCK_COMMENT.match(line):
+            rest = line[line.index("/*") + 2 :]
+            j = i
+            while "*/" not in rest and j < len(lines):
+                rest = lines[j]
+                j += 1
 
-        indented = re.match(r"^( {4}|\t)", line) is not None
-        if line.strip() and indented and (code or not kept or not kept[-1].strip()):
-            code = True
-            kept.append(line)
-            continue
-        code = code and not line.strip()
-
-        if BLOCK_COMMENT.match(line):
-            start = line.index("/*") + 2
-            rest = "\n".join([line[start:], *lines[i:]])
-            end = rest.find("*/")
-            if end >= 0:
-                closing = rest[:end].count("\n")
-                after = rest[end + 2 :].split("\n", 1)[0]
-                i += closing
+            if "*/" in rest:
+                after = rest[rest.index("*/") + 2 :]
                 if after.strip():
                     kept.append(after)
+                i = j
                 continue
+            unclosed = True
 
         kept.append(line)
 
-    return "\n".join(kept)
+    return kept
+
+
+class StripComments(Extension):
+    """
+    Leaves comments out of what's rendered. Runs once fenced code has been stashed away, so the renderer itself has
+    decided what's code, and a /* or */ in code is never taken for a comment.
+    """
+
+    def extendMarkdown(self, md):
+        md.preprocessors.register(StripCommentsProcessor(md), "strip_comments", 24)
+
+
+class StripCommentsProcessor(Preprocessor):
+    def run(self, lines):
+        return strip_comments(lines)
 
 
 def render_markdown(body: str, links: dict = None) -> tuple[str, list[Heading]]:
@@ -532,7 +532,7 @@ def render_markdown(body: str, links: dict = None) -> tuple[str, list[Heading]]:
     of our own quick reply syntax, say) survives instead of being quietly swallowed. Sanitizing stays as defense in
     depth, and still deals with the javascript: URLs markdown will happily make a link out of.
 
-    Comments are left out, as notes for the article's authors rather than part of it (see strip_comments).
+    Comments are left out, as notes for the article's authors rather than part of it (see StripComments).
 
     Every heading gets an id made from its text, so a page can link to it, and the top level ones come back
     alongside the HTML in the order they appear, for the page to list them.
@@ -541,6 +541,7 @@ def render_markdown(body: str, links: dict = None) -> tuple[str, list[Heading]]:
         extensions=[
             *MARKDOWN_EXTENSIONS,
             EscapeRawHTML(),
+            StripComments(),
             AnnotateImages(resolve=links is not None),
             CellBreaks(),
             ColumnStyles(),
@@ -549,7 +550,7 @@ def render_markdown(body: str, links: dict = None) -> tuple[str, list[Heading]]:
         ]
     )
     html = nh3.clean(
-        md.convert(strip_comments(body)),
+        md.convert(body),
         attributes=SANITIZE_ATTRIBUTES,
         attribute_filter=_sanitize_attribute,
         url_schemes=SANITIZE_URL_SCHEMES,
@@ -564,7 +565,7 @@ def render_markdown(body: str, links: dict = None) -> tuple[str, list[Heading]]:
 # what to strip from markdown to read an article as plain text - for excerpts and search snippets, where the markup
 # would only get in the way. Order matters: images before links, since an image is a link with a bang in front.
 PLAIN_TEXT_RULES = (
-    (re.compile(r"```.*?```", re.DOTALL), " "),  # fenced code
+    (HTML_PLACEHOLDER_RE, " "),  # fenced code, which the markdown preprocessors stashed
     (re.compile(r"!\[[^\]]*\]\([^)]*\)"), " "),  # images
     (re.compile(r"\[([^\]]*)\]\([^)]*\)"), r"\1"),  # links keep their text
     (re.compile(r"^\s{0,3}#{1,6}\s+", re.MULTILINE), ""),  # heading markers
@@ -583,7 +584,12 @@ def to_plain_text(body: str) -> str:
     """
     Reads authored markdown as plain text - what an excerpt or a search snippet shows of an article.
     """
-    text = strip_comments(body)
+    md = markdown.Markdown(extensions=["fenced_code", EscapeRawHTML(), StripComments()])
+    lines = body.split("\n")
+    for preprocessor in md.preprocessors:
+        lines = preprocessor.run(lines)
+
+    text = "\n".join(lines)
     for pattern, replacement in PLAIN_TEXT_RULES:
         text = pattern.sub(replacement, text)
     return text.strip()
