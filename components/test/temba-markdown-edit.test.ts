@@ -2029,16 +2029,16 @@ describe('noteOf', () => {
   it('reads a block of nothing but comments as a note', () => {
     assert.equal(noteOf('/* check this */'), 'check this');
     assert.equal(noteOf('/* check\nthis */'), 'check\nthis');
-    assert.equal(noteOf('// one\n// two'), 'one\ntwo');
-    assert.equal(noteOf('  /* indented */\n// and more'), 'indented\nand more');
+    assert.equal(noteOf('/* one */\n/* two */'), 'one\ntwo');
+    assert.equal(noteOf('  /* indented */\n/* and more */'), 'indented\nand more');
   });
 
   it('reads anything else as content', () => {
     assert.isNull(noteOf('Some text'));
-    assert.isNull(noteOf('Text\n// a note in a paragraph'));
+    assert.isNull(noteOf('Text\n/* a note in a paragraph */'));
     assert.isNull(noteOf('/* closed */ then text'));
     assert.isNull(noteOf('/* never closed'));
-    assert.isNull(noteOf('See https://example.com // not a note'));
+    assert.isNull(noteOf('// not a note'));
     assert.isNull(noteOf(''));
   });
 
@@ -2058,7 +2058,7 @@ describe(`${TAG} notes`, () => {
     'First paragraph.',
     '/* check the first paragraph */',
     'Second paragraph.',
-    '// check the second\n// over two lines',
+    '/* check the second\nover two lines */',
     'Third paragraph.'
   ].join('\n\n');
 
@@ -2194,7 +2194,7 @@ describe(`${TAG} notes`, () => {
       [
         'First paragraph.',
         '/* check the first paragraph */',
-        '// check the second\n// over two lines',
+        '/* check the second\nover two lines */',
         'Third paragraph.'
       ].join('\n\n')
     );
@@ -2213,7 +2213,7 @@ describe(`${TAG} notes`, () => {
       [
         'First paragraph.',
         'Second paragraph.',
-        '// check the second\n// over two lines',
+        '/* check the second\nover two lines */',
         'Third paragraph.'
       ].join('\n\n')
     );
@@ -2271,7 +2271,7 @@ describe(`${TAG} notes`, () => {
     textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     textarea.dispatchEvent(new Event('blur'));
     await editor.updateComplete;
-    assert.include(editor.value, '// check the second\n// over two lines');
+    assert.include(editor.value, '/* check the second\nover two lines */');
 
     // and emptying it is the same as removing it
     (margin(editor)[0].querySelector('.note-text') as HTMLElement).click();

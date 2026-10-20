@@ -118,8 +118,8 @@ export const splitBlocks = (source: string): Block[] => {
   return blocks;
 };
 
-// The text of a block that's nothing but notes - an author's comments, which an article never shows: lines that start
-// with //, or a run from a /* at the start of a line to the next */ - or null for a block with anything else in it.
+// The text of a block that's nothing but notes - an author's comments, which an article never shows: runs from a /* at
+// the start of a line to the next */ - or null for a block with anything else in it.
 // Only a block of notes is one; a comment inside a paragraph stays part of the paragraph here, though rendering the
 // article leaves it out all the same.
 export const noteOf = (source: string): string | null => {
@@ -129,12 +129,6 @@ export const noteOf = (source: string): string | null => {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (isBlank(line)) {
-      continue;
-    }
-
-    const comment = /^\s*\/\/\s?(.*)$/.exec(line);
-    if (comment) {
-      text.push(comment[1]);
       continue;
     }
 
