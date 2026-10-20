@@ -2030,7 +2030,10 @@ describe('noteOf', () => {
     assert.equal(noteOf('/* check this */'), 'check this');
     assert.equal(noteOf('/* check\nthis */'), 'check\nthis');
     assert.equal(noteOf('/* one */\n/* two */'), 'one\ntwo');
-    assert.equal(noteOf('  /* indented */\n/* and more */'), 'indented\nand more');
+    assert.equal(
+      noteOf('  /* indented */\n/* and more */'),
+      'indented\nand more'
+    );
   });
 
   it('reads anything else as content', () => {
@@ -2200,6 +2203,29 @@ describe(`${TAG} notes`, () => {
     );
   });
 
+  it('keeps a note in place when its block is replaced or merged away', async () => {
+    const editor = await getNotesEditor(
+      'One.\n\nTwo.\n\n/* about two */\n\nThree.'
+    );
+
+    // made a heading, the block is a new element, which the note follows
+    const heading = document.createElement('h2');
+    heading.textContent = 'Two.';
+    blocks(editor)[1].replaceWith(heading);
+    doc(editor).dispatchEvent(
+      new InputEvent('input', { inputType: 'formatBlock' })
+    );
+    assert.equal(editor.value, 'One.\n\n## Two.\n\n/* about two */\n\nThree.');
+
+    // merged into the one above, it follows that one
+    blocks(editor)[0].textContent = 'One. Two.';
+    blocks(editor)[1].remove();
+    doc(editor).dispatchEvent(
+      new InputEvent('input', { inputType: 'deleteContentBackward' })
+    );
+    assert.equal(editor.value, 'One. Two.\n\n/* about two */\n\nThree.');
+  });
+
   it('removes a note when its Remove is clicked', async () => {
     const editor = await getNotesEditor();
     const seen = changes(editor);
@@ -2272,6 +2298,16 @@ describe(`${TAG} notes`, () => {
     textarea.dispatchEvent(new Event('blur'));
     await editor.updateComplete;
     assert.include(editor.value, '/* check the second\nover two lines */');
+
+    // a new note abandoned empty changes nothing
+    const seen = changes(editor);
+    editor['addNote'](blocks(editor)[0]);
+    await editor.updateComplete;
+    textarea = margin(editor)[2].querySelector('textarea');
+    textarea.dispatchEvent(new Event('blur'));
+    await editor.updateComplete;
+    assert.equal(seen.count, 0);
+    assert.lengthOf(margin(editor), 2);
 
     // and emptying it is the same as removing it
     (margin(editor)[0].querySelector('.note-text') as HTMLElement).click();

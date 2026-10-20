@@ -1569,6 +1569,8 @@ export class MarkdownEditor extends FieldElement {
   /** the document's blocks, which together are always exactly the value */
   private blocks: Block[] = [];
 
+  /** the document's elements as of the last time its notes were placed among them */
+  private placed: Element[] = [];
   private runs = new WeakMap<Element, Run>();
   private trailers = new WeakMap<Element, string>();
 
@@ -1944,6 +1946,7 @@ export class MarkdownEditor extends FieldElement {
     });
 
     this.notes = notes;
+    this.placed = children;
     this.noting = null;
     this.hovered = null;
 
@@ -1971,17 +1974,30 @@ export class MarkdownEditor extends FieldElement {
     const blocks: Block[] = [];
     let at = 0;
 
-    // A note whose block has been deleted follows whatever the note before it does, which keeps it as near as it can
-    // be to what it was about. Then each note is written out after the elements it follows, in the order it was
-    // written - all but one still being written, which isn't anything yet.
+    // A note whose element is gone stays where it was: after an element that replaced it - a paragraph made a
+    // heading, say - or else after the nearest one before it that's still there. Then each note is written out after
+    // the elements it follows, in the order it was written - all but one still being written, which isn't anything yet.
     const live = new Set(children);
+    const placed = new Set(this.placed);
     let previous: Element = null;
     for (const note of this.notes) {
       if (note.after && !live.has(note.after)) {
-        note.after = previous;
+        const was = this.placed.indexOf(note.after);
+        if (was < 0) {
+          note.after = previous;
+        } else {
+          const before =
+            this.placed
+              .slice(0, was)
+              .reverse()
+              .find((element) => live.has(element)) || null;
+          const next = children[before ? children.indexOf(before) + 1 : 0];
+          note.after = next && !placed.has(next) ? next : before;
+        }
       }
       previous = note.after;
     }
+    this.placed = children;
     const written: Note[] = [];
     const follow = (elements: Element[]) => {
       for (const note of this.notes) {
@@ -4441,6 +4457,10 @@ export class MarkdownEditor extends FieldElement {
 
     if (!text.trim()) {
       this.notes = this.notes.filter((n) => n !== note);
+      // a new note that's abandoned was never part of the document
+      if (!note.block.source) {
+        return;
+      }
     } else if (text.trim() !== note.text) {
       // as it's kept, which is what reading it back will show
       note.block.source = noteSource(text);
