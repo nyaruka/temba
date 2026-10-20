@@ -18,6 +18,11 @@ import { getUrl, postFormData } from '../utils';
 import {
   Block,
   blockOf,
+  Directive,
+  directiveHash,
+  directiveLead,
+  directiveOf,
+  directiveSource,
   ColumnStyle,
   columnStyle,
   columnStyleText,
@@ -111,6 +116,19 @@ const TOP_LEVEL = new Set([
 const LOCKED = 'locked';
 
 const EMPTY_BLOCK = '<p><br></p>';
+
+/** a screenshot directive's block, which the editor draws over the image before it */
+const DIRECTIVE = 'directive';
+
+/** whether a directive is still what its screenshot was made from, has been edited since, or has none made yet */
+type DirectiveState = 'made' | 'edited' | 'new';
+
+const stateOf = (directive: Directive): DirectiveState =>
+  !directive.hash
+    ? 'new'
+    : directiveHash(directive.text) === directive.hash
+      ? 'made'
+      : 'edited';
 
 const signatureOf = (elements: Element[]): string =>
   elements
@@ -645,8 +663,220 @@ export class MarkdownEditor extends FieldElement {
       .overlays .image-actions,
       .overlays .link-options,
       .overlays .note,
-      .overlays .add-note {
+      .overlays .add-note,
+      .overlays .shot-chip,
+      .overlays .shot-card,
+      .overlays .shot-scrim,
+      .overlays .shot-panel {
         pointer-events: auto;
+      }
+
+      /* A screenshot directive's block in the document: nothing to see where it follows an image, which it's drawn
+         over instead, and otherwise the place its screenshot will go, which the card describing it fills. */
+      .doc .directive {
+        height: 88px;
+        margin: 1em 0;
+      }
+
+      .doc .directive.on-image {
+        display: none;
+      }
+
+      .shot-chip {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        max-width: 280px;
+        padding: 3px 9px 3px 7px;
+        background: rgba(255, 255, 255, 0.96);
+        border: 1px solid #d9dde3;
+        border-radius: 999px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+        font-size: 12px;
+        line-height: 18px;
+        color: #3c4350;
+        white-space: nowrap;
+        cursor: pointer;
+      }
+
+      .shot-chip:hover {
+        border-color: #b9c0ca;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.16);
+      }
+
+      .shot-chip temba-icon,
+      .shot-card .shot-icon,
+      .shot-panel .shot-head temba-icon {
+        color: #7a8290;
+      }
+
+      .shot-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-weight: 600;
+      }
+
+      .shot-state {
+        display: inline-flex;
+        flex: none;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .shot-state::before {
+        content: '';
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+
+      .shot-state.made {
+        color: #2b8a50;
+      }
+
+      .shot-state.edited {
+        color: #b86e00;
+      }
+
+      .shot-state.new {
+        color: #2f6fed;
+      }
+
+      .shot-card {
+        position: absolute;
+        box-sizing: border-box;
+        display: flex;
+        gap: 12px;
+        padding: 14px 16px;
+        background: #f8f9fb;
+        border: 1.5px dashed #c9ced6;
+        border-radius: 6px;
+        font-size: 13px;
+        line-height: 1.4;
+        color: #3c4350;
+        overflow: hidden;
+        cursor: pointer;
+      }
+
+      .shot-card:hover {
+        border-color: #aab2bd;
+      }
+
+      .shot-card .shot-icon {
+        display: flex;
+        flex: none;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #eceff3;
+      }
+
+      .shot-card .shot-body {
+        min-width: 0;
+      }
+
+      .shot-card .shot-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .shot-card .shot-text {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        margin-top: 4px;
+        color: #6b7280;
+        overflow-wrap: anywhere;
+      }
+
+      /* the image, or the card standing in for it, faded back under the directive being read */
+      .shot-scrim {
+        position: absolute;
+        background: rgba(248, 249, 251, 0.85);
+        border-radius: 4px;
+      }
+
+      .shot-panel {
+        position: absolute;
+        box-sizing: border-box;
+        padding: 10px 12px;
+        background: #fff;
+        border: 1px solid #d9dde3;
+        border-radius: 6px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+        font-size: 13px;
+        line-height: 1.4;
+        color: #3c4350;
+      }
+
+      .shot-panel .shot-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .shot-panel .shot-head .shot-name {
+        flex: 0 1 auto;
+      }
+
+      .shot-panel .shot-close {
+        margin-left: auto;
+        cursor: pointer;
+      }
+
+      .shot-panel textarea {
+        display: block;
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 96px;
+        padding: 8px 10px;
+        border: 1px solid #e3e6ea;
+        border-radius: 4px;
+        outline: none;
+        resize: vertical;
+        background: #fff;
+        font: inherit;
+        color: inherit;
+      }
+
+      .shot-panel textarea:focus {
+        border-color: #b9c0ca;
+      }
+
+      .shot-panel .shot-foot {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 8px;
+      }
+
+      .shot-panel .shot-help {
+        flex: 1 1 auto;
+        font-size: 12px;
+        color: #8a909a;
+      }
+
+      .shot-panel .shot-done {
+        flex: none;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--primary, #2f6fed);
+        cursor: pointer;
+      }
+
+      .shot-panel .shot-done:hover {
+        text-decoration: underline;
       }
 
       /* The notes margin, to the right of the card, for as long as there's a note to put in it: the card keeps the
@@ -1557,6 +1787,14 @@ export class MarkdownEditor extends FieldElement {
   @state()
   private noting: Note = null;
 
+  /** the screenshot directive whose panel is open, as its block in the document - null when none is */
+  @state()
+  private directing: Element = null;
+
+  /** the open directive's text as it's being edited, which is what its state is shown for */
+  @state()
+  private directingText: string = null;
+
   /** the block the pointer is over, which a note can be added beside */
   @state()
   private hovered: Element = null;
@@ -1729,7 +1967,8 @@ export class MarkdownEditor extends FieldElement {
       this.image ||
       this.column ||
       this.linkHref !== null ||
-      this.notes.length
+      this.notes.length ||
+      this.directiveBlocks().length
     ) {
       this.requestUpdate();
     }
@@ -1802,6 +2041,7 @@ export class MarkdownEditor extends FieldElement {
       this.fireCustomEvent(CustomEventType.NotesChanged, { margin: margined });
     }
     this.layoutNotes();
+    this.layoutDirectives();
   }
 
   /**
@@ -1850,6 +2090,15 @@ export class MarkdownEditor extends FieldElement {
     const counts: number[] = [];
 
     for (const block of this.blocks) {
+      // a screenshot directive is drawn over the image before it, so it's held in the document without showing
+      if (this.allowNotes && directiveOf(block.source)) {
+        parts.push(
+          `<div class="${LOCKED} ${DIRECTIVE}" contenteditable="false"></div>`
+        );
+        counts.push(1);
+        continue;
+      }
+
       // a note is shown in the margin rather than the document
       if (this.allowNotes && noteOf(block.source) !== null) {
         counts.push(0);
@@ -1945,13 +2194,17 @@ export class MarkdownEditor extends FieldElement {
 
     this.notes = notes;
     this.noting = null;
+    this.directing = null;
     this.hovered = null;
 
     // the notes are level with their blocks, so they move whenever the document reflows - an image arriving, or the
     // title above it wrapping - and not only when it's edited
     if (this.allowNotes) {
       this.docSizer?.disconnect();
-      this.docSizer = new ResizeObserver(() => this.layoutNotes());
+      this.docSizer = new ResizeObserver(() => {
+        this.layoutNotes();
+        this.layoutDirectives();
+      });
       this.docSizer.observe(doc);
       this.docSizer.observe(this.shadowRoot.querySelector('.article'));
     }
@@ -4300,7 +4553,7 @@ export class MarkdownEditor extends FieldElement {
     if (this.sourceMode) {
       return null;
     }
-    return html`${this.renderImageOverlay()}${this.renderLinkPopover()}${this.renderColumnPopover()}${this.renderNotes()}`;
+    return html`${this.renderImageOverlay()}${this.renderLinkPopover()}${this.renderColumnPopover()}${this.renderNotes()}${this.renderDirectives()}`;
   }
 
   // ==========================================================
@@ -4392,7 +4645,10 @@ export class MarkdownEditor extends FieldElement {
     )
       .map((element) => {
         const note = this.notes[Number(element.dataset.index)];
-        return { element, top: note ? topOf(note.after || this.doc) : 0 };
+        return {
+          element,
+          top: note ? topOf(this.anchorOf(note.after) || this.doc) : 0
+        };
       })
       .sort((a, b) => a.top - b.top);
 
@@ -4421,6 +4677,11 @@ export class MarkdownEditor extends FieldElement {
   }
 
   private addNote(after: Element): void {
+    // a directive stays right after its image, so a note about the image goes after both
+    const next = after?.nextElementSibling;
+    if (next && this.imageBefore(next) && next.classList.contains(DIRECTIVE)) {
+      after = next;
+    }
     const note: Note = { block: { source: '', trailer: '' }, text: '', after };
     this.notes = [...this.notes, note];
     this.noting = note;
@@ -4472,6 +4733,297 @@ export class MarkdownEditor extends FieldElement {
     this.notes = this.notes.filter((n) => n !== note);
     this.serialize();
     this.fireEvent('change');
+  }
+
+  // ==========================================================
+  // Screenshot directives
+  // ==========================================================
+
+  /** the document's screenshot directives, as the blocks that hold them */
+  private directiveBlocks(): Element[] {
+    if (!this.allowNotes || !this.doc) {
+      return [];
+    }
+    return [...this.doc.querySelectorAll(`:scope > .${DIRECTIVE}`)];
+  }
+
+  private directiveOf(element: Element): Directive {
+    return directiveOf(this.runs.get(element)?.source || '');
+  }
+
+  /** the image a directive is drawn over - the last in the block just before it - or null when that's no image */
+  private imageBefore(element: Element): HTMLImageElement {
+    const before = element.previousElementSibling;
+    if (!before || this.isLocked(before)) {
+      return null;
+    }
+    const images = before.querySelectorAll('img');
+    return images.length > 0
+      ? (images[images.length - 1] as HTMLImageElement)
+      : null;
+  }
+
+  /** what a note after a block is level with: for a directive on an image, the image */
+  private anchorOf(element: Element): Element {
+    return element?.classList.contains(DIRECTIVE) && this.imageBefore(element)
+      ? element.previousElementSibling
+      : element;
+  }
+
+  private renderDirectiveState(state: DirectiveState): TemplateResult {
+    const labels = {
+      made: msg('Up to date'),
+      edited: msg('Edited'),
+      new: msg('Not made yet')
+    };
+    const titles = {
+      made: msg('The screenshot was made from this directive'),
+      edited: msg('Edited since the screenshot was made'),
+      new: msg("The screenshot hasn't been made from this directive yet")
+    };
+    return html`<span class="shot-state ${state}" title=${titles[state]}
+      >${labels[state]}</span
+    >`;
+  }
+
+  /**
+   * Each screenshot directive drawn over the article: a chip on the corner of the image it makes, or a card where the
+   * screenshot will go when there's no image yet, either of which opens a panel over it to read and edit it. Like the
+   * notes, they're placed by layoutDirectives, as what they're over moves without the editor rendering.
+   */
+  private renderDirectives(): TemplateResult {
+    return html`${this.directiveBlocks().map((element, index) => {
+      const directive = this.directiveOf(element);
+      if (!directive) {
+        return null;
+      }
+      const state = stateOf(directive);
+      const open = () => this.openDirective(element);
+
+      if (element === this.directing) {
+        const editing = {
+          ...directive,
+          text: this.directingText ?? directive.text
+        };
+        return this.renderDirectivePanel(
+          element,
+          directive,
+          stateOf(editing),
+          index
+        );
+      }
+
+      if (this.imageBefore(element)) {
+        return html`<div
+          class="shot-chip"
+          data-index=${index}
+          title=${msg('Screenshot directive')}
+          @mousedown=${(evt: MouseEvent) => evt.preventDefault()}
+          @click=${open}
+        >
+          <temba-icon name=${Icon.screenshot} size="0.85"></temba-icon>
+          <span class="shot-name">${directive.name}</span>
+          ${this.renderDirectiveState(state)}
+        </div>`;
+      }
+
+      return html`<div
+        class="shot-card"
+        data-index=${index}
+        @mousedown=${(evt: MouseEvent) => evt.preventDefault()}
+        @click=${open}
+      >
+        <div class="shot-icon">
+          <temba-icon name=${Icon.screenshot} size="1.1"></temba-icon>
+        </div>
+        <div class="shot-body">
+          <div class="shot-title">
+            <span class="shot-name">${directive.name}</span>
+            ${this.renderDirectiveState(state)}
+          </div>
+          <div class="shot-text">${directive.text.replace(/\n/g, ' ')}</div>
+        </div>
+      </div>`;
+    })}`;
+  }
+
+  private renderDirectivePanel(
+    element: Element,
+    directive: Directive,
+    state: DirectiveState,
+    index: number
+  ): TemplateResult {
+    const help = {
+      made: msg('How this screenshot is made, for the tools that make it.'),
+      edited: msg('Edited since the screenshot was made from it.'),
+      new: msg('How this screenshot will be made, for the tools that make it.')
+    };
+    const close = (evt: Event) => {
+      const textarea = (evt.target as Element)
+        .closest('.shot-panel')
+        .querySelector('textarea');
+      this.commitDirective(element, textarea.value);
+      this.directing = null;
+    };
+
+    return html`<div class="shot-scrim" data-index=${index}></div>
+      <div
+        class="shot-panel"
+        data-index=${index}
+        @focusout=${(evt: FocusEvent) => {
+          const panel = evt.currentTarget as Element;
+          if (!panel.contains(evt.relatedTarget as Node)) {
+            this.commitDirective(
+              element,
+              panel.querySelector('textarea').value
+            );
+            this.directing = null;
+          }
+        }}
+      >
+        <div class="shot-head">
+          <temba-icon name=${Icon.screenshot} size="0.9"></temba-icon>
+          <span class="shot-name">${directive.name}</span>
+          ${this.renderDirectiveState(state)}
+          <temba-icon
+            class="shot-close"
+            name=${Icon.close}
+            size="0.9"
+            title=${msg('Close')}
+            @mousedown=${(evt: MouseEvent) => evt.preventDefault()}
+            @click=${close}
+          ></temba-icon>
+        </div>
+        <textarea
+          rows=${Math.min(directive.text.split('\n').length + 1, 14)}
+          spellcheck="false"
+          placeholder=${msg('Describe how the screenshot is made')}
+          ?readonly=${this.disabled}
+          .value=${directive.text}
+          @input=${(evt: Event) =>
+            (this.directingText = (evt.target as HTMLTextAreaElement).value)}
+          @keydown=${(evt: KeyboardEvent) =>
+            this.handleDirectiveKeyDown(evt, element, directive)}
+        ></textarea>
+        <div class="shot-foot">
+          <div class="shot-help">${help[state]}</div>
+          ${this.disabled
+            ? null
+            : html`<span
+                class="shot-done"
+                @mousedown=${(evt: MouseEvent) => evt.preventDefault()}
+                @click=${close}
+                >${msg('Done')}</span
+              >`}
+        </div>
+      </div>`;
+  }
+
+  /**
+   * Puts each directive's chip on the top right corner of its image, its card over the place it holds in the document,
+   * and an open one's panel over whichever of those it is.
+   */
+  private layoutDirectives(): void {
+    const elements = this.directiveBlocks();
+    for (const element of elements) {
+      element.classList.toggle('on-image', !!this.imageBefore(element));
+    }
+    if (elements.length === 0) {
+      return;
+    }
+
+    const card = this.overlayRect(this.shadowRoot.querySelector('.article'));
+    const overlays = [
+      ...this.shadowRoot.querySelectorAll(
+        '.overlays .shot-chip, .overlays .shot-card, .overlays .shot-scrim, .overlays .shot-panel'
+      )
+    ] as HTMLElement[];
+
+    for (const overlay of overlays) {
+      const element = elements[Number(overlay.dataset.index)];
+      const rect = element
+        ? this.overlayRect(this.imageBefore(element) || element)
+        : null;
+      if (!rect) {
+        continue;
+      }
+
+      if (overlay.classList.contains('shot-chip')) {
+        overlay.style.left = `${Math.max(
+          rect.left + 8,
+          rect.left + rect.width - overlay.offsetWidth - 8
+        )}px`;
+        overlay.style.top = `${rect.top + 8}px`;
+      } else if (overlay.classList.contains('shot-panel')) {
+        // over the top of the image, and wide enough to read even over a small one - though never past the card
+        const right = card ? card.left + card.width - 16 : Infinity;
+        const width = Math.min(
+          Math.max(rect.width - 16, 400),
+          right - rect.left
+        );
+        overlay.style.left = `${Math.min(rect.left + 8, right - width)}px`;
+        overlay.style.top = `${rect.top + 8}px`;
+        overlay.style.width = `${width - 8}px`;
+      } else {
+        overlay.style.left = `${rect.left}px`;
+        overlay.style.top = `${rect.top}px`;
+        overlay.style.width = `${rect.width}px`;
+        overlay.style.height = `${rect.height}px`;
+      }
+    }
+
+    // a panel just opened takes the caret
+    const textarea = this.shadowRoot.querySelector(
+      '.overlays .shot-panel textarea'
+    ) as HTMLTextAreaElement;
+    if (textarea && this.shadowRoot.activeElement !== textarea) {
+      textarea.focus();
+    }
+  }
+
+  private openDirective(element: Element): void {
+    this.directing = element;
+    this.directingText = null;
+  }
+
+  /** writes the document back out with a directive's new text - under the same header, hash and all */
+  private commitDirective(element: Element, text: string): void {
+    const run = this.runs.get(element);
+    const directive = run ? directiveOf(run.source) : null;
+    if (this.disabled || !directive) {
+      return;
+    }
+
+    const source = directiveSource(
+      { ...directive, text },
+      directiveLead(run.source)
+    );
+    if (directiveOf(source).text === directive.text) {
+      return;
+    }
+
+    run.source = source;
+    this.serialize();
+    this.fireEvent('change');
+  }
+
+  private handleDirectiveKeyDown(
+    evt: KeyboardEvent,
+    element: Element,
+    directive: Directive
+  ): void {
+    const textarea = evt.target as HTMLTextAreaElement;
+    if (evt.key === 'Escape') {
+      // leaves the directive as it was
+      evt.preventDefault();
+      evt.stopPropagation();
+      textarea.value = directive.text;
+      this.directing = null;
+    } else if (evt.key === 'Enter' && (evt.metaKey || evt.ctrlKey)) {
+      evt.preventDefault();
+      this.commitDirective(element, textarea.value);
+      this.directing = null;
+    }
   }
 
   private renderSource(): TemplateResult {

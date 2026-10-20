@@ -181,6 +181,7 @@ export enum Icon {
   section = 'folder',
   select_open = 'chevron-down',
   select_clear = 'x',
+  screenshot = 'camera-01',
   send = 'send-03',
   service = 'magic-wand-01',
   service_end = 'log-out-04',

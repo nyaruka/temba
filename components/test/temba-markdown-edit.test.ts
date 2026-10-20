@@ -4,6 +4,9 @@ import { Options } from '../src/display/Options';
 import { MarkdownEditor } from '../src/form/MarkdownEditor';
 import {
   blockOf,
+  directiveHash,
+  directiveOf,
+  directiveSource,
   joinBlocks,
   noteOf,
   noteSource,
@@ -2297,5 +2300,322 @@ describe(`${TAG} notes`, () => {
   it('shows the margin', async () => {
     const editor = await getNotesEditor();
     await assertScreenshot('markdown-editor/notes', getClip(editor));
+  });
+});
+
+describe('directiveOf', () => {
+  const TEXT = [
+    'Open the AI page.',
+    'Choose New Model from the page menu.',
+    'Pick OpenAI as the provider and click Next.',
+    'Type sk-proj-4f8a1c3e9b2d7f6a as the API key and click Next.',
+    "Pick gpt-5.4-mini from the account's models.",
+    'Type Advising OpenAI as the name.',
+    'Crop to the dialog.'
+  ].join('\n');
+
+  it('hashes the text of a directive, a line at a time', () => {
+    assert.equal(directiveHash(TEXT), 'a5fad2ee');
+
+    // which lines are indented, or what blank lines come between them, makes no difference
+    assert.equal(
+      directiveHash(
+        '\n  ' + TEXT.split('\n').join('  \n\n   ').replace('Pick', '\tPick')
+      ),
+      'a5fad2ee'
+    );
+    assert.notEqual(directiveHash(TEXT + '\nAnd more.'), 'a5fad2ee');
+  });
+
+  it('reads a block that is a directive', () => {
+    assert.deepEqual(
+      directiveOf(`/* shot new-model-name a5fad2ee\n${TEXT}\n*/`),
+      {
+        name: 'new-model-name',
+        hash: 'a5fad2ee',
+        text: TEXT
+      }
+    );
+
+    // one without a hash describes a screenshot that hasn't been made yet, and the comment can close on its last line
+    assert.deepEqual(
+      directiveOf('/* shot new-one\n  Open the AI page.\n\n  Crop to it. */'),
+      {
+        name: 'new-one',
+        hash: null,
+        text: 'Open the AI page.\nCrop to it.'
+      }
+    );
+    assert.deepEqual(directiveOf('\n/* shot empty\n*/'), {
+      name: 'empty',
+      hash: null,
+      text: ''
+    });
+  });
+
+  it('reads anything else as not one', () => {
+    assert.isNull(directiveOf('/* check this */'));
+    assert.isNull(directiveOf('/* shot of the dialog is out of date */'));
+    assert.isNull(directiveOf('/* shot of the dialog\nis out of date */'));
+    assert.isNull(directiveOf('/* shot Big-Name\nOpen it.\n*/'));
+    assert.isNull(directiveOf('/* shot name abc\nOpen it.\n*/'));
+    assert.isNull(directiveOf('/* shot name\nOpen it.\n*/ and then text'));
+    assert.isNull(directiveOf('/* shot name\nOpen it. */ more\n*/'));
+    assert.isNull(directiveOf('/* shot name\nOpen it.'));
+    assert.isNull(directiveOf('Text\n/* shot name\nOpen it.\n*/'));
+  });
+
+  it('writes a directive under its header, hash and all, with text that can never close it early', () => {
+    assert.equal(
+      directiveSource({
+        name: 'a-shot',
+        hash: 'a5fad2ee',
+        text: ' Open it. \n\nCrop */ it.'
+      }),
+      '/* shot a-shot a5fad2ee\nOpen it.\nCrop * / it.\n*/'
+    );
+    assert.equal(
+      directiveSource({ name: 'a-shot', hash: null, text: '' }, '\n'),
+      '\n/* shot a-shot\n*/'
+    );
+  });
+});
+
+describe(`${TAG} screenshot directives`, () => {
+  const IMAGE = '/test/assets/img/sim_image_c.jpg';
+  const TEXT = 'Open the AI page.\nCrop to the dialog.';
+  const HASH = directiveHash(TEXT);
+
+  const ARTICLE = [
+    'First paragraph.',
+    `![shot](${IMAGE}#size=medium)`,
+    `/* shot ai-page ${HASH}\n${TEXT}\n*/`,
+    '/* check the image */',
+    'Second paragraph.',
+    '/* shot new-model\nChoose New Model from the page menu.\nCrop to the dialog.\n*/',
+    'Third paragraph.'
+  ].join('\n\n');
+
+  const getEditor = async (
+    value = ARTICLE,
+    attrs = 'notes'
+  ): Promise<MarkdownEditor> => {
+    const editor = (await fixture(
+      `<${TAG} widget_only ${attrs} endpoint="${UPLOAD}" style="width:1050px"></${TAG}>`
+    )) as MarkdownEditor;
+    editor.value = value;
+    await editor.updateComplete;
+    await editor.updateComplete;
+    await waitForImages(editor.shadowRoot);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    return editor;
+  };
+
+  const overlays = (editor: MarkdownEditor, selector: string): HTMLElement[] =>
+    [
+      ...editor.shadowRoot.querySelectorAll(`.overlays ${selector}`)
+    ] as HTMLElement[];
+
+  const openPanel = async (
+    editor: MarkdownEditor,
+    selector = '.shot-chip'
+  ): Promise<HTMLTextAreaElement> => {
+    overlays(editor, selector)[0].click();
+    await editor.updateComplete;
+    return overlays(editor, '.shot-panel textarea')[0] as HTMLTextAreaElement;
+  };
+
+  it('draws a directive over its image, and one with no image where it will go', async () => {
+    const editor = await getEditor();
+
+    // they're held in the document without being part of what's shown or edited, and they aren't notes
+    const shown = blocks(editor).filter(
+      (block) => getComputedStyle(block).display !== 'none'
+    );
+    assert.deepEqual(
+      shown.map((block) => block.tagName),
+      ['P', 'P', 'P', 'DIV', 'P']
+    );
+    assert.deepEqual(
+      overlays(editor, '.note .note-text').map((note) => note.innerText),
+      ['check the image']
+    );
+    assert.lengthOf(overlays(editor, '.resolve'), 1);
+
+    // the chip's on the image's top right corner, saying it's what the screenshot was made from
+    const [chip] = overlays(editor, '.shot-chip');
+    const image = doc(editor).querySelector('img').getBoundingClientRect();
+    const box = chip.getBoundingClientRect();
+    assert.include(chip.innerText, 'ai-page');
+    assert.include(chip.innerText, 'Up to date');
+    assert.closeTo(box.top, image.top + 8, 1);
+    assert.closeTo(box.right, image.right - 8, 1);
+
+    // the note about the image is level with it
+    assert.closeTo(
+      overlays(editor, '.note')[0].getBoundingClientRect().top,
+      image.top,
+      1
+    );
+
+    // the one still to be made fills the place it holds
+    const [card] = overlays(editor, '.shot-card');
+    const place = shown[3].getBoundingClientRect();
+    assert.include(card.innerText, 'new-model');
+    assert.include(card.innerText, 'Not made yet');
+    assert.include(card.innerText, 'Choose New Model from the page menu.');
+    assert.closeTo(card.getBoundingClientRect().top, place.top, 1);
+    assert.closeTo(card.getBoundingClientRect().height, place.height, 1);
+    assert.isAbove(place.height, 80);
+  });
+
+  it('treats directives as comments without the notes attribute', async () => {
+    const editor = await getEditor(ARTICLE, '');
+    assert.lengthOf(overlays(editor, '.shot-chip, .shot-card'), 0);
+    assert.include(doc(editor).textContent, 'shot ai-page');
+  });
+
+  it('leaves directives as they are in source mode', async () => {
+    const editor = await getEditor();
+    editor.sourceMode = true;
+    await editor.updateComplete;
+    assert.equal(editor.textArea.value, ARTICLE);
+    assert.lengthOf(overlays(editor, '.shot-chip, .shot-card'), 0);
+  });
+
+  it('writes directives back exactly where they were when the document is edited', async () => {
+    const editor = await getEditor();
+
+    blocks(editor)[0].firstChild.textContent += ' More.';
+    doc(editor).dispatchEvent(
+      new InputEvent('input', { inputType: 'insertText' })
+    );
+
+    assert.equal(
+      editor.value,
+      ARTICLE.replace('First paragraph.', 'First paragraph. More.')
+    );
+  });
+
+  it('edits a directive in a panel over its image, keeping its hash', async () => {
+    const editor = await getEditor();
+    let seen = 0;
+    editor.addEventListener('change', () => seen++);
+
+    const textarea = await openPanel(editor);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    assert.equal(textarea.value, TEXT);
+    assert.equal(editor.shadowRoot.activeElement, textarea);
+    assert.lengthOf(overlays(editor, '.shot-chip'), 0);
+
+    const panel = overlays(editor, '.shot-panel')[0].getBoundingClientRect();
+    const image = doc(editor).querySelector('img').getBoundingClientRect();
+    assert.closeTo(panel.top, image.top + 8, 1);
+    assert.isAtLeast(panel.left, image.left);
+
+    textarea.value = 'Open the AI page.\nCrop to the */ dialog and its menu.';
+    (overlays(editor, '.shot-done')[0] as HTMLElement).click();
+    await editor.updateComplete;
+
+    assert.equal(seen, 1);
+    assert.include(
+      editor.value,
+      `![shot](${IMAGE}#size=medium)\n\n/* shot ai-page ${HASH}\nOpen the AI page.\nCrop to the * / dialog and its menu.\n*/\n\n/* check the image */`
+    );
+
+    // and it's seen to have been edited since its screenshot was made
+    assert.lengthOf(overlays(editor, '.shot-panel'), 0);
+    assert.include(overlays(editor, '.shot-chip')[0].innerText, 'Edited');
+  });
+
+  it('leaves a directive as it was on escape, or when nothing changed', async () => {
+    const editor = await getEditor();
+    let seen = 0;
+    editor.addEventListener('change', () => seen++);
+
+    let textarea = await openPanel(editor, '.shot-card');
+    textarea.value = 'never mind';
+    textarea.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+    );
+    await editor.updateComplete;
+    assert.lengthOf(overlays(editor, '.shot-panel'), 0);
+
+    textarea = await openPanel(editor, '.shot-card');
+    textarea.value = '  ' + textarea.value + '\n\n';
+    textarea.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        metaKey: true,
+        bubbles: true
+      })
+    );
+    await editor.updateComplete;
+
+    assert.equal(seen, 0);
+    assert.equal(editor.value, ARTICLE);
+  });
+
+  it('shows a directive whose image is deleted where the image was', async () => {
+    const editor = await getEditor();
+
+    blocks(editor)[1].remove();
+    doc(editor).dispatchEvent(
+      new InputEvent('input', { inputType: 'deleteContentBackward' })
+    );
+    await editor.updateComplete;
+
+    assert.equal(
+      editor.value,
+      ARTICLE.replace(`![shot](${IMAGE}#size=medium)\n\n`, '')
+    );
+    assert.lengthOf(overlays(editor, '.shot-chip'), 0);
+    assert.lengthOf(overlays(editor, '.shot-card'), 2);
+  });
+
+  it('adds a note about an image after its directive', async () => {
+    const editor = await getEditor(
+      `One.\n\n![shot](${IMAGE})\n\n/* shot ai-page\n${TEXT}\n*/\n\nTwo.`
+    );
+
+    blocks(editor)[1].dispatchEvent(
+      new MouseEvent('mousemove', { bubbles: true })
+    );
+    await editor.updateComplete;
+    (editor.shadowRoot.querySelector('.add-note') as HTMLElement).click();
+    await editor.updateComplete;
+    const textarea = overlays(
+      editor,
+      '.note textarea'
+    )[0] as HTMLTextAreaElement;
+    textarea.value = 'a better image?';
+    textarea.dispatchEvent(new Event('blur'));
+    await editor.updateComplete;
+
+    assert.equal(
+      editor.value,
+      `One.\n\n![shot](${IMAGE})\n\n/* shot ai-page\n${TEXT}\n*/\n\n/* a better image? */\n\nTwo.`
+    );
+  });
+
+  it('only reads a directive when disabled', async () => {
+    const editor = await getEditor(ARTICLE, 'notes disabled');
+    const textarea = await openPanel(editor);
+    assert.isTrue(textarea.readOnly);
+    assert.lengthOf(overlays(editor, '.shot-done'), 0);
+  });
+
+  it('shows directives on the article', async () => {
+    const editor = await getEditor();
+    await assertScreenshot('markdown-editor/directives', getClip(editor));
+  });
+
+  it('shows a directive being edited', async () => {
+    const editor = await getEditor();
+    const textarea = await openPanel(editor);
+    textarea.value = TEXT + '\nMark the New Model button.';
+    textarea.dispatchEvent(new Event('input'));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    await assertScreenshot('markdown-editor/directive-panel', getClip(editor));
   });
 });

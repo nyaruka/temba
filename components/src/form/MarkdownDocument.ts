@@ -167,6 +167,137 @@ export const noteOf = (source: string): string | null => {
 export const noteSource = (text: string): string =>
   `/* ${text.trim().replace(/\*\//g, '* /')} */`;
 
+/**
+ * A screenshot directive - a description of how a screenshot is made, for tools that generate screenshots - kept as a
+ * comment block after the image it makes, so the article never shows it. The comment opens with a line of its own,
+ * `/* shot <name> [<hash>]`, and the rest of it, up to where it closes, is the text: how to get to what the screenshot
+ * shows and what to crop and mark, a sentence to a line.
+ *
+ * The hash is of the text as it was when the screenshot was last made from it, so a directive edited since is
+ * recognized by anyone who recomputes it; one without a hash describes a screenshot that hasn't been made yet.
+ */
+export interface Directive {
+  /** the screenshot's name, which is its file name */
+  name: string;
+  hash: string | null;
+  /** the description, a line at a time - each trimmed, with no blank ones, which is what the hash is of */
+  text: string;
+}
+
+const DIRECTIVE =
+  /^(\s*)\/\*[ \t]*shot[ \t]+([a-z0-9-]+)(?:[ \t]+([0-9a-f]{8}))?[ \t]*\n([\s\S]*?)\*\/\s*$/;
+
+const directiveText = (text: string): string =>
+  text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line)
+    .join('\n');
+
+/** the directive a block is - one comment opening with its header line - or null for any other block */
+export const directiveOf = (source: string): Directive | null => {
+  const match = DIRECTIVE.exec(source);
+  if (!match || match[4].includes('*/')) {
+    return null;
+  }
+  return {
+    name: match[2],
+    hash: match[3] || null,
+    text: directiveText(match[4])
+  };
+};
+
+/** a directive's hash: the first 8 hex characters of the sha256 of its text */
+export const directiveHash = (text: string): string =>
+  sha256(directiveText(text)).slice(0, 8);
+
+/**
+ * a directive as the markdown that keeps it, ahead of whatever the block it was read from had ahead of it - its text
+ * can't close it early, and the hash stays whatever it was, which is how an edit since the screenshot was made shows
+ */
+export const directiveSource = (directive: Directive, lead = ''): string => {
+  const header = [`/* shot ${directive.name}`, directive.hash]
+    .filter((part) => part)
+    .join(' ');
+  const text = directiveText(directive.text).replace(/\*\//g, '* /');
+  return `${lead}${header}\n${text ? text + '\n' : ''}*/`;
+};
+
+/** whatever a directive's block has ahead of its comment - blank lines at the top of the document, or an indent */
+export const directiveLead = (source: string): string =>
+  DIRECTIVE.exec(source)?.[1] || '';
+
+// SHA-256 as hex, computed here rather than with crypto.subtle, which only exists in a secure context and only
+// answers asynchronously
+const K = new Uint32Array([
+  0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1,
+  0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
+  0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786,
+  0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+  0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147,
+  0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+  0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b,
+  0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+  0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a,
+  0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+  0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+]);
+
+const sha256 = (text: string): string => {
+  const data = new TextEncoder().encode(text);
+  // the message, a 1 bit, zeros, and its length in bits, to a multiple of 64 bytes
+  const padded = new Uint8Array((((data.length + 8) >> 6) + 1) << 6);
+  padded.set(data);
+  padded[data.length] = 0x80;
+  const view = new DataView(padded.buffer);
+  view.setUint32(padded.length - 8, Math.floor(data.length / 0x20000000));
+  view.setUint32(padded.length - 4, (data.length << 3) >>> 0);
+
+  const h = new Uint32Array([
+    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c,
+    0x1f83d9ab, 0x5be0cd19
+  ]);
+  const w = new Uint32Array(64);
+  const rotr = (x: number, n: number) => (x >>> n) | (x << (32 - n));
+
+  for (let offset = 0; offset < padded.length; offset += 64) {
+    for (let i = 0; i < 16; i++) {
+      w[i] = view.getUint32(offset + i * 4);
+    }
+    for (let i = 16; i < 64; i++) {
+      const s0 = rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >>> 3);
+      const s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+      w[i] = w[i - 16] + s0 + w[i - 7] + s1;
+    }
+
+    let [a, b, c, d, e, f, g, hh] = h;
+    for (let i = 0; i < 64; i++) {
+      const s1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+      const t1 = (hh + s1 + ((e & f) ^ (~e & g)) + K[i] + w[i]) >>> 0;
+      const s0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+      const t2 = (s0 + ((a & b) ^ (a & c) ^ (b & c))) >>> 0;
+      hh = g;
+      g = f;
+      f = e;
+      e = (d + t1) >>> 0;
+      d = c;
+      c = b;
+      b = a;
+      a = (t1 + t2) >>> 0;
+    }
+    h[0] += a;
+    h[1] += b;
+    h[2] += c;
+    h[3] += d;
+    h[4] += e;
+    h[5] += f;
+    h[6] += g;
+    h[7] += hh;
+  }
+
+  return [...h].map((word) => word.toString(16).padStart(8, '0')).join('');
+};
+
 export const joinBlocks = (blocks: Block[]): string =>
   blocks.map((block) => block.source + block.trailer).join('\n');
 
