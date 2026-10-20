@@ -578,9 +578,6 @@ class ArticleTest(TembaTest):
 
     def test_strip_comments(self):
         cases = (
-            # a line comment takes its line, indented or not
-            ("One\n// a note\nTwo", "One\nTwo"),
-            ("One\n   //a note\nTwo", "One\nTwo"),
             # a block comment can be on one line or span several, and takes the lines it fills
             ("One\n\n/* a note */\n\nTwo", "One\n\n\nTwo"),
             ("One\n\n/* a note\nover lines\n*/\n\nTwo", "One\n\n\nTwo"),
@@ -588,18 +585,19 @@ class ArticleTest(TembaTest):
             # what follows the */ that closes one stays
             ("/* a note */ Two", " Two"),
             ("/* a\nnote */ Two\nThree", " Two\nThree"),
-            # only at the start of a line - a URL's // or a /* in a sentence is text
-            ("See https://example.com/x // or not", "See https://example.com/x // or not"),
+            # only at the start of a line - a /* in a sentence is text
             ("Use a/* glob */ here", "Use a/* glob */ here"),
             ("Tap **/start** to begin", "Tap **/start** to begin"),
+            # and // isn't a comment at all
+            ("One\n// not a note\nTwo", "One\n// not a note\nTwo"),
             # a /* that's never closed isn't a comment
             ("/* never closed\nTwo", "/* never closed\nTwo"),
             # code is code, fenced or indented
-            ("```\n// code\n/* code */\n```\n// note", "```\n// code\n/* code */\n```"),
-            ("~~~~js\n// code\n~~~\n// still code\n~~~~", "~~~~js\n// code\n~~~\n// still code\n~~~~"),
-            ("Text\n\n    // code\n\n    /* code */\n// note", "Text\n\n    // code\n\n    /* code */"),
+            ("```\n/* code */\n```\n/* note */", "```\n/* code */\n```"),
+            ("~~~~js\n/* code */\n~~~\n/* still code */\n~~~~", "~~~~js\n/* code */\n~~~\n/* still code */\n~~~~"),
+            ("Text\n\n    /* code */\n\n    /* code */\n/* note */", "Text\n\n    /* code */\n\n    /* code */"),
             # though a paragraph's indented continuation isn't
-            ("Text\n    // note", "Text"),
+            ("Text\n    /* note */", "Text"),
             ("", ""),
         )
         for body, expected in cases:
@@ -608,7 +606,7 @@ class ArticleTest(TembaTest):
     def test_as_html_comments(self):
         article = self.create_article(self.helpdesk, "Notes")
         article.body = (
-            "# Shown\n\nText.\n\n/* check the screenshot\n# Hidden\n*/\n\n// and this\n\nMore `// code` text."
+            "# Shown\n\nText.\n\n/* check the screenshot\n# Hidden\n*/\n\n/* and this */\n\nMore `// code` text."
         )
 
         # comments are never shown - nor are any headings in them listed - and their plain text leaves them out too

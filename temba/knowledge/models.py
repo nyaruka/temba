@@ -466,12 +466,10 @@ def _sanitize_attribute(element: str, attribute: str, value: str) -> str | None:
 
 
 # An article can carry notes for its authors - what to check, what's still to do - as comments in its markdown, which
-# are never shown or indexed: a line whose first non-blank characters are //, or from a /* that starts a line to the
-# next */, which can be lines later. Only at the start of a line, so the // of a URL or a /* in a sentence is just text,
-# and never in code, where they're as likely to mean what they do in code. A /* that's never closed isn't a comment,
-# so a stray one can't swallow the rest of an article.
+# are never shown or indexed: from a /* that starts a line to the next */, which can be lines later. Only at the start
+# of a line, so a /* in a sentence is just text, and never in code, where it's as likely to mean what it does in code.
+# A /* that's never closed isn't a comment, so a stray one can't swallow the rest of an article.
 FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
-LINE_COMMENT = re.compile(r"^\s*//")
 BLOCK_COMMENT = re.compile(r"^\s*/\*")
 
 
@@ -506,9 +504,6 @@ def strip_comments(body: str) -> str:
             kept.append(line)
             continue
         code = code and not line.strip()
-
-        if LINE_COMMENT.match(line):
-            continue
 
         if BLOCK_COMMENT.match(line):
             start = line.index("/*") + 2
