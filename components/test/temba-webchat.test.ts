@@ -40,6 +40,7 @@ const RECEIVE_URL = new RegExp(`/wc/${CHANNEL}/receive$`);
 const UPLOAD_URL = new RegExp(`/wc/${CHANNEL}/upload$`);
 const HISTORY_URL = new RegExp(`/wc/${CHANNEL}/history\\?`);
 const HISTORY_PAGE_URL = new RegExp(`/wc/${CHANNEL}/history\\?.*before=`);
+const STATUS_URL = new RegExp(`/wc/${CHANNEL}/status$`);
 
 let clock: any;
 let mockedNow: SinonStub;
@@ -113,6 +114,32 @@ const msgOut = (uuid: string, text: string, extra: any = {}) => {
     text,
     ...extra
   };
+};
+
+// the service only takes real uuids in status reports
+const uuidN = (n: number) =>
+  `00000000-0000-4000-8000-${`${n}`.padStart(12, '0')}`;
+
+// the status reports made so far, as {status, msg_uuids}
+const statusReports = () => {
+  return requestsTo(STATUS_URL).map((request) => {
+    const body = bodyOf(request);
+    expect(body.chat_id).to.equal(CHAT_ID);
+    return { status: body.status, msg_uuids: body.msg_uuids };
+  });
+};
+
+// pretends the page is hidden or visible to the visitor
+const setPageVisible = (visible: boolean) => {
+  Object.defineProperty(document, 'visibilityState', {
+    configurable: true,
+    get: () => (visible ? 'visible' : 'hidden')
+  });
+  document.dispatchEvent(new Event('visibilitychange'));
+};
+
+const restorePageVisibility = () => {
+  delete (document as any).visibilityState;
 };
 
 const msgIn = (uuid: string, text: string, extra: any = {}) => {
@@ -224,9 +251,12 @@ describe('temba-webchat', () => {
 
     mockPOST(START_URL, { chat_id: CHAT_ID });
     mockPOST(RECEIVE_URL, { msg_uuid: 'sent-msg-uuid' });
+    mockPOST(STATUS_URL, {});
+    window.localStorage.clear();
   });
 
   afterEach(() => {
+    restorePageVisibility();
     setSocketProvider(previousProvider);
     clearMockGets();
     clearMockPosts();
@@ -1081,5 +1111,229 @@ describe('temba-webchat', () => {
 
     webChat.remove();
     expect(mockSocket.activeChannels()).to.deep.equal([]);
+  });
+
+  it('reports replies as read when shown and delivered when not', async () => {
+    const webChat = await openWebChat();
+
+    // seen as it arrives, so it's read straight away
+    mockSocket.serverPublish(SOCKET, msgOut(uuidN(1), 'Hello?'));
+    await settle(() => statusReports().length === 1);
+    expect(statusReports()[0]).to.deep.equal({
+      status: 'read',
+      msg_uuids: [uuidN(1)]
+    });
+
+    // one that arrives while the panel is closed only got as far as the page
+    webChat.open = false;
+    await webChat.updateComplete;
+    mockSocket.serverPublish(SOCKET, msgOut(uuidN(2), 'Still there?'));
+    await settle(() => statusReports().length === 2);
+    expect(statusReports()[1]).to.deep.equal({
+      status: 'delivered',
+      msg_uuids: [uuidN(2)]
+    });
+
+    // until the panel is opened
+    webChat.open = true;
+    await webChat.updateComplete;
+    await settle(() => statusReports().length === 3);
+    expect(statusReports()[2]).to.deep.equal({
+      status: 'read',
+      msg_uuids: [uuidN(2)]
+    });
+
+    // and nothing is reported twice
+    webChat.open = false;
+    await webChat.updateComplete;
+    webChat.open = true;
+    await webChat.updateComplete;
+    clock.tick(5000);
+    await settle(() => true);
+    expect(statusReports().length).to.equal(3);
+  });
+
+  it('holds reads until the page is visible', async () => {
+    setPageVisible(false);
+    const webChat = await openWebChat();
+
+    mockSocket.serverPublish(SOCKET, msgOut(uuidN(1), 'Hello?'));
+    await settle(() => statusReports().length === 1);
+    expect(statusReports()[0]).to.deep.equal({
+      status: 'delivered',
+      msg_uuids: [uuidN(1)]
+    });
+
+    // the visitor comes back to the tab
+    setPageVisible(true);
+    await settle(() => statusReports().length === 2);
+    expect(statusReports()[1]).to.deep.equal({
+      status: 'read',
+      msg_uuids: [uuidN(1)]
+    });
+
+    // which doesn't make the open panel read anything it already has
+    expect(webChat.open).to.equal(true);
+    setPageVisible(false);
+    setPageVisible(true);
+    clock.tick(5000);
+    await settle(() => true);
+    expect(statusReports().length).to.equal(2);
+  });
+
+  it('batches acks and spaces out its reports', async () => {
+    const webChat = await openWebChat();
+
+    const uuids = [...Array(30).keys()].map((i) => uuidN(i + 1));
+    uuids.forEach((uuid, i) =>
+      mockSocket.serverPublish(SOCKET, msgOut(uuid, `Message ${i}`))
+    );
+    await settle(() => hasMessage(webChat, uuidN(30)));
+
+    // a report takes as many as the service allows at once
+    await settle(() => statusReports().length === 1);
+    expect(statusReports()[0]).to.deep.equal({
+      status: 'read',
+      msg_uuids: uuids.slice(0, 25)
+    });
+
+    // and the rest wait for the service's rate
+    clock.tick(1500);
+    await settle(() => true);
+    expect(statusReports().length).to.equal(1);
+
+    await settle(() => statusReports().length === 2);
+    expect(statusReports()[1]).to.deep.equal({
+      status: 'read',
+      msg_uuids: uuids.slice(25)
+    });
+  });
+
+  it('acks history once, even across reloads', async () => {
+    installCookieJar([`${COOKIE}=${CHAT_ID}`]);
+    mockGET(HISTORY_URL, {
+      events: [
+        msgIn(uuidN(3), 'I would like to order a hat'),
+        msgOut(uuidN(2), 'Hi there, how can we help?'),
+        msgOut(uuidN(1), 'Welcome!')
+      ]
+    });
+
+    const webChat = await openWebChat();
+    await settle(() => statusReports().length === 1);
+    expect(statusReports()[0]).to.deep.equal({
+      status: 'read',
+      msg_uuids: [uuidN(1), uuidN(2)]
+    });
+
+    // recovering after a dropped connection fetches the same page again
+    mockSocket.subs[0].onSubscribed();
+    clock.tick(5000);
+    await settle(() => true);
+    expect(statusReports().length).to.equal(1);
+
+    // as does the page reloading - only what's new is reported
+    webChat.remove();
+    clearMockGets();
+    mockGET(HISTORY_URL, {
+      events: [
+        msgOut(uuidN(4), 'Which one?'),
+        msgIn(uuidN(3), 'I would like to order a hat'),
+        msgOut(uuidN(2), 'Hi there, how can we help?'),
+        msgOut(uuidN(1), 'Welcome!')
+      ]
+    });
+    await openWebChat();
+    await settle(() => statusReports().length === 2);
+    expect(statusReports()[1]).to.deep.equal({
+      status: 'read',
+      msg_uuids: [uuidN(4)]
+    });
+  });
+
+  it('only reads what this page has shown', async () => {
+    // acked as delivered on an earlier visit, but not in the history now
+    window.localStorage.setItem(
+      `temba-chat-status-${CHAT_ID}`,
+      JSON.stringify([[uuidN(9), 'delivered']])
+    );
+    installCookieJar([`${COOKIE}=${CHAT_ID}`]);
+    mockGET(HISTORY_URL, { events: [msgOut(uuidN(1), 'Welcome!')] });
+
+    setPageVisible(false);
+    await openWebChat();
+    await settle(() => statusReports().length === 1);
+    expect(statusReports()[0]).to.deep.equal({
+      status: 'delivered',
+      msg_uuids: [uuidN(1)]
+    });
+
+    // the visitor looking only reads what they can see
+    setPageVisible(true);
+    await settle(() => statusReports().length === 2);
+    expect(statusReports()[1]).to.deep.equal({
+      status: 'read',
+      msg_uuids: [uuidN(1)]
+    });
+    clock.tick(5000);
+    await settle(() => true);
+    expect(statusReports().length).to.equal(2);
+  });
+
+  it('keeps acks with their chat when it starts another', async () => {
+    const NEW_CHAT_ID = 'ZyXwVuTsRqPoNmLkJiHgFeDc';
+    installCookieJar([`${COOKIE}=${CHAT_ID}`]);
+    mockGET(HISTORY_URL, { events: [msgOut(uuidN(1), 'Welcome!')] });
+
+    // the first report is throttled, so it's waiting to be retried...
+    clearMockPosts();
+    mockPOST(STATUS_URL, { error: 'rate limit exceeded' }, {}, '429');
+    const webChat = await openWebChat();
+    await settle(() => statusReports().length === 1);
+
+    // ...when the widget comes back to find its chat gone and starts another
+    webChat.remove();
+    clearMockGets();
+    clearMockPosts();
+    mockGET(HISTORY_URL, { error: 'unknown chat id' }, {}, '400');
+    mockPOST(START_URL, { chat_id: NEW_CHAT_ID });
+    mockPOST(STATUS_URL, {});
+    document.body.appendChild(webChat);
+    await settle(() =>
+      mockSocket.activeChannels().includes(`chat:${CHANNEL}:${NEW_CHAT_ID}`)
+    );
+
+    // the old chat's acks never go out as the new chat's
+    clock.tick(60000);
+    await settle(() => true);
+    requestsTo(STATUS_URL).forEach((request) =>
+      expect(bodyOf(request).chat_id).to.equal(CHAT_ID)
+    );
+  });
+
+  it('retries a report the service throttled', async () => {
+    const webChat = await openWebChat();
+
+    clearMockPosts();
+    mockPOST(STATUS_URL, { error: 'rate limit exceeded' }, {}, '429');
+    mockSocket.serverPublish(SOCKET, msgOut(uuidN(1), 'Hello?'));
+    await settle(() => statusReports().length === 1);
+
+    // not straight away
+    clearMockPosts();
+    mockPOST(STATUS_URL, {});
+    clock.tick(5000);
+    await settle(() => true);
+    expect(statusReports().length).to.equal(1);
+
+    // but once the window has passed, with anything that arrived meanwhile
+    mockSocket.serverPublish(SOCKET, msgOut(uuidN(2), 'Anyone?'));
+    clock.tick(60000);
+    await settle(() => statusReports().length === 2);
+    expect(statusReports()[1]).to.deep.equal({
+      status: 'read',
+      msg_uuids: [uuidN(1), uuidN(2)]
+    });
+    expect(webChat.error).to.equal(null);
   });
 });

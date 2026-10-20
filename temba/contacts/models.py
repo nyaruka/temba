@@ -1992,7 +1992,7 @@ class ContactExport(ExportType):
                 dict(
                     field=contact_field,
                     label="Field:%s" % contact_field.name,
-                    key=contact_field.key,
+                    key=f"field:{contact_field.key}",  # prefixed so field keys can't collide with attributes
                     urn_scheme=None,
                 )
             )

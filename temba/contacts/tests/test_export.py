@@ -647,3 +647,20 @@ class ContactExportTest(TembaTest):
                 tz=self.org.timezone,
             )
             assertReimport(export)
+
+    def test_export_field_keyed_like_attribute(self):
+        # fields whose keys match contact attributes still export their own values
+        self.create_field("email", "Email Address")
+        self.create_field("status", "Status")
+        Contact.objects.filter(id=self.joe.id).update(email="joe@example.com")
+        self.set_contact_field(self.joe, "email", "joe@old.com")
+        self.set_contact_field(self.joe, "status", "Gold")
+
+        sheets, export = self._export(self.org.active_contacts_group)
+        rows = list(sheets[0].iter_rows(values_only=True))
+        joe_row = dict(zip(rows[0], next(r for r in rows[1:] if r[0] == str(self.joe.uuid))))
+
+        self.assertEqual("joe@example.com", joe_row["Email"])
+        self.assertEqual("Active", joe_row["Status"])
+        self.assertEqual("joe@old.com", joe_row["Field:Email Address"])
+        self.assertEqual("Gold", joe_row["Field:Status"])
