@@ -735,11 +735,14 @@ class Contact(LegacyIDMixin, LegacyUUIDMixin, CreatedByMixin, ModifiedByMixin, S
                 if anchor is None:  # contact has no value for this event's anchor field
                     continue
 
-                when = anchor + event.get_offset()
-                if event.delivery_hour >= 0 and event.unit in (CampaignEvent.UNIT_DAYS, CampaignEvent.UNIT_WEEKS):
-                    when = when.astimezone(self.org.timezone).replace(
-                        hour=event.delivery_hour, minute=0, second=0, microsecond=0
-                    )
+                try:
+                    when = anchor + event.get_offset()
+                    if event.delivery_hour >= 0 and event.unit in (CampaignEvent.UNIT_DAYS, CampaignEvent.UNIT_WEEKS):
+                        when = when.astimezone(self.org.timezone).replace(
+                            hour=event.delivery_hour, minute=0, second=0, microsecond=0
+                        )
+                except OverflowError:  # anchor is so close to the min/max date that the event time isn't representable
+                    continue
 
                 obj = {
                     "type": "campaign_event",
