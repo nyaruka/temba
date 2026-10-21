@@ -318,22 +318,20 @@ class WhatsAppTypeTest(TembaTest):
         self.assertEqual([], trans.variables)
         self.assertFalse(trans.is_supported)
 
-        # try null components
-        trans = self.type.update_local(
-            channel,
-            {
-                "category": "UTILITY",
-                "components": None,
-                "language": "en",
-                "name": "no_components",
-                "status": "APPROVED",
-                "id": "9031",
-            },
-        )
-        self.assertEqual(TemplateTranslation.STATUS_APPROVED, trans.status)
-        self.assertEqual([], trans.components)
-        self.assertEqual([], trans.variables)
-        self.assertFalse(trans.is_supported)
+        # try null, empty and missing components
+        for name, extra in (
+            ("null_components", {"components": None}),
+            ("empty_components", {"components": []}),
+            ("missing_components", {}),
+        ):
+            trans = self.type.update_local(
+                channel,
+                {"category": "UTILITY", "language": "en", "name": name, "status": "APPROVED", **extra},
+            )
+            self.assertEqual(TemplateTranslation.STATUS_APPROVED, trans.status)
+            self.assertEqual([], trans.components)
+            self.assertEqual([], trans.variables)
+            self.assertFalse(trans.is_supported)
 
     def test_update_local_d3(self):
         # no namespace in channel config
