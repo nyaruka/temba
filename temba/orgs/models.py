@@ -23,6 +23,7 @@ from django.contrib.postgres.validators import ArrayMinLengthValidator
 from django.contrib.staticfiles import finders
 from django.core.files import File
 from django.core.files.storage import default_storage
+from django.core.validators import MaxValueValidator
 from django.db import models, transaction
 from django.db.models import Count, Exists, Prefetch, Q
 from django.utils import timezone
@@ -321,7 +322,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     prometheus_token = models.CharField(null=True, max_length=40)
 
     # how long open tickets can go without activity before being closed automatically, zero to never close them
-    max_ticket_idle_days = models.PositiveIntegerField(default=30)
+    max_ticket_idle_days = models.PositiveIntegerField(default=30, validators=[MaxValueValidator(365)])
 
     config = models.JSONField(default=dict)
     slug = models.SlugField(
