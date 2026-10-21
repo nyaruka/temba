@@ -300,6 +300,10 @@ class Trigger(UUIDMixin, OrgLimitMixin, CreatedByMixin, ModifiedByMixin, SoftDel
         flow_uuid = trigger_def["flow"]["uuid"]
         flow = org.flows.get(uuid=flow_uuid, is_active=True)
 
+        # flow types can't be checked before the flows in the same export are imported
+        if flow.flow_type not in trigger_type.allowed_flow_types:
+            return None
+
         keywords = trigger_def.get("keywords")
         match_type = None
         if trigger_type.code == Trigger.TYPE_KEYWORD:

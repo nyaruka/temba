@@ -343,6 +343,16 @@ class TriggerTest(TembaTest):
         trigger = Trigger.objects.get(trigger_type="C")
         self.assertIsNone(trigger.keywords)
 
+        # triggers with flows of types not allowed for the trigger type are skipped
+        self._import_trigger({"trigger_type": "T", "flow": flow_ref, "groups": []})
+        self.assertFalse(Trigger.objects.filter(trigger_type="T").exists())
+
+        background = self.create_flow("Background", flow_type=Flow.TYPE_BACKGROUND)
+        self._import_trigger(
+            {"trigger_type": "T", "flow": {"uuid": str(background.uuid), "name": "Background"}, "groups": []}
+        )
+        self.assertEqual(background, Trigger.objects.get(trigger_type="T").flow)
+
     @override_settings(ORG_LIMIT_DEFAULTS={"triggers": 2})
     def test_org_limit(self):
         flow = self.create_flow("Test")
