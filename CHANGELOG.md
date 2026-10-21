@@ -1,3 +1,6 @@
+## v26.3.154 (2026-10-21)
+ * Skip campaign events with unrepresentable times on the contact timeline
+
 ## v26.3.153 (2026-10-21)
  * Skip importing triggers whose flow type isn't allowed for the trigger type
 
