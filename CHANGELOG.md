@@ -1,3 +1,6 @@
+## v26.3.153 (2026-10-21)
+ * Skip importing triggers whose flow type isn't allowed for the trigger type
+
 ## v26.3.152 (2026-10-21)
  * Treat WhatsApp templates without components as unsupported rather than failing the sync
  * Remove the old campaign event read page, now replaced by the campaign page's event modal
