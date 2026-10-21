@@ -322,7 +322,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     prometheus_token = models.CharField(null=True, max_length=40)
 
     # how long open tickets can go without activity before being closed automatically, zero to never close them
-    max_ticket_idle_days = models.PositiveIntegerField(default=30, validators=[MaxValueValidator(365)])
+    max_ticket_idle_days = models.PositiveIntegerField(default=30, validators=[MaxValueValidator(30)])
 
     config = models.JSONField(default=dict)
     slug = models.SlugField(
