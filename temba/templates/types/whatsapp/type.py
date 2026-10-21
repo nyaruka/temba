@@ -24,7 +24,7 @@ class WhatsAppType(TemplateType):
             return None
 
         status = self.STATUS_MAPPING[raw_status]
-        components, variables, supported = self._extract_components(raw["components"])
+        components, variables, supported = self._extract_components(raw.get("components"))
 
         return TemplateTranslation.get_or_create(
             channel,
@@ -39,14 +39,14 @@ class WhatsAppType(TemplateType):
             is_supported=supported,
         )
 
-    def _extract_components(self, raw: list) -> tuple:
+    def _extract_components(self, raw: list | None) -> tuple:
         """
         Extracts components in our simplified format from payload of WhatsApp template components
         """
 
         components = []
         variables = []
-        supported = True
+        supported = bool(raw)  # templates can come back without components
 
         def add_variables(names: list, typ: str) -> dict:
             map = {}
@@ -56,7 +56,7 @@ class WhatsAppType(TemplateType):
             return map
 
         raw_dict = dict()
-        for component in raw:
+        for component in raw or []:
             if component["type"].upper() not in ["HEADER", "BODY", "FOOTER", "BUTTONS"]:
                 supported = False
             raw_dict[component["type"].upper()] = component
