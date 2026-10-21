@@ -289,20 +289,21 @@ class Trigger(UUIDMixin, OrgLimitMixin, CreatedByMixin, ModifiedByMixin, SoftDel
         # only consider fields which are valid for this type of trigger
         trigger_def = {k: v for k, v in definition.items() if k in trigger_type.export_fields}
 
-        # resolve groups, channel and flow
+        flow_uuid = trigger_def["flow"]["uuid"]
+        flow = org.flows.get(uuid=flow_uuid, is_active=True)
+
+        # flow types can't be checked before the flows in the same export are imported, and are checked before
+        # resolving groups so that a skipped trigger doesn't leave behind groups that nothing uses
+        if flow.flow_type not in trigger_type.allowed_flow_types:
+            return None
+
+        # resolve groups and channel
         groups = cls._resolve_import_groups(org, user, same_site, trigger_def["groups"])
         exclude_groups = cls._resolve_import_groups(org, user, same_site, trigger_def.get("exclude_groups", []))
 
         channel = None
         if "channel" in trigger_def and isinstance(trigger_def["channel"], dict):
             channel = org.channels.filter(uuid=trigger_def["channel"]["uuid"], is_active=True).first()
-
-        flow_uuid = trigger_def["flow"]["uuid"]
-        flow = org.flows.get(uuid=flow_uuid, is_active=True)
-
-        # flow types can't be checked before the flows in the same export are imported
-        if flow.flow_type not in trigger_type.allowed_flow_types:
-            return None
 
         keywords = trigger_def.get("keywords")
         match_type = None
