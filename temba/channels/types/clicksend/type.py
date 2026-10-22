@@ -67,6 +67,11 @@ class ClickSendType(ChannelType):
         "password_help": _("Your API Password"),
         "form_blurb": _("You can connect your ClickSend number by entering the settings below."),
     }
+
+    credentials = (
+        ChannelType.Credential("username", _("API Username"), _("Your API Username")),
+        ChannelType.Credential("password", _("API Password"), _("Your API Password")),
+    )
     claim_blurb = _("If you have a %(link)s number, you can quickly connect it using their APIs.") % {
         "link": '<a target="_blank" href="https://www.clicksend.com/">ClickSend</a>'
     }

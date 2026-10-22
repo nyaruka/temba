@@ -21,6 +21,11 @@ class Hub9Type(ChannelType):
     claim_blurb = _("Easily add a two way number you have configured with Hub9 in Indonesia.")
     claim_view = ClaimView
 
+    credentials = (
+        ChannelType.Credential("username", _("Username"), _("The username provided by the provider to use their API")),
+        ChannelType.Credential("password", _("Password"), _("The password provided by the provider to use their API")),
+    )
+
     config_ui = ConfigUI(
         blurb=_("To finish configuring this channel, you'll need to provide them with the following details."),
         endpoints=[

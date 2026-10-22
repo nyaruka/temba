@@ -26,6 +26,13 @@ class NovoType(ChannelType):
     ) % {"link": '<a target="_blank" href="http://www.novotechnologyinc.com/">Novo</a>'}
     claim_view = ClaimView
 
+    credentials = (
+        ChannelType.Credential(
+            CONFIG_MERCHANT_ID, _("Merchant ID"), _("The merchant id to compose your Merchant URL provided by Novo")
+        ),
+        ChannelType.Credential(CONFIG_MERCHANT_SECRET, _("Merchant Secret"), _("The merchant secret provided by Novo")),
+    )
+
     config_ui = ConfigUI(
         endpoints=[
             ConfigUI.Endpoint(

@@ -30,7 +30,7 @@ from temba.orgs.models import Org
 from temba.orgs.views.base import BaseDependencyDeleteModal, BaseReadView
 from temba.orgs.views.mixins import OrgObjPermsMixin, OrgPermsMixin
 from temba.utils import countries
-from temba.utils.fields import SelectWidget
+from temba.utils.fields import InputWidget, SelectWidget
 from temba.utils.views.mixins import ChartViewMixin, ComponentFormMixin, ContextMenuMixin, ModalFormMixin, SpaMixin
 
 from .models import Channel, ChannelCount, ChannelLog
@@ -425,6 +425,19 @@ class UpdateChannelForm(forms.ModelForm):
                 default=False,
             )
 
+        for credential in self.instance.type.credentials:
+            self.add_config_field(
+                credential.key,
+                forms.CharField(
+                    max_length=256,
+                    label=credential.label,
+                    help_text=credential.help,
+                    required=credential.required,
+                    widget=InputWidget(),
+                ),
+                default="",
+            )
+
     def add_config_field(self, config_key: str, field, *, default):
         field.initial = self.instance.config.get(config_key, default)
 
@@ -435,7 +448,13 @@ class UpdateChannelForm(forms.ModelForm):
         return {k: v for k, v in self.cleaned_data.items() if k in self.config_fields}
 
     def should_check_credentials(self) -> bool:
-        return True
+        credentials = self.instance.type.credentials
+        if not credentials:
+            return True
+
+        # only check declared credentials when they change, so a channel with revoked credentials can still be
+        # disabled or renamed
+        return any(self.cleaned_data.get(c.key) != self.instance.config.get(c.key, "") for c in credentials)
 
     def clean(self) -> dict[str, Any]:
         cleaned_data = super().clean()

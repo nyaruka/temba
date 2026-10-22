@@ -24,6 +24,11 @@ class KaleyraType(ChannelType):
     )
     claim_view = ClaimView
 
+    credentials = (
+        ChannelType.Credential(CONFIG_ACCOUNT_SID, _("Account SID"), _("Your Kaleyra Account SID")),
+        ChannelType.Credential(CONFIG_API_KEY, _("API Key"), _("Your Kaleyra API Key")),
+    )
+
     config_ui = ConfigUI(
         blurb=_(
             "To finish configuring this channel, you'll need to set the following callback URL on your Kaleyra account."

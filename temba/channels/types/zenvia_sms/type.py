@@ -28,6 +28,24 @@ class ZenviaSMSType(ChannelType):
     }
     claim_view = ClaimView
 
+    credentials = (
+        ChannelType.Credential(
+            Channel.CONFIG_API_KEY, _("API Token"), _("The API token for your integration as provided by Zenvia")
+        ),
+    )
+
+    def check_credentials(self, config: dict) -> bool:
+        try:
+            response = requests.get(
+                "https://api.zenvia.com/v2/subscriptions",
+                headers={"X-API-TOKEN": config[Channel.CONFIG_API_KEY], "Content-Type": "application/json"},
+                timeout=10,
+            )
+        except requests.RequestException:
+            return False
+
+        return response.status_code == 200
+
     def update_webhook(self, channel, url, event_type):
         headers = {
             "X-API-TOKEN": channel.config[Channel.CONFIG_API_KEY],

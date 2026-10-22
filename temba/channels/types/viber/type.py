@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 
 from temba.contacts.models import URN
 
-from ...models import ChannelType, ConfigUI
+from ...models import Channel, ChannelType, ConfigUI
 from .views import ClaimView, UpdateForm
 
 
@@ -24,6 +24,25 @@ class ViberType(ChannelType):
     update_form = UpdateForm
 
     claim_view = ClaimView
+
+    credentials = (
+        ChannelType.Credential(
+            Channel.CONFIG_AUTH_TOKEN, _("Authentication Token"), _("The authentication token provided by Viber")
+        ),
+    )
+
+    def check_credentials(self, config: dict) -> bool:
+        try:
+            response = requests.post(
+                "https://chatapi.viber.com/pa/get_account_info",
+                json={"auth_token": config[Channel.CONFIG_AUTH_TOKEN]},
+                timeout=10,
+            )
+        except requests.RequestException:
+            return False
+
+        return response.status_code == 200 and response.json().get("status") == 0
+
     claim_blurb = _(
         "Connect a %(link)s public channel to send and receive messages to Viber users for free. Your users will need "
         "an Android, Windows or iOS device and a Viber account to send and receive messages."

@@ -23,6 +23,11 @@ class JioChatType(ChannelType):
     ) % {"link": '<a href="https://jiochat.com" target="_blank">JioChat</a>'}
     claim_view = ClaimView
 
+    credentials = (
+        ChannelType.Credential("jiochat_app_id", _("App ID"), _("The JioChat App ID")),
+        ChannelType.Credential("jiochat_app_secret", _("Application Secret"), _("The JioChat App secret")),
+    )
+
     config_ui = ConfigUI(
         blurb=_(
             "To finish configuring this channel, you'll need to enter the following webhook URL and token on "

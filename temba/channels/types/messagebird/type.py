@@ -2,7 +2,7 @@ from django.utils.translation import gettext_lazy as _
 
 from temba.contacts.models import URN
 
-from ...models import ChannelType, ConfigUI
+from ...models import Channel, ChannelType, ConfigUI
 from .views import SUPPORTED_TIMEZONES, ClaimView
 
 
@@ -22,6 +22,10 @@ class MessageBirdType(ChannelType):
         "link": '<a target="_blank" href="https://www.messagebird.com/">Messagebird</a>'
     }
     claim_view = ClaimView
+
+    credentials = (
+        ChannelType.Credential(Channel.CONFIG_AUTH_TOKEN, _("Messagebird API Auth Token"), _("The API auth token")),
+    )
 
     config_ui = ConfigUI(
         blurb=_(
