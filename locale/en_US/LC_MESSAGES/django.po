@@ -6548,10 +6548,10 @@ msgstr ""
 msgid "See more tickets"
 msgstr ""
 
-msgid "All done!"
+msgid "You're all caught up"
 msgstr ""
 
-msgid "Nice work, there aren't any more tickets here that need your attention."
+msgid "There are no tickets here waiting on you. New ones will show up here as they come in."
 msgstr ""
 
 msgid "No tickets yet"

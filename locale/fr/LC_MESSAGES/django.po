@@ -6582,11 +6582,11 @@ msgstr "Tous les agents"
 msgid "See more tickets"
 msgstr "Voir plus de billets"
 
-msgid "All done!"
-msgstr "C'est fait !"
+msgid "You're all caught up"
+msgstr "Vous êtes à jour"
 
-msgid "Nice work, there aren't any more tickets here that need your attention."
-msgstr "Beau travail, il n'y a pas d'autres billets ici qui nécessitent votre attention."
+msgid "There are no tickets here waiting on you. New ones will show up here as they come in."
+msgstr "Aucun ticket ici n'attend votre réponse. Les nouveaux apparaîtront ici dès leur arrivée."
 
 msgid "No tickets yet"
 msgstr "Aucun ticket pour l'instant"

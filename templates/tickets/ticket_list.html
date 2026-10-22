@@ -123,6 +123,12 @@
       text-align: center;
     }
 
+    /* the caught-up card is about the user's own queue, so other empty
+       folders show nothing rather than a message that doesn't fit them */
+    .empty:not([data-folder='mine']) .caught-up {
+      display: none;
+    }
+
     .empty-card temba-icon {
       --icon-color: var(--text-3);
       display: inline-block;
@@ -133,10 +139,6 @@
       color: var(--text-1);
       font-weight: var(--w-semibold);
       font-size: 18px;
-    }
-
-    .popper {
-      font-size: 40px;
     }
 
     /* the same 8px rhythm the card layout uses — the column's header strip
@@ -307,6 +309,7 @@
         }
 
         folder = menuItem.id;
+        document.querySelector(".chat-pane .empty").dataset.folder = folder;
         updateTicketList();
       }
     }
@@ -470,6 +473,7 @@
 
         if (empty) {
           empty.style.opacity = '0';
+          empty.style.pointerEvents = 'none';
         }
 
       } else {
@@ -496,6 +500,7 @@
         }
         if (empty) {
           empty.style.opacity = '1';
+          empty.style.pointerEvents = 'auto';
         }
 
         if (contactHeader) {
@@ -735,18 +740,18 @@
             </div>
           </temba-page-header>
         </temba-header-bar>
-        <div class="empty">
-          <div class="empty-card">
+        <div class="empty" data-folder="{{ folder }}">
+          <div class="empty-card{% if has_tickets %} caught-up{% endif %}">
             {% if has_tickets %}
-              <div class="popper">🎉</div>
+              <temba-icon name="tickets_mine_done" size="2"></temba-icon>
               <h2>
                 {% blocktrans trimmed %}
-                  All done!
+                  You're all caught up
                 {% endblocktrans %}
               </h2>
               <p>
                 {% blocktrans trimmed %}
-                  Nice work, there aren't any more tickets here that need your attention.
+                  There are no tickets here waiting on you. New ones will show up here as they come in.
                 {% endblocktrans %}
               </p>
             {% else %}
