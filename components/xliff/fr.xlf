@@ -1709,6 +1709,14 @@
             contain mistakes, so review them.</source>
   <target>Le texte sera traduit en <x id="0" equiv-text="&lt;strong&gt;${languageName}&lt;/strong&gt;"/> automatiquement. Les traductions peuvent contenir des erreurs, alors vérifiez-les.</target>
 </trans-unit>
+<trans-unit id="s27575b14c90d05bd">
+  <source>Add a note</source>
+  <target>Ajouter une note</target>
+</trans-unit>
+<trans-unit id="s8e46c72034dc11bb">
+  <source>No tickets</source>
+  <target>Aucun ticket</target>
+</trans-unit>
 </body>
 </file>
 </xliff>
