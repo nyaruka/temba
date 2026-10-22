@@ -104,6 +104,18 @@ describe('temba-ticket-list', () => {
     );
   });
 
+  it('shows an empty message when there are no tickets', async () => {
+    await loadStore();
+    const list = await getList('/test/assets/list/tickets-empty.json');
+    assert.equal(list.items.length, 0);
+
+    const options = list.shadowRoot.querySelector('temba-options');
+    await (options as any).updateComplete;
+    const empty = options.shadowRoot.querySelector('.no-options');
+    assert.equal(empty.textContent.trim(), 'No tickets');
+    await assertScreenshot('list/tickets-empty', getClip(list));
+  });
+
   it('separates closed tickets with a divider', async () => {
     const now = mockNow('2024-05-01T12:00:00.000Z');
     mockAgents();
