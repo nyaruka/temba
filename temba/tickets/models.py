@@ -354,8 +354,6 @@ class Ticket(models.Model):
             ),
             # used by engine to load a contact with its open tickets
             models.Index(name="tickets_contact_open", fields=["contact", "opened_on"], condition=Q(status="O")),
-            # used by engine to find open tickets that have been inactive
-            models.Index(name="tickets_open_last_activity", fields=["last_activity_on"], condition=Q(status="O")),
             # used by API tickets endpoint hence the ordering, and general fetching by org or contact
             models.Index(name="tickets_api_by_org", fields=["org", "-modified_on", "-id"]),
             models.Index(name="tickets_api_by_contact", fields=["contact", "-modified_on", "-id"]),
