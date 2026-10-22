@@ -11,7 +11,7 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
-from temba.channels.views import ChannelTypeMixin
+from temba.channels.views import ChannelTypeMixin, UpdateChannelForm
 from temba.orgs.views.mixins import OrgObjPermsMixin, OrgPermsMixin
 from temba.utils.fields import InputWidget
 from temba.utils.text import truncate
@@ -28,6 +28,27 @@ WHATSAPP_GRAPH_API_BASE = "https://graph.facebook.com/v25.0"
 # whatsapp_business_management and whatsapp_business_messaging permissions are granted as
 # granular (per-WABA) scopes and so are not present in the token's top-level scopes list.
 REQUIRED_SCOPE = "business_management"
+
+# opts a channel into sending messages outside the customer service window as utility messages without a template
+CONFIG_DIRECT_SEND = "wa_direct_send"
+
+
+class UpdateForm(UpdateChannelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.add_config_field(
+            CONFIG_DIRECT_SEND,
+            forms.BooleanField(
+                label=_("Direct Send"),
+                required=False,
+                help_text=_(
+                    "Send messages outside the customer service window as utility messages without a template. "
+                    "Requires Direct Send to be enabled by Meta for the WhatsApp Business Account."
+                ),
+            ),
+            default=False,
+        )
 
 
 class ClaimView(ClaimViewMixin, SmartFormView):
