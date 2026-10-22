@@ -1,3 +1,7 @@
+## v26.3.158 (2026-10-22)
+ * Show a centered placeholder card in the My Tickets folder when it has no tickets
+ * Drop index on open tickets by last activity
+
 ## v26.3.157 (2026-10-22)
  * Backfill close fires for open tickets
 
