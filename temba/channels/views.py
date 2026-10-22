@@ -441,7 +441,7 @@ class UpdateChannelForm(forms.ModelForm):
         # only check credentials when config has changed, so a channel whose credentials have been revoked can still
         # be renamed or disabled
         if updated_config != self.instance.config:
-            if not Channel.get_type_from_code(self.instance.channel_type).check_credentials(updated_config):
+            if not self.instance.type.check_credentials(updated_config):
                 raise ValidationError(_("Credentials don't appear to be valid."))
 
         return cleaned_data
@@ -716,7 +716,7 @@ class ChannelCRUDL(SmartCRUDL):
             return reverse("channels.channel_read", args=[self.object.uuid])
 
         def get_form_class(self):
-            return Channel.get_type_from_code(self.object.channel_type).get_update_form()
+            return self.object.type.get_update_form()
 
         def derive_initial(self):
             initial = super().derive_initial()
