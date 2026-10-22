@@ -130,3 +130,58 @@ class Dialog360TypeTest(CRUDLTestMixin, TembaTest):
                 "Content-Type": "application/json",
             },
         )
+
+    @patch("requests.get")
+    def test_update(self, mock_get):
+        channel = self.create_channel(
+            "D3C",
+            "360Dialog channel",
+            address="+250788123123",
+            country="RW",
+            config={
+                Channel.CONFIG_BASE_URL: "https://waba-v2.360dialog.io",
+                Channel.CONFIG_AUTH_TOKEN: "123456789",
+            },
+        )
+        update_url = reverse("channels.channel_update", args=[channel.id])
+
+        self.assertRequestDisallowed(update_url, [None, self.agent, self.admin2])
+        self.assertUpdateFetch(
+            update_url,
+            [self.editor, self.admin],
+            form_fields={"name": "360Dialog channel", "is_enabled": True, "auth_token": "123456789"},
+        )
+
+        # rejected API key
+        mock_get.return_value = MockResponse(401, '{"meta": {"success": false}}')
+        self.assertUpdateSubmit(
+            update_url,
+            self.admin,
+            {"name": "360Dialog channel", "is_enabled": True, "auth_token": "invalid"},
+            form_errors={"__all__": "Credentials don't appear to be valid."},
+            object_unchanged=channel,
+        )
+
+        # unreachable API
+        mock_get.side_effect = RequestException("Network is unreachable")
+        self.assertUpdateSubmit(
+            update_url,
+            self.admin,
+            {"name": "360Dialog channel", "is_enabled": True, "auth_token": "987654321"},
+            form_errors={"__all__": "Credentials don't appear to be valid."},
+            object_unchanged=channel,
+        )
+
+        mock_get.side_effect = None
+        mock_get.return_value = MockResponse(200, '{"waba_templates": []}')
+        self.assertUpdateSubmit(
+            update_url, self.admin, {"name": "WhatsApp", "is_enabled": True, "auth_token": "987654321"}
+        )
+
+        self.assertEqual("https://waba-v2.360dialog.io/v1/configs/templates", mock_get.call_args[0][0])
+        self.assertEqual({"D360-API-KEY": "987654321"}, mock_get.call_args[1]["headers"])
+
+        channel.refresh_from_db()
+        self.assertEqual("WhatsApp", channel.name)
+        self.assertEqual("987654321", channel.config[Channel.CONFIG_AUTH_TOKEN])
+        self.assertEqual("https://waba-v2.360dialog.io", channel.config[Channel.CONFIG_BASE_URL])
