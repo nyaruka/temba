@@ -4,9 +4,10 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from temba.contacts.models import URN
+from temba.utils.fields import InputWidget
 
 from ...models import Channel
-from ...views import ALL_COUNTRIES, ClaimViewMixin
+from ...views import ALL_COUNTRIES, ClaimViewMixin, UpdateChannelForm
 
 
 class ClaimView(ClaimViewMixin, SmartFormView):
@@ -50,3 +51,23 @@ class ClaimView(ClaimViewMixin, SmartFormView):
         )
 
         return super().form_valid(form)
+
+
+class UpdateForm(UpdateChannelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.add_config_field(
+            Channel.CONFIG_AUTH_TOKEN,
+            forms.CharField(
+                max_length=256,
+                label=_("API Key"),
+                help_text=_("The 360 Dialog API key generated after account registration"),
+                widget=InputWidget(),
+            ),
+            default="",
+        )
+
+    class Meta(UpdateChannelForm.Meta):
+        fields = ("name", "address", "is_enabled")
+        readonly = ("address",)

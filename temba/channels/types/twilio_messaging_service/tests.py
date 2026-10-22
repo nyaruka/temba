@@ -147,5 +147,10 @@ class TwilioMessagingServiceTypeTest(TembaTest):
         ) as mock_check_credentials:
             mock_check_credentials.return_value = False
 
-            response = self.client.post(update_url, post_data)
+            # credentials aren't checked if config is unchanged
+            response = self.client.post(update_url, post_data | {"name": "Bar channel"})
+            self.assertEqual(response.status_code, 302)
+            mock_check_credentials.assert_not_called()
+
+            response = self.client.post(update_url, post_data | {"allow_international": True})
             self.assertFormError(response.context["form"], None, "Credentials don't appear to be valid.")
