@@ -3232,6 +3232,9 @@ msgstr ""
 msgid "Unrestricted Webhooks"
 msgstr ""
 
+msgid "Ticket Triggers"
+msgstr ""
+
 msgid "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please contact support."
 msgstr ""
 

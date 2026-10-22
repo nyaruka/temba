@@ -3246,6 +3246,9 @@ msgstr "Canaux partagés"
 msgid "Unrestricted Webhooks"
 msgstr "Webhooks sans restriction"
 
+msgid "Ticket Triggers"
+msgstr "Déclencheurs de billets"
+
 msgid "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please contact support."
 msgstr "Désolé, votre espace de travail est actuellement suspendu. Pour réactiver le lancement de flux et l'envoi de messages, veuillez contacter le support."
 
