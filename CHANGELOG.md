@@ -1,3 +1,6 @@
+## v26.3.157 (2026-10-22)
+ * Backfill close fires for open tickets
+
 ## v26.3.156 (2026-10-22)
  * Add ticket_triggers org feature
 
