@@ -95,24 +95,48 @@
     }
 
     .chat-pane .empty {
+      display: flex;
       position: absolute;
       /* clear the header strip (52px + 1px rule) — as an absolutely
          positioned flex child the empty state's static position is the
          top of the pane, which would print it over the page header */
       top: 53px;
-      padding: 3px 40px;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
       opacity: 0;
       pointer-events: none;
     }
 
-    .empty h2 {
-      margin-top: 16px;
-      font-size: 36px;
+    .empty-card {
+      max-width: 420px;
+      padding: 32px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      background: var(--surface);
+      box-shadow: var(--shadow-2);
+      color: var(--text-2);
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .empty-card temba-icon {
+      --icon-color: var(--text-3);
+      display: inline-block;
+    }
+
+    .empty-card h2 {
+      margin: 12px 0 8px;
+      color: var(--text-1);
+      font-weight: var(--w-semibold);
+      font-size: 18px;
     }
 
     .popper {
-      display: inline;
-      font-size: 48px;
+      font-size: 40px;
     }
 
     /* the same 8px rhythm the card layout uses — the column's header strip
@@ -712,35 +736,34 @@
           </temba-page-header>
         </temba-header-bar>
         <div class="empty">
-          {% if has_tickets %}
-            <h2>
+          <div class="empty-card">
+            {% if has_tickets %}
               <div class="popper">🎉</div>
-              {% blocktrans trimmed %}
-                All done!
-              {% endblocktrans %}
-            </h2>
-            <div class="mt-4">
-              {% blocktrans trimmed %}
-                Nice work, there aren't any more tickets here that need your attention.
-              {% endblocktrans %}
-            </div>
-          {% else %}
-            <h2>
-              {% blocktrans trimmed %}
-                Tickets
-              {% endblocktrans %}
-            </h2>
-            <div class="mt-6">
-              {% blocktrans with name=branding.name trimmed %}
-                {{ name }} Tickets makes it easy to chat directly with your contacts.
-              {% endblocktrans %}
-            </div>
-            <div class="mt-4">
-              {% blocktrans trimmed %}
-                Sometimes an automated chatbot isn't enough. When your contacts need to chat with a real person, you can use the Open Ticket action to open a new ticket.
-              {% endblocktrans %}
-            </div>
-          {% endif %}
+              <h2>
+                {% blocktrans trimmed %}
+                  All done!
+                {% endblocktrans %}
+              </h2>
+              <p>
+                {% blocktrans trimmed %}
+                  Nice work, there aren't any more tickets here that need your attention.
+                {% endblocktrans %}
+              </p>
+            {% else %}
+              <temba-icon name="tickets" size="2"></temba-icon>
+              <h2>
+                {% blocktrans trimmed %}
+                  No tickets yet
+                {% endblocktrans %}
+              </h2>
+              <p>
+                {% blocktrans trimmed %}
+                  When a contact needs to talk to a person rather than a chatbot, use the Open Ticket action in a flow to hand them over. Their conversations will show up here for your team to reply
+                  to.
+                {% endblocktrans %}
+              </p>
+            {% endif %}
+          </div>
         </div>
         {# the chat is the primary workspace here — give it more room (a higher #}
         {# floor) before card mode wins over tabs than on the contact read page #}

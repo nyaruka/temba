@@ -6592,12 +6592,11 @@ msgstr "Tudo pronto!"
 msgid "Nice work, there aren't any more tickets here that need your attention."
 msgstr "Bom trabalho, não há mais tickets aqui que precisem da sua atenção."
 
-#, python-format
-msgid "%(name)s Tickets makes it easy to chat directly with your contacts."
-msgstr "Os tickets do %(name)s facilitam conversar diretamente com os seus contatos."
+msgid "No tickets yet"
+msgstr "Ainda não há tickets"
 
-msgid "Sometimes an automated chatbot isn't enough. When your contacts need to chat with a real person, you can use the Open Ticket action to open a new ticket."
-msgstr "Às vezes um chatbot automatizado não é suficiente. Quando os seus contatos precisarem conversar com uma pessoa real, você pode usar a ação Abrir Ticket para abrir um novo ticket."
+msgid "When a contact needs to talk to a person rather than a chatbot, use the Open Ticket action in a flow to hand them over. Their conversations will show up here for your team to reply to."
+msgstr "Quando um contato precisar falar com uma pessoa em vez de um chatbot, use a ação Abrir Ticket em um fluxo para transferi-lo. As conversas aparecerão aqui para que sua equipe possa responder."
 
 #, python-format
 msgid "Sorry, the <b>%(object)s</b> topic can't be deleted while it still has tickets. Move the tickets to another topic first and then try again."
