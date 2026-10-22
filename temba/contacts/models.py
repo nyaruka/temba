@@ -1885,11 +1885,13 @@ class ContactFire(models.Model):
     TYPE_WAIT_TIMEOUT = "T"
     TYPE_SESSION_EXPIRATION = "S"
     TYPE_CAMPAIGN_EVENT = "C"
+    TYPE_TICKET_CLOSE = "K"
     TYPE_CHOICES = (
         (TYPE_WAIT_EXPIRATION, "Wait Expiration"),
         (TYPE_WAIT_TIMEOUT, "Wait Timeout"),
         (TYPE_SESSION_EXPIRATION, "Session Expiration"),
         (TYPE_CAMPAIGN_EVENT, "Campaign Event"),
+        (TYPE_TICKET_CLOSE, "Ticket Close"),
     )
 
     id = models.BigAutoField(auto_created=True, primary_key=True)
