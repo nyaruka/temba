@@ -186,7 +186,7 @@ class Dialog360TypeTest(CRUDLTestMixin, TembaTest):
         self.assertEqual("987654321", channel.config[Channel.CONFIG_AUTH_TOKEN])
         self.assertEqual("https://waba-v2.360dialog.io", channel.config[Channel.CONFIG_BASE_URL])
 
-        # key isn't checked if unchanged, so a channel with a revoked key can still be disabled or renamed
+        # credentials aren't checked if config is unchanged, so a channel with a revoked key can still be disabled or renamed
         mock_get.reset_mock()
         mock_get.return_value = MockResponse(401, '{"meta": {"success": false}}')
         self.assertUpdateSubmit(

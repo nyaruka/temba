@@ -68,10 +68,6 @@ class UpdateForm(UpdateChannelForm):
             default="",
         )
 
-    def should_check_credentials(self) -> bool:
-        # only check the API key when it's being changed, so a channel with a revoked key can still be disabled
-        return self.cleaned_data.get(Channel.CONFIG_AUTH_TOKEN) != self.instance.config.get(Channel.CONFIG_AUTH_TOKEN)
-
     class Meta(UpdateChannelForm.Meta):
         fields = ("name", "address", "is_enabled")
         readonly = ("address",)

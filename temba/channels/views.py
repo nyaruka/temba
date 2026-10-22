@@ -434,17 +434,16 @@ class UpdateChannelForm(forms.ModelForm):
     def get_config_values(self):
         return {k: v for k, v in self.cleaned_data.items() if k in self.config_fields}
 
-    def should_check_credentials(self) -> bool:
-        return True
-
     def clean(self) -> dict[str, Any]:
         cleaned_data = super().clean()
         updated_config = self.instance.config | self.get_config_values()
 
-        if self.should_check_credentials() and not Channel.get_type_from_code(
-            self.instance.channel_type
-        ).check_credentials(updated_config):
-            raise ValidationError(_("Credentials don't appear to be valid."))
+        # only check credentials when config has changed, so a channel whose credentials have been revoked can still
+        # be renamed or disabled
+        if updated_config != self.instance.config:
+            if not Channel.get_type_from_code(self.instance.channel_type).check_credentials(updated_config):
+                raise ValidationError(_("Credentials don't appear to be valid."))
+
         return cleaned_data
 
     class Meta:
