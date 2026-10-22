@@ -17,6 +17,7 @@ from .views import (
     Connect,
     RequestCode,
     SelectWABA,
+    UpdateForm,
     VerifyCode,
 )
 
@@ -40,6 +41,7 @@ class WhatsAppType(ChannelType):
 
     claim_blurb = _("If you have an enterprise WhatsApp account, you can connect it to communicate with your contacts")
     claim_view = ClaimView
+    update_form = UpdateForm
 
     menu_items = [dict(label=_("Verify Number"), view_name="channels.types.whatsapp.request_code")]
 
@@ -96,7 +98,8 @@ class WhatsAppType(ChannelType):
                     HTTPLog.WHATSAPP_TEMPLATES_SYNCED, response, start, timezone.now(), channel=channel
                 )
 
-                templates.extend(response.json()["data"])
+                # skip templates Meta generates for Direct Send messages
+                templates.extend(t for t in response.json()["data"] if t.get("source") != "AUTO_GENERATED")
                 url = response.json().get("paging", {}).get("next", None)
             except requests.RequestException as e:
                 HTTPLog.from_exception(HTTPLog.WHATSAPP_TEMPLATES_SYNCED, e, start, channel=channel)

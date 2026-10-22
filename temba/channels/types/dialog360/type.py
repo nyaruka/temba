@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 
 from temba.channels.models import Channel
 from temba.channels.types.dialog360.views import ClaimView
+from temba.channels.types.whatsapp.views import UpdateForm
 from temba.contacts.models import URN
 from temba.request_logs.models import HTTPLog
 
@@ -30,6 +31,7 @@ class Dialog360Type(ChannelType):
         "Activate your own enterprise WhatsApp account in %(link)s (Cloud) to communicate with your contacts. "
     ) % {"link": '<a target="_blank" href="https://www.360dialog.com/">360Dialog</a>'}
     claim_view = ClaimView
+    update_form = UpdateForm
 
     config_ui = ConfigUI()  # has own template
 
@@ -59,7 +61,8 @@ class Dialog360Type(ChannelType):
             HTTPLog.from_exception(HTTPLog.WHATSAPP_TEMPLATES_SYNCED, e, start, channel=channel)
             raise e
 
-        return response.json()["waba_templates"]
+        # skip templates Meta generates for Direct Send messages
+        return [t for t in response.json()["waba_templates"] if t.get("source") != "AUTO_GENERATED"]
 
     def get_redact_values(self, channel) -> tuple:
         return (channel.config[Channel.CONFIG_AUTH_TOKEN],)
