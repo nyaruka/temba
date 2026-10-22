@@ -185,3 +185,15 @@ class Dialog360TypeTest(CRUDLTestMixin, TembaTest):
         self.assertEqual("WhatsApp", channel.name)
         self.assertEqual("987654321", channel.config[Channel.CONFIG_AUTH_TOKEN])
         self.assertEqual("https://waba-v2.360dialog.io", channel.config[Channel.CONFIG_BASE_URL])
+
+        # key isn't checked if unchanged, so a channel with a revoked key can still be disabled or renamed
+        mock_get.reset_mock()
+        mock_get.return_value = MockResponse(401, '{"meta": {"success": false}}')
+        self.assertUpdateSubmit(
+            update_url, self.admin, {"name": "Old WhatsApp", "is_enabled": False, "auth_token": "987654321"}
+        )
+        mock_get.assert_not_called()
+
+        channel.refresh_from_db()
+        self.assertEqual("Old WhatsApp", channel.name)
+        self.assertFalse(channel.is_enabled)
