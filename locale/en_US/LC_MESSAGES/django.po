@@ -6554,11 +6554,10 @@ msgstr ""
 msgid "Nice work, there aren't any more tickets here that need your attention."
 msgstr ""
 
-#, python-format
-msgid "%(name)s Tickets makes it easy to chat directly with your contacts."
+msgid "No tickets yet"
 msgstr ""
 
-msgid "Sometimes an automated chatbot isn't enough. When your contacts need to chat with a real person, you can use the Open Ticket action to open a new ticket."
+msgid "When a conversation needs more than a flow can handle, use the Open Ticket action to hand it over to an agent. Tickets show up here, ready to be picked up and answered."
 msgstr ""
 
 #, python-format
