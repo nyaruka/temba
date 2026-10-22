@@ -43,6 +43,11 @@ class BurstSMSType(ChannelType):
         "form_blurb": _("You can connect your BurstSMS number by entering the settings below."),
     }
 
+    credentials = (
+        ChannelType.Credential("username", _("API Key"), _("The API key as found on your settings page")),
+        ChannelType.Credential("password", _("API Secret"), _("The API secret as found on your settings page")),
+    )
+
     claim_blurb = _("If you have a %(link)s number, you can quickly connect it using their APIs.") % {
         "link": '<a target="_blank" href="https://www.burstsms.com.au/">BurstSMS</a>'
     }

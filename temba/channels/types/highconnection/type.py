@@ -24,6 +24,11 @@ class HighConnectionType(ChannelType):
     ) % {"link": '<a target="_blank" href="http://www.highconnexion.com/en/">High Connection</a>'}
     claim_view = AuthenticatedExternalCallbackClaimView
 
+    credentials = (
+        ChannelType.Credential("username", _("Username"), _("The username provided by the provider to use their API")),
+        ChannelType.Credential("password", _("Password"), _("The password provided by the provider to use their API")),
+    )
+
     config_ui = ConfigUI(
         blurb=_(
             "To finish configuring this channel, you'll need to notify HighConnection of the following URL for incoming "

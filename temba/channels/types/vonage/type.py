@@ -71,6 +71,15 @@ class VonageType(ChannelType):
     }
     claim_view = ClaimView
 
+    credentials = (
+        ChannelType.Credential(CONFIG_API_KEY, _("API Key"), _("Your Vonage API key")),
+        ChannelType.Credential(CONFIG_API_SECRET, _("API Secret"), _("Your Vonage API secret")),
+    )
+
+    def check_credentials(self, config: dict) -> bool:
+        client = VonageClient(api_key=config[self.CONFIG_API_KEY], api_secret=config[self.CONFIG_API_SECRET])
+        return client.check_credentials()
+
     async_activation = False
 
     config_ui = ConfigUI(

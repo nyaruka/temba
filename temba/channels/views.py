@@ -30,7 +30,7 @@ from temba.orgs.models import Org
 from temba.orgs.views.base import BaseDependencyDeleteModal, BaseReadView
 from temba.orgs.views.mixins import OrgObjPermsMixin, OrgPermsMixin
 from temba.utils import countries
-from temba.utils.fields import SelectWidget
+from temba.utils.fields import InputWidget, SelectWidget
 from temba.utils.views.mixins import ChartViewMixin, ComponentFormMixin, ContextMenuMixin, ModalFormMixin, SpaMixin
 
 from .models import Channel, ChannelCount, ChannelLog
@@ -423,6 +423,19 @@ class UpdateChannelForm(forms.ModelForm):
                     required=False, help_text=_("Perform answering machine detection and hangup if machine detected.")
                 ),
                 default=False,
+            )
+
+        for credential in self.instance.type.credentials:
+            self.add_config_field(
+                credential.key,
+                forms.CharField(
+                    max_length=256,
+                    label=credential.label,
+                    help_text=credential.help,
+                    required=credential.required,
+                    widget=InputWidget(),
+                ),
+                default="",
             )
 
     def add_config_field(self, config_key: str, field, *, default):

@@ -33,6 +33,15 @@ class ExternalType(ChannelType):
     CONFIG_MT_RESPONSE_CHECK = "mt_response_check"
     CONFIG_CONTENT_TYPE = "content_type"
 
+    credentials = (
+        ChannelType.Credential(
+            CONFIG_SEND_AUTHORIZATION,
+            _("Authorization Header Value"),
+            _("The Authorization header value added when calling the URL (if any)"),
+            required=False,
+        ),
+    )
+
     CONFIG_DEFAULT_SEND_BODY = (
         "uuid={{uuid}}&text={{text}}&to={{to}}&to_no_plus={{to_no_plus}}&from={{from}}&from_no_plus={{from_no_plus}}"
         "&channel={{channel}}"

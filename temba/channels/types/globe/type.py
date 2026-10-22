@@ -24,6 +24,16 @@ class GlobeType(ChannelType):
     )
     claim_view = ClaimView
 
+    credentials = (
+        ChannelType.Credential("app_id", _("Application Id"), _("The id of your Globe Labs application")),
+        ChannelType.Credential(
+            "app_secret", _("Application Secret"), _("The secret assigned to your Globe Labs application")
+        ),
+        ChannelType.Credential(
+            "passphrase", _("Passphrase"), _("The passphrase assigned to you by Globe Labs to support sending")
+        ),
+    )
+
     config_ui = ConfigUI(
         blurb=_(
             "To finish configuring this channel, you'll need to set the following notify URI for SMS on your "

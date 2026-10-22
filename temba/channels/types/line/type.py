@@ -25,6 +25,8 @@ class LineType(ChannelType):
     ) % {"link": '<a target="_blank" href="https://line.me">LINE</a>'}
     claim_view = ClaimView
 
+    credentials = (ChannelType.Credential("auth_token", _("Access Token"), _("Access token of the bot.")),)
+
     config_ui = ConfigUI(show_public_ips=True)
 
     def get_error_ref_url(self, channel, code: str) -> str:

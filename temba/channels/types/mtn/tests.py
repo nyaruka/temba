@@ -1,5 +1,7 @@
 from unittest.mock import patch
 
+from requests import RequestException
+
 from django.forms import ValidationError
 from django.test.utils import override_settings
 from django.urls import reverse
@@ -136,3 +138,20 @@ class MtnTypeTest(TembaTest):
                     self.fail("Should have thrown error deactivating channel")
                 except ValidationError:
                     pass
+
+    @patch("requests.post")
+    def test_check_credentials(self, mock_post):
+        config = {"api_key": "consumer-key", "auth_token": "consumer-secret"}
+        mock_post.side_effect = [
+            MockResponse(200, '{"access_token": "abc"}'),
+            MockResponse(401, "{}"),
+            RequestException("Network is unreachable"),
+        ]
+
+        self.assertTrue(MtnType().check_credentials(config))
+        self.assertFalse(MtnType().check_credentials(config))
+        self.assertFalse(MtnType().check_credentials(config))
+
+        self.assertEqual(
+            "https://api.mtn.com/v1/oauth/access_token?grant_type=client_credentials", mock_post.call_args[0][0]
+        )

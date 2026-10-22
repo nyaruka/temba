@@ -22,6 +22,11 @@ class JasminType(ChannelType):
     }
     claim_view = ClaimView
 
+    credentials = (
+        ChannelType.Credential("username", _("Username"), _("The username to be used to authenticate to Jasmin")),
+        ChannelType.Credential("password", _("Password"), _("The password to be used to authenticate to Jasmin")),
+    )
+
     config_ui = ConfigUI(
         blurb=_(
             "To finish configuring this channel, you'll need to configure Jasmin to call the following URL for MO (incoming) messages."

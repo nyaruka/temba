@@ -1,5 +1,7 @@
 from unittest.mock import patch
 
+from requests import RequestException
+
 from django.urls import reverse
 
 from temba.channels.models import Channel
@@ -293,3 +295,18 @@ class PlivoTypeTest(TembaTest):
             self.assertEqual(self.client.session[PlivoType.CONFIG_AUTH_TOKEN], "auth-token")
 
             self.assertRedirect(response, reverse("channels.types.plivo.claim"))
+
+    @patch("requests.get")
+    def test_check_credentials(self, mock_get):
+        config = {"PLIVO_AUTH_ID": "auth-id", "PLIVO_AUTH_TOKEN": "auth-token"}
+        mock_get.side_effect = [
+            MockResponse(200, "{}"),
+            MockResponse(401, "{}"),
+            RequestException("Network is unreachable"),
+        ]
+
+        self.assertTrue(PlivoType().check_credentials(config))
+        self.assertFalse(PlivoType().check_credentials(config))
+        self.assertFalse(PlivoType().check_credentials(config))
+
+        self.assertEqual("https://api.plivo.com/v1/Account/auth-id/", mock_get.call_args[0][0])

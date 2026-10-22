@@ -1,5 +1,7 @@
 from unittest.mock import patch
 
+from requests import RequestException
+
 from django.forms import ValidationError
 from django.urls import reverse
 
@@ -126,4 +128,22 @@ class SignalWireTest(TembaTest):
         self.assertEqual(
             "https://developer.signalwire.com/compatibility-api/rest/overview/error-codes/",
             SignalWireType().get_error_ref_url(None, "30006"),
+        )
+
+    @patch("requests.get")
+    def test_check_credentials(self, mock_get):
+        config = {"base_url": "https://temba.signalwire.com/api/laml", "account_sid": "abc123", "auth_token": "xyz"}
+        mock_get.side_effect = [
+            MockResponse(200, '{"incoming_phone_numbers": []}'),
+            MockResponse(401, "{}"),
+            RequestException("Network is unreachable"),
+        ]
+
+        self.assertTrue(SignalWireType().check_credentials(config))
+        self.assertFalse(SignalWireType().check_credentials(config))
+        self.assertFalse(SignalWireType().check_credentials(config))
+
+        self.assertEqual(
+            "https://temba.signalwire.com/api/laml/2010-04-01/Accounts/abc123/IncomingPhoneNumbers.json",
+            mock_get.call_args[0][0],
         )

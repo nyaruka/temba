@@ -27,6 +27,12 @@ class ThinQType(ChannelType):
     ) % {"link": '<a target="_blank" href="https://thinq.com">ThinQ</a>'}
     claim_view = ClaimView
 
+    credentials = (
+        ChannelType.Credential(CONFIG_ACCOUNT_ID, _("Account ID"), _("Your ThinQ account id")),
+        ChannelType.Credential(CONFIG_API_TOKEN_USER, _("Username"), _("The user name for you API token")),
+        ChannelType.Credential(CONFIG_API_TOKEN, _("API Token"), _("Your API token")),
+    )
+
     config_ui = ConfigUI(
         blurb=_(
             "To finish configuring this channel, you'll need to set the following callback URLs on the ThinQ "

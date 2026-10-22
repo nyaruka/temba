@@ -30,6 +30,11 @@ class MessangiType(ChannelType):
     ) % {"link": '<a target="_blank" href="http://www.messangi.com/">Messangi</a>'}
     claim_view = ClaimView
 
+    credentials = (
+        ChannelType.Credential(CONFIG_PUBLIC_KEY, _("Public Key"), _("The public key provided by Messangi")),
+        ChannelType.Credential(CONFIG_PRIVATE_KEY, _("Private Key"), _("The private key provided by Messangi")),
+    )
+
     config_ui = ConfigUI(
         blurb=_(
             "To finish configuring this channel, you'll need to set the following callback URLs on your Messangi account."

@@ -22,6 +22,11 @@ class I2SMSType(ChannelType):
     }
     claim_view = ClaimView
 
+    credentials = (
+        ChannelType.Credential("username", _("Username"), _("Your i2SMS username")),
+        ChannelType.Credential("password", _("Password"), _("Your i2SMS password")),
+    )
+
     config_ui = ConfigUI(
         blurb=_(
             "To finish configuring this channel, you'll need to set the message URL for the `DEFAULT` keyword as below."

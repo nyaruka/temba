@@ -297,6 +297,16 @@ class VonageTypeTest(TembaTest):
         )
         self.assertIsNone(VonageType().get_error_ref_url(None, "x:9"))
 
+    @patch("temba.channels.types.vonage.client.VonageClient.check_credentials")
+    def test_check_credentials(self, mock_check_credentials):
+        config = {"nexmo_api_key": "1234", "nexmo_api_secret": "secret"}
+
+        mock_check_credentials.return_value = True
+        self.assertTrue(VonageType().check_credentials(config))
+
+        mock_check_credentials.return_value = False
+        self.assertFalse(VonageType().check_credentials(config))
+
 
 class ClientTest(TembaTest):
     def setUp(self):

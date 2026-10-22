@@ -1,5 +1,7 @@
 from unittest.mock import patch
 
+from requests import RequestException
+
 from django.urls import reverse
 
 from temba.tests import MockResponse, TembaTest
@@ -90,3 +92,20 @@ class TelegramTypeTest(TembaTest):
 
     def test_get_error_ref_url(self):
         self.assertEqual("https://core.telegram.org/api/errors", TelegramType().get_error_ref_url(None, "420"))
+
+    @patch("requests.get")
+    def test_check_credentials(self, mock_get):
+        config = {"auth_token": "184875172:BAEKbsOKAL23CXufXG4ksNV7Dq7e_1qi3j8"}
+        mock_get.side_effect = [
+            MockResponse(200, '{"ok": true, "result": {}}'),
+            MockResponse(401, '{"ok": false}'),
+            RequestException("Network is unreachable"),
+        ]
+
+        self.assertTrue(TelegramType().check_credentials(config))
+        self.assertFalse(TelegramType().check_credentials(config))
+        self.assertFalse(TelegramType().check_credentials(config))
+
+        self.assertEqual(
+            "https://api.telegram.org/bot184875172:BAEKbsOKAL23CXufXG4ksNV7Dq7e_1qi3j8/getMe", mock_get.call_args[0][0]
+        )

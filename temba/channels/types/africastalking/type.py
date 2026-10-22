@@ -22,6 +22,11 @@ class AfricasTalkingType(ChannelType):
     }
     claim_view = ClaimView
 
+    credentials = (
+        ChannelType.Credential("username", _("Username"), _("Your username on Africa's Talking")),
+        ChannelType.Credential("api_key", _("API Key"), _("Your API key on Africa's Talking account")),
+    )
+
     config_ui = ConfigUI(
         blurb=_(
             "To finish configuring this channel, you'll need to add the following callback URLs to your account on the "

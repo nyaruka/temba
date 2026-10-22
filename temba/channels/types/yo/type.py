@@ -19,6 +19,11 @@ class YoType(ChannelType):
     available_timezones = ["Africa/Kampala"]
 
     claim_view = ClaimView
+
+    credentials = (
+        ChannelType.Credential("username", _("Account Number"), _("Your Yo! account YBS account number")),
+        ChannelType.Credential("password", _("Gateway Password"), _("Your Yo! SMS Gateway password")),
+    )
     claim_blurb = _(
         "If you are based in Uganda, you can integrate with %(link)s to send and receive messages on your short code."
     ) % {"link": '<a target="_blank" href="http://www.yo.co.ug/">Yo!</a>'}
