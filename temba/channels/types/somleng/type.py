@@ -30,6 +30,7 @@ class SomlengType(ChannelType):
     schemes = [URN.TEL_SCHEME]
 
     claim_view = ClaimView
+    credential_fields = {Channel.CONFIG_AUTH_TOKEN: _("Account Token")}
     claim_blurb = _("Connect to a Somleng instance.")
 
     config_ui = ConfigUI(

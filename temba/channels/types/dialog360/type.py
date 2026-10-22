@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from temba.channels.models import Channel
-from temba.channels.types.dialog360.views import ClaimView, UpdateForm
+from temba.channels.types.dialog360.views import ClaimView
 from temba.contacts.models import URN
 from temba.request_logs.models import HTTPLog
 
@@ -30,7 +30,7 @@ class Dialog360Type(ChannelType):
         "Activate your own enterprise WhatsApp account in %(link)s (Cloud) to communicate with your contacts. "
     ) % {"link": '<a target="_blank" href="https://www.360dialog.com/">360Dialog</a>'}
     claim_view = ClaimView
-    update_form = UpdateForm
+    credential_fields = {Channel.CONFIG_AUTH_TOKEN: _("API Key")}
 
     config_ui = ConfigUI()  # has own template
 

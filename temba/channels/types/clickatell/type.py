@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from temba.channels.types.clickatell.views import ClaimView
 from temba.contacts.models import URN
 
-from ...models import ChannelType, ConfigUI
+from ...models import Channel, ChannelType, ConfigUI
 
 
 class ClickatellType(ChannelType):
@@ -22,6 +22,7 @@ class ClickatellType(ChannelType):
         "working in a few minutes."
     ) % {"link": '<a target="_blank" href="http://clickatell.com/">Clickatell</a>'}
     claim_view = ClaimView
+    credential_fields = {Channel.CONFIG_API_KEY: _("API Key")}
 
     config_ui = ConfigUI(
         blurb=_(

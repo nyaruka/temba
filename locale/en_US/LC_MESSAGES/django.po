@@ -439,6 +439,9 @@ msgstr ""
 msgid "You can purchase a short code from %(link)s and connect it in a few simple steps."
 msgstr ""
 
+msgid "Username"
+msgstr ""
+
 msgid "To finish configuring this channel, you'll need to add the following callback URLs to your account on the Africa's Talking website."
 msgstr ""
 
@@ -487,6 +490,9 @@ msgstr ""
 msgid "Connect Android Channel"
 msgstr ""
 
+msgid "Password"
+msgstr ""
+
 #, python-format
 msgid "If you have an %(link)s number, you can quickly connect it using their APIs."
 msgstr ""
@@ -524,13 +530,7 @@ msgstr ""
 msgid "The charging level for your account"
 msgstr ""
 
-msgid "Username"
-msgstr ""
-
 msgid "The username for your API account"
-msgstr ""
-
-msgid "Password"
 msgstr ""
 
 msgid "The password for your API account"
@@ -651,6 +651,9 @@ msgstr ""
 msgid "If you are based in Malawi or Ghana you can purchase a number from %(link)s and connect it in a few simple steps."
 msgstr ""
 
+msgid "User ID"
+msgstr ""
+
 msgid "To finish configuring this channel, you need to configure Click Mobile to send new messages to the URL below."
 msgstr ""
 
@@ -661,9 +664,6 @@ msgid "Ghana"
 msgstr ""
 
 msgid "Malawi"
-msgstr ""
-
-msgid "User ID"
 msgstr ""
 
 msgid "Your user_id on Click Mobile"
@@ -1214,6 +1214,12 @@ msgstr ""
 msgid "This endpoint will be called by Mblox when new messages are received to your number and for delivery reports."
 msgstr ""
 
+msgid "API Token"
+msgstr ""
+
+msgid "Signing Key"
+msgstr ""
+
 msgid "To finish configuring this channel, you'll have to configure the Messagebird to send raw received SMS messages to the URL below either with a flow or by registering the webhook with them. Configure the status URL under Developer Settings to receive status updates for your messages."
 msgstr ""
 
@@ -1310,6 +1316,9 @@ msgstr ""
 msgid "If you are based in Trinidad & Tobago, you can purchase a short code from %(link)s and connect it in a few simple steps."
 msgstr ""
 
+msgid "Merchant Secret"
+msgstr ""
+
 msgid "To receive incoming messages, you need to set the receive URL for your Novo account."
 msgstr ""
 
@@ -1320,9 +1329,6 @@ msgid "Merchant ID"
 msgstr ""
 
 msgid "The merchant id to compose your Merchant URL provided by Novo"
-msgstr ""
-
-msgid "Merchant Secret"
 msgstr ""
 
 msgid "The merchant secret provided by Novo"
@@ -1503,6 +1509,9 @@ msgstr ""
 msgid "This endpoint should be called by SMSCentral when new messages are received to your number."
 msgstr ""
 
+msgid "Account Token"
+msgstr ""
+
 msgid "Connect to a Somleng instance."
 msgstr ""
 
@@ -1599,6 +1608,9 @@ msgstr ""
 
 #, python-format
 msgid "If you have a number with %(link)s you can connect it in a few easy steps to automate your SMS numbers."
+msgstr ""
+
+msgid "API Token User"
 msgstr ""
 
 msgid "To finish configuring this channel, you'll need to set the following callback URLs on the ThinQ website on the SMS -> SMS Configuration page."
@@ -1899,6 +1911,12 @@ msgstr ""
 msgid "Connect WhatsApp"
 msgstr ""
 
+msgid "Account Number"
+msgstr ""
+
+msgid "Gateway Password"
+msgstr ""
+
 #, python-format
 msgid "If you are based in Uganda, you can integrate with %(link)s to send and receive messages on your short code."
 msgstr ""
@@ -1912,13 +1930,7 @@ msgstr ""
 msgid "This URL should be called with a GET by Yo! when new incoming messages are received on your short code."
 msgstr ""
 
-msgid "Account Number"
-msgstr ""
-
 msgid "Your Yo! account YBS account number"
-msgstr ""
-
-msgid "Gateway Password"
 msgstr ""
 
 msgid "Your Yo! SMS Gateway password"
@@ -1934,9 +1946,6 @@ msgstr ""
 
 #, python-format
 msgid "Unable to remove webhook subscriptions: %(resp)s"
-msgstr ""
-
-msgid "API Token"
 msgstr ""
 
 msgid "The API token for your integration as provided by Zenvia"

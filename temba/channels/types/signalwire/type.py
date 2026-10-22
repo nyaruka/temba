@@ -71,6 +71,7 @@ class SignalWireType(ChannelType):
         "link": '<a target="_blank" href="http://www.signalwire.com/">SignalWire</a>'
     }
     claim_view = SignalWireClaimView
+    credential_fields = {Channel.CONFIG_AUTH_TOKEN: _("API Token")}
 
     config_ui = ConfigUI(
         blurb=_(

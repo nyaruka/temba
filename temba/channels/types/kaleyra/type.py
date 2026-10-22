@@ -1,6 +1,6 @@
 from django.utils.translation import gettext_lazy as _
 
-from temba.channels.models import ChannelType, ConfigUI
+from temba.channels.models import Channel, ChannelType, ConfigUI
 from temba.channels.types.kaleyra.views import ClaimView
 from temba.contacts.models import URN
 
@@ -23,6 +23,7 @@ class KaleyraType(ChannelType):
         """Activate your own enterprise WhatsApp account in Kaleyra to communicate with your contacts. <a target="_blank" href="https://www.kaleyra.com/whatsapp/">Learn more about Kaleyra WhatsApp</a>"""
     )
     claim_view = ClaimView
+    credential_fields = {Channel.CONFIG_API_KEY: _("API Key")}
 
     config_ui = ConfigUI(
         blurb=_(

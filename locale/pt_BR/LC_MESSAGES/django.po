@@ -457,6 +457,9 @@ msgstr "Verificação de webhook"
 msgid "You can purchase a short code from %(link)s and connect it in a few simple steps."
 msgstr "Você pode comprar um short code de %(link)s e conectar em poucos passos simples."
 
+msgid "Username"
+msgstr "Nome de usuário"
+
 msgid "To finish configuring this channel, you'll need to add the following callback URLs to your account on the Africa's Talking website."
 msgstr "Para concluir a configuração deste canal, você precisará adicionar as seguintes URLs de retorno de chamada à sua conta no site da Africa's Talking."
 
@@ -505,6 +508,9 @@ msgstr "Outro canal tem esse número. Por favor, remova esse canal primeiro."
 msgid "Connect Android Channel"
 msgstr "Conecte seu Canal Android"
 
+msgid "Password"
+msgstr "Senha"
+
 #, python-format
 msgid "If you have an %(link)s number, you can quickly connect it using their APIs."
 msgstr "Se você tem um número %(link)s, você pode conectar este número rapidamente usando a APIs deles."
@@ -542,14 +548,8 @@ msgstr "Faturado"
 msgid "The charging level for your account"
 msgstr "O nível de carga para a sua conta"
 
-msgid "Username"
-msgstr "Nome de usuário"
-
 msgid "The username for your API account"
 msgstr "O usuário da sua conta API"
-
-msgid "Password"
-msgstr "Senha"
 
 msgid "The password for your API account"
 msgstr "A senha para sua conta API"
@@ -669,6 +669,9 @@ msgstr "Número de telefone inválido, por favor inclua o código do país. ex:+
 msgid "If you are based in Malawi or Ghana you can purchase a number from %(link)s and connect it in a few simple steps."
 msgstr "Se você está localizado no Malawi ou Ghana, você pode comprar um short code da %(link)s e conectar em poucos passos simples."
 
+msgid "User ID"
+msgstr "ID de Usuário"
+
 msgid "To finish configuring this channel, you need to configure Click Mobile to send new messages to the URL below."
 msgstr "Para concluir a configuração deste canal, você precisa configurar o Click Mobile para enviar novas mensagens para a URL abaixo."
 
@@ -680,9 +683,6 @@ msgstr "Ghana"
 
 msgid "Malawi"
 msgstr "Malaui"
-
-msgid "User ID"
-msgstr "ID de Usuário"
 
 msgid "Your user_id on Click Mobile"
 msgstr "Seu ID de usuário em Click Mobile"
@@ -1232,6 +1232,12 @@ msgstr "Para concluir a configuração deste canal, você precisará definir a s
 msgid "This endpoint will be called by Mblox when new messages are received to your number and for delivery reports."
 msgstr "Este terminal será chamado pelo Mblox quando novas mensagens forem recebidas pelo seu número e para relatórios de entrega."
 
+msgid "API Token"
+msgstr "Token API"
+
+msgid "Signing Key"
+msgstr "Chave de assinatura"
+
 msgid "To finish configuring this channel, you'll have to configure the Messagebird to send raw received SMS messages to the URL below either with a flow or by registering the webhook with them. Configure the status URL under Developer Settings to receive status updates for your messages."
 msgstr "Para concluir a configuração deste canal, você terá que configurar o Messagebird para enviar as mensagens SMS recebidas brutas para a URL abaixo, seja com um fluxo ou registrando o webhook com eles. Configure a URL de estado em Developer Settings para receber atualizações de estado das suas mensagens."
 
@@ -1328,6 +1334,9 @@ msgstr "O endereço CP (se fornecido pela MTN)"
 msgid "If you are based in Trinidad & Tobago, you can purchase a short code from %(link)s and connect it in a few simple steps."
 msgstr "Se você está localizado em Trindade & Tobago, você pode comprar um short code em %(link)s e conectar isto em simples e poucos passos."
 
+msgid "Merchant Secret"
+msgstr "Segredo do Fornecedor"
+
 msgid "To receive incoming messages, you need to set the receive URL for your Novo account."
 msgstr "Para receber mensagens, você precisa definir a URL de recebimento para a sua conta Novo."
 
@@ -1339,9 +1348,6 @@ msgstr "ID do Negociante"
 
 msgid "The merchant id to compose your Merchant URL provided by Novo"
 msgstr "O Identificador do fornecedor para compor seu URL fornecedor proporcionado pela Novo."
-
-msgid "Merchant Secret"
-msgstr "Segredo do Fornecedor"
 
 msgid "The merchant secret provided by Novo"
 msgstr "O Segredo do fornecedor proporcionado pela Novo"
@@ -1521,6 +1527,9 @@ msgstr "Para concluir a configuração deste canal, você precisará notificar a
 msgid "This endpoint should be called by SMSCentral when new messages are received to your number."
 msgstr "      Este terminal deve ser chamado pela SMSCentral quando novas mensagens são recebidas no seu número.    "
 
+msgid "Account Token"
+msgstr "Token da conta"
+
 msgid "Connect to a Somleng instance."
 msgstr "Conecte-se a uma instância do Somleng."
 
@@ -1618,6 +1627,9 @@ msgstr "A chave privada fornecida para a utilização da API deles."
 #, python-format
 msgid "If you have a number with %(link)s you can connect it in a few easy steps to automate your SMS numbers."
 msgstr "Se você possuir um número com %(link)s você pode conectá-lo em poucos passos simples para automatizar os seus números de SMS."
+
+msgid "API Token User"
+msgstr "Usuário do token de API"
 
 msgid "To finish configuring this channel, you'll need to set the following callback URLs on the ThinQ website on the SMS -> SMS Configuration page."
 msgstr "Para concluir a configuração deste canal, você precisará definir as seguintes URLs de retorno de chamada no site da ThinQ, na página SMS -> SMS Configuration."
@@ -1917,6 +1929,12 @@ msgstr "Conta do WhatsApp conectada com sucesso."
 msgid "Connect WhatsApp"
 msgstr "Conectar WhatsApp"
 
+msgid "Account Number"
+msgstr "Número da conta"
+
+msgid "Gateway Password"
+msgstr "Senha do Gateway"
+
 #, python-format
 msgid "If you are based in Uganda, you can integrate with %(link)s to send and receive messages on your short code."
 msgstr "Se você está em Uganda, você pode integrar com a %(link)s para enviar e receber mensagens no seu número curto."
@@ -1930,14 +1948,8 @@ msgstr "Inbound SMS URL"
 msgid "This URL should be called with a GET by Yo! when new incoming messages are received on your short code."
 msgstr "Esta URL deve ser chamada com um GET pela Yo! quando novas mensagens forem recebidas no seu número curto."
 
-msgid "Account Number"
-msgstr "Número da conta"
-
 msgid "Your Yo! account YBS account number"
 msgstr "Seu Yo! Conta YBS número da conta"
-
-msgid "Gateway Password"
-msgstr "Senha do Gateway"
 
 msgid "Your Yo! SMS Gateway password"
 msgstr "Your Yo! SMS Gateway password"
@@ -1953,9 +1965,6 @@ msgstr "Não foi possível registrar as assinaturas de webhook: %(resp)s"
 #, python-format
 msgid "Unable to remove webhook subscriptions: %(resp)s"
 msgstr "Não foi possível remover as assinaturas de webhook: %(resp)s"
-
-msgid "API Token"
-msgstr "Token API"
 
 msgid "The API token for your integration as provided by Zenvia"
 msgstr "O token de API para a sua integração, conforme fornecido pela Zenvia"

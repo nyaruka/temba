@@ -106,6 +106,9 @@ class ChannelType(metaclass=ABCMeta):
 
     update_form = None
 
+    # credentials that can be updated after claiming, as config key -> form field label
+    credential_fields: dict = {}
+
     # additional read page content menu items
     menu_items = ()
 

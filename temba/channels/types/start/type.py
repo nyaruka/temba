@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from temba.channels.views import AuthenticatedExternalClaimView
 from temba.contacts.models import URN
 
-from ...models import ChannelType, ConfigUI
+from ...models import Channel, ChannelType, ConfigUI
 
 
 class StartType(ChannelType):
@@ -22,6 +22,7 @@ class StartType(ChannelType):
         "link": '<a target="_blank" href="https://bulk.startmobile.ua/">Start Mobile</a>'
     }
     claim_view = AuthenticatedExternalClaimView
+    credential_fields = {Channel.CONFIG_USERNAME: _("Username"), Channel.CONFIG_PASSWORD: _("Password")}
 
     config_ui = ConfigUI(
         blurb=_("To finish configuring this channel, you'll need to notify Start of the following receiving URL."),

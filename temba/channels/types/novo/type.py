@@ -25,6 +25,7 @@ class NovoType(ChannelType):
         "simple steps."
     ) % {"link": '<a target="_blank" href="http://www.novotechnologyinc.com/">Novo</a>'}
     claim_view = ClaimView
+    credential_fields = {CONFIG_MERCHANT_SECRET: _("Merchant Secret")}
 
     config_ui = ConfigUI(
         endpoints=[

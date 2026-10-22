@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from temba.channels.types.jasmin.views import ClaimView
 from temba.contacts.models import URN
 
-from ...models import ChannelType, ConfigUI
+from ...models import Channel, ChannelType, ConfigUI
 
 
 class JasminType(ChannelType):
@@ -21,6 +21,7 @@ class JasminType(ChannelType):
         "link": '<a target="_blank" href="http://www.jasminsms.com/">Jasmin</a>'
     }
     claim_view = ClaimView
+    credential_fields = {Channel.CONFIG_USERNAME: _("Username"), Channel.CONFIG_PASSWORD: _("Password")}
 
     config_ui = ConfigUI(
         blurb=_(

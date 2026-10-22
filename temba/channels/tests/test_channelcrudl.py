@@ -140,10 +140,14 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
         )
         vonage_channel = self.create_channel("NX", "My Vonage", "+1234567890", country="US", config={}, role="CASR")
         telegram_channel = self.create_channel("TG", "My Telegram", "75474745", config={})
+        clickatell_channel = self.create_channel(
+            "CT", "My Clickatell", "+250785551313", country="RW", config={"api_key": "abc123"}
+        )
 
         android_url = reverse("channels.channel_update", args=[android_channel.id])
         vonage_url = reverse("channels.channel_update", args=[vonage_channel.id])
         telegram_url = reverse("channels.channel_update", args=[telegram_channel.id])
+        clickatell_url = reverse("channels.channel_update", args=[clickatell_channel.id])
 
         self.assertRequestDisallowed(android_url, [None, self.agent, self.admin2])
 
@@ -170,6 +174,33 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertUpdateFetch(
             telegram_url, [self.editor, self.admin], form_fields={"name": "My Telegram", "is_enabled": True}
         )
+
+        # types which declare credential fields get them added
+        self.assertUpdateFetch(
+            clickatell_url,
+            [self.editor, self.admin],
+            form_fields={
+                "name": "My Clickatell",
+                "is_enabled": True,
+                "allow_international": False,
+                "api_key": "abc123",
+            },
+        )
+        self.assertUpdateSubmit(
+            clickatell_url,
+            self.admin,
+            {"name": "My Clickatell", "is_enabled": True, "allow_international": False, "api_key": ""},
+            form_errors={"api_key": "This field is required."},
+            object_unchanged=clickatell_channel,
+        )
+        self.assertUpdateSubmit(
+            clickatell_url,
+            self.admin,
+            {"name": "My Clickatell", "is_enabled": True, "allow_international": False, "api_key": "def456"},
+        )
+
+        clickatell_channel.refresh_from_db()
+        self.assertEqual("def456", clickatell_channel.config["api_key"])
 
         # name can't be empty
         self.assertUpdateSubmit(

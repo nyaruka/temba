@@ -27,6 +27,7 @@ class ZenviaSMSType(ChannelType):
         "link": '<a target="_blank" href="https://www.zenvia.com/">Zenvia SMS</a>'
     }
     claim_view = ClaimView
+    credential_fields = {Channel.CONFIG_API_KEY: _("API Token")}
 
     def update_webhook(self, channel, url, event_type):
         headers = {

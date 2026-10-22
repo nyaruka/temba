@@ -26,6 +26,7 @@ class ThinQType(ChannelType):
         "If you have a number with %(link)s you can connect it in a few easy steps to automate your SMS numbers."
     ) % {"link": '<a target="_blank" href="https://thinq.com">ThinQ</a>'}
     claim_view = ClaimView
+    credential_fields = {CONFIG_API_TOKEN_USER: _("API Token User"), CONFIG_API_TOKEN: _("API Token")}
 
     config_ui = ConfigUI(
         blurb=_(

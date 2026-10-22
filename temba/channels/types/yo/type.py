@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from temba.channels.types.yo.views import ClaimView
 from temba.contacts.models import URN
 
-from ...models import ChannelType, ConfigUI
+from ...models import Channel, ChannelType, ConfigUI
 
 
 class YoType(ChannelType):
@@ -19,6 +19,7 @@ class YoType(ChannelType):
     available_timezones = ["Africa/Kampala"]
 
     claim_view = ClaimView
+    credential_fields = {Channel.CONFIG_USERNAME: _("Account Number"), Channel.CONFIG_PASSWORD: _("Gateway Password")}
     claim_blurb = _(
         "If you are based in Uganda, you can integrate with %(link)s to send and receive messages on your short code."
     ) % {"link": '<a target="_blank" href="http://www.yo.co.ug/">Yo!</a>'}

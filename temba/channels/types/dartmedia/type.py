@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from temba.channels.types.dartmedia.views import ClaimView
 from temba.contacts.models import URN
 
-from ...models import ChannelType, ConfigUI
+from ...models import Channel, ChannelType, ConfigUI
 
 
 class DartMediaType(ChannelType):
@@ -22,6 +22,7 @@ class DartMediaType(ChannelType):
         "link": '<a target="_blank" href="http://dartmedia.biz/">Dart Media</a>'
     }
     claim_view = ClaimView
+    credential_fields = {Channel.CONFIG_USERNAME: _("Username"), Channel.CONFIG_PASSWORD: _("Password")}
 
     config_ui = ConfigUI(
         blurb=_("To finish configuring this channel, you'll need to provide them with the following details."),

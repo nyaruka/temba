@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from temba.channels.views import AuthenticatedExternalClaimView
 from temba.contacts.models import URN
 
-from ...models import ChannelType, ConfigUI
+from ...models import Channel, ChannelType, ConfigUI
 
 
 class M3TechType(ChannelType):
@@ -21,6 +21,7 @@ class M3TechType(ChannelType):
         "link": '<a target="_blank" href="http://m3techservice.com">M3 Tech</a>'
     }
     claim_view = AuthenticatedExternalClaimView
+    credential_fields = {Channel.CONFIG_USERNAME: _("Username"), Channel.CONFIG_PASSWORD: _("Password")}
 
     config_ui = ConfigUI(
         blurb=_("To finish configuring this channel, you'll need to notify M3Tech of the following callback URLs."),

@@ -30,7 +30,7 @@ from temba.orgs.models import Org
 from temba.orgs.views.base import BaseDependencyDeleteModal, BaseReadView
 from temba.orgs.views.mixins import OrgObjPermsMixin, OrgPermsMixin
 from temba.utils import countries
-from temba.utils.fields import SelectWidget
+from temba.utils.fields import InputWidget, SelectWidget
 from temba.utils.views.mixins import ChartViewMixin, ComponentFormMixin, ContextMenuMixin, ModalFormMixin, SpaMixin
 
 from .models import Channel, ChannelCount, ChannelLog
@@ -424,6 +424,9 @@ class UpdateChannelForm(forms.ModelForm):
                 ),
                 default=False,
             )
+
+        for config_key, label in self.instance.type.credential_fields.items():
+            self.add_config_field(config_key, forms.CharField(label=label, widget=InputWidget()), default="")
 
     def add_config_field(self, config_key: str, field, *, default):
         field.initial = self.instance.config.get(config_key, default)

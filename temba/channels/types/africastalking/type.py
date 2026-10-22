@@ -2,7 +2,7 @@ from django.utils.translation import gettext_lazy as _
 
 from temba.contacts.models import URN
 
-from ...models import ChannelType, ConfigUI
+from ...models import Channel, ChannelType, ConfigUI
 from .views import ClaimView
 
 
@@ -21,6 +21,7 @@ class AfricasTalkingType(ChannelType):
         "link": """<a target="_blank" href="http://africastalking.com">Africa's Talking</a>"""
     }
     claim_view = ClaimView
+    credential_fields = {Channel.CONFIG_USERNAME: _("Username"), Channel.CONFIG_API_KEY: _("API Key")}
 
     config_ui = ConfigUI(
         blurb=_(

@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from temba.channels.views import AuthenticatedExternalClaimView
 from temba.contacts.models import URN
 
-from ...models import ChannelType, ConfigUI
+from ...models import Channel, ChannelType, ConfigUI
 
 
 class MbloxType(ChannelType):
@@ -21,6 +21,7 @@ class MbloxType(ChannelType):
         "link": '<a target="_blank" href="https://www.mblox.com/">Mblox</a>'
     }
     claim_view = AuthenticatedExternalClaimView
+    credential_fields = {Channel.CONFIG_USERNAME: _("Username"), Channel.CONFIG_PASSWORD: _("Password")}
 
     config_ui = ConfigUI(
         blurb=_(

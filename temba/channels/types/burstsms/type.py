@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from temba.channels.views import AuthenticatedExternalClaimView
 from temba.contacts.models import URN
 
-from ...models import ChannelType, ConfigUI
+from ...models import Channel, ChannelType, ConfigUI
 
 
 class BurstSMSType(ChannelType):
@@ -42,6 +42,7 @@ class BurstSMSType(ChannelType):
         "password_help": _("The API secret as found on your settings page"),
         "form_blurb": _("You can connect your BurstSMS number by entering the settings below."),
     }
+    credential_fields = {Channel.CONFIG_USERNAME: _("API Key"), Channel.CONFIG_PASSWORD: _("API Secret")}
 
     claim_blurb = _("If you have a %(link)s number, you can quickly connect it using their APIs.") % {
         "link": '<a target="_blank" href="https://www.burstsms.com.au/">BurstSMS</a>'

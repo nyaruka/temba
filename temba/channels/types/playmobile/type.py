@@ -1,6 +1,6 @@
 from django.utils.translation import gettext_lazy as _
 
-from temba.channels.models import ChannelType, ConfigUI
+from temba.channels.models import Channel, ChannelType, ConfigUI
 from temba.channels.types.playmobile.views import ClaimView
 from temba.contacts.models import URN
 
@@ -22,6 +22,7 @@ class PlayMobileType(ChannelType):
         "steps."
     ) % {"link": '<a href="http://playmobile.uz/">Play Mobile</a>'}
     claim_view = ClaimView
+    credential_fields = {Channel.CONFIG_USERNAME: _("Username"), Channel.CONFIG_PASSWORD: _("Password")}
 
     config_ui = ConfigUI(
         blurb=_("To finish configuring this channel, you'll need to notify Play Mobile of the following URL."),

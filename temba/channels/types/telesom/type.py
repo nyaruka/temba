@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from temba.channels.types.telesom.views import ClaimView
 from temba.contacts.models import URN
 
-from ...models import ChannelType, ConfigUI
+from ...models import Channel, ChannelType, ConfigUI
 
 
 class TelesomType(ChannelType):
@@ -22,7 +22,11 @@ class TelesomType(ChannelType):
         "If you are based in Somalia, you can integrate with Telesom to send and receive messages on your short code."
     )
     claim_view = ClaimView
-
+    credential_fields = {
+        Channel.CONFIG_USERNAME: _("Username"),
+        Channel.CONFIG_PASSWORD: _("Password"),
+        Channel.CONFIG_SECRET: _("Private Key"),
+    }
     config_ui = ConfigUI(
         blurb=_(
             "TTo finish configuring this channel, you'll need to provide Telesom with the following delivery URL "

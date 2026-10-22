@@ -2,7 +2,7 @@ from django.utils.translation import gettext_lazy as _
 
 from temba.contacts.models import URN
 
-from ...models import ChannelType, ConfigUI
+from ...models import Channel, ChannelType, ConfigUI
 from .views import ClaimView
 
 
@@ -36,6 +36,7 @@ class WavyType(ChannelType):
     ]
 
     claim_view = ClaimView
+    credential_fields = {Channel.CONFIG_USERNAME: _("Username"), Channel.CONFIG_AUTH_TOKEN: _("Authentication Token")}
     claim_blurb = _("If you have an %(link)s number, you can quickly connect it using their APIs.") % {
         "link": '<a target="_blank" href="https://wavy.global/en/">Movile/Wavy</a>'
     }

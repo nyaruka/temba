@@ -22,6 +22,7 @@ class JustCallType(ChannelType):
     async_activation = False
 
     claim_view = ClaimView
+    credential_fields = {Channel.CONFIG_API_KEY: _("API Key"), Channel.CONFIG_SECRET: _("API Secret")}
     claim_blurb = _("If you have a %(link)s number, you can quickly connect it using their APIs.") % {
         "link": '<a target="_blank" href="https://justcall.io/">JustCall</a>'
     }

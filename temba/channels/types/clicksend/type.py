@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from temba.channels.views import AuthenticatedExternalClaimView
 from temba.contacts.models import URN
 
-from ...models import ChannelType, ConfigUI
+from ...models import Channel, ChannelType, ConfigUI
 
 
 class ClickSendType(ChannelType):
@@ -67,6 +67,7 @@ class ClickSendType(ChannelType):
         "password_help": _("Your API Password"),
         "form_blurb": _("You can connect your ClickSend number by entering the settings below."),
     }
+    credential_fields = {Channel.CONFIG_USERNAME: _("API Username"), Channel.CONFIG_PASSWORD: _("API Password")}
     claim_blurb = _("If you have a %(link)s number, you can quickly connect it using their APIs.") % {
         "link": '<a target="_blank" href="https://www.clicksend.com/">ClickSend</a>'
     }
