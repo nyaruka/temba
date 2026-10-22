@@ -73,7 +73,8 @@ class Dialog360Type(ChannelType):
             HTTPLog.from_exception(HTTPLog.WHATSAPP_TEMPLATES_SYNCED, e, start, channel=channel)
             raise e
 
-        return response.json()["waba_templates"]
+        # skip templates Meta generates for Direct Send messages
+        return [t for t in response.json()["waba_templates"] if t.get("source") != "AUTO_GENERATED"]
 
     def get_redact_values(self, channel) -> tuple:
         return (channel.config[Channel.CONFIG_AUTH_TOKEN],)

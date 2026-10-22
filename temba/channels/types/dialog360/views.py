@@ -3,6 +3,7 @@ from smartmin.views import SmartFormView
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
+from temba.channels.types.whatsapp.views import add_direct_send_field
 from temba.contacts.models import URN
 from temba.utils.fields import InputWidget
 
@@ -62,6 +63,7 @@ class UpdateForm(UpdateChannelForm):
             ),
             default="",
         )
+        add_direct_send_field(self)
 
     class Meta(UpdateChannelForm.Meta):
         fields = ("name", "address", "is_enabled")

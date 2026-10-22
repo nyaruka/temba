@@ -1545,6 +1545,12 @@ msgstr ""
 msgid "Unable to register phone with ID %s from WABA with ID %s"
 msgstr ""
 
+msgid "Direct Send"
+msgstr ""
+
+msgid "Send messages outside the customer service window as utility messages without a template. Requires Direct Send to be enabled by Meta for the WhatsApp Business Account."
+msgstr ""
+
 #, python-format
 msgid "Unable to add system user to %s, please make sure you have business admin manager privileges on the Facebook business."
 msgstr ""

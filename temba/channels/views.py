@@ -399,6 +399,7 @@ class UpdateChannelForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         self.config_fields = []
+        self.config_defaults = {}
 
         if URN.TEL_SCHEME in self.instance.schemes:
             self.add_config_field(
@@ -429,6 +430,7 @@ class UpdateChannelForm(forms.ModelForm):
 
         self.fields[config_key] = field
         self.config_fields.append(config_key)
+        self.config_defaults[config_key] = default
 
     def get_config_values(self):
         return {k: v for k, v in self.cleaned_data.items() if k in self.config_fields}
@@ -440,11 +442,12 @@ class UpdateChannelForm(forms.ModelForm):
 
     def clean(self) -> dict[str, Any]:
         cleaned_data = super().clean()
-        updated_config = self.instance.config | self.get_config_values()
+        config_values = self.get_config_values()
+        updated_config = self.instance.config | config_values
 
-        # only check credentials when config has changed, so a channel whose credentials have been revoked can still
-        # be renamed or disabled
-        if updated_config != self.instance.config:
+        # only check credentials when config has changed (a missing key being unchanged if it's set to its default),
+        # so a channel whose credentials have been revoked can still be renamed or disabled
+        if any(self.instance.config.get(k, self.config_defaults[k]) != v for k, v in config_values.items()):
             if not self.instance.type.check_credentials(updated_config):
                 raise ValidationError(_("Credentials don't appear to be valid."))
 
