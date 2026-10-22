@@ -1,3 +1,7 @@
+## v26.3.155 (2026-10-22)
+ * Add per-workspace ticket idle limit and ticket close contact fire type
+ * Allow updating the API key of 360Dialog channels and only check credentials when config changes
+
 ## v26.3.154 (2026-10-21)
  * Skip campaign events with unrepresentable times on the contact timeline
 
