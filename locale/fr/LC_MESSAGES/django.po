@@ -6591,8 +6591,8 @@ msgstr "Beau travail, il n'y a pas d'autres billets ici qui nécessitent votre a
 msgid "No tickets yet"
 msgstr "Aucun ticket pour l'instant"
 
-msgid "When a contact needs to talk to a person rather than a chatbot, use the Open Ticket action in a flow to hand them over. Their conversations will show up here for your team to reply to."
-msgstr "Lorsqu'un contact a besoin de parler à une personne plutôt qu'à un chatbot, utilisez l'action Ouvrir un ticket dans un flux pour le transférer. Ses conversations apparaîtront ici pour que votre équipe puisse y répondre."
+msgid "When a conversation needs more than a flow can handle, use the Open Ticket action to hand it over. Tickets show up here, ready to be picked up and answered."
+msgstr "Lorsqu'une conversation demande plus que ce qu'un flux peut gérer, utilisez l'action Ouvrir un ticket pour la transférer. Les tickets apparaissent ici, prêts à être pris en charge et traités."
 
 #, python-format
 msgid "Sorry, the <b>%(object)s</b> topic can't be deleted while it still has tickets. Move the tickets to another topic first and then try again."
