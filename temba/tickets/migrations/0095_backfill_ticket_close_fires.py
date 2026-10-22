@@ -38,6 +38,8 @@ def apply_manual():  # pragma: no cover
 
 
 class Migration(migrations.Migration):
+    atomic = False
+
     dependencies = [
         ("contacts", "0224_contactfire_ticket_close"),
         ("orgs", "0195_org_max_ticket_idle_days"),
