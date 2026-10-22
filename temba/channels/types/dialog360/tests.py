@@ -146,9 +146,15 @@ class Dialog360TypeTest(CRUDLTestMixin, TembaTest):
         update_url = reverse("channels.channel_update", args=[channel.id])
 
         self.assertRequestDisallowed(update_url, [None, self.agent, self.admin2])
+        # only admins see credentials
         self.assertUpdateFetch(
             update_url,
-            [self.editor, self.admin],
+            [self.editor],
+            form_fields={"name": "360Dialog channel", "is_enabled": True},
+        )
+        self.assertUpdateFetch(
+            update_url,
+            [self.admin],
             form_fields={"name": "360Dialog channel", "is_enabled": True, "auth_token": "123456789"},
         )
 

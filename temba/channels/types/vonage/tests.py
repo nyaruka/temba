@@ -1,5 +1,6 @@
 from unittest.mock import call, patch
 
+import requests
 from vonage_application.responses import ApplicationData
 from vonage_http_client.errors import AuthenticationError, HttpRequestError, NotFoundError, RateLimitedError
 from vonage_numbers.requests import (
@@ -305,6 +306,16 @@ class VonageTypeTest(TembaTest):
         self.assertTrue(VonageType().check_credentials(config))
 
         mock_check_credentials.return_value = False
+        self.assertFalse(VonageType().check_credentials(config))
+
+        # provider errors are treated as invalid rather than raised
+        mock_check_credentials.side_effect = HttpRequestError(MockResponse(500, "Server Error"))
+        self.assertFalse(VonageType().check_credentials(config))
+
+        mock_check_credentials.side_effect = RateLimitedError(MockResponse(429, "Too Many Requests"))
+        self.assertFalse(VonageType().check_credentials(config))
+
+        mock_check_credentials.side_effect = requests.ConnectionError("Network is unreachable")
         self.assertFalse(VonageType().check_credentials(config))
 
 

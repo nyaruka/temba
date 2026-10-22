@@ -1,3 +1,6 @@
+import requests
+from vonage_http_client.errors import HttpRequestError, RateLimitedError
+
 from django.core.exceptions import ValidationError
 from django.urls import re_path
 from django.utils.translation import gettext_lazy as _
@@ -78,7 +81,10 @@ class VonageType(ChannelType):
 
     def check_credentials(self, config: dict) -> bool:
         client = VonageClient(api_key=config[self.CONFIG_API_KEY], api_secret=config[self.CONFIG_API_SECRET])
-        return client.check_credentials()
+        try:
+            return client.check_credentials()
+        except HttpRequestError, RateLimitedError, requests.RequestException:
+            return False
 
     async_activation = False
 

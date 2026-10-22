@@ -39,10 +39,9 @@ class TelegramType(ChannelType):
             response = requests.get(
                 f"https://api.telegram.org/bot{config[Channel.CONFIG_AUTH_TOKEN]}/getMe", timeout=10
             )
-        except requests.RequestException:
+            return response.status_code == 200 and response.json().get("ok", False)
+        except requests.RequestException, ValueError:  # ValueError for non-JSON responses
             return False
-
-        return response.status_code == 200 and response.json().get("ok", False)
 
     def is_recommended_to(self, org, user):
         return True  # because it's super simpler to setup, free, and works everywhere

@@ -317,6 +317,9 @@ class UpdateForm(UpdateChannelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        if not self.can_edit_credentials:
+            return
+
         self.add_config_field(
             "account_sid",
             forms.CharField(
@@ -342,6 +345,9 @@ class UpdateForm(UpdateChannelForm):
         """
         We override the clean method for Twilio we need to make sure we grab the primary auth tokens
         """
+        if not self.can_edit_credentials:
+            return super().clean()
+
         account_sid = self.cleaned_data.get("account_sid", None)
         account_token = self.cleaned_data.get("auth_token", None)
 

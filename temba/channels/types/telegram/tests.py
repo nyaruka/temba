@@ -99,10 +99,12 @@ class TelegramTypeTest(TembaTest):
         mock_get.side_effect = [
             MockResponse(200, '{"ok": true, "result": {}}'),
             MockResponse(401, '{"ok": false}'),
+            MockResponse(200, "<html>Proxy error</html>"),
             RequestException("Network is unreachable"),
         ]
 
         self.assertTrue(TelegramType().check_credentials(config))
+        self.assertFalse(TelegramType().check_credentials(config))
         self.assertFalse(TelegramType().check_credentials(config))
         self.assertFalse(TelegramType().check_credentials(config))
 

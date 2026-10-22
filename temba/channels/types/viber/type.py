@@ -38,10 +38,9 @@ class ViberType(ChannelType):
                 json={"auth_token": config[Channel.CONFIG_AUTH_TOKEN]},
                 timeout=10,
             )
-        except requests.RequestException:
+            return response.status_code == 200 and response.json().get("status") == 0
+        except requests.RequestException, ValueError:  # ValueError for non-JSON responses
             return False
-
-        return response.status_code == 200 and response.json().get("status") == 0
 
     claim_blurb = _(
         "Connect a %(link)s public channel to send and receive messages to Viber users for free. Your users will need "

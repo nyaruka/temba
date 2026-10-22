@@ -80,9 +80,15 @@ class ViberTypeTest(TembaTest, CRUDLTestMixin):
         read_url = reverse("channels.channel_read", args=[self.channel.uuid])
 
         self.assertRequestDisallowed(update_url, [None, self.agent, self.admin2])
+        # only admins see credentials
         self.assertUpdateFetch(
             update_url,
-            [self.editor, self.admin],
+            [self.editor],
+            form_fields={"name": "Viber", "is_enabled": True, "welcome_message": ""},
+        )
+        self.assertUpdateFetch(
+            update_url,
+            [self.admin],
             form_fields={"name": "Viber", "is_enabled": True, "auth_token": "abcd1234", "welcome_message": ""},
         )
 
@@ -103,9 +109,19 @@ class ViberTypeTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("Updated", self.channel.name)
         self.assertEqual("Welcome, please subscribe for more", self.channel.config.get(CONFIG_WELCOME_MESSAGE))
 
+        # only admins see credentials
         self.assertUpdateFetch(
             update_url,
-            [self.editor, self.admin],
+            [self.editor],
+            form_fields={
+                "name": "Updated",
+                "is_enabled": True,
+                "welcome_message": "Welcome, please subscribe for more",
+            },
+        )
+        self.assertUpdateFetch(
+            update_url,
+            [self.admin],
             form_fields={
                 "name": "Updated",
                 "is_enabled": True,
@@ -137,10 +153,12 @@ class ViberTypeTest(TembaTest, CRUDLTestMixin):
         mock_post.side_effect = [
             MockResponse(200, '{"status": 0, "status_message": "ok"}'),
             MockResponse(200, '{"status": 2, "status_message": "invalidAuthToken"}'),
+            MockResponse(200, "<html>Proxy error</html>"),
             RequestException("Network is unreachable"),
         ]
 
         self.assertTrue(ViberType().check_credentials(config))
+        self.assertFalse(ViberType().check_credentials(config))
         self.assertFalse(ViberType().check_credentials(config))
         self.assertFalse(ViberType().check_credentials(config))
 
