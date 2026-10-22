@@ -63,6 +63,7 @@ class ContactsTest(TembaTest):
 
         with self.anonymous(self.org):
             self.assertEqual("••••••••", tags.format_urn(contact.get_urn(), self.org))
+            self.assertEqual("••••••••", tags.format_urn("tel:+12024561414", self.org))
 
     def test_msg_status_badge(self):
         contact = self.create_contact("Uri", urns=["tel:+12024561414"])

@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from uuid import UUID
 
+from temba.contacts.models import ContactURN
+from temba.orgs.models import Org
 from temba.users.models import User
 from temba.utils import dynamo
 
@@ -47,6 +49,15 @@ class Event:
 
     basic_ticket_types = {TYPE_TICKET_CLOSED, TYPE_TICKET_OPENED, TYPE_TICKET_REOPENED}
     all_ticket_types = basic_ticket_types | {TYPE_TICKET_ASSIGNED, TYPE_TICKET_NOTE_ADDED, TYPE_TICKET_TOPIC_CHANGED}
+
+    @classmethod
+    def redact_for_org(cls, org: Org, event: dict) -> dict:
+        if not org.is_anon or not isinstance(event, dict):
+            return event
+        if event.get("type") == cls.TYPE_CONTACT_URNS_CHANGED:
+            urns = event.get("urns") or []
+            event = {**event, "urns": [ContactURN.ANON_MASK] * len(urns)}
+        return event
 
     @classmethod
     def _from_item(cls, contact, item: dict) -> dict:
@@ -179,3 +190,7 @@ class Event:
                     event["msg"]["attachments"] = [
                         f"{a['content_type']}:{a['url']}" if isinstance(a, dict) else a for a in attachments
                     ]
+
+        if org.is_anon:
+            for i, event in enumerate(events):
+                events[i] = cls.redact_for_org(org, event)

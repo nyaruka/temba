@@ -466,6 +466,23 @@ class EventTest(TembaTest):
         self.assertEqual("session_triggered", event["type"])
         self.assertEqual({"uuid": "b7cf0d83-f1c9-411c-96fd-c511a4cfa86d", "name": "Registration Flow"}, event["flow"])
 
+    def test_redact_for_org(self):
+        from temba.contacts.models import ContactURN
+
+        event = {
+            "type": Event.TYPE_CONTACT_URNS_CHANGED,
+            "urns": ["tel:+123456789", "whatsapp:JM.2335234000556455"],
+        }
+
+        with self.anonymous(self.org):
+            redacted = Event.redact_for_org(self.org, event)
+            self.assertEqual([ContactURN.ANON_MASK, ContactURN.ANON_MASK], redacted["urns"])
+
+        self.assertEqual(
+            ["tel:+123456789", "whatsapp:JM.2335234000556455"],
+            Event.redact_for_org(self.org, event)["urns"],
+        )
+
     def assert_get_by_contact(self, contact, user, *, after=None, before=None, limit=50, ticket=None, expected: list):
         fetched = Event.get_by_contact(contact, user, after=after, before=before, ticket=ticket, limit=limit)
 
