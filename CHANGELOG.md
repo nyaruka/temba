@@ -1,3 +1,6 @@
+## v26.3.156 (2026-10-22)
+ * Add ticket_triggers org feature
+
 ## v26.3.155 (2026-10-22)
  * Add per-workspace ticket idle limit and ticket close contact fire type
  * Allow updating the API key of 360Dialog channels and only check credentials when config changes
