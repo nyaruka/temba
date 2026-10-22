@@ -135,10 +135,6 @@
       font-size: 18px;
     }
 
-    .popper {
-      font-size: 40px;
-    }
-
     /* the same 8px rhythm the card layout uses — the column's header strip
        runs full-bleed, the list body below carries the inset */
     .ticket-list {
@@ -738,15 +734,15 @@
         <div class="empty">
           <div class="empty-card">
             {% if has_tickets %}
-              <div class="popper">🎉</div>
+              <temba-icon name="tickets_mine_done" size="2"></temba-icon>
               <h2>
                 {% blocktrans trimmed %}
-                  All done!
+                  You're all caught up
                 {% endblocktrans %}
               </h2>
               <p>
                 {% blocktrans trimmed %}
-                  Nice work, there aren't any more tickets here that need your attention.
+                  There are no tickets here waiting on you. New ones will show up here as they come in.
                 {% endblocktrans %}
               </p>
             {% else %}
