@@ -6557,7 +6557,7 @@ msgstr ""
 msgid "No tickets yet"
 msgstr ""
 
-msgid "When a conversation needs more than a flow can handle, use the Open Ticket action to hand it over. Tickets show up here, ready to be picked up and answered."
+msgid "When a conversation needs more than a flow can handle, use the Open Ticket action to hand it over to an agent. Tickets show up here, ready to be picked up and answered."
 msgstr ""
 
 #, python-format
