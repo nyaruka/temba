@@ -202,6 +202,27 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
         clickatell_channel.refresh_from_db()
         self.assertEqual("def456", clickatell_channel.config["api_key"])
 
+        # a credential that was left blank at claim time isn't required
+        signalwire_channel = self.create_channel(
+            "SW", "My SignalWire", "+250785551414", country="RW", config={"account_sid": "sid123", "auth_token": ""}
+        )
+        signalwire_url = reverse("channels.channel_update", args=[signalwire_channel.id])
+
+        self.assertUpdateFetch(
+            signalwire_url,
+            [self.editor, self.admin],
+            form_fields={"name": "My SignalWire", "is_enabled": True, "allow_international": False, "auth_token": ""},
+        )
+        self.assertUpdateSubmit(
+            signalwire_url,
+            self.admin,
+            {"name": "Renamed SignalWire", "is_enabled": True, "allow_international": False, "auth_token": ""},
+        )
+
+        signalwire_channel.refresh_from_db()
+        self.assertEqual("Renamed SignalWire", signalwire_channel.name)
+        self.assertEqual("", signalwire_channel.config["auth_token"])
+
         # name can't be empty
         self.assertUpdateSubmit(
             android_url,

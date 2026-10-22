@@ -426,7 +426,12 @@ class UpdateChannelForm(forms.ModelForm):
             )
 
         for config_key, label in self.instance.type.credential_fields.items():
-            self.add_config_field(config_key, forms.CharField(label=label, widget=InputWidget()), default="")
+            # a credential left blank at claim time stays optional so the channel can still be edited
+            self.add_config_field(
+                config_key,
+                forms.CharField(label=label, required=bool(self.instance.config.get(config_key)), widget=InputWidget()),
+                default="",
+            )
 
     def add_config_field(self, config_key: str, field, *, default):
         field.initial = self.instance.config.get(config_key, default)
