@@ -6586,11 +6586,11 @@ msgstr "Todos os agentes"
 msgid "See more tickets"
 msgstr "Ver mais tickets"
 
-msgid "All clear"
-msgstr "Tudo em ordem"
+msgid "You're all caught up"
+msgstr "Você está em dia"
 
-msgid "There are no tickets in this folder right now."
-msgstr "Não há tickets nesta pasta no momento."
+msgid "There are no tickets here waiting on you. New ones will show up here as they come in."
+msgstr "Não há tickets aqui esperando por você. Os novos aparecerão aqui assim que chegarem."
 
 msgid "No tickets yet"
 msgstr "Ainda não há tickets"
