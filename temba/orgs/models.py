@@ -1715,6 +1715,9 @@ class ItemCount(BaseScopedCount):
             # for squashing task
             models.Index(name="orgcount_unsquashed", fields=("org", "scope"), condition=Q(is_squashed=False)),
         ]
+        constraints = [
+            models.UniqueConstraint(name="orgcount_squashed", fields=("org", "scope"), condition=Q(is_squashed=True))
+        ]
 
 
 class DailyCount(BaseDailyCount):
@@ -1733,4 +1736,9 @@ class DailyCount(BaseDailyCount):
             models.Index(
                 name="orgdailycount_unsquashed", fields=("org", "day", "scope"), condition=Q(is_squashed=False)
             ),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                name="orgdailycount_squashed", fields=("org", "day", "scope"), condition=Q(is_squashed=True)
+            )
         ]

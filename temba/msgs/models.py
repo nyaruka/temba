@@ -892,6 +892,13 @@ class BroadcastMsgCount(BaseSquashableCount):
         for bcast in broadcasts:
             bcast.msg_count = counts_by_bcast.get(bcast.id, 0)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                name="broadcastmsgcount_squashed", fields=("broadcast",), condition=Q(is_squashed=True)
+            )
+        ]
+
 
 class MsgFolder(Enum):
     """
@@ -1123,6 +1130,11 @@ class LabelCount(BaseSquashableCount):
         counts = cls.objects.filter(label__in=labels).values_list("label_id").annotate(count_sum=Sum("count"))
         counts_by_label_id = {c[0]: c[1] for c in counts}
         return {lb: counts_by_label_id.get(lb.id, 0) for lb in labels}
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(name="labelcount_squashed", fields=("label",), condition=Q(is_squashed=True))
+        ]
 
 
 class MsgIterator:

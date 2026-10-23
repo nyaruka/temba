@@ -1294,6 +1294,11 @@ class ArticleCount(BaseDailyCount):
                 name="articlecount_unsquashed", fields=("article", "day", "scope"), condition=Q(is_squashed=False)
             ),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                name="articlecount_squashed", fields=("article", "day", "scope"), condition=Q(is_squashed=True)
+            )
+        ]
 
 
 def lookup_txt(name: str) -> list | None:
