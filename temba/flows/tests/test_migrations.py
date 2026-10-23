@@ -1,3 +1,6 @@
+from importlib import import_module
+from unittest.mock import patch
+
 from temba.flows.models import Flow
 from temba.tests import MigrationTest
 
@@ -35,6 +38,15 @@ class DeleteMsgsInDowCountsTest(MigrationTest):
     app = "flows"
     migrate_from = "0413_rename_reserved_flows"
     migrate_to = "0414_delete_msgsin_dow_counts"
+
+    def setUp(self):
+        # shrink batches so that advancing between them is exercised, patched before super() runs the migration
+        migration = import_module("temba.flows.migrations.0414_delete_msgsin_dow_counts")
+        patcher = patch.object(migration, "BATCH_SIZE", 1)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+        super().setUp()
 
     def setUpBeforeMigration(self, apps):
         self.flow1 = self.create_flow("Flow 1")
