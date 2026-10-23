@@ -274,8 +274,9 @@ class MsgFolderTest(TembaTest):
             },
         )
 
-        # we should only have one count per folder with non-zero count
-        self.assertEqual(self.org.counts.count(), 5)
+        # we should only have one count per folder that has ever had messages, zero or not
+        self.assertEqual(self.org.counts.count(), 7)
+        self.assertEqual(self.org.counts.filter(count=0).count(), 2)
 
         # counts follow folder, so a state change which doesn't update it moves nothing - the message wouldn't have
         # moved between folders either

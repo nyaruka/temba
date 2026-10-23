@@ -1,12 +1,14 @@
 from datetime import date, timezone as tzone
+from unittest.mock import ANY, patch
 
-from django.db import connection
+from django.db import IntegrityError, connection, transaction
 from django.utils import timezone
 
 from temba.flows.models import FlowActivityCount, FlowRun, FlowSession
 from temba.flows.tasks import squash_flow_counts
 from temba.msgs.models import Msg
 from temba.tests import TembaTest
+from temba.utils.models.counts import get_merge_squashed_sql
 from temba.utils.uuid import uuid4
 
 
@@ -141,23 +143,23 @@ class FlowActivityCountTest(TembaTest):
         self.assertEqual({"status:A": 2, "status:W": 0, "status:C": 0, "status:I": 4}, flow1.counts.scope_totals())
         self.assertEqual({"status:W": 0, "status:X": 1, "status:I": 2}, flow2.counts.scope_totals())
 
-        # no difference after squashing except zeros gone
+        # no difference after squashing
         squash_flow_counts()
 
-        self.assertEqual({"status:A": 2, "status:I": 4}, flow1.counts.scope_totals())
-        self.assertEqual({"status:X": 1, "status:I": 2}, flow2.counts.scope_totals())
+        self.assertEqual({"status:A": 2, "status:W": 0, "status:C": 0, "status:I": 4}, flow1.counts.scope_totals())
+        self.assertEqual({"status:W": 0, "status:X": 1, "status:I": 2}, flow2.counts.scope_totals())
 
         # deleting runs which are still active or waiting decrements their status counts
         FlowRun.objects.filter(id__in=[r.id for r in runs2]).delete()
 
-        self.assertEqual({"status:A": 0, "status:I": 4}, flow1.counts.scope_totals())
-        self.assertEqual({"status:X": 1, "status:I": 2}, flow2.counts.scope_totals())
+        self.assertEqual({"status:A": 0, "status:W": 0, "status:C": 0, "status:I": 4}, flow1.counts.scope_totals())
+        self.assertEqual({"status:W": 0, "status:X": 1, "status:I": 2}, flow2.counts.scope_totals())
 
         # but deleting exited runs doesn't change status counts
         FlowRun.objects.filter(id__in=[r.id for r in runs1]).delete()
 
-        self.assertEqual({"status:A": 0, "status:I": 4}, flow1.counts.scope_totals())
-        self.assertEqual({"status:X": 1, "status:I": 2}, flow2.counts.scope_totals())
+        self.assertEqual({"status:A": 0, "status:W": 0, "status:C": 0, "status:I": 4}, flow1.counts.scope_totals())
+        self.assertEqual({"status:W": 0, "status:X": 1, "status:I": 2}, flow2.counts.scope_totals())
 
     def test_msgsin_counts(self):
         flow1 = self.create_flow("Test 1")
@@ -203,11 +205,15 @@ class FlowActivityCountTest(TembaTest):
         self.assertEqual(2, flow2.counts.count())
 
     def test_squashing(self):
+        def squashed(flow) -> dict:
+            self.assertEqual(0, flow.counts.filter(is_squashed=False).count())
+            return {c.scope: (c.id, c.count) for c in flow.counts.filter(is_squashed=True)}
+
         flow1 = self.create_flow("Test 1")
         flow1.counts.create(scope="foo:1", count=1)
         flow1.counts.create(scope="foo:1", count=2)
         flow1.counts.create(scope="foo:2", count=4)
-        flow1.counts.create(scope="foo:3", count=-6)
+        flow1.counts.create(scope="foo:3", count=-6)  # negative counts supported
         flow1.counts.create(scope="foo:3", count=-1)
 
         flow2 = self.create_flow("Test 2")
@@ -217,38 +223,91 @@ class FlowActivityCountTest(TembaTest):
         flow2.counts.create(scope="foo:2", count=-8)
         flow2.counts.create(scope="foo:3", count=5)
 
-        self.assertEqual(3, flow1.counts.filter(scope="foo:1").sum())
-        self.assertEqual(4, flow1.counts.filter(scope="foo:2").sum())
-        self.assertEqual(-7, flow1.counts.filter(scope="foo:3").sum())  # negative counts supported
         self.assertEqual(0, flow1.counts.filter(scope="foo:4").sum())  # zero if no such scope exists
-        self.assertEqual(10, flow2.counts.filter(scope="foo:1").sum())
-        self.assertEqual(0, flow2.counts.filter(scope="foo:2").sum())
-        self.assertEqual(5, flow2.counts.filter(scope="foo:3").sum())
+
+        self.assertEqual(6, FlowActivityCount.squash())
+
+        # each set now has a single squashed row, even if it sums to zero
+        flow1_rows = squashed(flow1)
+        flow2_rows = squashed(flow2)
+        self.assertEqual({"foo:1": 3, "foo:2": 4, "foo:3": -7}, {k: v[1] for k, v in flow1_rows.items()})
+        self.assertEqual({"foo:1": 10, "foo:2": 0, "foo:3": 5}, {k: v[1] for k, v in flow2_rows.items()})
+
+        # nothing to squash
+        self.assertEqual(0, FlowActivityCount.squash())
+        self.assertEqual(flow1_rows, squashed(flow1))
+
+        flow1.counts.create(scope="foo:1", count=-3)  # squashed total goes to zero
+        flow1.counts.create(scope="foo:2", count=-5)  # squashed total goes negative
+        flow1.counts.create(scope="foo:3", count=3)
+        flow1.counts.create(scope="foo:3", count=-3)  # unsquashed sum to zero
+        flow1.counts.create(scope="foo:4", count=2)  # new set
+        flow2.counts.create(scope="foo:2", count=6)  # squashed total goes up from zero
 
         squash_flow_counts()
 
-        self.assertEqual({"foo:1", "foo:2", "foo:3"}, set(flow1.counts.values_list("scope", flat=True)))
+        # existing squashed rows are updated in place
+        self.assertEqual(
+            {
+                "foo:1": (flow1_rows["foo:1"][0], 0),
+                "foo:2": (flow1_rows["foo:2"][0], -1),
+                "foo:3": (flow1_rows["foo:3"][0], -7),
+                "foo:4": (ANY, 2),
+            },
+            squashed(flow1),
+        )
+        self.assertEqual(
+            {"foo:1": flow2_rows["foo:1"], "foo:2": (flow2_rows["foo:2"][0], 6), "foo:3": flow2_rows["foo:3"]},
+            squashed(flow2),
+        )
+        self.assertEqual({"foo:1": 0, "foo:2": -1, "foo:3": -7, "foo:4": 2}, flow1.counts.scope_totals())
 
-        # flow2/foo:2 should be gone because it squashed to zero
-        self.assertEqual({"foo:1", "foo:3"}, set(flow2.counts.values_list("scope", flat=True)))
+        # squashed rows must be unique per set
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                flow1.counts.create(scope="foo:1", count=1, is_squashed=True)
 
-        self.assertEqual(3, flow1.counts.filter(scope="foo:1").sum())
-        self.assertEqual(4, flow1.counts.filter(scope="foo:2").sum())
-        self.assertEqual(-7, flow1.counts.filter(scope="foo:3").sum())
-        self.assertEqual(10, flow2.counts.filter(scope="foo:1").sum())
-        self.assertEqual(0, flow2.counts.filter(scope="foo:2").sum())
-        self.assertEqual(5, flow2.counts.filter(scope="foo:3").sum())
+        # sets are squashed in batches, up to a maximum number per call
+        for i in range(5):
+            flow2.counts.create(scope=f"bar:{i}", count=i + 1)
+            flow2.counts.create(scope=f"bar:{i}", count=1)
 
-        flow2.counts.create(scope="foo:3", count=-5)  # unsquashed zero + squashed zero
+        with (
+            patch.object(FlowActivityCount, "squash_batch_size", 2),
+            patch.object(FlowActivityCount, "squash_max_distinct", 3),
+        ):
+            self.assertEqual(3, FlowActivityCount.squash())
+            self.assertEqual(2, FlowActivityCount.squash())
+            self.assertEqual(0, FlowActivityCount.squash())
 
-        squash_flow_counts()
+        self.assertEqual(
+            {"bar:0": 2, "bar:1": 3, "bar:2": 4, "bar:3": 5, "bar:4": 6},
+            {k: v[1] for k, v in squashed(flow2).items() if k.startswith("bar:")},
+        )
 
-        # flow2/foo:3 should be gone because it squashed to zero
-        self.assertEqual({"foo:1"}, set(flow2.counts.values_list("scope", flat=True)))
+    def test_merge_squashed(self):
+        flow1 = self.create_flow("Test 1")
+        flow2 = self.create_flow("Test 2")
 
-        # test that model being asked to squash a set that matches no rows doesn't insert anytihng
         with connection.cursor() as cursor:
-            sql, params = FlowActivityCount.get_squash_query({"flow_id": flow1.id, "scope": "foo:9"})
-            cursor.execute(sql, params)
+            # duplicate squashed rows predate the unique index
+            cursor.execute("DROP INDEX flowactivitycount_squashed")
 
-        self.assertEqual({"foo:1", "foo:2", "foo:3"}, set(flow1.counts.values_list("scope", flat=True)))
+            flow1.counts.create(scope="foo:1", count=3, is_squashed=True)
+            flow1.counts.create(scope="foo:1", count=-1, is_squashed=True)
+            flow1.counts.create(scope="foo:1", count=4, is_squashed=True)
+            flow1.counts.create(scope="foo:1", count=2)  # unsquashed rows are left alone
+            flow1.counts.create(scope="foo:2", count=5, is_squashed=True)
+            flow1.counts.create(scope="foo:2", count=-5, is_squashed=True)
+            foo3 = flow1.counts.create(scope="foo:3", count=6, is_squashed=True)
+            flow2.counts.create(scope="foo:1", count=7, is_squashed=True)
+            flow2.counts.create(scope="foo:1", count=1, is_squashed=True)
+
+            cursor.execute(get_merge_squashed_sql("flows_flowactivitycount", ("flow_id", "scope")))
+
+        self.assertEqual(
+            [("foo:1", 2, False), ("foo:1", 6, True), ("foo:2", 0, True), ("foo:3", 6, True)],
+            list(flow1.counts.order_by("scope", "is_squashed").values_list("scope", "count", "is_squashed")),
+        )
+        self.assertEqual([("foo:1", 8, True)], list(flow2.counts.values_list("scope", "count", "is_squashed")))
+        self.assertTrue(flow1.counts.filter(id=foo3.id).exists())  # sets without duplicates are untouched

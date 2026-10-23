@@ -1390,6 +1390,11 @@ class FlowActivityCount(BaseScopedCount):
             # for squashing task
             models.Index(name="flowactivitycount_unsquashed", fields=("flow", "scope"), condition=Q(is_squashed=False)),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                name="flowactivitycount_squashed", fields=("flow", "scope"), condition=Q(is_squashed=True)
+            )
+        ]
 
 
 class FlowResultCount(BaseSquashableCount):
@@ -1411,6 +1416,11 @@ class FlowResultCount(BaseSquashableCount):
                 fields=("flow", "result", "category"),
                 condition=Q(is_squashed=False),
             ),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                name="flowresultcount_squashed", fields=("flow", "result", "category"), condition=Q(is_squashed=True)
+            )
         ]
 
 
@@ -1828,6 +1838,9 @@ class FlowStartCount(BaseSquashableCount):
 
     class Meta:
         indexes = [models.Index(fields=("start",), condition=Q(is_squashed=False), name="flowstartcounts_unsquashed")]
+        constraints = [
+            models.UniqueConstraint(name="flowstartcounts_squashed", fields=("start",), condition=Q(is_squashed=True))
+        ]
 
 
 class FlowLabel(OrgAsset):

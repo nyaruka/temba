@@ -713,6 +713,11 @@ class ChannelCount(BaseDailyCount):
                 name="channelcount_unsquashed", fields=("channel", "day", "scope"), condition=Q(is_squashed=False)
             ),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                name="channelcount_squashed", fields=("channel", "day", "scope"), condition=Q(is_squashed=True)
+            )
+        ]
 
 
 class ChannelEvent(UUIDMixin, models.Model):
