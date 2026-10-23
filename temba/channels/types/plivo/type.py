@@ -34,6 +34,25 @@ class PlivoType(ChannelType):
     }
     claim_view = ClaimView
 
+    credentials = (
+        ChannelType.Credential(CONFIG_AUTH_ID, _("Account ID"), _("Your Plivo auth ID")),
+        ChannelType.Credential(CONFIG_AUTH_TOKEN, _("Authentication Token"), _("Your Plivo auth token")),
+    )
+
+    def check_credentials(self, config: dict) -> bool:
+        auth_id = config[self.CONFIG_AUTH_ID]
+        try:
+            response = requests.get(
+                f"https://api.plivo.com/v1/Account/{auth_id}/",
+                headers=http_headers(extra={"Content-Type": "application/json"}),
+                auth=(auth_id, config[self.CONFIG_AUTH_TOKEN]),
+                timeout=10,
+            )
+        except requests.RequestException:
+            return False
+
+        return response.status_code == 200
+
     async_activation = False
 
     def activate(self, channel):

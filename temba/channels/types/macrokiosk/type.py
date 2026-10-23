@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from temba.channels.types.macrokiosk.views import ClaimView
 from temba.contacts.models import URN
 
-from ...models import ChannelType, ConfigUI
+from ...models import Channel, ChannelType, ConfigUI
 
 
 class MacrokioskType(ChannelType):
@@ -25,6 +25,15 @@ class MacrokioskType(ChannelType):
         "link": '<a target="_blank" href="http://macrokiosk.com/">Macrokiosk</a>'
     }
     claim_view = ClaimView
+
+    credentials = (
+        ChannelType.Credential(
+            Channel.CONFIG_USERNAME, _("Username"), _("The username provided by Macrokiosk to use their API")
+        ),
+        ChannelType.Credential(
+            Channel.CONFIG_PASSWORD, _("Password"), _("The password provided by Macrokiosk to use their API")
+        ),
+    )
 
     config_ui = ConfigUI(
         blurb=_("To finish configuring this channel, you'll need to notify MACROKIOSK of the following URLs."),

@@ -7,6 +7,7 @@ from django.urls import reverse
 from temba.tests import TembaTest
 
 from ...models import Channel
+from .type import SlackType
 
 
 class SlackTypeTest(TembaTest):
@@ -135,3 +136,14 @@ class SlackTypeTest(TembaTest):
         send_channel = self.org.get_send_channel()
         self.assertIsNotNone(send_channel)
         self.assertEqual(send_channel.channel_type, "SL")
+
+    @patch("slack_sdk.WebClient.api_call")
+    def test_check_credentials(self, mock_api_call):
+        config = {"user_token": "xoxp-123", "bot_token": "xoxb-123"}
+        slack_error = slack_sdk.errors.SlackApiError("invalid_auth", response={"ok": False, "error": "invalid_auth"})
+        mock_api_call.side_effect = [{"ok": True}, {"ok": True}, {"ok": True}, slack_error, OSError("timed out")]
+
+        self.assertTrue(SlackType().check_credentials(config))
+        self.assertEqual(2, mock_api_call.call_count)
+        self.assertFalse(SlackType().check_credentials(config))  # bot token rejected
+        self.assertFalse(SlackType().check_credentials(config))  # unreachable

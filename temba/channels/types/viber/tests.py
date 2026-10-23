@@ -1,5 +1,7 @@
 from unittest.mock import patch
 
+from requests import RequestException
+
 from django.urls import reverse
 
 from temba.tests import CRUDLTestMixin, MockResponse, TembaTest
@@ -78,28 +80,52 @@ class ViberTypeTest(TembaTest, CRUDLTestMixin):
         read_url = reverse("channels.channel_read", args=[self.channel.uuid])
 
         self.assertRequestDisallowed(update_url, [None, self.agent, self.admin2])
+        # only admins see credentials
         self.assertUpdateFetch(
             update_url,
-            [self.editor, self.admin],
+            [self.editor],
             form_fields={"name": "Viber", "is_enabled": True, "welcome_message": ""},
         )
-
-        self.assertUpdateSubmit(
+        self.assertUpdateFetch(
             update_url,
-            self.admin,
-            {"name": "Updated", "is_enabled": True, "welcome_message": "Welcome, please subscribe for more"},
+            [self.admin],
+            form_fields={"name": "Viber", "is_enabled": True, "auth_token": "abcd1234", "welcome_message": ""},
         )
+
+        # changing config checks credentials
+        with patch("temba.channels.types.viber.type.ViberType.check_credentials", return_value=True):
+            self.assertUpdateSubmit(
+                update_url,
+                self.admin,
+                {
+                    "name": "Updated",
+                    "is_enabled": True,
+                    "auth_token": "abcd1234",
+                    "welcome_message": "Welcome, please subscribe for more",
+                },
+            )
 
         self.channel.refresh_from_db()
         self.assertEqual("Updated", self.channel.name)
         self.assertEqual("Welcome, please subscribe for more", self.channel.config.get(CONFIG_WELCOME_MESSAGE))
 
+        # only admins see credentials
         self.assertUpdateFetch(
             update_url,
-            [self.editor, self.admin],
+            [self.editor],
             form_fields={
                 "name": "Updated",
                 "is_enabled": True,
+                "welcome_message": "Welcome, please subscribe for more",
+            },
+        )
+        self.assertUpdateFetch(
+            update_url,
+            [self.admin],
+            form_fields={
+                "name": "Updated",
+                "is_enabled": True,
+                "auth_token": "abcd1234",
                 "welcome_message": "Welcome, please subscribe for more",
             },
         )
@@ -111,7 +137,7 @@ class ViberTypeTest(TembaTest, CRUDLTestMixin):
         self.assertUpdateFetch(
             update_url,
             [self.customer_support],
-            form_fields=["name", "is_enabled", "welcome_message"],
+            form_fields=["name", "is_enabled", "auth_token", "welcome_message"],
             choose_org=self.org,
         )
 
@@ -120,3 +146,20 @@ class ViberTypeTest(TembaTest, CRUDLTestMixin):
             "https://developers.viber.com/docs/api/rest-bot-api/#error-codes",
             ViberType().get_error_ref_url(None, "12"),
         )
+
+    @patch("requests.post")
+    def test_check_credentials(self, mock_post):
+        config = {"auth_token": "abcd1234"}
+        mock_post.side_effect = [
+            MockResponse(200, '{"status": 0, "status_message": "ok"}'),
+            MockResponse(200, '{"status": 2, "status_message": "invalidAuthToken"}'),
+            MockResponse(200, "<html>Proxy error</html>"),
+            RequestException("Network is unreachable"),
+        ]
+
+        self.assertTrue(ViberType().check_credentials(config))
+        self.assertFalse(ViberType().check_credentials(config))
+        self.assertFalse(ViberType().check_credentials(config))
+        self.assertFalse(ViberType().check_credentials(config))
+
+        self.assertEqual("https://chatapi.viber.com/pa/get_account_info", mock_post.call_args[0][0])

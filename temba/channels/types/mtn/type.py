@@ -29,6 +29,25 @@ class MtnType(ChannelType):
     }
     claim_view = ClaimView
 
+    credentials = (
+        ChannelType.Credential(Channel.CONFIG_API_KEY, _("API Key"), _("The Consumer key")),
+        ChannelType.Credential(Channel.CONFIG_AUTH_TOKEN, _("API Secret"), _("The Consumer secret")),
+    )
+
+    def check_credentials(self, config: dict) -> bool:
+        base_url = config.get("api_host", "https://api.mtn.com")
+        try:
+            response = requests.post(
+                f"{base_url}/v1/oauth/access_token?grant_type=client_credentials",
+                data={"client_id": config[Channel.CONFIG_API_KEY], "client_secret": config[Channel.CONFIG_AUTH_TOKEN]},
+                headers={"Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json"},
+                timeout=10,
+            )
+        except requests.RequestException:
+            return False
+
+        return response.status_code // 100 == 2
+
     def get_token(self, channel):
         base_url = channel.config.get("api_host", "https://api.mtn.com")
         token_url = f"{base_url}/v1/oauth/access_token?grant_type=client_credentials"

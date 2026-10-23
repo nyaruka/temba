@@ -23,6 +23,12 @@ class TelesomType(ChannelType):
     )
     claim_view = ClaimView
 
+    credentials = (
+        ChannelType.Credential("username", _("Username"), _("The username provided to use their API")),
+        ChannelType.Credential("password", _("Password"), _("The password provided to use their API")),
+        ChannelType.Credential("secret", _("Private Key"), _("The private key provided to use their API")),
+    )
+
     config_ui = ConfigUI(
         blurb=_(
             "TTo finish configuring this channel, you'll need to provide Telesom with the following delivery URL "

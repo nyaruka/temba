@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 
 from temba.contacts.models import URN
 
-from ...models import ChannelType
+from ...models import Channel, ChannelType
 from .views import ClaimView
 
 
@@ -27,6 +27,21 @@ class TelegramType(ChannelType):
         "Windows or iOS device and a Telegram account to send and receive messages."
     ) % {"link": '<a target="_blank" href="https://telegram.org">Telegram</a>'}
     claim_view = ClaimView
+
+    credentials = (
+        ChannelType.Credential(
+            Channel.CONFIG_AUTH_TOKEN, _("Authentication Token"), _("The Authentication token for your Telegram Bot")
+        ),
+    )
+
+    def check_credentials(self, config: dict) -> bool:
+        try:
+            response = requests.get(
+                f"https://api.telegram.org/bot{config[Channel.CONFIG_AUTH_TOKEN]}/getMe", timeout=10
+            )
+            return response.status_code == 200 and response.json().get("ok", False)
+        except requests.RequestException, ValueError:  # ValueError for non-JSON responses
+            return False
 
     def is_recommended_to(self, org, user):
         return True  # because it's super simpler to setup, free, and works everywhere
