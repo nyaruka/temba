@@ -434,7 +434,6 @@ BEGIN
     INSERT INTO flows_flowactivitycount("flow_id", "scope", "count", "is_squashed")
     SELECT s.flow_id, unnest(ARRAY[
             format('msgsin:hour:%s', extract(hour FROM NOW())),
-            format('msgsin:dow:%s', extract(isodow FROM NOW())),
             format('msgsin:date:%s', NOW()::date)
         ]), s.msgs, FALSE
     FROM (
