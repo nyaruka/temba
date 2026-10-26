@@ -188,7 +188,6 @@ class ClaimView(ClaimViewMixin, SmartFormView):
             name=name,
             address=phone_number_id,
             config=config,
-            tps=80,
         )
         self.remove_token_credentials_from_session()
         return super().form_valid(form)

@@ -389,7 +389,6 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
             address=phone_number,
             role=role,
             config=config,
-            tps=1,
         )
 
 

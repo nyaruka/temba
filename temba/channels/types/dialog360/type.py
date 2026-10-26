@@ -22,6 +22,7 @@ class Dialog360Type(ChannelType):
     category = ChannelType.Category.SOCIAL_MEDIA
 
     unique_addresses = True
+    tps = 45
 
     schemes = [URN.WHATSAPP_SCHEME]
     template_type = "whatsapp"
