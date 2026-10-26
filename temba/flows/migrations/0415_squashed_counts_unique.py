@@ -7,8 +7,9 @@ class Migration(migrations.Migration):
     # Squashing upserts the single squashed row of each set of counts, which needs a unique index over the squashed
     # rows - so any sets with more than one are merged first. The index is built concurrently because these tables
     # take constant writes, and fillfactor is lowered to leave room on each page for squashed rows to be updated in
-    # place. Installations large enough to care can merge duplicates and run the following ahead of the deploy, and
-    # fake this migration:
+    # place. Any index left invalid by a failed build is dropped first so that the migration can be re-run.
+    # Installations large enough to care can merge duplicates and run the following ahead of the deploy, and fake
+    # this migration:
     #
     #   ALTER TABLE flows_flowactivitycount SET (fillfactor = 85);
     #   CREATE UNIQUE INDEX CONCURRENTLY "flowactivitycount_squashed" ON flows_flowactivitycount ("flow_id", "scope") WHERE "is_squashed";
@@ -24,6 +25,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunSQL('DROP INDEX CONCURRENTLY IF EXISTS "flowactivitycount_squashed"'),
         migrations.RunSQL(get_merge_squashed_sql("flows_flowactivitycount", ("flow_id", "scope"))),
         migrations.RunSQL(sql="ALTER TABLE flows_flowactivitycount SET (fillfactor = 85)"),
         migrations.RunSQL(
@@ -39,6 +41,7 @@ class Migration(migrations.Migration):
                 ),
             ],
         ),
+        migrations.RunSQL('DROP INDEX CONCURRENTLY IF EXISTS "flowresultcount_squashed"'),
         migrations.RunSQL(get_merge_squashed_sql("flows_flowresultcount", ("flow_id", "result", "category"))),
         migrations.RunSQL(sql="ALTER TABLE flows_flowresultcount SET (fillfactor = 85)"),
         migrations.RunSQL(
@@ -54,6 +57,7 @@ class Migration(migrations.Migration):
                 ),
             ],
         ),
+        migrations.RunSQL('DROP INDEX CONCURRENTLY IF EXISTS "flowstartcounts_squashed"'),
         migrations.RunSQL(get_merge_squashed_sql("flows_flowstartcount", ("start_id",))),
         migrations.RunSQL(sql="ALTER TABLE flows_flowstartcount SET (fillfactor = 85)"),
         migrations.RunSQL(

@@ -7,8 +7,9 @@ class Migration(migrations.Migration):
     # Squashing upserts the single squashed row of each set of counts, which needs a unique index over the squashed
     # rows - so any sets with more than one are merged first. The index is built concurrently because these tables
     # take constant writes, and fillfactor is lowered to leave room on each page for squashed rows to be updated in
-    # place. Installations large enough to care can merge duplicates and run the following ahead of the deploy, and
-    # fake this migration:
+    # place. Any index left invalid by a failed build is dropped first so that the migration can be re-run.
+    # Installations large enough to care can merge duplicates and run the following ahead of the deploy, and fake
+    # this migration:
     #
     #   ALTER TABLE msgs_broadcastmsgcount SET (fillfactor = 85);
     #   CREATE UNIQUE INDEX CONCURRENTLY "broadcastmsgcount_squashed" ON msgs_broadcastmsgcount ("broadcast_id") WHERE "is_squashed";
@@ -22,6 +23,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunSQL('DROP INDEX CONCURRENTLY IF EXISTS "broadcastmsgcount_squashed"'),
         migrations.RunSQL(get_merge_squashed_sql("msgs_broadcastmsgcount", ("broadcast_id",))),
         migrations.RunSQL(sql="ALTER TABLE msgs_broadcastmsgcount SET (fillfactor = 85)"),
         migrations.RunSQL(
@@ -37,6 +39,7 @@ class Migration(migrations.Migration):
                 ),
             ],
         ),
+        migrations.RunSQL('DROP INDEX CONCURRENTLY IF EXISTS "labelcount_squashed"'),
         migrations.RunSQL(get_merge_squashed_sql("msgs_labelcount", ("label_id",))),
         migrations.RunSQL(sql="ALTER TABLE msgs_labelcount SET (fillfactor = 85)"),
         migrations.RunSQL(
