@@ -555,7 +555,7 @@ class FlowTest(TembaTest, CRUDLTestMixin):
             flow.get_category_counts(),
         )
 
-        # check no change after squashing
+        # check no change after squashing except zero count for Other gone
         squash_flow_counts()
 
         self.assertEqual(
@@ -567,7 +567,6 @@ class FlowTest(TembaTest, CRUDLTestMixin):
                         {"name": "", "count": 5, "pct": 0.2},
                         {"name": "Blue", "count": 10, "pct": 0.4},
                         {"name": "Green", "count": 5, "pct": 0.2},
-                        {"name": "Other", "count": 0, "pct": 0.0},
                         {"name": "Red", "count": 5, "pct": 0.2},
                     ],
                     "total": 25,

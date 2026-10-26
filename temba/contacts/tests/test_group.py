@@ -319,10 +319,9 @@ class ContactGroupTest(TembaTest):
         ba.restore(self.editor)
         ba.restore(self.editor)
 
-        # squash again, which keeps the zero totals
+        # squash again, this time we discard zero counts
         squash_group_counts()
-        self.assertEqual(ContactGroupCount.objects.all().count(), 3)
-        self.assertEqual(2, ContactGroupCount.objects.filter(count=0).count())
+        self.assertEqual(ContactGroupCount.objects.all().count(), 1)
 
         counts = Contact.get_status_counts(self.org)
         self.assertEqual(

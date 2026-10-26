@@ -9,7 +9,8 @@ from temba.utils.db.queries import or_list
 
 def get_merge_squashed_sql(table: str, columns: tuple) -> str:
     """
-    Builds a query which merges any squashed rows of the given table which share values for the given columns.
+    Builds a query which merges any squashed rows of the given table which share values for the given columns,
+    dropping them if they sum to zero.
     """
 
     cols = ", ".join([f'"{col}"' for col in columns])
@@ -24,7 +25,7 @@ def get_merge_squashed_sql(table: str, columns: tuple) -> str:
         RETURNING {returning}, c."count"
     )
     INSERT INTO {table} ({cols}, "count", "is_squashed")
-    SELECT {cols}, SUM("count"), TRUE FROM removed GROUP BY {cols};
+    SELECT {cols}, SUM("count"), TRUE FROM removed GROUP BY {cols} HAVING SUM("count") != 0;
     """
 
 
@@ -67,7 +68,7 @@ class BaseSquashableCount(models.Model):
     def squash(cls) -> int:
         """
         Squashes the unsquashed rows of each distinct set of counts into that set's single squashed row, which is
-        updated in place so that its id and tuple stay put. Returns the number of sets squashed.
+        updated in place so that its id stays put. Returns the number of sets squashed.
         """
 
         squash_over = cls.get_squash_over()
@@ -90,7 +91,8 @@ class BaseSquashableCount(models.Model):
     def get_squash_query(cls) -> str:
         """
         Builds the query which squashes a batch of sets, given as one array param per squash_over column. It relies
-        on the unique index of squashed rows over the squash_over columns.
+        on the unique index of squashed rows over the squash_over columns. Squashed rows which reach zero are deleted
+        so that sets which drain, like the counts of a flow's nodes, don't leave rows behind.
 
         Only squashed rows are updated and only unsquashed rows are deleted, so writers inserting deltas never wait on
         it. An overlapping squash blocks on the rows being deleted and then skips them, so nothing is counted twice.
@@ -100,20 +102,29 @@ class BaseSquashableCount(models.Model):
         table = cls._meta.db_table
         fields_by_column = {f.column: f for f in cls._meta.concrete_fields}
 
+        def join(a, b):
+            return " AND ".join([f'{a}."{col}" = {b}."{col}"' for col in squash_over])
+
         cols = ", ".join([f'"{col}"' for col in squash_over])
         arrays = ", ".join([f"%s::{fields_by_column[col].db_type(connection)}[]" for col in squash_over])
-        join_cond = " AND ".join([f'c."{col}" = k."{col}"' for col in squash_over])
         returning = ", ".join([f'c."{col}"' for col in squash_over])
 
         return f"""
         WITH keys AS (
             SELECT * FROM unnest({arrays}) AS k({cols})
         ), removed AS (
-            DELETE FROM {table} c USING keys k WHERE NOT c."is_squashed" AND {join_cond}
+            DELETE FROM {table} c USING keys k WHERE NOT c."is_squashed" AND {join("c", "k")}
             RETURNING {returning}, c."count"
+        ), sums AS (
+            SELECT {cols}, SUM("count") AS "count" FROM removed GROUP BY {cols}
+        ), zeroed AS (
+            DELETE FROM {table} c USING sums s WHERE c."is_squashed" AND {join("c", "s")} AND c."count" + s."count" = 0
+            RETURNING {returning}
         )
         INSERT INTO {table} AS t ({cols}, "count", "is_squashed")
-        SELECT {cols}, SUM("count"), TRUE FROM removed GROUP BY {cols} ORDER BY {cols}
+        SELECT {cols}, s."count", TRUE FROM sums s
+        WHERE s."count" != 0 AND NOT EXISTS (SELECT 1 FROM zeroed z WHERE {join("z", "s")})
+        ORDER BY {cols}
         ON CONFLICT ({cols}) WHERE "is_squashed" DO UPDATE SET "count" = t."count" + EXCLUDED."count";
         """
 
