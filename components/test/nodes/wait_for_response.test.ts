@@ -929,7 +929,7 @@ describe('wait_for_response node config', () => {
       expect(validation.errors).to.be.empty;
     });
 
-    it('preserves category UUIDs when names are updated', () => {
+    it('preserves UUIDs through the form when categories are renamed and moved', () => {
       // Create original node with specific UUIDs
       const originalNode: Node = {
         uuid: 'test-node',
@@ -976,23 +976,12 @@ describe('wait_for_response node config', () => {
         ]
       };
 
-      // Update category names but keep same rules in same order
-      const formData = {
-        uuid: 'test-node',
-        result_name: 'response',
-        rules: [
-          {
-            operator: { value: 'has_phrase', name: 'contains phrase' },
-            value1: 'yes',
-            category: 'New Name 1' // Changed from "Old Name 1"
-          },
-          {
-            operator: { value: 'has_phrase', name: 'contains phrase' },
-            value1: 'no',
-            category: 'New Name 2' // Changed from "Old Name 2"
-          }
-        ]
-      };
+      // Load the node into the form, rename both categories and swap the rules, as the editor would
+      const formData = wait_for_response.toFormData!(originalNode);
+      formData.rules = [
+        { ...formData.rules[1], category: 'New Name 2' },
+        { ...formData.rules[0], category: 'New Name 1' }
+      ];
 
       const result = wait_for_response.fromFormData!(formData, originalNode);
 
@@ -1028,7 +1017,16 @@ describe('wait_for_response node config', () => {
       );
 
       expect(case1?.uuid).to.equal('case-1-uuid');
+      expect(case1?.arguments).to.deep.equal(['yes']);
       expect(case2?.uuid).to.equal('case-2-uuid');
+      expect(case2?.arguments).to.deep.equal(['no']);
+
+      // the new rule order is kept
+      expect(result.router!.categories.map((cat) => cat.name)).to.deep.equal([
+        'New Name 2',
+        'New Name 1',
+        'Other'
+      ]);
 
       // Verify exits are preserved
       expect(result.exits).to.have.length(3);

@@ -49,64 +49,67 @@ const expectAllUnique = ({ router, exits }: ReturnType<typeof build>) => {
 };
 
 describe('createRulesRouter', () => {
-  it('reuses an existing category by position when renamed', () => {
-    const { router, exits } = build([rule('Crimson'), rule('Blue')]);
-
-    expect(router.categories.map((c) => [c.name, c.uuid])).to.deep.equal([
-      ['Crimson', 'cat-red'],
-      ['Blue', 'cat-blue'],
-      ['Other', 'cat-other']
-    ]);
-    expect(exits.map((e) => e.destination_uuid)).to.deep.equal([
-      'node-red',
-      'node-blue',
-      'node-other'
-    ]);
-  });
-
-  it('reuses a category that was renamed and moved', () => {
-    const { router, exits } = build([rule('Blue'), rule('Crimson')]);
-
-    expect(router.categories.map((c) => [c.name, c.uuid])).to.deep.equal([
-      ['Blue', 'cat-blue'],
-      ['Crimson', 'cat-red'],
-      ['Other', 'cat-other']
-    ]);
-    expect(exits[1].destination_uuid).to.equal('node-red');
-  });
-
-  it("doesn't take by position a category matched by name earlier", () => {
-    const result = build([rule('Blue'), rule('Green')]);
+  it('matches rules without UUIDs to existing categories by name only', () => {
+    const result = build([rule('Crimson'), rule('Blue')]);
     const { router, exits } = result;
 
     expectAllUnique(result);
-    expect(router.categories[0].uuid).to.equal('cat-blue');
+    expect(router.categories[1].uuid).to.equal('cat-blue');
+    expect(exits[1].destination_uuid).to.equal('node-blue');
 
-    // Green takes the first unclaimed category instead
-    expect(router.categories[1].uuid).to.equal('cat-red');
-    expect(exits[1].destination_uuid).to.equal('node-red');
-  });
-
-  it('only creates new categories when every existing one is claimed', () => {
-    const result = build([rule('Red'), rule('Blue'), rule('Green')]);
-    const { router, exits } = result;
-
-    expectAllUnique(result);
-    expect(router.categories[2].uuid).to.not.be.oneOf([
+    // Crimson is new rather than a guessed rename of Red
+    expect(router.categories[0].uuid).to.not.be.oneOf([
       'cat-red',
       'cat-blue',
       'cat-other'
     ]);
-    expect(exits[2].destination_uuid).to.equal(null);
+    expect(exits[0].destination_uuid).to.equal(null);
+    expect(router.categories.map((c) => c.uuid)).to.not.include('cat-red');
   });
 
-  it("doesn't take by position a category matched by name later", () => {
-    const result = build([rule('Green'), rule('Red')]);
-    const { router, exits } = result;
+  it("doesn't reuse anything when every rule is replaced", () => {
+    const existingCases = [
+      {
+        uuid: 'case-red',
+        type: 'has_any_word',
+        arguments: ['red'],
+        category_uuid: 'cat-red'
+      },
+      {
+        uuid: 'case-blue',
+        type: 'has_any_word',
+        arguments: ['blue'],
+        category_uuid: 'cat-blue'
+      }
+    ];
+
+    // every loaded rule deleted and new ones typed in
+    const result = build(
+      [rule('Green'), rule('Purple')],
+      existingCategories,
+      existingExits,
+      existingCases
+    );
 
     expectAllUnique(result);
-    expect(router.categories[1].uuid).to.equal('cat-red');
-    expect(exits[1].destination_uuid).to.equal('node-red');
+    const reused = ['cat-red', 'cat-blue', 'exit-red', 'exit-blue'];
+    expect(
+      result.router.categories.slice(0, 2).map((c) => c.uuid)
+    ).to.not.include.members(reused);
+    expect(result.exits.slice(0, 2).map((e) => e.uuid)).to.not.include.members(
+      reused
+    );
+    expect(
+      result.exits.slice(0, 2).map((e) => e.destination_uuid)
+    ).to.deep.equal([null, null]);
+    expect(result.router.cases.map((c) => c.uuid)).to.not.include.members([
+      'case-red',
+      'case-blue'
+    ]);
+
+    // the default category is kept
+    expect(result.router.categories[2].uuid).to.equal('cat-other');
+    expect(result.exits[2].destination_uuid).to.equal('node-other');
   });
 
   it('gives categories that shared an exit their own exits', () => {
@@ -153,39 +156,6 @@ describe('createRulesRouter', () => {
     expectAllUnique(result);
     expect(result.router.categories[0].uuid).to.equal('cat-blue');
     expect(result.exits[0].uuid).to.equal('exit-blue');
-  });
-
-  it('reuses each existing case at most once', () => {
-    const existingCases = [
-      {
-        uuid: 'case-red',
-        type: 'has_any_word',
-        arguments: ['red'],
-        category_uuid: 'cat-red'
-      }
-    ];
-
-    // a second rule for the same category
-    let result = build(
-      [rule('Red'), rule('Red', 'crimson')],
-      existingCategories,
-      existingExits,
-      existingCases
-    );
-    expectAllUnique(result);
-    expect(result.router.cases[0].uuid).to.equal('case-red');
-
-    // a new rule inserted above the existing one doesn't take its case
-    result = build(
-      [rule('Green'), rule('Red')],
-      existingCategories,
-      existingExits,
-      existingCases
-    );
-    expectAllUnique(result);
-    expect(result.router.cases[0].uuid).to.not.equal('case-red');
-    expect(result.router.cases[1].uuid).to.equal('case-red');
-    expect(result.router.cases[1].category_uuid).to.equal('cat-red');
   });
 
   describe('with rules that carry their UUIDs', () => {

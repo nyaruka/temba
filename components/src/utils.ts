@@ -1508,20 +1508,11 @@ export const createRulesRouter = (
     };
   };
 
-  const isUnclaimed = (cat: any) =>
-    cat &&
-    !nameMatchedCategoryUuids.has(cat.uuid) &&
-    !usedCategoryUuids.has(cat.uuid);
-
   // Rules loaded from an existing node carry the UUIDs of the case and category they came from,
-  // and rules added in the editor carry none. When any rule has them we know which rule is which
-  // and don't need to guess renames from positions.
-  const rulesHaveUuids = userRules.some(
-    (rule) => rule.case_uuid || rule.category_uuid
-  );
+  // and rules added in the editor carry none, so we never have to guess which rule was which
 
   // Process rules in their original order to preserve rule order
-  userRules.forEach((rule, ruleIndex) => {
+  userRules.forEach((rule) => {
     const categoryKey = rule.category.trim().toLowerCase();
     const categoryName = rule.category.trim(); // Use original casing
 
@@ -1537,23 +1528,19 @@ export const createRulesRouter = (
           !usedCategoryUuids.has(cat.uuid)
       );
 
-      if (!existingCategory && rulesHaveUuids) {
-        // A rename of the category one of these rules came from, if no other rule keeps it
+      // Otherwise a rename of the category one of these rules came from, if no other rule keeps
+      // it, and failing that a new category
+      if (!existingCategory) {
         const sourceUuids = userRules
           .filter((r) => categoryNamesEqual(r.category, categoryName))
           .map((r) => r.category_uuid)
           .filter(Boolean);
         existingCategory = existingUserCategories.find(
-          (cat) => sourceUuids.includes(cat.uuid) && isUnclaimed(cat)
+          (cat) =>
+            sourceUuids.includes(cat.uuid) &&
+            !nameMatchedCategoryUuids.has(cat.uuid) &&
+            !usedCategoryUuids.has(cat.uuid)
         );
-      } else if (!existingCategory) {
-        // Without UUIDs, guess a rename of the category at the same position, or else the first
-        // one that no other rule takes
-        const candidateCategory =
-          existingUserCategories[createdCategories.size];
-        existingCategory = isUnclaimed(candidateCategory)
-          ? candidateCategory
-          : existingUserCategories.find(isUnclaimed);
       }
 
       const { categoryUuid, exitUuid, destinationUuid } =
@@ -1580,30 +1567,13 @@ export const createRulesRouter = (
       });
     }
 
-    let existingCase: any;
-
-    if (rulesHaveUuids) {
-      // The rule keeps its own case, so its translations stay with it wherever it moves
-      existingCase = existingCases.find(
-        (case_) =>
-          case_.uuid === rule.case_uuid && !usedCaseUuids.has(case_.uuid)
-      );
-    } else {
-      // Without UUIDs, reuse an existing case only if it belonged to the same category, so
-      // its UUID (and translations) never move to another category's rule
-      const ruleCategoryUuid = categoryInfo.uuid;
-      const isReusableCase = (case_: any) =>
-        case_ &&
-        !usedCaseUuids.has(case_.uuid) &&
-        case_.category_uuid === ruleCategoryUuid;
-
-      // Prefer the case at the same position, else one with the same operator
-      existingCase = isReusableCase(existingCases[ruleIndex])
-        ? existingCases[ruleIndex]
-        : existingCases.find(
-            (case_) => isReusableCase(case_) && case_.type === rule.operator
-          );
-    }
+    // The rule keeps its own case, so its translations stay with it wherever it moves
+    const existingCase = rule.case_uuid
+      ? existingCases.find(
+          (case_) =>
+            case_.uuid === rule.case_uuid && !usedCaseUuids.has(case_.uuid)
+        )
+      : null;
 
     const caseUuid = existingCase?.uuid || generateUUID();
     usedCaseUuids.add(caseUuid);
