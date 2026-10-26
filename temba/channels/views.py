@@ -477,10 +477,12 @@ class ChannelCRUDL(SmartCRUDL):
         def build_context_menu(self, menu):
             obj = self.get_object()
 
-            for item in obj.type.menu_items:
-                menu.add_link(item["label"], reverse(item["view_name"], args=[obj.uuid]))
+            # type specific actions like reconnecting are all claim views
+            if self.has_org_perm("channels.channel_claim"):
+                for item in obj.type.menu_items:
+                    menu.add_link(item["label"], reverse(item["view_name"], args=[obj.uuid]))
 
-            if obj.type.config_ui:
+            if obj.type.config_ui and self.has_org_perm("channels.channel_configuration"):
                 menu.add_link(_("Configuration"), reverse("channels.channel_configuration", args=[obj.uuid]))
 
             if obj.type.has_logs and self.has_org_perm("channels.channel_logs"):

@@ -50,10 +50,10 @@ class ChipTypeTest(CRUDLTestMixin, TembaTest):
         update_url = reverse("channels.channel_update", args=[channel.id])
         config_url = reverse("channels.channel_configuration", args=[channel.uuid])
 
-        self.assertRequestDisallowed(update_url, [None, self.agent, self.admin2])
+        self.assertRequestDisallowed(update_url, [None, self.agent, self.editor, self.admin2])
         self.assertUpdateFetch(
             update_url,
-            [self.editor, self.admin],
+            [self.admin],
             form_fields={"name": "WebChat", "is_enabled": True, "allowed_domains": ""},
         )
 
