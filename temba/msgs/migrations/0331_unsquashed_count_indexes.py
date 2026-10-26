@@ -3,7 +3,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    # a plain index build would block writes to the counts tables for its duration, so they're created concurrently
+    # A plain index build would block writes to the counts tables for its duration, so they're created concurrently.
+    # Installations large enough to care can run the following ahead of the deploy, and fake this migration:
+    #
+    #   CREATE INDEX CONCURRENTLY "broadcastmsgcount_unsquashed" ON msgs_broadcastmsgcount ("broadcast_id") WHERE NOT "is_squashed";
+    #   CREATE INDEX CONCURRENTLY "labelcount_unsquashed" ON msgs_labelcount ("label_id") WHERE NOT "is_squashed";
+    #
     atomic = False
 
     dependencies = [
