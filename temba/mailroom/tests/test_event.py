@@ -467,16 +467,29 @@ class EventTest(TembaTest):
         self.assertEqual({"uuid": "b7cf0d83-f1c9-411c-96fd-c511a4cfa86d", "name": "Registration Flow"}, event["flow"])
 
     def test_redact_for_org(self):
-        from temba.contacts.models import ContactURN
+        from temba.contacts.models import URN, ContactURN
 
         event = {
             "type": Event.TYPE_CONTACT_URNS_CHANGED,
             "urns": ["tel:+123456789", "whatsapp:JM.2335234000556455"],
         }
+        masked = [
+            URN.from_parts(URN.TEL_SCHEME, ContactURN.ANON_MASK),
+            URN.from_parts(URN.WHATSAPP_SCHEME, ContactURN.ANON_MASK),
+        ]
 
         with self.anonymous(self.org):
             redacted = Event.redact_for_org(self.org, event)
-            self.assertEqual([ContactURN.ANON_MASK, ContactURN.ANON_MASK], redacted["urns"])
+            self.assertEqual(masked, redacted["urns"])
+            # temba-contact-chat renders URNs via urn.split(':')[1]
+            for urn in redacted["urns"]:
+                self.assertIn(":", urn)
+                self.assertEqual(ContactURN.ANON_MASK, urn.split(":")[1])
+
+            malformed = Event.redact_for_org(
+                self.org, {"type": Event.TYPE_CONTACT_URNS_CHANGED, "urns": ["********"]}
+            )
+            self.assertEqual([URN.from_parts(URN.EXTERNAL_SCHEME, ContactURN.ANON_MASK)], malformed["urns"])
 
         self.assertEqual(
             ["tel:+123456789", "whatsapp:JM.2335234000556455"],
