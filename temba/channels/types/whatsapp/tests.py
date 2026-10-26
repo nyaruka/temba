@@ -727,10 +727,10 @@ class WhatsAppTypeTest(TembaTest, CRUDLTestMixin):
 
         update_url = reverse("channels.channel_update", args=[channel.id])
 
-        self.assertRequestDisallowed(update_url, [None, self.agent, self.admin2])
+        self.assertRequestDisallowed(update_url, [None, self.agent, self.editor, self.admin2])
         self.assertUpdateFetch(
             update_url,
-            [self.editor, self.admin],
+            [self.admin],
             form_fields={"name": "WABA name", "is_enabled": True},
         )
 
