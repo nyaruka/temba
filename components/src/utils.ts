@@ -1475,6 +1475,17 @@ export const createRulesRouter = (
     { uuid: string; name: string; exit_uuid: string }
   >();
 
+  // Existing categories that some rule will match by name, plus those already taken, so the
+  // positional fallback never hands the same category (and its exit) to two categories
+  const ruleCategoryKeys = new Set(
+    userRules.map((rule) => rule.category.trim().toLowerCase())
+  );
+  const claimedCategoryUuids = new Set(
+    existingUserCategories
+      .filter((cat) => ruleCategoryKeys.has(cat.name.toLowerCase()))
+      .map((cat) => cat.uuid)
+  );
+
   // Process rules in their original order to preserve rule order
   userRules.forEach((rule, ruleIndex) => {
     const categoryKey = rule.category.trim().toLowerCase();
@@ -1500,10 +1511,15 @@ export const createRulesRouter = (
         // Double-check that this candidate is not a system category UUID
         if (
           candidateCategory &&
+          !claimedCategoryUuids.has(candidateCategory.uuid) &&
           !isSystemCategoryUuid(candidateCategory.uuid, existingCategories)
         ) {
           existingCategory = candidateCategory;
         }
+      }
+
+      if (existingCategory) {
+        claimedCategoryUuids.add(existingCategory.uuid);
       }
 
       const existingExit = existingCategory
