@@ -8,7 +8,7 @@ from django.http import HttpResponse
 from django.test import Client, RequestFactory, override_settings
 from django.urls import reverse
 
-from temba.middleware import CompleteStream, NoStoreMiddleware, ProxiedRequestMiddleware
+from temba.middleware import CompleteStream, IncompleteBodyMiddleware, NoStoreMiddleware, ProxiedRequestMiddleware
 from temba.tests import TembaTest
 
 
@@ -211,6 +211,15 @@ class IncompleteBodyTest(TembaTest):
         response = self.post(b'{"name": "Tes', 100)
 
         self.assertEqual(400, response.status_code)
+
+    def test_without_a_usable_length_body_is_left_alone(self):
+        middleware = IncompleteBodyMiddleware(lambda r: HttpResponse(r.read()))
+
+        for length in ("", "x"):
+            request = RequestFactory().post("/", b"abc", content_type="text/plain", CONTENT_LENGTH=length)
+            self.assertNotIsInstance(request._stream, CompleteStream)
+            middleware(request)
+            self.assertNotIsInstance(request._stream, CompleteStream)
 
     def test_streams(self):
         stream = CompleteStream(io.BytesIO(b"ab\ncd\n"), 6)
