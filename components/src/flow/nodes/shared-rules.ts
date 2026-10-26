@@ -247,7 +247,9 @@ export const extractUserRules = (formData: FormData) => {
         value: value,
         value1,
         value2,
-        category: rule.category.trim()
+        category: rule.category.trim(),
+        ...(rule.case_uuid && { case_uuid: rule.case_uuid }),
+        ...(rule.category_uuid && { category_uuid: rule.category_uuid })
       };
     });
 };
@@ -289,11 +291,15 @@ export const casesToFormRules = (node: any) => {
           value2 = '';
         }
 
+        // keep the case and category UUIDs on the row so saving knows which rule it was,
+        // rather than guessing from names and positions
         rules.push({
           operator: { value: case_.type, name: operatorDisplayName },
           value1: value1,
           value2: value2,
-          category: category.name
+          category: category.name,
+          case_uuid: case_.uuid,
+          category_uuid: category.uuid
         });
       }
     });

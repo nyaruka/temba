@@ -299,9 +299,40 @@ describe('flow/nodes/shared-rules', () => {
       expect(result).to.have.length(1);
       expect(result[0].value).to.equal('');
     });
+
+    it('passes through the UUIDs a rule was loaded with', () => {
+      const result = extractUserRules({
+        rules: [
+          validRule({ case_uuid: 'case-1', category_uuid: 'cat-1' }),
+          validRule({ category: 'Blue', value1: 'blue' })
+        ]
+      } as any);
+      expect(result[0].case_uuid).to.equal('case-1');
+      expect(result[0].category_uuid).to.equal('cat-1');
+      expect(result[1]).to.not.have.property('case_uuid');
+      expect(result[1]).to.not.have.property('category_uuid');
+    });
   });
 
   describe('casesToFormRules', () => {
+    it('keeps the case and category UUIDs on each rule', () => {
+      const rules = casesToFormRules({
+        router: {
+          cases: [
+            {
+              uuid: 'case-1',
+              type: 'has_any_word',
+              arguments: ['red'],
+              category_uuid: 'cat-1'
+            }
+          ],
+          categories: [{ uuid: 'cat-1', name: 'Red' }]
+        }
+      });
+      expect(rules[0].case_uuid).to.equal('case-1');
+      expect(rules[0].category_uuid).to.equal('cat-1');
+    });
+
     it('returns an empty list when the node has no router', () => {
       expect(casesToFormRules({})).to.deep.equal([]);
       expect(casesToFormRules({ router: {} })).to.deep.equal([]);

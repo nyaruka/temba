@@ -340,13 +340,17 @@ describe('wait_for_response node config', () => {
         operator: createOperatorOption('has_any_word'),
         value1: 'red',
         value2: '',
-        category: 'Red'
+        category: 'Red',
+        case_uuid: 'red-case',
+        category_uuid: 'red-cat'
       });
       expect(formData.rules[1]).to.deep.equal({
         operator: createOperatorOption('has_phrase'),
         value1: 'green',
         value2: '',
-        category: 'Green'
+        category: 'Green',
+        case_uuid: 'green-case',
+        category_uuid: 'green-cat'
       });
     });
 

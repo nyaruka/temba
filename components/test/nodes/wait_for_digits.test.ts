@@ -172,7 +172,9 @@ describe('wait_for_digits node config', () => {
         operator: createOperatorOption('has_number_eq'),
         value1: '1234',
         value2: '',
-        category: 'Valid'
+        category: 'Valid',
+        case_uuid: 'case-1',
+        category_uuid: 'valid-cat'
       });
     });
 
