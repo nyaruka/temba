@@ -64,18 +64,40 @@ describe('createRulesRouter', () => {
     ]);
   });
 
+  it('reuses a category that was renamed and moved', () => {
+    const { router, exits } = build([rule('Blue'), rule('Crimson')]);
+
+    expect(router.categories.map((c) => [c.name, c.uuid])).to.deep.equal([
+      ['Blue', 'cat-blue'],
+      ['Crimson', 'cat-red'],
+      ['Other', 'cat-other']
+    ]);
+    expect(exits[1].destination_uuid).to.equal('node-red');
+  });
+
   it("doesn't take by position a category matched by name earlier", () => {
     const result = build([rule('Blue'), rule('Green')]);
     const { router, exits } = result;
 
     expectAllUnique(result);
     expect(router.categories[0].uuid).to.equal('cat-blue');
-    expect(router.categories[1].uuid).to.not.be.oneOf([
+
+    // Green takes the first unclaimed category instead
+    expect(router.categories[1].uuid).to.equal('cat-red');
+    expect(exits[1].destination_uuid).to.equal('node-red');
+  });
+
+  it('only creates new categories when every existing one is claimed', () => {
+    const result = build([rule('Red'), rule('Blue'), rule('Green')]);
+    const { router, exits } = result;
+
+    expectAllUnique(result);
+    expect(router.categories[2].uuid).to.not.be.oneOf([
       'cat-red',
       'cat-blue',
       'cat-other'
     ]);
-    expect(exits[1].destination_uuid).to.equal(null);
+    expect(exits[2].destination_uuid).to.equal(null);
   });
 
   it("doesn't take by position a category matched by name later", () => {
@@ -153,7 +175,7 @@ describe('createRulesRouter', () => {
     expectAllUnique(result);
     expect(result.router.cases[0].uuid).to.equal('case-red');
 
-    // a new rule inserted above the existing one
+    // a new rule inserted above the existing one doesn't take its case
     result = build(
       [rule('Green'), rule('Red')],
       existingCategories,
@@ -161,5 +183,8 @@ describe('createRulesRouter', () => {
       existingCases
     );
     expectAllUnique(result);
+    expect(result.router.cases[0].uuid).to.not.equal('case-red');
+    expect(result.router.cases[1].uuid).to.equal('case-red');
+    expect(result.router.cases[1].category_uuid).to.equal('cat-red');
   });
 });

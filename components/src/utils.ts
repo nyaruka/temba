@@ -1508,8 +1508,6 @@ export const createRulesRouter = (
     };
   };
 
-  const isUnusedCase = (case_: any) => case_ && !usedCaseUuids.has(case_.uuid);
-
   // Process rules in their original order to preserve rule order
   userRules.forEach((rule, ruleIndex) => {
     const categoryKey = rule.category.trim().toLowerCase();
@@ -1527,17 +1525,19 @@ export const createRulesRouter = (
           !usedCategoryUuids.has(cat.uuid)
       );
 
-      // If no match by name, try by position (for category rename scenarios)
+      // If no match by name, treat it as a rename - of the category at the same position, or
+      // else the first one that no other rule takes
       if (!existingCategory) {
+        const isUnclaimed = (cat: any) =>
+          cat &&
+          !nameMatchedCategoryUuids.has(cat.uuid) &&
+          !usedCategoryUuids.has(cat.uuid);
+
         const candidateCategory =
           existingUserCategories[createdCategories.size];
-        if (
-          candidateCategory &&
-          !nameMatchedCategoryUuids.has(candidateCategory.uuid) &&
-          !usedCategoryUuids.has(candidateCategory.uuid)
-        ) {
-          existingCategory = candidateCategory;
-        }
+        existingCategory = isUnclaimed(candidateCategory)
+          ? candidateCategory
+          : existingUserCategories.find(isUnclaimed);
       }
 
       const { categoryUuid, exitUuid, destinationUuid } =
@@ -1564,28 +1564,20 @@ export const createRulesRouter = (
       });
     }
 
-    // Create case for this rule
-    let existingCase = isUnusedCase(existingCases[ruleIndex])
+    // Create case for this rule, reusing an existing case only if it belonged to the same
+    // category, so its UUID (and translations) never move to another category's rule
+    const ruleCategoryUuid = categoryInfo.uuid;
+    const isReusableCase = (case_: any) =>
+      case_ &&
+      !usedCaseUuids.has(case_.uuid) &&
+      case_.category_uuid === ruleCategoryUuid;
+
+    // Prefer the case at the same position, else one with the same operator
+    const existingCase = isReusableCase(existingCases[ruleIndex])
       ? existingCases[ruleIndex]
-      : null;
-
-    // If we can't find by position, try to find by matching rule content
-    if (!existingCase) {
-      existingCase = existingCases.find((case_) => {
-        // Find the category for this case
-        const caseCategory = existingCategories.find(
-          (cat) => cat.uuid === case_.category_uuid
+      : existingCases.find(
+          (case_) => isReusableCase(case_) && case_.type === rule.operator
         );
-
-        // Match by operator type and category name
-        return (
-          isUnusedCase(case_) &&
-          case_.type === rule.operator &&
-          caseCategory &&
-          categoryNamesEqual(caseCategory.name, categoryName)
-        );
-      });
-    }
 
     const caseUuid = existingCase?.uuid || generateUUID();
     usedCaseUuids.add(caseUuid);
