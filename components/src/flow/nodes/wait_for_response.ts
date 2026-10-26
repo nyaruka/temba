@@ -69,9 +69,26 @@ const createWaitForResponseRouter = (
     );
 
     if (existingNoResponseExit) {
-      router.categories.push(existingNoResponseCategory);
+      // the existing definition may have shared this category's UUID or exit with another
+      // category, in which case it gets new ones
+      const categoryUuid = router.categories.some(
+        (cat) => cat.uuid === existingNoResponseCategory.uuid
+      )
+        ? generateUUID()
+        : existingNoResponseCategory.uuid;
+      const exitUuid = exits.some(
+        (exit) => exit.uuid === existingNoResponseExit.uuid
+      )
+        ? generateUUID()
+        : existingNoResponseExit.uuid;
+
+      router.categories.push({
+        ...existingNoResponseCategory,
+        uuid: categoryUuid,
+        exit_uuid: exitUuid
+      });
       exits.push({
-        uuid: existingNoResponseExit.uuid,
+        uuid: exitUuid,
         destination_uuid: existingNoResponseExit.destination_uuid || null
       });
     }
@@ -335,11 +352,15 @@ export const wait_for_response: NodeConfig = {
             (cat: any) => cat.name === 'No Response'
           );
 
-        const noResponseCategory = existingNoResponseCategory || {
-          uuid: generateUUID(),
-          name: 'No Response',
-          exit_uuid: generateUUID()
-        };
+        // the router may have already added it, possibly with new UUIDs
+        const noResponseCategory = router.categories?.find(
+          (cat: any) => cat.name === 'No Response'
+        ) ||
+          existingNoResponseCategory || {
+            uuid: generateUUID(),
+            name: 'No Response',
+            exit_uuid: generateUUID()
+          };
 
         waitConfig.timeout = {
           seconds: timeoutSeconds,

@@ -66,6 +66,7 @@ class VonageType(ChannelType):
     category = ChannelType.Category.PHONE
 
     unique_addresses = True
+    tps = 1
 
     schemes = [URN.TEL_SCHEME]
 

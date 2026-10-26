@@ -100,7 +100,6 @@ class ClaimView(ClaimViewMixin, SmartFormView):
                 name="WhatsApp: %s" % data["address"],
                 address=data["address"],
                 config=config,
-                tps=45,
             )
         except forms.ValidationError as e:
             form.add_error(None, e)

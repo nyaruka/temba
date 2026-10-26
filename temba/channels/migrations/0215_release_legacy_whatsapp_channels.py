@@ -7,7 +7,7 @@ from django.utils import timezone
 LEGACY_TYPES = ("WA", "D3", "TXW")
 
 
-def release_legacy_whatsapp_channels(apps, schema_editor):
+def release_legacy_whatsapp_channels(apps, schema_editor):  # pragma: no cover
     Channel = apps.get_model("channels", "Channel")
     Trigger = apps.get_model("triggers", "Trigger")
     Incident = apps.get_model("notifications", "Incident")
@@ -50,7 +50,7 @@ def release_legacy_whatsapp_channels(apps, schema_editor):
         )
 
 
-def update_base_translation(template):
+def update_base_translation(template):  # pragma: no cover
     """
     Version of Template.update_base for historical models - tries to set a new base translation for this template.
     """

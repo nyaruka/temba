@@ -1197,8 +1197,26 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
 
         self.assertEqual(
             response.json()["blockers"][0],
+            "To start this flow an administrator needs to add a voice channel to your workspace which will allow you to make and receive calls.",
+        )
+
+        # administrators get a link to add one
+        self.login(self.admin)
+        mr_mocks.flow_start_preview(query='age > 30 AND status = "active" AND history != "IVR Test"', total=100)
+        response = self.client.post(
+            preview_url,
+            {
+                "query": "age > 30",
+                "exclusions": {"non_active": True, "started_previously": True},
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(
+            response.json()["blockers"][0],
             'To start this flow you need to <a href="/channels/channel/claim/">add a voice channel</a> to your workspace which will allow you to make and receive calls.',
         )
+        self.login(self.editor)
 
         # if we have too many messages in our outbox we should block
         self.org.counts.create(scope="msgs:folder:O", count=1_000_001)
@@ -1269,6 +1287,23 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         self.channel.release(self.admin)
         mr_mocks.flow_start_preview(query='age > 30 AND status = "active" AND history != "Test Flow"', total=100)
 
+        response = self.client.post(
+            preview_url,
+            {
+                "query": "age > 30",
+                "exclusions": {"non_active": True, "started_previously": True},
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(
+            response.json()["blockers"][0],
+            "To start this flow an administrator needs to add a channel to your workspace which will allow you to send messages to your contacts.",
+        )
+
+        # administrators get a link to add one
+        self.login(self.admin)
+        mr_mocks.flow_start_preview(query='age > 30 AND status = "active" AND history != "Test Flow"', total=100)
         response = self.client.post(
             preview_url,
             {
@@ -1944,13 +1979,15 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(7, len(resp_data["labels"]))  # 7 days
         self.assertEqual([0, 0, 0, 0, 0, 0, 0], resp_data["datasets"][0]["data"])
 
-        # with dow data
-        flow1.counts.create(scope="msgsin:dow:0", count=4)  # Sunday
-        flow1.counts.create(scope="msgsin:dow:1", count=2)  # Monday
+        # with daily counts, summed by weekday
+        flow1.counts.create(scope="msgsin:date:2026-10-18", count=4)  # Sunday
+        flow1.counts.create(scope="msgsin:date:2026-10-25", count=3)  # Sunday
+        flow1.counts.create(scope="msgsin:date:2026-10-19", count=2)  # Monday
+        flow1.counts.create(scope="msgsin:date:2026-10-24", count=1)  # Saturday
 
         response = self.requestView(dow_url, self.admin)
         resp_data = response.json()["data"]
-        self.assertEqual([4, 2, 0, 0, 0, 0, 0], resp_data["datasets"][0]["data"])
+        self.assertEqual([7, 2, 0, 0, 0, 0, 1], resp_data["datasets"][0]["data"])
 
         # test that labels are datetime objects starting from Sunday
         labels = resp_data["labels"]

@@ -16,6 +16,7 @@ class KaleyraType(ChannelType):
     code = "KWA"
     name = "Kaleyra WhatsApp"
     category = ChannelType.Category.SOCIAL_MEDIA
+    tps = 45
 
     schemes = [URN.WHATSAPP_SCHEME]
 

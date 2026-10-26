@@ -29,7 +29,7 @@ SELECT (SELECT MAX(id) FROM batch), (SELECT COUNT(*) FROM updated)
 """
 
 
-def backfill_msg_uuids(apps, schema_editor):
+def backfill_msg_uuids(apps, schema_editor):  # pragma: no cover
     # schema_editor is None when this is run out of band via apply_manual
     conn = schema_editor.connection if schema_editor else default_connection
 

@@ -1,3 +1,28 @@
+## v26.3.161 (2026-10-26)
+ * Restrict editors to read-only access to channels
+ * Squash counts by updating a single squashed row per set in place (#7147)
+
+## v26.3.160 (2026-10-26)
+ * Let channel types define the TPS set on new channels (#7151)
+ * Derive flow engagement by weekday from daily counts and stop writing weekday counts (#7146)
+
+## v26.3.159 (2026-10-24)
+ * Bump dependencies
+
+## v26.3.158 (2026-10-22)
+ * Show a centered placeholder card in the My Tickets folder when it has no tickets
+ * Drop index on open tickets by last activity
+
+## v26.3.157 (2026-10-22)
+ * Backfill close fires for open tickets
+
+## v26.3.156 (2026-10-22)
+ * Add ticket_triggers org feature
+
+## v26.3.155 (2026-10-22)
+ * Add per-workspace ticket idle limit and ticket close contact fire type
+ * Allow updating the API key of 360Dialog channels and only check credentials when config changes
+
 ## v26.3.154 (2026-10-21)
  * Skip campaign events with unrepresentable times on the contact timeline
 

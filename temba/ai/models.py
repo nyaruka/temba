@@ -183,3 +183,8 @@ class LLMCount(BaseDailyCount):
             # for squashing task
             models.Index(name="llmcount_unsquashed", fields=("llm", "day", "scope"), condition=Q(is_squashed=False)),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                name="llmcount_squashed", fields=("llm", "day", "scope"), condition=Q(is_squashed=True)
+            )
+        ]

@@ -79,13 +79,7 @@ class ViberTypeTest(TembaTest, CRUDLTestMixin):
         update_url = reverse("channels.channel_update", args=[self.channel.id])
         read_url = reverse("channels.channel_read", args=[self.channel.uuid])
 
-        self.assertRequestDisallowed(update_url, [None, self.agent, self.admin2])
-        # only admins see credentials
-        self.assertUpdateFetch(
-            update_url,
-            [self.editor],
-            form_fields={"name": "Viber", "is_enabled": True, "welcome_message": ""},
-        )
+        self.assertRequestDisallowed(update_url, [None, self.agent, self.editor, self.admin2])
         self.assertUpdateFetch(
             update_url,
             [self.admin],
@@ -109,16 +103,6 @@ class ViberTypeTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("Updated", self.channel.name)
         self.assertEqual("Welcome, please subscribe for more", self.channel.config.get(CONFIG_WELCOME_MESSAGE))
 
-        # only admins see credentials
-        self.assertUpdateFetch(
-            update_url,
-            [self.editor],
-            form_fields={
-                "name": "Updated",
-                "is_enabled": True,
-                "welcome_message": "Welcome, please subscribe for more",
-            },
-        )
         self.assertUpdateFetch(
             update_url,
             [self.admin],

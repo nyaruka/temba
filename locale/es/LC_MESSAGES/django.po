@@ -2672,6 +2672,12 @@ msgstr "Para iniciar este flujo necesita <a href=\"%(link)s\">añadir un canal</
 msgid "To start this flow you need to <a href=\"%(link)s\">add a voice channel</a> to your workspace which will allow you to make and receive calls."
 msgstr "Para iniciar este flujo necesita <a href=\"%(link)s\">añadir un canal de voz</a> a su workspace que le permita realizar y recibir llamadas."
 
+msgid "To start this flow an administrator needs to add a channel to your workspace which will allow you to send messages to your contacts."
+msgstr "Para iniciar este flujo un administrador necesita añadir un canal a su workspace que le permita enviar mensajes a sus contactos."
+
+msgid "To start this flow an administrator needs to add a voice channel to your workspace which will allow you to make and receive calls."
+msgstr "Para iniciar este flujo un administrador necesita añadir un canal de voz a su workspace que le permita realizar y recibir llamadas."
+
 msgid "You have too many messages queued in your outbox. Please wait for these messages to send and then try again."
 msgstr "Tiene demasiados mensajes en cola en su bandeja de salida. Espere a que se envíen estos mensajes y vuelva a intentarlo."
 
@@ -3112,6 +3118,9 @@ msgstr "Difusiones programadas"
 msgid "To get started you need to <a href=\"%(link)s\">add a channel</a> to your workspace which will allow you to send messages to your contacts."
 msgstr "Para comenzar, debe <a href=\"%(link)s\">agregar un canal</a> a su espacio de trabajo que le permitirá enviar mensajes a sus contactos."
 
+msgid "To get started an administrator needs to add a channel to your workspace which will allow you to send messages to your contacts."
+msgstr "Para comenzar, un administrador debe agregar un canal a su espacio de trabajo que le permitirá enviar mensajes a sus contactos."
+
 msgid "Inbox"
 msgstr "Bandeja de entrada"
 
@@ -3245,6 +3254,9 @@ msgstr "Canales compartidos"
 
 msgid "Unrestricted Webhooks"
 msgstr "Webhooks sin restricciones"
+
+msgid "Ticket Triggers"
+msgstr "Activadores de tickets"
 
 msgid "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please contact support."
 msgstr "Lo sentimos, su workspace está suspendido actualmente. Para volver a habilitar el inicio de flujos y el envío de mensajes, póngase en contacto con el soporte."
@@ -6579,18 +6591,17 @@ msgstr "Todos los agentes"
 msgid "See more tickets"
 msgstr "Ver más tickets"
 
-msgid "All done!"
-msgstr "¡Todo listo!"
+msgid "You're all caught up"
+msgstr "Está todo al día"
 
-msgid "Nice work, there aren't any more tickets here that need your attention."
-msgstr "Buen trabajo, no hay más entradas aquí que requieran su atención."
+msgid "There are no tickets here waiting on you. New ones will show up here as they come in."
+msgstr "No hay tickets aquí esperando su respuesta. Los nuevos aparecerán aquí a medida que lleguen."
 
-#, python-format
-msgid "%(name)s Tickets makes it easy to chat directly with your contacts."
-msgstr "%(name)s Tickets facilita chatear directamente con sus contactos."
+msgid "No tickets yet"
+msgstr "Aún no hay tickets"
 
-msgid "Sometimes an automated chatbot isn't enough. When your contacts need to chat with a real person, you can use the Open Ticket action to open a new ticket."
-msgstr "A veces, un chatbot automatizado no es suficiente. Cuando sus contactos necesiten chatear con una persona real, puede utilizar la acción Abrir ticket para abrir un nuevo ticket."
+msgid "When a conversation needs more than a flow can handle, use the Open Ticket action to hand it over to an agent. Tickets show up here, ready to be picked up and answered."
+msgstr "Cuando una conversación necesite más de lo que un flujo puede ofrecer, use la acción Abrir Ticket para transferirla a un agente. Los tickets aparecen aquí, listos para ser asignados y respondidos."
 
 #, python-format
 msgid "Sorry, the <b>%(object)s</b> topic can't be deleted while it still has tickets. Move the tickets to another topic first and then try again."

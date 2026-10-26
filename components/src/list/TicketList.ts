@@ -12,11 +12,18 @@ export class TicketList extends TembaList {
   static get styles() {
     return css`
       ${super.styles}
+      :host {
+        --options-empty-message-align: center;
+      }
       temba-options {
         --temba-options-row-separator: 1px solid
           var(--temba-options-option-focus-bg, var(--color-selection));
       }
     `;
+  }
+
+  protected defaultEmptyMessage(): string {
+    return msg('No tickets');
   }
 
   public getRefreshEndpoint() {

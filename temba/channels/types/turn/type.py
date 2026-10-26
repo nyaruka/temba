@@ -34,6 +34,7 @@ class TurnType(ChannelType):
     category = ChannelType.Category.SOCIAL_MEDIA
 
     unique_addresses = True
+    tps = 45
 
     schemes = [URN.WHATSAPP_SCHEME]
     async_activation = False

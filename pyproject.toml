@@ -1,6 +1,6 @@
 [project]
 name = "temba"
-version = "26.3.154"
+version = "26.3.161"
 description = "Hosted service for visually building interactive messaging applications"
 authors = [
     {"name" = "Nyaruka", "email" = "code@nyaruka.com"}
@@ -40,7 +40,7 @@ dependencies = [
     "packaging ~= 26.3",
     "requests-toolbelt ~= 1.0.0",
     "openpyxl ~= 3.1.5",
-    "pillow~=12.3.0",
+    "pillow>=12.3,<13.1",
     "twilio>=9.10.9,<10.0.0",
     "vonage>=4.8.2,<5.0.0",
     "slack-sdk ~= 3.43.0",

@@ -571,6 +571,62 @@ describe('wait_for_response node config', () => {
       );
     });
 
+    it('gives No Response its own exit when it shared one with a user category', () => {
+      const formData = {
+        uuid: 'test-node',
+        result_name: 'response',
+        timeout_enabled: true,
+        timeout_duration: [{ value: '300', name: '5 minutes' }],
+        rules: [{ operator: 'has_text', value: 'yes', category: 'Positive' }]
+      };
+
+      const originalNode: Node = {
+        uuid: 'test-node',
+        actions: [],
+        router: {
+          type: 'switch',
+          wait: {
+            type: 'msg',
+            timeout: { category_uuid: 'timeout-cat', seconds: 300 }
+          },
+          categories: [
+            {
+              uuid: 'positive-cat',
+              name: 'Positive',
+              exit_uuid: 'shared-exit'
+            },
+            {
+              uuid: 'timeout-cat',
+              name: 'No Response',
+              exit_uuid: 'shared-exit'
+            }
+          ]
+        },
+        exits: [{ uuid: 'shared-exit', destination_uuid: 'node-x' }]
+      };
+
+      const result = wait_for_response.fromFormData!(formData, originalNode);
+
+      const exitUuids = result.exits.map((exit) => exit.uuid);
+      expect(new Set(exitUuids).size).to.equal(exitUuids.length);
+      expect(
+        result.router!.categories.map((cat) => cat.exit_uuid)
+      ).to.have.members(exitUuids);
+
+      const noResponse = result.router!.categories.find(
+        (cat) => cat.name === 'No Response'
+      )!;
+      expect(noResponse.uuid).to.equal('timeout-cat');
+      expect(noResponse.exit_uuid).to.not.equal('shared-exit');
+      expect(
+        result.exits.find((exit) => exit.uuid === noResponse.exit_uuid)!
+          .destination_uuid
+      ).to.equal('node-x');
+      expect(result.router?.wait?.timeout?.category_uuid).to.equal(
+        'timeout-cat'
+      );
+    });
+
     it('ensures user categories never share UUIDs with system categories', () => {
       const formData = {
         uuid: 'test-node',

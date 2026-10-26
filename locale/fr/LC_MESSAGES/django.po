@@ -2672,6 +2672,12 @@ msgstr "Pour démarrer ce flux, vous devez <a href=\"%(link)s\">ajouter un canal
 msgid "To start this flow you need to <a href=\"%(link)s\">add a voice channel</a> to your workspace which will allow you to make and receive calls."
 msgstr "Pour démarrer ce flux, vous devez <a href=\"%(link)s\">ajouter un canal vocal</a> à votre espace de travail, ce qui vous permettra de passer et de recevoir des appels."
 
+msgid "To start this flow an administrator needs to add a channel to your workspace which will allow you to send messages to your contacts."
+msgstr "Pour démarrer ce flux, un administrateur doit ajouter un canal à votre espace de travail qui vous permettra d'envoyer des messages à vos contacts."
+
+msgid "To start this flow an administrator needs to add a voice channel to your workspace which will allow you to make and receive calls."
+msgstr "Pour démarrer ce flux, un administrateur doit ajouter un canal vocal à votre espace de travail qui vous permettra de passer et de recevoir des appels."
+
 msgid "You have too many messages queued in your outbox. Please wait for these messages to send and then try again."
 msgstr "Vous avez trop de messages en attente dans votre boîte d'envoi. Veuillez attendre que ces messages soient envoyés, puis réessayer."
 
@@ -3112,6 +3118,9 @@ msgstr "Diffusions planifiées"
 msgid "To get started you need to <a href=\"%(link)s\">add a channel</a> to your workspace which will allow you to send messages to your contacts."
 msgstr "Pour commencer, vous devez <a href=\"%(link)s\">ajouter un canal</a> à votre espace de travail qui vous permettra d'envoyer des messages à vos contacts."
 
+msgid "To get started an administrator needs to add a channel to your workspace which will allow you to send messages to your contacts."
+msgstr "Pour commencer, un administrateur doit ajouter un canal à votre espace de travail qui vous permettra d'envoyer des messages à vos contacts."
+
 msgid "Inbox"
 msgstr "Boîte de Réception"
 
@@ -3245,6 +3254,9 @@ msgstr "Canaux partagés"
 
 msgid "Unrestricted Webhooks"
 msgstr "Webhooks sans restriction"
+
+msgid "Ticket Triggers"
+msgstr "Déclencheurs de billets"
 
 msgid "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please contact support."
 msgstr "Désolé, votre espace de travail est actuellement suspendu. Pour réactiver le lancement de flux et l'envoi de messages, veuillez contacter le support."
@@ -6579,18 +6591,17 @@ msgstr "Tous les agents"
 msgid "See more tickets"
 msgstr "Voir plus de billets"
 
-msgid "All done!"
-msgstr "C'est fait !"
+msgid "You're all caught up"
+msgstr "Vous êtes à jour"
 
-msgid "Nice work, there aren't any more tickets here that need your attention."
-msgstr "Beau travail, il n'y a pas d'autres billets ici qui nécessitent votre attention."
+msgid "There are no tickets here waiting on you. New ones will show up here as they come in."
+msgstr "Aucun ticket ici n'attend votre réponse. Les nouveaux apparaîtront ici dès leur arrivée."
 
-#, python-format
-msgid "%(name)s Tickets makes it easy to chat directly with your contacts."
-msgstr "%(name)s Billets permet de chatter directement avec vos contacts."
+msgid "No tickets yet"
+msgstr "Aucun ticket pour l'instant"
 
-msgid "Sometimes an automated chatbot isn't enough. When your contacts need to chat with a real person, you can use the Open Ticket action to open a new ticket."
-msgstr "Parfois, un chatbot automatisé ne suffit pas. Lorsque vos contacts ont besoin de discuter avec une personne réelle, vous pouvez utiliser l'action Ouvrir un Billet pour ouvrir un nouveau billet."
+msgid "When a conversation needs more than a flow can handle, use the Open Ticket action to hand it over to an agent. Tickets show up here, ready to be picked up and answered."
+msgstr "Lorsqu'une conversation demande plus que ce qu'un flux peut gérer, utilisez l'action Ouvrir un ticket pour la transférer à un agent. Les tickets apparaissent ici, prêts à être pris en charge et traités."
 
 #, python-format
 msgid "Sorry, the <b>%(object)s</b> topic can't be deleted while it still has tickets. Move the tickets to another topic first and then try again."

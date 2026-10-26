@@ -2676,6 +2676,12 @@ msgstr "Para iniciar este fluxo você precisa <a href=\"%(link)s\">adicionar um 
 msgid "To start this flow you need to <a href=\"%(link)s\">add a voice channel</a> to your workspace which will allow you to make and receive calls."
 msgstr "Para iniciar este fluxo você precisa <a href=\"%(link)s\">adicionar um canal de voz</a> à sua área de trabalho, o que permitirá fazer e receber chamadas."
 
+msgid "To start this flow an administrator needs to add a channel to your workspace which will allow you to send messages to your contacts."
+msgstr "Para iniciar este fluxo, um administrador precisa adicionar um canal à sua área de trabalho, o que permitirá enviar mensagens aos seus contatos."
+
+msgid "To start this flow an administrator needs to add a voice channel to your workspace which will allow you to make and receive calls."
+msgstr "Para iniciar este fluxo, um administrador precisa adicionar um canal de voz à sua área de trabalho, o que permitirá fazer e receber chamadas."
+
 msgid "You have too many messages queued in your outbox. Please wait for these messages to send and then try again."
 msgstr "Você tem mensagens demais na fila da sua caixa de saída. Por favor aguarde o envio dessas mensagens e tente novamente."
 
@@ -3116,6 +3122,9 @@ msgstr "Transmissões agendadas"
 msgid "To get started you need to <a href=\"%(link)s\">add a channel</a> to your workspace which will allow you to send messages to your contacts."
 msgstr "Para começar você precisa <a href=\"%(link)s\">adicionar um canal</a> à sua área de trabalho, o que permitirá enviar mensagens aos seus contatos."
 
+msgid "To get started an administrator needs to add a channel to your workspace which will allow you to send messages to your contacts."
+msgstr "Para começar, um administrador precisa adicionar um canal à sua área de trabalho, o que permitirá enviar mensagens aos seus contatos."
+
 msgid "Inbox"
 msgstr "Caixa de entrada"
 
@@ -3249,6 +3258,9 @@ msgstr "Canais compartilhados"
 
 msgid "Unrestricted Webhooks"
 msgstr "Webhooks sem restrições"
+
+msgid "Ticket Triggers"
+msgstr "Disparadores de tickets"
 
 msgid "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please contact support."
 msgstr "Desculpe, sua área de trabalho está suspensa no momento. Para voltar a iniciar fluxos e enviar mensagens, por favor entre em contato com o suporte."
@@ -6583,18 +6595,17 @@ msgstr "Todos os agentes"
 msgid "See more tickets"
 msgstr "Ver mais tickets"
 
-msgid "All done!"
-msgstr "Tudo pronto!"
+msgid "You're all caught up"
+msgstr "Você está em dia"
 
-msgid "Nice work, there aren't any more tickets here that need your attention."
-msgstr "Bom trabalho, não há mais tickets aqui que precisem da sua atenção."
+msgid "There are no tickets here waiting on you. New ones will show up here as they come in."
+msgstr "Não há tickets aqui esperando por você. Os novos aparecerão aqui assim que chegarem."
 
-#, python-format
-msgid "%(name)s Tickets makes it easy to chat directly with your contacts."
-msgstr "Os tickets do %(name)s facilitam conversar diretamente com os seus contatos."
+msgid "No tickets yet"
+msgstr "Ainda não há tickets"
 
-msgid "Sometimes an automated chatbot isn't enough. When your contacts need to chat with a real person, you can use the Open Ticket action to open a new ticket."
-msgstr "Às vezes um chatbot automatizado não é suficiente. Quando os seus contatos precisarem conversar com uma pessoa real, você pode usar a ação Abrir Ticket para abrir um novo ticket."
+msgid "When a conversation needs more than a flow can handle, use the Open Ticket action to hand it over to an agent. Tickets show up here, ready to be picked up and answered."
+msgstr "Quando uma conversa precisar de mais do que um fluxo consegue resolver, use a ação Abrir Ticket para transferi-la para um agente. Os tickets aparecem aqui, prontos para serem assumidos e respondidos."
 
 #, python-format
 msgid "Sorry, the <b>%(object)s</b> topic can't be deleted while it still has tickets. Move the tickets to another topic first and then try again."

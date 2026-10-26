@@ -1209,6 +1209,14 @@ class FlowCRUDL(SmartCRUDL):
                 'To start this flow you need to <a href="%(link)s">add a voice channel</a> to your workspace which will '
                 "allow you to make and receive calls."
             ),
+            "no_send_channel_ask": _(
+                "To start this flow an administrator needs to add a channel to your workspace which will allow you to "
+                "send messages to your contacts."
+            ),
+            "no_call_channel_ask": _(
+                "To start this flow an administrator needs to add a voice channel to your workspace which will allow "
+                "you to make and receive calls."
+            ),
             "outbox_full": _(
                 "You have too many messages queued in your outbox. Please wait for these messages to send and then try again."
             ),
@@ -1250,11 +1258,17 @@ class FlowCRUDL(SmartCRUDL):
                 blockers.append(self.blockers["too_many_recipients"])
 
             if flow.flow_type == Flow.TYPE_MESSAGE and not flow.org.get_send_channel():
-                blockers.append(self.blockers["no_send_channel"] % {"link": reverse("channels.channel_claim")})
+                blockers.append(self.get_no_channel_blocker("no_send_channel"))
             elif flow.flow_type == Flow.TYPE_VOICE and not flow.org.get_call_channel():
-                blockers.append(self.blockers["no_call_channel"] % {"link": reverse("channels.channel_claim")})
+                blockers.append(self.get_no_channel_blocker("no_call_channel"))
 
             return blockers
+
+        def get_no_channel_blocker(self, key: str) -> str:
+            # users who can't add channels themselves can't follow a link to do so
+            if self.has_org_perm("channels.channel_claim"):
+                return self.blockers[key] % {"link": reverse("channels.channel_claim")}
+            return self.blockers[f"{key}_ask"]
 
         def get_warnings(self, features, flow, query, send_time) -> list:
             warnings = []

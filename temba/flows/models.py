@@ -965,18 +965,16 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
 
     def get_engagement_by_weekday(self) -> dict[int, int]:
         """
-        Gets engagement counts (i.e. messages in) by day of the week.
+        Gets engagement counts (i.e. messages in) by day of the week (0-6 Sun-Sat).
         """
 
-        def parse(scope: str) -> int:
-            """
-            e.g. "msgsin:dow:3" -> 3, "msgsin:dow:7" -> 0
-            """
-            iso_dow = int(scope[11:])  # 1-7 Mon-Sun
-            return 0 if iso_dow == 7 else iso_dow  # 0-6 Sun-Sat
-
-        counts = self.counts.prefix("msgsin:dow:").scope_totals()
-        return {parse(scope): count for scope, count in counts.items()}
+        counts = (
+            self.counts.prefix("msgsin:date:")
+            .extra({"dow": "extract(dow FROM split_part(scope, ':', 3)::date)::int"})
+            .values("dow")
+            .annotate(count=Sum("count"))
+        )
+        return {c["dow"]: c["count"] for c in counts}
 
     def get_engagement_by_hour(self, tz) -> dict[int, int]:
         """
@@ -1392,6 +1390,11 @@ class FlowActivityCount(BaseScopedCount):
             # for squashing task
             models.Index(name="flowactivitycount_unsquashed", fields=("flow", "scope"), condition=Q(is_squashed=False)),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                name="flowactivitycount_squashed", fields=("flow", "scope"), condition=Q(is_squashed=True)
+            )
+        ]
 
 
 class FlowResultCount(BaseSquashableCount):
@@ -1413,6 +1416,11 @@ class FlowResultCount(BaseSquashableCount):
                 fields=("flow", "result", "category"),
                 condition=Q(is_squashed=False),
             ),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                name="flowresultcount_squashed", fields=("flow", "result", "category"), condition=Q(is_squashed=True)
+            )
         ]
 
 
@@ -1830,6 +1838,9 @@ class FlowStartCount(BaseSquashableCount):
 
     class Meta:
         indexes = [models.Index(fields=("start",), condition=Q(is_squashed=False), name="flowstartcounts_unsquashed")]
+        constraints = [
+            models.UniqueConstraint(name="flowstartcounts_squashed", fields=("start",), condition=Q(is_squashed=True))
+        ]
 
 
 class FlowLabel(OrgAsset):

@@ -3,7 +3,7 @@
 from django.db import migrations
 
 
-def release_optin_triggers(apps, schema_editor):
+def release_optin_triggers(apps, schema_editor):  # pragma: no cover
     Trigger = apps.get_model("triggers", "Trigger")
 
     num_released = Trigger.objects.filter(trigger_type__in=("I", "O"), is_active=True).update(is_active=False)

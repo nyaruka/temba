@@ -104,6 +104,9 @@ class ChannelType(metaclass=ABCMeta):
 
     unique_addresses = False
 
+    # max messages per second set on new channels of this type which aren't given their own value
+    tps = None
+
     schemes = None
     available_timezones = None
     recommended_timezones = None
@@ -401,6 +404,9 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
             modified_by=user,
         )
         create_args.update(kwargs)
+
+        if create_args.get("tps") is None:
+            create_args["tps"] = channel_type.tps
 
         if "uuid" not in create_args:
             create_args["uuid"] = generate_uuid()
@@ -726,6 +732,11 @@ class ChannelCount(BaseDailyCount):
             models.Index(
                 name="channelcount_unsquashed", fields=("channel", "day", "scope"), condition=Q(is_squashed=False)
             ),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                name="channelcount_squashed", fields=("channel", "day", "scope"), condition=Q(is_squashed=True)
+            )
         ]
 
 
