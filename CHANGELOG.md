@@ -1,3 +1,6 @@
+## v26.3.159 (2026-10-24)
+ * Bump dependencies
+
 ## v26.3.158 (2026-10-22)
  * Show a centered placeholder card in the My Tickets folder when it has no tickets
  * Drop index on open tickets by last activity
