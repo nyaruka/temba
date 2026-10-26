@@ -4,7 +4,7 @@ from django.db.models.functions import Lower
 RESERVED_NAMES = ("ticket",)
 
 
-def rename_reserved_flows(apps, schema_editor):
+def rename_reserved_flows(apps, schema_editor):  # pragma: no cover
     Flow = apps.get_model("flows", "Flow")
 
     num_renamed = 0

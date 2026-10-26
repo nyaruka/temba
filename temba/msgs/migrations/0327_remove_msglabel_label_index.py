@@ -40,7 +40,7 @@ def drop_label_index(apps, schema_editor):
             cursor.execute(f'DROP INDEX {concurrently}"{name}"')
 
 
-def create_label_index(apps, schema_editor):
+def create_label_index(apps, schema_editor):  # pragma: no cover
     with schema_editor.connection.cursor() as cursor:
         cursor.execute(f'CREATE INDEX "{LABEL_INDEX_NAME}" ON msgs_msg_labels (label_id)')
 

@@ -6,7 +6,7 @@ from uuid import uuid4
 from django.db import migrations
 
 
-def backfill_trigger_uuids(apps, schema_editor):
+def backfill_trigger_uuids(apps, schema_editor):  # pragma: no cover
     Trigger = apps.get_model("triggers", "Trigger")
 
     num_updated = 0

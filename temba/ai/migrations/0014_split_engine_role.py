@@ -1,7 +1,7 @@
 from django.db import migrations, models
 
 
-def split_engine_role(apps, schema_editor):
+def split_engine_role(apps, schema_editor):  # pragma: no cover
     LLM = apps.get_model("ai", "LLM")
 
     for llm in LLM.objects.filter(roles__contains="F"):

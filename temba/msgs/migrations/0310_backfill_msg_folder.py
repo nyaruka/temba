@@ -57,7 +57,7 @@ WHERE m.id = d.id AND d.folder IS NOT NULL AND m.folder IS DISTINCT FROM d.folde
 """
 
 
-def backfill_msg_folder(apps, schema_editor):
+def backfill_msg_folder(apps, schema_editor):  # pragma: no cover
     Msg = apps.get_model("msgs", "Msg")
 
     # schema_editor is None when this is run out of band via apply_manual

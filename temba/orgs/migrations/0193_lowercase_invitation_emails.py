@@ -2,7 +2,7 @@ from django.db import migrations
 from django.db.models.functions import Lower
 
 
-def lowercase_invitation_emails(apps, schema_editor):
+def lowercase_invitation_emails(apps, schema_editor):  # pragma: no cover
     Invitation = apps.get_model("orgs", "Invitation")
 
     num_updated = Invitation.objects.exclude(email=Lower("email")).update(email=Lower("email"))

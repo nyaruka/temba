@@ -5,7 +5,7 @@ from django.db import migrations
 from temba.utils.uuid import uuid7
 
 
-def backfill_broadcast_uuids(apps, schema_editor):
+def backfill_broadcast_uuids(apps, schema_editor):  # pragma: no cover
     Broadcast = apps.get_model("msgs", "Broadcast")
 
     num_updated = 0
