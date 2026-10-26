@@ -131,13 +131,18 @@ class CompleteStream(IOBase):
         self._remaining = length
 
     def read(self, size=-1, /):
-        data = self._stream.read(size)
-        self._remaining -= len(data)
+        wanted = self._remaining if size is None or size < 0 else min(size, self._remaining)
 
-        # a read that comes up short is only legitimate if it's because there's nothing more to come
-        if self._remaining > 0 and (size is None or size < 0 or len(data) < size):
-            raise BadRequest("request body is shorter than its Content-Length")
-        return data
+        # a single read can legitimately come up short of what's there, so only running out entirely is truncation
+        data = bytearray()
+        while len(data) < wanted:
+            chunk = self._stream.read(wanted - len(data))
+            if not chunk:
+                raise BadRequest("request body is shorter than its Content-Length")
+            data += chunk
+
+        self._remaining -= len(data)
+        return bytes(data)
 
     def readline(self, size=-1, /):
         data = self._stream.readline(size)
