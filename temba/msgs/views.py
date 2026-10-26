@@ -413,6 +413,10 @@ class BroadcastCRUDL(SmartCRUDL):
                 'To get started you need to <a href="%(link)s">add a channel</a> to your workspace which will allow '
                 "you to send messages to your contacts."
             ),
+            "no_send_channel_ask": _(
+                "To get started an administrator needs to add a channel to your workspace which will allow you to "
+                "send messages to your contacts."
+            ),
             "outbox_full": _(
                 "You have too many messages queued in your outbox. Please wait for these messages to send and then try again."
             ),
@@ -430,7 +434,11 @@ class BroadcastCRUDL(SmartCRUDL):
                 blockers.append(Org.BLOCKER_FLAGGED)
 
             if not org.get_send_channel():
-                blockers.append(self.blockers["no_send_channel"] % {"link": reverse("channels.channel_claim")})
+                # users who can't add channels themselves can't follow a link to do so
+                if self.has_org_perm("channels.channel_claim"):
+                    blockers.append(self.blockers["no_send_channel"] % {"link": reverse("channels.channel_claim")})
+                else:
+                    blockers.append(self.blockers["no_send_channel_ask"])
 
             return blockers
 

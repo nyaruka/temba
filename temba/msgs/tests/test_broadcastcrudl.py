@@ -527,6 +527,18 @@ class BroadcastCRUDLTest(TembaTest, CRUDLTestMixin):
 
         self.assertEqual(
             response.json()["blockers"][0],
+            "To get started an administrator needs to add a channel to your workspace which will allow you to send messages to your contacts.",
+        )
+
+        # administrators get a link to add one
+        self.login(self.admin)
+        mr_mocks.msg_broadcast_preview(query='age > 30 AND status = "active"', total=100)
+        response = self.client.post(
+            preview_url, {"query": "age > 30", "exclusions": {"non_active": True}}, content_type="application/json"
+        )
+
+        self.assertEqual(
+            response.json()["blockers"][0],
             'To get started you need to <a href="/channels/channel/claim/">add a channel</a> to your workspace which will allow you to send messages to your contacts.',
         )
 

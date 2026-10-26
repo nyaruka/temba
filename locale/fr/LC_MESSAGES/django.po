@@ -2672,6 +2672,12 @@ msgstr "Pour démarrer ce flux, vous devez <a href=\"%(link)s\">ajouter un canal
 msgid "To start this flow you need to <a href=\"%(link)s\">add a voice channel</a> to your workspace which will allow you to make and receive calls."
 msgstr "Pour démarrer ce flux, vous devez <a href=\"%(link)s\">ajouter un canal vocal</a> à votre espace de travail, ce qui vous permettra de passer et de recevoir des appels."
 
+msgid "To start this flow an administrator needs to add a channel to your workspace which will allow you to send messages to your contacts."
+msgstr "Pour démarrer ce flux, un administrateur doit ajouter un canal à votre espace de travail qui vous permettra d'envoyer des messages à vos contacts."
+
+msgid "To start this flow an administrator needs to add a voice channel to your workspace which will allow you to make and receive calls."
+msgstr "Pour démarrer ce flux, un administrateur doit ajouter un canal vocal à votre espace de travail qui vous permettra de passer et de recevoir des appels."
+
 msgid "You have too many messages queued in your outbox. Please wait for these messages to send and then try again."
 msgstr "Vous avez trop de messages en attente dans votre boîte d'envoi. Veuillez attendre que ces messages soient envoyés, puis réessayer."
 
@@ -3111,6 +3117,9 @@ msgstr "Diffusions planifiées"
 #, python-format
 msgid "To get started you need to <a href=\"%(link)s\">add a channel</a> to your workspace which will allow you to send messages to your contacts."
 msgstr "Pour commencer, vous devez <a href=\"%(link)s\">ajouter un canal</a> à votre espace de travail qui vous permettra d'envoyer des messages à vos contacts."
+
+msgid "To get started an administrator needs to add a channel to your workspace which will allow you to send messages to your contacts."
+msgstr "Pour commencer, un administrateur doit ajouter un canal à votre espace de travail qui vous permettra d'envoyer des messages à vos contacts."
 
 msgid "Inbox"
 msgstr "Boîte de Réception"

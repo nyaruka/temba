@@ -1,3 +1,7 @@
+## v26.3.161 (2026-10-26)
+ * Restrict editors to read-only access to channels
+ * Squash counts by updating a single squashed row per set in place (#7147)
+
 ## v26.3.160 (2026-10-26)
  * Let channel types define the TPS set on new channels (#7151)
  * Derive flow engagement by weekday from daily counts and stop writing weekday counts (#7146)

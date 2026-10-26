@@ -2658,6 +2658,12 @@ msgstr ""
 msgid "To start this flow you need to <a href=\"%(link)s\">add a voice channel</a> to your workspace which will allow you to make and receive calls."
 msgstr ""
 
+msgid "To start this flow an administrator needs to add a channel to your workspace which will allow you to send messages to your contacts."
+msgstr ""
+
+msgid "To start this flow an administrator needs to add a voice channel to your workspace which will allow you to make and receive calls."
+msgstr ""
+
 msgid "You have too many messages queued in your outbox. Please wait for these messages to send and then try again."
 msgstr ""
 
@@ -3096,6 +3102,9 @@ msgstr ""
 
 #, python-format
 msgid "To get started you need to <a href=\"%(link)s\">add a channel</a> to your workspace which will allow you to send messages to your contacts."
+msgstr ""
+
+msgid "To get started an administrator needs to add a channel to your workspace which will allow you to send messages to your contacts."
 msgstr ""
 
 msgid "Inbox"
