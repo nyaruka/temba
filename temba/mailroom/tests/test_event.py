@@ -486,9 +486,7 @@ class EventTest(TembaTest):
                 self.assertIn(":", urn)
                 self.assertEqual(ContactURN.ANON_MASK, urn.split(":")[1])
 
-            malformed = Event.redact_for_org(
-                self.org, {"type": Event.TYPE_CONTACT_URNS_CHANGED, "urns": ["********"]}
-            )
+            malformed = Event.redact_for_org(self.org, {"type": Event.TYPE_CONTACT_URNS_CHANGED, "urns": ["********"]})
             self.assertEqual([URN.from_parts(URN.EXTERNAL_SCHEME, ContactURN.ANON_MASK)], malformed["urns"])
 
         self.assertEqual(
