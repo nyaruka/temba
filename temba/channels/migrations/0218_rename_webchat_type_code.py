@@ -1,7 +1,7 @@
 from django.db import migrations
 
 
-def rename_webchat_type_code(apps, schema_editor):
+def rename_webchat_type_code(apps, schema_editor):  # pragma: no cover
     Channel = apps.get_model("channels", "Channel")
 
     num_updated = Channel.objects.filter(channel_type="WCH").update(channel_type="CHP")

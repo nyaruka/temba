@@ -25,7 +25,7 @@ WHERE m.id = rows.id AND m.status NOT IN ('I', 'E')
 """
 
 
-def clear_stale_next_attempts(apps, schema_editor):
+def clear_stale_next_attempts(apps, schema_editor):  # pragma: no cover
     # schema_editor is None when this is run out of band via apply_manual
     conn = schema_editor.connection if schema_editor else default_connection
 

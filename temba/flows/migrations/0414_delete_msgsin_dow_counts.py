@@ -18,7 +18,7 @@ SELECT (SELECT MAX(id) FROM batch), (SELECT COUNT(*) FROM deleted)
 """
 
 
-def delete_dow_counts(apps, schema_editor):
+def delete_dow_counts(apps, schema_editor):  # pragma: no cover
     # schema_editor is None when this is run out of band via apply_manual
     conn = schema_editor.connection if schema_editor else default_connection
 

@@ -1874,6 +1874,11 @@ class ContactGroupCount(BaseSquashableCount):
         indexes = [
             models.Index(fields=("group",), condition=Q(is_squashed=False), name="contactgroupcounts_unsquashed")
         ]
+        constraints = [
+            models.UniqueConstraint(
+                name="contactgroupcounts_squashed", fields=("group",), condition=Q(is_squashed=True)
+            )
+        ]
 
 
 class ContactFire(models.Model):

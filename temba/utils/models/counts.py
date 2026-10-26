@@ -6,6 +6,28 @@ from django.db.models import Q, Sum
 from temba.utils.db.queries import or_list
 
 
+def get_merge_squashed_sql(table: str, columns: tuple) -> str:
+    """
+    Builds a query which merges any squashed rows of the given table which share values for the given columns,
+    dropping them if they sum to zero.
+    """
+
+    cols = ", ".join([f'"{col}"' for col in columns])
+    join_cond = " AND ".join([f'c."{col}" = d."{col}"' for col in columns])
+    returning = ", ".join([f'c."{col}"' for col in columns])
+
+    return f"""
+    WITH dupes AS (
+        SELECT {cols} FROM {table} WHERE "is_squashed" GROUP BY {cols} HAVING COUNT(*) > 1
+    ), removed AS (
+        DELETE FROM {table} c USING dupes d WHERE c."is_squashed" AND {join_cond}
+        RETURNING {returning}, c."count"
+    )
+    INSERT INTO {table} ({cols}, "count", "is_squashed")
+    SELECT {cols}, SUM("count"), TRUE FROM removed GROUP BY {cols} HAVING SUM("count") != 0;
+    """
+
+
 class CountQuerySet(models.QuerySet):
     """
     Custom queryset for count models.
@@ -43,8 +65,8 @@ class BaseSquashableCount(models.Model):
     @classmethod
     def squash(cls) -> int:
         """
-        Squashes all distinct sets of counts with unsquashed rows into a single row if they sum to non-zero or just
-        deletes them if they sum to zero. Returns the number of sets squashed.
+        Squashes the unsquashed rows of each distinct set of counts into that set's single squashed row, which is
+        updated in place so that its id stays put, or deleted if it reaches zero. Returns the number of sets squashed.
         """
 
         num_sets = 0
@@ -68,22 +90,30 @@ class BaseSquashableCount(models.Model):
 
     @classmethod
     def get_squash_query(cls, distinct_set: dict) -> tuple:
+        """
+        Builds the query which squashes a single set. It relies on the unique index of squashed rows over the
+        squash_over columns. Only unsquashed rows are deleted, so writers inserting deltas never wait on it.
+        """
+
         squash_over = cls.get_squash_over()
-        delete_cond = " AND ".join([f'"{col}" = %s' for col in squash_over])
+        cond = " AND ".join([f'"{col}" = %s' for col in squash_over])
         insert_cols = ", ".join([f'"{col}"' for col in squash_over])
         insert_vals = ", ".join(["%s"] * len(squash_over))
 
         sql = f"""
-        WITH removed as (
-            DELETE FROM {cls._meta.db_table} WHERE {delete_cond} RETURNING "count"
+        WITH removed AS (
+            DELETE FROM {cls._meta.db_table} WHERE NOT "is_squashed" AND {cond} RETURNING "count"
+        ), zeroed AS (
+            DELETE FROM {cls._meta.db_table} WHERE "is_squashed" AND {cond}
+            AND "count" + (SELECT SUM(r."count") FROM removed r) = 0 RETURNING "id"
         )
-        INSERT INTO {cls._meta.db_table}({insert_cols}, "count", "is_squashed")
-        SELECT {insert_vals}, s.total, TRUE FROM (
-            SELECT COALESCE(SUM("count"), 0) AS "total" FROM removed
-        ) s WHERE s.total != 0;
+        INSERT INTO {cls._meta.db_table} AS t ({insert_cols}, "count", "is_squashed")
+        SELECT {insert_vals}, s.total, TRUE FROM (SELECT SUM("count") AS "total" FROM removed) s
+        WHERE s.total != 0 AND NOT EXISTS (SELECT 1 FROM zeroed)
+        ON CONFLICT ({insert_cols}) WHERE "is_squashed" DO UPDATE SET "count" = t."count" + EXCLUDED."count";
         """
 
-        return sql, tuple(distinct_set[col] for col in squash_over) * 2
+        return sql, tuple(distinct_set[col] for col in squash_over) * 3
 
     class Meta:
         abstract = True

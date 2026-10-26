@@ -2,7 +2,7 @@ from django.db import migrations
 from django.utils import timezone
 
 
-def release_chip_channels(apps, schema_editor):
+def release_chip_channels(apps, schema_editor):  # pragma: no cover
     Channel = apps.get_model("channels", "Channel")
     Trigger = apps.get_model("triggers", "Trigger")
     Incident = apps.get_model("notifications", "Incident")
