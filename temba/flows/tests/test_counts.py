@@ -270,15 +270,12 @@ class FlowActivityCountTest(TembaTest):
             with transaction.atomic():
                 flow1.counts.create(scope="foo:1", count=1, is_squashed=True)
 
-        # sets are squashed in batches, up to a maximum number per call
+        # sets are squashed up to a maximum number per call
         for i in range(5):
             flow2.counts.create(scope=f"bar:{i}", count=i + 1)
             flow2.counts.create(scope=f"bar:{i}", count=1)
 
-        with (
-            patch.object(FlowActivityCount, "squash_batch_size", 2),
-            patch.object(FlowActivityCount, "squash_max_distinct", 3),
-        ):
+        with patch.object(FlowActivityCount, "squash_max_distinct", 3):
             self.assertEqual(3, FlowActivityCount.squash())
             self.assertEqual(2, FlowActivityCount.squash())
             self.assertEqual(0, FlowActivityCount.squash())
@@ -287,6 +284,12 @@ class FlowActivityCountTest(TembaTest):
             {"bar:0": 2, "bar:1": 3, "bar:2": 4, "bar:3": 5, "bar:4": 6},
             {k: v[1] for k, v in squashed(flow2).items() if k.startswith("bar:")},
         )
+
+        # squashing a set that matches no rows doesn't insert anything
+        with connection.cursor() as cursor:
+            cursor.execute(*FlowActivityCount.get_squash_query({"flow_id": flow1.id, "scope": "foo:9"}))
+
+        self.assertFalse(flow1.counts.filter(scope="foo:9").exists())
 
     def test_merge_squashed(self):
         flow1 = self.create_flow("Test 1")

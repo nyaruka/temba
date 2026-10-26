@@ -1,4 +1,3 @@
-import itertools
 from datetime import date
 
 from django.db import connection, models
@@ -48,7 +47,6 @@ class BaseSquashableCount(models.Model):
 
     squash_over = ()
     squash_max_distinct = 5000
-    squash_batch_size = 500
 
     id = models.BigAutoField(auto_created=True, primary_key=True)
     count = models.BigIntegerField()
@@ -68,65 +66,54 @@ class BaseSquashableCount(models.Model):
     def squash(cls) -> int:
         """
         Squashes the unsquashed rows of each distinct set of counts into that set's single squashed row, which is
-        updated in place so that its id stays put. Returns the number of sets squashed.
+        updated in place so that its id stays put, or deleted if it reaches zero. Returns the number of sets squashed.
         """
 
+        num_sets = 0
         squash_over = cls.get_squash_over()
-        distinct_sets = list(
+        distinct_sets = (
             cls.get_unsquashed()
-            .values_list(*squash_over)
+            .values(*squash_over)
             .order_by(*squash_over)
             .distinct(*squash_over)[: cls.squash_max_distinct]
         )
 
-        sql = cls.get_squash_query()
-
-        for batch in itertools.batched(distinct_sets, cls.squash_batch_size):
+        for distinct_set in distinct_sets:
             with connection.cursor() as cursor:
-                cursor.execute(sql, [list(col) for col in zip(*batch)])
+                sql, params = cls.get_squash_query(distinct_set)
 
-        return len(distinct_sets)
+                cursor.execute(sql, params)
+
+            num_sets += 1
+
+        return num_sets
 
     @classmethod
-    def get_squash_query(cls) -> str:
+    def get_squash_query(cls, distinct_set: dict) -> tuple:
         """
-        Builds the query which squashes a batch of sets, given as one array param per squash_over column. It relies
-        on the unique index of squashed rows over the squash_over columns. Squashed rows which reach zero are deleted
-        so that sets which drain, like the counts of a flow's nodes, don't leave rows behind.
-
-        Only squashed rows are updated and only unsquashed rows are deleted, so writers inserting deltas never wait on
-        it. An overlapping squash blocks on the rows being deleted and then skips them, so nothing is counted twice.
+        Builds the query which squashes a single set. It relies on the unique index of squashed rows over the
+        squash_over columns. Only unsquashed rows are deleted, so writers inserting deltas never wait on it.
         """
 
         squash_over = cls.get_squash_over()
-        table = cls._meta.db_table
-        fields_by_column = {f.column: f for f in cls._meta.concrete_fields}
+        cond = " AND ".join([f'"{col}" = %s' for col in squash_over])
+        insert_cols = ", ".join([f'"{col}"' for col in squash_over])
+        insert_vals = ", ".join(["%s"] * len(squash_over))
 
-        def join(a, b):
-            return " AND ".join([f'{a}."{col}" = {b}."{col}"' for col in squash_over])
-
-        cols = ", ".join([f'"{col}"' for col in squash_over])
-        arrays = ", ".join([f"%s::{fields_by_column[col].db_type(connection)}[]" for col in squash_over])
-        returning = ", ".join([f'c."{col}"' for col in squash_over])
-
-        return f"""
-        WITH keys AS (
-            SELECT * FROM unnest({arrays}) AS k({cols})
-        ), removed AS (
-            DELETE FROM {table} c USING keys k WHERE NOT c."is_squashed" AND {join("c", "k")}
-            RETURNING {returning}, c."count"
-        ), sums AS (
-            SELECT {cols}, SUM("count") AS "count" FROM removed GROUP BY {cols}
+        sql = f"""
+        WITH removed AS (
+            DELETE FROM {cls._meta.db_table} WHERE NOT "is_squashed" AND {cond} RETURNING "count"
         ), zeroed AS (
-            DELETE FROM {table} c USING sums s WHERE c."is_squashed" AND {join("c", "s")} AND c."count" + s."count" = 0
-            RETURNING {returning}
+            DELETE FROM {cls._meta.db_table} WHERE "is_squashed" AND {cond}
+            AND "count" + (SELECT SUM(r."count") FROM removed r) = 0 RETURNING "id"
         )
-        INSERT INTO {table} AS t ({cols}, "count", "is_squashed")
-        SELECT {cols}, s."count", TRUE FROM sums s
-        WHERE s."count" != 0 AND NOT EXISTS (SELECT 1 FROM zeroed z WHERE {join("z", "s")})
-        ORDER BY {cols}
-        ON CONFLICT ({cols}) WHERE "is_squashed" DO UPDATE SET "count" = t."count" + EXCLUDED."count";
+        INSERT INTO {cls._meta.db_table} AS t ({insert_cols}, "count", "is_squashed")
+        SELECT {insert_vals}, s.total, TRUE FROM (SELECT SUM("count") AS "total" FROM removed) s
+        WHERE s.total != 0 AND NOT EXISTS (SELECT 1 FROM zeroed)
+        ON CONFLICT ({insert_cols}) WHERE "is_squashed" DO UPDATE SET "count" = t."count" + EXCLUDED."count";
         """
+
+        return sql, tuple(distinct_set[col] for col in squash_over) * 3
 
     class Meta:
         abstract = True
