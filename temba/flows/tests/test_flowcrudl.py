@@ -1944,13 +1944,15 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(7, len(resp_data["labels"]))  # 7 days
         self.assertEqual([0, 0, 0, 0, 0, 0, 0], resp_data["datasets"][0]["data"])
 
-        # with dow data
-        flow1.counts.create(scope="msgsin:dow:0", count=4)  # Sunday
-        flow1.counts.create(scope="msgsin:dow:1", count=2)  # Monday
+        # with daily counts, summed by weekday
+        flow1.counts.create(scope="msgsin:date:2026-10-18", count=4)  # Sunday
+        flow1.counts.create(scope="msgsin:date:2026-10-25", count=3)  # Sunday
+        flow1.counts.create(scope="msgsin:date:2026-10-19", count=2)  # Monday
+        flow1.counts.create(scope="msgsin:date:2026-10-24", count=1)  # Saturday
 
         response = self.requestView(dow_url, self.admin)
         resp_data = response.json()["data"]
-        self.assertEqual([4, 2, 0, 0, 0, 0, 0], resp_data["datasets"][0]["data"])
+        self.assertEqual([7, 2, 0, 0, 0, 0, 1], resp_data["datasets"][0]["data"])
 
         # test that labels are datetime objects starting from Sunday
         labels = resp_data["labels"]

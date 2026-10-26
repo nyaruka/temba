@@ -181,27 +181,26 @@ class FlowActivityCountTest(TembaTest):
         handle(in2, flow1)
         handle(in3, flow2)
 
-        self.assertEqual(6, flow1.counts.count())
-        self.assertEqual(3, flow2.counts.count())
+        self.assertEqual(4, flow1.counts.count())
+        self.assertEqual(2, flow2.counts.count())
 
         today = date.today().isoformat()  # date as YYYY-MM-DD
-        dow = date.today().isoweekday()  # weekday as 1(Mon)-7(Sun)
         hour = timezone.now().astimezone(tzone.utc).hour
 
         self.assertEqual(
-            {f"msgsin:date:{today}": 2, f"msgsin:dow:{dow}": 2, f"msgsin:hour:{hour}": 2},
+            {f"msgsin:date:{today}": 2, f"msgsin:hour:{hour}": 2},
             flow1.counts.filter(scope__startswith="msgsin:").scope_totals(),
         )
         self.assertEqual(
-            {f"msgsin:date:{today}": 1, f"msgsin:dow:{dow}": 1, f"msgsin:hour:{hour}": 1},
+            {f"msgsin:date:{today}": 1, f"msgsin:hour:{hour}": 1},
             flow2.counts.filter(scope__startswith="msgsin:").scope_totals(),
         )
 
         # other changes to msgs shouldn't create new counts
         Msg.bulk_archive(self.org, [in1, in2])
 
-        self.assertEqual(6, flow1.counts.count())
-        self.assertEqual(3, flow2.counts.count())
+        self.assertEqual(4, flow1.counts.count())
+        self.assertEqual(2, flow2.counts.count())
 
     def test_squashing(self):
         flow1 = self.create_flow("Test 1")
