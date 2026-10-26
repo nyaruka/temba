@@ -92,20 +92,30 @@ describe('createRulesRouter', () => {
     );
 
     expectAllUnique(result);
-    const reused = ['cat-red', 'cat-blue', 'exit-red', 'exit-blue'];
+    const reused = (uuids: string[], existing: string[]) =>
+      uuids.filter((uuid) => existing.includes(uuid));
+
     expect(
-      result.router.categories.slice(0, 2).map((c) => c.uuid)
-    ).to.not.include.members(reused);
-    expect(result.exits.slice(0, 2).map((e) => e.uuid)).to.not.include.members(
-      reused
-    );
+      reused(
+        result.router.categories.map((c) => c.uuid),
+        ['cat-red', 'cat-blue']
+      )
+    ).to.be.empty;
+    expect(
+      reused(
+        result.exits.map((e) => e.uuid),
+        ['exit-red', 'exit-blue']
+      )
+    ).to.be.empty;
+    expect(
+      reused(
+        result.router.cases.map((c) => c.uuid),
+        ['case-red', 'case-blue']
+      )
+    ).to.be.empty;
     expect(
       result.exits.slice(0, 2).map((e) => e.destination_uuid)
     ).to.deep.equal([null, null]);
-    expect(result.router.cases.map((c) => c.uuid)).to.not.include.members([
-      'case-red',
-      'case-blue'
-    ]);
 
     // the default category is kept
     expect(result.router.categories[2].uuid).to.equal('cat-other');
@@ -265,25 +275,105 @@ describe('createRulesRouter', () => {
     });
 
     it('splits off a category when only some of its rules are renamed', () => {
-      const result = buildLoaded([
-        red(),
-        loaded('Crimson', 'scarlet', 'case-scarlet', 'cat-red'),
-        blue()
-      ]);
+      // Red has two rules, and only the second is renamed
+      const result = build(
+        [
+          red(),
+          loaded('Crimson', 'scarlet', 'case-scarlet', 'cat-red'),
+          blue()
+        ],
+        existingCategories,
+        existingExits,
+        [
+          ...existingCases,
+          {
+            uuid: 'case-scarlet',
+            type: 'has_any_word',
+            arguments: ['scarlet'],
+            category_uuid: 'cat-red'
+          }
+        ]
+      );
 
       expectAllUnique(result);
       expect(byName(result, 'Red').category.uuid).to.equal('cat-red');
-      expect(byName(result, 'Crimson').category.uuid).to.not.equal('cat-red');
+      expect(byName(result, 'Red').exit.destination_uuid).to.equal('node-red');
+      expect(byName(result, 'Crimson').category.uuid).to.not.be.oneOf([
+        'cat-red',
+        'cat-blue'
+      ]);
       expect(byName(result, 'Crimson').exit.destination_uuid).to.equal(null);
+
+      // the renamed rule keeps its own case
+      expect(result.router.cases[1].uuid).to.equal('case-scarlet');
     });
 
-    it('gives copied rows their own UUIDs', () => {
+    it('gives duplicated rows their own UUIDs', () => {
+      // the Red row appears twice, once renamed to Crimson
       const result = buildLoaded([red(), red('Crimson'), blue()]);
 
       expectAllUnique(result);
       expect(byName(result, 'Red').category.uuid).to.equal('cat-red');
+      expect(byName(result, 'Crimson').category.uuid).to.not.be.oneOf([
+        'cat-red',
+        'cat-blue'
+      ]);
+      expect(byName(result, 'Crimson').exit.destination_uuid).to.equal(null);
       expect(result.router.cases[0].uuid).to.equal('case-red');
-      expect(result.router.cases[1].uuid).to.not.equal('case-red');
+      expect(result.router.cases[1].uuid).to.not.be.oneOf([
+        'case-red',
+        'case-blue'
+      ]);
+    });
+
+    it("gives new UUIDs for ones the existing node doesn't have", () => {
+      const result = buildLoaded([
+        loaded('Red', 'red', 'case-unknown', 'cat-unknown')
+      ]);
+
+      expectAllUnique(result);
+
+      // the category still matches by name
+      expect(byName(result, 'Red').category.uuid).to.equal('cat-red');
+      expect(result.router.cases[0].uuid).to.not.equal('case-unknown');
+    });
+
+    it('merges categories renamed to the same name', () => {
+      const result = buildLoaded([red('Crimson'), blue('Crimson')]);
+
+      expectAllUnique(result);
+      expect(result.router.categories.map((c) => c.name)).to.deep.equal([
+        'Crimson',
+        'Other'
+      ]);
+
+      // the merged category keeps the first existing category the rules came from
+      const { category, exit } = byName(result, 'Crimson');
+      expect(category.uuid).to.equal('cat-red');
+      expect(exit.destination_uuid).to.equal('node-red');
+      expect(result.exits.map((e) => e.uuid)).to.not.include('exit-blue');
+
+      // both rules keep their cases
+      expect(
+        result.router.cases.map((c) => [c.uuid, c.category_uuid])
+      ).to.deep.equal([
+        ['case-red', 'cat-red'],
+        ['case-blue', 'cat-red']
+      ]);
+    });
+
+    it("takes a deleted category's routing when renamed to its name", () => {
+      // Blue's rule deleted and Red renamed to Blue - names are matched first
+      const result = buildLoaded([red('Blue')]);
+
+      expectAllUnique(result);
+      const { category, exit } = byName(result, 'Blue');
+      expect(category.uuid).to.equal('cat-blue');
+      expect(exit.destination_uuid).to.equal('node-blue');
+      expect(result.router.categories.map((c) => c.uuid)).to.not.include(
+        'cat-red'
+      );
+      expect(result.router.cases[0].uuid).to.equal('case-red');
     });
   });
 });

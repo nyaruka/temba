@@ -291,8 +291,8 @@ export const casesToFormRules = (node: any) => {
           value2 = '';
         }
 
-        // keep the case and category UUIDs on the row so saving knows which rule it was,
-        // rather than guessing from names and positions
+        // keep the case and category UUIDs on the row so saving can match it to the case and
+        // category it came from
         rules.push({
           operator: { value: case_.type, name: operatorDisplayName },
           value1: value1,

@@ -1442,7 +1442,13 @@ const parseTwoOperandRuleValues = (rule: any): string[] => {
   return [value1, value2].filter((value) => value !== '');
 };
 
-// Helper function to create a rules-based router (used by wait_for_response and split_by_expression)
+// Helper function to create a rules-based router from form rules, reusing what it can of the
+// existing router (used by the rules-based split and wait nodes).
+//
+// Rules loaded from an existing node carry the UUIDs of the case and category they came from, and
+// rules added in the editor carry none. Each category keeps the existing category with its name,
+// else one its rules came from that no other rule keeps by name, else it's new. Each rule keeps
+// the case it came from, else gets a new one.
 export const createRulesRouter = (
   operand: string,
   userRules: any[],
@@ -1507,9 +1513,6 @@ export const createRulesRouter = (
       destinationUuid: existingExit?.destination_uuid || null
     };
   };
-
-  // Rules loaded from an existing node carry the UUIDs of the case and category they came from,
-  // and rules added in the editor carry none, so we never have to guess which rule was which
 
   // Process rules in their original order to preserve rule order
   userRules.forEach((rule) => {

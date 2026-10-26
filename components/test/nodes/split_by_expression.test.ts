@@ -377,22 +377,9 @@ describe('split_by_expression node config', () => {
         ]
       };
 
-      const formData = {
-        uuid: 'test-node-uuid',
-        operand: '@fields.age',
-        rules: [
-          {
-            operator: {
-              value: 'has_number_gte',
-              name: 'has a number at or above'
-            },
-            value1: '18',
-            value2: '',
-            category: 'Adult'
-          }
-        ],
-        result_name: ''
-      };
+      // load the node into the form and rename its category, as the editor would
+      const formData = split_by_expression.toFormData!(existingNode);
+      formData.rules[0].category = 'Grown Up';
 
       const resultNode = split_by_expression.fromFormData!(
         formData,
@@ -401,10 +388,11 @@ describe('split_by_expression node config', () => {
 
       // Check that UUIDs are preserved
       const adultCategory = resultNode.router!.categories!.find(
-        (cat) => cat.name === 'Adult'
+        (cat) => cat.name === 'Grown Up'
       );
       expect(adultCategory!.uuid).to.equal('existing-cat-1');
       expect(adultCategory!.exit_uuid).to.equal('existing-exit-1');
+      expect(resultNode.router!.cases![0].uuid).to.equal('existing-case-1');
 
       // Check that destination_uuid is preserved
       const adultExit = resultNode.exits!.find(

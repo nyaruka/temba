@@ -411,20 +411,6 @@ describe('split_by_run_result node config', () => {
     });
 
     it('should preserve existing UUIDs when updating categories', () => {
-      const formData = {
-        uuid: 'test-node-uuid',
-        result: [{ value: 'favorite_color', name: 'Favorite Color' }],
-        rules: [
-          {
-            operator: { value: 'has_phrase', name: 'has the phrase' },
-            value1: 'red',
-            value2: '',
-            category: 'Red'
-          }
-        ],
-        result_name: ''
-      };
-
       const originalNode: Node = {
         uuid: 'test-node-uuid',
         actions: [],
@@ -459,6 +445,15 @@ describe('split_by_run_result node config', () => {
         ]
       };
 
+      // load the node into the form and rename its category, as the editor would
+      const formData = split_by_run_result.toFormData!(originalNode, {
+        position: { left: 0, top: 0 },
+        config: {
+          operand: { id: 'favorite_color', name: 'Favorite Color' }
+        }
+      } as any);
+      formData.rules[0].category = 'Crimson';
+
       const resultNode = split_by_run_result.fromFormData!(
         formData,
         originalNode
@@ -466,10 +461,11 @@ describe('split_by_run_result node config', () => {
 
       // Should preserve existing category UUIDs
       const redCategory = resultNode.router!.categories.find(
-        (cat) => cat.name === 'Red'
+        (cat) => cat.name === 'Crimson'
       );
       expect(redCategory!.uuid).to.equal('existing-cat-uuid');
       expect(redCategory!.exit_uuid).to.equal('existing-exit-uuid');
+      expect(resultNode.router!.cases[0].uuid).to.equal('existing-case-uuid');
 
       const otherCategory = resultNode.router!.categories.find(
         (cat) => cat.name === 'Other'
