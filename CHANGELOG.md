@@ -1,3 +1,7 @@
+## v26.3.160 (2026-10-26)
+ * Let channel types define the TPS set on new channels (#7151)
+ * Derive flow engagement by weekday from daily counts and stop writing weekday counts (#7146)
+
 ## v26.3.159 (2026-10-24)
  * Bump dependencies
 
