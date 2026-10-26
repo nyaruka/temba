@@ -1,13 +1,14 @@
+import io
 import tempfile
 from pathlib import Path
 
 from django.conf import settings
-from django.core.exceptions import DisallowedHost
+from django.core.exceptions import BadRequest, DisallowedHost
 from django.http import HttpResponse
 from django.test import Client, RequestFactory, override_settings
 from django.urls import reverse
 
-from temba.middleware import NoStoreMiddleware, ProxiedRequestMiddleware
+from temba.middleware import CompleteStream, NoStoreMiddleware, ProxiedRequestMiddleware
 from temba.tests import TembaTest
 
 
@@ -188,3 +189,42 @@ class ProxiedRequestTest(TembaTest):
             response = Client().post("/ti/websockets/connect", content_type="application/json", **internal)
             self.assertEqual(403, response.status_code)
             self.assertEqual(b"", response.content)
+
+
+class IncompleteBodyTest(TembaTest):
+    def post(self, body: bytes, length: int):
+        # what the WSGI server hands over when the client disconnects before sending everything it said it would
+        return self.client.post(
+            reverse("flows.flow_revisions", args=[self.flow.uuid]),
+            content_type="application/json",
+            CONTENT_LENGTH=str(length),
+            **{"wsgi.input": io.BytesIO(body)},
+        )
+
+    def setUp(self):
+        super().setUp()
+
+        self.flow = self.create_flow("Test")
+        self.login(self.admin)
+
+    def test_truncated_body_is_rejected(self):
+        response = self.post(b'{"name": "Tes', 100)
+
+        self.assertEqual(400, response.status_code)
+
+    def test_streams(self):
+        stream = CompleteStream(io.BytesIO(b"ab\ncd\n"), 6)
+        self.assertEqual(b"ab\n", stream.readline())
+        self.assertEqual(b"cd\n", stream.read(10))  # short only because there's nothing more to come
+
+        stream = CompleteStream(io.BytesIO(b"ab\ncd"), 10)
+        self.assertEqual(b"ab\n", stream.readline())
+        self.assertEqual(b"cd", stream.readline())
+        with self.assertRaises(BadRequest):
+            stream.readline()
+
+        stream = CompleteStream(io.BytesIO(b"abcd"), 10)
+        with self.assertRaises(BadRequest):
+            stream.read()
+
+        stream.close()

@@ -1,8 +1,10 @@
 import json
 import traceback
+from io import IOBase
 
 from django.conf import settings
 from django.contrib import messages
+from django.core.exceptions import BadRequest
 from django.http import HttpResponseForbidden, HttpResponseNotFound
 from django.utils import timezone, translation
 from django.utils.crypto import constant_time_compare
@@ -94,6 +96,60 @@ class ProxiedRequestMiddleware:
         token = settings.INTERNAL_AUTH_TOKEN
 
         return bool(token) and constant_time_compare(request.headers.get("Authorization", ""), f"Token {token}")
+
+
+class IncompleteBodyMiddleware:
+    """
+    Rejects a request whose body ends before its Content-Length says it should, which is what a client that
+    disconnects mid-upload leaves behind. The WSGI server hands over whatever arrived as though it were the whole body
+    and Django doesn't check, so without this a view gets a truncated body - an error when it's JSON, but a form post
+    that has silently lost its trailing fields when it isn't. The client has gone, so a 400 is only for the logs.
+    """
+
+    def __init__(self, get_response=None):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        try:
+            length = int(request.META.get("CONTENT_LENGTH") or 0)
+        except ValueError:
+            length = 0
+
+        if length > 0:
+            request._stream = CompleteStream(request._stream, length)
+
+        return self.get_response(request)
+
+
+class CompleteStream(IOBase):
+    """
+    Wraps a request body stream to raise if it runs out before the given length.
+    """
+
+    def __init__(self, stream, length: int):
+        self._stream = stream
+        self._remaining = length
+
+    def read(self, size=-1, /):
+        data = self._stream.read(size)
+        self._remaining -= len(data)
+
+        # a read that comes up short is only legitimate if it's because there's nothing more to come
+        if self._remaining > 0 and (size is None or size < 0 or len(data) < size):
+            raise BadRequest("request body is shorter than its Content-Length")
+        return data
+
+    def readline(self, size=-1, /):
+        data = self._stream.readline(size)
+        self._remaining -= len(data)
+
+        if self._remaining > 0 and not data:
+            raise BadRequest("request body is shorter than its Content-Length")
+        return data
+
+    def close(self):
+        self._stream.close()
+        super().close()
 
 
 class NoStoreMiddleware:
