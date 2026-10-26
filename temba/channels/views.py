@@ -26,7 +26,7 @@ from django.utils.translation import gettext_lazy as _
 from temba.contacts.models import URN
 from temba.ivr.models import Call
 from temba.msgs.models import Msg
-from temba.orgs.models import Org, OrgRole
+from temba.orgs.models import Org
 from temba.orgs.views.base import BaseDependencyDeleteModal, BaseReadView
 from temba.orgs.views.mixins import OrgObjPermsMixin, OrgPermsMixin
 from temba.utils import countries
@@ -404,16 +404,11 @@ class UpdateChannelForm(forms.ModelForm):
         label=_("Name"), max_length=64, required=True, help_text=_("Descriptive name for this channel.")
     )
 
-    def __init__(self, *args, user=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.config_fields = []
         self.config_defaults = {}
-
-        # credentials are secrets so only administrators can view and change them
-        self.can_edit_credentials = user is not None and (
-            user.is_staff or self.instance.org.get_user_role(user) == OrgRole.ADMINISTRATOR
-        )
 
         if URN.TEL_SCHEME in self.instance.schemes:
             self.add_config_field(
@@ -431,7 +426,7 @@ class UpdateChannelForm(forms.ModelForm):
                 default=False,
             )
 
-        for credential in self.instance.type.credentials if self.can_edit_credentials else ():
+        for credential in self.instance.type.credentials:
             self.add_config_field(
                 credential.key,
                 forms.CharField(
@@ -739,11 +734,6 @@ class ChannelCRUDL(SmartCRUDL):
 
         def get_form_class(self):
             return self.object.type.get_update_form()
-
-        def get_form_kwargs(self):
-            kwargs = super().get_form_kwargs()
-            kwargs["user"] = self.request.user
-            return kwargs
 
         def derive_initial(self):
             initial = super().derive_initial()

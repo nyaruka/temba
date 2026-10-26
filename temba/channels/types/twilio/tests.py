@@ -359,20 +359,6 @@ class TwilioTypeTest(TembaTest):
             response = self.client.post(update_url, post_data | {"allow_international": True})
             self.assertFormError(response.context["form"], None, "Credentials don't appear to be valid.")
 
-        # editors can't see or change credentials, but can still update the channel
-        self.login(self.editor)
-        response = self.client.get(update_url)
-        self.assertEqual(["name", "is_enabled", "allow_international", "loc"], list(response.context["form"].fields))
-
-        with patch("temba.channels.types.twilio.views.TwilioClient") as mock_client:
-            response = self.client.post(update_url, {"name": "Editor channel", "allow_international": False})
-            self.assertEqual(response.status_code, 302)
-            mock_client.assert_not_called()
-
-        twilio_channel.refresh_from_db()
-        self.assertEqual("Editor channel", twilio_channel.name)
-        self.assertEqual("AccountToken", twilio_channel.config[Channel.CONFIG_AUTH_TOKEN])
-
         # staff users see extra fields
         self.login(self.customer_support, choose_org=self.org)
         response = self.client.get(update_url)

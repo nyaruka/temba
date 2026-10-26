@@ -299,20 +299,6 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
                     channel.refresh_from_db()
                     self.assertFalse(channel.is_enabled)
 
-                    # editors can't see or change credentials, but can still update the channel
-                    self.login(self.editor)
-                    response = self.client.get(update_url)
-                    for credential in channel_type.credentials:
-                        self.assertNotIn(credential.key, response.context["form"].fields)
-
-                    response = self.client.post(update_url, data | old_creds | {"name": "Editor Name"})
-                    self.assertEqual(302, response.status_code)
-                    self.assertEqual(2, mock_check.call_count)
-
-                    channel.refresh_from_db()
-                    self.assertEqual("Editor Name", channel.name)
-                    self.assertEqual(new_creds, {k: channel.config[k] for k in new_creds})
-
     def test_read_menu(self):
         # normal channel types get a logs menu item on their read page
         self.assertContentMenu(
