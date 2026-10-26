@@ -893,6 +893,9 @@ class BroadcastMsgCount(BaseSquashableCount):
             bcast.msg_count = counts_by_bcast.get(bcast.id, 0)
 
     class Meta:
+        indexes = [
+            models.Index(fields=("broadcast",), condition=Q(is_squashed=False), name="broadcastmsgcount_unsquashed")
+        ]
         constraints = [
             models.UniqueConstraint(
                 name="broadcastmsgcount_squashed", fields=("broadcast",), condition=Q(is_squashed=True)
@@ -1132,6 +1135,7 @@ class LabelCount(BaseSquashableCount):
         return {lb: counts_by_label_id.get(lb.id, 0) for lb in labels}
 
     class Meta:
+        indexes = [models.Index(fields=("label",), condition=Q(is_squashed=False), name="labelcount_unsquashed")]
         constraints = [
             models.UniqueConstraint(name="labelcount_squashed", fields=("label",), condition=Q(is_squashed=True))
         ]
