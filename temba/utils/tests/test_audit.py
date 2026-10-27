@@ -73,8 +73,8 @@ class AuditTest(TembaTest):
         self.assertEqual(str(self.editor.uuid), entries[0]["actor"]["uuid"])
 
         # entries are formatted as a line of JSON
-        with self.assertLogs("temba.audit", level="INFO") as logs:
-            audit.record("test.thing", immediate=True, when=date(2026, 1, 2))
+        with self.assertLogs("temba.audit", level="INFO") as logs, self.captureOnCommitCallbacks(execute=True):
+            audit.record("test.thing", when=date(2026, 1, 2))
         self.assertEqual(
             {"audit": "test.thing", "time": logs.records[0].audit["time"], "data": {"when": "2026-01-02"}},
             json.loads(audit.AuditFormatter().format(logs.records[0])),
@@ -84,12 +84,6 @@ class AuditTest(TembaTest):
         with self.assertNoLogs("temba.audit"), self.captureOnCommitCallbacks(execute=True):
             with self.assertRaises(ValueError), transaction.atomic():
                 audit.record("test.thing")
-                raise ValueError("rolled back")
-
-        # unless they're attempts which should be recorded regardless
-        with self.assertLogs("temba.audit", level="INFO"):
-            with self.assertRaises(ValueError), transaction.atomic():
-                audit.record("test.thing", immediate=True)
                 raise ValueError("rolled back")
 
         # and failing to record is logged rather than raised

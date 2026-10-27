@@ -46,14 +46,14 @@ class AuditFormatter(logging.Formatter):
         return json.dumps(record.audit, default=str)
 
 
-def record(event: str, *, user=None, org=None, actor=None, request=None, immediate=False, **data):
+def record(event: str, *, user=None, org=None, actor=None, request=None, **data):
     """
     Records an audit event. The user is who the event is about, e.g. who signed in or was added to a workspace, and
     the actor is who caused it - the signed-in user of the request, which defaults to the one being handled, or else
     the given actor, e.g. when called from a task. Failing to record never fails what's being recorded.
 
     The entry is built straight away but only logged once the current transaction commits, so a change that's rolled
-    back isn't recorded - unless immediate, for attempts that should be recorded whatever happens to the transaction.
+    back isn't recorded.
     """
 
     try:
@@ -62,10 +62,7 @@ def record(event: str, *, user=None, org=None, actor=None, request=None, immedia
         _errors.exception("unable to record audit event %s", event)
         return
 
-    if immediate:
-        _log(entry)
-    else:
-        transaction.on_commit(lambda: _log(entry))
+    transaction.on_commit(lambda: _log(entry))
 
 
 def _log(entry: dict):

@@ -229,12 +229,12 @@ def audit_login_failed(sender, credentials, request=None, **kwargs):
     except ValidationError:
         identifier = None
 
-    audit.record("user.login_failed", request=request, immediate=True, email=identifier)
+    audit.record("user.login_failed", request=request, email=identifier)
 
 
 @receiver(authentication_failed)
 def audit_mfa_failed(sender, request, user, authenticator, **kwargs):
-    audit.record("user.mfa_failed", user=user, request=request, immediate=True, type=authenticator.type)
+    audit.record("user.mfa_failed", user=user, request=request, type=authenticator.type)
 
 
 @receiver([authenticator_added, authenticator_removed, authenticator_reset])
