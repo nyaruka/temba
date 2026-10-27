@@ -93,6 +93,9 @@ class OrgTest(TembaTest):
         self.assertEqual([self.admin, admin3], list(self.org.get_admins().order_by("id")))
         self.assertEqual([self.admin, self.admin2], list(self.org2.get_admins().order_by("id")))
 
+        self.assertTrue(self.org.has_user(admin3))
+        self.assertFalse(self.org.has_user(self.admin2))
+
     def test_get_membership(self):
         group_admin = self.create_user("gad@textit.com")
         self.create_admin_group("Global Admins", orgs=[self.org], users=[group_admin, self.agent])
