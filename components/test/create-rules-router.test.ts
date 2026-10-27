@@ -234,6 +234,36 @@ describe('createRulesRouter', () => {
       expect(result.router.cases[1].uuid).to.equal('case-red');
     });
 
+    it('adds a new rule to a renamed category', () => {
+      // Red renamed to Crimson, and a new rule added for Crimson
+      const result = buildLoaded([
+        red('Crimson'),
+        rule('Crimson', 'scarlet'),
+        blue()
+      ]);
+
+      expectAllUnique(result);
+      expect(result.router.categories.map((c) => c.name)).to.deep.equal([
+        'Crimson',
+        'Blue',
+        'Other'
+      ]);
+
+      const { category, exit } = byName(result, 'Crimson');
+      expect(category.uuid).to.equal('cat-red');
+      expect(exit.destination_uuid).to.equal('node-red');
+
+      // the new rule joins the category with a case of its own
+      expect(
+        result.router.cases.map((c) => [c.uuid, c.category_uuid])
+      ).to.deep.include.members([['case-red', 'cat-red']]);
+      expect(result.router.cases[1].category_uuid).to.equal('cat-red');
+      expect(result.router.cases[1].uuid).to.not.be.oneOf([
+        'case-red',
+        'case-blue'
+      ]);
+    });
+
     it("doesn't give a new category a deleted one's routing", () => {
       // Red's rule deleted, a new Green rule added at the top
       const result = buildLoaded([rule('Green'), blue()]);
