@@ -172,7 +172,9 @@ describe('wait_for_digits node config', () => {
         operator: createOperatorOption('has_number_eq'),
         value1: '1234',
         value2: '',
-        category: 'Valid'
+        category: 'Valid',
+        case_uuid: 'case-1',
+        category_uuid: 'valid-cat'
       });
     });
 
@@ -252,20 +254,7 @@ describe('wait_for_digits node config', () => {
       expect(result.router?.wait?.hint?.type).to.equal('digits');
     });
 
-    it('preserves category UUIDs', () => {
-      const formData = {
-        uuid: 'test-node',
-        result_name: 'digits',
-        rules: [
-          {
-            operator: { value: 'has_number_eq', name: 'is equal to' },
-            value1: '1234',
-            value2: '',
-            category: 'Valid'
-          }
-        ]
-      };
-
+    it('preserves category and case UUIDs', () => {
       const originalNode: Node = {
         uuid: 'test-node',
         actions: [],
@@ -298,11 +287,16 @@ describe('wait_for_digits node config', () => {
         ]
       };
 
+      // load the node into the form and rename its category, as the editor would
+      const formData = wait_for_digits.toFormData!(originalNode);
+      formData.rules[0].category = 'Correct';
+
       const result = wait_for_digits.fromFormData!(formData, originalNode);
 
-      const valid = result.router!.categories.find((c) => c.name === 'Valid');
+      const valid = result.router!.categories.find((c) => c.name === 'Correct');
       expect(valid?.uuid).to.equal('orig-valid');
       expect(valid?.exit_uuid).to.equal('orig-valid-exit');
+      expect(result.router!.cases[0].uuid).to.equal('orig-case');
 
       const other = result.router!.categories.find((c) => c.name === 'Other');
       expect(other?.uuid).to.equal('orig-other');

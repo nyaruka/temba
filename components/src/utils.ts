@@ -1442,7 +1442,13 @@ const parseTwoOperandRuleValues = (rule: any): string[] => {
   return [value1, value2].filter((value) => value !== '');
 };
 
-// Helper function to create a rules-based router (used by wait_for_response and split_by_expression)
+// Helper function to create a rules-based router from form rules, reusing what it can of the
+// existing router (used by the rules-based split and wait nodes).
+//
+// Rules loaded from an existing node carry the UUIDs of the case and category they came from, and
+// rules added in the editor carry none. Each category keeps the existing category with its name,
+// else one its rules came from that no other rule keeps by name, else it's new. Each rule keeps
+// the case it came from, else gets a new one.
 export const createRulesRouter = (
   operand: string,
   userRules: any[],
@@ -1472,8 +1478,8 @@ export const createRulesRouter = (
   const usedExitUuids = new Set<string>();
   const usedCaseUuids = new Set<string>();
 
-  // Existing categories that some rule will match by name, which the positional fallback must
-  // leave for that rule
+  // Existing categories that some rule will match by name, which a rename must leave for that
+  // rule
   const nameMatchedCategoryUuids = new Set(
     existingUserCategories
       .filter((cat) =>
@@ -1509,7 +1515,7 @@ export const createRulesRouter = (
   };
 
   // Process rules in their original order to preserve rule order
-  userRules.forEach((rule, ruleIndex) => {
+  userRules.forEach((rule) => {
     const categoryKey = rule.category.trim().toLowerCase();
     const categoryName = rule.category.trim(); // Use original casing
 
@@ -1518,26 +1524,26 @@ export const createRulesRouter = (
     if (!categoryInfo) {
       // First time seeing this category - create it
 
-      // Smart category matching: try by name first, then fall back to position
+      // An existing category with this name keeps its routing, whichever rules now use it
       let existingCategory = existingUserCategories.find(
         (cat) =>
           categoryNamesEqual(cat.name, categoryName) &&
           !usedCategoryUuids.has(cat.uuid)
       );
 
-      // If no match by name, treat it as a rename - of the category at the same position, or
-      // else the first one that no other rule takes
+      // Otherwise a rename of the category one of these rules came from, if no other rule keeps
+      // it, and failing that a new category
       if (!existingCategory) {
-        const isUnclaimed = (cat: any) =>
-          cat &&
-          !nameMatchedCategoryUuids.has(cat.uuid) &&
-          !usedCategoryUuids.has(cat.uuid);
-
-        const candidateCategory =
-          existingUserCategories[createdCategories.size];
-        existingCategory = isUnclaimed(candidateCategory)
-          ? candidateCategory
-          : existingUserCategories.find(isUnclaimed);
+        const sourceUuids = userRules
+          .filter((r) => categoryNamesEqual(r.category, categoryName))
+          .map((r) => r.category_uuid)
+          .filter(Boolean);
+        existingCategory = existingUserCategories.find(
+          (cat) =>
+            sourceUuids.includes(cat.uuid) &&
+            !nameMatchedCategoryUuids.has(cat.uuid) &&
+            !usedCategoryUuids.has(cat.uuid)
+        );
       }
 
       const { categoryUuid, exitUuid, destinationUuid } =
@@ -1564,20 +1570,13 @@ export const createRulesRouter = (
       });
     }
 
-    // Create case for this rule, reusing an existing case only if it belonged to the same
-    // category, so its UUID (and translations) never move to another category's rule
-    const ruleCategoryUuid = categoryInfo.uuid;
-    const isReusableCase = (case_: any) =>
-      case_ &&
-      !usedCaseUuids.has(case_.uuid) &&
-      case_.category_uuid === ruleCategoryUuid;
-
-    // Prefer the case at the same position, else one with the same operator
-    const existingCase = isReusableCase(existingCases[ruleIndex])
-      ? existingCases[ruleIndex]
-      : existingCases.find(
-          (case_) => isReusableCase(case_) && case_.type === rule.operator
-        );
+    // The rule keeps its own case, so its translations stay with it wherever it moves
+    const existingCase = rule.case_uuid
+      ? existingCases.find(
+          (case_) =>
+            case_.uuid === rule.case_uuid && !usedCaseUuids.has(case_.uuid)
+        )
+      : null;
 
     const caseUuid = existingCase?.uuid || generateUUID();
     usedCaseUuids.add(caseUuid);
