@@ -1,3 +1,10 @@
+## v26.3.162 (2026-10-27)
+ * Add unsquashed partial indexes to label and broadcast msg counts
+ * Match rules form cases and categories on carried UUIDs when saving, falling back to the first unclaimed category on rename
+ * Keep cases with their category and dedupe the No Response category in the rules router
+ * Reuse each existing category, exit and case UUID at most once in the rules router
+ * Stop guessing renames for rules without UUIDs
+
 ## v26.3.161 (2026-10-26)
  * Restrict editors to read-only access to channels
  * Squash counts by updating a single squashed row per set in place (#7147)
