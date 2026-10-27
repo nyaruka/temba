@@ -1,3 +1,8 @@
+## v26.3.163 (2026-10-27)
+ * Reject requests whose body is shorter than its Content-Length
+ * End a user's other sessions when they log in, keeping track of the session key when a password change cycles it
+ * Exclude data migrations whose tests were removed from coverage
+
 ## v26.3.162 (2026-10-27)
  * Add unsquashed partial indexes to label and broadcast msg counts
  * Match rules form cases and categories on carried UUIDs when saving, falling back to the first unclaimed category on rename
