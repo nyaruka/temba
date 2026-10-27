@@ -37,7 +37,7 @@ from temba.campaigns.models import Campaign
 from temba.flows.models import Flow
 from temba.formax import FormaxMixin, FormaxSectionMixin
 from temba.tickets.models import Team
-from temba.utils import json, languages, on_transaction_commit, str_to_bool
+from temba.utils import audit, json, languages, on_transaction_commit, str_to_bool
 from temba.utils.email import parse_smtp_url
 from temba.utils.fields import (
     ArbitraryJsonChoiceField,
@@ -1762,6 +1762,8 @@ class ExportCRUDL(SmartCRUDL):
         def get(self, request, *args, **kwargs):
             if str_to_bool(request.GET.get("raw", 0)):
                 export = self.get_object()
+
+                audit.record("export.downloaded", org=export.org, export=str(export.uuid), type=export.export_type)
 
                 return HttpResponseRedirect(export.get_raw_url())
 

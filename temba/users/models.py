@@ -9,6 +9,7 @@ from django.db.models import Exists, OuterRef
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from temba.utils import audit
 from temba.utils.fields import UploadToIdPathAndRename
 from temba.utils.models.base import LegacyIDMixin, UUIDMixin
 from temba.utils.uuid import uuid4
@@ -215,6 +216,8 @@ class User(LegacyIDMixin, UUIDMixin, AbstractBaseUser, PermissionsMixin):
         """
         Releases this user, and any orgs of which they are the sole owner.
         """
+        audit.record("user.released", user=self, actor=user)
+
         self.first_name = ""
         self.last_name = ""
         self.email = f"{str(uuid4())}@temba.io"
@@ -226,8 +229,9 @@ class User(LegacyIDMixin, UUIDMixin, AbstractBaseUser, PermissionsMixin):
         self.socialaccount_set.all().delete()
         self.emailaddress_set.all().delete()
 
-        # release any API tokens
-        self.api_tokens.update(is_active=False)
+        # release any API tokens, one by one so each is recorded
+        for token in self.api_tokens.filter(is_active=True):
+            token.release(user)
 
         # remove from any permission groups
         self.groups.clear()

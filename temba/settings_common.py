@@ -234,6 +234,7 @@ MIDDLEWARE = (
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "temba.utils.audit.AuditMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "temba.middleware.OrgMiddleware",
     "temba.knowledge.middleware.HelpSiteMiddleware",
@@ -352,11 +353,20 @@ LOGGING = {
     # loggers created before this is applied stay enabled - gunicorn sets up its access and error loggers in the master
     # before the app loads in a worker, and disabling them silences its request log
     "disable_existing_loggers": False,
-    "formatters": {"verbose": {"format": "%(levelname)s %(asctime)s %(module)s %(message)s"}},
+    "formatters": {
+        "verbose": {"format": "%(levelname)s %(asctime)s %(module)s %(message)s"},
+        "audit": {"()": "temba.utils.audit.AuditFormatter"},
+    },
     "handlers": {
         "console": {"level": "DEBUG", "class": "logging.StreamHandler", "formatter": "verbose"},
+        "audit": {"level": "INFO", "class": "logging.StreamHandler", "formatter": "audit"},
     },
     "root": {"level": "INFO", "handlers": ["console"]},
+    "loggers": {
+        # audit entries are written as JSON for log collectors to parse - but not under test, where every fixture would
+        # add some
+        "temba.audit": {"level": "WARNING" if TESTING else "INFO", "handlers": ["audit"], "propagate": False},
+    },
 }
 
 # -----------------------------------------------------------------------------------
