@@ -1,7 +1,7 @@
 """
 A log of security-relevant events - sign-ins and failed attempts, credential changes, and changes to who can access a
-workspace - written to the temba.audit logger as one JSON object per line, so that whatever collects the process's
-output can retain, search and alert on them apart from the rest of the log.
+workspace - sent to the temba.audit logger with each entry as a dict on the record, so that a deployment can route them
+apart from the rest of the log by configuring that logger's handlers. AuditFormatter writes an entry as one JSON object.
 
 Each entry says what happened, who did it (the signed-in user of the current request, if any), who or what it was done
 to, the workspace, and where the request came from. The client address is recorded as the connection's peer plus any
@@ -12,6 +12,7 @@ import json
 import logging
 from contextvars import ContextVar
 
+from django.db import transaction
 from django.utils import timezone
 
 logger = logging.getLogger("temba.audit")
@@ -36,20 +37,42 @@ class AuditMiddleware:
             _request.reset(token)
 
 
-def record(event: str, *, user=None, org=None, actor=None, request=None, **data):
+class AuditFormatter(logging.Formatter):
+    """
+    Formats an audit entry as a single line of JSON.
+    """
+
+    def format(self, record):
+        return json.dumps(record.audit, default=str)
+
+
+def record(event: str, *, user=None, org=None, actor=None, request=None, immediate=False, **data):
     """
     Records an audit event. The user is who the event is about, e.g. who signed in or was added to a workspace, and
     the actor is who caused it - the signed-in user of the request, which defaults to the one being handled, or else
     the given actor, e.g. when called from a task. Failing to record never fails what's being recorded.
+
+    The entry is built straight away but only logged once the current transaction commits, so a change that's rolled
+    back isn't recorded - unless immediate, for attempts that should be recorded whatever happens to the transaction.
     """
 
     try:
-        _record(event, user=user, org=org, actor=actor, request=request or _request.get(), data=data)
+        entry = _entry(event, user=user, org=org, actor=actor, request=request or _request.get(), data=data)
     except Exception:
         _errors.exception("unable to record audit event %s", event)
+        return
+
+    if immediate:
+        _log(entry)
+    else:
+        transaction.on_commit(lambda: _log(entry))
 
 
-def _record(event: str, *, user, org, actor, request, data: dict):
+def _log(entry: dict):
+    logger.info(entry["audit"], extra={"audit": entry})
+
+
+def _entry(event: str, *, user, org, actor, request, data: dict) -> dict:
     request_user = getattr(request, "user", None) if request else None
     if request_user and request_user.is_authenticated:
         actor = request_user
@@ -73,7 +96,7 @@ def _record(event: str, *, user, org, actor, request, data: dict):
     if data:
         entry["data"] = data
 
-    logger.info(json.dumps(entry, default=str))
+    return entry
 
 
 def _user_ref(user) -> dict:

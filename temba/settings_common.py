@@ -355,16 +355,16 @@ LOGGING = {
     "disable_existing_loggers": False,
     "formatters": {
         "verbose": {"format": "%(levelname)s %(asctime)s %(module)s %(message)s"},
-        "bare": {"format": "%(message)s"},
+        "audit": {"()": "temba.utils.audit.AuditFormatter"},
     },
     "handlers": {
         "console": {"level": "DEBUG", "class": "logging.StreamHandler", "formatter": "verbose"},
-        "audit": {"level": "INFO", "class": "logging.StreamHandler", "formatter": "bare"},
+        "audit": {"level": "INFO", "class": "logging.StreamHandler", "formatter": "audit"},
     },
     "root": {"level": "INFO", "handlers": ["console"]},
     "loggers": {
-        # audit entries are each a JSON object, so they're written as is for log collectors to parse - but not under
-        # test, where every fixture would add some
+        # audit entries are written as JSON for log collectors to parse - but not under test, where every fixture would
+        # add some
         "temba.audit": {"level": "WARNING" if TESTING else "INFO", "handlers": ["audit"], "propagate": False},
     },
 }

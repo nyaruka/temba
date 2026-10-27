@@ -1,4 +1,5 @@
 import json
+from datetime import date
 
 from allauth.account.models import EmailAddress
 from allauth.account.signals import email_changed
@@ -7,6 +8,7 @@ from allauth.mfa.signals import authentication_failed, authenticator_added, auth
 
 from django.contrib.auth.models import Group
 from django.contrib.auth.signals import user_login_failed
+from django.db import transaction
 from django.test import RequestFactory
 from django.urls import reverse
 
@@ -22,10 +24,10 @@ class AuditTest(TembaTest):
         """
         Asserts that calling fn records exactly the given (event, extra fields) audit entries, returning the entries
         """
-        with self.assertLogs("temba.audit", level="INFO") as logs:
+        with self.assertLogs("temba.audit", level="INFO") as logs, self.captureOnCommitCallbacks(execute=True):
             fn()
 
-        entries = [json.loads(r.getMessage()) for r in logs.records]
+        entries = [r.audit for r in logs.records]
         self.assertEqual([e[0] for e in expected], [e["audit"] for e in entries])
 
         for (event, fields), entry in zip(expected, entries):
@@ -70,6 +72,26 @@ class AuditTest(TembaTest):
         entries = self.assertAudited([("test.thing", {})], lambda: audit.record("test.thing", actor=self.editor))
         self.assertEqual(str(self.editor.uuid), entries[0]["actor"]["uuid"])
 
+        # entries are formatted as a line of JSON
+        with self.assertLogs("temba.audit", level="INFO") as logs:
+            audit.record("test.thing", immediate=True, when=date(2026, 1, 2))
+        self.assertEqual(
+            {"audit": "test.thing", "time": logs.records[0].audit["time"], "data": {"when": "2026-01-02"}},
+            json.loads(audit.AuditFormatter().format(logs.records[0])),
+        )
+
+        # entries are only logged once the transaction commits, so changes that are rolled back aren't recorded
+        with self.assertNoLogs("temba.audit"), self.captureOnCommitCallbacks(execute=True):
+            with self.assertRaises(ValueError), transaction.atomic():
+                audit.record("test.thing")
+                raise ValueError("rolled back")
+
+        # unless they're attempts which should be recorded regardless
+        with self.assertLogs("temba.audit", level="INFO"):
+            with self.assertRaises(ValueError), transaction.atomic():
+                audit.record("test.thing", immediate=True)
+                raise ValueError("rolled back")
+
         # and failing to record is logged rather than raised
         with self.assertLogs("temba.utils.audit", level="ERROR"):
             audit.record("test.thing", user=object())
@@ -82,7 +104,7 @@ class AuditTest(TembaTest):
             [("user.login_failed", {"data": {"email": "editor@textit.com"}})],
             lambda: self.client.post(login_url, {"login": "editor@textit.com", "password": "wrong"}),
         )
-        self.assertNotIn("wrong", json.dumps(entries))
+        self.assertNotIn("wrong", json.dumps(entries, default=str))
 
         # an identifier that isn't an email address might be a password typed into the wrong field, so isn't recorded
         # (the login form refuses those itself, but other authentication paths may not)
@@ -92,7 +114,7 @@ class AuditTest(TembaTest):
                 sender=self.__class__, credentials={"email": "Sesame123", "password": "********"}, request=None
             ),
         )
-        self.assertNotIn("Sesame123", json.dumps(entries))
+        self.assertNotIn("Sesame123", json.dumps(entries, default=str))
 
         self.assertAudited(
             [("user.login", {"path": login_url})],
@@ -110,7 +132,7 @@ class AuditTest(TembaTest):
         self.assertAudited([("user.logout", {})], lambda: self.client.post(reverse("account_logout")))
 
         # logging out when not logged in isn't recorded
-        with self.assertNoLogs("temba.audit"):
+        with self.assertNoLogs("temba.audit"), self.captureOnCommitCallbacks(execute=True):
             self.client.post(reverse("account_logout"))
 
         request = RequestFactory().get("/")
@@ -225,7 +247,7 @@ class AuditTest(TembaTest):
         )
 
         # an unknown action is refused, and nothing recorded
-        with self.assertNoLogs("temba.audit"):
+        with self.assertNoLogs("temba.audit"), self.captureOnCommitCallbacks(execute=True):
             response = self.client.post(org_update_url, {"action": "released"})
         self.assertEqual(400, response.status_code)
 
@@ -244,7 +266,7 @@ class AuditTest(TembaTest):
             [("user.staff_disable_mfa", {})], lambda: self.client.post(user_update_url, {"action": "disable-mfa"})
         )
 
-        with self.assertNoLogs("temba.audit"):
+        with self.assertNoLogs("temba.audit"), self.captureOnCommitCallbacks(execute=True):
             response = self.client.post(user_update_url, {"action": "release"})
         self.assertEqual(400, response.status_code)
 
