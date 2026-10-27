@@ -317,6 +317,7 @@ class ObjectUnchanged(BaseCheck):
         # ignore some User fields which are modified by logging in or can't be compared
         if isinstance(obj, User):
             del d["last_login"]
+            del d["session_key"]
             del d["avatar"]
 
         return d

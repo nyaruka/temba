@@ -14,7 +14,7 @@ from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.contrib.sessions.middleware import SessionMiddleware
-from django.test import RequestFactory, override_settings
+from django.test import Client, RequestFactory, override_settings
 from django.urls import reverse
 from django.utils.functional import lazystr
 
@@ -56,6 +56,28 @@ class UserAuthTest(TembaTest):
         response = self.client.get(change_password_url)
         self.assertEqual(200, response.status_code)
         self.assertContains(response, "At least 8 characters or more")
+
+    def test_concurrent_sessions(self):
+        laptop, phone = Client(), Client()
+        credentials = {"login": self.admin.email, "password": self.default_password}
+
+        laptop.post(reverse("account_login"), credentials)
+        self.assertEqual(200, laptop.get(reverse("account_change_password")).status_code)
+
+        self.admin.refresh_from_db()
+        self.assertEqual(laptop.session.session_key, self.admin.session_key)
+
+        # logging in on another device ends the first session
+        phone.post(reverse("account_login"), credentials)
+        self.assertEqual(200, phone.get(reverse("account_change_password")).status_code)
+        self.assertLoginRedirect(laptop.get(reverse("account_change_password")))
+
+        self.admin.refresh_from_db()
+        self.assertEqual(phone.session.session_key, self.admin.session_key)
+
+        # logging in again on the same device keeps it the only session
+        phone.post(reverse("account_login"), credentials)
+        self.assertEqual(200, phone.get(reverse("account_change_password")).status_code)
 
     def test_mfa(self):
         self.login(self.admin)

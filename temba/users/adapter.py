@@ -10,6 +10,7 @@ from allauth.socialaccount.signals import social_account_added
 
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -189,6 +190,16 @@ class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter)
 
                     sociallogin.connect(request, user)
                     return
+
+
+@receiver(user_logged_in)
+def end_other_sessions(sender, request, user, **kwargs):
+    # users can't have concurrent sessions, so logging in ends any previous session
+    if user.session_key and user.session_key != request.session.session_key:
+        request.session.delete(user.session_key)
+
+    user.session_key = request.session.session_key
+    user.save(update_fields=("session_key",))
 
 
 @receiver(social_account_added)
