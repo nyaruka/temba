@@ -67,6 +67,9 @@ class User(LegacyIDMixin, UUIDMixin, AbstractBaseUser, PermissionsMixin):
     # generic bucket of UI state, e.g. card order on the contact read page
     settings = models.JSONField(default=dict)
 
+    # the user's only session, as logging in ends any other
+    session_key = models.CharField(max_length=40, null=True)
+
     objects = UserManager()
 
     def clean(self):

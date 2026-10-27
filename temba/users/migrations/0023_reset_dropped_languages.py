@@ -7,7 +7,7 @@ LANGUAGES = ["en-us", "es", "fr", "pt-br"]
 DEFAULT_LANGUAGE = "en-us"
 
 
-def reset_dropped_languages(apps, schema_editor):
+def reset_dropped_languages(apps, schema_editor):  # pragma: no cover
     User = apps.get_model("users", "User")
 
     num_updated = User.objects.exclude(language__in=LANGUAGES).update(language=DEFAULT_LANGUAGE)

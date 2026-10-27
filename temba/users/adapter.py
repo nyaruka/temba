@@ -2,6 +2,7 @@ from urllib.parse import urlencode
 
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.account.models import EmailAddress
+from allauth.account.signals import password_changed, password_set
 from allauth.core import context as allauth_context
 from allauth.mfa.adapter import DefaultMFAAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
@@ -10,6 +11,7 @@ from allauth.socialaccount.signals import social_account_added
 
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -189,6 +191,17 @@ class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter)
 
                     sociallogin.connect(request, user)
                     return
+
+
+@receiver([user_logged_in, password_changed, password_set])
+def end_other_sessions(sender, request, user, **kwargs):
+    # users can't have concurrent sessions, so logging in ends any previous session. Changing or setting a password
+    # also cycles the session key without a new login.
+    if user.session_key and user.session_key != request.session.session_key:
+        request.session.delete(user.session_key)
+
+    user.session_key = request.session.session_key
+    user.save(update_fields=("session_key",))
 
 
 @receiver(social_account_added)
