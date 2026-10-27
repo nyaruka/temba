@@ -223,6 +223,7 @@ FORM_RENDERER = "django.forms.renderers.TemplatesSetting"
 # far-future max-age and mustn't be gzipped again or marked uncacheable.
 MIDDLEWARE = (
     "temba.middleware.ProxiedRequestMiddleware",
+    "temba.middleware.IncompleteBodyMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.csp.ContentSecurityPolicyMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",

@@ -1,13 +1,14 @@
+import io
 import tempfile
 from pathlib import Path
 
 from django.conf import settings
-from django.core.exceptions import DisallowedHost
+from django.core.exceptions import BadRequest, DisallowedHost
 from django.http import HttpResponse
 from django.test import Client, RequestFactory, override_settings
 from django.urls import reverse
 
-from temba.middleware import NoStoreMiddleware, ProxiedRequestMiddleware
+from temba.middleware import CompleteStream, IncompleteBodyMiddleware, NoStoreMiddleware, ProxiedRequestMiddleware
 from temba.tests import TembaTest
 
 
@@ -188,3 +189,72 @@ class ProxiedRequestTest(TembaTest):
             response = Client().post("/ti/websockets/connect", content_type="application/json", **internal)
             self.assertEqual(403, response.status_code)
             self.assertEqual(b"", response.content)
+
+
+class IncompleteBodyTest(TembaTest):
+    def post(self, client, url: str, content_type: str, body: bytes, length: int):
+        # what the WSGI server hands over when the client disconnects before sending everything it said it would
+        return client.post(
+            url, content_type=content_type, CONTENT_LENGTH=str(length), **{"wsgi.input": io.BytesIO(body)}
+        )
+
+    def setUp(self):
+        super().setUp()
+
+        self.flow = self.create_flow("Test")
+        self.login(self.admin)
+
+    def test_truncated_json_is_rejected(self):
+        url = reverse("flows.flow_revisions", args=[self.flow.uuid])
+
+        self.assertEqual(400, self.post(self.client, url, "application/json", b'{"name": "Tes', 100).status_code)
+
+    def test_truncated_forms_are_rejected(self):
+        # with CSRF checks enforced, the form is read by the CSRF middleware before the view ever sees it
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.admin)
+        client.cookies[settings.CSRF_COOKIE_NAME] = "a" * 32
+        url = reverse("flows.flow_create")
+
+        for c in (self.client, client):
+            response = self.post(c, url, "application/x-www-form-urlencoded", b"name=Test&keyword_tri", 100)
+            self.assertEqual(400, response.status_code)
+
+            body = b'--BoUnDaRy\r\nContent-Disposition: form-data; name="name"\r\n\r\nTes'
+            response = self.post(c, url, "multipart/form-data; boundary=BoUnDaRy", body, 100)
+            self.assertEqual(400, response.status_code)
+
+    def test_without_a_usable_length_body_is_left_alone(self):
+        middleware = IncompleteBodyMiddleware(lambda r: HttpResponse(r.read()))
+
+        for length in ("", "x"):
+            request = RequestFactory().post("/", b"abc", content_type="text/plain", CONTENT_LENGTH=length)
+            self.assertNotIsInstance(request._stream, CompleteStream)
+            middleware(request)
+            self.assertNotIsInstance(request._stream, CompleteStream)
+
+    def test_streams(self):
+        stream = CompleteStream(io.BytesIO(b"ab\ncd\n"), 6)
+        self.assertEqual(b"ab\n", stream.readline())
+        self.assertEqual(b"cd\n", stream.read(10))  # short only because there's nothing more to come
+        self.assertEqual(b"", stream.read())
+
+        stream = CompleteStream(io.BytesIO(b"ab\ncd"), 10)
+        self.assertEqual(b"ab\n", stream.readline())
+        self.assertEqual(b"cd", stream.readline())
+        with self.assertRaises(BadRequest):
+            stream.readline()
+
+        stream = CompleteStream(io.BytesIO(b"abcd"), 10)
+        with self.assertRaises(BadRequest):
+            stream.read()
+
+        # a server is free to return less than asked for, so a short read alone isn't truncation
+        class Trickle(io.BytesIO):
+            def read(self, size=-1, /):
+                return super().read(min(size, 2))
+
+        stream = CompleteStream(Trickle(b"abcde"), 5)
+        self.assertEqual(b"abcde", stream.read(5))
+
+        stream.close()
