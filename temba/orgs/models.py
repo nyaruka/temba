@@ -36,7 +36,7 @@ from temba import mailroom
 from temba.archives.models import Archive
 from temba.locations.models import AdminBoundary
 from temba.users.models import User
-from temba.utils import json, languages, on_transaction_commit
+from temba.utils import audit, json, languages, on_transaction_commit
 from temba.utils.dates import datetime_to_str
 from temba.utils.email import EmailSender
 from temba.utils.models import (
@@ -878,8 +878,9 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         assert role == OrgRole.AGENT or not team, "only agent users can be assigned to a team"
         assert not team or team.org == self, "team must belong to this org"
 
-        if self.has_user(user):  # remove user from any existing roles
-            self.remove_user(user)
+        previous = OrgMembership.objects.filter(org=self, user=user).first()
+        if previous:  # remove user from any existing roles
+            self._remove_user(user)
 
         if role == OrgRole.AGENT and not team:
             team = self.default_team
@@ -893,10 +894,23 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             can_reply_non_own=can_reply_non_own,
         )
 
+        audit.record(
+            "workspace.member_added" if not previous else "workspace.member_role_changed",
+            user=user,
+            org=self,
+            role=role.code,
+            previous_role=previous.role_code if previous else None,
+        )
+
     def remove_user(self, user: User):
         """
         Removes the given user from this org by removing them from any roles
         """
+        self._remove_user(user)
+
+        audit.record("workspace.member_removed", user=user, org=self)
+
+    def _remove_user(self, user: User):
         self.users.remove(user)
         if user in self._membership_cache:
             del self._membership_cache[user]
@@ -1103,6 +1117,8 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         # release any child orgs
         for child in self.children.all():
             child.release(user, release_users=release_users)
+
+        audit.record("workspace.released", org=self)
 
         # deactivate ourselves
         self.is_active = False
@@ -1367,7 +1383,7 @@ class Invitation(CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     def create(cls, org, user, email: str, role: OrgRole, *, team=None):
         assert not team or org == team.org
 
-        return cls.objects.create(
+        invitation = cls.objects.create(
             org=org,
             email=User.objects.normalize_email(email),
             role_code=role.code,
@@ -1375,6 +1391,9 @@ class Invitation(CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             created_by=user,
             modified_by=user,
         )
+
+        audit.record("workspace.invitation_created", org=org, email=invitation.email, role=role.code)
+        return invitation
 
     def save(self, *args, **kwargs):
         if not self.secret:
@@ -1537,6 +1556,8 @@ class Export(UUIDMixin, CreatedByMixin):
 
     def start(self):
         from .tasks import perform_export
+
+        audit.record("export.started", user=self.created_by, org=self.org, export=str(self.uuid), type=self.export_type)
 
         perform_export.delay(self.id)
 

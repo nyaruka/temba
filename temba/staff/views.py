@@ -17,6 +17,7 @@ from django.views.decorators.csrf import csrf_exempt
 from temba.orgs.models import Org, OrgRole
 from temba.orgs.views import switch_to_org
 from temba.users.models import User
+from temba.utils import audit
 from temba.utils.fields import SelectMultipleWidget
 from temba.utils.views.mixins import ComponentFormMixin, ContextMenuMixin, ModalFormMixin, SpaMixin, StaffOnlyMixin
 
@@ -230,6 +231,8 @@ class OrgCRUDL(SmartCRUDL):
                 elif action == self.ACTION_VERIFY:
                     obj.verify()
 
+                audit.record(f"workspace.{action}", org=obj)
+
                 return HttpResponseRedirect(reverse("staff.org_read", args=[obj.id]))
 
             return super().post(request, *args, **kwargs)
@@ -240,6 +243,18 @@ class OrgCRUDL(SmartCRUDL):
             cleaned_data = self.form.cleaned_data
 
             obj.limits = cleaned_data["limits"]
+            return obj
+
+        def post_save(self, obj):
+            obj = super().post_save(obj)
+
+            audit.record(
+                "workspace.staff_updated",
+                org=obj,
+                is_anon=obj.is_anon,
+                features=obj.features,
+                admin_groups=sorted(g.name for g in obj.admin_groups.all()),
+            )
             return obj
 
     class Service(StaffOnlyMixin, SmartFormView):
@@ -268,6 +283,8 @@ class OrgCRUDL(SmartCRUDL):
 
         # valid form means we set our org and redirect to next
         def form_valid(self, form):
+            audit.record("workspace.serviced", org=form.cleaned_data["other_org"])
+
             switch_to_org(self.request, form.cleaned_data["other_org"])
             success_url = form.cleaned_data["next"] or reverse("orgs.org_start")
             return HttpResponseRedirect(success_url)
@@ -348,6 +365,8 @@ class UserCRUDL(SmartCRUDL):
                 elif action == self.ACTION_DISABLE_MFA:
                     obj.disable_mfa()
 
+                audit.record(f"user.staff_{action.replace('-', '_')}", user=obj)
+
                 return HttpResponseRedirect(reverse("staff.user_read", args=[obj.id]))
 
             return super().post(request, *args, **kwargs)
@@ -361,6 +380,7 @@ class UserCRUDL(SmartCRUDL):
                 for group in self.form.cleaned_data["groups"]:
                     obj.groups.add(group)
 
+            audit.record("user.staff_updated", user=obj, groups=sorted(g.name for g in obj.groups.all()))
             return obj
 
     class Delete(StaffOnlyMixin, ModalFormMixin, SmartDeleteView):

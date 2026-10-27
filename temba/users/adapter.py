@@ -2,16 +2,17 @@ from urllib.parse import urlencode
 
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.account.models import EmailAddress
-from allauth.account.signals import password_changed, password_set
+from allauth.account.signals import email_changed, password_changed, password_reset, password_set
 from allauth.core import context as allauth_context
 from allauth.mfa.adapter import DefaultMFAAdapter
+from allauth.mfa.signals import authentication_failed, authenticator_added, authenticator_removed, authenticator_reset
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.socialaccount.providers.base import AuthProcess
 from allauth.socialaccount.signals import social_account_added
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.signals import user_logged_in
+from django.contrib.auth.signals import user_logged_in, user_logged_out, user_login_failed
 from django.dispatch import receiver
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -20,6 +21,7 @@ from django.utils.translation import gettext_lazy as _
 
 from temba.orgs.models import Invitation
 from temba.users.models import User
+from temba.utils import audit
 from temba.utils.email.send import EmailSender
 
 
@@ -202,6 +204,51 @@ def end_other_sessions(sender, request, user, **kwargs):
 
     user.session_key = request.session.session_key
     user.save(update_fields=("session_key",))
+
+
+@receiver(user_logged_in)
+def audit_login(sender, request, user, **kwargs):
+    audit.record("user.login", user=user, request=request)
+
+
+@receiver(user_logged_out)
+def audit_logout(sender, request, user, **kwargs):
+    if user:
+        audit.record("user.logout", user=user, request=request)
+
+
+@receiver(user_login_failed)
+def audit_login_failed(sender, credentials, request=None, **kwargs):
+    # credentials arrive with any secrets already masked, so only the identifier tried is recorded
+    audit.record("user.login_failed", request=request, email=credentials.get("email") or credentials.get("username"))
+
+
+@receiver(authentication_failed)
+def audit_mfa_failed(sender, request, user, authenticator, **kwargs):
+    audit.record("user.mfa_failed", user=user, request=request, type=authenticator.type)
+
+
+@receiver([authenticator_added, authenticator_removed, authenticator_reset])
+def audit_mfa_change(sender, request, user, authenticator, signal, **kwargs):
+    event = {authenticator_added: "added", authenticator_removed: "removed", authenticator_reset: "reset"}[signal]
+    audit.record(f"user.mfa_{event}", user=user, request=request, type=authenticator.type)
+
+
+@receiver([password_changed, password_set, password_reset])
+def audit_password_change(sender, request, user, signal, **kwargs):
+    event = {password_changed: "changed", password_set: "set", password_reset: "reset"}[signal]
+    audit.record(f"user.password_{event}", user=user, request=request)
+
+
+@receiver(email_changed)
+def audit_email_change(sender, request, user, from_email_address, to_email_address, **kwargs):
+    audit.record(
+        "user.email_changed",
+        user=user,
+        request=request,
+        old=from_email_address.email if from_email_address else None,
+        new=to_email_address.email,
+    )
 
 
 @receiver(social_account_added)

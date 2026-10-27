@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from temba.orgs.models import Org, OrgRole
+from temba.utils import audit
 from temba.utils.models import CreatedByMixin, JSONAsTextField, ModifiedByMixin, SoftDeleteMixin
 from temba.utils.text import generate_secret
 
@@ -224,7 +225,10 @@ class APIToken(models.Model):
 
         assert org.get_user_role(user) in cls.ALLOWED_ROLES
 
-        return cls.objects.create(user=user, org=org, key=generate_secret(40))
+        token = cls.objects.create(user=user, org=org, key=generate_secret(40))
+
+        audit.record("api_token.created", user=user, org=org, token=token.key[:4])
+        return token
 
     def record_used(self):
         r = get_valkey_connection()
@@ -238,6 +242,8 @@ class APIToken(models.Model):
     def release(self):
         self.is_active = False
         self.save(update_fields=("is_active",))
+
+        audit.record("api_token.released", user=self.user, org=self.org, token=self.key[:4])
 
     def __str__(self):
         return self.key
