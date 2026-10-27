@@ -79,6 +79,20 @@ class UserAuthTest(TembaTest):
         phone.post(reverse("account_login"), credentials)
         self.assertEqual(200, phone.get(reverse("account_change_password")).status_code)
 
+        # changing password cycles the session key, which is still tracked
+        phone.post(
+            reverse("account_change_password"),
+            {"oldpassword": self.default_password, "password1": "Sup3rS3cret!", "password2": "Sup3rS3cret!"},
+        )
+        self.assertEqual(200, phone.get(reverse("account_change_password")).status_code)
+
+        self.admin.refresh_from_db()
+        self.assertEqual(phone.session.session_key, self.admin.session_key)
+
+        laptop.post(reverse("account_login"), {"login": self.admin.email, "password": "Sup3rS3cret!"})
+        self.assertEqual(200, laptop.get(reverse("account_change_password")).status_code)
+        self.assertLoginRedirect(phone.get(reverse("account_change_password")))
+
     def test_mfa(self):
         self.login(self.admin)
         mfa_url = reverse("mfa_activate_totp")
