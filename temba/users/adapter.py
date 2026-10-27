@@ -13,6 +13,8 @@ from allauth.socialaccount.signals import social_account_added
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.signals import user_logged_in, user_logged_out, user_login_failed
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.dispatch import receiver
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -219,8 +221,15 @@ def audit_logout(sender, request, user, **kwargs):
 
 @receiver(user_login_failed)
 def audit_login_failed(sender, credentials, request=None, **kwargs):
-    # credentials arrive with any secrets already masked, so only the identifier tried is recorded
-    audit.record("user.login_failed", request=request, email=credentials.get("email") or credentials.get("username"))
+    # credentials arrive with any secrets already masked, so only the identifier tried is recorded - and only if it's
+    # an email address, since people sometimes type their password into that field
+    identifier = credentials.get("email") or credentials.get("username") or ""
+    try:
+        validate_email(identifier)
+    except ValidationError:
+        identifier = None
+
+    audit.record("user.login_failed", request=request, email=identifier)
 
 
 @receiver(authentication_failed)

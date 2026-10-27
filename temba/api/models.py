@@ -239,11 +239,11 @@ class APIToken(models.Model):
         r = get_valkey_connection()
         return [k.decode() for k in r.spop("api_tokens_used", r.scard("api_tokens_used"))]
 
-    def release(self):
+    def release(self, user=None):
         self.is_active = False
         self.save(update_fields=("is_active",))
 
-        audit.record("api_token.released", user=self.user, org=self.org, token=self.key[:4])
+        audit.record("api_token.released", user=self.user, org=self.org, actor=user, token=self.key[:4])
 
     def __str__(self):
         return self.key

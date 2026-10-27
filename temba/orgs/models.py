@@ -894,13 +894,22 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             can_reply_non_own=can_reply_non_own,
         )
 
-        audit.record(
-            "workspace.member_added" if not previous else "workspace.member_role_changed",
-            user=user,
-            org=self,
-            role=role.code,
-            previous_role=previous.role_code if previous else None,
-        )
+        if not previous:
+            audit.record("workspace.member_added", user=user, org=self, role=role.code)
+        elif previous.role_code != role.code:
+            audit.record(
+                "workspace.member_role_changed", user=user, org=self, role=role.code, previous_role=previous.role_code
+            )
+        else:  # only the team or permissions changed
+            audit.record(
+                "workspace.member_updated",
+                user=user,
+                org=self,
+                role=role.code,
+                team=str(team.uuid) if team else None,
+                can_assign=can_assign,
+                can_reply_non_own=can_reply_non_own,
+            )
 
     def remove_user(self, user: User):
         """
@@ -1118,7 +1127,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         for child in self.children.all():
             child.release(user, release_users=release_users)
 
-        audit.record("workspace.released", org=self)
+        audit.record("workspace.released", org=self, actor=user)
 
         # deactivate ourselves
         self.is_active = False

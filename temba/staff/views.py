@@ -9,7 +9,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.models import Group
 from django.db.models import Prefetch
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt
@@ -230,6 +230,8 @@ class OrgCRUDL(SmartCRUDL):
                     obj.unsuspend()
                 elif action == self.ACTION_VERIFY:
                     obj.verify()
+                else:
+                    return HttpResponseBadRequest()
 
                 audit.record(f"workspace.{action}", org=obj)
 
@@ -351,6 +353,7 @@ class UserCRUDL(SmartCRUDL):
 
         def post(self, request, *args, **kwargs):
             obj = self.get_object()
+            self.previous_email = obj.email
             if "email" in request.POST:
                 if obj.email != User.objects.normalize_email(request.POST["email"]):
                     obj.emailaddress_set.all().delete()
@@ -364,6 +367,8 @@ class UserCRUDL(SmartCRUDL):
                     obj.set_verified(False)
                 elif action == self.ACTION_DISABLE_MFA:
                     obj.disable_mfa()
+                else:
+                    return HttpResponseBadRequest()
 
                 audit.record(f"user.staff_{action.replace('-', '_')}", user=obj)
 
@@ -380,7 +385,12 @@ class UserCRUDL(SmartCRUDL):
                 for group in self.form.cleaned_data["groups"]:
                     obj.groups.add(group)
 
-            audit.record("user.staff_updated", user=obj, groups=sorted(g.name for g in obj.groups.all()))
+            changes = {"groups": sorted(g.name for g in obj.groups.all())}
+            if obj.email != self.previous_email:
+                changes["old_email"] = self.previous_email
+                changes["new_email"] = obj.email
+
+            audit.record("user.staff_updated", user=obj, **changes)
             return obj
 
     class Delete(StaffOnlyMixin, ModalFormMixin, SmartDeleteView):

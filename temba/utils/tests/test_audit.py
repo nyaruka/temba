@@ -6,6 +6,7 @@ from allauth.mfa.models import Authenticator
 from allauth.mfa.signals import authentication_failed, authenticator_added, authenticator_removed, authenticator_reset
 
 from django.contrib.auth.models import Group
+from django.contrib.auth.signals import user_login_failed
 from django.test import RequestFactory
 from django.urls import reverse
 
@@ -65,6 +66,14 @@ class AuditTest(TembaTest):
         self.assertNotIn("user", entries[0])
         self.assertNotIn("data", entries[0])
 
+        # outside of a request, an explicit actor is used
+        entries = self.assertAudited([("test.thing", {})], lambda: audit.record("test.thing", actor=self.editor))
+        self.assertEqual(str(self.editor.uuid), entries[0]["actor"]["uuid"])
+
+        # and failing to record is logged rather than raised
+        with self.assertLogs("temba.utils.audit", level="ERROR"):
+            audit.record("test.thing", user=object())
+
     def test_auth_events(self):
         login_url = reverse("account_login")
 
@@ -74,6 +83,16 @@ class AuditTest(TembaTest):
             lambda: self.client.post(login_url, {"login": "editor@textit.com", "password": "wrong"}),
         )
         self.assertNotIn("wrong", json.dumps(entries))
+
+        # an identifier that isn't an email address might be a password typed into the wrong field, so isn't recorded
+        # (the login form refuses those itself, but other authentication paths may not)
+        entries = self.assertAudited(
+            [("user.login_failed", {"data": {"email": None}})],
+            lambda: user_login_failed.send(
+                sender=self.__class__, credentials={"email": "Sesame123", "password": "********"}, request=None
+            ),
+        )
+        self.assertNotIn("Sesame123", json.dumps(entries))
 
         self.assertAudited(
             [("user.login", {"path": login_url})],
@@ -118,11 +137,25 @@ class AuditTest(TembaTest):
             ),
         )
 
+    def test_mfa_failed(self):
+        # end to end, so a change to what allauth sends with its signal would be caught
+        Authenticator.objects.create(user=self.admin, type=Authenticator.Type.TOTP, data={"secret": "JBSWY3DPEHPK3PXP"})
+
+        response = self.client.post(
+            reverse("account_login"), {"login": "admin@textit.com", "password": self.default_password}
+        )
+        self.assertRedirect(response, reverse("mfa_authenticate"))
+
+        self.assertAudited(
+            [("user.mfa_failed", {"data": {"type": "totp"}})],
+            lambda: self.client.post(reverse("mfa_authenticate"), {"code": "000000"}),
+        )
+
     def test_access_changes(self):
         user = self.create_user("bob@textit.com")
 
         self.assertAudited(
-            [("workspace.member_added", {"data": {"role": "E", "previous_role": None}})],
+            [("workspace.member_added", {"data": {"role": "E"}})],
             lambda: self.org.add_user(user, OrgRole.EDITOR),
         )
         self.assertAudited(
@@ -130,11 +163,22 @@ class AuditTest(TembaTest):
             lambda: self.org.add_user(user, OrgRole.ADMINISTRATOR),
         )
 
-        entries = self.assertAudited([("api_token.created", {})], lambda: APIToken.create(self.org, user))
-        token = APIToken.objects.get(org=self.org, user=user, is_active=True)
-        self.assertEqual(token.key[:4], entries[0]["data"]["token"])
+        # changing only the permissions isn't a role change
+        self.assertAudited(
+            [
+                (
+                    "workspace.member_updated",
+                    {"data": {"role": "A", "team": None, "can_assign": False, "can_reply_non_own": True}},
+                )
+            ],
+            lambda: self.org.add_user(user, OrgRole.ADMINISTRATOR, can_assign=False),
+        )
 
-        self.assertAudited([("api_token.released", {})], lambda: token.release())
+        entries = self.assertAudited([("api_token.created", {})], lambda: APIToken.create(self.org, user))
+        token1 = APIToken.objects.get(key__startswith=entries[0]["data"]["token"], user=user)
+        self.assertAudited([("api_token.released", {})], lambda: token1.release())
+
+        token2 = APIToken.create(self.org, user)
 
         self.assertAudited([("workspace.member_removed", {})], lambda: self.org.remove_user(user))
 
@@ -143,7 +187,12 @@ class AuditTest(TembaTest):
             lambda: Invitation.create(self.org, self.admin, "Carol@textit.com", OrgRole.AGENT),
         )
 
-        self.assertAudited([("user.released", {})], lambda: user.release(self.customer_support))
+        # releasing a user records each of their tokens being released, and outside of a request whoever released them
+        entries = self.assertAudited(
+            [("user.released", {}), ("api_token.released", {"data": {"token": token2.key[:4]}})],
+            lambda: user.release(self.customer_support),
+        )
+        self.assertEqual([str(self.customer_support.uuid)] * 2, [e["actor"]["uuid"] for e in entries])
 
         # releasing a workspace also removes its members
         num_members = self.org2.users.count()
@@ -175,6 +224,11 @@ class AuditTest(TembaTest):
             lambda: self.client.post(org_update_url, {"action": "suspend"}),
         )
 
+        # an unknown action is refused, and nothing recorded
+        with self.assertNoLogs("temba.audit"):
+            response = self.client.post(org_update_url, {"action": "released"})
+        self.assertEqual(400, response.status_code)
+
         self.assertAudited(
             [("workspace.staff_updated", {"data": {"is_anon": True, "features": ["new_orgs"], "admin_groups": []}})],
             lambda: self.client.post(org_update_url, {"name": "Nyaruka", "features": ["new_orgs"], "is_anon": True}),
@@ -190,6 +244,10 @@ class AuditTest(TembaTest):
             [("user.staff_disable_mfa", {})], lambda: self.client.post(user_update_url, {"action": "disable-mfa"})
         )
 
+        with self.assertNoLogs("temba.audit"):
+            response = self.client.post(user_update_url, {"action": "release"})
+        self.assertEqual(400, response.status_code)
+
         beta = Group.objects.create(name="Beta")
         entries = self.assertAudited(
             [("user.staff_updated", {"data": {"groups": ["Beta"]}})],
@@ -199,3 +257,17 @@ class AuditTest(TembaTest):
             ),
         )
         self.assertEqual(str(self.customer_support.uuid), entries[0]["actor"]["uuid"])
+        self.assertNotIn("old_email", entries[0]["data"])
+
+        # a staff change of email is recorded with the old and new addresses
+        self.assertAudited(
+            [
+                (
+                    "user.staff_updated",
+                    {"data": {"groups": [], "old_email": "editor@textit.com", "new_email": "ed@textit.com"}},
+                )
+            ],
+            lambda: self.client.post(
+                user_update_url, {"email": "ed@textit.com", "first_name": "Ed", "last_name": "Itor"}
+            ),
+        )
