@@ -1,3 +1,6 @@
+## v26.3.164 (2026-10-27)
+ * Add a security audit log
+
 ## v26.3.163 (2026-10-27)
  * Reject requests whose body is shorter than its Content-Length
  * End a user's other sessions when they log in, keeping track of the session key when a password change cycles it
