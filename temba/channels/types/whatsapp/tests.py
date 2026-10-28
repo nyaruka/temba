@@ -748,6 +748,6 @@ class WhatsAppTypeTest(TembaTest, CRUDLTestMixin):
         self.assertUpdateFetch(
             update_url,
             [self.customer_support],
-            form_fields=["name", "is_enabled"],
+            form_fields=["name", "is_enabled", "tps"],
             choose_org=self.org,
         )

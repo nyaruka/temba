@@ -404,7 +404,7 @@ class UpdateChannelForm(forms.ModelForm):
         label=_("Name"), max_length=64, required=True, help_text=_("Descriptive name for this channel.")
     )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, user, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.config_fields = []
@@ -425,6 +425,16 @@ class UpdateChannelForm(forms.ModelForm):
                 default=False,
             )
 
+        if user.is_staff:
+            self.fields["tps"] = forms.IntegerField(
+                label=_("TPS"),
+                min_value=1,
+                max_value=1000,
+                required=False,
+                initial=self.instance.tps,
+                help_text=_("Maximum messages sent per second. Leave blank to use the default for this channel type."),
+            )
+
     def add_config_field(self, config_key: str, field, *, default):
         field.initial = self.instance.config.get(config_key, default)
 
@@ -433,6 +443,10 @@ class UpdateChannelForm(forms.ModelForm):
 
     def get_config_values(self):
         return {k: v for k, v in self.cleaned_data.items() if k in self.config_fields}
+
+    def clean_tps(self):
+        tps = self.cleaned_data["tps"]
+        return tps if tps is not None else self.instance.type.tps
 
     def clean(self) -> dict[str, Any]:
         cleaned_data = super().clean()
@@ -720,6 +734,11 @@ class ChannelCRUDL(SmartCRUDL):
         def get_form_class(self):
             return self.object.type.get_update_form()
 
+        def get_form_kwargs(self):
+            kwargs = super().get_form_kwargs()
+            kwargs["user"] = self.request.user
+            return kwargs
+
         def derive_initial(self):
             initial = super().derive_initial()
             initial["role"] = [char for char in self.object.role]
@@ -728,6 +747,10 @@ class ChannelCRUDL(SmartCRUDL):
         def pre_save(self, obj):
             obj = super().pre_save(obj)
             obj.config.update(self.form.get_config_values())
+
+            if "tps" in self.form.cleaned_data:
+                obj.tps = self.form.cleaned_data["tps"]
+
             return obj
 
     class Claim(SpaMixin, OrgPermsMixin, SmartTemplateView):
