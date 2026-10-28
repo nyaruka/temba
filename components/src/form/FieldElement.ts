@@ -1,8 +1,12 @@
-import { TemplateResult, html, css } from 'lit';
+import { TemplateResult, html, css, unsafeCSS } from 'lit';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { renderMarkdownInline } from '../markdown';
 import { designTokens } from '../styles/designTokens';
+
+// Shared with labels drawn outside a FieldElement's shadow root as an inline style
+export const fieldLabelStyle =
+  'margin-bottom: 6px; display: block; font-weight: var(--w-medium); font-size: 12.5px; line-height: normal; color: var(--color-label);';
 
 /**
  * FieldElement is a base class for form components that provides built-in
@@ -70,12 +74,7 @@ export abstract class FieldElement extends RapidElement {
       }
 
       label {
-        margin-bottom: 6px;
-        display: block;
-        font-weight: var(--w-medium);
-        font-size: 12.5px;
-        line-height: normal;
-        color: var(--color-label);
+        ${unsafeCSS(fieldLabelStyle)}
       }
 
       .help-text {
