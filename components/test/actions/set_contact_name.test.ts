@@ -35,5 +35,14 @@ describe('set_contact_name action config', () => {
       } as SetContactName,
       'expression-name'
     );
+
+    helper.testAction(
+      {
+        uuid: 'test-action-3',
+        type: 'set_contact_name',
+        name: ''
+      } as SetContactName,
+      'clear-name'
+    );
   });
 });
