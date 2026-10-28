@@ -29,7 +29,7 @@ from temba.msgs.models import Msg
 from temba.orgs.models import Org
 from temba.orgs.views.base import BaseDependencyDeleteModal, BaseReadView
 from temba.orgs.views.mixins import OrgObjPermsMixin, OrgPermsMixin
-from temba.utils import countries
+from temba.utils import audit, countries
 from temba.utils.fields import SelectWidget
 from temba.utils.views.mixins import ChartViewMixin, ComponentFormMixin, ContextMenuMixin, ModalFormMixin, SpaMixin
 
@@ -738,8 +738,23 @@ class ChannelCRUDL(SmartCRUDL):
             obj = super().pre_save(obj)
             obj.config.update(self.form.get_config_values())
 
+            self.previous_tps = obj.tps
             if "tps" in self.form.cleaned_data:
                 obj.tps = self.form.cleaned_data["tps"]
+
+            return obj
+
+        def post_save(self, obj):
+            obj = super().post_save(obj)
+
+            if obj.tps != self.previous_tps:
+                audit.record(
+                    "channel.tps_changed",
+                    org=obj.org,
+                    channel=str(obj.uuid),
+                    tps=obj.tps,
+                    previous_tps=self.previous_tps,
+                )
 
             return obj
 
