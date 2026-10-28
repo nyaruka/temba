@@ -2,6 +2,7 @@ import json
 from datetime import timezone as tzone
 
 from django import forms
+from django.db.models.utils import get_blank_choice_label
 from django.template.defaultfilters import register
 from django.urls import reverse
 from django.utils.html import escapejs
@@ -95,10 +96,11 @@ def _is_optional(field) -> bool:
         return False
 
     # a select whose empty choice has a real name, e.g. "Unassigned", always shows a value
+    blank_labels = ("---------", get_blank_choice_label())
     if isinstance(f, forms.ModelChoiceField):
-        return f.empty_label in (None, "---------")
+        return f.empty_label is None or f.empty_label in blank_labels
     if isinstance(f, forms.ChoiceField):
-        return not any(value in ("", None) and label != "---------" for value, label in f.choices)
+        return not any(value in ("", None) and label not in blank_labels for value, label in f.choices)
 
     return True
 

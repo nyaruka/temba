@@ -6,11 +6,13 @@ from django.template import Context, Template
 from django.utils import timezone, translation
 
 from temba.campaigns.models import Campaign, CampaignEvent
+from temba.contacts.models import ContactGroup
 from temba.flows.models import Flow
 from temba.tests import TembaTest
 from temba.triggers.models import Trigger
+from temba.users.models import User
 from temba.utils import json
-from temba.utils.fields import CheckboxWidget, InputWidget, SelectWidget
+from temba.utils.fields import CheckboxWidget, InputWidget, SelectMultipleWidget, SelectWidget
 from temba.utils.templatetags import temba as tags
 
 
@@ -161,6 +163,13 @@ class TembaTagLibraryTest(TembaTest):
             vip = forms.BooleanField(required=False, widget=CheckboxWidget())
             color = forms.ChoiceField(required=False, choices=(("", "---------"), ("R", "Red")), widget=SelectWidget())
             size = forms.ChoiceField(required=False, choices=(("", "Default"), ("L", "Large")), widget=SelectWidget())
+            group = forms.ModelChoiceField(ContactGroup.objects.all(), required=False, widget=SelectWidget())
+            owner = forms.ModelChoiceField(
+                User.objects.all(), required=False, empty_label="Unassigned", widget=SelectWidget()
+            )
+            groups = forms.ModelMultipleChoiceField(
+                ContactGroup.objects.all(), required=False, widget=SelectMultipleWidget()
+            )
 
         def render(form, name):
             field = form[name]
@@ -174,6 +183,9 @@ class TembaTagLibraryTest(TembaTest):
         self.assertNotIn(" optional", render(form, "vip"))  # checkbox
         self.assertIn(" optional", render(form, "color"))
         self.assertNotIn(" optional", render(form, "size"))  # always has a value
+        self.assertIn(" optional", render(form, "group"))
+        self.assertNotIn(" optional", render(form, "owner"))  # always has a value
+        self.assertIn(" optional", render(form, "groups"))
 
         # no markers when nothing on the form is required
         form = Form()
