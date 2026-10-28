@@ -59,6 +59,7 @@ export const set_run_result: ActionConfig = {
     category: {
       type: 'text',
       label: 'Category',
+      helpText: 'Optional.',
       required: false,
       maxLength: 36,
       placeholder: 'Enter category...'
