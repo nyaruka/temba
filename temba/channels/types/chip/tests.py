@@ -3,7 +3,7 @@ from django.urls import reverse
 from temba.channels.models import Channel
 from temba.tests import CRUDLTestMixin, TembaTest
 
-from .views import CONFIG_ALLOWED_DOMAINS
+from .views import CONFIG_ALLOWED_DOMAINS, CONFIG_EMAIL_FROM, CONFIG_MAILGUN_API_KEY, CONFIG_MAILGUN_DOMAIN
 
 
 class ChipTypeTest(CRUDLTestMixin, TembaTest):
@@ -54,7 +54,15 @@ class ChipTypeTest(CRUDLTestMixin, TembaTest):
         self.assertUpdateFetch(
             update_url,
             [self.admin],
-            form_fields={"name": "WebChat", "is_enabled": True, "allowed_domains": ""},
+            form_fields={
+                "name": "WebChat",
+                "is_enabled": True,
+                "allowed_domains": "",
+                "email_from": "",
+                "mailgun_domain": "",
+                "mailgun_region": "us",
+                "mailgun_api_key": "",
+            },
         )
 
         # domains can be one per line or comma separated, and are normalized to lowercase host[:port] entries with
@@ -66,6 +74,7 @@ class ChipTypeTest(CRUDLTestMixin, TembaTest):
                 "name": "WebChat",
                 "is_enabled": True,
                 "allowed_domains": "Example.com\n www.example.com:8080, example.com,\n",
+                "mailgun_region": "us",
             },
         )
 
@@ -76,7 +85,15 @@ class ChipTypeTest(CRUDLTestMixin, TembaTest):
         self.assertUpdateFetch(
             update_url,
             [self.admin],
-            form_fields={"name": "WebChat", "is_enabled": True, "allowed_domains": "example.com\nwww.example.com:8080"},
+            form_fields={
+                "name": "WebChat",
+                "is_enabled": True,
+                "allowed_domains": "example.com\nwww.example.com:8080",
+                "email_from": "",
+                "mailgun_domain": "",
+                "mailgun_region": "us",
+                "mailgun_api_key": "",
+            },
         )
 
         # and on the configuration page
@@ -97,7 +114,12 @@ class ChipTypeTest(CRUDLTestMixin, TembaTest):
             self.assertUpdateSubmit(
                 update_url,
                 self.admin,
-                {"name": "WebChat", "is_enabled": True, "allowed_domains": f"example.com\n{invalid}"},
+                {
+                    "name": "WebChat",
+                    "is_enabled": True,
+                    "allowed_domains": f"example.com\n{invalid}",
+                    "mailgun_region": "us",
+                },
                 form_errors={
                     "allowed_domains": f"{invalid.lower()} is not a valid domain. "
                     "Enter domains without schemes or paths, e.g. example.com."
@@ -106,7 +128,98 @@ class ChipTypeTest(CRUDLTestMixin, TembaTest):
             )
 
         # clearing the field removes the restriction
-        self.assertUpdateSubmit(update_url, self.admin, {"name": "WebChat", "is_enabled": True, "allowed_domains": ""})
+        self.assertUpdateSubmit(
+            update_url,
+            self.admin,
+            {"name": "WebChat", "is_enabled": True, "allowed_domains": "", "mailgun_region": "us"},
+        )
 
         channel.refresh_from_db()
         self.assertEqual([], channel.config.get(CONFIG_ALLOWED_DOMAINS))
+
+    def test_update_email(self):
+        channel = self.create_channel("CHP", "WebChat", "123")
+        update_url = reverse("channels.channel_update", args=[channel.id])
+        config_url = reverse("channels.channel_configuration", args=[channel.uuid])
+
+        def submit(**kwargs):
+            return {"name": "WebChat", "is_enabled": True, "mailgun_region": "us"} | kwargs
+
+        self.login(self.admin)
+        response = self.client.get(config_url)
+        self.assertContains(response, "Emails can't be sent to contacts until a Mailgun domain is set")
+
+        # a domain needs a from address and an API key
+        self.assertUpdateSubmit(
+            update_url,
+            self.admin,
+            submit(mailgun_domain="mg.example.com"),
+            form_errors={"email_from": "Required to send emails.", "mailgun_api_key": "Required to send emails."},
+            object_unchanged=channel,
+        )
+
+        # and must be a bare domain
+        for invalid in ("https://mg.example.com", "mg.example.com/x", "mg.example.com:443"):
+            self.assertUpdateSubmit(
+                update_url,
+                self.admin,
+                submit(email_from="support@example.com", mailgun_domain=invalid, mailgun_api_key="key-1"),
+                form_errors={"mailgun_domain": "Enter a domain without a scheme, path or port, e.g. mg.example.com."},
+                object_unchanged=channel,
+            )
+
+        self.assertUpdateSubmit(
+            update_url,
+            self.admin,
+            submit(
+                email_from="support@example.com",
+                mailgun_domain="MG.example.com",
+                mailgun_region="eu",
+                mailgun_api_key="key-1",
+            ),
+        )
+
+        channel.refresh_from_db()
+        self.assertEqual("support@example.com", channel.config[CONFIG_EMAIL_FROM])
+        self.assertEqual("mg.example.com", channel.config[CONFIG_MAILGUN_DOMAIN])
+        self.assertEqual("eu", channel.config["mailgun_region"])
+        self.assertEqual("key-1", channel.config[CONFIG_MAILGUN_API_KEY])
+
+        # the key isn't shown back
+        self.assertUpdateFetch(
+            update_url,
+            [self.admin],
+            form_fields={
+                "name": "WebChat",
+                "is_enabled": True,
+                "allowed_domains": "",
+                "email_from": "support@example.com",
+                "mailgun_domain": "mg.example.com",
+                "mailgun_region": "eu",
+                "mailgun_api_key": "",
+            },
+        )
+        response = self.client.get(update_url)
+        self.assertNotContains(response, "key-1")
+
+        response = self.client.get(config_url)
+        self.assertContains(response, "mg.example.com")
+
+        # leaving the key empty keeps the existing one
+        self.assertUpdateSubmit(
+            update_url,
+            self.admin,
+            submit(email_from="help@example.com", mailgun_domain="mg.example.com", mailgun_region="eu"),
+        )
+
+        channel.refresh_from_db()
+        self.assertEqual("help@example.com", channel.config[CONFIG_EMAIL_FROM])
+        self.assertEqual("key-1", channel.config[CONFIG_MAILGUN_API_KEY])
+
+        # clearing the domain stops emails and drops the from address and key
+        self.assertUpdateSubmit(update_url, self.admin, submit(email_from="help@example.com"))
+
+        channel.refresh_from_db()
+        self.assertEqual("", channel.config[CONFIG_MAILGUN_DOMAIN])
+        self.assertEqual("", channel.config[CONFIG_EMAIL_FROM])
+        self.assertEqual("", channel.config[CONFIG_MAILGUN_API_KEY])
