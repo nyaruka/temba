@@ -207,13 +207,65 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
             },
         )
 
-        # staff users see extra fields
+        # staff users also see the TPS field
         self.assertUpdateFetch(
             vonage_url,
             [self.customer_support],
-            form_fields=["name", "is_enabled", "allow_international", "machine_detection"],
+            form_fields={
+                "name": "Updated Name",
+                "is_enabled": True,
+                "allow_international": True,
+                "machine_detection": True,
+                "tps": None,
+            },
             choose_org=self.org,
         )
+
+        # but can only change it if they're also superusers
+        response = self.requestView(
+            vonage_url, self.customer_support, post_data={"name": "Updated Name", "tps": "25"}, choose_org=self.org
+        )
+        self.assertEqual(403, response.status_code)
+
+        self.customer_support.is_superuser = True
+        self.customer_support.save(update_fields=("is_superuser",))
+
+        # TPS must be in range
+        self.assertUpdateSubmit(
+            vonage_url,
+            self.customer_support,
+            {"name": "Updated Name", "is_enabled": True, "tps": "0"},
+            form_errors={"tps": "Ensure this value is greater than or equal to 1."},
+            object_unchanged=vonage_channel,
+        )
+        self.assertUpdateSubmit(
+            vonage_url,
+            self.customer_support,
+            {"name": "Updated Name", "is_enabled": True, "tps": "1001"},
+            form_errors={"tps": "Ensure this value is less than or equal to 1000."},
+            object_unchanged=vonage_channel,
+        )
+
+        self.assertUpdateSubmit(
+            vonage_url, self.customer_support, {"name": "Updated Name", "is_enabled": True, "tps": "25"}
+        )
+
+        vonage_channel.refresh_from_db()
+        self.assertEqual(25, vonage_channel.tps)
+
+        # non-staff saving the form leave it alone
+        self.assertUpdateSubmit(vonage_url, self.admin, {"name": "Updated Name", "is_enabled": True})
+
+        vonage_channel.refresh_from_db()
+        self.assertEqual(25, vonage_channel.tps)
+
+        # blank leaves it unchanged
+        self.assertUpdateSubmit(
+            vonage_url, self.customer_support, {"name": "Updated Name", "is_enabled": True, "tps": ""}
+        )
+
+        vonage_channel.refresh_from_db()
+        self.assertEqual(25, vonage_channel.tps)
 
     def test_read_menu(self):
         # normal channel types get a logs menu item on their read page

@@ -1997,6 +1997,12 @@ msgstr "Permitir o envio e as chamadas para números internacionais."
 msgid "Perform answering machine detection and hangup if machine detected."
 msgstr "Realizar detecção de secretária eletrônica e desligar se detectada."
 
+msgid "TPS"
+msgstr "TPS"
+
+msgid "Maximum messages sent per second."
+msgstr "Máximo de mensagens enviadas por segundo."
+
 msgid "Credentials don't appear to be valid."
 msgstr "As credenciais parecem não ser válidas."
 

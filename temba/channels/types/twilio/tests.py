@@ -363,7 +363,7 @@ class TwilioTypeTest(TembaTest):
         self.login(self.customer_support, choose_org=self.org)
         response = self.client.get(update_url)
         self.assertEqual(
-            ["name", "is_enabled", "allow_international", "account_sid", "auth_token", "loc"],
+            ["name", "is_enabled", "allow_international", "tps", "account_sid", "auth_token", "loc"],
             list(response.context["form"].fields.keys()),
         )
 

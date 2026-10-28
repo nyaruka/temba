@@ -1979,6 +1979,12 @@ msgstr ""
 msgid "Perform answering machine detection and hangup if machine detected."
 msgstr ""
 
+msgid "TPS"
+msgstr ""
+
+msgid "Maximum messages sent per second."
+msgstr ""
+
 msgid "Credentials don't appear to be valid."
 msgstr ""
 

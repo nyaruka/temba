@@ -1993,6 +1993,12 @@ msgstr "Permet l'envoi à et l'appel de numéros internationaux."
 msgid "Perform answering machine detection and hangup if machine detected."
 msgstr "Effectuer la détection du répondeur et raccrocher si le répondeur est détecté."
 
+msgid "TPS"
+msgstr "TPS"
+
+msgid "Maximum messages sent per second."
+msgstr "Nombre maximal de messages envoyés par seconde."
+
 msgid "Credentials don't appear to be valid."
 msgstr "Les identifiants ne semblent pas être valides."
 

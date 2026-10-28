@@ -111,7 +111,7 @@ class ViberTypeTest(TembaTest, CRUDLTestMixin):
         self.assertUpdateFetch(
             update_url,
             [self.customer_support],
-            form_fields=["name", "is_enabled", "welcome_message"],
+            form_fields=["name", "is_enabled", "tps", "welcome_message"],
             choose_org=self.org,
         )
 

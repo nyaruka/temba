@@ -1993,6 +1993,12 @@ msgstr "Permitir enviar y llamar a números internacionales."
 msgid "Perform answering machine detection and hangup if machine detected."
 msgstr "Detectar contestadores automáticos y colgar si se detecta uno."
 
+msgid "TPS"
+msgstr "TPS"
+
+msgid "Maximum messages sent per second."
+msgstr "Máximo de mensajes enviados por segundo."
+
 msgid "Credentials don't appear to be valid."
 msgstr "Las credenciales no parecen ser válidas."
 
