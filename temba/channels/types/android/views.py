@@ -16,8 +16,8 @@ from ...views import ClaimViewMixin
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
-        claim_code = forms.CharField(max_length=12, help_text=_("The claim code from your Android phone"))
-        phone_number = forms.CharField(max_length=15, help_text=_("The phone number of the phone"))
+        claim_code = forms.CharField(max_length=12, help_text=_("Shown in the Android app on your phone."))
+        phone_number = forms.CharField(max_length=15)
 
         def __init__(self, org, *args, **kwargs):
             super().__init__(*args, **kwargs)

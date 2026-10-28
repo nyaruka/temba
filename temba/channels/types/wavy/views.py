@@ -12,19 +12,12 @@ from temba.utils.fields import SelectWidget
 class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
         country = forms.ChoiceField(
-            choices=ALL_COUNTRIES,
-            widget=SelectWidget(attrs={"searchable": True}),
-            label=_("Country"),
-            help_text=_("The country this channel will be used in"),
+            choices=ALL_COUNTRIES, widget=SelectWidget(attrs={"searchable": True}), label=_("Country")
         )
 
-        number = forms.CharField(
-            max_length=14, min_length=4, label=_("Number"), help_text=_("The number you are connecting.")
-        )
-        username = forms.CharField(label=_("Username"), help_text=_("The username for your Movile/Wavy account"))
-        token = forms.CharField(
-            label=_("Authentication Token"), help_text=_("The Authentication Token for your Movile/Wavy account")
-        )
+        number = forms.CharField(max_length=14, min_length=4, label=_("Number"))
+        username = forms.CharField(label=_("Username"))
+        token = forms.CharField(label=_("Authentication Token"))
 
     form_class = Form
 

@@ -13,25 +13,16 @@ from ...views import ALL_COUNTRIES, ClaimViewMixin
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
-        address = forms.CharField(help_text=_("Your enterprise Turn.io WhatsApp number"), label=_("Number"))
+        address = forms.CharField(label=_("Number"))
         country = forms.ChoiceField(
-            widget=SelectWidget(attrs={"searchable": True}),
-            choices=ALL_COUNTRIES,
-            label=_("Country"),
-            help_text=_("The country this phone number is used in"),
+            widget=SelectWidget(attrs={"searchable": True}), choices=ALL_COUNTRIES, label=_("Country")
         )
-        username = forms.CharField(
-            max_length=32, help_text=_("The username to access your Turn.io WhatsApp enterprise account")
-        )
-        password = forms.CharField(
-            max_length=64, help_text=_("The password to access your Turn.io WhatsApp enterprise account")
-        )
+        username = forms.CharField(max_length=32)
+        password = forms.CharField(max_length=64)
 
-        access_token = forms.CharField(
-            max_length=256, help_text=_("The access token that will be used for syncing WhatsApp templates")
-        )
+        access_token = forms.CharField(max_length=256, help_text=_("Used to sync WhatsApp templates."))
 
-        namespace = forms.CharField(max_length=128, help_text=_("The namespace for your Turn.io WhatsApp templates"))
+        namespace = forms.CharField(max_length=128, help_text=_("The namespace of your WhatsApp templates."))
 
         def clean(self):
             # first check that our phone number looks sane

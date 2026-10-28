@@ -320,17 +320,9 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
     org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="channels", null=True)
     channel_type = models.CharField(max_length=3)
     name = models.CharField(max_length=64)
-    address = models.CharField(
-        verbose_name=_("Address"),
-        max_length=255,
-        blank=True,
-        null=True,
-        help_text=_("Address with which this channel communicates"),
-    )
+    address = models.CharField(verbose_name=_("Address"), max_length=255, blank=True, null=True)
 
-    country = CountryField(
-        verbose_name=_("Country"), null=True, blank=True, help_text=_("Country which this channel is for")
-    )
+    country = CountryField(verbose_name=_("Country"), null=True, blank=True)
 
     config = models.JSONField(default=dict)
     schemes = ArrayField(models.CharField(max_length=16), default=_get_default_channel_scheme)

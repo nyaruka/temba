@@ -13,7 +13,7 @@ CONFIG_WELCOME_MESSAGE = "welcome_message"
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
-        auth_token = forms.CharField(help_text=_("The authentication token provided by Viber"))
+        auth_token = forms.CharField()
 
         def clean_auth_token(self):
             auth_token = self.data["auth_token"]
@@ -66,8 +66,7 @@ class UpdateForm(UpdateChannelForm):
                 required=False,
                 widget=forms.Textarea,
                 help_text=_(
-                    "The message send to user who have not yet subscribed to the channel, changes may take up to 30 "
-                    "seconds to take effect"
+                    "Sent to contacts who haven't yet subscribed, with changes taking up to 30 seconds to apply."
                 ),
             ),
             default="",

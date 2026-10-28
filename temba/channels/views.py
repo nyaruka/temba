@@ -125,9 +125,9 @@ class ClaimViewMixin(ChannelTypeMixin, OrgPermsMixin, ComponentFormMixin):
 class AuthenticatedExternalClaimView(ClaimViewMixin, SmartFormView):
     form_blurb = _("You can connect your number by entering your credentials here.")
     username_label = _("Username")
-    username_help = _("The username provided by the provider to use their API")
+    username_help = None
     password_label = _("Password")
-    password_help = _("The password provided by the provider to use their API")
+    password_help = None
 
     def __init__(self, **kwargs):
         self.form_blurb = kwargs.pop("form_blurb", self.form_blurb)
@@ -140,23 +140,16 @@ class AuthenticatedExternalClaimView(ClaimViewMixin, SmartFormView):
 
     class Form(ClaimViewMixin.Form):
         country = forms.ChoiceField(
-            choices=ALL_COUNTRIES,
-            widget=SelectWidget(attrs={"searchable": True}),
-            label=_("Country"),
-            help_text=_("The country this phone number is used in"),
+            choices=ALL_COUNTRIES, widget=SelectWidget(attrs={"searchable": True}), label=_("Country")
         )
         number = forms.CharField(
             max_length=14,
             min_length=1,
             label=_("Number"),
-            help_text=_("The phone number or short code you are connecting with country code. ex: +250788123124"),
+            help_text=_("A phone number with country code or a short code, e.g. +250788123124 or 15543."),
         )
-        username = forms.CharField(
-            label=_("Username"), help_text=_("The username provided by the provider to use their API")
-        )
-        password = forms.CharField(
-            label=_("Password"), help_text=_("The password provided by the provider to use their API")
-        )
+        username = forms.CharField(label=_("Username"))
+        password = forms.CharField(label=_("Password"))
 
         def clean_number(self):
             number = self.data["number"]
@@ -400,9 +393,7 @@ class BaseClaimNumberMixin(ClaimViewMixin):
 
 
 class UpdateChannelForm(forms.ModelForm):
-    name = forms.CharField(
-        label=_("Name"), max_length=64, required=True, help_text=_("Descriptive name for this channel.")
-    )
+    name = forms.CharField(label=_("Name"), max_length=64, required=True)
 
     def __init__(self, *args, user, **kwargs):
         super().__init__(*args, **kwargs)
@@ -412,16 +403,14 @@ class UpdateChannelForm(forms.ModelForm):
         if URN.TEL_SCHEME in self.instance.schemes:
             self.add_config_field(
                 Channel.CONFIG_ALLOW_INTERNATIONAL,
-                forms.BooleanField(required=False, help_text=_("Allow sending to and calling international numbers.")),
+                forms.BooleanField(required=False, help_text=_("Allows sending to and calling international numbers.")),
                 default=False,
             )
 
         if Channel.ROLE_CALL in self.instance.role:
             self.add_config_field(
                 Channel.CONFIG_MACHINE_DETECTION,
-                forms.BooleanField(
-                    required=False, help_text=_("Perform answering machine detection and hangup if machine detected.")
-                ),
+                forms.BooleanField(required=False, help_text=_("Hangs up calls answered by an answering machine.")),
                 default=False,
             )
 
@@ -649,7 +638,7 @@ class ChannelCRUDL(SmartCRUDL):
             whitelisted_domain = forms.URLField(
                 required=True,
                 initial="https://",
-                help_text=_("The domain to whitelist for Messenger extensions ex: https://yourdomain.com"),
+                help_text=_("Allows Messenger extensions on this domain, e.g. https://example.com."),
             )
 
         slug_url_kwarg = "uuid"

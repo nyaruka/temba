@@ -333,7 +333,7 @@ class RequestCode(ChannelTypeMixin, OrgObjPermsMixin, SmartModelActionView, Smar
 class VerifyCode(ChannelTypeMixin, OrgObjPermsMixin, SmartModelActionView, SmartFormView):
     class Form(forms.Form):
         code = forms.CharField(
-            min_length=6, required=True, help_text=_("The 6-digits number verification code"), widget=InputWidget()
+            min_length=6, required=True, help_text=_("The 6-digit verification code."), widget=InputWidget()
         )
 
     slug_url_kwarg = "uuid"

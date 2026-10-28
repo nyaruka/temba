@@ -9,19 +9,14 @@ from ...views import ClaimViewMixin
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class NVClaimForm(ClaimViewMixin.Form):
-        shortcode = forms.CharField(max_length=15, min_length=1, help_text=_("The Novo short code"))
+        shortcode = forms.CharField(max_length=15, min_length=1)
         merchant_id = forms.CharField(
             max_length=30,
             min_length=1,
             label=_("Merchant ID"),
-            help_text=_("The merchant id to compose your Merchant URL provided by Novo"),
+            help_text=_("Provided by Novo and used to build your merchant URL."),
         )
-        merchant_secret = forms.CharField(
-            max_length=30,
-            min_length=1,
-            label=_("Merchant Secret"),
-            help_text=_("The merchant secret provided by Novo"),
-        )
+        merchant_secret = forms.CharField(max_length=30, min_length=1, label=_("Merchant Secret"))
 
     form_class = NVClaimForm
 

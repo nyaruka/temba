@@ -9,18 +9,13 @@ from temba.utils.fields import ExternalURLField, SelectWidget
 class ClaimView(AuthenticatedExternalClaimView):
     class TelesomForm(ClaimViewMixin.Form):
         country = forms.ChoiceField(
-            choices=ALL_COUNTRIES,
-            widget=SelectWidget(attrs={"searchable": True}),
-            label=_("Country"),
-            help_text=_("The country this phone number is used in"),
+            choices=ALL_COUNTRIES, widget=SelectWidget(attrs={"searchable": True}), label=_("Country")
         )
-        number = forms.CharField(
-            max_length=14, min_length=1, label=_("Number"), help_text=_("The short code you are connecting with.")
-        )
-        url = ExternalURLField(label=_("URL"), help_text=_("The url provided to deliver messages"))
-        username = forms.CharField(label=_("Username"), help_text=_("The username provided to use their API"))
-        password = forms.CharField(label=_("Password"), help_text=_("The password provided to use their API"))
-        secret = forms.CharField(label=_("Private Key"), help_text=_("The private key provided to use their API"))
+        number = forms.CharField(max_length=14, min_length=1, label=_("Number"))
+        url = ExternalURLField(label=_("URL"), help_text=_("Used to send messages."))
+        username = forms.CharField(label=_("Username"))
+        password = forms.CharField(label=_("Password"))
+        secret = forms.CharField(label=_("Private Key"))
 
     form_class = TelesomForm
 

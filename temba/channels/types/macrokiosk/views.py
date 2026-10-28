@@ -12,30 +12,19 @@ from ...views import ALL_COUNTRIES, ClaimViewMixin
 class ClaimView(ClaimViewMixin, SmartFormView):
     class MacrokioskClaimForm(ClaimViewMixin.Form):
         country = forms.ChoiceField(
-            choices=ALL_COUNTRIES,
-            widget=SelectWidget(attrs={"searchable": True}),
-            label=_("Country"),
-            help_text=_("The country this phone number is used in"),
+            choices=ALL_COUNTRIES, widget=SelectWidget(attrs={"searchable": True}), label=_("Country")
         )
         number = forms.CharField(
             max_length=14,
             min_length=1,
             label=_("Number"),
-            help_text=_("The phone number or short code you are connecting with country code. ex: +250788123124"),
+            help_text=_("A phone number with country code or a short code, e.g. +250788123124 or 15543."),
         )
-        sender_id = forms.CharField(
-            label=_("Sender ID"), help_text=_("The sender ID provided by Macrokiosk to use their API")
-        )
+        sender_id = forms.CharField(label=_("Sender ID"))
 
-        username = forms.CharField(
-            label=_("Username"), help_text=_("The username provided by Macrokiosk to use their API")
-        )
-        password = forms.CharField(
-            label=_("Password"), help_text=_("The password provided by Macrokiosk to use their API")
-        )
-        service_id = forms.CharField(
-            label=_("Service ID"), help_text=_("The Service ID provided by Macrokiosk to use their API")
-        )
+        username = forms.CharField(label=_("Username"))
+        password = forms.CharField(label=_("Password"))
+        service_id = forms.CharField(label=_("Service ID"))
 
     form_class = MacrokioskClaimForm
 

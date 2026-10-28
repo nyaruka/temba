@@ -13,19 +13,15 @@ class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
         user_token = forms.CharField(
             label=_("User OAuth Token"),
-            help_text=_(
-                "In Slack select your bot app and go to Features / OAuth & Permissions to see this information."
-            ),
+            help_text=_("Found in your Slack app under Features / OAuth & Permissions."),
         )
         bot_token = forms.CharField(
             label=_("Bot User OAuth Token"),
-            help_text=_(
-                "In Slack select your bot app and go to Features / OAuth & Permissions to see this information."
-            ),
+            help_text=_("Found in your Slack app under Features / OAuth & Permissions."),
         )
         verification_token = forms.CharField(
             label=_("Verification Token"),
-            help_text=_("In Slack go to Settings / Basic information, find in App Credentials and paste here."),
+            help_text=_("Found in your Slack app under Settings / Basic Information / App Credentials."),
         )
 
         def clean_user_token(self):

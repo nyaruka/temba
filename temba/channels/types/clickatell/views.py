@@ -11,22 +11,15 @@ from temba.utils.fields import SelectWidget
 class ClaimView(AuthenticatedExternalClaimView):
     class ClickatellForm(ClaimViewMixin.Form):
         country = forms.ChoiceField(
-            choices=ALL_COUNTRIES,
-            widget=SelectWidget(attrs={"searchable": True}),
-            label=_("Country"),
-            help_text=_("The country this phone number is used in"),
+            choices=ALL_COUNTRIES, widget=SelectWidget(attrs={"searchable": True}), label=_("Country")
         )
         number = forms.CharField(
             max_length=18,
             min_length=1,
             label=_("Number"),
-            help_text=_(
-                "The phone number with country code or short code you are connecting. ex: +250788123124 or 15543"
-            ),
+            help_text=_("A phone number with country code or a short code, e.g. +250788123124 or 15543."),
         )
-        api_key = forms.CharField(
-            label=_("API Key"), help_text=_("The API key for your integration as provided by Clickatell")
-        )
+        api_key = forms.CharField(label=_("API Key"))
 
         def clean_number(self):
             # if this is a long number, try to normalize it

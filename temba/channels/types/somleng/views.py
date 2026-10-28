@@ -19,39 +19,32 @@ class ClaimView(ClaimViewMixin, SmartFormView):
             (Channel.ROLE_SEND + Channel.ROLE_RECEIVE + Channel.ROLE_CALL + Channel.ROLE_ANSWER, _("Both")),
         )
         country = forms.ChoiceField(
-            choices=ALL_COUNTRIES,
-            widget=SelectWidget(attrs={"searchable": True}),
-            label=_("Country"),
-            help_text=_("The country this phone number is used in"),
+            choices=ALL_COUNTRIES, widget=SelectWidget(attrs={"searchable": True}), label=_("Country")
         )
         number = forms.CharField(
             max_length=14,
             min_length=1,
             label=_("Number"),
-            help_text=_("The phone number without country code or short code you are connecting."),
+            help_text=_("A phone number without country code or a short code."),
         )
         url = ExternalURLField(
             max_length=1024,
             label=_("Somleng Host"),
-            help_text=_("The publicly accessible URL for your Somleng instance ex: https://api.somleng.org"),
+            help_text=_("Must be publicly accessible, e.g. https://api.somleng.org."),
         )
-        role = forms.ChoiceField(
-            choices=ROLES, label=_("Role"), help_text=_("Choose the role that this channel supports")
-        )
+        role = forms.ChoiceField(choices=ROLES, label=_("Role"))
         account_sid = forms.CharField(
             max_length=64,
             required=False,
-            help_text=_("The Account SID to use to authenticate with Somleng"),
             widget=forms.TextInput(attrs={"autocomplete": "off"}),
         )
         account_token = forms.CharField(
             max_length=64,
             required=False,
-            help_text=_("The Account Token to use to authenticate with Somleng"),
             widget=forms.TextInput(attrs={"autocomplete": "off"}),
         )
         max_concurrent_calls = forms.IntegerField(
-            min_value=1, required=False, help_text=_("Max active calls at the same time")
+            min_value=1, required=False, help_text=_("The maximum number of calls that can be active at the same time.")
         )
 
     form_class = SomlengClaimForm

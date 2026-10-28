@@ -249,7 +249,7 @@ CALLING_CODES = countries.calling_codes(SUPPORTED_COUNTRIES)
 class ClaimView(BaseClaimNumberMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
         country = forms.ChoiceField(choices=COUNTRY_CHOICES, widget=SelectWidget(attrs={"searchable": True}))
-        phone_number = forms.CharField(help_text=_("The phone number being added"))
+        phone_number = forms.CharField()
 
         def clean_phone_number(self):
             if not self.cleaned_data.get("country", None):  # pragma: needs cover
@@ -432,8 +432,8 @@ class SearchView(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
 
 class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
     class VonageConnectForm(forms.Form):
-        api_key = forms.CharField(help_text=_("Your Vonage API key"), widget=InputWidget(), required=True)
-        api_secret = forms.CharField(help_text=_("Your Vonage API secret"), widget=InputWidget(), required=True)
+        api_key = forms.CharField(label=_("API Key"), widget=InputWidget(), required=True)
+        api_secret = forms.CharField(label=_("API Secret"), widget=InputWidget(), required=True)
 
         def clean(self):
             super().clean()

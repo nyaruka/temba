@@ -17,9 +17,7 @@ from ...views import ClaimViewMixin
 class ClaimView(ClaimViewMixin, SmartFormView):
     class TwilioMessagingServiceForm(ClaimViewMixin.Form):
         country = forms.ChoiceField(choices=COUNTRY_CHOICES, widget=SelectWidget(attrs={"searchable": True}))
-        messaging_service_sid = forms.CharField(
-            label=_("Messaging Service SID"), help_text=_("The Twilio Messaging Service SID")
-        )
+        messaging_service_sid = forms.CharField(label=_("Messaging Service SID"))
 
     form_class = TwilioMessagingServiceForm
 
@@ -100,7 +98,7 @@ class UpdateForm(TwilioUpdateForm):
             forms.BooleanField(
                 label=_("Twilio Link Shortening"),
                 required=False,
-                help_text=_("Whether the Twilio Link shortening is enabled on the channel"),
+                help_text=_("Shortens links in messages using Twilio."),
             ),
             default=False,
         )

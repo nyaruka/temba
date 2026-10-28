@@ -11,14 +11,12 @@ class ClaimView(AuthenticatedExternalClaimView):
             max_length=14,
             min_length=1,
             label=_("Number"),
-            help_text=_("The short code you have been assigned by Globe Labs ex: 15543"),
+            help_text=_("The short code assigned by Globe Labs, e.g. 15543."),
         )
-        app_id = forms.CharField(label=_("Application Id"), help_text=_("The id of your Globe Labs application"))
-        app_secret = forms.CharField(
-            label=_("Application Secret"), help_text=_("The secret assigned to your Globe Labs application")
-        )
+        app_id = forms.CharField(label=_("Application Id"))
+        app_secret = forms.CharField(label=_("Application Secret"))
         passphrase = forms.CharField(
-            label=_("Passphrase"), help_text=_("The passphrase assigned to you by Globe Labs to support sending")
+            label=_("Passphrase"), help_text=_("Assigned by Globe Labs and required for sending.")
         )
 
     form_class = GlobeClaimForm

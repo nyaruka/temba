@@ -16,15 +16,13 @@ class ClaimView(ClaimViewMixin, SmartFormView):
             max_length=14,
             min_length=1,
             label=_("Number"),
-            help_text=_(
-                "The Click Mobile phone number or short code you are connecting with country code. ex: +250788123124"
-            ),
+            help_text=_("A phone number with country code or a short code, e.g. +250788123124 or 15543."),
         )
         country = forms.ChoiceField(choices=(("GH", _("Ghana")), ("MW", _("Malawi"))), label=_("Country"))
-        username = forms.CharField(max_length=32, label=_("User ID"), help_text=_("Your user_id on Click Mobile"))
-        password = forms.CharField(max_length=64, label=_("Password"), help_text=_("Your password on Click Mobile"))
-        app_id = forms.CharField(max_length=32, label=_("App ID"), help_text=_("Your app_id on Click Mobile"))
-        org_id = forms.CharField(max_length=32, label=_("Org ID"), help_text=_("Your org_id on Click Mobile"))
+        username = forms.CharField(max_length=32, label=_("User ID"))
+        password = forms.CharField(max_length=64, label=_("Password"))
+        app_id = forms.CharField(max_length=32, label=_("App ID"))
+        org_id = forms.CharField(max_length=32, label=_("Org ID"))
 
         def clean_number(self):
             number = self.data["number"]

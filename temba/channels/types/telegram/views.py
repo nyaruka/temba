@@ -11,9 +11,7 @@ from ...views import ClaimViewMixin
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
-        auth_token = forms.CharField(
-            label=_("Authentication Token"), help_text=_("The Authentication token for your Telegram Bot")
-        )
+        auth_token = forms.CharField(label=_("Authentication Token"))
 
         def clean_auth_token(self):
             org = self.request.org

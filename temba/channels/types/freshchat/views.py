@@ -9,23 +9,20 @@ from ...views import ClaimViewMixin
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
-        title = forms.CharField(
-            max_length=64,
-            required=True,
-            label=_("FreshChat Environment Title"),
-            help_text=_("The name of your environment"),
-        )
+        title = forms.CharField(max_length=64, required=True, label=_("FreshChat Environment Title"))
 
         webhook_key = forms.CharField(
             required=True,
             label=_("FreshChat Webhook Public Key"),
-            help_text=_("Webhook Public Key used to verify signatures"),
+            help_text=_("Used to verify webhook signatures."),
         )
         address = forms.CharField(
-            required=True, label=_("FreshChat Agent ID"), help_text=_("The UUID of the Agent you want RP to Use.")
+            required=True, label=_("FreshChat Agent ID"), help_text=_("The UUID of the agent to send messages as.")
         )
         auth_token = forms.CharField(
-            required=True, label=_("FreshChat API Auth Token"), help_text=_("The API auth token- leave out the bearer")
+            required=True,
+            label=_("FreshChat API Auth Token"),
+            help_text=_("The token alone, without the Bearer prefix."),
         )
 
     form_class = Form

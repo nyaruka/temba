@@ -6,9 +6,9 @@ from ...views import AuthenticatedExternalClaimView
 
 class ClaimView(AuthenticatedExternalClaimView):
     class Form(AuthenticatedExternalClaimView.Form):
-        channel_hash = forms.CharField(max_length=42, help_text=_("The hash of your i2SMS channel"))
-        username = forms.CharField(label=_("Username"), help_text=_("Your i2SMS username"))
-        password = forms.CharField(label=_("Password"), help_text=_("Your i2SMS password"))
+        channel_hash = forms.CharField(max_length=42)
+        username = forms.CharField(label=_("Username"))
+        password = forms.CharField(label=_("Password"))
 
     form_class = Form
 

@@ -62,9 +62,7 @@ class ClickSendType(ChannelType):
     claim_view = AuthenticatedExternalClaimView
     claim_view_kwargs = {
         "username_label": _("API Username"),
-        "username_help": _("Your API Username"),
         "password_label": _("API Password"),
-        "password_help": _("Your API Password"),
         "form_blurb": _("You can connect your ClickSend number by entering the settings below."),
     }
     claim_blurb = _("If you have a %(link)s number, you can quickly connect it using their APIs.") % {

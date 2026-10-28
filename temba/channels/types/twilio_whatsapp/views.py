@@ -20,7 +20,7 @@ from ...views import ALL_COUNTRIES, BaseClaimNumberMixin, ClaimViewMixin
 class ClaimView(BaseClaimNumberMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
         country = forms.ChoiceField(choices=ALL_COUNTRIES, widget=SelectWidget(attrs={"searchable": True}))
-        phone_number = forms.CharField(help_text=_("The phone number being added"))
+        phone_number = forms.CharField()
 
         def clean_phone_number(self):
             phone = self.cleaned_data["phone_number"]

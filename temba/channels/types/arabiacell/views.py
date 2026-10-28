@@ -12,18 +12,13 @@ from temba.utils.fields import SelectWidget
 class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
         country = forms.ChoiceField(
-            choices=ALL_COUNTRIES,
-            widget=SelectWidget(attrs={"searchable": True}),
-            label=_("Country"),
-            help_text=_("The country this channel will be used in"),
+            choices=ALL_COUNTRIES, widget=SelectWidget(attrs={"searchable": True}), label=_("Country")
         )
-        shortcode = forms.CharField(label=_("Short Code"), help_text=_("The short code you are connecting"))
-        service_id = forms.CharField(label=_("Service ID"), help_text=_("The service ID as provided by ArabiaCell"))
-        charging_level = forms.ChoiceField(
-            choices=(("0", _("Free")), ("1", _("Billed"))), help_text=_("The charging level for your account")
-        )
-        username = forms.CharField(label=_("Username"), help_text=_("The username for your API account"))
-        password = forms.CharField(label=_("Password"), help_text=_("The password for your API account"))
+        shortcode = forms.CharField(label=_("Short Code"))
+        service_id = forms.CharField(label=_("Service ID"))
+        charging_level = forms.ChoiceField(choices=(("0", _("Free")), ("1", _("Billed"))))
+        username = forms.CharField(label=_("Username"))
+        password = forms.CharField(label=_("Password"))
 
     form_class = Form
 
