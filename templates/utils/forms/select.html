@@ -15,16 +15,14 @@
   {% endif %}
   {% for group_name, group_choices, group_index in widget.optgroups %}
     {% for option in group_choices %}
-      {% if option.label != "---------" %}
-        <temba-option
-          {% for name, value in option.attrs.items %}{% if value is not False %} {{ name }}{% if value is not True %}="{{ value|stringformat:'s' }}"{% endif %} {% endif %} {% endfor %}
-          name="{{ option.label }}"
-          {% if option.icon %}icon="{{ option.icon }}"{% endif %}
-          value="{{ option.value|stringformat:'s' }}"
-          {% if option.selected %}selected{% endif %}
-        >
-        </temba-option>
-      {% endif %}
+      <temba-option
+        {% for name, value in option.attrs.items %}{% if value is not False %} {{ name }}{% if value is not True %}="{{ value|stringformat:'s' }}"{% endif %} {% endif %} {% endfor %}
+        name="{{ option.label }}"
+        {% if option.icon %}icon="{{ option.icon }}"{% endif %}
+        value="{{ option.value|stringformat:'s' }}"
+        {% if option.selected %}selected{% endif %}
+      >
+      </temba-option>
     {% endfor %}
   {% endfor %}
 </temba-select>

@@ -8,6 +8,8 @@ from uuid import uuid4
 
 from django import forms
 from django.core.validators import URLValidator
+from django.db.models.fields import BLANK_CHOICE_DASH
+from django.db.models.utils import get_blank_choice_label
 from django.forms import ValidationError
 from django.utils.dateparse import parse_datetime
 from django.utils.deconstruct import deconstructible
@@ -208,6 +210,16 @@ class SelectWidget(forms.Select):
             "template_name": self.option_template_name,
             "wrap_label": True,
         }
+
+    def optgroups(self, name, value, attrs=None):
+        # Django's default blank choice isn't a real option, but named ones (e.g. "Unassigned") are
+        blank_labels = {BLANK_CHOICE_DASH[0][1], get_blank_choice_label()}
+        groups = []
+        for group_name, options, index in super().optgroups(name, value, attrs):
+            options = [o for o in options if not (o["value"] in ("", None) and str(o["label"]) in blank_labels)]
+            if options:
+                groups.append((group_name, options, index))
+        return groups
 
     def format_value(self, value):
         def format_single(v):
