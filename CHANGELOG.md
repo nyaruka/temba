@@ -1,3 +1,12 @@
+## v26.3.166 (2026-10-28)
+ * Mark optional fields in forms and in the flow editor
+ * Mark the number search pattern as optional
+ * Use placeholders only for example values
+ * Hide Django's default blank choice in select widgets however it's labelled
+ * Label the result name field on resthook and airtime nodes
+ * Make the flow editor's media field label match other field labels
+ * Record an audit entry when a channel's TPS is changed
+
 ## v26.3.165 (2026-10-28)
  * Simplify form and channel form help texts and make them consistent, including the flow editor
  * Add real labels to Twilio, Plivo and Vonage connect fields
