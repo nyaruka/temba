@@ -14,7 +14,6 @@ export const wait_for_audio: NodeConfig = {
       label: 'Result Name',
       required: false,
       maxLength: 64,
-      placeholder: '(optional)',
       helpText: 'Used to reference this result elsewhere in the flow.'
     }
   },

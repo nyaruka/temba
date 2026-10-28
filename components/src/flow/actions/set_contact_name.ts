@@ -21,6 +21,7 @@ export const set_contact_name: ActionConfig = {
     name: {
       type: 'text',
       label: 'Name',
+      required: false,
       placeholder: 'Enter contact name...',
       evaluated: true,
       maxLength: 1000,

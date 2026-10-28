@@ -27,7 +27,7 @@ export const split_by_ticket: NodeConfig = {
       type: 'select',
       label: 'Assignee',
       required: false,
-      placeholder: 'Select an agent (optional)',
+      placeholder: 'Select an agent',
       endpoint: '/api/v2/users.json',
       valueKey: 'uuid',
       getName: (item: {
@@ -44,7 +44,7 @@ export const split_by_ticket: NodeConfig = {
       label: 'Note',
       required: false,
       evaluated: true,
-      placeholder: 'Enter a note for the ticket (optional)',
+      placeholder: 'Enter a note for the ticket',
       maxLength: 10000,
       minHeight: 100
     }

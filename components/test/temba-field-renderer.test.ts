@@ -125,6 +125,65 @@ describe('FieldRenderer', () => {
     });
   });
 
+  describe('optional marker', () => {
+    const renderLabel = async (
+      config: TextFieldConfig,
+      markOptional: boolean
+    ): Promise<HTMLElement> => {
+      const template = FieldRenderer.renderField('name', config, '', {
+        errors: [],
+        showLabel: true,
+        markOptional,
+        onChange: () => {}
+      });
+      const container = await fixture(html`<div>${template}</div>`);
+      const input = container.querySelector('temba-textinput') as any;
+      await input.updateComplete;
+      return input.shadowRoot.querySelector('label');
+    };
+
+    it('marks fields that are explicitly not required', async () => {
+      const label = await renderLabel(
+        { type: 'text', label: 'Category', required: false },
+        true
+      );
+      expect(label.querySelector('.optional').textContent).to.equal('Optional');
+
+      const container = await fixture(
+        html`<div style="width: 400px; padding: 20px;">
+          ${FieldRenderer.renderField(
+            'name',
+            { type: 'text', label: 'Category', required: false },
+            '',
+            { errors: [], showLabel: true, markOptional: true }
+          )}
+        </div>`
+      );
+      await assertScreenshot(
+        'field-renderer/text-optional',
+        getClip(container as HTMLElement)
+      );
+    });
+
+    it('does not mark fields with required unset or true', async () => {
+      for (const required of [undefined, true]) {
+        const label = await renderLabel(
+          { type: 'text', label: 'Name', required },
+          true
+        );
+        expect(label.querySelector('.optional')).to.be.null;
+      }
+    });
+
+    it('does not mark fields unless asked to', async () => {
+      const label = await renderLabel(
+        { type: 'text', label: 'Category', required: false },
+        false
+      );
+      expect(label.querySelector('.optional')).to.be.null;
+    });
+  });
+
   describe('textarea fields', () => {
     it('should render textarea with label', async () => {
       const config: TextareaFieldConfig = {

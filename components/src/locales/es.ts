@@ -319,6 +319,7 @@
 'sc8e2c91325d8ad73': `Buscar mensajes`,
 'sca4fb8fafd9b52e5': `Verificado`,
 'sca6e637a4400a738': `Los datos de diseño de este flujo no coinciden con sus nodos. Es posible que se haya dañado durante una exportación o migración. Vuelva a exportar el flujo desde el espacio de trabajo original e intente importarlo de nuevo.`,
+'scc7a3682dd25ae19': `Opcional`,
 'scd576e61f93828d0': `Buscar tickets`,
 'scdda9a7e65a1f21e': `Todos los montos deben ser números positivos válidos`,
 'sce15a6ce2f2e0ffa': `Sin mensajes`,
