@@ -10,10 +10,10 @@ from ...views import ClaimViewMixin
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
-        shortcode = forms.IntegerField(help_text=_("Your short code on DMark Mobile"))
+        shortcode = forms.IntegerField()
         country = forms.ChoiceField(choices=(("UG", _("Uganda")), ("CD", _("DRC"))))
-        username = forms.CharField(max_length=32, help_text=_("Your username on DMark Mobile"))
-        password = forms.CharField(max_length=64, help_text=_("Your password on DMark Mobile"))
+        username = forms.CharField(max_length=32)
+        password = forms.CharField(max_length=64)
 
         def clean(self):
             try:

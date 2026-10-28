@@ -11,10 +11,10 @@ from ...views import ALL_COUNTRIES, ClaimViewMixin
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
-        number = forms.CharField(help_text=_("Your enterprise WhatsApp number"))
-        country = forms.ChoiceField(choices=ALL_COUNTRIES, help_text=_("The country this phone number is used in"))
-        account_sid = forms.CharField(label=_("Account SID"), help_text=_("Your Kaleyra Account SID"))
-        api_key = forms.CharField(label=_("API Key"), help_text=_("Your Kaleyra API Key"))
+        number = forms.CharField()
+        country = forms.ChoiceField(choices=ALL_COUNTRIES)
+        account_sid = forms.CharField(label=_("Account SID"))
+        api_key = forms.CharField(label=_("API Key"))
 
         def clean_number(self):
             # check that our phone number looks sane

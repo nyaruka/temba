@@ -12,46 +12,31 @@ from ...views import ALL_COUNTRIES, ClaimViewMixin
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class KannelClaimForm(ClaimViewMixin.Form):
-        number = forms.CharField(
-            max_length=14,
-            min_length=1,
-            label=_("Number"),
-            help_text=_("The phone number or short code you are connecting"),
-        )
+        number = forms.CharField(max_length=14, min_length=1, label=_("Number"))
         country = forms.ChoiceField(
-            choices=ALL_COUNTRIES,
-            widget=SelectWidget(attrs={"searchable": True}),
-            label=_("Country"),
-            help_text=_("The country this phone number is used in"),
+            choices=ALL_COUNTRIES, widget=SelectWidget(attrs={"searchable": True}), label=_("Country")
         )
         url = ExternalURLField(
             max_length=1024,
             label=_("Send URL"),
-            help_text=_(
-                "The publicly accessible URL for your Kannel instance for sending. "
-                "ex: https://kannel.macklemore.co/cgi-bin/sendsms"
-            ),
+            help_text=_("Must be publicly accessible, e.g. https://kannel.example.com/cgi-bin/sendsms."),
         )
         username = forms.CharField(
             max_length=64,
             required=False,
-            help_text=_("The username to use to authenticate to Kannel, if left blank we will generate one for you"),
+            help_text=_("Generated automatically if left blank."),
         )
         password = forms.CharField(
             max_length=64,
             required=False,
-            help_text=_("The password to use to authenticate to Kannel, if left blank we will generate one for you"),
+            help_text=_("Generated automatically if left blank."),
         )
-        encoding = forms.ChoiceField(
-            choices=Channel.ENCODING_CHOICES,
-            label=_("Encoding"),
-            help_text=_("What encoding to use for outgoing messages"),
-        )
+        encoding = forms.ChoiceField(choices=Channel.ENCODING_CHOICES, label=_("Encoding"))
         use_national = forms.BooleanField(
             initial=False,
             required=False,
             label=_("Use National Numbers"),
-            help_text=_("Use only the national number (no country code) when sending (not recommended)"),
+            help_text=_("Sends to numbers without their country code, which isn't recommended."),
         )
 
     form_class = KannelClaimForm

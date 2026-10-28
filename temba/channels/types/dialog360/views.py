@@ -12,14 +12,10 @@ from ...views import ALL_COUNTRIES, ClaimViewMixin, UpdateChannelForm
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
-        address = forms.CharField(help_text=_("Your enterprise WhatsApp number"), label=_("Number"))
-        country = forms.ChoiceField(
-            choices=ALL_COUNTRIES, label=_("Country"), help_text=_("The country this phone number is used in")
-        )
+        address = forms.CharField(label=_("Number"))
+        country = forms.ChoiceField(choices=ALL_COUNTRIES, label=_("Country"))
 
-        api_key = forms.CharField(
-            max_length=256, help_text=_("The 360 Dialog API key generated after account registration")
-        )
+        api_key = forms.CharField(max_length=256, help_text=_("Generated after registering your 360dialog account."))
 
         def clean(self):
             # first check that our phone number looks sane
@@ -61,7 +57,7 @@ class UpdateForm(UpdateChannelForm):
             forms.CharField(
                 max_length=256,
                 label=_("API Key"),
-                help_text=_("The 360 Dialog API key generated after account registration"),
+                help_text=_("Generated after registering your 360dialog account."),
                 widget=InputWidget(),
             ),
             default="",

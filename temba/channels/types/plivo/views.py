@@ -47,7 +47,7 @@ CALLING_CODES = countries.calling_codes(SUPPORTED_COUNTRIES)
 class ClaimView(BaseClaimNumberMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
         country = forms.ChoiceField(choices=COUNTRY_CHOICES, widget=SelectWidget(attrs={"searchable": True}))
-        phone_number = forms.CharField(help_text=_("The phone number being added"))
+        phone_number = forms.CharField()
 
         def clean_phone_number(self):
             if not self.cleaned_data.get("country", None):  # pragma: needs cover
@@ -221,8 +221,8 @@ class SearchView(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
 
 class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
     class PlivoConnectForm(forms.Form):
-        auth_id = forms.CharField(help_text=_("Your Plivo auth ID"))
-        auth_token = forms.CharField(help_text=_("Your Plivo auth token"))
+        auth_id = forms.CharField()
+        auth_token = forms.CharField()
 
         def clean(self):
             super().clean()

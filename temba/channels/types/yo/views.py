@@ -10,19 +10,16 @@ from temba.utils.fields import SelectWidget
 class ClaimView(AuthenticatedExternalClaimView):
     class YoClaimForm(ClaimViewMixin.Form):
         country = forms.ChoiceField(
-            choices=ALL_COUNTRIES,
-            widget=SelectWidget(attrs={"searchable": True}),
-            label=_("Country"),
-            help_text=_("The country this phone number is used in"),
+            choices=ALL_COUNTRIES, widget=SelectWidget(attrs={"searchable": True}), label=_("Country")
         )
         number = forms.CharField(
             max_length=14,
             min_length=1,
             label=_("Number"),
-            help_text=_("The phone number or short code you are connecting with country code. ex: +250788123124"),
+            help_text=_("A phone number with country code or a short code, e.g. +250788123124 or 15543."),
         )
-        username = forms.CharField(label=_("Account Number"), help_text=_("Your Yo! account YBS account number"))
-        password = forms.CharField(label=_("Gateway Password"), help_text=_("Your Yo! SMS Gateway password"))
+        username = forms.CharField(label=_("Account Number"))
+        password = forms.CharField(label=_("Gateway Password"))
 
         def clean_number(self):
             number = self.data["number"]

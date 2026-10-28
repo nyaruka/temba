@@ -11,21 +11,13 @@ from ...views import ALL_COUNTRIES, ClaimViewMixin
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
-        number = forms.CharField(
-            max_length=14,
-            min_length=1,
-            label=_("Number"),
-            help_text=_("The phone number or short code you are connecting"),
-        )
+        number = forms.CharField(max_length=14, min_length=1, label=_("Number"))
         country = forms.ChoiceField(
-            choices=ALL_COUNTRIES,
-            widget=SelectWidget(attrs={"searchable": True}),
-            label=_("Country"),
-            help_text=_("The country this phone number is used in"),
+            choices=ALL_COUNTRIES, widget=SelectWidget(attrs={"searchable": True}), label=_("Country")
         )
-        consumer_key = forms.CharField(required=True, help_text=_("The Consumer key"))
-        consumer_secret = forms.CharField(required=True, help_text=_("The Consumer secret"))
-        cp_address = forms.CharField(required=False, help_text=_("The CP Address (if provided by MTN)"))
+        consumer_key = forms.CharField(required=True)
+        consumer_secret = forms.CharField(required=True)
+        cp_address = forms.CharField(required=False, help_text=_("Only needed if MTN provided one."))
 
     form_class = Form
 

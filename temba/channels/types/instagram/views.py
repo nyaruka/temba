@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
-        user_access_token = forms.CharField(min_length=32, required=True, help_text=_("The User Access Token"))
-        page_name = forms.CharField(required=True, help_text=_("The name of the Facebook page"))
-        page_id = forms.IntegerField(required=True, help_text=_("The Facebook Page ID"))
+        user_access_token = forms.CharField(min_length=32, required=True)
+        page_name = forms.CharField(required=True)
+        page_id = forms.IntegerField(required=True)
 
         def clean(self):
             try:
@@ -169,10 +169,10 @@ class ClaimView(ClaimViewMixin, SmartFormView):
 
 class RefreshToken(ChannelTypeMixin, OrgObjPermsMixin, SmartModelActionView, SmartFormView):
     class Form(forms.Form):
-        user_access_token = forms.CharField(min_length=32, required=True, help_text=_("The User Access Token"))
+        user_access_token = forms.CharField(min_length=32, required=True)
         fb_user_id = forms.CharField(
             required=True,
-            help_text=_("The Facebook User ID of the admin that connected the channel"),
+            help_text=_("The Facebook user ID of the admin who connected the channel."),
         )
 
     slug_url_kwarg = "uuid"

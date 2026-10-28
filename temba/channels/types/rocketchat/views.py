@@ -35,16 +35,11 @@ class ClaimView(ClaimViewMixin, SmartFormView):
                     "placeholder": _("Ex.: https://my.rocket.chat/api/apps/public/51c5cebe-b8e4-48ae-89d3-2b7746019cc4")
                 }
             ),
-            help_text=_("URL of the Rocket.Chat Channel app"),
         )
-        bot_username = forms.CharField(label=_("Bot Username"), help_text=_("Username of your bot user"))
-        admin_user_id = forms.CharField(label=_("Admin User ID"), help_text=_("User ID of an administrator user"))
-        admin_auth_token = forms.CharField(
-            label=_("Admin Auth Token"), help_text=_("Authentication token of an administrator user")
-        )
-        secret = forms.CharField(
-            label=_("Secret"), widget=forms.HiddenInput(), help_text=_("Secret to be passed to Rocket.Chat")
-        )
+        bot_username = forms.CharField(label=_("Bot Username"))
+        admin_user_id = forms.CharField(label=_("Admin User ID"))
+        admin_auth_token = forms.CharField(label=_("Admin Auth Token"))
+        secret = forms.CharField(label=_("Secret"), widget=forms.HiddenInput())
 
         def clean(self):
             secret = self.cleaned_data.get("secret")

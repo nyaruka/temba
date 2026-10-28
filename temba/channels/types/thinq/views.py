@@ -10,11 +10,11 @@ from ...views import ClaimViewMixin
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
-        account_id = forms.IntegerField(help_text=_("Your ThinQ account id"))
-        number = forms.CharField(min_length=10, help_text=_("The ThinQ number you want to connect"))
+        account_id = forms.IntegerField()
+        number = forms.CharField(min_length=10)
         country = forms.ChoiceField(choices=(("US", _("United States")),))
-        token_user = forms.CharField(help_text=_("The user name for you API token"))
-        token = forms.CharField(help_text=_("Your API token"))
+        token_user = forms.CharField(help_text=_("The username for your API token."))
+        token = forms.CharField()
 
         def clean_number(self):
             number = self.data["number"]

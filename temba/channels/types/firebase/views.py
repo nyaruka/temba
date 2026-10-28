@@ -15,13 +15,13 @@ class ClaimView(ClaimViewMixin, SmartFormView):
 
         authentication_json = forms.JSONField(
             widget=InputWidget({"textarea": True}),
-            help_text=_("Copy the FCM authentication JSON file content to this field"),
+            help_text=_("The content of your FCM authentication JSON file."),
             initial={},
         )
         send_notification = forms.CharField(
             label=_("Send notification"),
             required=False,
-            help_text=_("Check if you want this channel to send notifications to contacts."),
+            help_text=_("Sends notifications to contacts."),
             widget=forms.CheckboxInput(),
         )
 

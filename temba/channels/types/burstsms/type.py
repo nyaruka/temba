@@ -37,9 +37,9 @@ class BurstSMSType(ChannelType):
     claim_view = AuthenticatedExternalClaimView
     claim_view_kwargs = {
         "username_label": _("API Key"),
-        "username_help": _("The API key as found on your settings page"),
+        "username_help": _("Found on your BurstSMS settings page."),
         "password_label": _("API Secret"),
-        "password_help": _("The API secret as found on your settings page"),
+        "password_help": _("Found on your BurstSMS settings page."),
         "form_blurb": _("You can connect your BurstSMS number by entering the settings below."),
     }
 

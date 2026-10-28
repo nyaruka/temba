@@ -9,12 +9,10 @@ from ...views import ClaimViewMixin
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
-        address = forms.CharField(
-            label=_("Channel ID"), required=True, help_text=_("Channel ID of the LINE channel for the bot.")
-        )
-        name = forms.CharField(label=_("Name"), max_length=64, required=True, help_text=_("Name of the bot."))
-        access_token = forms.CharField(label=_("Access Token"), required=True, help_text=_("Access token of the bot."))
-        secret = forms.CharField(label=_("Secret"), required=True, help_text=_("Secret of the bot."))
+        address = forms.CharField(label=_("Channel ID"), required=True)
+        name = forms.CharField(label=_("Name"), max_length=64, required=True)
+        access_token = forms.CharField(label=_("Access Token"), required=True)
+        secret = forms.CharField(label=_("Secret"), required=True)
 
     form_class = Form
 

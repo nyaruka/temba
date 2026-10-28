@@ -10,28 +10,16 @@ from temba.utils.fields import ExternalURLField, SelectWidget
 class ClaimView(AuthenticatedExternalCallbackClaimView):
     class JasminForm(ClaimViewMixin.Form):
         country = forms.ChoiceField(
-            choices=ALL_COUNTRIES,
-            widget=SelectWidget(attrs={"searchable": True}),
-            label=_("Country"),
-            help_text=_("The country this phone number is used in"),
+            choices=ALL_COUNTRIES, widget=SelectWidget(attrs={"searchable": True}), label=_("Country")
         )
-        number = forms.CharField(
-            max_length=14,
-            min_length=3,
-            label=_("Number"),
-            help_text=_("The short code or phone number you are connecting."),
-        )
+        number = forms.CharField(max_length=14, min_length=3, label=_("Number"))
         url = ExternalURLField(
             widget=forms.URLInput(attrs={"placeholder": _("Ex: https://jasmin.gateway.io/send")}),
             label=_("URL"),
-            help_text=_("The URL for the Jasmin server send path"),
+            help_text=_("The send path of your Jasmin server."),
         )
-        username = forms.CharField(
-            label=_("Username"), help_text=_("The username to be used to authenticate to Jasmin")
-        )
-        password = forms.CharField(
-            label=_("Password"), help_text=_("The password to be used to authenticate to Jasmin")
-        )
+        username = forms.CharField(label=_("Username"))
+        password = forms.CharField(label=_("Password"))
 
         def clean_number(self):
             number = self.data["number"]

@@ -11,7 +11,7 @@ from ...views import ClaimViewMixin
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
-        shortcode = forms.CharField(max_length=6, min_length=1, help_text=_("Your short code on Africa's Talking"))
+        shortcode = forms.CharField(max_length=6, min_length=1)
         country = forms.ChoiceField(
             choices=(
                 ("BJ", ("Benin")),
@@ -39,10 +39,12 @@ class ClaimView(ClaimViewMixin, SmartFormView):
             widget=SelectWidget(attrs={"searchable": True}),
         )
         is_shared = forms.BooleanField(
-            initial=False, required=False, help_text=_("Whether this short code is shared with others")
+            initial=False,
+            required=False,
+            help_text=_("Marks the short code as shared with other Africa's Talking accounts."),
         )
-        username = forms.CharField(max_length=32, help_text=_("Your username on Africa's Talking"))
-        api_key = forms.CharField(max_length=128, help_text=_("Your API key on Africa's Talking account"))
+        username = forms.CharField(max_length=32)
+        api_key = forms.CharField(max_length=128)
 
     form_class = Form
 
