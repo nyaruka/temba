@@ -15,6 +15,7 @@ import {
 } from '../flow/types';
 import { Attachment } from '../interfaces';
 import { DEFAULT_MEDIA_ENDPOINT } from '../utils';
+import { fieldLabelStyle, fieldOptionalStyle } from './FieldElement';
 
 /**
  * FieldRenderer provides a consistent way to render field configurations
@@ -467,11 +468,9 @@ export class FieldRenderer {
     return html`
       <div>
         ${showLabel && config.label
-          ? html`<label
-              style="margin-bottom: 5px; margin-left: 4px; display: block; font-weight: 400; font-size: var(--label-size); letter-spacing: 0.05em; line-height: normal; color: var(--color-label, #777);"
+          ? html`<label style="${fieldLabelStyle}"
               >${config.label}${FieldRenderer.isOptional(config, context)
-                ? html`<span
-                    style="margin-left: 6px; color: var(--color-text-help);"
+                ? html`<span style="${fieldOptionalStyle}"
                     >${msg('Optional')}</span
                   >`
                 : ''}</label
