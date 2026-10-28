@@ -43,3 +43,18 @@
     {% endif %}
   </div>
 </div>
+<div class="mt-4 card">
+  <div class="subtitle">{% trans "Email" %}</div>
+  <div class="mt-2">
+    {% if channel.config.mailgun_domain %}
+      {% blocktrans trimmed %}
+        Emails to contacts are sent through the following Mailgun domain. This can be changed in the channel settings.
+      {% endblocktrans %}
+      <div class="code inline-block mt-2">{{ channel.config.mailgun_domain }}</div>
+    {% else %}
+      {% blocktrans trimmed %}
+        Emails can't be sent to contacts until a Mailgun domain is set in the channel settings.
+      {% endblocktrans %}
+    {% endif %}
+  </div>
+</div>

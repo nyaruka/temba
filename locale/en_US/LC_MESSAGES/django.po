@@ -600,14 +600,50 @@ msgstr ""
 msgid "Chat with visitors on your website via an embedded chat widget."
 msgstr ""
 
+msgid "US"
+msgstr ""
+
+msgid "EU"
+msgstr ""
+
 msgid "Allowed Domains"
 msgstr ""
 
 msgid "The domains of the websites that can embed this channel's chat widget, one per line or comma separated, e.g. example.com or example.com:8080. If empty, any website can embed it."
 msgstr ""
 
+msgid "Email From Address"
+msgstr ""
+
+msgid "e.g. support@example.com"
+msgstr ""
+
+msgid "Mailgun Domain"
+msgstr ""
+
+msgid "If empty, emails aren't sent to contacts."
+msgstr ""
+
+msgid "Mailgun Region"
+msgstr ""
+
+msgid "The region of the Mailgun account that the domain belongs to."
+msgstr ""
+
+msgid "Mailgun API Key"
+msgstr ""
+
+msgid "A sending API key for the domain, kept unchanged if left empty."
+msgstr ""
+
 #, python-format
 msgid "%(domain)s is not a valid domain. Enter domains without schemes or paths, e.g. example.com."
+msgstr ""
+
+msgid "Enter a domain without a scheme, path or port, e.g. mg.example.com."
+msgstr ""
+
+msgid "Required to send emails."
 msgstr ""
 
 #, python-format
@@ -4571,6 +4607,15 @@ msgstr ""
 msgid "Currently any website can embed this channel's chat widget. Setting allowed domains in the channel settings stops other websites from embedding it."
 msgstr ""
 
+msgid "Email"
+msgstr ""
+
+msgid "Emails to contacts are sent through the following Mailgun domain. This can be changed in the channel settings."
+msgstr ""
+
+msgid "Emails can't be sent to contacts until a Mailgun domain is set in the channel settings."
+msgstr ""
+
 msgid "To connect a <a href=\"https://clickatell.com\">Clickatell</a> number, first create an HTTP integration for a two way number, then enter the number and API key below."
 msgstr ""
 
@@ -5957,9 +6002,6 @@ msgstr ""
 
 #, python-format
 msgid "These are pending invitations to join your workspace. Invitations expire after %(days)s days."
-msgstr ""
-
-msgid "Email"
 msgstr ""
 
 msgid "Sent On"

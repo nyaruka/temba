@@ -614,15 +614,51 @@ msgstr "BurstSMS doit appeler cette URL lorsque des réponses sont données aux 
 msgid "Chat with visitors on your website via an embedded chat widget."
 msgstr "Discutez avec les visiteurs de votre site web via un widget de chat intégré."
 
+msgid "US"
+msgstr "États-Unis"
+
+msgid "EU"
+msgstr "UE"
+
 msgid "Allowed Domains"
 msgstr "Domaines autorisés"
 
 msgid "The domains of the websites that can embed this channel's chat widget, one per line or comma separated, e.g. example.com or example.com:8080. If empty, any website can embed it."
 msgstr "Les domaines des sites web qui peuvent intégrer le widget de chat de ce canal, un par ligne ou séparés par des virgules, par ex. example.com ou example.com:8080. Si vide, n'importe quel site web peut l'intégrer."
 
+msgid "Email From Address"
+msgstr "Adresse d'expédition des e-mails"
+
+msgid "e.g. support@example.com"
+msgstr "par ex. support@example.com"
+
+msgid "Mailgun Domain"
+msgstr "Domaine Mailgun"
+
+msgid "If empty, emails aren't sent to contacts."
+msgstr "S'il est vide, aucun e-mail n'est envoyé aux contacts."
+
+msgid "Mailgun Region"
+msgstr "Région Mailgun"
+
+msgid "The region of the Mailgun account that the domain belongs to."
+msgstr "La région du compte Mailgun auquel appartient le domaine."
+
+msgid "Mailgun API Key"
+msgstr "Clé d'API Mailgun"
+
+msgid "A sending API key for the domain, kept unchanged if left empty."
+msgstr "Une clé d'API d'envoi pour le domaine, conservée si le champ est laissé vide."
+
 #, python-format
 msgid "%(domain)s is not a valid domain. Enter domains without schemes or paths, e.g. example.com."
 msgstr "%(domain)s n'est pas un domaine valide. Saisissez des domaines sans schéma ni chemin, par ex. example.com."
+
+msgid "Enter a domain without a scheme, path or port, e.g. mg.example.com."
+msgstr "Saisissez un domaine sans schéma, chemin ni port, par ex. mg.example.com."
+
+msgid "Required to send emails."
+msgstr "Requis pour envoyer des e-mails."
 
 #, python-format
 msgid "Connect your %(link)s number, we'll walk you through the steps necessary to get your Clickatell connection working in a few minutes."
@@ -4586,6 +4622,15 @@ msgstr "Seuls les sites web des domaines suivants peuvent intégrer le widget de
 msgid "Currently any website can embed this channel's chat widget. Setting allowed domains in the channel settings stops other websites from embedding it."
 msgstr "Actuellement, n'importe quel site web peut intégrer le widget de chat de ce canal. Définir des domaines autorisés dans les paramètres du canal empêche les autres sites web de l'intégrer."
 
+msgid "Email"
+msgstr "Email"
+
+msgid "Emails to contacts are sent through the following Mailgun domain. This can be changed in the channel settings."
+msgstr "Les e-mails aux contacts sont envoyés via le domaine Mailgun suivant. Cela peut être modifié dans les paramètres du canal."
+
+msgid "Emails can't be sent to contacts until a Mailgun domain is set in the channel settings."
+msgstr "Aucun e-mail ne peut être envoyé aux contacts tant qu'un domaine Mailgun n'est pas défini dans les paramètres du canal."
+
 msgid "To connect a <a href=\"https://clickatell.com\">Clickatell</a> number, first create an HTTP integration for a two way number, then enter the number and API key below."
 msgstr "Pour connecter un numéro <a href=\"https://clickatell.com\">Clickatell</a>, créez d'abord une intégration HTTP pour un numéro bidirectionnel, puis saisissez le numéro et la clé d'API ci-dessous."
 
@@ -5990,9 +6035,6 @@ msgstr "Annuler l'invitation"
 #, python-format
 msgid "These are pending invitations to join your workspace. Invitations expire after %(days)s days."
 msgstr "Voici les invitations en attente à rejoindre votre espace de travail. Les invitations expirent au bout de %(days)s jours."
-
-msgid "Email"
-msgstr "Email"
 
 msgid "Sent On"
 msgstr "Envoyé le"
