@@ -9,6 +9,9 @@ export const set_contact_name: ActionConfig = {
   group: ACTION_GROUPS.contacts,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SetContactName) => {
+    if (!action.name) {
+      return html`Clear name`;
+    }
     return renderClamped(
       html`Set to ${renderHighlightedText(action.name, true)}`,
       `Set to ${action.name}`
@@ -19,11 +22,10 @@ export const set_contact_name: ActionConfig = {
       type: 'text',
       label: 'Name',
       placeholder: 'Enter contact name...',
-      required: true,
       evaluated: true,
       maxLength: 1000,
       helpText:
-        'The new name for the contact. You can use expressions like @contact.name'
+        'Clears it when empty, and can include expressions, e.g. `@input.text`.'
     }
   },
   sanitize: (formData: FormData): void => {

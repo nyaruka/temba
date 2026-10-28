@@ -317,7 +317,7 @@ export const casesToFormRules = (node: any) => {
  */
 export const createRulesArrayConfig = (
   operatorOptions: any[],
-  helpText: string = 'Define rules to categorize responses'
+  helpText: string = 'Responses are categorized by the first rule they match.'
 ) => ({
   type: 'array' as const,
   helpText,

@@ -20,7 +20,7 @@ export const split_by_subflow: NodeConfig = {
       searchable: true,
       placeholder: 'Select a flow...',
       helpText:
-        'Once the subflow is complete or expires, the contact will return here',
+        'The contact returns here once the subflow completes or expires.',
       endpoint: '/api/v2/flows.json?archived=false',
       valueKey: 'uuid',
       nameKey: 'name',

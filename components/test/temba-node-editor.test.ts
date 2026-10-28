@@ -922,7 +922,7 @@ describe('temba-node-editor', () => {
         .closest('.inline-field')
         .getAttribute('title')
     ).to.equal(
-      'Only enable if you plan to use @results.color.category_localized'
+      'Only needed when expressions use @results.color.category_localized.'
     );
 
     await assertDialogScreenshot(el, 'editor/wait-require-translations');

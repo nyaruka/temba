@@ -24,8 +24,7 @@ export const set_contact_channel: ActionConfig = {
       endpoint: '/api/v2/channels.json',
       valueKey: 'uuid',
       nameKey: 'name',
-      placeholder: 'Select channel',
-      helpText: 'Select the channel to set for the contact'
+      placeholder: 'Select channel'
     }
   },
   toFormData: (action: SetContactChannel) => {

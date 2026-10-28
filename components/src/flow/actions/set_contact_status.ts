@@ -45,8 +45,7 @@ export const set_contact_status: ActionConfig = {
         { value: 'archived', name: 'Archived' },
         { value: 'stopped', name: 'Stopped' },
         { value: 'blocked', name: 'Blocked' }
-      ],
-      helpText: 'Select the status to set for the contact'
+      ]
     }
   }
 };

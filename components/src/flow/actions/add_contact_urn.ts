@@ -53,7 +53,6 @@ export const add_contact_urn: ActionConfig = {
     scheme: {
       type: 'select',
       label: 'URN Type',
-      helpText: 'Select the type of URN to add to the contact',
       required: true,
       searchable: false,
       multi: false,
@@ -65,7 +64,7 @@ export const add_contact_urn: ActionConfig = {
     path: {
       type: 'text',
       label: 'URN Value',
-      helpText: 'Enter the URN value (e.g., phone number, Facebook ID, etc.)',
+      helpText: 'e.g. a phone number or Facebook ID',
       required: true,
       maxLength: 1000,
       placeholder: 'Enter the URN value...',

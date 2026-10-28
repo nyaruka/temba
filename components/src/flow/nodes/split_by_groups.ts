@@ -20,8 +20,7 @@ export const split_by_groups: NodeConfig = {
     groups: {
       type: 'select',
       label: 'Groups',
-      helpText:
-        'Select the groups to split contacts by. Contacts will be routed based on their group membership.',
+      helpText: 'Routes contacts to the first of these groups they belong to.',
       required: true,
       options: [],
       multi: true,

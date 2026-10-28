@@ -34,7 +34,7 @@ export const set_contact_field: ActionConfig = {
       nameKey: 'name',
       valueKey: 'key',
       endpoint: '/api/v2/fields.json',
-      helpText: 'Select the contact field to update',
+      helpText: 'Typing a new name creates a new field.',
       allowCreate: true,
       createArbitraryOption: (input: string) => ({
         key: input,
@@ -49,7 +49,7 @@ export const set_contact_field: ActionConfig = {
       evaluated: true,
       maxLength: 10000,
       helpText:
-        'The new value for the contact field. You can use expressions like @contact.name'
+        'Clears it when empty, and can include expressions, e.g. `@input.text`.'
     }
   },
   toFormData: (action: SetContactField) => {

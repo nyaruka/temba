@@ -26,8 +26,7 @@ export const add_input_labels: ActionConfig = {
     labels: {
       type: 'select',
       label: 'Labels',
-      helpText:
-        'Select labels to add to the input. Type a new label name to create it.',
+      helpText: 'Typing a new name creates a new label.',
       required: true,
       options: [],
       multi: true,

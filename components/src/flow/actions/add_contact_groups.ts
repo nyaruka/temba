@@ -23,7 +23,6 @@ export const add_contact_groups: ActionConfig = {
     groups: {
       type: 'select',
       label: 'Groups',
-      helpText: 'Select the groups to add the contact to',
       required: true,
       options: [],
       multi: true,

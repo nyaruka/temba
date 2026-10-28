@@ -32,7 +32,6 @@ export const set_contact_language: ActionConfig = {
       clearable: false,
       valueKey: 'value',
       nameKey: 'name',
-      helpText: 'Select the language to set for the contact',
       getDynamicOptions: () => {
         const store = getStore();
         const workspace = store?.getState().workspace;

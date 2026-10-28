@@ -17,7 +17,8 @@ export const split_by_random: NodeConfig = {
   form: {
     categories: {
       type: 'array',
-      helpText: 'Define the buckets to randomly split contacts into',
+      helpText:
+        'Contacts are divided evenly and at random between the buckets.',
       required: true,
       itemLabel: 'Bucket',
       sortable: true,

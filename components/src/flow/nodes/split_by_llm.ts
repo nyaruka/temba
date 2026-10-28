@@ -56,7 +56,6 @@ export const split_by_llm: NodeConfig = {
     input: {
       type: 'text',
       label: 'Input',
-      helpText: 'The input the AI will process',
       required: true,
       evaluated: true,
       maxLength: 10000,
@@ -65,8 +64,7 @@ export const split_by_llm: NodeConfig = {
     instructions: {
       type: 'textarea',
       label: 'Instructions',
-      helpText:
-        'Tell the AI what to do with the input. The result can be referenced as **`@locals._llm_output`**',
+      helpText: 'The output is available as **`@locals._llm_output`**.',
       required: true,
       evaluated: true,
       maxLength: 10000,
