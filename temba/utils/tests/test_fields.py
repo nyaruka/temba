@@ -1,8 +1,12 @@
+import re
+
 from django import forms
+from django.contrib.auth.models import Group
+from django.db.models.fields import BLANK_CHOICE_DASH
 from django.forms import ValidationError
 from django.test import TestCase
 
-from temba.utils.fields import ExternalURLField, NameValidator
+from temba.utils.fields import ExternalURLField, NameValidator, SelectWidget
 
 
 class TestFields(TestCase):
@@ -68,3 +72,25 @@ class TestFields(TestCase):
             else:
                 self.assertTrue(is_valid, f"form.is_valid() unexpectedly false for '{tc[0]}'")
                 self.assertEqual({}, form.errors)
+
+    def test_select_widget_blank_choice(self):
+        groups = Group.objects.filter(name="Testers")
+
+        class Form(forms.Form):
+            model_optional = forms.ModelChoiceField(groups, required=False, widget=SelectWidget())
+            model_named = forms.ModelChoiceField(
+                groups, required=False, empty_label="Unassigned", widget=SelectWidget()
+            )
+            choice_dash = forms.ChoiceField(choices=BLANK_CHOICE_DASH + [("a", "A")], widget=SelectWidget())
+            choice_named = forms.ChoiceField(choices=[("", "None"), ("a", "A")], widget=SelectWidget())
+
+        Group.objects.create(name="Testers")
+        form = Form()
+
+        def option_names(field):
+            return re.findall(r'name="([^"]*)"', str(form[field]))[1:]  # first is the select's own name
+
+        self.assertEqual(["Testers"], option_names("model_optional"))
+        self.assertEqual(["Unassigned", "Testers"], option_names("model_named"))
+        self.assertEqual(["A"], option_names("choice_dash"))
+        self.assertEqual(["None", "A"], option_names("choice_named"))
