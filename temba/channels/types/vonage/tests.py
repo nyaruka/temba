@@ -1,5 +1,6 @@
 from unittest.mock import call, patch
 
+import requests
 from vonage_application.responses import ApplicationData
 from vonage_http_client.errors import AuthenticationError, HttpRequestError, NotFoundError, RateLimitedError
 from vonage_numbers.requests import (
@@ -296,6 +297,26 @@ class VonageTypeTest(TembaTest):
             VonageType().get_error_ref_url(None, "dlr:8"),
         )
         self.assertIsNone(VonageType().get_error_ref_url(None, "x:9"))
+
+    @patch("temba.channels.types.vonage.client.VonageClient.check_credentials")
+    def test_check_credentials(self, mock_check_credentials):
+        config = {"nexmo_api_key": "1234", "nexmo_api_secret": "secret"}
+
+        mock_check_credentials.return_value = True
+        self.assertTrue(VonageType().check_credentials(config))
+
+        mock_check_credentials.return_value = False
+        self.assertFalse(VonageType().check_credentials(config))
+
+        # provider errors are treated as invalid rather than raised
+        mock_check_credentials.side_effect = HttpRequestError(MockResponse(500, "Server Error"))
+        self.assertFalse(VonageType().check_credentials(config))
+
+        mock_check_credentials.side_effect = RateLimitedError(MockResponse(429, "Too Many Requests"))
+        self.assertFalse(VonageType().check_credentials(config))
+
+        mock_check_credentials.side_effect = requests.ConnectionError("Network is unreachable")
+        self.assertFalse(VonageType().check_credentials(config))
 
 
 class ClientTest(TembaTest):

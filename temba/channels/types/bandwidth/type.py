@@ -24,6 +24,12 @@ class BandwidthType(ChannelType):
     async_activation = False
 
     claim_view = ClaimView
+
+    credentials = (
+        ChannelType.Credential(Channel.CONFIG_USERNAME, _("Username"), _("Your username on Bandwidth")),
+        ChannelType.Credential(Channel.CONFIG_PASSWORD, _("Password"), _("Your password on Bandwidth")),
+        ChannelType.Credential("account_id", _("Account ID"), _("Your account ID on Bandwidth")),
+    )
     claim_blurb = _("If you have an %(link)s number, you can quickly connect it using their APIs.") % {
         "link": '<a target="_blank" href="https://www.bandwidth.com/">Bandwidth</a>'
     }

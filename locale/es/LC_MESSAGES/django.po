@@ -447,6 +447,15 @@ msgstr "Verificación de webhook"
 msgid "You can purchase a short code from %(link)s and connect it in a few simple steps."
 msgstr "Puede comprar un código corto de %(link)s y conectarlo en unos sencillos pasos."
 
+msgid "Username"
+msgstr "Nombre de usuario"
+
+msgid "Your username on Africa's Talking"
+msgstr "Su contraseña en Africa's Talking"
+
+msgid "Your API key on Africa's Talking account"
+msgstr "Su clave de API en la cuenta de Africa's Talking"
+
 msgid "To finish configuring this channel, you'll need to add the following callback URLs to your account on the Africa's Talking website."
 msgstr "Para terminar de configurar este canal, deberá añadir las siguientes URL de callback a su cuenta en el sitio web de Africa's Talking."
 
@@ -468,12 +477,6 @@ msgstr "Su código abreviado en Africa's Talking"
 msgid "Whether this short code is shared with others"
 msgstr "Si este código corto se comparte con otros"
 
-msgid "Your username on Africa's Talking"
-msgstr "Su contraseña en Africa's Talking"
-
-msgid "Your API key on Africa's Talking account"
-msgstr "Su clave de API en la cuenta de Africa's Talking"
-
 msgid "Works in any country and uses the cell phone plan you already have. You just need an Android phone to get started."
 msgstr "Funciona en cualquier país y usa el plan de telefonía celular que ya tiene. Solo necesitas un teléfono Android para comenzar."
 
@@ -494,6 +497,15 @@ msgstr "Otro canal tiene este número. Primero elimine ese canal."
 
 msgid "Connect Android Channel"
 msgstr "Conectar Canal de Android"
+
+msgid "The username for your API account"
+msgstr "El nombre de usuario de su cuenta API"
+
+msgid "Password"
+msgstr "Contraseña"
+
+msgid "The password for your API account"
+msgstr "La contraseña de su cuenta API"
 
 #, python-format
 msgid "If you have an %(link)s number, you can quickly connect it using their APIs."
@@ -532,17 +544,17 @@ msgstr "Facturado"
 msgid "The charging level for your account"
 msgstr "El nivel de carga de su cuenta"
 
-msgid "Username"
-msgstr "Nombre de usuario"
+msgid "Your username on Bandwidth"
+msgstr "Su nombre de usuario en Bandwidth"
 
-msgid "The username for your API account"
-msgstr "El nombre de usuario de su cuenta API"
+msgid "Your password on Bandwidth"
+msgstr "Su contraseña en Bandwidth"
 
-msgid "Password"
-msgstr "Contraseña"
+msgid "Account ID"
+msgstr "ID de cuenta"
 
-msgid "The password for your API account"
-msgstr "La contraseña de su cuenta API"
+msgid "Your account ID on Bandwidth"
+msgstr "Su ID de cuenta en Bandwidth"
 
 msgid "Unable to create bandwidth application"
 msgstr "No se pudo crear la aplicación de Bandwidth"
@@ -567,18 +579,6 @@ msgstr "Rol"
 
 msgid "Choose the role that this channel supports"
 msgstr "Elija el rol que admite este canal"
-
-msgid "Your username on Bandwidth"
-msgstr "Su nombre de usuario en Bandwidth"
-
-msgid "Your password on Bandwidth"
-msgstr "Su contraseña en Bandwidth"
-
-msgid "Account ID"
-msgstr "ID de cuenta"
-
-msgid "Your account ID on Bandwidth"
-msgstr "Su ID de cuenta en Bandwidth"
 
 msgid "The API key as found on your settings page"
 msgstr "La clave de API que se encuentra en su página de configuración"
@@ -628,6 +628,9 @@ msgstr "%(domain)s no es un dominio válido. Ingrese dominios sin esquemas ni ru
 msgid "Connect your %(link)s number, we'll walk you through the steps necessary to get your Clickatell connection working in a few minutes."
 msgstr "Conecte su número %(link)s, lo guiaremos a través de los pasos necesarios para que su conexión Clickatell funcione en unos minutos."
 
+msgid "The API key for your integration as provided by Clickatell"
+msgstr "La clave API para su integración proporcionada por Clickatell"
+
 msgid "To finish configuring this channel, you'll need to set the following callback URLs on the Clickatell website for your integration."
 msgstr "Para terminar de configurar este canal, deberá configurar las siguientes URL de callback en el sitio web de Clickatell para su integración."
 
@@ -649,15 +652,21 @@ msgstr "El país en el que se está usando este número de teléfono"
 msgid "The phone number with country code or short code you are connecting. ex: +250788123124 or 15543"
 msgstr "El número de teléfono con el código de país o código abreviado con el que se está conectando. Por ejemplo: +250788123124"
 
-msgid "The API key for your integration as provided by Clickatell"
-msgstr "La clave API para su integración proporcionada por Clickatell"
-
 msgid "Invalid phone number, please include the country code. ex: +250788123123"
 msgstr "Número de teléfono inválido, por favor, incluya el código de país. Por ejemplo: +250788123123"
 
 #, python-format
 msgid "If you are based in Malawi or Ghana you can purchase a number from %(link)s and connect it in a few simple steps."
 msgstr "Si reside en Malawi o Ghana, puede comprar un número de %(link)s y conectarlo en unos sencillos pasos."
+
+msgid "User ID"
+msgstr "ID de Usuario"
+
+msgid "Your user_id on Click Mobile"
+msgstr "Su user_id en Click Mobile"
+
+msgid "Your password on Click Mobile"
+msgstr "Su contraseña en Click Mobile"
 
 msgid "To finish configuring this channel, you need to configure Click Mobile to send new messages to the URL below."
 msgstr "Para terminar de configurar este canal, debe configurar Click Mobile para enviar los mensajes nuevos a la URL de abajo."
@@ -670,15 +679,6 @@ msgstr "Ghana"
 
 msgid "Malawi"
 msgstr "Malawi"
-
-msgid "User ID"
-msgstr "ID de Usuario"
-
-msgid "Your user_id on Click Mobile"
-msgstr "Su user_id en Click Mobile"
-
-msgid "Your password on Click Mobile"
-msgstr "Su contraseña en Click Mobile"
 
 msgid "App ID"
 msgstr "App ID"
@@ -717,6 +717,12 @@ msgstr "ClickSend debería llamar a esta URL cuando se reciban nuevos mensajes. 
 msgid "Easily add a two way number you have configured with %(link)s in Indonesia."
 msgstr "Agregue fácilmente un número bidireccional que haya configurado con %(link)s en Indonesia."
 
+msgid "The username provided by the provider to use their API"
+msgstr "El nombre de usuario otorgado por el proveedor para usar su API"
+
+msgid "The password provided by the provider to use their API"
+msgstr "La contraseña otorgada por el proveedor para usar su API"
+
 msgid "To finish configuring this channel, you'll need to provide them with the following details."
 msgstr "Para terminar de configurar este canal, deberá proporcionarles los siguientes detalles."
 
@@ -736,15 +742,15 @@ msgstr "Este punto final debe ser llamado por Dart Media cuando un mensaje ha ll
 msgid "Activate your own enterprise WhatsApp account in %(link)s (Cloud) to communicate with your contacts. "
 msgstr "Active su propia cuenta de WhatsApp empresarial en %(link)s (Cloud) para comunicarse con sus contactos. "
 
+msgid "The 360 Dialog API key generated after account registration"
+msgstr "La clave API de 360 Dialog generada después del registro de la cuenta"
+
 #, python-format
 msgid "Unable to register callbacks: %(resp)s"
 msgstr "No se pueden registrar devoluciones de llamada: %(resp)s"
 
 msgid "Your enterprise WhatsApp number"
 msgstr "Su número de WhatsApp empresarial"
-
-msgid "The 360 Dialog API key generated after account registration"
-msgstr "La clave API de 360 Dialog generada después del registro de la cuenta"
 
 msgid "Please enter a valid phone number"
 msgstr "Por favor ingrese un número de teléfono válido"
@@ -777,6 +783,12 @@ msgstr "No se puede recuperar el token, verifique el nombre de usuario y la cont
 msgid "Use our pluggable API to connect an external service you already have."
 msgstr "Use nuestro API insertable para conectar un servicio externo que ya tenga."
 
+msgid "Authorization Header Value"
+msgstr "Valor del Encabezado de Autorización"
+
+msgid "The Authorization header value added when calling the URL (if any)"
+msgstr "El valor del encabezado de autorización agregado al llamar a la URL (si corresponde)"
+
 msgid "URN Type"
 msgstr "Tipo de URN"
 
@@ -803,12 +815,6 @@ msgstr "El tipo de contenido utilizado al enviar la solicitud."
 
 msgid "The maximum length of any single message on this channel. (longer messages will be split)"
 msgstr "La longitud máxima de cualquier mensaje individual en este canal. (los mensajes más largos se dividirán)"
-
-msgid "Authorization Header Value"
-msgstr "Valor del Encabezado de Autorización"
-
-msgid "The Authorization header value added when calling the URL (if any)"
-msgstr "El valor del encabezado de autorización agregado al llamar a la URL (si corresponde)"
 
 msgid "Send URL"
 msgstr "URL de Enviar"
@@ -906,6 +912,12 @@ msgstr "JSON de autenticación no válido, falta el campo private_key_id"
 msgid "Connect your approved %(link)s channel"
 msgstr "Conecte su canal de %(link)s aprobado"
 
+msgid "FreshChat API Auth Token"
+msgstr "Token de autenticación de API FreshChat"
+
+msgid "The API auth token- leave out the bearer"
+msgstr "El token de autenticación de API: omita el bearer"
+
 msgid "To finish configuring this channel, you'll have to configure the FreshChat server to direct messages to the url below."
 msgstr "Para terminar de configurar este canal, tendrá que configurar el servidor de FreshChat para dirigir los mensajes a la URL de abajo."
 
@@ -930,23 +942,8 @@ msgstr "ID de agente de FreshChat"
 msgid "The UUID of the Agent you want RP to Use."
 msgstr "El UUID del agente que desea que RP utilice."
 
-msgid "FreshChat API Auth Token"
-msgstr "Token de autenticación de API FreshChat"
-
-msgid "The API auth token- leave out the bearer"
-msgstr "El token de autenticación de API: omita el bearer"
-
 msgid "If you are based in the Phillipines, you can integrate {{ branding.name }} with Globe Labs to send and receive messages on your short code."
 msgstr "Si reside en Filipinas, puede integrar {{branding.name}} con Globe Labs para enviar y recibir mensajes con su código corto."
-
-msgid "To finish configuring this channel, you'll need to set the following notify URI for SMS on your application configuration page."
-msgstr "Para terminar de configurar este canal, deberá establecer el siguiente URI de notificación para SMS en la página de configuración de su aplicación."
-
-msgid "Notify URI"
-msgstr "Notify URI"
-
-msgid "The short code you have been assigned by Globe Labs ex: 15543"
-msgstr "El código corto que le ha asignado Globe Labs ej: 15543"
 
 msgid "Application Id"
 msgstr "ID de aplicación"
@@ -965,6 +962,15 @@ msgstr "Frase de contraseña"
 
 msgid "The passphrase assigned to you by Globe Labs to support sending"
 msgstr "La frase de contraseña que le asignó Globe Labs para admitir el envío"
+
+msgid "To finish configuring this channel, you'll need to set the following notify URI for SMS on your application configuration page."
+msgstr "Para terminar de configurar este canal, deberá establecer el siguiente URI de notificación para SMS en la página de configuración de su aplicación."
+
+msgid "Notify URI"
+msgstr "Notify URI"
+
+msgid "The short code you have been assigned by Globe Labs ex: 15543"
+msgstr "El código corto que le ha asignado Globe Labs ej: 15543"
 
 #, python-format
 msgid "If you are based in France, you can purchase a number from %(link)s and connect it in a few simple steps."
@@ -993,6 +999,12 @@ msgstr "Hub9 debería llamar a este punto final cuando un mensaje haya llegado a
 msgid "If you have a long number or short code with %(link)s you can connect it in a few easy steps."
 msgstr "Si tiene un número largo o un código corto con %(link)s, puede conectarlo en unos pocos y sencillos pasos."
 
+msgid "Your i2SMS username"
+msgstr "Su nombre de usuario de i2SMS"
+
+msgid "Your i2SMS password"
+msgstr "Su contraseña de i2SMS"
+
 msgid "To finish configuring this channel, you'll need to set the message URL for the `DEFAULT` keyword as below."
 msgstr "Para terminar de configurar este canal, deberá establecer la URL de mensajes para la palabra clave `DEFAULT` como se muestra a continuación."
 
@@ -1005,15 +1017,15 @@ msgstr "Puede configurar la URL de su mensaje visitando <a href=\"https://mx.i2s
 msgid "The hash of your i2SMS channel"
 msgstr "El hash de tu canal i2SMS"
 
-msgid "Your i2SMS username"
-msgstr "Su nombre de usuario de i2SMS"
-
-msgid "Your i2SMS password"
-msgstr "Su contraseña de i2SMS"
-
 #, python-format
 msgid "Easily add a two way number you have configured with %(link)s using their APIs."
 msgstr "Agregue fácilmente un número bidireccional que haya configurado con %(link)s usando sus API."
+
+msgid "Infobip API Key"
+msgstr "Clave de API de Infobip"
+
+msgid "The API Key"
+msgstr "La clave de API"
 
 msgid "To finish configuring this channel, you'll need to set the following callback URLs on the Infobip website under your account."
 msgstr "Para terminar de configurar este canal, deberá establecer las siguientes URL de callback en el sitio web de Infobip, en su cuenta."
@@ -1029,12 +1041,6 @@ msgstr "Número de teléfono de origen"
 
 msgid "The phone number being added"
 msgstr "El número de teléfono que se está agregando"
-
-msgid "Infobip API Key"
-msgstr "Clave de API de Infobip"
-
-msgid "The API Key"
-msgstr "La clave de API"
 
 msgid "Infobip API subdomain"
 msgstr "Subdominio de la API de Infobip"
@@ -1062,6 +1068,12 @@ msgstr "Volver a conectar la cuenta de empresa de Instagram"
 msgid "Connect your %(link)s instance that you have already connected to an SMSC."
 msgstr "Conecte su instancia %(link)s que ya ha conectado a un SMSC."
 
+msgid "The username to be used to authenticate to Jasmin"
+msgstr "El nombre de usuario que se utilizará para autenticarse en Jasmin"
+
+msgid "The password to be used to authenticate to Jasmin"
+msgstr "La contraseña que se utilizará para autenticarse en Jasmin"
+
 msgid "To finish configuring this channel, you'll need to configure Jasmin to call the following URL for MO (incoming) messages."
 msgstr "Para terminar de configurar este canal, deberá configurar Jasmin para que llame a la siguiente URL para los mensajes MO (entrantes)."
 
@@ -1083,21 +1095,9 @@ msgstr "URL"
 msgid "The URL for the Jasmin server send path"
 msgstr "La URL de la ruta de envío del servidor Jasmin"
 
-msgid "The username to be used to authenticate to Jasmin"
-msgstr "El nombre de usuario que se utilizará para autenticarse en Jasmin"
-
-msgid "The password to be used to authenticate to Jasmin"
-msgstr "La contraseña que se utilizará para autenticarse en Jasmin"
-
 #, python-format
 msgid "Add a %(link)s bot to send and receive messages to JioChat users for free. Your users will need an Android, Windows or iOS device and a JioChat account to send and receive messages."
 msgstr "Agregue un bot %(link)s para enviar y recibir mensajes a los usuarios de JioChat de forma gratuita. Sus usuarios necesitarán un dispositivo Android, Windows o iOS y una cuenta de JioChat para enviar y recibir mensajes."
-
-msgid "To finish configuring this channel, you'll need to enter the following webhook URL and token on JioChat Developer Center configuration."
-msgstr "Para terminar de configurar este canal, deberá introducir la siguiente URL de webhook y el token en la configuración del Centro de desarrolladores de JioChat."
-
-msgid "Webhook URL"
-msgstr "URL de Webhook"
 
 msgid "The JioChat App ID"
 msgstr "El ID de la aplicación JioChat"
@@ -1105,18 +1105,18 @@ msgstr "El ID de la aplicación JioChat"
 msgid "The JioChat App secret"
 msgstr "El secret de la aplicación JioChat"
 
+msgid "To finish configuring this channel, you'll need to enter the following webhook URL and token on JioChat Developer Center configuration."
+msgstr "Para terminar de configurar este canal, deberá introducir la siguiente URL de webhook y el token en la configuración del Centro de desarrolladores de JioChat."
+
+msgid "Webhook URL"
+msgstr "URL de Webhook"
+
 #, python-format
 msgid "Unable to add webhook to JustCall: %(resp)s"
 msgstr "No se pudo añadir el webhook a JustCall: %(resp)s"
 
 msgid "Activate your own enterprise WhatsApp account in Kaleyra to communicate with your contacts. <a target=\"_blank\" href=\"https://www.kaleyra.com/whatsapp/\">Learn more about Kaleyra WhatsApp</a>"
 msgstr "Active su propia cuenta de WhatsApp empresarial en Kaleyra para comunicarse con sus contactos. <a target=\"_blank\" href=\"https://www.kaleyra.com/whatsapp/\">Más información sobre Kaleyra WhatsApp</a>"
-
-msgid "To finish configuring this channel, you'll need to set the following callback URL on your Kaleyra account."
-msgstr "Para terminar de configurar este canal, deberá establecer la siguiente URL de callback en su cuenta de Kaleyra."
-
-msgid "To receive incoming messages, you need to set the receive URL for your Kaleyra account."
-msgstr "Para recibir mensajes entrantes, debe configurar la URL de recepción para su cuenta de Kaleyra."
 
 msgid "Account SID"
 msgstr "SID de Cuenta"
@@ -1126,6 +1126,12 @@ msgstr "Su SID de cuenta de Kaleyra "
 
 msgid "Your Kaleyra API Key"
 msgstr "Su clave API de Kaleyra"
+
+msgid "To finish configuring this channel, you'll need to set the following callback URL on your Kaleyra account."
+msgstr "Para terminar de configurar este canal, deberá establecer la siguiente URL de callback en su cuenta de Kaleyra."
+
+msgid "To receive incoming messages, you need to set the receive URL for your Kaleyra account."
+msgstr "Para recibir mensajes entrantes, debe configurar la URL de recepción para su cuenta de Kaleyra."
 
 #, python-format
 msgid "Connect your %(link)s instance, we'll walk you through the steps necessary to get your SMSC connection working in a few minutes."
@@ -1153,6 +1159,12 @@ msgstr "Utilice solo el número nacional (sin código de país) al enviar (no re
 msgid "Add a %(link)s bot to send and receive messages to LINE users for free. Your users will need an Android, Windows or iOS device and a LINE account to send and receive messages."
 msgstr "Agregue un bot %(link)s para enviar y recibir mensajes a los usuarios de LINE de forma gratuita. Sus usuarios necesitarán un dispositivo Android, Windows o iOS y una cuenta LINE para enviar y recibir mensajes."
 
+msgid "Access Token"
+msgstr "Token de Acceso"
+
+msgid "Access token of the bot."
+msgstr "Token de acceso del bot."
+
 msgid "Channel ID"
 msgstr "ID de Canal"
 
@@ -1161,12 +1173,6 @@ msgstr "ID del canal de LINE para el bot."
 
 msgid "Name of the bot."
 msgstr "Nombre del bot."
-
-msgid "Access Token"
-msgstr "Token de Acceso"
-
-msgid "Access token of the bot."
-msgstr "Token de acceso del bot."
 
 msgid "Secret"
 msgstr "Secreto"
@@ -1182,6 +1188,12 @@ msgstr "Enviar URL"
 
 msgid "Failed URL"
 msgstr "Error en el URL"
+
+msgid "The username provided by Macrokiosk to use their API"
+msgstr "El nombre de usuario proporcionado por Macrokiosk para usar su API"
+
+msgid "The password provided by Macrokiosk to use their API"
+msgstr "La contraseña proporcionada por Macrokiosk para usar su API"
 
 msgid "To finish configuring this channel, you'll need to notify MACROKIOSK of the following URLs."
 msgstr "Para terminar de configurar este canal, deberá notificar a MACROKIOSK las siguientes URL."
@@ -1207,12 +1219,6 @@ msgstr "Sender ID"
 msgid "The sender ID provided by Macrokiosk to use their API"
 msgstr "El Sender ID proporcionado por Macrokiosk para usar su API"
 
-msgid "The username provided by Macrokiosk to use their API"
-msgstr "El nombre de usuario proporcionado por Macrokiosk para usar su API"
-
-msgid "The password provided by Macrokiosk to use their API"
-msgstr "La contraseña proporcionada por Macrokiosk para usar su API"
-
 msgid "The Service ID provided by Macrokiosk to use their API"
 msgstr "El ID de servicio proporcionado por Macrokiosk para usar su API"
 
@@ -1221,6 +1227,12 @@ msgstr "Para terminar de configurar este canal, deberá establecer la siguiente 
 
 msgid "This endpoint will be called by Mblox when new messages are received to your number and for delivery reports."
 msgstr "Mblox llamará a este punto final cuando se reciban nuevos mensajes a su número y para informes de entrega."
+
+msgid "Messagebird API Auth Token"
+msgstr "Token de autenticación de la API de Messagebird"
+
+msgid "The API auth token"
+msgstr "El token de autenticación de la API"
 
 msgid "To finish configuring this channel, you'll have to configure the Messagebird to send raw received SMS messages to the URL below either with a flow or by registering the webhook with them. Configure the status URL under Developer Settings to receive status updates for your messages."
 msgstr "Para terminar de configurar este canal, deberá configurar Messagebird para que envíe los mensajes SMS recibidos sin procesar a la URL de abajo, ya sea con un flujo o registrando el webhook con ellos. Configure la URL de estado en Developer Settings para recibir actualizaciones de estado de sus mensajes."
@@ -1240,15 +1252,21 @@ msgstr "Clave de firma de la API de Messagebird"
 msgid "Signing Key used to verify signatures. See https://developers.messagebird.com/api/#verifying-http-requests"
 msgstr "Clave de firma utilizada para verificar las firmas. Consulte https://developers.messagebird.com/api/#verifying-http-requests"
 
-msgid "Messagebird API Auth Token"
-msgstr "Token de autenticación de la API de Messagebird"
-
-msgid "The API auth token"
-msgstr "El token de autenticación de la API"
-
 #, python-format
 msgid "If you are based in Jamaica, you can purchase a short code from %(link)s and connect it in a few simple steps."
 msgstr "Si reside en Jamaica, puede comprar un código corto de %(link)s y conectarlo en unos sencillos pasos."
+
+msgid "Public Key"
+msgstr "Llave pública"
+
+msgid "The public key provided by Messangi"
+msgstr "La clave pública proporcionada por Messangi"
+
+msgid "Private Key"
+msgstr "Llave privada"
+
+msgid "The private key provided by Messangi"
+msgstr "La clave privada proporcionada por Messangi"
 
 msgid "To finish configuring this channel, you'll need to set the following callback URLs on your Messangi account."
 msgstr "Para terminar de configurar este canal, deberá establecer las siguientes URL de callback en su cuenta de Messangi."
@@ -1264,18 +1282,6 @@ msgstr "Identificador de operador"
 
 msgid "The carrier id for the short code"
 msgstr "La identificación del operador para el código corto"
-
-msgid "Public Key"
-msgstr "Llave pública"
-
-msgid "The public key provided by Messangi"
-msgstr "La clave pública proporcionada por Messangi"
-
-msgid "Private Key"
-msgstr "Llave privada"
-
-msgid "The private key provided by Messangi"
-msgstr "La clave privada proporcionada por Messangi"
 
 msgid "Instance Id"
 msgstr "ID de instancia"
@@ -1293,6 +1299,12 @@ msgstr "Para terminar de configurar este canal, debe hacer que Mtarget configure
 msgid "The service ID as provided by Mtarget"
 msgstr "El ID de servicio proporcionado por Mtarget"
 
+msgid "The Consumer key"
+msgstr "La clave de consumidor"
+
+msgid "The Consumer secret"
+msgstr "El secret de consumidor"
+
 #, python-format
 msgid "Unable to get token: %s"
 msgstr "No se pudo obtener el token: %s"
@@ -1305,24 +1317,12 @@ msgstr "No se pudieron eliminar los callbacks de suscripción: %s"
 msgid "Unable to add subscription callbacks: %s"
 msgstr "No se pudieron añadir los callbacks de suscripción: %s"
 
-msgid "The Consumer key"
-msgstr "La clave de consumidor"
-
-msgid "The Consumer secret"
-msgstr "El secret de consumidor"
-
 msgid "The CP Address (if provided by MTN)"
 msgstr "La dirección CP (si la proporciona MTN)"
 
 #, python-format
 msgid "If you are based in Trinidad & Tobago, you can purchase a short code from %(link)s and connect it in a few simple steps."
 msgstr "Si reside en Trinidad y Tobago, puede comprar un código corto de %(link)s y conectarlo en unos sencillos pasos."
-
-msgid "To receive incoming messages, you need to set the receive URL for your Novo account."
-msgstr "Para recibir mensajes entrantes, debe configurar la URL de recepción para su cuenta Novo."
-
-msgid "The Novo short code"
-msgstr "El código corto de Novo"
 
 msgid "Merchant ID"
 msgstr "Identificación del comerciante"
@@ -1335,6 +1335,12 @@ msgstr "Secreto del comerciante"
 
 msgid "The merchant secret provided by Novo"
 msgstr "El secret comercial proporcionado por Novo"
+
+msgid "To receive incoming messages, you need to set the receive URL for your Novo account."
+msgstr "Para recibir mensajes entrantes, debe configurar la URL de recepción para su cuenta Novo."
+
+msgid "The Novo short code"
+msgstr "El código corto de Novo"
 
 #, python-format
 msgid "If you are based in Uzbekistan, you can purchase a short code from %(link)s and connect it in a few simple steps."
@@ -1355,6 +1361,15 @@ msgstr "La URL base de PlayMobile"
 msgid "Shortcode"
 msgstr "Código corto"
 
+msgid "Your Plivo auth ID"
+msgstr "Su auth ID de Plivo"
+
+msgid "Authentication Token"
+msgstr "Token de Autenticación"
+
+msgid "Your Plivo auth token"
+msgstr "Su token de autenticación de Plivo"
+
 msgid "Unable to create a Plivo application for that number, please try again."
 msgstr "No se pudo crear una aplicación de Plivo para ese número. Vuelve a intentarlo."
 
@@ -1366,12 +1381,6 @@ msgstr "Ese número no se admite actualmente."
 
 msgid "There was a problem claiming that number, please check the balance on your account."
 msgstr "Hubo un problema al solicitar ese número, por favor, verifique el saldo en su cuenta."
-
-msgid "Your Plivo auth ID"
-msgstr "Su auth ID de Plivo"
-
-msgid "Your Plivo auth token"
-msgstr "Su token de autenticación de Plivo"
 
 msgid "Your Plivo auth ID and auth token seem invalid. Please check them again and retry."
 msgstr "Su ID de autenticación de Plivo y su token de autenticación parecen no válidos. Revíselos de nuevo y vuelva a intentarlo."
@@ -1436,6 +1445,18 @@ msgstr "La configuración ha fallado"
 msgid "Easily add a two way number you have with %(link)s using their APIs."
 msgstr "Agregue fácilmente un número bidireccional que tenga con %(link)s usando sus API."
 
+msgid "Project Key"
+msgstr "Clave del Proyecto"
+
+msgid "The key for your project ex: 990c5c10-bf8f-4156-b014-44282e60b3a1"
+msgstr "La clave para su proyecto ex: 990c5c10-bf8f-4156-b014-44282e60b3a1"
+
+msgid "API Token"
+msgstr "Token API"
+
+msgid "The API token to use to authenticate ex: FPd199eb93e878f8a3tw9ttna313914tnauwy"
+msgstr "El token de API que se utilizará para autenticar, por ejemplo: FPd199eb93e878f8a3tw9ttna313914tnauwy"
+
 msgid "To finish configuring this channel, you may need to set this callback URL in your Signalwire account."
 msgstr "Para terminar de configurar este canal, puede que necesite establecer esta URL de callback en su cuenta de Signalwire."
 
@@ -1460,15 +1481,6 @@ msgstr "Espacio"
 
 msgid "Your SignalWire Space name. For example, if your space is rapid.signalwire.com, enter rapid."
 msgstr "El nombre de su espacio de SignalWire. Por ejemplo, si su espacio es rapid.signalwire.com, introduzca rapid."
-
-msgid "Project Key"
-msgstr "Clave del Proyecto"
-
-msgid "The key for your project ex: 990c5c10-bf8f-4156-b014-44282e60b3a1"
-msgstr "La clave para su proyecto ex: 990c5c10-bf8f-4156-b014-44282e60b3a1"
-
-msgid "The API token to use to authenticate ex: FPd199eb93e878f8a3tw9ttna313914tnauwy"
-msgstr "El token de API que se utilizará para autenticar, por ejemplo: FPd199eb93e878f8a3tw9ttna313914tnauwy"
 
 msgid "Enter a valid space name."
 msgstr "Introduzca un nombre de espacio válido."
@@ -1572,9 +1584,6 @@ msgstr "Se debe llamar a este endpoint cuando se reciban nuevos mensajes en su n
 msgid "Add a %(link)s bot to send and receive messages to Telegram users for free. Your users will need an Android, Windows or iOS device and a Telegram account to send and receive messages."
 msgstr "Agrega un bot %(link)s para enviar y recibir mensajes a los usuarios de Telegram de forma gratuita. Sus usuarios necesitarán un dispositivo Android, Windows o iOS y una cuenta de Telegram para enviar y recibir mensajes."
 
-msgid "Authentication Token"
-msgstr "Token de Autenticación"
-
 msgid "The Authentication token for your Telegram Bot"
 msgstr "El token de autenticación para su Telegram Bot"
 
@@ -1587,15 +1596,6 @@ msgstr "Su token de autenticación no es válido, verifique y vuelva a intentarl
 msgid "If you are based in Somalia, you can integrate with Telesom to send and receive messages on your short code."
 msgstr "Si reside en Somalia, puede integrarse con Telesom para enviar y recibir mensajes en su código corto."
 
-msgid "TTo finish configuring this channel, you'll need to provide Telesom with the following delivery URL for incoming messages."
-msgstr "Para terminar de configurar este canal, deberá proporcionar a Telesom la siguiente URL de entrega para los mensajes entrantes."
-
-msgid "The short code you are connecting with."
-msgstr "El código corto con el que se está conectando."
-
-msgid "The url provided to deliver messages"
-msgstr "La URL proporcionada para enviar mensajes"
-
 msgid "The username provided to use their API"
 msgstr "El nombre de usuario proporcionado para usar su API"
 
@@ -1605,9 +1605,27 @@ msgstr "La contraseña proporcionada para usar su API"
 msgid "The private key provided to use their API"
 msgstr "La clave privada proporcionada para usar su API"
 
+msgid "TTo finish configuring this channel, you'll need to provide Telesom with the following delivery URL for incoming messages."
+msgstr "Para terminar de configurar este canal, deberá proporcionar a Telesom la siguiente URL de entrega para los mensajes entrantes."
+
+msgid "The short code you are connecting with."
+msgstr "El código corto con el que se está conectando."
+
+msgid "The url provided to deliver messages"
+msgstr "La URL proporcionada para enviar mensajes"
+
 #, python-format
 msgid "If you have a number with %(link)s you can connect it in a few easy steps to automate your SMS numbers."
 msgstr "Si tiene un número con %(link)s, puede conectarlo en unos sencillos pasos para automatizar sus números SMS."
+
+msgid "Your ThinQ account id"
+msgstr "Su ID de cuenta de ThinQ"
+
+msgid "The user name for you API token"
+msgstr "El nombre de usuario de su token de API"
+
+msgid "Your API token"
+msgstr "Tu token de API"
 
 msgid "To finish configuring this channel, you'll need to set the following callback URLs on the ThinQ website on the SMS -> SMS Configuration page."
 msgstr "Para terminar de configurar este canal, deberá establecer las siguientes URL de callback en el sitio web de ThinQ, en la página SMS -> SMS Configuration."
@@ -1624,20 +1642,11 @@ msgstr "Configuración de SMS salientes"
 msgid "Set your Delivery Confirmation URL to the above, making sure you select \"Form-Data\" as the Delivery Notification Format."
 msgstr "Establezca su URL de confirmación de entrega como la anterior, asegurándose de seleccionar \"Form-Data\" como formato de notificación de entrega."
 
-msgid "Your ThinQ account id"
-msgstr "Su ID de cuenta de ThinQ"
-
 msgid "The ThinQ number you want to connect"
 msgstr "El número de ThinQ que desea conectar"
 
 msgid "United States"
 msgstr "Estados Unidos"
-
-msgid "The user name for you API token"
-msgstr "El nombre de usuario de su token de API"
-
-msgid "Your API token"
-msgstr "Tu token de API"
 
 msgid "Invalid phone number, please include the country code. ex: +12065551212"
 msgstr "Número de teléfono no válido, incluya el código del país. ej .: +12065551212"
@@ -1748,15 +1757,15 @@ msgstr "Solo se admiten los números de WhatsApp de Twilio existentes"
 msgid "Twilio Messaging Service SID"
 msgstr "SID del Messaging Service de Twilio"
 
+msgid "The authentication token provided by Viber"
+msgstr "El token de autenticación proporcionado por Viber"
+
 #, python-format
 msgid "Connect a %(link)s public channel to send and receive messages to Viber users for free. Your users will need an Android, Windows or iOS device and a Viber account to send and receive messages."
 msgstr "Conecte un canal público %(link)s para enviar y recibir mensajes a los usuarios de Viber de forma gratuita. Sus usuarios necesitarán un dispositivo Android, Windows o iOS y una cuenta de Viber para enviar y recibir mensajes."
 
 msgid "Your Viber channel is connected. If needed the webhook endpoints are listed below."
 msgstr "Tu canal de Viber está conectado. Si es necesario, los puntos finales de webhook se enumeran a continuación."
-
-msgid "The authentication token provided by Viber"
-msgstr "El token de autenticación proporcionado por Viber"
 
 #, python-format
 msgid "Error validating authentication token: %(error)s"
@@ -1787,6 +1796,12 @@ msgstr "ID de la comunidad"
 msgid "The callback verification string"
 msgstr "La cadena de verificación de Callback"
 
+msgid "Your Vonage API key"
+msgstr "Su clave de API de Vonage"
+
+msgid "Your Vonage API secret"
+msgstr "Su secret de API de Vonage"
+
 msgid "Your Vonage configuration URLs are as follows. These should have been set up automatically when claiming your number, but if not you can set them from your Vonage dashboard."
 msgstr "Tus URL de configuración de Vonage son las siguientes. Estos deberían haberse configurado automáticamente al reclamar tu número, pero si no, puedes configurarlos desde tu panel de Vonage."
 
@@ -1811,12 +1826,6 @@ msgstr "Vonage llama a la URL de devolución de llamada cuando recibes una llama
 msgid "There was a problem claiming that number, please check the balance on your account. Note that you can only claim numbers after adding credit to your Vonage account."
 msgstr "Hubo un problema al reclamar ese número, verifique el saldo en su cuenta. Tenga en cuenta que solo puede reclamar números después de agregar crédito a su cuenta de Vonage."
 
-msgid "Your Vonage API key"
-msgstr "Su clave de API de Vonage"
-
-msgid "Your Vonage API secret"
-msgstr "Su secret de API de Vonage"
-
 msgid "Your API key and secret seem invalid. Please check them again and retry."
 msgstr "Su clave de API y su secreto parecen no válidos. Revíselos de nuevo y vuelva a intentarlo."
 
@@ -1825,6 +1834,12 @@ msgstr "Cuenta de Vonage conectada correctamente."
 
 msgid "Connect Vonage"
 msgstr "Conectar Vonage"
+
+msgid "The username for your Movile/Wavy account"
+msgstr "El nombre de usuario de su cuenta Movile / Wavy"
+
+msgid "The Authentication Token for your Movile/Wavy account"
+msgstr "El token de autenticación para su cuenta Movile / Wavy"
 
 msgid "To finish configuring this channel, you need to have Movile/Wavy configure the URL below for your number."
 msgstr "Para terminar de configurar este canal, debe hacer que Movile/Wavy configure la URL de abajo para su número."
@@ -1838,24 +1853,18 @@ msgstr "Para recibir el acuse de recibo de los mensajes enviados, debe configura
 msgid "To receive delivery of delivered messages, you need to set the Delivered URL for your Movile/Wavy account."
 msgstr "Para recibir la entrega de mensajes entregados, debe configurar la URL de entrega para su cuenta Movile / Wavy."
 
-msgid "The username for your Movile/Wavy account"
-msgstr "El nombre de usuario de su cuenta Movile / Wavy"
-
-msgid "The Authentication Token for your Movile/Wavy account"
-msgstr "El token de autenticación para su cuenta Movile / Wavy"
-
 #, python-format
 msgid "Add a %(link)s bot to send and receive messages to WeChat users for free. Your users will need an Android, Windows or iOS device and a WeChat account to send and receive messages."
 msgstr "Agregue un bot %(link)s para enviar y recibir mensajes a los usuarios de WeChat de forma gratuita. Sus usuarios necesitarán un dispositivo Android, Windows o iOS y una cuenta de WeChat para enviar y recibir mensajes."
-
-msgid "To finish configuring this channel, you'll need to enter the following webhook URL and token on WeChat Official Accounts Platform."
-msgstr "Para terminar de configurar este canal, deberá introducir la siguiente URL de webhook y el token en la Plataforma de cuentas oficiales de WeChat."
 
 msgid "The WeChat App ID"
 msgstr "El ID de la aplicación WeChat"
 
 msgid "The WeChat App secret"
 msgstr "El secret de la aplicación WeChat"
+
+msgid "To finish configuring this channel, you'll need to enter the following webhook URL and token on WeChat Official Accounts Platform."
+msgstr "Para terminar de configurar este canal, deberá introducir la siguiente URL de webhook y el token en la Plataforma de cuentas oficiales de WeChat."
 
 msgid "If you have an enterprise WhatsApp account, you can connect it to communicate with your contacts"
 msgstr "Si tiene una cuenta de WhatsApp empresarial, puede conectarla para comunicarse con sus contactos"
@@ -1907,19 +1916,6 @@ msgstr "Cuenta de WhatsApp conectada correctamente."
 msgid "Connect WhatsApp"
 msgstr "Conectar WhatsApp"
 
-#, python-format
-msgid "If you are based in Uganda, you can integrate with %(link)s to send and receive messages on your short code."
-msgstr "Si reside en Uganda, puede integrarse con %(link)s para enviar y recibir mensajes en su código corto."
-
-msgid "To finish configuring this channel, you'll need to notify Yo! of the following inbound SMS URL."
-msgstr "Para terminar de configurar este canal, deberá notificar a Yo! la siguiente URL de SMS entrante."
-
-msgid "Inbound SMS URL"
-msgstr "URL de SMS entrante"
-
-msgid "This URL should be called with a GET by Yo! when new incoming messages are received on your short code."
-msgstr "Esta URL debe llamarse con un GET by Yo! cuando se reciben nuevos mensajes entrantes en su código corto."
-
 msgid "Account Number"
 msgstr "Número de cuenta"
 
@@ -1933,8 +1929,24 @@ msgid "Your Yo! SMS Gateway password"
 msgstr "Tu contraseña de Gateway SMS de Yo! "
 
 #, python-format
+msgid "If you are based in Uganda, you can integrate with %(link)s to send and receive messages on your short code."
+msgstr "Si reside en Uganda, puede integrarse con %(link)s para enviar y recibir mensajes en su código corto."
+
+msgid "To finish configuring this channel, you'll need to notify Yo! of the following inbound SMS URL."
+msgstr "Para terminar de configurar este canal, deberá notificar a Yo! la siguiente URL de SMS entrante."
+
+msgid "Inbound SMS URL"
+msgstr "URL de SMS entrante"
+
+msgid "This URL should be called with a GET by Yo! when new incoming messages are received on your short code."
+msgstr "Esta URL debe llamarse con un GET by Yo! cuando se reciben nuevos mensajes entrantes en su código corto."
+
+#, python-format
 msgid "If you have a %(link)s number, you can connect it to communicate with your contacts."
 msgstr "Si tiene un número de %(link)s, puede conectarlo para comunicarse con sus contactos."
+
+msgid "The API token for your integration as provided by Zenvia"
+msgstr "El token de API para su integración proporcionado por Zenvia"
 
 #, python-format
 msgid "Unable to register webhook subscriptions: %(resp)s"
@@ -1943,12 +1955,6 @@ msgstr "No se pueden registrar suscripciones de webhook: %(resp)s"
 #, python-format
 msgid "Unable to remove webhook subscriptions: %(resp)s"
 msgstr "No se pueden eliminar las suscripciones a webhook: %(resp)s"
-
-msgid "API Token"
-msgstr "Token API"
-
-msgid "The API token for your integration as provided by Zenvia"
-msgstr "El token de API para su integración proporcionado por Zenvia"
 
 msgid "Invalid token. Please check your Zenvia account settings."
 msgstr "Simbolo no valido. Verifique la configuración de su cuenta de Zenvia."
@@ -1968,12 +1974,6 @@ msgstr "Conectar %(channel_type)s"
 
 msgid "You can connect your number by entering your credentials here."
 msgstr "Puede conectar su número ingresando sus credenciales aquí."
-
-msgid "The username provided by the provider to use their API"
-msgstr "El nombre de usuario otorgado por el proveedor para usar su API"
-
-msgid "The password provided by the provider to use their API"
-msgstr "La contraseña otorgada por el proveedor para usar su API"
 
 msgid "Sorry, you need to have a workspace to add numbers. You can still test things out for free using an Android phone."
 msgstr "Lo siento, necesita tener un workspace para agregar números. Aún puedes probar cosas gratis usando un teléfono Android."

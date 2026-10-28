@@ -177,7 +177,7 @@ class ExternalTypeTest(TembaTest):
         self.login(self.admin)
         response = self.client.get(update_url)
         self.assertEqual(
-            ["name", "role", "is_enabled", "allow_international", "loc"],
+            ["name", "role", "is_enabled", "allow_international", "send_authorization", "loc"],
             list(response.context["form"].fields.keys()),
         )
 
@@ -200,6 +200,6 @@ class ExternalTypeTest(TembaTest):
         self.login(self.customer_support, choose_org=self.org)
         response = self.client.get(update_url)
         self.assertEqual(
-            ["name", "role", "is_enabled", "allow_international", "loc"],
+            ["name", "role", "is_enabled", "allow_international", "send_authorization", "loc"],
             list(response.context["form"].fields.keys()),
         )

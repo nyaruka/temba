@@ -1,3 +1,6 @@
+import requests
+from vonage_http_client.errors import HttpRequestError, RateLimitedError
+
 from django.core.exceptions import ValidationError
 from django.urls import re_path
 from django.utils.translation import gettext_lazy as _
@@ -71,6 +74,18 @@ class VonageType(ChannelType):
         "link": '<a target="_blank" href="https://www.vonage.com/">Vonage</a>'
     }
     claim_view = ClaimView
+
+    credentials = (
+        ChannelType.Credential(CONFIG_API_KEY, _("API Key"), _("Your Vonage API key")),
+        ChannelType.Credential(CONFIG_API_SECRET, _("API Secret"), _("Your Vonage API secret")),
+    )
+
+    def check_credentials(self, config: dict) -> bool:
+        client = VonageClient(api_key=config[self.CONFIG_API_KEY], api_secret=config[self.CONFIG_API_SECRET])
+        try:
+            return client.check_credentials()
+        except HttpRequestError, RateLimitedError, requests.RequestException:
+            return False
 
     async_activation = False
 

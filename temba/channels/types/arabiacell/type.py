@@ -2,7 +2,7 @@ from django.utils.translation import gettext_lazy as _
 
 from temba.contacts.models import URN
 
-from ...models import ChannelType, ConfigUI
+from ...models import Channel, ChannelType, ConfigUI
 from .views import ClaimView
 
 
@@ -20,6 +20,11 @@ class ArabiaCellType(ChannelType):
     recommended_timezones = ["Asia/Amman"]
 
     claim_view = ClaimView
+
+    credentials = (
+        ChannelType.Credential(Channel.CONFIG_USERNAME, _("Username"), _("The username for your API account")),
+        ChannelType.Credential(Channel.CONFIG_PASSWORD, _("Password"), _("The password for your API account")),
+    )
     claim_blurb = _("If you have an %(link)s number, you can quickly connect it using their APIs.") % {
         "link": '<a target="_blank" href="https://www.arabiacell.com/">ArabiaCell</a>'
     }

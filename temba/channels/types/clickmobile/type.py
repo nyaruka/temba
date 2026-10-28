@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from temba.channels.types.clickmobile.views import ClaimView
 from temba.contacts.models import URN
 
-from ...models import ChannelType, ConfigUI
+from ...models import Channel, ChannelType, ConfigUI
 
 
 class ClickMobileType(ChannelType):
@@ -24,6 +24,11 @@ class ClickMobileType(ChannelType):
     ) % {"link": '<a target="_blank" href="https://www.click-mobile.com/">Click Mobile</a>'}
 
     claim_view = ClaimView
+
+    credentials = (
+        ChannelType.Credential(Channel.CONFIG_USERNAME, _("User ID"), _("Your user_id on Click Mobile")),
+        ChannelType.Credential(Channel.CONFIG_PASSWORD, _("Password"), _("Your password on Click Mobile")),
+    )
 
     config_ui = ConfigUI(
         blurb=_(

@@ -72,6 +72,33 @@ class SignalWireType(ChannelType):
     }
     claim_view = SignalWireClaimView
 
+    credentials = (
+        ChannelType.Credential(
+            Channel.CONFIG_ACCOUNT_SID,
+            _("Project Key"),
+            _("The key for your project ex: 990c5c10-bf8f-4156-b014-44282e60b3a1"),
+        ),
+        ChannelType.Credential(
+            Channel.CONFIG_AUTH_TOKEN,
+            _("API Token"),
+            _("The API token to use to authenticate ex: FPd199eb93e878f8a3tw9ttna313914tnauwy"),
+            required=False,
+        ),
+    )
+
+    def check_credentials(self, config: dict) -> bool:
+        sid = config[Channel.CONFIG_ACCOUNT_SID]
+        try:
+            response = requests.get(
+                f"{config[Channel.CONFIG_BASE_URL]}/2010-04-01/Accounts/{sid}/IncomingPhoneNumbers.json",
+                auth=(sid, config.get(Channel.CONFIG_AUTH_TOKEN, "")),
+                timeout=10,
+            )
+        except requests.RequestException:
+            return False
+
+        return response.status_code == 200
+
     config_ui = ConfigUI(
         blurb=_(
             "To finish configuring this channel, you may need to set this callback URL in your Signalwire account."

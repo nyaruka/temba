@@ -138,7 +138,14 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
         android_channel = self.create_channel(
             "A", "My Android", "+250785551212", country="RW", secret="sesame", config={"FCM_ID": "123"}
         )
-        vonage_channel = self.create_channel("NX", "My Vonage", "+1234567890", country="US", config={}, role="CASR")
+        vonage_channel = self.create_channel(
+            "NX",
+            "My Vonage",
+            "+1234567890",
+            country="US",
+            config={"nexmo_api_key": "1234", "nexmo_api_secret": "secret"},
+            role="CASR",
+        )
         telegram_channel = self.create_channel("TG", "My Telegram", "75474745", config={})
 
         android_url = reverse("channels.channel_update", args=[android_channel.id])
@@ -165,9 +172,15 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
                 "is_enabled": True,
                 "allow_international": False,
                 "machine_detection": False,
+                "nexmo_api_key": "1234",
+                "nexmo_api_secret": "secret",
             },
         )
-        self.assertUpdateFetch(telegram_url, [self.admin], form_fields={"name": "My Telegram", "is_enabled": True})
+        self.assertUpdateFetch(
+            telegram_url,
+            [self.admin],
+            form_fields={"name": "My Telegram", "is_enabled": True, "auth_token": ""},
+        )
 
         # name can't be empty
         self.assertUpdateSubmit(
@@ -178,17 +191,20 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
             object_unchanged=android_channel,
         )
 
-        # make some changes
-        self.assertUpdateSubmit(
-            vonage_url,
-            self.admin,
-            {
-                "name": "Updated Name",
-                "is_enabled": True,
-                "allow_international": True,
-                "machine_detection": True,
-            },
-        )
+        # make some changes (changing config checks credentials)
+        with patch("temba.channels.types.vonage.type.VonageType.check_credentials", return_value=True):
+            self.assertUpdateSubmit(
+                vonage_url,
+                self.admin,
+                {
+                    "name": "Updated Name",
+                    "is_enabled": True,
+                    "allow_international": True,
+                    "machine_detection": True,
+                    "nexmo_api_key": "1234",
+                    "nexmo_api_secret": "secret",
+                },
+            )
 
         vonage_channel.refresh_from_db()
         self.assertEqual("Updated Name", vonage_channel.name)
@@ -204,6 +220,8 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
                 "is_enabled": True,
                 "allow_international": True,
                 "machine_detection": True,
+                "nexmo_api_key": "1234",
+                "nexmo_api_secret": "secret",
             },
         )
 
@@ -211,9 +229,75 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertUpdateFetch(
             vonage_url,
             [self.customer_support],
-            form_fields=["name", "is_enabled", "allow_international", "machine_detection"],
+            form_fields=[
+                "name",
+                "is_enabled",
+                "allow_international",
+                "machine_detection",
+                "nexmo_api_key",
+                "nexmo_api_secret",
+            ],
             choose_org=self.org,
         )
+
+    def test_update_credentials(self):
+        types = [t for t in Channel.get_types() if t.credentials]
+        self.assertIn("D3C", [t.code for t in types])
+
+        for channel_type in types:
+            with self.subTest(channel_type=channel_type.code):
+                old_creds = {c.key: f"old-{c.key}" for c in channel_type.credentials}
+                new_creds = {c.key: f"new-{c.key}-" + ("x" * 400) for c in channel_type.credentials}  # long tokens ok
+
+                channel = self.create_channel(
+                    channel_type.code, "Old Name", "1234", schemes=channel_type.schemes or ["tel"], config=old_creds
+                )
+                update_url = reverse("channels.channel_update", args=[channel.id])
+
+                # admins see the current credentials
+                self.login(self.admin)
+                response = self.client.get(update_url)
+                form = response.context["form"]
+                for credential in channel_type.credentials:
+                    self.assertEqual(f"old-{credential.key}", form.fields[credential.key].initial)
+                    self.assertEqual(credential.required, form.fields[credential.key].required)
+
+                data = {"name": "New Name", "is_enabled": True}
+                if "role" in form.fields:
+                    data["role"] = list(channel.role)
+
+                with patch.object(type(channel_type), "check_credentials", return_value=False) as mock_check:
+                    # renaming a channel doesn't check credentials, even if it's the first save of config defaults
+                    response = self.client.post(update_url, data | old_creds)
+                    self.assertEqual(302, response.status_code)
+                    self.assertEqual(0, mock_check.call_count)
+
+                    # changed credentials are checked and rejected if invalid
+                    response = self.client.post(update_url, data | new_creds)
+                    self.assertFormError(response.context["form"], None, "Credentials don't appear to be valid.")
+                    self.assertEqual(1, mock_check.call_count)
+
+                    channel.refresh_from_db()
+                    self.assertEqual(old_creds, {k: channel.config[k] for k in old_creds})
+
+                    # and saved if valid
+                    mock_check.return_value = True
+                    response = self.client.post(update_url, data | new_creds)
+                    self.assertEqual(302, response.status_code)
+                    self.assertEqual(2, mock_check.call_count)
+                    self.assertEqual(new_creds, {k: mock_check.call_args[0][0][k] for k in new_creds})
+
+                    channel.refresh_from_db()
+                    self.assertEqual(new_creds, {k: channel.config[k] for k in new_creds})
+
+                    # unchanged credentials aren't checked, so a channel with revoked credentials can be disabled
+                    mock_check.return_value = False
+                    response = self.client.post(update_url, data | new_creds | {"is_enabled": False})
+                    self.assertEqual(302, response.status_code)
+                    self.assertEqual(2, mock_check.call_count)
+
+                    channel.refresh_from_db()
+                    self.assertFalse(channel.is_enabled)
 
     def test_read_menu(self):
         # normal channel types get a logs menu item on their read page

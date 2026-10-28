@@ -1,12 +1,14 @@
 from unittest.mock import patch
 
+from requests import RequestException
+
 from django.forms import ValidationError
 from django.urls import reverse
 
 from temba.tests import MockResponse, TembaTest
 
 from ...models import Channel
-from .type import ZENVIA_MESSAGE_SUBSCRIPTION_ID, ZENVIA_STATUS_SUBSCRIPTION_ID
+from .type import ZENVIA_MESSAGE_SUBSCRIPTION_ID, ZENVIA_STATUS_SUBSCRIPTION_ID, ZenviaSMSType
 
 
 class ZenviaSMSTypeTest(TembaTest):
@@ -123,3 +125,18 @@ class ZenviaSMSTypeTest(TembaTest):
             self.assertEqual("12345", mock_delete.call_args_list[0][1]["headers"]["X-API-TOKEN"])
             self.assertEqual("https://api.zenvia.com/v2/subscriptions/status_123", mock_delete.call_args_list[1][0][0])
             self.assertEqual("12345", mock_delete.call_args_list[1][1]["headers"]["X-API-TOKEN"])
+
+    @patch("requests.get")
+    def test_check_credentials(self, mock_get):
+        config = {"api_key": "zv-token"}
+        mock_get.side_effect = [
+            MockResponse(200, "[]"),
+            MockResponse(401, "{}"),
+            RequestException("Network is unreachable"),
+        ]
+
+        self.assertTrue(ZenviaSMSType().check_credentials(config))
+        self.assertFalse(ZenviaSMSType().check_credentials(config))
+        self.assertFalse(ZenviaSMSType().check_credentials(config))
+
+        self.assertEqual("https://api.zenvia.com/v2/subscriptions", mock_get.call_args[0][0])

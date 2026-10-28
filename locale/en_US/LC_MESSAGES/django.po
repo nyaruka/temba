@@ -433,6 +433,15 @@ msgstr ""
 msgid "You can purchase a short code from %(link)s and connect it in a few simple steps."
 msgstr ""
 
+msgid "Username"
+msgstr ""
+
+msgid "Your username on Africa's Talking"
+msgstr ""
+
+msgid "Your API key on Africa's Talking account"
+msgstr ""
+
 msgid "To finish configuring this channel, you'll need to add the following callback URLs to your account on the Africa's Talking website."
 msgstr ""
 
@@ -454,12 +463,6 @@ msgstr ""
 msgid "Whether this short code is shared with others"
 msgstr ""
 
-msgid "Your username on Africa's Talking"
-msgstr ""
-
-msgid "Your API key on Africa's Talking account"
-msgstr ""
-
 msgid "Works in any country and uses the cell phone plan you already have. You just need an Android phone to get started."
 msgstr ""
 
@@ -479,6 +482,15 @@ msgid "Another channel has this number. Please remove that channel first."
 msgstr ""
 
 msgid "Connect Android Channel"
+msgstr ""
+
+msgid "The username for your API account"
+msgstr ""
+
+msgid "Password"
+msgstr ""
+
+msgid "The password for your API account"
 msgstr ""
 
 #, python-format
@@ -518,16 +530,16 @@ msgstr ""
 msgid "The charging level for your account"
 msgstr ""
 
-msgid "Username"
+msgid "Your username on Bandwidth"
 msgstr ""
 
-msgid "The username for your API account"
+msgid "Your password on Bandwidth"
 msgstr ""
 
-msgid "Password"
+msgid "Account ID"
 msgstr ""
 
-msgid "The password for your API account"
+msgid "Your account ID on Bandwidth"
 msgstr ""
 
 msgid "Unable to create bandwidth application"
@@ -552,18 +564,6 @@ msgid "Role"
 msgstr ""
 
 msgid "Choose the role that this channel supports"
-msgstr ""
-
-msgid "Your username on Bandwidth"
-msgstr ""
-
-msgid "Your password on Bandwidth"
-msgstr ""
-
-msgid "Account ID"
-msgstr ""
-
-msgid "Your account ID on Bandwidth"
 msgstr ""
 
 msgid "The API key as found on your settings page"
@@ -614,6 +614,9 @@ msgstr ""
 msgid "Connect your %(link)s number, we'll walk you through the steps necessary to get your Clickatell connection working in a few minutes."
 msgstr ""
 
+msgid "The API key for your integration as provided by Clickatell"
+msgstr ""
+
 msgid "To finish configuring this channel, you'll need to set the following callback URLs on the Clickatell website for your integration."
 msgstr ""
 
@@ -635,14 +638,20 @@ msgstr ""
 msgid "The phone number with country code or short code you are connecting. ex: +250788123124 or 15543"
 msgstr ""
 
-msgid "The API key for your integration as provided by Clickatell"
-msgstr ""
-
 msgid "Invalid phone number, please include the country code. ex: +250788123123"
 msgstr ""
 
 #, python-format
 msgid "If you are based in Malawi or Ghana you can purchase a number from %(link)s and connect it in a few simple steps."
+msgstr ""
+
+msgid "User ID"
+msgstr ""
+
+msgid "Your user_id on Click Mobile"
+msgstr ""
+
+msgid "Your password on Click Mobile"
 msgstr ""
 
 msgid "To finish configuring this channel, you need to configure Click Mobile to send new messages to the URL below."
@@ -655,15 +664,6 @@ msgid "Ghana"
 msgstr ""
 
 msgid "Malawi"
-msgstr ""
-
-msgid "User ID"
-msgstr ""
-
-msgid "Your user_id on Click Mobile"
-msgstr ""
-
-msgid "Your password on Click Mobile"
 msgstr ""
 
 msgid "App ID"
@@ -703,6 +703,12 @@ msgstr ""
 msgid "Easily add a two way number you have configured with %(link)s in Indonesia."
 msgstr ""
 
+msgid "The username provided by the provider to use their API"
+msgstr ""
+
+msgid "The password provided by the provider to use their API"
+msgstr ""
+
 msgid "To finish configuring this channel, you'll need to provide them with the following details."
 msgstr ""
 
@@ -722,14 +728,14 @@ msgstr ""
 msgid "Activate your own enterprise WhatsApp account in %(link)s (Cloud) to communicate with your contacts. "
 msgstr ""
 
+msgid "The 360 Dialog API key generated after account registration"
+msgstr ""
+
 #, python-format
 msgid "Unable to register callbacks: %(resp)s"
 msgstr ""
 
 msgid "Your enterprise WhatsApp number"
-msgstr ""
-
-msgid "The 360 Dialog API key generated after account registration"
 msgstr ""
 
 msgid "Please enter a valid phone number"
@@ -763,6 +769,12 @@ msgstr ""
 msgid "Use our pluggable API to connect an external service you already have."
 msgstr ""
 
+msgid "Authorization Header Value"
+msgstr ""
+
+msgid "The Authorization header value added when calling the URL (if any)"
+msgstr ""
+
 msgid "URN Type"
 msgstr ""
 
@@ -788,12 +800,6 @@ msgid "The content type used when sending the request"
 msgstr ""
 
 msgid "The maximum length of any single message on this channel. (longer messages will be split)"
-msgstr ""
-
-msgid "Authorization Header Value"
-msgstr ""
-
-msgid "The Authorization header value added when calling the URL (if any)"
 msgstr ""
 
 msgid "Send URL"
@@ -892,6 +898,12 @@ msgstr ""
 msgid "Connect your approved %(link)s channel"
 msgstr ""
 
+msgid "FreshChat API Auth Token"
+msgstr ""
+
+msgid "The API auth token- leave out the bearer"
+msgstr ""
+
 msgid "To finish configuring this channel, you'll have to configure the FreshChat server to direct messages to the url below."
 msgstr ""
 
@@ -916,22 +928,7 @@ msgstr ""
 msgid "The UUID of the Agent you want RP to Use."
 msgstr ""
 
-msgid "FreshChat API Auth Token"
-msgstr ""
-
-msgid "The API auth token- leave out the bearer"
-msgstr ""
-
 msgid "If you are based in the Phillipines, you can integrate {{ branding.name }} with Globe Labs to send and receive messages on your short code."
-msgstr ""
-
-msgid "To finish configuring this channel, you'll need to set the following notify URI for SMS on your application configuration page."
-msgstr ""
-
-msgid "Notify URI"
-msgstr ""
-
-msgid "The short code you have been assigned by Globe Labs ex: 15543"
 msgstr ""
 
 msgid "Application Id"
@@ -950,6 +947,15 @@ msgid "Passphrase"
 msgstr ""
 
 msgid "The passphrase assigned to you by Globe Labs to support sending"
+msgstr ""
+
+msgid "To finish configuring this channel, you'll need to set the following notify URI for SMS on your application configuration page."
+msgstr ""
+
+msgid "Notify URI"
+msgstr ""
+
+msgid "The short code you have been assigned by Globe Labs ex: 15543"
 msgstr ""
 
 #, python-format
@@ -979,6 +985,12 @@ msgstr ""
 msgid "If you have a long number or short code with %(link)s you can connect it in a few easy steps."
 msgstr ""
 
+msgid "Your i2SMS username"
+msgstr ""
+
+msgid "Your i2SMS password"
+msgstr ""
+
 msgid "To finish configuring this channel, you'll need to set the message URL for the `DEFAULT` keyword as below."
 msgstr ""
 
@@ -991,14 +1003,14 @@ msgstr ""
 msgid "The hash of your i2SMS channel"
 msgstr ""
 
-msgid "Your i2SMS username"
-msgstr ""
-
-msgid "Your i2SMS password"
-msgstr ""
-
 #, python-format
 msgid "Easily add a two way number you have configured with %(link)s using their APIs."
+msgstr ""
+
+msgid "Infobip API Key"
+msgstr ""
+
+msgid "The API Key"
 msgstr ""
 
 msgid "To finish configuring this channel, you'll need to set the following callback URLs on the Infobip website under your account."
@@ -1014,12 +1026,6 @@ msgid "Originating Phone number"
 msgstr ""
 
 msgid "The phone number being added"
-msgstr ""
-
-msgid "Infobip API Key"
-msgstr ""
-
-msgid "The API Key"
 msgstr ""
 
 msgid "Infobip API subdomain"
@@ -1048,6 +1054,12 @@ msgstr ""
 msgid "Connect your %(link)s instance that you have already connected to an SMSC."
 msgstr ""
 
+msgid "The username to be used to authenticate to Jasmin"
+msgstr ""
+
+msgid "The password to be used to authenticate to Jasmin"
+msgstr ""
+
 msgid "To finish configuring this channel, you'll need to configure Jasmin to call the following URL for MO (incoming) messages."
 msgstr ""
 
@@ -1069,26 +1081,20 @@ msgstr ""
 msgid "The URL for the Jasmin server send path"
 msgstr ""
 
-msgid "The username to be used to authenticate to Jasmin"
-msgstr ""
-
-msgid "The password to be used to authenticate to Jasmin"
-msgstr ""
-
 #, python-format
 msgid "Add a %(link)s bot to send and receive messages to JioChat users for free. Your users will need an Android, Windows or iOS device and a JioChat account to send and receive messages."
-msgstr ""
-
-msgid "To finish configuring this channel, you'll need to enter the following webhook URL and token on JioChat Developer Center configuration."
-msgstr ""
-
-msgid "Webhook URL"
 msgstr ""
 
 msgid "The JioChat App ID"
 msgstr ""
 
 msgid "The JioChat App secret"
+msgstr ""
+
+msgid "To finish configuring this channel, you'll need to enter the following webhook URL and token on JioChat Developer Center configuration."
+msgstr ""
+
+msgid "Webhook URL"
 msgstr ""
 
 #, python-format
@@ -1098,12 +1104,6 @@ msgstr ""
 msgid "Activate your own enterprise WhatsApp account in Kaleyra to communicate with your contacts. <a target=\"_blank\" href=\"https://www.kaleyra.com/whatsapp/\">Learn more about Kaleyra WhatsApp</a>"
 msgstr ""
 
-msgid "To finish configuring this channel, you'll need to set the following callback URL on your Kaleyra account."
-msgstr ""
-
-msgid "To receive incoming messages, you need to set the receive URL for your Kaleyra account."
-msgstr ""
-
 msgid "Account SID"
 msgstr ""
 
@@ -1111,6 +1111,12 @@ msgid "Your Kaleyra Account SID"
 msgstr ""
 
 msgid "Your Kaleyra API Key"
+msgstr ""
+
+msgid "To finish configuring this channel, you'll need to set the following callback URL on your Kaleyra account."
+msgstr ""
+
+msgid "To receive incoming messages, you need to set the receive URL for your Kaleyra account."
 msgstr ""
 
 #, python-format
@@ -1139,6 +1145,12 @@ msgstr ""
 msgid "Add a %(link)s bot to send and receive messages to LINE users for free. Your users will need an Android, Windows or iOS device and a LINE account to send and receive messages."
 msgstr ""
 
+msgid "Access Token"
+msgstr ""
+
+msgid "Access token of the bot."
+msgstr ""
+
 msgid "Channel ID"
 msgstr ""
 
@@ -1146,12 +1158,6 @@ msgid "Channel ID of the LINE channel for the bot."
 msgstr ""
 
 msgid "Name of the bot."
-msgstr ""
-
-msgid "Access Token"
-msgstr ""
-
-msgid "Access token of the bot."
 msgstr ""
 
 msgid "Secret"
@@ -1167,6 +1173,12 @@ msgid "Sent URL"
 msgstr ""
 
 msgid "Failed URL"
+msgstr ""
+
+msgid "The username provided by Macrokiosk to use their API"
+msgstr ""
+
+msgid "The password provided by Macrokiosk to use their API"
 msgstr ""
 
 msgid "To finish configuring this channel, you'll need to notify MACROKIOSK of the following URLs."
@@ -1193,12 +1205,6 @@ msgstr ""
 msgid "The sender ID provided by Macrokiosk to use their API"
 msgstr ""
 
-msgid "The username provided by Macrokiosk to use their API"
-msgstr ""
-
-msgid "The password provided by Macrokiosk to use their API"
-msgstr ""
-
 msgid "The Service ID provided by Macrokiosk to use their API"
 msgstr ""
 
@@ -1206,6 +1212,12 @@ msgid "To finish configuring this channel, you'll need to set the following call
 msgstr ""
 
 msgid "This endpoint will be called by Mblox when new messages are received to your number and for delivery reports."
+msgstr ""
+
+msgid "Messagebird API Auth Token"
+msgstr ""
+
+msgid "The API auth token"
 msgstr ""
 
 msgid "To finish configuring this channel, you'll have to configure the Messagebird to send raw received SMS messages to the URL below either with a flow or by registering the webhook with them. Configure the status URL under Developer Settings to receive status updates for your messages."
@@ -1226,14 +1238,20 @@ msgstr ""
 msgid "Signing Key used to verify signatures. See https://developers.messagebird.com/api/#verifying-http-requests"
 msgstr ""
 
-msgid "Messagebird API Auth Token"
-msgstr ""
-
-msgid "The API auth token"
-msgstr ""
-
 #, python-format
 msgid "If you are based in Jamaica, you can purchase a short code from %(link)s and connect it in a few simple steps."
+msgstr ""
+
+msgid "Public Key"
+msgstr ""
+
+msgid "The public key provided by Messangi"
+msgstr ""
+
+msgid "Private Key"
+msgstr ""
+
+msgid "The private key provided by Messangi"
 msgstr ""
 
 msgid "To finish configuring this channel, you'll need to set the following callback URLs on your Messangi account."
@@ -1249,18 +1267,6 @@ msgid "Carrier Id"
 msgstr ""
 
 msgid "The carrier id for the short code"
-msgstr ""
-
-msgid "Public Key"
-msgstr ""
-
-msgid "The public key provided by Messangi"
-msgstr ""
-
-msgid "Private Key"
-msgstr ""
-
-msgid "The private key provided by Messangi"
 msgstr ""
 
 msgid "Instance Id"
@@ -1279,6 +1285,12 @@ msgstr ""
 msgid "The service ID as provided by Mtarget"
 msgstr ""
 
+msgid "The Consumer key"
+msgstr ""
+
+msgid "The Consumer secret"
+msgstr ""
+
 #, python-format
 msgid "Unable to get token: %s"
 msgstr ""
@@ -1291,23 +1303,11 @@ msgstr ""
 msgid "Unable to add subscription callbacks: %s"
 msgstr ""
 
-msgid "The Consumer key"
-msgstr ""
-
-msgid "The Consumer secret"
-msgstr ""
-
 msgid "The CP Address (if provided by MTN)"
 msgstr ""
 
 #, python-format
 msgid "If you are based in Trinidad & Tobago, you can purchase a short code from %(link)s and connect it in a few simple steps."
-msgstr ""
-
-msgid "To receive incoming messages, you need to set the receive URL for your Novo account."
-msgstr ""
-
-msgid "The Novo short code"
 msgstr ""
 
 msgid "Merchant ID"
@@ -1320,6 +1320,12 @@ msgid "Merchant Secret"
 msgstr ""
 
 msgid "The merchant secret provided by Novo"
+msgstr ""
+
+msgid "To receive incoming messages, you need to set the receive URL for your Novo account."
+msgstr ""
+
+msgid "The Novo short code"
 msgstr ""
 
 #, python-format
@@ -1341,6 +1347,15 @@ msgstr ""
 msgid "Shortcode"
 msgstr ""
 
+msgid "Your Plivo auth ID"
+msgstr ""
+
+msgid "Authentication Token"
+msgstr ""
+
+msgid "Your Plivo auth token"
+msgstr ""
+
 msgid "Unable to create a Plivo application for that number, please try again."
 msgstr ""
 
@@ -1351,12 +1366,6 @@ msgid "That number is not currently supported."
 msgstr ""
 
 msgid "There was a problem claiming that number, please check the balance on your account."
-msgstr ""
-
-msgid "Your Plivo auth ID"
-msgstr ""
-
-msgid "Your Plivo auth token"
 msgstr ""
 
 msgid "Your Plivo auth ID and auth token seem invalid. Please check them again and retry."
@@ -1422,6 +1431,18 @@ msgstr ""
 msgid "Easily add a two way number you have with %(link)s using their APIs."
 msgstr ""
 
+msgid "Project Key"
+msgstr ""
+
+msgid "The key for your project ex: 990c5c10-bf8f-4156-b014-44282e60b3a1"
+msgstr ""
+
+msgid "API Token"
+msgstr ""
+
+msgid "The API token to use to authenticate ex: FPd199eb93e878f8a3tw9ttna313914tnauwy"
+msgstr ""
+
 msgid "To finish configuring this channel, you may need to set this callback URL in your Signalwire account."
 msgstr ""
 
@@ -1445,15 +1466,6 @@ msgid "Space"
 msgstr ""
 
 msgid "Your SignalWire Space name. For example, if your space is rapid.signalwire.com, enter rapid."
-msgstr ""
-
-msgid "Project Key"
-msgstr ""
-
-msgid "The key for your project ex: 990c5c10-bf8f-4156-b014-44282e60b3a1"
-msgstr ""
-
-msgid "The API token to use to authenticate ex: FPd199eb93e878f8a3tw9ttna313914tnauwy"
 msgstr ""
 
 msgid "Enter a valid space name."
@@ -1558,9 +1570,6 @@ msgstr ""
 msgid "Add a %(link)s bot to send and receive messages to Telegram users for free. Your users will need an Android, Windows or iOS device and a Telegram account to send and receive messages."
 msgstr ""
 
-msgid "Authentication Token"
-msgstr ""
-
 msgid "The Authentication token for your Telegram Bot"
 msgstr ""
 
@@ -1573,15 +1582,6 @@ msgstr ""
 msgid "If you are based in Somalia, you can integrate with Telesom to send and receive messages on your short code."
 msgstr ""
 
-msgid "TTo finish configuring this channel, you'll need to provide Telesom with the following delivery URL for incoming messages."
-msgstr ""
-
-msgid "The short code you are connecting with."
-msgstr ""
-
-msgid "The url provided to deliver messages"
-msgstr ""
-
 msgid "The username provided to use their API"
 msgstr ""
 
@@ -1591,8 +1591,26 @@ msgstr ""
 msgid "The private key provided to use their API"
 msgstr ""
 
+msgid "TTo finish configuring this channel, you'll need to provide Telesom with the following delivery URL for incoming messages."
+msgstr ""
+
+msgid "The short code you are connecting with."
+msgstr ""
+
+msgid "The url provided to deliver messages"
+msgstr ""
+
 #, python-format
 msgid "If you have a number with %(link)s you can connect it in a few easy steps to automate your SMS numbers."
+msgstr ""
+
+msgid "Your ThinQ account id"
+msgstr ""
+
+msgid "The user name for you API token"
+msgstr ""
+
+msgid "Your API token"
 msgstr ""
 
 msgid "To finish configuring this channel, you'll need to set the following callback URLs on the ThinQ website on the SMS -> SMS Configuration page."
@@ -1610,19 +1628,10 @@ msgstr ""
 msgid "Set your Delivery Confirmation URL to the above, making sure you select \"Form-Data\" as the Delivery Notification Format."
 msgstr ""
 
-msgid "Your ThinQ account id"
-msgstr ""
-
 msgid "The ThinQ number you want to connect"
 msgstr ""
 
 msgid "United States"
-msgstr ""
-
-msgid "The user name for you API token"
-msgstr ""
-
-msgid "Your API token"
 msgstr ""
 
 msgid "Invalid phone number, please include the country code. ex: +12065551212"
@@ -1734,14 +1743,14 @@ msgstr ""
 msgid "Twilio Messaging Service SID"
 msgstr ""
 
+msgid "The authentication token provided by Viber"
+msgstr ""
+
 #, python-format
 msgid "Connect a %(link)s public channel to send and receive messages to Viber users for free. Your users will need an Android, Windows or iOS device and a Viber account to send and receive messages."
 msgstr ""
 
 msgid "Your Viber channel is connected. If needed the webhook endpoints are listed below."
-msgstr ""
-
-msgid "The authentication token provided by Viber"
 msgstr ""
 
 #, python-format
@@ -1773,6 +1782,12 @@ msgstr ""
 msgid "The callback verification string"
 msgstr ""
 
+msgid "Your Vonage API key"
+msgstr ""
+
+msgid "Your Vonage API secret"
+msgstr ""
+
 msgid "Your Vonage configuration URLs are as follows. These should have been set up automatically when claiming your number, but if not you can set them from your Vonage dashboard."
 msgstr ""
 
@@ -1797,12 +1812,6 @@ msgstr ""
 msgid "There was a problem claiming that number, please check the balance on your account. Note that you can only claim numbers after adding credit to your Vonage account."
 msgstr ""
 
-msgid "Your Vonage API key"
-msgstr ""
-
-msgid "Your Vonage API secret"
-msgstr ""
-
 msgid "Your API key and secret seem invalid. Please check them again and retry."
 msgstr ""
 
@@ -1810,6 +1819,12 @@ msgid "Vonage Account successfully connected."
 msgstr ""
 
 msgid "Connect Vonage"
+msgstr ""
+
+msgid "The username for your Movile/Wavy account"
+msgstr ""
+
+msgid "The Authentication Token for your Movile/Wavy account"
 msgstr ""
 
 msgid "To finish configuring this channel, you need to have Movile/Wavy configure the URL below for your number."
@@ -1824,23 +1839,17 @@ msgstr ""
 msgid "To receive delivery of delivered messages, you need to set the Delivered URL for your Movile/Wavy account."
 msgstr ""
 
-msgid "The username for your Movile/Wavy account"
-msgstr ""
-
-msgid "The Authentication Token for your Movile/Wavy account"
-msgstr ""
-
 #, python-format
 msgid "Add a %(link)s bot to send and receive messages to WeChat users for free. Your users will need an Android, Windows or iOS device and a WeChat account to send and receive messages."
-msgstr ""
-
-msgid "To finish configuring this channel, you'll need to enter the following webhook URL and token on WeChat Official Accounts Platform."
 msgstr ""
 
 msgid "The WeChat App ID"
 msgstr ""
 
 msgid "The WeChat App secret"
+msgstr ""
+
+msgid "To finish configuring this channel, you'll need to enter the following webhook URL and token on WeChat Official Accounts Platform."
 msgstr ""
 
 msgid "If you have an enterprise WhatsApp account, you can connect it to communicate with your contacts"
@@ -1893,19 +1902,6 @@ msgstr ""
 msgid "Connect WhatsApp"
 msgstr ""
 
-#, python-format
-msgid "If you are based in Uganda, you can integrate with %(link)s to send and receive messages on your short code."
-msgstr ""
-
-msgid "To finish configuring this channel, you'll need to notify Yo! of the following inbound SMS URL."
-msgstr ""
-
-msgid "Inbound SMS URL"
-msgstr ""
-
-msgid "This URL should be called with a GET by Yo! when new incoming messages are received on your short code."
-msgstr ""
-
 msgid "Account Number"
 msgstr ""
 
@@ -1919,7 +1915,23 @@ msgid "Your Yo! SMS Gateway password"
 msgstr ""
 
 #, python-format
+msgid "If you are based in Uganda, you can integrate with %(link)s to send and receive messages on your short code."
+msgstr ""
+
+msgid "To finish configuring this channel, you'll need to notify Yo! of the following inbound SMS URL."
+msgstr ""
+
+msgid "Inbound SMS URL"
+msgstr ""
+
+msgid "This URL should be called with a GET by Yo! when new incoming messages are received on your short code."
+msgstr ""
+
+#, python-format
 msgid "If you have a %(link)s number, you can connect it to communicate with your contacts."
+msgstr ""
+
+msgid "The API token for your integration as provided by Zenvia"
 msgstr ""
 
 #, python-format
@@ -1928,12 +1940,6 @@ msgstr ""
 
 #, python-format
 msgid "Unable to remove webhook subscriptions: %(resp)s"
-msgstr ""
-
-msgid "API Token"
-msgstr ""
-
-msgid "The API token for your integration as provided by Zenvia"
 msgstr ""
 
 msgid "Invalid token. Please check your Zenvia account settings."
@@ -1953,12 +1959,6 @@ msgid "Connect %(channel_type)s"
 msgstr ""
 
 msgid "You can connect your number by entering your credentials here."
-msgstr ""
-
-msgid "The username provided by the provider to use their API"
-msgstr ""
-
-msgid "The password provided by the provider to use their API"
 msgstr ""
 
 msgid "Sorry, you need to have a workspace to add numbers. You can still test things out for free using an Android phone."

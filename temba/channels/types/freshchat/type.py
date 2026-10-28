@@ -2,7 +2,7 @@ from django.utils.translation import gettext_lazy as _
 
 from temba.contacts.models import URN
 
-from ...models import ChannelType, ConfigUI
+from ...models import Channel, ChannelType, ConfigUI
 from .views import ClaimView
 
 
@@ -23,6 +23,12 @@ class FreshChatType(ChannelType):
         "link": '<a target="_blank" href="https://www.freshworks.com/live-chat-software/">FreshChat</a>'
     }
     claim_view = ClaimView
+
+    credentials = (
+        ChannelType.Credential(
+            Channel.CONFIG_AUTH_TOKEN, _("FreshChat API Auth Token"), _("The API auth token- leave out the bearer")
+        ),
+    )
 
     config_ui = ConfigUI(
         blurb=_(

@@ -30,7 +30,7 @@ from temba.orgs.models import Org
 from temba.orgs.views.base import BaseDependencyDeleteModal, BaseReadView
 from temba.orgs.views.mixins import OrgObjPermsMixin, OrgPermsMixin
 from temba.utils import countries
-from temba.utils.fields import SelectWidget
+from temba.utils.fields import InputWidget, SelectWidget
 from temba.utils.views.mixins import ChartViewMixin, ComponentFormMixin, ContextMenuMixin, ModalFormMixin, SpaMixin
 
 from .models import Channel, ChannelCount, ChannelLog
@@ -408,6 +408,7 @@ class UpdateChannelForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         self.config_fields = []
+        self.config_defaults = {}
 
         if URN.TEL_SCHEME in self.instance.schemes:
             self.add_config_field(
@@ -425,23 +426,37 @@ class UpdateChannelForm(forms.ModelForm):
                 default=False,
             )
 
+        for credential in self.instance.type.credentials:
+            self.add_config_field(
+                credential.key,
+                forms.CharField(
+                    label=credential.label,
+                    help_text=credential.help,
+                    required=credential.required,
+                    widget=InputWidget(),
+                ),
+                default="",
+            )
+
     def add_config_field(self, config_key: str, field, *, default):
         field.initial = self.instance.config.get(config_key, default)
 
         self.fields[config_key] = field
         self.config_fields.append(config_key)
+        self.config_defaults[config_key] = default
 
     def get_config_values(self):
         return {k: v for k, v in self.cleaned_data.items() if k in self.config_fields}
 
     def clean(self) -> dict[str, Any]:
         cleaned_data = super().clean()
-        updated_config = self.instance.config | self.get_config_values()
+        config_values = self.get_config_values()
+        current_values = {k: self.instance.config.get(k, self.config_defaults[k]) for k in config_values}
 
-        # only check credentials when config has changed, so a channel whose credentials have been revoked can still
-        # be renamed or disabled
-        if updated_config != self.instance.config:
-            if not self.instance.type.check_credentials(updated_config):
+        # only check credentials when config has changed (ignoring defaults being saved for the first time), so a
+        # channel whose credentials have been revoked can still be renamed or disabled
+        if config_values != current_values:
+            if not self.instance.type.check_credentials(self.instance.config | config_values):
                 raise ValidationError(_("Credentials don't appear to be valid."))
 
         return cleaned_data

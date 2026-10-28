@@ -86,6 +86,17 @@ class ChannelType(metaclass=ABCMeta):
         SOCIAL_MEDIA = 2
         API = 4
 
+    @dataclass
+    class Credential:
+        """
+        Config value entered by the user when claiming, which they can also change from the update form.
+        """
+
+        key: str
+        label: str
+        help: str = ""
+        required: bool = True
+
     code = None  # DB code and lowercased to create courier URLs
     slug = None  # set automatically
     name = None  # display name
@@ -108,6 +119,9 @@ class ChannelType(metaclass=ABCMeta):
     config_ui = None
 
     update_form = None
+
+    # config values that can be changed from the update form, checked with check_credentials when they change
+    credentials: tuple[Credential] = ()
 
     # additional read page content menu items
     menu_items = ()
