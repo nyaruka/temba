@@ -3,6 +3,7 @@ from datetime import datetime, timezone as tzone
 from django.urls import reverse
 
 from temba.api.v2.serializers import format_datetime
+from temba.tickets.models import Ticket
 
 from . import APITest
 
@@ -23,7 +24,7 @@ class TicketsEndpointTest(APITest):
         ticket1 = self.create_ticket(
             ann, opened_by=self.admin, closed_on=datetime(2021, 1, 1, 12, 30, 45, 123456, tzone.utc)
         )
-        ticket2 = self.create_ticket(bob, opened_in=flow)
+        ticket2 = self.create_ticket(bob, opened_in=flow, closed_on=datetime(2021, 1, 2, 12, 30, 45, 123456, tzone.utc))
         ticket3 = self.create_ticket(bob, assignee=self.agent)
 
         # on another org
@@ -51,14 +52,14 @@ class TicketsEndpointTest(APITest):
                     "uuid": str(ticket2.uuid),
                     "assignee": None,
                     "contact": {"uuid": str(bob.uuid), "name": "Bob"},
-                    "status": "open",
+                    "status": "closed",
                     "topic": {"uuid": str(self.org.default_topic.uuid), "name": "General"},
                     "body": None,
                     "opened_on": format_datetime(ticket2.opened_on),
                     "opened_by": None,
                     "opened_in": {"uuid": str(flow.uuid), "name": "Support"},
                     "modified_on": format_datetime(ticket2.modified_on),
-                    "closed_on": None,
+                    "closed_on": "2021-01-02T12:30:45.123456Z",
                 },
                 {
                     "uuid": str(ticket1.uuid),
@@ -85,3 +86,11 @@ class TicketsEndpointTest(APITest):
 
         # filter further by ticket uuid
         self.assertGet(endpoint_url + f"?uuid={ticket3.uuid}", [self.admin], results=[ticket3])
+
+        # pending tickets have their own status
+        ticket3.status = Ticket.STATUS_PENDING
+        ticket3.save(update_fields=("status",))
+
+        self.assertGet(
+            endpoint_url + f"?uuid={ticket3.uuid}", [self.admin], raw=lambda j: j["results"][0]["status"] == "pending"
+        )

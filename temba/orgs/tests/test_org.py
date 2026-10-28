@@ -780,7 +780,7 @@ class OrgDeleteTest(TembaTest):
     def _create_ticket_content(self, org, user, contacts, flows, add):
         topic = add(Topic.create(org, user, "Spam"))
         add(self.create_ticket(contacts[0], topic))
-        add(self.create_ticket(contacts[0], opened_in=flows[0]))
+        add(self.create_ticket(contacts[0], opened_in=flows[0], closed_on=timezone.now()))
         team = add(Team.create(org, user, "Spam Only", topics=[topic]))
         Invitation.create(org, user, "newagent@textit.com", OrgRole.AGENT, team=team)
 

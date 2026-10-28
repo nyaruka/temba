@@ -137,6 +137,24 @@ class ContactTest(TembaTest):
             mr_mocks.calls["contact_modify"],
         )
 
+        # contact already has an open ticket so it's returned rather than a new one opened
+        self.assertEqual(ticket, self.joe.open_ticket(self.admin, topic=self.org.default_topic, assignee=None, note=""))
+        self.assertEqual(1, self.joe.tickets.count())
+
+        # and an older ticket which has been reopened is returned rather than the newest ticket
+        ticket.status = Ticket.STATUS_CLOSED
+        ticket.save(update_fields=("status",))
+        older = self.create_ticket(self.joe, opened_on=timezone.now() - timedelta(days=1))
+
+        self.assertEqual(older, self.joe.open_ticket(self.admin, topic=self.org.default_topic, assignee=None, note=""))
+
+        # as is a pending ticket
+        older.status = Ticket.STATUS_PENDING
+        older.save(update_fields=("status",))
+
+        self.assertEqual(older, self.joe.open_ticket(self.admin, topic=self.org.default_topic, assignee=None, note=""))
+        self.assertEqual(2, self.joe.tickets.count())
+
     def test_interrupt(self):
         # noop when contact not in a flow
         self.joe.interrupt(self.admin)

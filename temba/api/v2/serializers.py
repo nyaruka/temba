@@ -1770,7 +1770,7 @@ class WebHookEventReadSerializer(ReadSerializer):
 
 
 class TicketReadSerializer(ReadSerializer):
-    STATUSES = {Ticket.STATUS_OPEN: "open", Ticket.STATUS_CLOSED: "closed"}
+    STATUSES = {Ticket.STATUS_PENDING: "pending", Ticket.STATUS_OPEN: "open", Ticket.STATUS_CLOSED: "closed"}
 
     contact = fields.ContactField()
     status = serializers.SerializerMethodField()
