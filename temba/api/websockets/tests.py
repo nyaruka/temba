@@ -393,8 +393,8 @@ class EndpointsTest(APITestMixin, TembaTest):
 
         contact = self.create_contact("Ann", phone="+1234", org=self.org)
         sales_ticket = self.create_ticket(contact, topic=sales)
-        support_ticket = self.create_ticket(contact, topic=support)
-        assigned_ticket = self.create_ticket(contact, topic=support, assignee=self.agent)
+        support_ticket = self.create_ticket(contact, topic=support, closed_on=timezone.now())
+        assigned_ticket = self.create_ticket(contact, topic=support, assignee=self.agent, closed_on=timezone.now())
 
         def subscribe(socket, *, client="conn-1"):
             return self.post("api.websockets.subscribe", {"channel": socket, "client": client})

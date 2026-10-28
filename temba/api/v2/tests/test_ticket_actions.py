@@ -21,10 +21,11 @@ class TicketActionsEndpointTest(APITest):
 
         # create some tickets
         joe = self.create_contact("Joe Blow", phone="+250788123123")
+        ann = self.create_contact("Ann", phone="+250788123124")
         frank = self.create_contact("Frank", urns=["facebook:123456"])
         sales = Topic.create(self.org, self.admin, "Sales")
         ticket1 = self.create_ticket(joe, closed_on=datetime(2021, 1, 1, 12, 30, 45, 123456, tzone.utc))
-        ticket2 = self.create_ticket(joe)
+        ticket2 = self.create_ticket(ann)
         self.create_ticket(frank)
 
         # on another org

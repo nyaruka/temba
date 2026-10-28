@@ -261,12 +261,12 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         menu_url = reverse("tickets.ticket_menu")
 
         self.create_ticket(self.contact, assignee=self.admin)
-        self.create_ticket(self.contact, assignee=self.admin, topic=self.sales)
-        self.create_ticket(self.contact, assignee=None)
-        self.create_ticket(self.contact, closed_on=timezone.now())
+        self.create_ticket(self.create_contact("Bob"), assignee=self.admin, topic=self.sales)
+        self.create_ticket(self.create_contact("Cat"), assignee=None)
+        self.create_ticket(self.create_contact("Dan"), closed_on=timezone.now())
 
         # agent3 is assigned a ticket in a topic their team doesn't have access to
-        self.create_ticket(self.contact, assignee=self.agent3, topic=self.sales)
+        self.create_ticket(self.create_contact("Eve"), assignee=self.agent3, topic=self.sales)
 
         self.assertRequestDisallowed(menu_url, [None])
         self.assertPageMenu(
@@ -334,6 +334,7 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         contact1 = self.create_contact("Joe", phone="123", last_seen_on=timezone.now())
         contact2 = self.create_contact("Frank", phone="124", last_seen_on=timezone.now())
         contact3 = self.create_contact("Anne", phone="125", last_seen_on=timezone.now())
+        contact4 = self.create_contact("Dave", phone="127", last_seen_on=timezone.now())
         self.create_contact("Mary No tickets", phone="126", last_seen_on=timezone.now())
         self.create_contact("Mr Other Org", phone="126", last_seen_on=timezone.now(), org=self.org2)
 
@@ -370,12 +371,16 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         assert_tickets(all_url, self.agent3, expected=[])
         assert_tickets(all_url, self.customer_support, expected=[], choose_org=self.org)
 
-        # contact 1 has two open tickets and some messages
+        # contact 1 has an open ticket and some messages
         c1_t1 = self.create_ticket(contact1, topic=self.org.default_topic, assignee=self.admin)
-        c1_t2 = self.create_ticket(contact1, topic=self.sales, assignee=self.agent3)  # doesn't have access to sales
 
         self.create_incoming_msg(contact1, "I have an issue")
         self.create_outgoing_msg(contact1, "We can help", created_by=self.admin)
+
+        # contact 4 has an open ticket assigned to an agent who doesn't have access to sales
+        c4_t1 = self.create_ticket(contact4, topic=self.sales, assignee=self.agent3)
+
+        self.create_outgoing_msg(contact4, "Sales can help", created_by=self.admin)
 
         # contact 2 has an open ticket and a closed ticket
         c2_t1 = self.create_ticket(contact2)
@@ -393,7 +398,7 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         # tickets created back to back can land in the same millisecond, and the timestamp cursors below only have
         # millisecond resolution, so space out activity to keep paging deterministic
         base = timezone.now().replace(microsecond=0) - timedelta(minutes=1)
-        for i, ticket in enumerate([c1_t1, c1_t2, c2_t1, c2_t2, c3_t1, c3_t2]):
+        for i, ticket in enumerate([c1_t1, c4_t1, c2_t1, c2_t2, c3_t1, c3_t2]):
             Ticket.objects.filter(id=ticket.id).update(last_activity_on=base + timedelta(seconds=i))
             ticket.last_activity_on = base + timedelta(seconds=i)
 
@@ -402,15 +407,15 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         with self.assertNumQueries(11):
             response = self.client.get(all_url)
 
-        assert_tickets(all_url, self.admin, expected=[c2_t1, c1_t2, c1_t1, c3_t2, c3_t1, c2_t2])
-        assert_tickets(all_url, self.editor, expected=[c2_t1, c1_t2, c1_t1, c3_t2, c3_t1, c2_t2])
-        assert_tickets(all_url, self.agent, expected=[c2_t1, c1_t2, c1_t1, c3_t2, c3_t1, c2_t2])
-        assert_tickets(all_url, self.agent2, expected=[c1_t2, c3_t1])  # only sales topic
+        assert_tickets(all_url, self.admin, expected=[c2_t1, c4_t1, c1_t1, c3_t2, c3_t1, c2_t2])
+        assert_tickets(all_url, self.editor, expected=[c2_t1, c4_t1, c1_t1, c3_t2, c3_t1, c2_t2])
+        assert_tickets(all_url, self.agent, expected=[c2_t1, c4_t1, c1_t1, c3_t2, c3_t1, c2_t2])
+        assert_tickets(all_url, self.agent2, expected=[c4_t1, c3_t1])  # only sales topic
         assert_tickets(all_url, self.agent3, expected=[])
         assert_tickets(
             all_url,
             self.customer_support,
-            expected=[c2_t1, c1_t2, c1_t1, c3_t2, c3_t1, c2_t2],
+            expected=[c2_t1, c4_t1, c1_t1, c3_t2, c3_t1, c2_t2],
             choose_org=self.org,
         )
 
@@ -437,11 +442,11 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
                     },
                 },
                 {
-                    "uuid": str(contact1.uuid),
-                    "name": "Joe",
+                    "uuid": str(contact4.uuid),
+                    "name": "Dave",
                     "last_seen_on": matchers.ISODatetime(),
                     "last_msg": {
-                        "text": "We can help",
+                        "text": "Sales can help",
                         "direction": "O",
                         "type": "T",
                         "created_on": matchers.ISODatetime(),
@@ -449,7 +454,7 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
                         "attachments": [],
                     },
                     "ticket": {
-                        "uuid": str(c1_t2.uuid),
+                        "uuid": str(c4_t1.uuid),
                         "assignee": {
                             "id": self.agent3.id,
                             "first_name": "",
@@ -529,7 +534,7 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # test filtering by assignee on the all folder
         assert_tickets(f"{all_url}?assignee={self.admin.uuid}", self.admin, expected=[c1_t1])
-        assert_tickets(f"{all_url}?assignee={self.agent3.uuid}", self.admin, expected=[c1_t2])
+        assert_tickets(f"{all_url}?assignee={self.agent3.uuid}", self.admin, expected=[c4_t1])
         assert_tickets(f"{all_url}?assignee={self.agent.uuid}", self.admin, expected=[])
 
         # assignee filter is ignored on non-all folders
@@ -539,15 +544,15 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         # agent2 only has access to sales topic, so filtering by admin (who has a General ticket) returns nothing
         assert_tickets(f"{all_url}?assignee={self.admin.uuid}", self.agent2, expected=[])
         # but filtering by agent3 (who has a Sales ticket) returns that ticket
-        assert_tickets(f"{all_url}?assignee={self.agent3.uuid}", self.agent2, expected=[c1_t2])
+        assert_tickets(f"{all_url}?assignee={self.agent3.uuid}", self.agent2, expected=[c4_t1])
 
         # invalid assignee UUID returns all tickets
-        assert_tickets(f"{all_url}?assignee={uuid4()}", self.admin, expected=[c2_t1, c1_t2, c1_t1, c3_t2, c3_t1, c2_t2])
+        assert_tickets(f"{all_url}?assignee={uuid4()}", self.admin, expected=[c2_t1, c4_t1, c1_t1, c3_t2, c3_t1, c2_t2])
 
         # test assignee filter with pagination (paginate_by=25, so we need 25+ tickets)
         bulk_tickets = []
         for i in range(24):
-            bulk_tickets.append(self.create_ticket(contact3, assignee=self.admin))
+            bulk_tickets.append(self.create_ticket(self.create_contact(f"Bulk {i}"), assignee=self.admin))
         # now we have 25 admin-assigned tickets total (c1_t1 + 24 new ones) which fills a page, so we get a next
         # link and it has to carry the assignee filter
         response = self.requestView(f"{all_url}?assignee={self.admin.uuid}", self.admin)
@@ -575,8 +580,8 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         assert_tickets(general_url, self.agent2, expected=404)
         assert_tickets(general_url, self.agent3, expected=404)
 
-        assert_tickets(sales_url, self.admin, expected=[c1_t2, c3_t1])
-        assert_tickets(sales_url, self.agent2, expected=[c1_t2, c3_t1])
+        assert_tickets(sales_url, self.admin, expected=[c4_t1, c3_t1])
+        assert_tickets(sales_url, self.agent2, expected=[c4_t1, c3_t1])
         assert_tickets(sales_url, self.agent3, expected=404)  # no access to sales topic
 
         # bad topic should be a 404
@@ -592,12 +597,12 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         assert_tickets(f"{all_url}{str(c1_t1.uuid)}", self.agent2, expected=[])
         assert_tickets(f"{all_url}{str(c1_t1.uuid)}", self.agent3, expected=[])
 
-        assert_tickets(f"{all_url}{str(c1_t2.uuid)}", self.admin, expected=[c1_t2])
-        assert_tickets(f"{all_url}{str(c1_t2.uuid)}", self.agent2, expected=[c1_t2])
-        assert_tickets(f"{all_url}{str(c1_t2.uuid)}", self.agent3, expected=[])  # no access to sales topic
+        assert_tickets(f"{all_url}{str(c4_t1.uuid)}", self.admin, expected=[c4_t1])
+        assert_tickets(f"{all_url}{str(c4_t1.uuid)}", self.agent2, expected=[c4_t1])
+        assert_tickets(f"{all_url}{str(c4_t1.uuid)}", self.agent3, expected=[])  # no access to sales topic
 
-        assert_tickets(f"{mine_url}{str(c1_t2.uuid)}", self.admin, expected=[])
-        assert_tickets(f"{mine_url}{str(c1_t2.uuid)}", self.agent3, expected=[])  # nor via Mine tho assigned
+        assert_tickets(f"{mine_url}{str(c4_t1.uuid)}", self.admin, expected=[])
+        assert_tickets(f"{mine_url}{str(c4_t1.uuid)}", self.agent3, expected=[])  # nor via Mine tho assigned
 
         # deep links work for closed tickets too
         assert_tickets(f"{all_url}{str(c2_t2.uuid)}", self.admin, expected=[c2_t2])
@@ -606,10 +611,10 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         with patch("temba.tickets.views.TicketCRUDL.Folder.paginate_by", 2):
             response = self.requestView(all_url, self.admin)
             self.assertEqual(
-                [str(c2_t1.uuid), str(c1_t2.uuid)], [t["ticket"]["uuid"] for t in response.json()["results"]]
+                [str(c2_t1.uuid), str(c4_t1.uuid)], [t["ticket"]["uuid"] for t in response.json()["results"]]
             )
             self.assertEqual(
-                f"{all_url}?before={datetime_to_timestamp(c1_t2.last_activity_on)}&before_id={c1_t2.id}"
+                f"{all_url}?before={datetime_to_timestamp(c4_t1.last_activity_on)}&before_id={c4_t1.id}"
                 f"&before_status=O",
                 response.json()["next"],
             )
@@ -636,11 +641,10 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
             self.assertNotIn("next", response.json())
 
     def test_folder_refresh_bounding(self):
-        contact = self.create_contact("Joe", phone="123")
         base = timezone.now().replace(microsecond=0)
 
         # 8 tickets in distinct milliseconds
-        spread = [self.create_ticket(contact) for _ in range(8)]
+        spread = [self.create_ticket(self.create_contact(f"Spread {i}")) for i in range(8)]
         for i, ticket in enumerate(spread):
             Ticket.objects.filter(id=ticket.id).update(last_activity_on=base + timedelta(milliseconds=i))
 
@@ -655,7 +659,7 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
 
             # a bulk update can put more than a page of tickets inside a single millisecond - the cap must
             # yield so the client's millisecond resolution cursor can still advance
-            tied = [self.create_ticket(contact) for _ in range(8)]
+            tied = [self.create_ticket(self.create_contact(f"Tied {i}")) for i in range(8)]
             for i, ticket in enumerate(tied):
                 Ticket.objects.filter(id=ticket.id).update(
                     last_activity_on=base + timedelta(seconds=1, microseconds=i + 1)
@@ -697,7 +701,7 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
     def test_folder_cursor_without_status(self):
         contact = self.create_contact("Joe", phone="123")
         open1 = self.create_ticket(contact)
-        open2 = self.create_ticket(contact)
+        open2 = self.create_ticket(self.create_contact("Bob", phone="124"))
         closed1 = self.create_ticket(contact, closed_on=timezone.now())
 
         base = timezone.now().replace(microsecond=0) - timedelta(minutes=1)
@@ -719,7 +723,7 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
     def test_folder_invalid_params(self):
         contact = self.create_contact("Joe", phone="123")
         ticket1 = self.create_ticket(contact)
-        ticket2 = self.create_ticket(contact, assignee=self.admin)
+        ticket2 = self.create_ticket(self.create_contact("Bob", phone="124"), assignee=self.admin)
 
         all_url = reverse("tickets.ticket_folder", kwargs={"folder": "all"})
 

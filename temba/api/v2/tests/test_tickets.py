@@ -23,7 +23,7 @@ class TicketsEndpointTest(APITest):
         ticket1 = self.create_ticket(
             ann, opened_by=self.admin, closed_on=datetime(2021, 1, 1, 12, 30, 45, 123456, tzone.utc)
         )
-        ticket2 = self.create_ticket(bob, opened_in=flow)
+        ticket2 = self.create_ticket(bob, opened_in=flow, closed_on=datetime(2021, 1, 2, 12, 30, 45, 123456, tzone.utc))
         ticket3 = self.create_ticket(bob, assignee=self.agent)
 
         # on another org
@@ -51,14 +51,14 @@ class TicketsEndpointTest(APITest):
                     "uuid": str(ticket2.uuid),
                     "assignee": None,
                     "contact": {"uuid": str(bob.uuid), "name": "Bob"},
-                    "status": "open",
+                    "status": "closed",
                     "topic": {"uuid": str(self.org.default_topic.uuid), "name": "General"},
                     "body": None,
                     "opened_on": format_datetime(ticket2.opened_on),
                     "opened_by": None,
                     "opened_in": {"uuid": str(flow.uuid), "name": "Support"},
                     "modified_on": format_datetime(ticket2.modified_on),
-                    "closed_on": None,
+                    "closed_on": "2021-01-02T12:30:45.123456Z",
                 },
                 {
                     "uuid": str(ticket1.uuid),

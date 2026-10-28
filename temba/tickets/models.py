@@ -358,6 +358,12 @@ class Ticket(models.Model):
             models.Index(name="tickets_api_by_org", fields=["org", "-modified_on", "-id"]),
             models.Index(name="tickets_api_by_contact", fields=["contact", "-modified_on", "-id"]),
         ]
+        constraints = [
+            # a contact can only have one ticket that isn't closed
+            models.UniqueConstraint(
+                name="tickets_contact_single_active", fields=("contact",), condition=Q(status__in=("P", "O"))
+            ),
+        ]
 
 
 class TicketFolder(metaclass=ABCMeta):

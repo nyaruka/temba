@@ -733,12 +733,18 @@ class TestClient(MailroomClient):
     def ticket_reopen(self, org, user, tickets, via: str):
         tickets = list(Ticket.objects.filter(org=org, id__in=[t.id for t in tickets], status=Ticket.STATUS_CLOSED))
 
+        reopened = []
         for ticket in tickets:
+            # a contact can only have one open ticket
+            if ticket.contact.tickets.filter(status=Ticket.STATUS_OPEN).exists():
+                continue
+
             ticket.status = Ticket.STATUS_OPEN
             ticket.closed_on = None
             ticket.save(update_fields=("status", "closed_on"))
+            reopened.append(ticket)
 
-        return {"changed_uuids": [str(t.uuid) for t in tickets]}
+        return {"changed_uuids": [str(t.uuid) for t in reopened]}
 
 
 def mock_mailroom(method=None):
@@ -797,6 +803,10 @@ def apply_modifiers(org, user, contacts, modifiers: list):
             topic = org.topics.get(uuid=mod.topic.uuid, is_active=True)
             assignee = org.users.get(uuid=mod.assignee.uuid, is_active=True) if mod.assignee else None
             for contact in contacts:
+                # a contact can only have one open ticket
+                if contact.tickets.filter(status=Ticket.STATUS_OPEN).exists():
+                    continue
+
                 contact.tickets.create(
                     uuid=uuid7(),
                     org=org,
