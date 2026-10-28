@@ -58,7 +58,7 @@ class UpdateForm(UpdateChannelForm):
             forms.EmailField(
                 label=_("Email From Address"),
                 required=False,
-                help_text=_("The address that emails to contacts are sent from, e.g. support@example.com."),
+                help_text=_("e.g. support@example.com"),
             ),
             default="",
         )
@@ -67,7 +67,7 @@ class UpdateForm(UpdateChannelForm):
             forms.CharField(
                 label=_("Mailgun Domain"),
                 required=False,
-                help_text=_("The Mailgun sending domain to send emails through. If empty, emails aren't sent."),
+                help_text=_("If empty, emails aren't sent to contacts."),
             ),
             default="",
         )
@@ -86,7 +86,7 @@ class UpdateForm(UpdateChannelForm):
                 label=_("Mailgun API Key"),
                 required=False,
                 widget=forms.PasswordInput(),
-                help_text=_("A sending API key for the Mailgun domain. Leave empty to keep the existing key."),
+                help_text=_("A sending API key for the domain, kept unchanged if left empty."),
             ),
             default="",
         )

@@ -621,13 +621,13 @@ msgstr ""
 msgid "Email From Address"
 msgstr ""
 
-msgid "The address that emails to contacts are sent from, e.g. support@example.com."
+msgid "e.g. support@example.com"
 msgstr ""
 
 msgid "Mailgun Domain"
 msgstr ""
 
-msgid "The Mailgun sending domain to send emails through. If empty, emails aren't sent."
+msgid "If empty, emails aren't sent to contacts."
 msgstr ""
 
 msgid "Mailgun Region"
@@ -639,7 +639,7 @@ msgstr ""
 msgid "Mailgun API Key"
 msgstr ""
 
-msgid "A sending API key for the Mailgun domain. Leave empty to keep the existing key."
+msgid "A sending API key for the domain, kept unchanged if left empty."
 msgstr ""
 
 #, python-format

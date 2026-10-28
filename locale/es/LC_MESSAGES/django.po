@@ -635,14 +635,14 @@ msgstr "Los dominios de los sitios web que pueden integrar el widget de chat de 
 msgid "Email From Address"
 msgstr "Dirección de envío de correo"
 
-msgid "The address that emails to contacts are sent from, e.g. support@example.com."
-msgstr "La dirección desde la que se envían los correos a los contactos, p. ej. support@example.com."
+msgid "e.g. support@example.com"
+msgstr "p. ej. support@example.com"
 
 msgid "Mailgun Domain"
 msgstr "Dominio de Mailgun"
 
-msgid "The Mailgun sending domain to send emails through. If empty, emails aren't sent."
-msgstr "El dominio de envío de Mailgun a través del cual se envían los correos. Si está vacío, no se envían correos."
+msgid "If empty, emails aren't sent to contacts."
+msgstr "Si está vacío, no se envían correos a los contactos."
 
 msgid "Mailgun Region"
 msgstr "Región de Mailgun"
@@ -653,8 +653,8 @@ msgstr "La región de la cuenta de Mailgun a la que pertenece el dominio."
 msgid "Mailgun API Key"
 msgstr "Clave de API de Mailgun"
 
-msgid "A sending API key for the Mailgun domain. Leave empty to keep the existing key."
-msgstr "Una clave de API de envío para el dominio de Mailgun. Déjela vacía para conservar la clave existente."
+msgid "A sending API key for the domain, kept unchanged if left empty."
+msgstr "Una clave de API de envío para el dominio, que se conserva si se deja vacía."
 
 #, python-format
 msgid "%(domain)s is not a valid domain. Enter domains without schemes or paths, e.g. example.com."
