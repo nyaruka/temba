@@ -44,7 +44,6 @@ class KeywordTriggerType(ChannelTriggerType):
             choices=Trigger.MATCH_TYPES,
             initial=Trigger.MATCH_ONLY_WORD,
             label=_("Trigger When"),
-            help_text=_("How to match a message with a keyword."),
         )
 
         def __init__(self, org, user, *args, **kwargs):
@@ -68,7 +67,7 @@ class KeywordTriggerType(ChannelTriggerType):
 
         class Meta(BaseChannelTriggerForm.Meta):
             fields = ("keywords", "match_type") + BaseChannelTriggerForm.Meta.fields
-            help_texts = {"channel": "Only include messages from this channel."}
+            help_texts = {"channel": _("Only includes messages from this channel.")}
             widgets = {"match_type": SelectWidget()}
 
     code = Trigger.TYPE_KEYWORD
@@ -109,7 +108,7 @@ class CatchallTriggerType(ChannelTriggerType):
             super().__init__(org, user, Trigger.TYPE_CATCH_ALL, *args, **kwargs)
 
         class Meta(BaseChannelTriggerForm.Meta):
-            help_texts = {"channel": "Only include messages from this channel."}
+            help_texts = {"channel": _("Only includes messages from this channel.")}
 
     code = Trigger.TYPE_CATCH_ALL
     slug = "catch_all"
@@ -128,7 +127,6 @@ class ScheduledTriggerType(TriggerType):
         contacts = JSONField(
             label=_("Contacts To Include"),
             required=False,
-            help_text=_("Additional specific contacts that will be started in the flow."),
             widget=OmniboxChoice(attrs={"placeholder": _("Optional: Search for contacts"), "contacts": True}),
         )
 
@@ -155,8 +153,8 @@ class ScheduledTriggerType(TriggerType):
         class Meta(BaseTriggerForm.Meta):
             fields = ScheduleFormMixin.Meta.fields + ("flow", "groups", "contacts", "exclude_groups")
             help_texts = {
-                "groups": _("The groups that will be started in the flow."),
-                "exclude_groups": _("Any contacts in these groups will not be started in the flow."),
+                "groups": _("Contacts in these groups will be started in the flow."),
+                "exclude_groups": _("Excludes contacts in these groups."),
             }
 
     code = Trigger.TYPE_SCHEDULE
@@ -223,7 +221,7 @@ class InboundCallTriggerType(ChannelTriggerType):
 
         class Meta(BaseChannelTriggerForm.Meta):
             fields = ("action", "voice_flow", "msg_flow", "channel", "groups", "exclude_groups")
-            help_texts = {"channel": "Only include calls from this channel."}
+            help_texts = {"channel": _("Only includes calls from this channel.")}
 
     code = Trigger.TYPE_INBOUND_CALL
     slug = "inbound_call"
@@ -273,7 +271,7 @@ class ReferralTriggerType(ChannelTriggerType):
 
     class Form(BaseChannelTriggerForm):
         referrer_id = forms.CharField(
-            max_length=255, required=False, label=_("Referrer Id"), help_text=_("The referrer id that will trigger us")
+            max_length=255, required=False, label=_("Referrer Id"), help_text=_("Leave blank to match any referrer.")
         )
 
         def __init__(self, org, user, *args, **kwargs):

@@ -189,7 +189,7 @@ class HelpSiteForm(forms.ModelForm):
     title = forms.CharField(
         max_length=HelpSite.MAX_TITLE_LEN,
         label=_("Title"),
-        help_text=_("The name of your help site, shown in its header."),
+        help_text=_("Shown in the header of every page."),
         widget=InputWidget(),
     )
     tagline = forms.CharField(
@@ -210,7 +210,7 @@ class HelpSiteForm(forms.ModelForm):
     favicon = FaviconField(
         required=False,
         label=_("Icon"),
-        help_text=_("Shown in the browser tab. An open book if you don't choose one."),
+        help_text=_("Shown in the browser tab. Defaults to an open book."),
         widget=ImagePickerWidget(attrs={"clearable": True}),
     )
     chat_channel = forms.ChoiceField(
@@ -299,7 +299,7 @@ class HelpSiteDomainForm(forms.ModelForm):
         required=False,
         max_length=HelpSite.MAX_DOMAIN_LEN,
         label=_("Domain"),
-        help_text=_("A domain of your own to serve your help site on, such as help.example.com."),
+        help_text=_("Your own domain to serve the help site on, e.g. help.example.com."),
         # the dialog shows the records to add for whatever domain is being typed - see helpsite_domain.html
         widget=InputWidget(attrs={"placeholder": "help.example.com", "oninput": "updateHelpSiteRecords(this)"}),
     )
@@ -307,7 +307,7 @@ class HelpSiteDomainForm(forms.ModelForm):
     is_enabled = forms.BooleanField(
         required=False,
         label=_("Enabled"),
-        help_text=_("Whether the site is available to the public on its domain."),
+        help_text=_("Makes the site available to the public on its domain."),
         widget=CheckboxWidget(),
     )
 

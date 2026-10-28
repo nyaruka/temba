@@ -732,7 +732,7 @@ class TicketCRUDL(SmartCRUDL):
                 max_length=Ticket.MAX_NOTE_LENGTH,
                 required=True,
                 widget=InputWidget({"hide_label": True, "textarea": True}),
-                help_text=_("Notes can only be seen by the support team"),
+                help_text=_("Notes are never shown to the contact."),
             )
 
             class Meta:

@@ -26,9 +26,6 @@ msgstr ""
 msgid "Provider"
 msgstr ""
 
-msgid "Choose the provider for this model."
-msgstr ""
-
 msgid "API Key"
 msgstr ""
 
@@ -39,16 +36,13 @@ msgstr ""
 msgid "Model"
 msgstr ""
 
-msgid "Choose the model you would like to use."
-msgstr ""
-
 msgid "Name"
 msgstr ""
 
 msgid "e.g. Translation Assistant"
 msgstr ""
 
-msgid "Name this model for how you plan to use it, so the name stays useful if you change providers or models later."
+msgid "Name it for how it will be used, so the name stays accurate if you change models later."
 msgstr ""
 
 msgid "Must be unique."
@@ -2085,7 +2079,7 @@ msgid "%(language)s (Missing)"
 msgstr ""
 
 #, python-format
-msgid "%(label)s for this contact"
+msgid "Referenced in flows as %(expression)s."
 msgstr ""
 
 msgid "Invalid format."
@@ -2344,10 +2338,7 @@ msgstr ""
 msgid "Agent Access"
 msgstr ""
 
-msgid "Type of the values that will be stored in this field."
-msgstr ""
-
-msgid "Type of access that agent users have for this field."
+msgid "Whether agents can see or edit this field."
 msgstr ""
 
 msgid "Update"
@@ -2468,13 +2459,10 @@ msgstr ""
 msgid "After 4 minutes"
 msgstr ""
 
-msgid "Ignore keyword triggers while in this flow."
+msgid "Contacts in this flow won't be interrupted by keyword triggers."
 msgstr ""
 
-msgid "Minutes of inactivity that will cause expiration from flow."
-msgstr ""
-
-msgid "The authoring language, additional languages can be added later."
+msgid "Additional languages can be added later."
 msgstr ""
 
 msgid "Flow"
@@ -2529,7 +2517,7 @@ msgstr ""
 msgid "Keyword triggers"
 msgstr ""
 
-msgid "When a user sends any of these keywords they will begin this flow"
+msgid "Contacts who send any of these keywords will start this flow."
 msgstr ""
 
 msgid "Select keywords to trigger this flow"
@@ -2538,10 +2526,7 @@ msgstr ""
 msgid "Type"
 msgstr ""
 
-msgid "Choose the method for your flow"
-msgstr ""
-
-msgid "Choose a unique name to describe this flow, e.g. Registration"
+msgid "e.g. Registration"
 msgstr ""
 
 msgid "You have reached the per-workspace limit and must delete existing ones before you can create new ones."
@@ -2553,13 +2538,10 @@ msgstr ""
 msgid "Expire inactive contacts"
 msgstr ""
 
-msgid "When inactive contacts should be removed from the flow"
-msgstr ""
-
 msgid "Retry call if unable to connect"
 msgstr ""
 
-msgid "Retries call three times for the chosen interval"
+msgid "Calls are retried up to three times at this interval."
 msgstr ""
 
 msgid "Label"
@@ -2626,7 +2608,7 @@ msgstr ""
 msgid "Responded Only"
 msgstr ""
 
-msgid "Only export results for contacts which responded"
+msgid "Only includes contacts who responded."
 msgstr ""
 
 msgid "Messages"
@@ -2702,7 +2684,7 @@ msgstr ""
 msgid "Archive Flow"
 msgstr ""
 
-msgid "This will prevent new contacts from entering the flow."
+msgid "Prevents new contacts from entering the flow."
 msgstr ""
 
 msgid "Flow Starts"
@@ -2793,7 +2775,7 @@ msgstr ""
 msgid "Limit for file uploads is %s MB"
 msgstr ""
 
-msgid "The name of your help site, shown in its header."
+msgid "Shown in the header of every page."
 msgstr ""
 
 msgid "Tagline"
@@ -2811,7 +2793,7 @@ msgstr ""
 msgid "Icon"
 msgstr ""
 
-msgid "Shown in the browser tab. An open book if you don't choose one."
+msgid "Shown in the browser tab. Defaults to an open book."
 msgstr ""
 
 msgid "Chat"
@@ -2853,10 +2835,10 @@ msgstr ""
 msgid "Domain"
 msgstr ""
 
-msgid "A domain of your own to serve your help site on, such as help.example.com."
+msgid "Your own domain to serve the help site on, e.g. help.example.com."
 msgstr ""
 
-msgid "Whether the site is available to the public on its domain."
+msgid "Makes the site available to the public on its domain."
 msgstr ""
 
 msgid "Not a valid domain name."
@@ -3325,7 +3307,7 @@ msgstr ""
 msgid "From Address"
 msgstr ""
 
-msgid "Can contain a name e.g. Jane Doe <jane@example.org>"
+msgid "Can include a name, e.g. Jane Doe <jane@example.org>."
 msgstr ""
 
 msgid "Hostname"
@@ -3486,22 +3468,7 @@ msgstr ""
 msgid "Join"
 msgstr ""
 
-msgid "The first name of the workspace administrator"
-msgstr ""
-
-msgid "Your last name of the workspace administrator"
-msgstr ""
-
-msgid "Their email address"
-msgstr ""
-
-msgid "The timezone for the workspace"
-msgstr ""
-
-msgid "Their password, at least eight letters please. (leave blank for existing login)"
-msgstr ""
-
-msgid "The name of the new workspace"
+msgid "At least eight characters. Leave blank if the user already has a login."
 msgstr ""
 
 msgid "Login already exists, please do not include password."
@@ -3516,7 +3483,7 @@ msgstr ""
 msgid "Workspace successfully created."
 msgstr ""
 
-msgid "Enter a name for your event. ex: new-registration"
+msgid "e.g. new-registration"
 msgstr ""
 
 msgid "This event name has already been used."
@@ -3561,9 +3528,6 @@ msgstr ""
 msgid "User has already been invited to this workspace."
 msgstr ""
 
-msgid "The import file"
-msgstr ""
-
 msgid "This file is not a valid flow definition file."
 msgstr ""
 
@@ -3589,9 +3553,6 @@ msgid "Download"
 msgstr ""
 
 msgid "Confirmation Code"
-msgstr ""
-
-msgid "The confirmation code for your request"
 msgstr ""
 
 msgid "Invalid confirmation code"
@@ -3678,9 +3639,6 @@ msgid "Repeat"
 msgstr ""
 
 msgid "Repeat On Days"
-msgstr ""
-
-msgid "The days of the week to repeat on for weekly schedules"
 msgstr ""
 
 msgid "Select days"
@@ -3847,7 +3805,7 @@ msgstr ""
 msgid "Delete Topic"
 msgstr ""
 
-msgid "Notes can only be seen by the support team"
+msgid "Notes are never shown to the contact."
 msgstr ""
 
 msgid "Response Time"
@@ -3879,10 +3837,10 @@ msgstr ""
 msgid "Trigger When"
 msgstr ""
 
-msgid "How to match a message with a keyword."
+msgid "Must be a single word containing only letters and numbers, or a single emoji character."
 msgstr ""
 
-msgid "Must be a single word containing only letters and numbers, or a single emoji character."
+msgid "Only includes messages from this channel."
 msgstr ""
 
 msgid "Keyword"
@@ -3898,19 +3856,16 @@ msgstr ""
 msgid "Contacts To Include"
 msgstr ""
 
-msgid "Additional specific contacts that will be started in the flow."
-msgstr ""
-
 msgid "Optional: Search for contacts"
 msgstr ""
 
 msgid "Must provide at least one group or contact to include."
 msgstr ""
 
-msgid "The groups that will be started in the flow."
+msgid "Contacts in these groups will be started in the flow."
 msgstr ""
 
-msgid "Any contacts in these groups will not be started in the flow."
+msgid "Excludes contacts in these groups."
 msgstr ""
 
 msgid "Schedule"
@@ -3925,6 +3880,9 @@ msgstr ""
 msgid "Select a flow"
 msgstr ""
 
+msgid "Only includes calls from this channel."
+msgstr ""
+
 msgid "Inbound Call"
 msgstr ""
 
@@ -3934,13 +3892,10 @@ msgstr ""
 msgid "Referrer Id"
 msgstr ""
 
-msgid "The referrer id that will trigger us"
+msgid "Leave blank to match any referrer."
 msgstr ""
 
 msgid "Closed Ticket"
-msgstr ""
-
-msgid "Which flow will be started."
 msgstr ""
 
 msgid "Groups To Include"
@@ -3955,9 +3910,6 @@ msgstr ""
 msgid "Groups To Exclude"
 msgstr ""
 
-msgid "Excludes contacts in these groups."
-msgstr ""
-
 msgid "Can't include and exclude the same group."
 msgstr ""
 
@@ -3967,7 +3919,7 @@ msgstr ""
 msgid "Channel"
 msgstr ""
 
-msgid "Only include activity from this channel."
+msgid "Only includes activity from this channel."
 msgstr ""
 
 msgid "Optional: Select channel"
@@ -5213,9 +5165,6 @@ msgid "Interrupt Contact"
 msgstr ""
 
 msgid "Add Connection"
-msgstr ""
-
-msgid "Add a new way connect with this contact"
 msgstr ""
 
 msgid "Update Field"

@@ -333,7 +333,7 @@ class FlowCRUDL(SmartCRUDL):
             keyword_triggers = forms.CharField(
                 required=False,
                 label=_("Keyword triggers"),
-                help_text=_("When a user sends any of these keywords they will begin this flow"),
+                help_text=_("Contacts who send any of these keywords will start this flow."),
                 widget=SelectWidget(
                     attrs={
                         "widget_only": False,
@@ -351,7 +351,6 @@ class FlowCRUDL(SmartCRUDL):
 
                 self.fields["flow_type"] = forms.ChoiceField(
                     label=_("Type"),
-                    help_text=_("Choose the method for your flow"),
                     choices=Flow.TYPE_CHOICES[:3],  # exclude SURVEY from options
                     widget=SelectWidget(
                         attrs={"widget_only": False},
@@ -378,7 +377,7 @@ class FlowCRUDL(SmartCRUDL):
         form_class = Form
         success_url = "uuid@flows.flow_editor"
         submit_button_name = _("Create")
-        field_config = {"name": {"help": _("Choose a unique name to describe this flow, e.g. Registration")}}
+        field_config = {"name": {"help": _("e.g. Registration")}}
 
         def derive_exclude(self):
             return ["base_language"] if not self.request.org.flow_languages else []
@@ -467,7 +466,7 @@ class FlowCRUDL(SmartCRUDL):
             keyword_triggers = forms.CharField(
                 required=False,
                 label=_("Keyword triggers"),
-                help_text=_("When a user sends any of these keywords they will begin this flow"),
+                help_text=_("Contacts who send any of these keywords will start this flow."),
                 widget=SelectWidget(
                     attrs={
                         "widget_only": False,
@@ -482,7 +481,6 @@ class FlowCRUDL(SmartCRUDL):
 
             expires_after_minutes = forms.ChoiceField(
                 label=_("Expire inactive contacts"),
-                help_text=_("When inactive contacts should be removed from the flow"),
                 initial=Flow.EXPIRES_DEFAULTS[Flow.TYPE_VOICE],
                 choices=Flow.EXPIRES_CHOICES[Flow.TYPE_VOICE],
                 widget=SelectWidget(attrs={"widget_only": False}),
@@ -500,7 +498,7 @@ class FlowCRUDL(SmartCRUDL):
         class VoiceForm(BaseOnlineForm):
             ivr_retry = forms.ChoiceField(
                 label=_("Retry call if unable to connect"),
-                help_text=_("Retries call three times for the chosen interval"),
+                help_text=_("Calls are retried up to three times at this interval."),
                 initial=60,
                 choices=Call.RETRY_CHOICES,
                 widget=SelectWidget(attrs={"widget_only": False}),
@@ -521,7 +519,6 @@ class FlowCRUDL(SmartCRUDL):
         class MessagingForm(BaseOnlineForm):
             expires_after_minutes = forms.ChoiceField(
                 label=_("Expire inactive contacts"),
-                help_text=_("When inactive contacts should be removed from the flow"),
                 initial=Flow.EXPIRES_DEFAULTS[Flow.TYPE_MESSAGE],
                 choices=Flow.EXPIRES_CHOICES[Flow.TYPE_MESSAGE],
                 widget=SelectWidget(attrs={"widget_only": False}),
@@ -911,7 +908,7 @@ class FlowCRUDL(SmartCRUDL):
                 required=False,
                 label=_("Responded Only"),
                 initial=True,
-                help_text=_("Only export results for contacts which responded"),
+                help_text=_("Only includes contacts who responded."),
                 widget=CheckboxWidget(),
             )
 
@@ -1498,7 +1495,7 @@ class FlowCRUDL(SmartCRUDL):
             archive = forms.BooleanField(
                 required=False,
                 label=_("Archive Flow"),
-                help_text=_("This will prevent new contacts from entering the flow."),
+                help_text=_("Prevents new contacts from entering the flow."),
                 widget=CheckboxWidget(),
             )
 

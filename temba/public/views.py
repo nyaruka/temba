@@ -44,7 +44,7 @@ class Style(SmartTemplateView):
 
 class Forgetme(NoNavMixin, ComponentFormMixin, SmartFormView):
     class Form(forms.Form):
-        code = forms.CharField(label=_("Confirmation Code"), help_text=_("The confirmation code for your request"))
+        code = forms.CharField(label=_("Confirmation Code"))
 
         def clean_code(self):
             code = self.data.get("code")
