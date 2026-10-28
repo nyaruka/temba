@@ -2459,12 +2459,6 @@ msgstr ""
 msgid "After 4 minutes"
 msgstr ""
 
-msgid "Contacts in this flow won't be interrupted by keyword triggers."
-msgstr ""
-
-msgid "Additional languages can be added later."
-msgstr ""
-
 msgid "Flow"
 msgstr ""
 
@@ -2526,6 +2520,9 @@ msgstr ""
 msgid "Type"
 msgstr ""
 
+msgid "Additional languages can be added later."
+msgstr ""
+
 msgid "e.g. Registration"
 msgstr ""
 
@@ -2542,6 +2539,9 @@ msgid "Retry call if unable to connect"
 msgstr ""
 
 msgid "Calls are retried up to three times at this interval."
+msgstr ""
+
+msgid "Contacts in this flow won't be interrupted by keyword triggers."
 msgstr ""
 
 msgid "Label"

@@ -2473,12 +2473,6 @@ msgstr "Después de 3 minutos"
 msgid "After 4 minutes"
 msgstr "Después de 4 minutos"
 
-msgid "Contacts in this flow won't be interrupted by keyword triggers."
-msgstr "Los contactos en este flujo no serán interrumpidos por disparadores de palabras clave."
-
-msgid "Additional languages can be added later."
-msgstr "Se pueden añadir idiomas adicionales más adelante."
-
 msgid "Flow"
 msgstr "Flujo"
 
@@ -2540,6 +2534,9 @@ msgstr "Seleccionar palabras clave para activar este flujo"
 msgid "Type"
 msgstr "Tipo"
 
+msgid "Additional languages can be added later."
+msgstr "Se pueden añadir idiomas adicionales más adelante."
+
 msgid "e.g. Registration"
 msgstr "p. ej. Registro"
 
@@ -2557,6 +2554,9 @@ msgstr "Vuelva a intentar llamar si no puede conectarse"
 
 msgid "Calls are retried up to three times at this interval."
 msgstr "Las llamadas se reintentan hasta tres veces con este intervalo."
+
+msgid "Contacts in this flow won't be interrupted by keyword triggers."
+msgstr "Los contactos en este flujo no serán interrumpidos por disparadores de palabras clave."
 
 msgid "Label"
 msgstr "Etiquetar"

@@ -364,6 +364,7 @@ class FlowCRUDL(SmartCRUDL):
 
                 self.fields["base_language"] = forms.ChoiceField(
                     label=_("Language"),
+                    help_text=_("Additional languages can be added later."),
                     initial=org.flow_languages[0],
                     choices=languages.choices(org.flow_languages),
                     widget=SelectWidget(attrs={"widget_only": False}),
@@ -515,6 +516,7 @@ class FlowCRUDL(SmartCRUDL):
                 model = Flow
                 fields = ("name", "keyword_triggers", "expires_after_minutes", "ignore_triggers", "ivr_retry")
                 widgets = {"name": InputWidget(), "ignore_triggers": CheckboxWidget()}
+                help_texts = {"ignore_triggers": _("Contacts in this flow won't be interrupted by keyword triggers.")}
 
         class MessagingForm(BaseOnlineForm):
             expires_after_minutes = forms.ChoiceField(
@@ -528,6 +530,7 @@ class FlowCRUDL(SmartCRUDL):
                 model = Flow
                 fields = ("name", "keyword_triggers", "expires_after_minutes", "ignore_triggers")
                 widgets = {"name": InputWidget(), "ignore_triggers": CheckboxWidget()}
+                help_texts = {"ignore_triggers": _("Contacts in this flow won't be interrupted by keyword triggers.")}
 
         success_url = "uuid@flows.flow_editor"
         form_classes = {
