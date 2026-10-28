@@ -221,8 +221,8 @@ class SearchView(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
 
 class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
     class PlivoConnectForm(forms.Form):
-        auth_id = forms.CharField()
-        auth_token = forms.CharField()
+        auth_id = forms.CharField(label=_("Auth ID"))
+        auth_token = forms.CharField(label=_("Auth Token"))
 
         def clean(self):
             super().clean()
@@ -247,7 +247,6 @@ class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
     permission = "channels.channel_claim"
     submit_button_name = _("Save")
     template_name = "channels/types/plivo/connect.html"
-    field_config = dict(auth_id=dict(label=""), auth_token=dict(label=""))
     success_message = _("Plivo credentials verified. You can now add a Plivo channel.")
     menu_path = "/settings/workspace"
 

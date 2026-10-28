@@ -432,8 +432,8 @@ class SearchView(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
 
 class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
     class VonageConnectForm(forms.Form):
-        api_key = forms.CharField(widget=InputWidget(), required=True)
-        api_secret = forms.CharField(widget=InputWidget(), required=True)
+        api_key = forms.CharField(label=_("API Key"), widget=InputWidget(), required=True)
+        api_secret = forms.CharField(label=_("API Secret"), widget=InputWidget(), required=True)
 
         def clean(self):
             super().clean()

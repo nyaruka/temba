@@ -1121,6 +1121,12 @@ msgstr "Ce numéro n'est actuellement pas pris en charge."
 msgid "There was a problem claiming that number, please check the balance on your account."
 msgstr "Il y a eu un problème pour réclamer ce numéro, prière de verifier le solde de votre compte."
 
+msgid "Auth ID"
+msgstr "ID d'authentification"
+
+msgid "Auth Token"
+msgstr "Jeton d'authentification"
+
 msgid "Your Plivo auth ID and auth token seem invalid. Please check them again and retry."
 msgstr "Votre identifiant et votre jeton d'authentification Plivo semblent invalides. Veuillez les vérifier à nouveau et réessayer."
 

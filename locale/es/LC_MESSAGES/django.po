@@ -1121,6 +1121,12 @@ msgstr "Ese número no se admite actualmente."
 msgid "There was a problem claiming that number, please check the balance on your account."
 msgstr "Hubo un problema al solicitar ese número, por favor, verifique el saldo en su cuenta."
 
+msgid "Auth ID"
+msgstr "ID de autenticación"
+
+msgid "Auth Token"
+msgstr "Token de autenticación"
+
 msgid "Your Plivo auth ID and auth token seem invalid. Please check them again and retry."
 msgstr "Su ID de autenticación de Plivo y su token de autenticación parecen no válidos. Revíselos de nuevo y vuelva a intentarlo."
 

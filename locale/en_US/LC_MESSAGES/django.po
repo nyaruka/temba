@@ -1107,6 +1107,12 @@ msgstr ""
 msgid "There was a problem claiming that number, please check the balance on your account."
 msgstr ""
 
+msgid "Auth ID"
+msgstr ""
+
+msgid "Auth Token"
+msgstr ""
+
 msgid "Your Plivo auth ID and auth token seem invalid. Please check them again and retry."
 msgstr ""
 

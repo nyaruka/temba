@@ -365,8 +365,8 @@ class UpdateForm(UpdateChannelForm):
 
 class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
     class TwilioConnectForm(forms.Form):
-        account_sid = forms.CharField(widget=InputWidget(), required=True)
-        account_token = forms.CharField(widget=InputWidget(), required=True)
+        account_sid = forms.CharField(label=_("Account SID"), widget=InputWidget(), required=True)
+        account_token = forms.CharField(label=_("Auth Token"), widget=InputWidget(), required=True)
 
         def clean(self):
             account_sid = self.cleaned_data.get("account_sid")
@@ -389,7 +389,6 @@ class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
     form_class = TwilioConnectForm
     permission = "channels.channel_claim"
     submit_button_name = _("Save")
-    field_config = dict(account_sid=dict(label=""), account_token=dict(label=""))
     success_message = _("Twilio Account successfully connected.")
     template_name = "channels/types/twilio/connect.html"
     menu_path = "/settings/channels/new-channel"
