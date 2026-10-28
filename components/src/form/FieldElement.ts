@@ -1,5 +1,6 @@
 import { TemplateResult, html, css } from 'lit';
 import { property } from 'lit/decorators.js';
+import { msg } from '@lit/localize';
 import { RapidElement } from '../RapidElement';
 import { renderMarkdownInline } from '../markdown';
 import { designTokens } from '../styles/designTokens';
@@ -56,6 +57,9 @@ export abstract class FieldElement extends RapidElement {
   @property({ type: String })
   label: string;
 
+  @property({ type: Boolean })
+  optional = false;
+
   constructor() {
     super();
     this.internals = this.attachInternals();
@@ -76,6 +80,12 @@ export abstract class FieldElement extends RapidElement {
         font-size: 12.5px;
         line-height: normal;
         color: var(--color-label);
+      }
+
+      .optional {
+        margin-left: 6px;
+        font-weight: normal;
+        color: var(--color-text-help);
       }
 
       .help-text {
@@ -268,7 +278,9 @@ export abstract class FieldElement extends RapidElement {
         ${!!this.name && !this.hideLabel && !!this.label
           ? html`
               <label class="control-label" for="${this.name}"
-                >${this.label}</label
+                >${this.label}${this.optional
+                  ? html`<span class="optional">${msg('Optional')}</span>`
+                  : null}</label
               >
             `
           : null}

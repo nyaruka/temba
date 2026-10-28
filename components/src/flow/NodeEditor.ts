@@ -2264,6 +2264,7 @@ export class NodeEditor extends RapidElement {
         }
       },
       showLabel: true,
+      markOptional: !this.isTranslating,
       formData: this.formData,
       additionalData: {
         attachments: this.formData.attachments || [],

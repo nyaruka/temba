@@ -1714,6 +1714,10 @@
   <source>Only needed when expressions use category_localized for this result.</source>
   <target>Nécessaire uniquement si des expressions utilisent category_localized pour ce résultat.</target>
 </trans-unit>
+<trans-unit id="scc7a3682dd25ae19">
+  <source>Optional</source>
+  <target>Facultatif</target>
+</trans-unit>
 </body>
 </file>
 </xliff>

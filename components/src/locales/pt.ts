@@ -319,6 +319,7 @@
 'sc8e2c91325d8ad73': `Pesquisar mensagens`,
 'sca4fb8fafd9b52e5': `Verificado`,
 'sca6e637a4400a738': `Os dados de layout deste fluxo não correspondem aos seus nós. Ele pode ter sido corrompido durante uma exportação ou migração. Exporte novamente o fluxo do espaço de trabalho original e tente importá-lo de novo.`,
+'scc7a3682dd25ae19': `Opcional`,
 'scd576e61f93828d0': `Pesquisar tickets`,
 'scdda9a7e65a1f21e': `Todos os valores devem ser números positivos válidos`,
 'sce15a6ce2f2e0ffa': `Nenhuma mensagem`,

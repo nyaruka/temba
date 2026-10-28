@@ -319,6 +319,7 @@
 'sc8e2c91325d8ad73': `Rechercher des messages`,
 'sca4fb8fafd9b52e5': `Vérifié`,
 'sca6e637a4400a738': `Les données de mise en page de ce flux ne correspondent pas à ses nœuds. Il a peut-être été corrompu lors d'une exportation ou d'une migration. Veuillez réexporter le flux depuis l'espace de travail d'origine et réessayer de l'importer.`,
+'scc7a3682dd25ae19': `Facultatif`,
 'scd576e61f93828d0': `Rechercher des tickets`,
 'scdda9a7e65a1f21e': `Tous les montants doivent être des nombres positifs valides`,
 'sce15a6ce2f2e0ffa': `Aucun message`,

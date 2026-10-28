@@ -45,6 +45,7 @@ export const set_contact_field: ActionConfig = {
     value: {
       type: 'textarea',
       label: 'Value',
+      required: false,
       placeholder: 'Enter field value...',
       evaluated: true,
       maxLength: 10000,
