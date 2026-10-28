@@ -53,7 +53,7 @@ export const split_by_airtime: NodeConfig = {
         }
       }
     },
-    result_name: resultNameField
+    result_name: { ...resultNameField, label: 'Result Name' }
   },
   layout: ['amounts', 'result_name'],
   validate: validateWith((formData, errors) => {
