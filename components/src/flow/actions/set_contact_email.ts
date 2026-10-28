@@ -22,7 +22,6 @@ export const set_contact_email: ActionConfig = {
       type: 'text',
       label: 'Email',
       required: false,
-      placeholder: 'Enter email address...',
       evaluated: true,
       maxLength: 1000,
       helpText:

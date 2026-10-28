@@ -34,7 +34,6 @@ export const add_input_labels: ActionConfig = {
       endpoint: '/api/v2/labels.json',
       valueKey: 'uuid',
       nameKey: 'name',
-      placeholder: 'Search for labels or type to create new ones...',
       allowCreate: true,
       createArbitraryOption: (input: string, options: any[]) => {
         // Check if a label with this name already exists

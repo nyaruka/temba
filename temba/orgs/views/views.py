@@ -330,10 +330,8 @@ class UserCRUDL(SmartCRUDL):
 
     class Edit(ComponentFormMixin, InferUserMixin, SmartUpdateView):
         class Form(forms.ModelForm):
-            first_name = forms.CharField(
-                label=_("First Name"), widget=InputWidget(attrs={"placeholder": _("Required")})
-            )
-            last_name = forms.CharField(label=_("Last Name"), widget=InputWidget(attrs={"placeholder": _("Required")}))
+            first_name = forms.CharField(label=_("First Name"), widget=InputWidget())
+            last_name = forms.CharField(label=_("Last Name"), widget=InputWidget())
             avatar = forms.ImageField(
                 required=False, label=_("Profile Picture"), widget=ImagePickerWidget(attrs={"shape": "circle"})
             )
@@ -1313,8 +1311,7 @@ class OrgCRUDL(SmartCRUDL):
             new_slug = forms.SlugField(
                 required=False,
                 label=_("New Event"),
-                help_text=_("e.g. new-registration"),
-                widget=InputWidget(),
+                widget=InputWidget(attrs={"placeholder": _("e.g. new-registration")}),
                 max_length=Resthook._meta.get_field("slug").max_length,
             )
 
@@ -1463,7 +1460,6 @@ class OrgCRUDL(SmartCRUDL):
                 help_text=_("Used for contacts with no language preference."),
                 widget=SelectWidget(
                     attrs={
-                        "placeholder": _("Select a language"),
                         "searchable": True,
                         "queryParam": "q",
                         "endpoint": reverse_lazy("orgs.org_languages"),
@@ -1476,7 +1472,6 @@ class OrgCRUDL(SmartCRUDL):
                 help_text=_("The languages that your flows can be translated into."),
                 widget=SelectMultipleWidget(
                     attrs={
-                        "placeholder": _("Select languages"),
                         "searchable": True,
                         "queryParam": "q",
                         "endpoint": reverse_lazy("orgs.org_languages"),

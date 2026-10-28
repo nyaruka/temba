@@ -34,7 +34,7 @@ export const split_by_expression: NodeConfig = {
       required: true,
       evaluated: true,
       maxLength: 10000,
-      placeholder: '@fields.age'
+      placeholder: 'e.g. @fields.age'
     },
     rules: createRulesArrayConfig(
       operatorsToSelectOptions(getWaitForResponseOperators()),

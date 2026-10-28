@@ -23,8 +23,7 @@ export const set_contact_channel: ActionConfig = {
       clearable: false,
       endpoint: '/api/v2/channels.json',
       valueKey: 'uuid',
-      nameKey: 'name',
-      placeholder: 'Select channel'
+      nameKey: 'name'
     }
   },
   toFormData: (action: SetContactChannel) => {

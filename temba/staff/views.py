@@ -158,9 +158,8 @@ class OrgCRUDL(SmartCRUDL):
             )
             admin_groups = forms.ModelMultipleChoiceField(
                 queryset=Group.objects.none(),
-                widget=SelectMultipleWidget(
-                    attrs={"placeholder": _("Select groups whose members administer this workspace")}
-                ),
+                help_text=_("Members of these groups administer this workspace."),
+                widget=SelectMultipleWidget(),
                 required=False,
             )
 
@@ -192,7 +191,7 @@ class OrgCRUDL(SmartCRUDL):
                         label=limit_type.capitalize(),
                         required=False,
                         initial=org.limits.get(limit_type),
-                        widget=forms.TextInput(attrs={"placeholder": f"{settings.ORG_LIMIT_DEFAULTS[limit_type]}"}),
+                        help_text=_("Defaults to %(limit)s.") % {"limit": settings.ORG_LIMIT_DEFAULTS[limit_type]},
                     )
                     field_key = f"{limit_type}_limit"
 
@@ -334,7 +333,7 @@ class UserCRUDL(SmartCRUDL):
 
         class Form(forms.ModelForm):
             groups = forms.ModelMultipleChoiceField(
-                widget=SelectMultipleWidget(attrs={"placeholder": _("Select permissions groups"), "searchable": True}),
+                widget=SelectMultipleWidget(attrs={"searchable": True}),
                 queryset=Group.objects.all(),
                 required=False,
             )

@@ -67,7 +67,6 @@ export const add_contact_urn: ActionConfig = {
       helpText: 'e.g. a phone number or Facebook ID',
       required: true,
       maxLength: 1000,
-      placeholder: 'Enter the URN value...',
       evaluated: true
     }
   },

@@ -36,7 +36,7 @@ class KeywordTriggerType(ChannelTriggerType):
                     "searchable": True,
                     "tags": True,
                     "space_select": True,
-                    "placeholder": _("Keywords"),
+                    "placeholder": _("e.g. join"),
                 }
             ),
         )
@@ -127,7 +127,7 @@ class ScheduledTriggerType(TriggerType):
         contacts = JSONField(
             label=_("Contacts To Include"),
             required=False,
-            widget=OmniboxChoice(attrs={"placeholder": _("Search for contacts"), "contacts": True, "optional": False}),
+            widget=OmniboxChoice(attrs={"contacts": True, "optional": False}),
         )
 
         def __init__(self, org, user, *args, **kwargs):

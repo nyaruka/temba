@@ -383,9 +383,9 @@ class BaseExportModal(ModalFormMixin, OrgPermsMixin, SmartFormView):
             ContactField.objects.none(),
             required=False,
             label=_("Fields"),
+            help_text=_("Adds a column for each of these fields."),
             widget=SelectMultipleWidget(
                 attrs={
-                    "placeholder": _("Fields to include"),
                     "searchable": True,
                     "pill_type": "field",
                 }
@@ -395,9 +395,9 @@ class BaseExportModal(ModalFormMixin, OrgPermsMixin, SmartFormView):
             ContactGroup.objects.none(),
             required=False,
             label=_("Groups"),
+            help_text=_("Adds a column for membership of each of these groups."),
             widget=SelectMultipleWidget(
                 attrs={
-                    "placeholder": _("Group memberships to include"),
                     "searchable": True,
                     "pill_type": "group",
                 }

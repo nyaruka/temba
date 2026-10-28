@@ -121,8 +121,7 @@ export const start_session: ActionConfig = {
       searchable: true,
       endpoint: '/api/v2/flows.json?archived=false',
       valueKey: 'uuid',
-      nameKey: 'name',
-      placeholder: 'Select a flow...'
+      nameKey: 'name'
     },
     startType: {
       type: 'select',
@@ -143,7 +142,6 @@ export const start_session: ActionConfig = {
       queryParam: 'search',
       valueKey: 'id',
       nameKey: 'name',
-      placeholder: 'Search for contacts or groups...',
       expressions: 'session',
       conditions: {
         visible: (formData: FormData) => {
@@ -158,7 +156,7 @@ export const start_session: ActionConfig = {
       label: 'Contact Query',
       helpText: 'Only one matching contact is started.',
       maxLength: 10000,
-      placeholder: 'household_id = @fields.household_id',
+      placeholder: 'e.g. household_id = @fields.household_id',
       conditions: {
         visible: (formData: FormData) => {
           const startType = formData.startType?.[0]?.value;

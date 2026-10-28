@@ -69,7 +69,6 @@ export const send_broadcast: ActionConfig = {
       queryParam: 'search',
       valueKey: 'id',
       nameKey: 'name',
-      placeholder: 'Search for contacts or groups...',
       required: true,
       expressions: 'session'
     },
@@ -80,7 +79,6 @@ export const send_broadcast: ActionConfig = {
         'Can include attachments and expressions, e.g. `@contact.name`.',
       required: true,
       evaluated: true,
-      placeholder: 'Type your message here...',
       maxLength: 640,
       maxAttachments: 10,
       accept: '',

@@ -32,7 +32,7 @@ class ClaimView(ClaimViewMixin, SmartFormView):
             label=_("URL"),
             widget=forms.URLInput(
                 attrs={
-                    "placeholder": _("Ex.: https://my.rocket.chat/api/apps/public/51c5cebe-b8e4-48ae-89d3-2b7746019cc4")
+                    "placeholder": _("e.g. https://my.rocket.chat/api/apps/public/51c5cebe-b8e4-48ae-89d3-2b7746019cc4")
                 }
             ),
         )

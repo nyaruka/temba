@@ -34,7 +34,7 @@ class CampaignForm(forms.ModelForm):
     group = TembaChoiceField(
         queryset=ContactGroup.objects.none(),
         empty_label=None,
-        widget=SelectWidget(attrs={"placeholder": _("Select group"), "searchable": True}),
+        widget=SelectWidget(attrs={"searchable": True}),
         label=_("Group"),
         help_text=_("Only contacts in this group will be included in this campaign's events."),
     )

@@ -35,8 +35,7 @@ export const split_by_scheme: NodeConfig = {
       required: true,
       options: getSchemeOptions(),
       multi: true,
-      searchable: true,
-      placeholder: 'Select the channels to split by...'
+      searchable: true
     },
     result_name: resultNameField
   },
