@@ -14,7 +14,7 @@ class SMTPForm(forms.Form):
     from_email = forms.CharField(
         max_length=128,
         label=_("From Address"),
-        help_text=_("Can contain a name e.g. Jane Doe <jane@example.org>"),
+        help_text=_("Can include a name, e.g. Jane Doe <jane@example.org>."),
         widget=InputWidget(),
     )
     host = forms.CharField(

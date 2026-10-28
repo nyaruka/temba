@@ -31,9 +31,7 @@ class ModelWizardForm(forms.Form):
 
 
 class ProviderForm(ModelWizardForm):
-    provider = forms.ChoiceField(
-        label=_("Provider"), widget=SelectWidget(), help_text=_("Choose the provider for this model.")
-    )
+    provider = forms.ChoiceField(label=_("Provider"), widget=SelectWidget())
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -111,17 +109,13 @@ class ModelForm(ModelWizardForm):
     Reusable wizard form for selecting and naming a model.
     """
 
-    model = forms.ChoiceField(
-        label=_("Model"), widget=SelectWidget(), help_text=_("Choose the model you would like to use.")
-    )
+    model = forms.ChoiceField(label=_("Model"), widget=SelectWidget())
     name = forms.CharField(
         label=_("Name"),
         max_length=LLM.MAX_NAME_LEN,
         validators=[NameValidator(LLM.MAX_NAME_LEN)],
         widget=InputWidget(attrs={"placeholder": _("e.g. Translation Assistant")}),
-        help_text=_(
-            "Name this model for how you plan to use it, so the name stays useful if you change providers or models later."
-        ),
+        help_text=_("Name it for how it will be used, so the name stays accurate if you change models later."),
         required=True,
     )
 

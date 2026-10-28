@@ -158,19 +158,12 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
     labels = models.ManyToManyField("FlowLabel", related_name="flows")
     is_archived = models.BooleanField(default=False)
     flow_type = models.CharField(max_length=1, choices=TYPE_CHOICES, default=TYPE_MESSAGE)
-    ignore_triggers = models.BooleanField(default=False, help_text=_("Ignore keyword triggers while in this flow."))
+    ignore_triggers = models.BooleanField(default=False)
     ivr_retry = models.IntegerField(null=True)
 
     # properties set from last revision
-    expires_after_minutes = models.IntegerField(
-        default=EXPIRES_DEFAULTS[TYPE_MESSAGE],
-        help_text=_("Minutes of inactivity that will cause expiration from flow."),
-    )
-    base_language = models.CharField(
-        max_length=3,  # ISO-639-3
-        help_text=_("The authoring language, additional languages can be added later."),
-        default="und",
-    )
+    expires_after_minutes = models.IntegerField(default=EXPIRES_DEFAULTS[TYPE_MESSAGE])
+    base_language = models.CharField(max_length=3, default="und")  # ISO-639-3
     version_number = models.CharField(default="0.0.0", max_length=8)  # no actual spec version until there's a revision
 
     # information from flow inspection

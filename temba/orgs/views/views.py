@@ -1251,24 +1251,16 @@ class OrgCRUDL(SmartCRUDL):
 
     class Grant(SpaMixin, ComponentFormMixin, NonAtomicMixin, SmartCreateView):
         class Form(forms.ModelForm):
-            first_name = forms.CharField(
-                help_text=_("The first name of the workspace administrator"),
-                max_length=User._meta.get_field("first_name").max_length,
-            )
-            last_name = forms.CharField(
-                help_text=_("Your last name of the workspace administrator"),
-                max_length=User._meta.get_field("last_name").max_length,
-            )
-            email = forms.EmailField(
-                help_text=_("Their email address"), max_length=User._meta.get_field("email").max_length
-            )
-            timezone = TimeZoneFormField(help_text=_("The timezone for the workspace"))
+            first_name = forms.CharField(max_length=User._meta.get_field("first_name").max_length)
+            last_name = forms.CharField(max_length=User._meta.get_field("last_name").max_length)
+            email = forms.EmailField(max_length=User._meta.get_field("email").max_length)
+            timezone = TimeZoneFormField()
             password = forms.CharField(
                 widget=forms.PasswordInput,
                 required=False,
-                help_text=_("Their password, at least eight letters please. (leave blank for existing login)"),
+                help_text=_("At least eight characters. Leave blank if the user already has a login."),
             )
-            name = forms.CharField(label=_("Workspace"), help_text=_("The name of the new workspace"))
+            name = forms.CharField(label=_("Workspace"))
 
             def clean(self):
                 data = self.cleaned_data
@@ -1321,7 +1313,7 @@ class OrgCRUDL(SmartCRUDL):
             new_slug = forms.SlugField(
                 required=False,
                 label=_("New Event"),
-                help_text=_("Enter a name for your event. ex: new-registration"),
+                help_text=_("e.g. new-registration"),
                 widget=InputWidget(),
                 max_length=Resthook._meta.get_field("slug").max_length,
             )
@@ -1683,7 +1675,7 @@ class OrgImportCRUDL(SmartCRUDL):
         menu_path = "/settings/import"
 
         class Form(forms.ModelForm):
-            file = forms.FileField(help_text=_("The import file"))
+            file = forms.FileField()
 
             def __init__(self, org, *args, **kwargs):
                 super().__init__(*args, **kwargs)

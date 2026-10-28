@@ -46,7 +46,7 @@ class OpenAITypeTest(TembaTest, CRUDLTestMixin):
         )
         self.assertContains(
             response,
-            "Name this model for how you plan to use it, so the name stays useful if you change providers or models later.",
+            "Name it for how it will be used, so the name stays accurate if you change models later.",
         )
 
         # select a model and give it a name

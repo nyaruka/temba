@@ -63,7 +63,6 @@ class BaseTriggerForm(forms.ModelForm):
     flow = TembaChoiceField(
         Flow.objects.none(),
         label=_("Flow"),
-        help_text=_("Which flow will be started."),
         required=True,
         widget=SelectWidget(attrs={"placeholder": _("Select a flow"), "searchable": True}),
     )
@@ -145,7 +144,7 @@ class BaseChannelTriggerForm(BaseTriggerForm):
     channel = TembaChoiceField(
         queryset=Channel.objects.none(),
         label=_("Channel"),
-        help_text=_("Only include activity from this channel."),
+        help_text=_("Only includes activity from this channel."),
         required=False,
         widget=SelectWidget(attrs={"placeholder": _("Optional: Select channel"), "clearable": True}),
     )

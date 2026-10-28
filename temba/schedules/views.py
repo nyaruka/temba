@@ -13,7 +13,6 @@ class ScheduleFormMixin(forms.Form):
     repeat_days_of_week = forms.MultipleChoiceField(
         choices=Schedule.REPEAT_DAYS_CHOICES,
         label=_("Repeat On Days"),
-        help_text=_("The days of the week to repeat on for weekly schedules"),
         required=False,
         widget=SelectMultipleWidget(attrs=({"placeholder": _("Select days")})),
     )

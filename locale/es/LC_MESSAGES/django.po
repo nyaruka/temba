@@ -32,9 +32,6 @@ msgstr "Las claves de API las proporciona el equipo ICTD de UNICEF."
 msgid "Provider"
 msgstr "Proveedor"
 
-msgid "Choose the provider for this model."
-msgstr "Elija el proveedor para este modelo."
-
 msgid "API Key"
 msgstr "Clave API"
 
@@ -45,17 +42,14 @@ msgstr "Déjelo en blanco para usar la clave de API existente de este proveedor.
 msgid "Model"
 msgstr "Modelo"
 
-msgid "Choose the model you would like to use."
-msgstr "Elija el modelo que desea utilizar."
-
 msgid "Name"
 msgstr "Nombre"
 
 msgid "e.g. Translation Assistant"
 msgstr "p. ej. Asistente de traducción"
 
-msgid "Name this model for how you plan to use it, so the name stays useful if you change providers or models later."
-msgstr "Nombre este modelo según cómo piensa usarlo, para que el nombre siga siendo útil si más adelante cambia de proveedor o de modelo."
+msgid "Name it for how it will be used, so the name stays accurate if you change models later."
+msgstr "Nómbrelo según cómo se usará, para que el nombre siga siendo preciso si cambia de modelo más adelante."
 
 msgid "Must be unique."
 msgstr "Debe ser único."
@@ -2099,8 +2093,8 @@ msgid "%(language)s (Missing)"
 msgstr "%(language)s (No encontrado)"
 
 #, python-format
-msgid "%(label)s for this contact"
-msgstr "%(label)s para este contacto"
+msgid "Referenced in flows as %(expression)s."
+msgstr "Se referencia en los flujos como %(expression)s."
 
 msgid "Invalid format."
 msgstr "Formato no válido."
@@ -2358,11 +2352,8 @@ msgstr "Tipo de Datos"
 msgid "Agent Access"
 msgstr "Acceso de agentes"
 
-msgid "Type of the values that will be stored in this field."
-msgstr "Tipo de valores que se almacenarán en este campo."
-
-msgid "Type of access that agent users have for this field."
-msgstr "Tipo de acceso que los usuarios agentes tienen a este campo."
+msgid "Whether agents can see or edit this field."
+msgstr "Si los agentes pueden ver o editar este campo."
 
 msgid "Update"
 msgstr "Actualizar"
@@ -2482,15 +2473,6 @@ msgstr "Después de 3 minutos"
 msgid "After 4 minutes"
 msgstr "Después de 4 minutos"
 
-msgid "Ignore keyword triggers while in this flow."
-msgstr "Ignorar los activadores de palabras clave mientras se está en este flujo."
-
-msgid "Minutes of inactivity that will cause expiration from flow."
-msgstr "Minutos de inactividad que provocarán la expiración del flujo."
-
-msgid "The authoring language, additional languages can be added later."
-msgstr "El idioma de autoría; se pueden añadir idiomas adicionales más adelante."
-
 msgid "Flow"
 msgstr "Flujo"
 
@@ -2543,8 +2525,8 @@ msgstr "Tu flujo no se pudo guardar. Por favor refresque su navegador."
 msgid "Keyword triggers"
 msgstr "Activadores de palabras clave"
 
-msgid "When a user sends any of these keywords they will begin this flow"
-msgstr "Cuando un usuario envía una de estas palabras clave iniciará este flujo"
+msgid "Contacts who send any of these keywords will start this flow."
+msgstr "Los contactos que envíen cualquiera de estas palabras clave iniciarán este flujo."
 
 msgid "Select keywords to trigger this flow"
 msgstr "Seleccionar palabras clave para activar este flujo"
@@ -2552,11 +2534,11 @@ msgstr "Seleccionar palabras clave para activar este flujo"
 msgid "Type"
 msgstr "Tipo"
 
-msgid "Choose the method for your flow"
-msgstr "Elija el método para su flujo"
+msgid "Additional languages can be added later."
+msgstr "Se pueden añadir idiomas adicionales más adelante."
 
-msgid "Choose a unique name to describe this flow, e.g. Registration"
-msgstr "Elija un nombre único que describa este flujo, p. ej. Registro"
+msgid "e.g. Registration"
+msgstr "p. ej. Registro"
 
 msgid "You have reached the per-workspace limit and must delete existing ones before you can create new ones."
 msgstr "Ha alcanzado el límite por workspace y debe eliminar los existentes antes de poder crear nuevos."
@@ -2567,14 +2549,14 @@ msgstr "Palabras clave"
 msgid "Expire inactive contacts"
 msgstr "Vencimiento de contactos inactivos"
 
-msgid "When inactive contacts should be removed from the flow"
-msgstr "Cuándo los contactos inactivos serán retirados del flujo"
-
 msgid "Retry call if unable to connect"
 msgstr "Vuelva a intentar llamar si no puede conectarse"
 
-msgid "Retries call three times for the chosen interval"
-msgstr "Los reintentos llaman tres veces para el intervalo elegido"
+msgid "Calls are retried up to three times at this interval."
+msgstr "Las llamadas se reintentan hasta tres veces con este intervalo."
+
+msgid "Contacts in this flow won't be interrupted by keyword triggers."
+msgstr "Los contactos en este flujo no serán interrumpidos por disparadores de palabras clave."
 
 msgid "Label"
 msgstr "Etiquetar"
@@ -2640,8 +2622,8 @@ msgstr "Opcional: URN además del utilizado en el flujo"
 msgid "Responded Only"
 msgstr "Solo Respondido"
 
-msgid "Only export results for contacts which responded"
-msgstr "Exportar solo los resultados de los contactos que respondieron"
+msgid "Only includes contacts who responded."
+msgstr "Solo incluye contactos que respondieron."
 
 msgid "Messages"
 msgstr "Mensajes"
@@ -2716,8 +2698,8 @@ msgstr "Se requieren contactos o grupos."
 msgid "Archive Flow"
 msgstr "Archivar flujo"
 
-msgid "This will prevent new contacts from entering the flow."
-msgstr "Esto impedirá que nuevos contactos entren en el flujo."
+msgid "Prevents new contacts from entering the flow."
+msgstr "Impide que nuevos contactos entren en el flujo."
 
 msgid "Flow Starts"
 msgstr "Inicios de flujo"
@@ -2807,8 +2789,8 @@ msgstr "Descripción"
 msgid "Limit for file uploads is %s MB"
 msgstr "El límite para la subida de archivos es de %s MB"
 
-msgid "The name of your help site, shown in its header."
-msgstr "El nombre de tu sitio de ayuda, mostrado en su encabezado."
+msgid "Shown in the header of every page."
+msgstr "Se muestra en el encabezado de cada página."
 
 msgid "Tagline"
 msgstr "Lema"
@@ -2825,8 +2807,8 @@ msgstr "Se muestra al final de cada página."
 msgid "Icon"
 msgstr "Icono"
 
-msgid "Shown in the browser tab. An open book if you don't choose one."
-msgstr "Se muestra en la pestaña del navegador. Un libro abierto si no eliges uno."
+msgid "Shown in the browser tab. Defaults to an open book."
+msgstr "Se muestra en la pestaña del navegador. Por defecto, un libro abierto."
 
 msgid "Chat"
 msgstr "Chat"
@@ -2867,11 +2849,11 @@ msgstr "Tipo de archivo no admitido"
 msgid "Domain"
 msgstr "Dominio"
 
-msgid "A domain of your own to serve your help site on, such as help.example.com."
-msgstr "Un dominio propio en el que servir tu sitio de ayuda, como help.example.com."
+msgid "Your own domain to serve the help site on, e.g. help.example.com."
+msgstr "Su propio dominio en el que servir el sitio de ayuda, p. ej. help.example.com."
 
-msgid "Whether the site is available to the public on its domain."
-msgstr "Si el sitio está disponible al público en su dominio."
+msgid "Makes the site available to the public on its domain."
+msgstr "Hace que el sitio esté disponible al público en su dominio."
 
 msgid "Not a valid domain name."
 msgstr "No es un nombre de dominio válido."
@@ -3339,8 +3321,8 @@ msgstr "estos serán eliminados"
 msgid "From Address"
 msgstr "Dirección de remitente"
 
-msgid "Can contain a name e.g. Jane Doe <jane@example.org>"
-msgstr "Puede contener un nombre, p. ej. Jane Doe <jane@example.org>"
+msgid "Can include a name, e.g. Jane Doe <jane@example.org>."
+msgstr "Puede incluir un nombre, p. ej. Jane Doe <jane@example.org>."
 
 msgid "Hostname"
 msgstr "Nombre de host"
@@ -3500,23 +3482,8 @@ msgstr "Seleccione su Workspace"
 msgid "Join"
 msgstr "Participar"
 
-msgid "The first name of the workspace administrator"
-msgstr "El nombre del administrador del workspace"
-
-msgid "Your last name of the workspace administrator"
-msgstr "Su apellido del administrador del workspace"
-
-msgid "Their email address"
-msgstr "Su dirección de correo electrónico"
-
-msgid "The timezone for the workspace"
-msgstr "La zona horaria del workspace"
-
-msgid "Their password, at least eight letters please. (leave blank for existing login)"
-msgstr "Su contraseña, al menos ocho letras por favor. (déjelo en blanco para el login existente)"
-
-msgid "The name of the new workspace"
-msgstr "El nombre del nuevo workspace"
+msgid "At least eight characters. Leave blank if the user already has a login."
+msgstr "Al menos ocho caracteres. Déjelo en blanco si el usuario ya tiene una cuenta."
 
 msgid "Login already exists, please do not include password."
 msgstr "El login ya existe, no incluya la contraseña."
@@ -3530,8 +3497,8 @@ msgstr "Crear Cuenta de Workspace"
 msgid "Workspace successfully created."
 msgstr "Workspace creado correctamente."
 
-msgid "Enter a name for your event. ex: new-registration"
-msgstr "Ingrese un nombre para su evento. ej: new-registration"
+msgid "e.g. new-registration"
+msgstr "p. ej. nuevo-registro"
 
 msgid "This event name has already been used."
 msgstr "Este nombre de evento ya está en uso."
@@ -3575,9 +3542,6 @@ msgstr "El usuario ya es miembro de este workspace."
 msgid "User has already been invited to this workspace."
 msgstr "El usuario ya ha sido invitado a este workspace."
 
-msgid "The import file"
-msgstr "El archivo de importación"
-
 msgid "This file is not a valid flow definition file."
 msgstr "Este archivo no es un archivo de definición de flujo válido."
 
@@ -3604,9 +3568,6 @@ msgstr "Descargar"
 
 msgid "Confirmation Code"
 msgstr "Código de confirmación"
-
-msgid "The confirmation code for your request"
-msgstr "El código de confirmación de su solicitud"
 
 msgid "Invalid confirmation code"
 msgstr "Código de confirmación no válido"
@@ -3693,9 +3654,6 @@ msgstr "Repetir"
 
 msgid "Repeat On Days"
 msgstr "Repite en los Días"
-
-msgid "The days of the week to repeat on for weekly schedules"
-msgstr "Los días de la semana para repetir las programaciones semanales."
 
 msgid "Select days"
 msgstr "Seleccione los días"
@@ -3861,8 +3819,8 @@ msgstr "Editar tema"
 msgid "Delete Topic"
 msgstr "Eliminar tema"
 
-msgid "Notes can only be seen by the support team"
-msgstr "Las notas solo pueden ser vistas por el equipo de soporte"
+msgid "Notes are never shown to the contact."
+msgstr "Las notas nunca se muestran al contacto."
 
 msgid "Response Time"
 msgstr "Tiempo de respuesta"
@@ -3893,11 +3851,11 @@ msgstr "Activador"
 msgid "Trigger When"
 msgstr "Activar cuando"
 
-msgid "How to match a message with a keyword."
-msgstr "Cómo hacer coincidir un mensaje con una palabra clave."
-
 msgid "Must be a single word containing only letters and numbers, or a single emoji character."
 msgstr "Debe ser una sola palabra que contenga únicamente letras y números, o un solo carácter emoji."
+
+msgid "Only includes messages from this channel."
+msgstr "Solo incluye mensajes de este canal."
 
 msgid "Keyword"
 msgstr "Palabra clave"
@@ -3912,20 +3870,17 @@ msgstr "Cachar todo"
 msgid "Contacts To Include"
 msgstr "Contactos Para Incluir"
 
-msgid "Additional specific contacts that will be started in the flow."
-msgstr "Contactos específicos adicionales que se iniciarán en el flujo."
-
 msgid "Optional: Search for contacts"
 msgstr "Opcional: Buscar contactos"
 
 msgid "Must provide at least one group or contact to include."
 msgstr "Debe proporcionar al menos un grupo o contacto para incluir."
 
-msgid "The groups that will be started in the flow."
-msgstr "Los grupos que se iniciarán en el flujo."
+msgid "Contacts in these groups will be started in the flow."
+msgstr "Los contactos de estos grupos se iniciarán en el flujo."
 
-msgid "Any contacts in these groups will not be started in the flow."
-msgstr "Los contactos de estos grupos no se iniciarán en el flujo."
+msgid "Excludes contacts in these groups."
+msgstr "Excluye contactos en estos grupos."
 
 msgid "Schedule"
 msgstr "Horario"
@@ -3939,6 +3894,9 @@ msgstr "Colgar la llamada e iniciar un flujo de mensajería"
 msgid "Select a flow"
 msgstr "Seleccione un flujo"
 
+msgid "Only includes calls from this channel."
+msgstr "Solo incluye llamadas de este canal."
+
 msgid "Inbound Call"
 msgstr "Llamada entrante"
 
@@ -3948,14 +3906,11 @@ msgstr "Llamada Perdida"
 msgid "Referrer Id"
 msgstr "ID de referencia"
 
-msgid "The referrer id that will trigger us"
-msgstr "La identificación de referencia que nos activará"
+msgid "Leave blank to match any referrer."
+msgstr "Déjelo en blanco para coincidir con cualquier referente."
 
 msgid "Closed Ticket"
 msgstr "Ticket Cerrado"
-
-msgid "Which flow will be started."
-msgstr "Qué flujo se iniciará."
 
 msgid "Groups To Include"
 msgstr "Grupos Para Incluir"
@@ -3969,9 +3924,6 @@ msgstr "Opcional: seleccionar grupos de contactos"
 msgid "Groups To Exclude"
 msgstr "Grupos para Excluir"
 
-msgid "Excludes contacts in these groups."
-msgstr "Excluye contactos en estos grupos."
-
 msgid "Can't include and exclude the same group."
 msgstr "No se puede incluir y excluir el mismo grupo."
 
@@ -3981,8 +3933,8 @@ msgstr "Ya existe un disparador de este tipo con estas opciones."
 msgid "Channel"
 msgstr "Canal"
 
-msgid "Only include activity from this channel."
-msgstr "Incluir solo la actividad de este canal."
+msgid "Only includes activity from this channel."
+msgstr "Solo incluye la actividad de este canal."
 
 msgid "Optional: Select channel"
 msgstr "Opcional: seleccione un canal"
@@ -5229,9 +5181,6 @@ msgstr "Interrumpir contacto"
 
 msgid "Add Connection"
 msgstr "Agregar Conexión"
-
-msgid "Add a new way connect with this contact"
-msgstr "Agregar una nueva forma de conectarse con este contacto"
 
 msgid "Update Field"
 msgstr "Actualizar Campo"

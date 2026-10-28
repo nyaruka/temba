@@ -912,8 +912,7 @@ class ContactFieldForm(UniqueNameMixin, forms.ModelForm):
             "agent_access": _("Agent Access"),
         }
         help_texts = {
-            "value_type": _("Type of the values that will be stored in this field."),
-            "agent_access": _("Type of access that agent users have for this field."),
+            "agent_access": _("Whether agents can see or edit this field."),
         }
         widgets = {
             "name": InputWidget(attrs={"widget_only": False}),
