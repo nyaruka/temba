@@ -16,6 +16,11 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.AlterField(
+            model_name="ticket",
+            name="status",
+            field=models.CharField(choices=[("P", "Pending"), ("O", "Open"), ("C", "Closed")], max_length=1),
+        ),
         migrations.RunSQL('DROP INDEX CONCURRENTLY IF EXISTS "tickets_contact_single_active"'),
         migrations.RunSQL(
             sql="""CREATE UNIQUE INDEX CONCURRENTLY "tickets_contact_single_active" ON tickets_ticket ("contact_id") WHERE "status" IN ('P', 'O')""",

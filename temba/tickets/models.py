@@ -216,9 +216,10 @@ class Ticket(models.Model):
     A ticket represents a period of human interaction with a contact.
     """
 
+    STATUS_PENDING = "P"
     STATUS_OPEN = "O"
     STATUS_CLOSED = "C"
-    STATUS_CHOICES = ((STATUS_OPEN, _("Open")), (STATUS_CLOSED, _("Closed")))
+    STATUS_CHOICES = ((STATUS_PENDING, _("Pending")), (STATUS_OPEN, _("Open")), (STATUS_CLOSED, _("Closed")))
 
     MAX_NOTE_LENGTH = 10_000
 
@@ -359,7 +360,7 @@ class Ticket(models.Model):
             models.Index(name="tickets_api_by_contact", fields=["contact", "-modified_on", "-id"]),
         ]
         constraints = [
-            # a contact can only have one ticket that isn't closed - includes P for a planned pending status
+            # a contact can only have one ticket that isn't closed
             models.UniqueConstraint(
                 name="tickets_contact_single_active", fields=("contact",), condition=Q(status__in=("P", "O"))
             ),

@@ -3,6 +3,7 @@ from datetime import datetime, timezone as tzone
 from django.urls import reverse
 
 from temba.api.v2.serializers import format_datetime
+from temba.tickets.models import Ticket
 
 from . import APITest
 
@@ -85,3 +86,11 @@ class TicketsEndpointTest(APITest):
 
         # filter further by ticket uuid
         self.assertGet(endpoint_url + f"?uuid={ticket3.uuid}", [self.admin], results=[ticket3])
+
+        # pending tickets have their own status
+        ticket3.status = Ticket.STATUS_PENDING
+        ticket3.save(update_fields=("status",))
+
+        self.assertGet(
+            endpoint_url + f"?uuid={ticket3.uuid}", [self.admin], raw=lambda j: j["results"][0]["status"] == "pending"
+        )
