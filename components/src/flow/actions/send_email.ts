@@ -31,7 +31,6 @@ export const send_email: ActionConfig = {
       label: 'Recipients',
       multi: true,
       searchable: true,
-      placeholder: 'Enter email addresses...',
       emails: true,
       expressions: 'session'
     },
@@ -40,7 +39,6 @@ export const send_email: ActionConfig = {
       label: 'Subject',
       required: true,
       evaluated: true,
-      placeholder: 'Enter email subject',
       maxLength: 1000
     },
     body: {

@@ -89,7 +89,6 @@ export const split_by_llm_categorize: NodeConfig = {
       endpoint: LLMS_ENDPOINT,
       valueKey: 'uuid',
       nameKey: 'name',
-      placeholder: 'Select a model...',
       shouldExclude: (option: LLMModel) => !hasLLMRole(option, 'classify')
     },
     input: {
@@ -98,7 +97,7 @@ export const split_by_llm_categorize: NodeConfig = {
       required: true,
       evaluated: true,
       maxLength: 10000,
-      placeholder: '@input'
+      placeholder: 'e.g. @input'
     },
     options: {
       type: 'array',

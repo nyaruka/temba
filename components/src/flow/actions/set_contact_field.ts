@@ -30,7 +30,6 @@ export const set_contact_field: ActionConfig = {
       required: true,
       searchable: true,
       clearable: false,
-      placeholder: 'Search for contact fields...',
       nameKey: 'name',
       valueKey: 'key',
       endpoint: '/api/v2/fields.json',
@@ -46,7 +45,6 @@ export const set_contact_field: ActionConfig = {
       type: 'textarea',
       label: 'Value',
       required: false,
-      placeholder: 'Enter field value...',
       evaluated: true,
       maxLength: 10000,
       helpText:

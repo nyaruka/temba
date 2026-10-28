@@ -21,7 +21,7 @@
         <temba-textinput type="text" name="email" label='{% trans "Email Address" %}' value="{{ invitation.email }}" disabled> </temba-textinput>
       </div>
       <div class="control-group">
-        <temba-textinput type="password" name="password" label='{% trans "Password" %}' placeholder='{% trans "Your password" %}' password> </temba-textinput>
+        <temba-textinput type="password" name="password" label='{% trans "Password" %}' password> </temba-textinput>
       </div>
     </fieldset>
     {% csrf_token %}

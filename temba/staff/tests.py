@@ -95,11 +95,11 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
             list(response.context["form"].fields.keys()),
         )
 
-        # every limit type shows its default as the placeholder
+        # every limit type shows its default in its help text
         form = response.context["form"]
-        self.assertEqual("10", form.fields["channels_limit"].widget.attrs["placeholder"])
-        self.assertEqual("10000000", form.fields["contacts_limit"].widget.attrs["placeholder"])
-        self.assertEqual("10000", form.fields["flows_limit"].widget.attrs["placeholder"])
+        self.assertEqual("Defaults to 10.", form.fields["channels_limit"].help_text)
+        self.assertEqual("Defaults to 10000000.", form.fields["contacts_limit"].help_text)
+        self.assertEqual("Defaults to 10000.", form.fields["flows_limit"].help_text)
 
         # make some changes to our org
         response = self.client.post(

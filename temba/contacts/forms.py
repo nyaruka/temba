@@ -46,7 +46,7 @@ class UpdateContactForm(forms.ModelForm):
         queryset=ContactGroup.objects.none(),
         required=False,
         label=_("Groups"),
-        widget=SelectMultipleWidget(attrs={"placeholder": _("Select groups for this contact"), "searchable": True}),
+        widget=SelectMultipleWidget(attrs={"searchable": True}),
     )
     new_scheme = forms.ChoiceField(required=False, choices=URN.SCHEME_CHOICES)
     new_path = forms.CharField(required=False)

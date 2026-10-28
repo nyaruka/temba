@@ -33,13 +33,14 @@ class SignalWireClaimView(ClaimViewMixin, SmartFormView):
         project_key = forms.CharField(
             max_length=64,
             label=_("Project Key"),
-            help_text=_("e.g. 990c5c10-bf8f-4156-b014-44282e60b3a1"),
+            widget=forms.TextInput(attrs={"placeholder": _("e.g. 990c5c10-bf8f-4156-b014-44282e60b3a1")}),
         )
         api_token = forms.CharField(
             max_length=64,
             required=False,
-            help_text=_("e.g. FPd199eb93e878f8a3tw9ttna313914tnauwy"),
-            widget=InputWidget(attrs={"optional": False}),
+            widget=InputWidget(
+                attrs={"placeholder": _("e.g. FPd199eb93e878f8a3tw9ttna313914tnauwy"), "optional": False}
+            ),
         )
 
         def clean_space(self):

@@ -50,7 +50,6 @@ export const split_by_llm: NodeConfig = {
       searchable: true,
       valueKey: 'uuid',
       nameKey: 'name',
-      placeholder: 'Select an LLM...',
       shouldExclude: (option: LLMModel) => !hasLLMRole(option, 'generate')
     },
     input: {
@@ -59,7 +58,7 @@ export const split_by_llm: NodeConfig = {
       required: true,
       evaluated: true,
       maxLength: 10000,
-      placeholder: '@input'
+      placeholder: 'e.g. @input'
     },
     instructions: {
       type: 'textarea',
@@ -68,7 +67,6 @@ export const split_by_llm: NodeConfig = {
       required: true,
       evaluated: true,
       maxLength: 10000,
-      placeholder: 'Enter instructions for the AI model...',
       minHeight: 130
     }
   },

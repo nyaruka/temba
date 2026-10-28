@@ -14,7 +14,7 @@ class ScheduleFormMixin(forms.Form):
         choices=Schedule.REPEAT_DAYS_CHOICES,
         label=_("Repeat On Days"),
         required=False,
-        widget=SelectMultipleWidget(attrs={"placeholder": _("Select days"), "optional": False}),
+        widget=SelectMultipleWidget(attrs={"optional": False}),
     )
 
     def set_org(self, org):

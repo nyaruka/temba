@@ -14,7 +14,7 @@ class ClaimView(AuthenticatedExternalCallbackClaimView):
         )
         number = forms.CharField(max_length=14, min_length=3, label=_("Number"))
         url = ExternalURLField(
-            widget=forms.URLInput(attrs={"placeholder": _("Ex: https://jasmin.gateway.io/send")}),
+            widget=forms.URLInput(attrs={"placeholder": _("e.g. https://jasmin.example.com/send")}),
             label=_("URL"),
             help_text=_("The send path of your Jasmin server."),
         )

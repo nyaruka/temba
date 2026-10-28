@@ -29,7 +29,6 @@ export const say_msg: ActionConfig = {
       label: 'Message',
       required: true,
       evaluated: true,
-      placeholder: 'Enter message to speak...',
       maxLength: 10000,
       minHeight: 80
     },

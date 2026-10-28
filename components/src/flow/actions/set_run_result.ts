@@ -24,7 +24,6 @@ export const set_run_result: ActionConfig = {
       helpText: 'Typing a new name creates a new result.',
       required: true,
       maxLength: 64,
-      placeholder: 'Select or enter result name...',
       createArbitraryOption: (input, options) => {
         const exists = options.some(
           (option: any) =>
@@ -53,15 +52,13 @@ export const set_run_result: ActionConfig = {
       helpText: 'Can include expressions, e.g. `@input.text`.',
       required: false,
       evaluated: true,
-      maxLength: 10000,
-      placeholder: 'Enter value...'
+      maxLength: 10000
     },
     category: {
       type: 'text',
       label: 'Category',
       required: false,
-      maxLength: 36,
-      placeholder: 'Enter category...'
+      maxLength: 36
     }
   },
   layout: ['name', 'value', 'category'],

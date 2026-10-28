@@ -341,13 +341,15 @@ class FlowCRUDL(SmartCRUDL):
                         "searchable": True,
                         "tags": True,
                         "space_select": True,
-                        "placeholder": _("Select keywords to trigger this flow"),
+                        "placeholder": _("e.g. join"),
                     }
                 ),
             )
 
             def __init__(self, org, branding, *args, **kwargs):
                 super().__init__(org, branding, *args, **kwargs)
+
+                self.fields["name"].widget.attrs["placeholder"] = _("e.g. Registration")
 
                 self.fields["flow_type"] = forms.ChoiceField(
                     label=_("Type"),
@@ -378,7 +380,6 @@ class FlowCRUDL(SmartCRUDL):
         form_class = Form
         success_url = "uuid@flows.flow_editor"
         submit_button_name = _("Create")
-        field_config = {"name": {"help": _("e.g. Registration")}}
 
         def derive_exclude(self):
             return ["base_language"] if not self.request.org.flow_languages else []
@@ -475,7 +476,7 @@ class FlowCRUDL(SmartCRUDL):
                         "searchable": True,
                         "tags": True,
                         "space_select": True,
-                        "placeholder": _("Keywords"),
+                        "placeholder": _("e.g. join"),
                     }
                 ),
             )
@@ -902,8 +903,9 @@ class FlowCRUDL(SmartCRUDL):
             extra_urns = forms.MultipleChoiceField(
                 required=False,
                 label=_("URNs"),
+                help_text=_("Includes these URN types in addition to the one used in the flow."),
                 choices=URN.SCHEME_CHOICES,
-                widget=SelectMultipleWidget(attrs={"placeholder": _("URNs in addition to the one used in the flow")}),
+                widget=SelectMultipleWidget(),
             )
             responded_only = forms.BooleanField(
                 required=False,

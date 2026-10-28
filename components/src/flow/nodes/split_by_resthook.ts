@@ -21,7 +21,6 @@ export const split_by_resthook: NodeConfig = {
       required: true,
       searchable: true,
       clearable: false,
-      placeholder: 'Select a resthook...',
       endpoint: '/api/v2/resthooks.json',
       valueKey: 'resthook',
       nameKey: 'resthook'

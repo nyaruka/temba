@@ -28,7 +28,6 @@ export const split_by_groups: NodeConfig = {
       endpoint: '/api/v2/groups.json',
       valueKey: 'uuid',
       nameKey: 'name',
-      placeholder: 'Search for groups...',
       allowCreate: true,
       createArbitraryOption: (input: string, options: any[]) => {
         // Check if a group with this name already exists

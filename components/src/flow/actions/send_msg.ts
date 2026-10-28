@@ -74,7 +74,6 @@ export const send_msg: ActionConfig = {
         'Can include attachments and expressions, e.g. `@contact.name`.',
       required: true,
       evaluated: true,
-      placeholder: 'Type your message here...',
       maxLength: 10000,
       maxAttachments: 10,
       accept: '',

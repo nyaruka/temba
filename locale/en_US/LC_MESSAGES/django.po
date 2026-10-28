@@ -208,9 +208,6 @@ msgstr ""
 msgid "Campaign Events"
 msgstr ""
 
-msgid "Select group"
-msgstr ""
-
 msgid "Group"
 msgstr ""
 
@@ -940,7 +937,7 @@ msgstr ""
 msgid "This endpoint will be called by Jasmin when new messages are received to your number, it must be configured to be called as a POST."
 msgstr ""
 
-msgid "Ex: https://jasmin.gateway.io/send"
+msgid "e.g. https://jasmin.example.com/send"
 msgstr ""
 
 msgid "URL"
@@ -1165,7 +1162,7 @@ msgstr ""
 msgid "Add a %(link)s bot to send and receive messages to Rocket.Chat users."
 msgstr ""
 
-msgid "Ex.: https://my.rocket.chat/api/apps/public/51c5cebe-b8e4-48ae-89d3-2b7746019cc4"
+msgid "e.g. https://my.rocket.chat/api/apps/public/51c5cebe-b8e4-48ae-89d3-2b7746019cc4"
 msgstr ""
 
 msgid "Bot Username"
@@ -1747,9 +1744,6 @@ msgstr ""
 msgid "Groups"
 msgstr ""
 
-msgid "Select groups for this contact"
-msgstr ""
-
 msgid "No Preference"
 msgstr ""
 
@@ -2190,7 +2184,10 @@ msgstr ""
 msgid "Contacts who send any of these keywords will start this flow."
 msgstr ""
 
-msgid "Select keywords to trigger this flow"
+msgid "e.g. join"
+msgstr ""
+
+msgid "e.g. Registration"
 msgstr ""
 
 msgid "Type"
@@ -2199,13 +2196,7 @@ msgstr ""
 msgid "Additional languages can be added later."
 msgstr ""
 
-msgid "e.g. Registration"
-msgstr ""
-
 msgid "You have reached the per-workspace limit and must delete existing ones before you can create new ones."
-msgstr ""
-
-msgid "Keywords"
 msgstr ""
 
 msgid "Expire inactive contacts"
@@ -2278,7 +2269,7 @@ msgstr ""
 msgid "URNs"
 msgstr ""
 
-msgid "URNs in addition to the one used in the flow"
+msgid "Includes these URN types in addition to the one used in the flow."
 msgstr ""
 
 msgid "Responded Only"
@@ -2493,13 +2484,13 @@ msgstr ""
 msgid "Bubble 1"
 msgstr ""
 
-msgid "None"
-msgstr ""
-
 msgid "Bubble 2"
 msgstr ""
 
 msgid "Bubble 3"
+msgstr ""
+
+msgid "None"
 msgstr ""
 
 msgid "Not a valid color."
@@ -2511,7 +2502,10 @@ msgstr ""
 msgid "Domain"
 msgstr ""
 
-msgid "Your own domain to serve the help site on, e.g. help.example.com."
+msgid "Your own domain to serve the help site on."
+msgstr ""
+
+msgid "e.g. help.example.com"
 msgstr ""
 
 msgid "Makes the site available to the public on its domain."
@@ -2951,10 +2945,10 @@ msgstr ""
 msgid "End Date"
 msgstr ""
 
-msgid "Fields to include"
+msgid "Adds a column for each of these fields."
 msgstr ""
 
-msgid "Group memberships to include"
+msgid "Adds a column for membership of each of these groups."
 msgstr ""
 
 #, python-format
@@ -2989,13 +2983,13 @@ msgstr ""
 msgid "Hostname"
 msgstr ""
 
-msgid "smtp.example.com"
+msgid "e.g. smtp.example.com"
 msgstr ""
 
 msgid "Port"
 msgstr ""
 
-msgid "25"
+msgid "e.g. 25"
 msgstr ""
 
 msgid "Not a valid email address."
@@ -3037,9 +3031,6 @@ msgid "Remove"
 msgstr ""
 
 msgid "First Name"
-msgstr ""
-
-msgid "Required"
 msgstr ""
 
 msgid "Last Name"
@@ -3174,16 +3165,10 @@ msgstr ""
 msgid "Used for contacts with no language preference."
 msgstr ""
 
-msgid "Select a language"
-msgstr ""
-
 msgid "Additional Languages"
 msgstr ""
 
 msgid "The languages that your flows can be translated into."
-msgstr ""
-
-msgid "Select languages"
 msgstr ""
 
 msgid "Input Matching"
@@ -3314,9 +3299,6 @@ msgstr ""
 msgid "Repeat On Days"
 msgstr ""
 
-msgid "Select days"
-msgstr ""
-
 #, python-format
 msgid "First time this should happen in the %s timezone."
 msgstr ""
@@ -3375,7 +3357,11 @@ msgstr ""
 msgid "Verified"
 msgstr ""
 
-msgid "Select groups whose members administer this workspace"
+msgid "Members of these groups administer this workspace."
+msgstr ""
+
+#, python-format
+msgid "Defaults to %(limit)s."
 msgstr ""
 
 msgid "Edit User"
@@ -3388,9 +3374,6 @@ msgid "Disable MFA"
 msgstr ""
 
 msgid "Delete User"
-msgstr ""
-
-msgid "Select permissions groups"
 msgstr ""
 
 msgid "You can reset the user's password by entering a new password here"
@@ -3507,6 +3490,9 @@ msgstr ""
 msgid "Trigger"
 msgstr ""
 
+msgid "Keywords"
+msgstr ""
+
 msgid "Trigger When"
 msgstr ""
 
@@ -3527,9 +3513,6 @@ msgid "Catch All"
 msgstr ""
 
 msgid "Contacts To Include"
-msgstr ""
-
-msgid "Search for contacts"
 msgstr ""
 
 msgid "Must provide at least one group or contact to include."
@@ -3577,9 +3560,6 @@ msgstr ""
 msgid "Only includes contacts in these groups."
 msgstr ""
 
-msgid "Select contact groups"
-msgstr ""
-
 msgid "Groups To Exclude"
 msgstr ""
 
@@ -3593,9 +3573,6 @@ msgid "Channel"
 msgstr ""
 
 msgid "Only includes activity from this channel."
-msgstr ""
-
-msgid "Select channel"
 msgstr ""
 
 msgid "New Trigger"
@@ -5723,9 +5700,6 @@ msgstr ""
 
 #, python-format
 msgid "Sign in to join the <b>%(org)s</b> workspace."
-msgstr ""
-
-msgid "Your password"
 msgstr ""
 
 #, python-format

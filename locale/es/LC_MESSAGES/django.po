@@ -222,9 +222,6 @@ msgstr "Evento de campaña"
 msgid "Campaign Events"
 msgstr "Eventos de Campaña"
 
-msgid "Select group"
-msgstr "Seleccione grupo"
-
 msgid "Group"
 msgstr "Grupo"
 
@@ -954,8 +951,8 @@ msgstr "Enviar URL para mensajes"
 msgid "This endpoint will be called by Jasmin when new messages are received to your number, it must be configured to be called as a POST."
 msgstr "Jasmin llamará a este punto final cuando se reciban nuevos mensajes en su número, debe configurarse para que se llame como POST."
 
-msgid "Ex: https://jasmin.gateway.io/send"
-msgstr "Ejemplo: https://jasmin.gateway.io/send"
+msgid "e.g. https://jasmin.example.com/send"
+msgstr "p. ej. https://jasmin.example.com/send"
 
 msgid "URL"
 msgstr "URL"
@@ -1179,8 +1176,8 @@ msgstr "No se puede configurar. La conexión a RocketChat está tardando demasia
 msgid "Add a %(link)s bot to send and receive messages to Rocket.Chat users."
 msgstr "Agregue un bot %(link)s para enviar y recibir mensajes a los usuarios de Rocket.Chat."
 
-msgid "Ex.: https://my.rocket.chat/api/apps/public/51c5cebe-b8e4-48ae-89d3-2b7746019cc4"
-msgstr "Ej .: https://my.rocket.chat/api/apps/public/51c5cebe-b8e4-48ae-89d3-2b7746019cc4"
+msgid "e.g. https://my.rocket.chat/api/apps/public/51c5cebe-b8e4-48ae-89d3-2b7746019cc4"
+msgstr "p. ej. https://my.rocket.chat/api/apps/public/51c5cebe-b8e4-48ae-89d3-2b7746019cc4"
 
 msgid "Bot Username"
 msgstr "Nombre de usuario del bot"
@@ -1761,9 +1758,6 @@ msgstr "Idioma"
 msgid "Groups"
 msgstr "Grupos"
 
-msgid "Select groups for this contact"
-msgstr "Seleccionar grupos para este contacto"
-
 msgid "No Preference"
 msgstr "Sin preferencia"
 
@@ -2204,8 +2198,11 @@ msgstr "Activadores de palabras clave"
 msgid "Contacts who send any of these keywords will start this flow."
 msgstr "Los contactos que envíen cualquiera de estas palabras clave iniciarán este flujo."
 
-msgid "Select keywords to trigger this flow"
-msgstr "Seleccionar palabras clave para activar este flujo"
+msgid "e.g. join"
+msgstr "p. ej. unirse"
+
+msgid "e.g. Registration"
+msgstr "p. ej. Registro"
 
 msgid "Type"
 msgstr "Tipo"
@@ -2213,14 +2210,8 @@ msgstr "Tipo"
 msgid "Additional languages can be added later."
 msgstr "Se pueden añadir idiomas adicionales más adelante."
 
-msgid "e.g. Registration"
-msgstr "p. ej. Registro"
-
 msgid "You have reached the per-workspace limit and must delete existing ones before you can create new ones."
 msgstr "Ha alcanzado el límite por workspace y debe eliminar los existentes antes de poder crear nuevos."
-
-msgid "Keywords"
-msgstr "Palabras clave"
 
 msgid "Expire inactive contacts"
 msgstr "Vencimiento de contactos inactivos"
@@ -2292,8 +2283,8 @@ msgstr "No se pudo cambiar el idioma del flujo."
 msgid "URNs"
 msgstr "URNs"
 
-msgid "URNs in addition to the one used in the flow"
-msgstr "URN además del utilizado en el flujo"
+msgid "Includes these URN types in addition to the one used in the flow."
+msgstr "Incluye estos tipos de URN además del utilizado en el flujo."
 
 msgid "Responded Only"
 msgstr "Solo Respondido"
@@ -2507,14 +2498,14 @@ msgstr "El fondo del encabezado en todas las páginas."
 msgid "Bubble 1"
 msgstr "Burbuja 1"
 
-msgid "None"
-msgstr "Ninguno"
-
 msgid "Bubble 2"
 msgstr "Burbuja 2"
 
 msgid "Bubble 3"
 msgstr "Burbuja 3"
+
+msgid "None"
+msgstr "Ninguno"
 
 msgid "Not a valid color."
 msgstr "No es un color válido."
@@ -2525,8 +2516,11 @@ msgstr "Tipo de archivo no admitido"
 msgid "Domain"
 msgstr "Dominio"
 
-msgid "Your own domain to serve the help site on, e.g. help.example.com."
-msgstr "Su propio dominio en el que servir el sitio de ayuda, p. ej. help.example.com."
+msgid "Your own domain to serve the help site on."
+msgstr "Su propio dominio en el que servir el sitio de ayuda."
+
+msgid "e.g. help.example.com"
+msgstr "p. ej. help.example.com"
 
 msgid "Makes the site available to the public on its domain."
 msgstr "Hace que el sitio esté disponible al público en su dominio."
@@ -2965,11 +2959,11 @@ msgstr "Fecha de Inicio"
 msgid "End Date"
 msgstr "Fecha Final"
 
-msgid "Fields to include"
-msgstr "Campos para incluir"
+msgid "Adds a column for each of these fields."
+msgstr "Agrega una columna para cada uno de estos campos."
 
-msgid "Group memberships to include"
-msgstr "Membresías de grupo a incluir"
+msgid "Adds a column for membership of each of these groups."
+msgstr "Agrega una columna para la membresía de cada uno de estos grupos."
 
 #, python-format
 msgid "You can only include up to %(limit)d fields."
@@ -3003,14 +2997,14 @@ msgstr "Puede incluir un nombre, p. ej. Jane Doe <jane@example.org>."
 msgid "Hostname"
 msgstr "Nombre de host"
 
-msgid "smtp.example.com"
-msgstr "smtp.example.com"
+msgid "e.g. smtp.example.com"
+msgstr "p. ej. smtp.example.com"
 
 msgid "Port"
 msgstr "Puerto"
 
-msgid "25"
-msgstr "25"
+msgid "e.g. 25"
+msgstr "p. ej. 25"
 
 msgid "Not a valid email address."
 msgstr "No es una dirección de correo electrónico válida."
@@ -3052,9 +3046,6 @@ msgstr "Retirar"
 
 msgid "First Name"
 msgstr "Nombre"
-
-msgid "Required"
-msgstr "Necesario"
 
 msgid "Last Name"
 msgstr "Apellido"
@@ -3188,17 +3179,11 @@ msgstr "Idioma de Flujo Predeterminado"
 msgid "Used for contacts with no language preference."
 msgstr "Usado para contactos sin preferencia de lenguaje."
 
-msgid "Select a language"
-msgstr "Seleccione un idioma"
-
 msgid "Additional Languages"
 msgstr "Idiomas adicionales"
 
 msgid "The languages that your flows can be translated into."
 msgstr "Los idiomas a los que se pueden traducir sus flujos."
-
-msgid "Select languages"
-msgstr "Seleccione idiomas"
 
 msgid "Input Matching"
 msgstr "Coincidencia de entrada"
@@ -3328,9 +3313,6 @@ msgstr "Repetir"
 msgid "Repeat On Days"
 msgstr "Repite en los Días"
 
-msgid "Select days"
-msgstr "Seleccione los días"
-
 #, python-format
 msgid "First time this should happen in the %s timezone."
 msgstr "La primera vez que esto debería suceder en la zona horaria %s."
@@ -3389,8 +3371,12 @@ msgstr "Suspendido"
 msgid "Verified"
 msgstr "Verificado"
 
-msgid "Select groups whose members administer this workspace"
-msgstr "Seleccione los grupos cuyos miembros administran este espacio de trabajo"
+msgid "Members of these groups administer this workspace."
+msgstr "Los miembros de estos grupos administran este espacio de trabajo."
+
+#, python-format
+msgid "Defaults to %(limit)s."
+msgstr "Por defecto es %(limit)s."
 
 msgid "Edit User"
 msgstr "Editar usuario"
@@ -3403,9 +3389,6 @@ msgstr "Deshabilitar MFA"
 
 msgid "Delete User"
 msgstr "Eliminar Usuario"
-
-msgid "Select permissions groups"
-msgstr "Seleccione grupos de permisos"
 
 msgid "You can reset the user's password by entering a new password here"
 msgstr "Puede restablecer la contraseña del usuario introduciendo una nueva contraseña aquí"
@@ -3521,6 +3504,9 @@ msgstr "Este workspace ha alcanzado su límite de activadores."
 msgid "Trigger"
 msgstr "Activador"
 
+msgid "Keywords"
+msgstr "Palabras clave"
+
 msgid "Trigger When"
 msgstr "Activar cuando"
 
@@ -3542,9 +3528,6 @@ msgstr "Cachar todo"
 
 msgid "Contacts To Include"
 msgstr "Contactos Para Incluir"
-
-msgid "Search for contacts"
-msgstr "Buscar contactos"
 
 msgid "Must provide at least one group or contact to include."
 msgstr "Debe proporcionar al menos un grupo o contacto para incluir."
@@ -3591,9 +3574,6 @@ msgstr "Grupos Para Incluir"
 msgid "Only includes contacts in these groups."
 msgstr "Solo incluye contactos en estos grupos."
 
-msgid "Select contact groups"
-msgstr "Seleccionar grupos de contactos"
-
 msgid "Groups To Exclude"
 msgstr "Grupos para Excluir"
 
@@ -3608,9 +3588,6 @@ msgstr "Canal"
 
 msgid "Only includes activity from this channel."
 msgstr "Solo incluye la actividad de este canal."
-
-msgid "Select channel"
-msgstr "Seleccione un canal"
 
 msgid "New Trigger"
 msgstr "Nuevo activador"
@@ -5756,9 +5733,6 @@ msgstr "Eliminar esta configuración significará que los correos electrónicos 
 #, python-format
 msgid "Sign in to join the <b>%(org)s</b> workspace."
 msgstr "Inicie sesión para unirse al workspace <b>%(org)s</b>."
-
-msgid "Your password"
-msgstr "Su contraseña"
 
 #, python-format
 msgid "You have been invited to join the <b>%(org)s</b> workspace."

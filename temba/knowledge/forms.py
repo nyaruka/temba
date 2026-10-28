@@ -230,15 +230,9 @@ class HelpSiteForm(forms.ModelForm):
         widget=ColorInputWidget(),
     )
     # the bubbles share a help text, which the dialog shows beneath all three of them
-    bubble_1 = forms.CharField(
-        required=False, label=_("Bubble 1"), widget=ColorInputWidget(attrs={"placeholder": _("None")})
-    )
-    bubble_2 = forms.CharField(
-        required=False, label=_("Bubble 2"), widget=ColorInputWidget(attrs={"placeholder": _("None")})
-    )
-    bubble_3 = forms.CharField(
-        required=False, label=_("Bubble 3"), widget=ColorInputWidget(attrs={"placeholder": _("None")})
-    )
+    bubble_1 = forms.CharField(required=False, label=_("Bubble 1"), widget=ColorInputWidget())
+    bubble_2 = forms.CharField(required=False, label=_("Bubble 2"), widget=ColorInputWidget())
+    bubble_3 = forms.CharField(required=False, label=_("Bubble 3"), widget=ColorInputWidget())
 
     def __init__(self, org, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -299,9 +293,9 @@ class HelpSiteDomainForm(forms.ModelForm):
         required=False,
         max_length=HelpSite.MAX_DOMAIN_LEN,
         label=_("Domain"),
-        help_text=_("Your own domain to serve the help site on, e.g. help.example.com."),
+        help_text=_("Your own domain to serve the help site on."),
         # the dialog shows the records to add for whatever domain is being typed - see helpsite_domain.html
-        widget=InputWidget(attrs={"placeholder": "help.example.com", "oninput": "updateHelpSiteRecords(this)"}),
+        widget=InputWidget(attrs={"placeholder": _("e.g. help.example.com"), "oninput": "updateHelpSiteRecords(this)"}),
     )
 
     is_enabled = forms.BooleanField(
