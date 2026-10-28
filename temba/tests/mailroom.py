@@ -735,8 +735,8 @@ class TestClient(MailroomClient):
 
         reopened = []
         for ticket in tickets:
-            # a contact can only have one open ticket
-            if ticket.contact.tickets.filter(status=Ticket.STATUS_OPEN).exists():
+            # a contact can only have one pending or open ticket
+            if ticket.contact.tickets.filter(status__in=(Ticket.STATUS_PENDING, Ticket.STATUS_OPEN)).exists():
                 continue
 
             ticket.status = Ticket.STATUS_OPEN
@@ -803,8 +803,8 @@ def apply_modifiers(org, user, contacts, modifiers: list):
             topic = org.topics.get(uuid=mod.topic.uuid, is_active=True)
             assignee = org.users.get(uuid=mod.assignee.uuid, is_active=True) if mod.assignee else None
             for contact in contacts:
-                # a contact can only have one open ticket
-                if contact.tickets.filter(status=Ticket.STATUS_OPEN).exists():
+                # a contact can only have one pending or open ticket
+                if contact.tickets.filter(status__in=(Ticket.STATUS_PENDING, Ticket.STATUS_OPEN)).exists():
                     continue
 
                 contact.tickets.create(

@@ -148,6 +148,13 @@ class ContactTest(TembaTest):
 
         self.assertEqual(older, self.joe.open_ticket(self.admin, topic=self.org.default_topic, assignee=None, note=""))
 
+        # as is a pending ticket
+        older.status = Ticket.STATUS_PENDING
+        older.save(update_fields=("status",))
+
+        self.assertEqual(older, self.joe.open_ticket(self.admin, topic=self.org.default_topic, assignee=None, note=""))
+        self.assertEqual(2, self.joe.tickets.count())
+
     def test_interrupt(self):
         # noop when contact not in a flow
         self.joe.interrupt(self.admin)

@@ -1150,7 +1150,7 @@ class Contact(LegacyIDMixin, LegacyUUIDMixin, CreatedByMixin, ModifiedByMixin, S
 
     def open_ticket(self, user, *, topic, assignee, note: str):
         """
-        Opens a new ticket for this contact, unless they already have an open ticket, and returns their open ticket.
+        Opens a new ticket for this contact, unless they already have a pending or open ticket, and returns that ticket.
         """
         from temba.tickets.models import Ticket
 
@@ -1160,7 +1160,7 @@ class Contact(LegacyIDMixin, LegacyUUIDMixin, CreatedByMixin, ModifiedByMixin, S
             note=note,
         )
         self.modify(user, [mod], refresh=False)
-        return self.tickets.filter(status=Ticket.STATUS_OPEN).first()
+        return self.tickets.filter(status__in=(Ticket.STATUS_PENDING, Ticket.STATUS_OPEN)).first()
 
     def interrupt(self, user):
         """
