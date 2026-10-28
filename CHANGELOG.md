@@ -1,3 +1,11 @@
+## v26.3.165 (2026-10-28)
+ * Simplify form and channel form help texts and make them consistent, including the flow editor
+ * Add real labels to Twilio, Plivo and Vonage connect fields
+ * Allow webchat channels to be configured with Mailgun for sending emails
+ * Let staff set a channel's TPS from its update form
+ * Add pending ticket status and enforce one non-closed ticket per contact
+ * Exclude smart groups from the remove from group action picker
+
 ## v26.3.164 (2026-10-27)
  * Add a security audit log
 
