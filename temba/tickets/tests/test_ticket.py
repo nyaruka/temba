@@ -61,6 +61,15 @@ class TicketTest(TembaTest):
 
         self.assertEqual([call(self.org, self.admin, [ticket], via="ui")], mr_mocks.calls["ticket_reopen"])
 
+        # a ticket can't be reopened if its contact already has an open ticket
+        Ticket.bulk_close(self.org, self.admin, [ticket])
+        other = self.create_ticket(ticket.contact)
+
+        self.assertEqual([], Ticket.bulk_reopen(self.org, self.admin, [ticket]))
+        ticket.refresh_from_db()
+        self.assertEqual(Ticket.STATUS_CLOSED, ticket.status)
+        self.assertEqual(Ticket.STATUS_OPEN, other.status)
+
     def test_get_accessible(self):
         sales = Topic.create(self.org, self.admin, "Sales")
         support = Topic.create(self.org, self.admin, "Support")
