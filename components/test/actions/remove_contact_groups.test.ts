@@ -15,6 +15,14 @@ describe('remove_contact_groups action config', () => {
     it('has correct name', () => {
       expect(remove_contact_groups.name).to.equal('Remove from Group');
     });
+
+    it('excludes smart groups from the group picker', () => {
+      const shouldExclude = (remove_contact_groups.form.groups as any)
+        .shouldExclude;
+      expect(shouldExclude({ name: 'VIPs', query: 'status = vip' })).to.be
+        .true;
+      expect(shouldExclude({ name: 'Testers', query: null })).to.be.false;
+    });
   });
 
   describe('action scenarios', () => {
