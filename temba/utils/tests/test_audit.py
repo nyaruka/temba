@@ -287,3 +287,37 @@ class AuditTest(TembaTest):
                 user_update_url, {"email": "ed@textit.com", "first_name": "Ed", "last_name": "Itor"}
             ),
         )
+
+    def test_channel_tps_changed(self):
+        self.customer_support.is_superuser = True
+        self.customer_support.save(update_fields=("is_superuser",))
+
+        self.login(self.customer_support, choose_org=self.org)
+
+        update_url = reverse("channels.channel_update", args=[self.channel.id])
+        entries = self.assertAudited(
+            [
+                (
+                    "channel.tps_changed",
+                    {
+                        "workspace": {"uuid": str(self.org.uuid), "name": "Nyaruka"},
+                        "data": {"channel": str(self.channel.uuid), "tps": 25, "previous_tps": None},
+                    },
+                )
+            ],
+            lambda: self.client.post(update_url, {"name": "Test Channel", "is_enabled": True, "tps": "25"}),
+        )
+        self.assertEqual(str(self.customer_support.uuid), entries[0]["actor"]["uuid"])
+
+        self.assertAudited(
+            [("channel.tps_changed", {"data": {"channel": str(self.channel.uuid), "tps": 50, "previous_tps": 25}})],
+            lambda: self.client.post(update_url, {"name": "Test Channel", "is_enabled": True, "tps": "50"}),
+        )
+
+        # resubmitting the same value, or leaving it blank, isn't a change
+        for tps in ("50", ""):
+            with self.assertNoLogs("temba.audit"), self.captureOnCommitCallbacks(execute=True):
+                self.client.post(update_url, {"name": "Test Channel", "is_enabled": True, "tps": tps})
+
+        self.channel.refresh_from_db()
+        self.assertEqual(50, self.channel.tps)

@@ -42,15 +42,15 @@ export const wait_for_dial: NodeConfig = {
       type: 'text',
       label: 'Dial Limit (seconds)',
       required: false,
-      placeholder: '60'
+      helpText: 'Defaults to 60 seconds.'
     },
     call_limit_seconds: {
       type: 'text',
       label: 'Call Limit (seconds)',
       required: false,
-      placeholder: '7200'
+      helpText: 'Defaults to two hours.'
     },
-    result_name: resultNameField
+    result_name: { ...resultNameField, label: 'Result Name' }
   },
   layout: [
     'phone',

@@ -26,7 +26,7 @@ export const split_by_resthook: NodeConfig = {
       valueKey: 'resthook',
       nameKey: 'resthook'
     },
-    result_name: resultNameField
+    result_name: { ...resultNameField, label: 'Result Name' }
   },
   layout: ['resthook', 'result_name'],
   validate: validateWith((formData, errors) => {

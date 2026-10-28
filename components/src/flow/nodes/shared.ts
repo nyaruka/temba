@@ -24,7 +24,6 @@ export const resultNameField: TextFieldConfig = {
   type: 'text',
   required: false,
   maxLength: 64,
-  placeholder: '(optional)',
   helpText: 'Used to reference this result elsewhere in the flow.'
 };
 
