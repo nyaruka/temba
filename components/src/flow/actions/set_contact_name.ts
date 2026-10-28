@@ -22,8 +22,7 @@ export const set_contact_name: ActionConfig = {
       required: true,
       evaluated: true,
       maxLength: 1000,
-      helpText:
-        'The new name for the contact. You can use expressions like @contact.name'
+      helpText: 'Can include expressions, e.g. `@input.text`.'
     }
   },
   sanitize: (formData: FormData): void => {

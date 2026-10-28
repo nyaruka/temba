@@ -26,7 +26,8 @@ export const split_by_airtime: NodeConfig = {
     amounts: {
       type: 'array',
       label: 'Airtime Amounts',
-      helpText: 'Define the currencies and amounts to transfer',
+      helpText:
+        "The contact receives the amount in their mobile network's currency.",
       required: true,
       itemLabel: 'Amount',
       sortable: false,

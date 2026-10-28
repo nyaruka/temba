@@ -21,7 +21,7 @@ export const set_run_result: ActionConfig = {
     name: {
       type: 'select',
       label: 'Result Name',
-      helpText: 'Select an existing result name or type a new one',
+      helpText: 'Typing a new name creates a new result.',
       required: true,
       maxLength: 64,
       placeholder: 'Select or enter result name...',
@@ -50,7 +50,7 @@ export const set_run_result: ActionConfig = {
     value: {
       type: 'textarea',
       label: 'Value',
-      helpText: 'The value to save for this result (can use expressions)',
+      helpText: 'Can include expressions, e.g. `@input.text`.',
       required: false,
       evaluated: true,
       maxLength: 10000,
@@ -59,7 +59,6 @@ export const set_run_result: ActionConfig = {
     category: {
       type: 'text',
       label: 'Category',
-      helpText: 'Optional category for this result',
       required: false,
       maxLength: 36,
       placeholder: 'Enter category...'

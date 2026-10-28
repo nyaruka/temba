@@ -120,7 +120,7 @@ export const split_by_run_result: NodeConfig = {
       type: 'row',
       label: 'Flow Result',
       helpText:
-        'Select a flow result and optionally delimit it to split on a specific part',
+        'Delimiting splits on one part of the result, e.g. its first word.',
       items: ['result', 'delimit_by', 'delimit_index']
     },
     'rules',

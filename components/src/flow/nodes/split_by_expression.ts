@@ -31,7 +31,6 @@ export const split_by_expression: NodeConfig = {
     operand: {
       type: 'text',
       label: 'Expression',
-      helpText: 'The expression to evaluate and split on',
       required: true,
       evaluated: true,
       maxLength: 10000,

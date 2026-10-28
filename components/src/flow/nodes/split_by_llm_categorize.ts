@@ -85,7 +85,6 @@ export const split_by_llm_categorize: NodeConfig = {
     model: {
       type: 'select',
       label: 'Model',
-      helpText: 'Select the AI model to use for classification',
       required: true,
       endpoint: LLMS_ENDPOINT,
       valueKey: 'uuid',
@@ -96,7 +95,6 @@ export const split_by_llm_categorize: NodeConfig = {
     input: {
       type: 'text',
       label: 'Input',
-      helpText: 'The input to classify (usually @input)',
       required: true,
       evaluated: true,
       maxLength: 10000,
@@ -104,8 +102,7 @@ export const split_by_llm_categorize: NodeConfig = {
     },
     options: {
       type: 'array',
-      helpText:
-        'Define the categories for classification. Descriptions help the model decide when each one fits.',
+      helpText: 'Descriptions help the model decide when each category fits.',
       required: true,
       sortable: true,
       itemLabel: 'Category',

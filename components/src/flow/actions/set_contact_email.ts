@@ -24,8 +24,7 @@ export const set_contact_email: ActionConfig = {
       placeholder: 'Enter email address...',
       evaluated: true,
       maxLength: 1000,
-      helpText:
-        'The new email address for the contact, or leave empty to clear it. You can use expressions like @input.text'
+      helpText: "An empty value clears the contact's email address."
     }
   },
   sanitize: (formData: FormData): void => {

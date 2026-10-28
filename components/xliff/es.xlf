@@ -423,14 +423,6 @@
   <source>Flow Issues</source>
   <target>Problemas del flujo</target>
 </trans-unit>
-<trans-unit id="sf56ef287cc7daf3b">
-  <source>Only enable if you plan to use @results.<x id="0" equiv-text="${key}"/>.category_localized</source>
-  <target>Actívelo solo si planea usar @results.<x id="0" equiv-text="${key}"/>.category_localized</target>
-</trans-unit>
-<trans-unit id="s555b86db4eb91a66">
-  <source>Only enable if you plan to use category_localized in your expressions for this result</source>
-  <target>Actívelo solo si planea usar category_localized en sus expresiones para este resultado</target>
-</trans-unit>
 <trans-unit id="s002055c0e8aaaefa">
   <source>At least one currency and amount is required</source>
   <target>Se requiere al menos una moneda y un monto</target>
@@ -1676,9 +1668,6 @@
   <source>Save the result as {name}</source>
   <note from="lit-localize">{name} is a text box for the result name. Keep {name} as it is.</note>
 </trans-unit>
-<trans-unit id="se94c8ac46fa79972">
-  <source>Each language must specify its own rules for this node</source>
-</trans-unit>
 <trans-unit id="s2f1345908b7598ed">
   <source>Each language must translate its {categories}</source>
   <note from="lit-localize">{categories} is a checkbox labeled "categories". Keep it as it is.</note>
@@ -1716,6 +1705,14 @@
 <trans-unit id="s8e46c72034dc11bb">
   <source>No tickets</source>
   <target>Sin tickets</target>
+</trans-unit>
+<trans-unit id="s83aafebe89c1ff3c">
+  <source>Only needed when expressions use @results.<x id="0" equiv-text="${key}"/>.category_localized.</source>
+  <target>Solo es necesario si las expresiones usan @results.<x id="0" equiv-text="${key}"/>.category_localized.</target>
+</trans-unit>
+<trans-unit id="sbd5e61d540c34e82">
+  <source>Only needed when expressions use category_localized for this result.</source>
+  <target>Solo es necesario si las expresiones usan category_localized para este resultado.</target>
 </trans-unit>
 </body>
 </file>

@@ -25,7 +25,7 @@ export const resultNameField: TextFieldConfig = {
   required: false,
   maxLength: 64,
   placeholder: '(optional)',
-  helpText: 'The name to use to reference this result in the flow'
+  helpText: 'Used to reference this result elsewhere in the flow.'
 };
 
 /**
@@ -38,8 +38,7 @@ export const localizeRulesField: CheckboxFieldConfig = {
   label: () =>
     msg('rules', {
       desc: 'A checkbox in "Each language must translate its {rules} {categories}"'
-    }),
-  helpText: () => msg('Each language must specify its own rules for this node')
+    })
 };
 
 export const localizeCategoriesField: CheckboxFieldConfig = {
@@ -53,11 +52,11 @@ export const localizeCategoriesField: CheckboxFieldConfig = {
     if (name) {
       const key = name.toLowerCase().replace(/\s+/g, '_');
       return msg(
-        str`Only enable if you plan to use @results.${key}.category_localized`
+        str`Only needed when expressions use @results.${key}.category_localized.`
       );
     }
     return msg(
-      'Only enable if you plan to use category_localized in your expressions for this result'
+      'Only needed when expressions use category_localized for this result.'
     );
   },
   conditions: {

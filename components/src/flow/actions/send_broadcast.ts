@@ -63,7 +63,6 @@ export const send_broadcast: ActionConfig = {
     recipients: {
       type: 'select',
       label: 'Recipients',
-      helpText: 'Select the contacts or groups to receive the broadcast',
       multi: true,
       searchable: true,
       endpoint: '/contact/omnibox/?types=gc',
@@ -78,7 +77,7 @@ export const send_broadcast: ActionConfig = {
       type: 'message-editor',
       label: 'Message',
       helpText:
-        'Enter the message to send with optional attachments. You can use expressions like @contact.name',
+        'Can include attachments and expressions, e.g. `@contact.name`.',
       required: true,
       evaluated: true,
       placeholder: 'Type your message here...',

@@ -479,7 +479,7 @@ describe('flow/nodes/shared-rules', () => {
         'Custom help'
       );
       expect(createRulesArrayConfig([]).helpText).to.equal(
-        'Define rules to categorize responses'
+        'Responses are categorized by the first rule they match.'
       );
     });
 

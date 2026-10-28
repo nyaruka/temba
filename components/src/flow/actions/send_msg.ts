@@ -71,7 +71,7 @@ export const send_msg: ActionConfig = {
       type: 'message-editor',
       label: 'Message',
       helpText:
-        'Enter the message to send with optional attachments. You can use expressions like @contact.name',
+        'Can include attachments and expressions, e.g. `@contact.name`.',
       required: true,
       evaluated: true,
       placeholder: 'Type your message here...',
