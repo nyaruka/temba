@@ -127,13 +127,16 @@ class ScheduledTriggerType(TriggerType):
         contacts = JSONField(
             label=_("Contacts To Include"),
             required=False,
-            widget=OmniboxChoice(attrs={"placeholder": _("Optional: Search for contacts"), "contacts": True}),
+            widget=OmniboxChoice(attrs={"placeholder": _("Search for contacts"), "contacts": True, "optional": False}),
         )
 
         def __init__(self, org, user, *args, **kwargs):
             super().__init__(org, user, Trigger.TYPE_SCHEDULE, *args, **kwargs)
 
             self.set_org(org)
+
+            # groups or contacts are required, see clean
+            self.fields["groups"].widget.attrs["optional"] = False
 
         def clean_contacts(self):
             groups, contacts = omnibox_deserialize(self.org, self.cleaned_data["contacts"])

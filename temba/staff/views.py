@@ -159,7 +159,7 @@ class OrgCRUDL(SmartCRUDL):
             admin_groups = forms.ModelMultipleChoiceField(
                 queryset=Group.objects.none(),
                 widget=SelectMultipleWidget(
-                    attrs={"placeholder": _("Optional: Select groups whose members administer this workspace.")}
+                    attrs={"placeholder": _("Select groups whose members administer this workspace")}
                 ),
                 required=False,
             )
@@ -334,9 +334,7 @@ class UserCRUDL(SmartCRUDL):
 
         class Form(forms.ModelForm):
             groups = forms.ModelMultipleChoiceField(
-                widget=SelectMultipleWidget(
-                    attrs={"placeholder": _("Optional: Select permissions groups."), "searchable": True}
-                ),
+                widget=SelectMultipleWidget(attrs={"placeholder": _("Select permissions groups"), "searchable": True}),
                 queryset=Group.objects.all(),
                 required=False,
             )

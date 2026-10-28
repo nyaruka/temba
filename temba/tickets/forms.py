@@ -26,7 +26,9 @@ class TeamForm(UniqueNameMixin, forms.ModelForm):
         initial=True,
         widget=CheckboxWidget(attrs={"widget_only": True}),
     )
-    topics = forms.ModelMultipleChoiceField(queryset=Topic.objects.none(), required=False)
+    topics = forms.ModelMultipleChoiceField(
+        queryset=Topic.objects.none(), required=False, widget=forms.SelectMultiple(attrs={"optional": False})
+    )
 
     def __init__(self, org, *args, **kwargs):
         super().__init__(*args, **kwargs)

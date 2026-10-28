@@ -750,7 +750,7 @@ class ContactCRUDL(SmartCRUDL):
             )
             note = forms.CharField(
                 label=_("Note"),
-                widget=InputWidget(attrs={"textarea": True, "placeholder": _("Optional")}),
+                widget=InputWidget(attrs={"textarea": True}),
                 required=False,
             )
 

@@ -39,6 +39,7 @@ class SignalWireClaimView(ClaimViewMixin, SmartFormView):
             max_length=64,
             required=False,
             help_text=_("e.g. FPd199eb93e878f8a3tw9ttna313914tnauwy"),
+            widget=forms.TextInput(attrs={"optional": False}),
         )
 
         def clean_space(self):

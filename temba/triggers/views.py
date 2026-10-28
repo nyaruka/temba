@@ -72,7 +72,7 @@ class BaseTriggerForm(forms.ModelForm):
         help_text=_("Only includes contacts in these groups."),
         required=False,
         widget=SelectMultipleWidget(
-            attrs={"icons": True, "placeholder": _("Optional: Select contact groups"), "searchable": True}
+            attrs={"icons": True, "placeholder": _("Select contact groups"), "searchable": True}
         ),
     )
     exclude_groups = TembaMultipleChoiceField(
@@ -81,7 +81,7 @@ class BaseTriggerForm(forms.ModelForm):
         help_text=_("Excludes contacts in these groups."),
         required=False,
         widget=SelectMultipleWidget(
-            attrs={"icons": True, "placeholder": _("Optional: Select contact groups"), "searchable": True}
+            attrs={"icons": True, "placeholder": _("Select contact groups"), "searchable": True}
         ),
     )
 
@@ -146,7 +146,7 @@ class BaseChannelTriggerForm(BaseTriggerForm):
         label=_("Channel"),
         help_text=_("Only includes activity from this channel."),
         required=False,
-        widget=SelectWidget(attrs={"placeholder": _("Optional: Select channel"), "clearable": True}),
+        widget=SelectWidget(attrs={"placeholder": _("Select channel"), "clearable": True}),
     )
 
     def __init__(self, org, user, trigger_type, *args, **kwargs):

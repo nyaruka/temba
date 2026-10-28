@@ -903,9 +903,7 @@ class FlowCRUDL(SmartCRUDL):
                 required=False,
                 label=_("URNs"),
                 choices=URN.SCHEME_CHOICES,
-                widget=SelectMultipleWidget(
-                    attrs={"placeholder": _("Optional: URNs in addition to the one used in the flow")}
-                ),
+                widget=SelectMultipleWidget(attrs={"placeholder": _("URNs in addition to the one used in the flow")}),
             )
             responded_only = forms.BooleanField(
                 required=False,

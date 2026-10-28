@@ -2008,9 +2008,6 @@ msgstr "Sem responsável"
 msgid "Note"
 msgstr "Nota"
 
-msgid "Optional"
-msgstr "Opcional"
-
 msgid "Open"
 msgstr "Aberto"
 
@@ -2299,8 +2296,8 @@ msgstr "Não foi possível alterar o idioma do fluxo."
 msgid "URNs"
 msgstr "URNs"
 
-msgid "Optional: URNs in addition to the one used in the flow"
-msgstr "Opcional: URNs além da utilizada no fluxo"
+msgid "URNs in addition to the one used in the flow"
+msgstr "URNs além da utilizada no fluxo"
 
 msgid "Responded Only"
 msgstr "Somente Respondidos"
@@ -2972,11 +2969,11 @@ msgstr "Data de Início"
 msgid "End Date"
 msgstr "Data de Término"
 
-msgid "Optional: Fields to include"
-msgstr "Opcional: Campos para incluir"
+msgid "Fields to include"
+msgstr "Campos para incluir"
 
-msgid "Optional: Group memberships to include"
-msgstr "Opcional: participações em grupos a incluir"
+msgid "Group memberships to include"
+msgstr "Participações em grupos a incluir"
 
 #, python-format
 msgid "You can only include up to %(limit)d fields."
@@ -3185,9 +3182,6 @@ msgstr "ex. novo-cadastro"
 
 msgid "This event name has already been used."
 msgstr "Este nome de evento já foi usado."
-
-msgid "The country used for location values. (optional)"
-msgstr "O país usado para valores da localidade. (opcional)"
 
 msgid "State and district names will be searched against this country."
 msgstr "Nomes de estados e distritos serão pesquisados dentro deste país."
@@ -3399,8 +3393,8 @@ msgstr "Suspensa"
 msgid "Verified"
 msgstr "Verificada"
 
-msgid "Optional: Select groups whose members administer this workspace."
-msgstr "Opcional: selecione os grupos cujos membros administram este espaço de trabalho."
+msgid "Select groups whose members administer this workspace"
+msgstr "Selecione os grupos cujos membros administram este espaço de trabalho"
 
 msgid "Edit User"
 msgstr "Editar usuário"
@@ -3414,8 +3408,8 @@ msgstr "Desabilitar MFA"
 msgid "Delete User"
 msgstr "Deletar usuário"
 
-msgid "Optional: Select permissions groups."
-msgstr "Opcional: selecione os grupos de permissões."
+msgid "Select permissions groups"
+msgstr "Selecione os grupos de permissões"
 
 msgid "You can reset the user's password by entering a new password here"
 msgstr "Você pode redefinir a senha do usuário digitando uma nova senha aqui"
@@ -3553,8 +3547,8 @@ msgstr "Pegar tudo"
 msgid "Contacts To Include"
 msgstr "Contatos a incluir"
 
-msgid "Optional: Search for contacts"
-msgstr "Opcional: pesquise por contatos"
+msgid "Search for contacts"
+msgstr "Pesquise por contatos"
 
 msgid "Must provide at least one group or contact to include."
 msgstr "É preciso fornecer ao menos um grupo ou contato a incluir."
@@ -3601,8 +3595,8 @@ msgstr "Grupos a incluir"
 msgid "Only includes contacts in these groups."
 msgstr "Inclui somente contatos destes grupos."
 
-msgid "Optional: Select contact groups"
-msgstr "Opcional: selecione grupos de contatos"
+msgid "Select contact groups"
+msgstr "Selecione grupos de contatos"
 
 msgid "Groups To Exclude"
 msgstr "Grupos a excluir"
@@ -3619,8 +3613,8 @@ msgstr "Canal"
 msgid "Only includes activity from this channel."
 msgstr "Inclui somente atividade deste canal."
 
-msgid "Optional: Select channel"
-msgstr "Opcional: selecione o canal"
+msgid "Select channel"
+msgstr "Selecione o canal"
 
 msgid "New Trigger"
 msgstr "Novo disparador"

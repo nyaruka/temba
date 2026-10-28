@@ -53,7 +53,7 @@ class KnowledgeSourceForm(UniqueNameMixin, forms.ModelForm):
         required=False,
         max_length=KnowledgeSource.MAX_URL_LEN,
         label=_("URL"),
-        widget=InputWidget(),
+        widget=InputWidget(attrs={"optional": False}),
         help_text=_("The address to crawl, e.g. https://help.example.com"),
     )
     max_pages = forms.IntegerField(
