@@ -1982,7 +1982,7 @@ msgstr ""
 msgid "TPS"
 msgstr ""
 
-msgid "Maximum messages sent per second. Leave blank to use the default for this channel type."
+msgid "Maximum messages sent per second."
 msgstr ""
 
 msgid "Credentials don't appear to be valid."

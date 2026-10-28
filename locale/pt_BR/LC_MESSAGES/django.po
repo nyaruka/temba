@@ -2000,8 +2000,8 @@ msgstr "Realizar detecção de secretária eletrônica e desligar se detectada."
 msgid "TPS"
 msgstr "TPS"
 
-msgid "Maximum messages sent per second. Leave blank to use the default for this channel type."
-msgstr "Máximo de mensagens enviadas por segundo. Deixe em branco para usar o padrão deste tipo de canal."
+msgid "Maximum messages sent per second."
+msgstr "Máximo de mensagens enviadas por segundo."
 
 msgid "Credentials don't appear to be valid."
 msgstr "As credenciais parecem não ser válidas."

@@ -1996,8 +1996,8 @@ msgstr "Effectuer la détection du répondeur et raccrocher si le répondeur est
 msgid "TPS"
 msgstr "TPS"
 
-msgid "Maximum messages sent per second. Leave blank to use the default for this channel type."
-msgstr "Nombre maximal de messages envoyés par seconde. Laissez vide pour utiliser la valeur par défaut de ce type de canal."
+msgid "Maximum messages sent per second."
+msgstr "Nombre maximal de messages envoyés par seconde."
 
 msgid "Credentials don't appear to be valid."
 msgstr "Les identifiants ne semblent pas être valides."

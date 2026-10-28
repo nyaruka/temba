@@ -432,7 +432,7 @@ class UpdateChannelForm(forms.ModelForm):
                 max_value=1000,
                 required=False,
                 initial=self.instance.tps,
-                help_text=_("Maximum messages sent per second. Leave blank to use the default for this channel type."),
+                help_text=_("Maximum messages sent per second."),
             )
 
     def add_config_field(self, config_key: str, field, *, default):
@@ -445,8 +445,9 @@ class UpdateChannelForm(forms.ModelForm):
         return {k: v for k, v in self.cleaned_data.items() if k in self.config_fields}
 
     def clean_tps(self):
+        # some types set TPS at claim time, e.g. by country, so there's no default to safely reset to
         tps = self.cleaned_data["tps"]
-        return tps if tps is not None else self.instance.type.tps
+        return tps if tps is not None else self.instance.tps
 
     def clean(self) -> dict[str, Any]:
         cleaned_data = super().clean()

@@ -259,24 +259,13 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
         vonage_channel.refresh_from_db()
         self.assertEqual(25, vonage_channel.tps)
 
-        # blank resets it to the type's default
+        # blank leaves it unchanged
         self.assertUpdateSubmit(
             vonage_url, self.customer_support, {"name": "Updated Name", "is_enabled": True, "tps": ""}
         )
 
         vonage_channel.refresh_from_db()
-        self.assertEqual(1, vonage_channel.tps)
-
-        # which for some types is none
-        telegram_channel.tps = 20
-        telegram_channel.save(update_fields=("tps",))
-
-        self.assertUpdateSubmit(
-            telegram_url, self.customer_support, {"name": "My Telegram", "is_enabled": True, "tps": ""}
-        )
-
-        telegram_channel.refresh_from_db()
-        self.assertIsNone(telegram_channel.tps)
+        self.assertEqual(25, vonage_channel.tps)
 
     def test_read_menu(self):
         # normal channel types get a logs menu item on their read page

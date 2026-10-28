@@ -1996,8 +1996,8 @@ msgstr "Detectar contestadores automáticos y colgar si se detecta uno."
 msgid "TPS"
 msgstr "TPS"
 
-msgid "Maximum messages sent per second. Leave blank to use the default for this channel type."
-msgstr "Máximo de mensajes enviados por segundo. Déjalo en blanco para usar el valor predeterminado de este tipo de canal."
+msgid "Maximum messages sent per second."
+msgstr "Máximo de mensajes enviados por segundo."
 
 msgid "Credentials don't appear to be valid."
 msgstr "Las credenciales no parecen ser válidas."
