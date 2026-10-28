@@ -48,7 +48,8 @@ export const set_contact_field: ActionConfig = {
       placeholder: 'Enter field value...',
       evaluated: true,
       maxLength: 10000,
-      helpText: 'Can include expressions, e.g. `@input.text`.'
+      helpText:
+        'Clears it when empty, and can include expressions, e.g. `@input.text`.'
     }
   },
   toFormData: (action: SetContactField) => {

@@ -208,7 +208,7 @@ describe('remove_contact_groups action config', () => {
       const result = remove_contact_groups.validate(action);
       expect(result.valid).to.be.false;
       expect(result.errors.groups).to.equal(
-        'At least one group must be selected or check "Remove from All Groups"'
+        'At least one group must be selected or check "Remove from all groups"'
       );
     });
 
@@ -223,7 +223,7 @@ describe('remove_contact_groups action config', () => {
       const result = remove_contact_groups.validate(action);
       expect(result.valid).to.be.false;
       expect(result.errors.groups).to.equal(
-        'At least one group must be selected or check "Remove from All Groups"'
+        'At least one group must be selected or check "Remove from all groups"'
       );
     });
 

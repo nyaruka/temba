@@ -45,7 +45,7 @@ export const remove_contact_groups: ActionConfig = {
     },
     all_groups: {
       type: 'checkbox',
-      label: 'Remove from All Groups'
+      label: 'Remove from all groups'
     }
   },
   validate: (formData: FormData): ValidationResult => {
@@ -56,7 +56,7 @@ export const remove_contact_groups: ActionConfig = {
       (!formData.groups || formData.groups.length === 0)
     ) {
       errors.groups =
-        'At least one group must be selected or check "Remove from All Groups"';
+        'At least one group must be selected or check "Remove from all groups"';
     }
 
     return {
