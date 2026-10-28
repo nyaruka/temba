@@ -25,7 +25,6 @@ export const enter_flow: ActionConfig = {
       type: 'select',
       required: true,
       placeholder: 'Select a flow...',
-      helpText: "The contact enters this flow and doesn't return.",
       endpoint: '/api/v2/flows.json?archived=false',
       valueKey: 'uuid',
       nameKey: 'name',
