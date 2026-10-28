@@ -1,6 +1,8 @@
 import json
 from datetime import timezone as tzone
 
+from django import forms
+from django.db.models.utils import get_blank_choice_label
 from django.template.defaultfilters import register
 from django.urls import reverse
 from django.utils.html import escapejs
@@ -70,7 +72,37 @@ def annotated_field(field, label, help_text):
     attrs["label"] = label
     attrs["help_text"] = help_text
     attrs["errors"] = json.dumps([str(error) for error in field.errors])
+    attrs.setdefault(
+        "optional",
+        bool(str(label).strip())
+        and _is_optional(field)
+        # in a form where nothing is required, marking every field says nothing
+        and any(_is_required(f) for f in field.form.visible_fields()),
+    )
     return field.as_widget(attrs=attrs)
+
+
+def _is_required(field) -> bool:
+    return field.field.required and not isinstance(field.field.widget, forms.CheckboxInput)
+
+
+def _is_optional(field) -> bool:
+    """
+    Whether a field can be left empty and should say so. Widgets can opt out with an optional=False attr, e.g. for
+    fields that are required only in some cases.
+    """
+    f = field.field
+    if f.required or isinstance(f.widget, forms.CheckboxInput):
+        return False
+
+    # a select whose empty choice has a real name, e.g. "Unassigned", always shows a value
+    blank_labels = ("---------", get_blank_choice_label())
+    if isinstance(f, forms.ModelChoiceField):
+        return f.empty_label is None or f.empty_label in blank_labels
+    if isinstance(f, forms.ChoiceField):
+        return not any(value in ("", None) and label not in blank_labels for value, label in f.choices)
+
+    return True
 
 
 @register.filter

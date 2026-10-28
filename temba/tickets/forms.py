@@ -2,7 +2,7 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from temba.orgs.views.mixins import UniqueNameMixin
-from temba.utils.fields import CheckboxWidget
+from temba.utils.fields import CheckboxWidget, SelectMultipleWidget
 
 from .models import Shortcut, Team, Topic
 
@@ -26,7 +26,9 @@ class TeamForm(UniqueNameMixin, forms.ModelForm):
         initial=True,
         widget=CheckboxWidget(attrs={"widget_only": True}),
     )
-    topics = forms.ModelMultipleChoiceField(queryset=Topic.objects.none(), required=False)
+    topics = forms.ModelMultipleChoiceField(
+        queryset=Topic.objects.none(), required=False, widget=SelectMultipleWidget(attrs={"optional": False})
+    )
 
     def __init__(self, org, *args, **kwargs):
         super().__init__(*args, **kwargs)

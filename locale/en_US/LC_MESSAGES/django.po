@@ -1990,9 +1990,6 @@ msgstr ""
 msgid "Note"
 msgstr ""
 
-msgid "Optional"
-msgstr ""
-
 msgid "Open"
 msgstr ""
 
@@ -2281,7 +2278,7 @@ msgstr ""
 msgid "URNs"
 msgstr ""
 
-msgid "Optional: URNs in addition to the one used in the flow"
+msgid "URNs in addition to the one used in the flow"
 msgstr ""
 
 msgid "Responded Only"
@@ -2954,10 +2951,10 @@ msgstr ""
 msgid "End Date"
 msgstr ""
 
-msgid "Optional: Fields to include"
+msgid "Fields to include"
 msgstr ""
 
-msgid "Optional: Group memberships to include"
+msgid "Group memberships to include"
 msgstr ""
 
 #, python-format
@@ -3166,9 +3163,6 @@ msgid "e.g. new-registration"
 msgstr ""
 
 msgid "This event name has already been used."
-msgstr ""
-
-msgid "The country used for location values. (optional)"
 msgstr ""
 
 msgid "State and district names will be searched against this country."
@@ -3381,7 +3375,7 @@ msgstr ""
 msgid "Verified"
 msgstr ""
 
-msgid "Optional: Select groups whose members administer this workspace."
+msgid "Select groups whose members administer this workspace"
 msgstr ""
 
 msgid "Edit User"
@@ -3396,7 +3390,7 @@ msgstr ""
 msgid "Delete User"
 msgstr ""
 
-msgid "Optional: Select permissions groups."
+msgid "Select permissions groups"
 msgstr ""
 
 msgid "You can reset the user's password by entering a new password here"
@@ -3535,7 +3529,7 @@ msgstr ""
 msgid "Contacts To Include"
 msgstr ""
 
-msgid "Optional: Search for contacts"
+msgid "Search for contacts"
 msgstr ""
 
 msgid "Must provide at least one group or contact to include."
@@ -3583,7 +3577,7 @@ msgstr ""
 msgid "Only includes contacts in these groups."
 msgstr ""
 
-msgid "Optional: Select contact groups"
+msgid "Select contact groups"
 msgstr ""
 
 msgid "Groups To Exclude"
@@ -3601,7 +3595,7 @@ msgstr ""
 msgid "Only includes activity from this channel."
 msgstr ""
 
-msgid "Optional: Select channel"
+msgid "Select channel"
 msgstr ""
 
 msgid "New Trigger"

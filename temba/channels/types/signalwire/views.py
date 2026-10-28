@@ -8,7 +8,7 @@ from django import forms
 from django.forms import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from temba.utils.fields import SelectWidget
+from temba.utils.fields import InputWidget, SelectWidget
 
 from ...models import Channel
 from ...views import ALL_COUNTRIES, ClaimViewMixin
@@ -39,6 +39,7 @@ class SignalWireClaimView(ClaimViewMixin, SmartFormView):
             max_length=64,
             required=False,
             help_text=_("e.g. FPd199eb93e878f8a3tw9ttna313914tnauwy"),
+            widget=InputWidget(attrs={"optional": False}),
         )
 
         def clean_space(self):

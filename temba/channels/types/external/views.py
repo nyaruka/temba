@@ -8,7 +8,7 @@ from django.forms import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from temba.contacts.models import URN
-from temba.utils.fields import ExternalURLField, SelectMultipleWidget, SelectWidget
+from temba.utils.fields import ExternalURLField, InputWidget, SelectMultipleWidget, SelectWidget
 
 from ...models import Channel
 from ...views import ALL_COUNTRIES, ClaimViewMixin, UpdateChannelForm
@@ -18,9 +18,22 @@ class ClaimView(ClaimViewMixin, SmartFormView):
     class ClaimForm(ClaimViewMixin.Form):
         scheme = forms.ChoiceField(choices=URN.SCHEME_CHOICES, label=_("URN Type"))
 
-        number = forms.CharField(max_length=14, min_length=1, label=_("Number"), required=False)
+        # number or address is required depending on the scheme, see clean
+        number = forms.CharField(
+            max_length=14,
+            min_length=1,
+            label=_("Number"),
+            required=False,
+            widget=InputWidget(attrs={"optional": False}),
+        )
 
-        address = forms.CharField(max_length=64, min_length=1, label=_("Address"), required=False)
+        address = forms.CharField(
+            max_length=64,
+            min_length=1,
+            label=_("Address"),
+            required=False,
+            widget=InputWidget(attrs={"optional": False}),
+        )
 
         country = forms.ChoiceField(
             choices=ALL_COUNTRIES, label=_("Country"), required=False, widget=SelectWidget(attrs={"searchable": True})

@@ -1,14 +1,18 @@
 from datetime import datetime, timezone as tzone
 from unittest.mock import patch
 
+from django import forms
 from django.template import Context, Template
 from django.utils import timezone, translation
 
 from temba.campaigns.models import Campaign, CampaignEvent
+from temba.contacts.models import ContactGroup
 from temba.flows.models import Flow
 from temba.tests import TembaTest
 from temba.triggers.models import Trigger
+from temba.users.models import User
 from temba.utils import json
+from temba.utils.fields import CheckboxWidget, InputWidget, SelectMultipleWidget, SelectWidget
 from temba.utils.templatetags import temba as tags
 
 
@@ -149,6 +153,44 @@ class TembaTagLibraryTest(TembaTest):
         self.assertEqual("{}", pretty_json({}))
         self.assertEqual('{\n  "a": 1,\n  "b": 2\n}', pretty_json({"b": 2, "a": 1}))
         self.assertEqual('{\n  "name": "Año"\n}', pretty_json({"name": "Año"}))
+
+    def test_annotated_field(self):
+        class Form(forms.Form):
+            name = forms.CharField(widget=InputWidget())
+            nickname = forms.CharField(required=False, widget=InputWidget())
+            alias = forms.CharField(required=False, widget=InputWidget(attrs={"optional": False}))
+            blank = forms.CharField(required=False, label=" ", widget=InputWidget())
+            vip = forms.BooleanField(required=False, widget=CheckboxWidget())
+            color = forms.ChoiceField(required=False, choices=(("", "---------"), ("R", "Red")), widget=SelectWidget())
+            size = forms.ChoiceField(required=False, choices=(("", "Default"), ("L", "Large")), widget=SelectWidget())
+            group = forms.ModelChoiceField(ContactGroup.objects.all(), required=False, widget=SelectWidget())
+            owner = forms.ModelChoiceField(
+                User.objects.all(), required=False, empty_label="Unassigned", widget=SelectWidget()
+            )
+            groups = forms.ModelMultipleChoiceField(
+                ContactGroup.objects.all(), required=False, widget=SelectMultipleWidget()
+            )
+
+        def render(form, name):
+            field = form[name]
+            return tags.annotated_field(field, field.label, "")
+
+        form = Form()
+        self.assertNotIn(" optional", render(form, "name"))
+        self.assertIn(" optional", render(form, "nickname"))
+        self.assertNotIn(" optional", render(form, "alias"))  # opted out
+        self.assertNotIn(" optional", render(form, "blank"))  # no label to mark
+        self.assertNotIn(" optional", render(form, "vip"))  # checkbox
+        self.assertIn(" optional", render(form, "color"))
+        self.assertNotIn(" optional", render(form, "size"))  # always has a value
+        self.assertIn(" optional", render(form, "group"))
+        self.assertNotIn(" optional", render(form, "owner"))  # always has a value
+        self.assertIn(" optional", render(form, "groups"))
+
+        # no markers when nothing on the form is required
+        form = Form()
+        form.fields["name"].required = False
+        self.assertNotIn(" optional", render(form, "nickname"))
 
     def test_verbose_name_plural(self):
         flow = self.create_flow("Test")

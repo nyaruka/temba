@@ -385,7 +385,7 @@ class BaseExportModal(ModalFormMixin, OrgPermsMixin, SmartFormView):
             label=_("Fields"),
             widget=SelectMultipleWidget(
                 attrs={
-                    "placeholder": _("Optional: Fields to include"),
+                    "placeholder": _("Fields to include"),
                     "searchable": True,
                     "pill_type": "field",
                 }
@@ -397,7 +397,7 @@ class BaseExportModal(ModalFormMixin, OrgPermsMixin, SmartFormView):
             label=_("Groups"),
             widget=SelectMultipleWidget(
                 attrs={
-                    "placeholder": _("Optional: Group memberships to include"),
+                    "placeholder": _("Group memberships to include"),
                     "searchable": True,
                     "pill_type": "group",
                 }

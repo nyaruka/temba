@@ -3,14 +3,18 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
+from temba.utils.fields import InputWidget
+
 from ...views import IntegrationFormaxView
 from .client import DTOneClient
 
 
 class AccountView(IntegrationFormaxView):
     class Form(IntegrationFormaxView.Form):
-        api_key = forms.CharField(label=_("API Key"), required=False)
-        api_secret = forms.CharField(label=_("API Secret"), required=False)
+        api_key = forms.CharField(label=_("API Key"), required=False, widget=InputWidget(attrs={"optional": False}))
+        api_secret = forms.CharField(
+            label=_("API Secret"), required=False, widget=InputWidget(attrs={"optional": False})
+        )
         disconnect = forms.CharField(widget=forms.HiddenInput, max_length=6, required=False)
 
         def clean(self):

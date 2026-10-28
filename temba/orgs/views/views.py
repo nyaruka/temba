@@ -1444,7 +1444,7 @@ class OrgCRUDL(SmartCRUDL):
             root_location = forms.ModelChoiceField(
                 Org.get_possible_countries(),
                 required=False,
-                label=_("The country used for location values. (optional)"),
+                label=_("Country"),
                 help_text=_("State and district names will be searched against this country."),
                 widget=SelectWidget(),
             )
