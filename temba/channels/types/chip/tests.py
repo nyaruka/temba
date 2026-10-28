@@ -216,6 +216,27 @@ class ChipTypeTest(CRUDLTestMixin, TembaTest):
         self.assertEqual("help@example.com", channel.config[CONFIG_EMAIL_FROM])
         self.assertEqual("key-1", channel.config[CONFIG_MAILGUN_API_KEY])
 
+        # but not when the domain or region changes, as the saved key is scoped to them
+        for domain, region in (("mg2.example.com", "eu"), ("mg.example.com", "us")):
+            self.assertUpdateSubmit(
+                update_url,
+                self.admin,
+                submit(email_from="help@example.com", mailgun_domain=domain, mailgun_region=region),
+                form_errors={"mailgun_api_key": "Required to send emails."},
+                object_unchanged=channel,
+            )
+
+        self.assertUpdateSubmit(
+            update_url,
+            self.admin,
+            submit(email_from="help@example.com", mailgun_domain="mg2.example.com", mailgun_api_key="key-2"),
+        )
+
+        channel.refresh_from_db()
+        self.assertEqual("mg2.example.com", channel.config[CONFIG_MAILGUN_DOMAIN])
+        self.assertEqual("us", channel.config["mailgun_region"])
+        self.assertEqual("key-2", channel.config[CONFIG_MAILGUN_API_KEY])
+
         # clearing the domain stops emails and drops the from address and key
         self.assertUpdateSubmit(update_url, self.admin, submit(email_from="help@example.com"))
 

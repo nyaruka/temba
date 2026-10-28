@@ -115,12 +115,19 @@ class UpdateForm(UpdateChannelForm):
             raise ValidationError(_("Enter a domain without a scheme, path or port, e.g. mg.example.com."))
         return domain
 
-    def clean_mailgun_api_key(self) -> str:
-        # the saved key is never rendered back to the browser
-        return self.cleaned_data[CONFIG_MAILGUN_API_KEY] or self.instance.config.get(CONFIG_MAILGUN_API_KEY, "")
-
     def clean(self) -> dict:
-        if self.cleaned_data.get(CONFIG_MAILGUN_DOMAIN):
+        domain = self.cleaned_data.get(CONFIG_MAILGUN_DOMAIN)
+        if domain:
+            # the saved key is never rendered back to the browser, so an empty key field keeps it - but only when the
+            # domain and region are unchanged, as sending keys are scoped to them
+            config = self.instance.config
+            if (
+                not self.cleaned_data.get(CONFIG_MAILGUN_API_KEY)
+                and domain == config.get(CONFIG_MAILGUN_DOMAIN)
+                and self.cleaned_data.get(CONFIG_MAILGUN_REGION) == config.get(CONFIG_MAILGUN_REGION)
+            ):
+                self.cleaned_data[CONFIG_MAILGUN_API_KEY] = config.get(CONFIG_MAILGUN_API_KEY, "")
+
             for key in (CONFIG_EMAIL_FROM, CONFIG_MAILGUN_API_KEY):
                 if key in self.cleaned_data and not self.cleaned_data[key]:
                     self.add_error(key, _("Required to send emails."))
