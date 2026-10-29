@@ -1,3 +1,11 @@
+## v26.3.167 (2026-10-29)
+ * Stop maintaining Contact.ticket_count
+ * Highlight expressions in webhook header values
+ * Use ticket = "open" as the Open Tickets group query
+ * Add ticket keyword field to contacts index mapping
+ * Don't default multi and clearable selects to the first option
+ * Drop redundant tickets_contact_open index
+
 ## v26.3.166 (2026-10-28)
  * Mark optional fields in forms and in the flow editor
  * Mark the number search pattern as optional
