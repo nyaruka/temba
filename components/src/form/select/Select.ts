@@ -941,8 +941,12 @@ export class Select<T extends SelectOption> extends FieldElement {
       }
     }
 
-    // default to the first option if we don't have a placeholder
+    // single non-clearable selects default to the first option if we don't
+    // have a placeholder (for multi and clearable selects an empty selection
+    // is a valid state the user must be able to get back to)
     if (
+      !this.isMultiMode &&
+      !this.clearable &&
       this.values.length === 0 &&
       !this.placeholder &&
       this.staticOptions.length > 0
