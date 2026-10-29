@@ -1,3 +1,6 @@
+## v26.3.168 (2026-10-29)
+ * Make optional single selects clearable so they don't default to the first option
+
 ## v26.3.167 (2026-10-29)
  * Stop maintaining Contact.ticket_count
  * Highlight expressions in webhook header values
