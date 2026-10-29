@@ -100,9 +100,13 @@ class TestFields(TestCase):
             optional = forms.ChoiceField(choices=[("a", "A")], required=False, widget=SelectWidget())
             required = forms.ChoiceField(choices=[("a", "A")], widget=SelectWidget())
             multi = forms.MultipleChoiceField(choices=[("a", "A")], required=False, widget=SelectMultipleWidget())
+            unclearable = forms.ChoiceField(
+                choices=[("a", "A")], required=False, widget=SelectWidget(attrs={"clearable": False})
+            )
 
         form = Form()
 
         self.assertIn("clearable", str(form["optional"]))
         self.assertNotIn("clearable", str(form["required"]))
         self.assertNotIn("clearable", str(form["multi"]))
+        self.assertNotIn(" clearable", str(form["unclearable"]))

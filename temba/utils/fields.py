@@ -224,7 +224,7 @@ class SelectWidget(forms.Select):
     def get_context(self, name, value, attrs):
         # the component defaults a non-clearable single select to its first option, so an optional one must be
         # clearable or there's no way to leave it empty
-        if not self.is_required and not self.allow_multiple_selected:
+        if not self.is_required and not self.allow_multiple_selected and "clearable" not in self.attrs:
             attrs = {"clearable": True, **(attrs or {})}
 
         return super().get_context(name, value, attrs)
