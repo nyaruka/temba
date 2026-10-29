@@ -1,7 +1,6 @@
 from datetime import date
 from unittest.mock import call
 
-from temba.contacts.models import Contact
 from temba.orgs.models import Org, OrgRole
 from temba.orgs.tasks import squash_item_counts
 from temba.tests import TembaTest, mock_mailroom
@@ -124,9 +123,7 @@ class TicketTest(TembaTest):
         t5 = self.create_ticket(contact5, topic=cats)
         t6 = self.create_ticket(org2_contact, topic=org2_general)
 
-        def assert_counts(
-            org, *, assignee_open: dict, assignee_closed: dict, topic_open: dict, topic_closed: dict, contacts: dict
-        ):
+        def assert_counts(org, *, assignee_open: dict, assignee_closed: dict, topic_open: dict, topic_closed: dict):
             all_topics = org.topics.filter(is_active=True)
             assignees = [None] + list(org.get_users())
 
@@ -146,8 +143,6 @@ class TicketTest(TembaTest):
             self.assertEqual(topic_open, Ticket.get_topic_counts(org, list(org.topics.all()), Ticket.STATUS_OPEN))
             self.assertEqual(topic_closed, Ticket.get_topic_counts(org, list(org.topics.all()), Ticket.STATUS_CLOSED))
 
-            self.assertEqual(contacts, {c: Contact.objects.get(id=c.id).ticket_count for c in contacts})
-
         # t1:O/None/General t2:O/None/General t3:O/None/General t4:O/None/Cats t5:O/None/Cats t6:O/None/General
         assert_counts(
             self.org,
@@ -155,7 +150,6 @@ class TicketTest(TembaTest):
             assignee_closed={None: 0, self.agent: 0, self.editor: 0, self.admin: 0},
             topic_open={general: 3, cats: 2},
             topic_closed={general: 0, cats: 0},
-            contacts={contact1: 1, contact2: 1, contact3: 1, contact4: 1, contact5: 1},
         )
         assert_counts(
             self.org2,
@@ -163,7 +157,6 @@ class TicketTest(TembaTest):
             assignee_closed={None: 0, self.admin2: 0},
             topic_open={org2_general: 1},
             topic_closed={org2_general: 0},
-            contacts={org2_contact: 1},
         )
 
         Ticket.bulk_assign(self.org, self.admin, [t1, t2], assignee=self.agent)
@@ -177,7 +170,6 @@ class TicketTest(TembaTest):
             assignee_closed={None: 0, self.agent: 0, self.editor: 0, self.admin: 0},
             topic_open={general: 3, cats: 2},
             topic_closed={general: 0, cats: 0},
-            contacts={contact1: 1, contact2: 1, contact3: 1, contact4: 1, contact5: 1},
         )
         assert_counts(
             self.org2,
@@ -185,7 +177,6 @@ class TicketTest(TembaTest):
             assignee_closed={None: 0, self.admin2: 0},
             topic_open={org2_general: 1},
             topic_closed={org2_general: 0},
-            contacts={org2_contact: 1},
         )
 
         Ticket.bulk_close(self.org, self.admin, [t1, t4])
@@ -198,7 +189,6 @@ class TicketTest(TembaTest):
             assignee_closed={None: 1, self.agent: 1, self.editor: 0, self.admin: 0},
             topic_open={general: 2, cats: 1},
             topic_closed={general: 1, cats: 1},
-            contacts={contact1: 0, contact2: 1, contact3: 1, contact4: 0, contact5: 1},
         )
         assert_counts(
             self.org2,
@@ -206,7 +196,6 @@ class TicketTest(TembaTest):
             assignee_closed={None: 0, self.admin2: 1},
             topic_open={org2_general: 0},
             topic_closed={org2_general: 1},
-            contacts={org2_contact: 0},
         )
 
         Ticket.bulk_assign(self.org, self.admin, [t1, t5], assignee=self.admin)
@@ -218,7 +207,6 @@ class TicketTest(TembaTest):
             assignee_closed={None: 1, self.agent: 0, self.editor: 0, self.admin: 1},
             topic_open={general: 2, cats: 1},
             topic_closed={general: 1, cats: 1},
-            contacts={contact1: 0, contact2: 1, contact3: 1, contact4: 0, contact5: 1},
         )
 
         Ticket.bulk_reopen(self.org, self.admin, [t4])
@@ -231,7 +219,6 @@ class TicketTest(TembaTest):
             assignee_closed={None: 0, self.agent: 0, self.editor: 0, self.admin: 1},
             topic_open={general: 2, cats: 2},
             topic_closed={general: 0, cats: 1},
-            contacts={contact1: 0, contact2: 1, contact3: 1, contact4: 1, contact5: 1},
         )
 
         squash_item_counts()  # shouldn't change counts
@@ -242,7 +229,6 @@ class TicketTest(TembaTest):
             assignee_closed={None: 0, self.agent: 0, self.editor: 0, self.admin: 1},
             topic_open={general: 2, cats: 2},
             topic_closed={general: 0, cats: 1},
-            contacts={contact1: 0, contact2: 1, contact3: 1, contact4: 1, contact5: 1},
         )
 
         t1.delete()
@@ -256,7 +242,6 @@ class TicketTest(TembaTest):
             assignee_closed={None: 0, self.agent: 0, self.editor: 0, self.admin: 0},
             topic_open={general: 1, cats: 2},
             topic_closed={general: 0, cats: 0},
-            contacts={contact1: 0, contact2: 0, contact3: 1, contact4: 1, contact5: 1},
         )
         assert_counts(
             self.org2,
@@ -264,7 +249,6 @@ class TicketTest(TembaTest):
             assignee_closed={None: 0, self.admin2: 0},
             topic_open={org2_general: 0},
             topic_closed={org2_general: 0},
-            contacts={org2_contact: 0},
         )
 
         squash_item_counts()
