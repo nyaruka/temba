@@ -221,6 +221,14 @@ class SelectWidget(forms.Select):
                 groups.append((group_name, options, index))
         return groups
 
+    def get_context(self, name, value, attrs):
+        # the component defaults a non-clearable single select to its first option, so an optional one must be
+        # clearable or there's no way to leave it empty
+        if not self.is_required and not self.allow_multiple_selected:
+            attrs = {"clearable": True, **(attrs or {})}
+
+        return super().get_context(name, value, attrs)
+
     def format_value(self, value):
         def format_single(v):
             if isinstance(v, (dict)):
