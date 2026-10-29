@@ -1566,8 +1566,8 @@ msgstr "Não foi possível registrar o telefone com o ID %s da WABA com o ID %s"
 msgid "Direct Send"
 msgstr "Envio direto"
 
-msgid "Send messages outside the customer service window as utility messages without a template. Requires Direct Send to be enabled by Meta for the WhatsApp Business Account."
-msgstr "Envia mensagens fora da janela de atendimento ao cliente como mensagens de utilidade sem um template. Requer que o envio direto seja habilitado pela Meta para a conta do WhatsApp Business."
+msgid "Sends messages outside the customer service window as utility messages without a template, if Meta has enabled Direct Send for the WhatsApp Business Account."
+msgstr "Envia mensagens fora da janela de atendimento ao cliente como mensagens de utilidade sem um template, se a Meta tiver habilitado o envio direto para a conta do WhatsApp Business."
 
 #, python-format
 msgid "Unable to add system user to %s, please make sure you have business admin manager privileges on the Facebook business."

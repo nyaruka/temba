@@ -1548,7 +1548,7 @@ msgstr ""
 msgid "Direct Send"
 msgstr ""
 
-msgid "Send messages outside the customer service window as utility messages without a template. Requires Direct Send to be enabled by Meta for the WhatsApp Business Account."
+msgid "Sends messages outside the customer service window as utility messages without a template, if Meta has enabled Direct Send for the WhatsApp Business Account."
 msgstr ""
 
 #, python-format

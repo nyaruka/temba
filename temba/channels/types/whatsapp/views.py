@@ -43,8 +43,8 @@ def add_direct_send_field(form: UpdateChannelForm):
             label=_("Direct Send"),
             required=False,
             help_text=_(
-                "Send messages outside the customer service window as utility messages without a template. "
-                "Requires Direct Send to be enabled by Meta for the WhatsApp Business Account."
+                "Sends messages outside the customer service window as utility messages without a template, if Meta "
+                "has enabled Direct Send for the WhatsApp Business Account."
             ),
         ),
         default=False,
