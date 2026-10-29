@@ -92,10 +92,6 @@ CREATE TRIGGER temba_notification_on_update
 AFTER UPDATE ON notifications_notification REFERENCING OLD TABLE AS oldtab NEW TABLE AS newtab
 FOR EACH STATEMENT EXECUTE PROCEDURE temba_notification_on_update();
 
-CREATE TRIGGER temba_ticket_on_change_trg
-  AFTER INSERT OR UPDATE OR DELETE ON tickets_ticket
-  FOR EACH ROW EXECUTE PROCEDURE temba_ticket_on_change();
-
 CREATE TRIGGER temba_ticket_on_delete
 AFTER DELETE ON tickets_ticket REFERENCING OLD TABLE AS oldtab
 FOR EACH STATEMENT EXECUTE PROCEDURE temba_ticket_on_delete();

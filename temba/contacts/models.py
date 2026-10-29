@@ -608,7 +608,7 @@ class Contact(LegacyIDMixin, LegacyUUIDMixin, CreatedByMixin, ModifiedByMixin, S
 
     current_session_uuid = models.UUIDField(null=True)  # waiting session if any
     current_flow = models.ForeignKey("flows.Flow", on_delete=models.PROTECT, null=True, db_index=False)
-    ticket_count = models.IntegerField(default=0)
+    ticket_count = models.IntegerField(null=True)
     last_seen_on = models.DateTimeField(null=True)
 
     created_by = models.ForeignKey(

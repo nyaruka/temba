@@ -452,8 +452,16 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
         self.assertContentMenu(read_url, self.editor, ["Start Flow", "Open Ticket"])
         self.assertContentMenu(read_url, self.admin, ["Start Flow", "Open Ticket"])
 
-        # if there's an open ticket already, don't show open ticket option
-        self.create_ticket(joe)
+        # a closed ticket doesn't stop another being opened
+        self.create_ticket(joe, closed_on=timezone.now())
+        self.assertContentMenu(read_url, self.editor, ["Start Flow", "Open Ticket"])
+
+        # but an open or pending one does
+        ticket = self.create_ticket(joe)
+        self.assertContentMenu(read_url, self.editor, ["Start Flow"])
+
+        ticket.status = Ticket.STATUS_PENDING
+        ticket.save(update_fields=("status",))
         self.assertContentMenu(read_url, self.editor, ["Start Flow"])
 
         # login as admin
