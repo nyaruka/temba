@@ -154,6 +154,24 @@ describe('temba-select', () => {
     await assertScreenshot('select/without-placeholder', getClip(select));
   });
 
+  it('does not pick the first option for clearable selects', async () => {
+    const select = await createSelect(
+      clock,
+      getSelectHTML(colors, { clearable: true })
+    );
+    assert.equal(select.getStaticOptions().length, 3);
+    expect(select.values.length).to.equal(0);
+  });
+
+  it('keeps initial selection for multi selects', async () => {
+    const select = await createSelect(
+      clock,
+      getSelectHTML(colors, { multi: true }, '1')
+    );
+    expect(select.values.length).to.equal(1);
+    expect(select.values[0].name).to.equal('Green');
+  });
+
   it('does not pick the first option for multi selects', async () => {
     const select = await createSelect(
       clock,

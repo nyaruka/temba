@@ -898,16 +898,6 @@ export class Select<T extends SelectOption> extends FieldElement {
           this.resolving = false;
         }
       });
-    } else if (this.staticOptions.length > 0) {
-      if (this.getAttribute('multi') !== null) {
-        this.addValue(this.staticOptions[0]);
-      } else {
-        if (this.getAttribute('value')) {
-          this.setSelectedValue(this.getAttribute('value'));
-        } else {
-          this.setValues([this.staticOptions[0]]);
-        }
-      }
     }
   }
 
