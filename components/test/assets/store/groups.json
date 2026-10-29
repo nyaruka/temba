@@ -13,7 +13,7 @@
     {
       "uuid": "12e583b3-46f5-4d9d-85ca-15fb6153c1a0",
       "name": "Open Tickets",
-      "query": "tickets > 0",
+      "query": "ticket = \"open\"",
       "status": "ready",
       "system": true,
       "count": 2

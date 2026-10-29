@@ -1607,7 +1607,7 @@ class ContactGroup(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin
             name="Open Tickets",
             group_type=ContactGroup.TYPE_SMART,
             is_system=True,
-            query="tickets > 0",
+            query='ticket = "open"',
             status=cls.STATUS_READY,  # since this group will always be empty for new orgs
             created_by=org.created_by,
             modified_by=org.modified_by,

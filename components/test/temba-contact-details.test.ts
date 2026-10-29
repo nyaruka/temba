@@ -114,7 +114,7 @@ describe(TAG, () => {
           type: 'group',
           uuid: smart,
           name: 'Pending',
-          query: 'tickets > 0'
+          query: 'ticket = "open"'
         }
       });
       mockSocket.serverPublish('org:org-uuid', {
