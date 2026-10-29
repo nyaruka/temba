@@ -464,6 +464,10 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
         ticket.save(update_fields=("status",))
         self.assertContentMenu(read_url, self.editor, ["Start Flow"])
 
+        ticket.status = Ticket.STATUS_CLOSED
+        ticket.save(update_fields=("status",))
+        self.assertContentMenu(read_url, self.editor, ["Start Flow", "Open Ticket"])
+
         # login as admin
         self.login(self.admin)
 

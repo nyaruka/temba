@@ -306,7 +306,7 @@ class ContactCRUDL(SmartCRUDL):
                     )
                 if (
                     self.has_org_perm("contacts.contact_open_ticket")
-                    and not obj.tickets.exclude(status=Ticket.STATUS_CLOSED).exists()
+                    and not obj.tickets.filter(status__in=(Ticket.STATUS_PENDING, Ticket.STATUS_OPEN)).exists()
                 ):
                     menu.add_modax(
                         _("Open Ticket"), "open-ticket", reverse("contacts.contact_open_ticket", args=[obj.uuid])
