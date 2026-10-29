@@ -154,6 +154,41 @@ describe('temba-select', () => {
     await assertScreenshot('select/without-placeholder', getClip(select));
   });
 
+  it('does not pick the first option for clearable selects', async () => {
+    const select = await createSelect(
+      clock,
+      getSelectHTML(colors, { clearable: true })
+    );
+    assert.equal(select.getStaticOptions().length, 3);
+    expect(select.values.length).to.equal(0);
+  });
+
+  it('keeps initial selection for multi selects', async () => {
+    const select = await createSelect(
+      clock,
+      getSelectHTML(colors, { multi: true }, '1')
+    );
+    expect(select.values.length).to.equal(1);
+    expect(select.values[0].name).to.equal('Green');
+  });
+
+  it('does not pick the first option for multi selects', async () => {
+    const select = await createSelect(
+      clock,
+      getSelectHTML(colors, { multi: true })
+    );
+    assert.equal(select.getStaticOptions().length, 3);
+    expect(select.values.length).to.equal(0);
+
+    // removing the only selection should leave the select empty
+    await openAndClick(clock, select, 0);
+    expect(select.values.length).to.equal(1);
+    select.removeValue(select.values[0]);
+    clock.runAll();
+    await select.updateComplete;
+    expect(select.values.length).to.equal(0);
+  });
+
   it('shows options when opened', async () => {
     const select = await createSelect(clock, getSelectHTML());
     await openSelect(clock, select);
@@ -1222,6 +1257,8 @@ describe('temba-select', () => {
       await assertScreenshot('select/selection-clearable', getClip(select));
 
       clear(select);
+      clock.runAll();
+      await select.updateComplete;
       expect(select.values.length).to.equal(0);
     });
 
