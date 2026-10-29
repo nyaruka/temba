@@ -155,6 +155,62 @@ describe('Field Configuration System', () => {
       expect(removeDisabled(rows[0])).to.be.false;
       expect(removeDisabled(rows[1])).to.be.true;
     });
+
+    it('should render evaluated values as rich-edit, keys as textinput', async () => {
+      const el = await fixture(html`
+        <temba-key-value-editor
+          evaluatedValues
+          .value=${{ Authorization: '@globals.api_token' }}
+        ></temba-key-value-editor>
+      `);
+
+      const row = el.shadowRoot?.querySelector('.row');
+      expect(row?.querySelector('temba-textinput')).to.exist;
+      expect(row?.querySelector('temba-rich-edit')).to.exist;
+    });
+
+    it('should not render rich-edit values by default', async () => {
+      const el = await fixture(html`
+        <temba-key-value-editor
+          .value=${{ Authorization: '@globals.api_token' }}
+        ></temba-key-value-editor>
+      `);
+
+      expect(el.shadowRoot?.querySelector('temba-rich-edit')).to.not.exist;
+    });
+
+    it('should update value on rich-edit changes', async () => {
+      const el = await fixture(html`
+        <temba-key-value-editor
+          evaluatedValues
+          .value=${{ Authorization: 'Token abc' }}
+        ></temba-key-value-editor>
+      `);
+
+      const valueInput = el.shadowRoot?.querySelector('temba-rich-edit') as any;
+      valueInput.value = 'Token @globals.api_token';
+      valueInput.dispatchEvent(new Event('change'));
+      await (el as any).updateComplete;
+
+      expect((el as any).value).to.deep.include({
+        key: 'Authorization',
+        value: 'Token @globals.api_token'
+      });
+    });
+
+    it('should render evaluated values as rich-edit with readOnlyKeys', async () => {
+      const el = await fixture(html`
+        <temba-key-value-editor
+          evaluatedValues
+          readOnlyKeys
+          .value=${{ Authorization: '@globals.api_token' }}
+        ></temba-key-value-editor>
+      `);
+
+      const grid = el.shadowRoot?.querySelector('.readonly-keys-grid');
+      expect(grid?.querySelector('temba-rich-edit')).to.exist;
+      expect(grid?.querySelector('temba-textinput')).to.not.exist;
+    });
   });
 
   describe('ArrayEditor', () => {

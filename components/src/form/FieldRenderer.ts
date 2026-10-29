@@ -380,6 +380,7 @@ export class FieldRenderer {
         .valuePlaceholder="${config.valuePlaceholder || 'Value'}"
         .minRows="${config.minRows || 0}"
         ?readOnlyKeys="${config.readOnlyKeys}"
+        ?evaluatedValues="${config.evaluated}"
         class="${extraClasses}"
         style="${style}"
         @change="${onChange || (() => {})}"
