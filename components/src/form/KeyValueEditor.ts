@@ -21,6 +21,10 @@ export class KeyValueEditor extends BaseListEditor<KeyValueItem> {
   @property({ type: Boolean })
   readOnlyKeys = false;
 
+  // values are evaluated templates, edited with expression highlighting
+  @property({ type: Boolean })
+  evaluatedValues = false;
+
   @state()
   private keyErrors: { [index: number]: string } = {};
 
@@ -187,19 +191,31 @@ export class KeyValueEditor extends BaseListEditor<KeyValueItem> {
           ${items.map(
             (item, index) => html`
               <div class="key-label">${item.key}</div>
-              <temba-textinput
-                flavor="xsmall"
-                .value=${item.value}
-                .placeholder=${this.valuePlaceholder}
-                @change=${(e: any) =>
-                  this.handleValueChange(index, e.target.value)}
-              ></temba-textinput>
+              ${this.renderValueInput(item, index)}
             `
           )}
         </div>
       `;
     }
     return super.renderWidget();
+  }
+
+  private renderValueInput(item: KeyValueItem, index: number): TemplateResult {
+    if (this.evaluatedValues) {
+      return html`<temba-rich-edit
+        flavor="xsmall"
+        .value=${item.value}
+        placeholder=${this.valuePlaceholder}
+        session
+        @change=${(e: any) => this.handleValueChange(index, e.target.value)}
+      ></temba-rich-edit>`;
+    }
+    return html`<temba-textinput
+      flavor="xsmall"
+      .value=${item.value}
+      .placeholder=${this.valuePlaceholder}
+      @change=${(e: any) => this.handleValueChange(index, e.target.value)}
+    ></temba-textinput>`;
   }
 
   renderItem(item: KeyValueItem, index: number): TemplateResult {
@@ -215,13 +231,7 @@ export class KeyValueEditor extends BaseListEditor<KeyValueItem> {
           .errors=${keyError ? [keyError] : []}
           @change=${(e: any) => this.handleKeyChange(index, e.target.value)}
         ></temba-textinput>
-        <temba-textinput
-          flavor="xsmall"
-          .value=${item.value}
-          .placeholder=${this.valuePlaceholder}
-          @change=${(e: any) => this.handleValueChange(index, e.target.value)}
-        ></temba-textinput>
-        ${this.renderRemoveButton(index)}
+        ${this.renderValueInput(item, index)} ${this.renderRemoveButton(index)}
       </div>
     `;
   }
