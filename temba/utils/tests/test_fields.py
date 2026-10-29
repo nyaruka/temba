@@ -6,7 +6,7 @@ from django.db.models.fields import BLANK_CHOICE_DASH
 from django.forms import ValidationError
 from django.test import TestCase
 
-from temba.utils.fields import ExternalURLField, NameValidator, SelectWidget
+from temba.utils.fields import ExternalURLField, NameValidator, SelectMultipleWidget, SelectWidget
 
 
 class TestFields(TestCase):
@@ -94,3 +94,19 @@ class TestFields(TestCase):
         self.assertEqual(["Unassigned", "Testers"], option_names("model_named"))
         self.assertEqual(["A"], option_names("choice_dash"))
         self.assertEqual(["None", "A"], option_names("choice_named"))
+
+    def test_select_widget_clearable(self):
+        class Form(forms.Form):
+            optional = forms.ChoiceField(choices=[("a", "A")], required=False, widget=SelectWidget())
+            required = forms.ChoiceField(choices=[("a", "A")], widget=SelectWidget())
+            multi = forms.MultipleChoiceField(choices=[("a", "A")], required=False, widget=SelectMultipleWidget())
+            unclearable = forms.ChoiceField(
+                choices=[("a", "A")], required=False, widget=SelectWidget(attrs={"clearable": False})
+            )
+
+        form = Form()
+
+        self.assertIn("clearable", str(form["optional"]))
+        self.assertNotIn("clearable", str(form["required"]))
+        self.assertNotIn("clearable", str(form["multi"]))
+        self.assertNotIn(" clearable", str(form["unclearable"]))
