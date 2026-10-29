@@ -199,7 +199,7 @@ class ContactGroupTest(TembaTest):
                 "type": "group",
                 "uuid": str(new_org.groups.get(name="Open Tickets").uuid),
                 "name": "Open Tickets",
-                "query": "tickets > 0",
+                "query": 'ticket = "open"',
             },
             published,
         )

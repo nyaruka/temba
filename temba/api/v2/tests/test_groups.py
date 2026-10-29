@@ -65,7 +65,7 @@ class GroupsEndpointTest(APITest):
                 {
                     "uuid": str(open_tickets.uuid),
                     "name": "Open Tickets",
-                    "query": "tickets > 0",
+                    "query": 'ticket = "open"',
                     "status": "ready",
                     "system": True,
                     "count": 0,
