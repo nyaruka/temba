@@ -1,3 +1,6 @@
+## v26.3.169 (2026-10-30)
+ * Drop Contact.ticket_count
+
 ## v26.3.168 (2026-10-29)
  * Make optional single selects clearable so they don't default to the first option
 
