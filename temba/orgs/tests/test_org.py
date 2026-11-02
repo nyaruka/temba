@@ -916,7 +916,7 @@ class OrgDeleteTest(TembaTest):
 
         r = get_valkey_connection()
         r.hset(f"tallies:{org.id}", "foo", 1)
-        r.hset(f"tallies:daily:{org.id}:flushing", "foo:2026-11-02", 1)
+        r.hset(f"tallies:daily:{org.id}:flushing", "foo/2026-11-02", 1)
         r.sadd("tallies:pending", org.id)
 
     def _exists(self, obj) -> bool:

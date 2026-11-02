@@ -1786,11 +1786,12 @@ class DailyCount(BaseDailyCount):
 class BaseTally(models.Model):
     """
     Base class for org-level totals of things which only go up. Writers increment per-org hashes in Valkey which
-    mailroom flushes into these rows, so a total is the sum of both. Key layout must match mailroom's tallies package.
+    mailroom flushes into these rows, so a total is the sum of both. Reads aren't atomic with flushes so a total can be
+    briefly off while one is in progress. Key layout must match mailroom's tallies package.
     """
 
     PENDING_KEY = "tallies:pending"
-    GENERATION = "_gen"  # reserved field and scope which mailroom uses to make flushes exactly-once
+    GENERATION = "_gen"  # reserved hash field and ItemTally scope which mailroom uses to make flushes exactly-once
 
     key_prefix = None
 
@@ -1869,7 +1870,7 @@ class DailyTally(BaseTally):
     key_prefix = "tallies:daily"
 
     # how long to keep rows by scope prefix, with anything unmatched kept for the default
-    retention = {"emails:": timedelta(days=365)}
+    retention = {"emails/": timedelta(days=365)}
     default_retention = timedelta(days=90)
 
     org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="daily_tallies", db_index=False)
@@ -1887,9 +1888,14 @@ class DailyTally(BaseTally):
         for day, scope, count in rows.values_list("day", "scope", "count"):
             totals[(day, scope)] += count
         for field, count in cls._get_buffered(org).items():
-            scope, day = field.rsplit(":", 1)
-            day = date.fromisoformat(day)
-            if scope.startswith(prefix) and since <= day < until:
+            scope, _, day = field.rpartition("/")
+            if not scope.startswith(prefix):
+                continue
+            try:
+                day = date.fromisoformat(day)
+            except ValueError:
+                continue
+            if since <= day < until:
                 totals[(day, scope)] += count
 
         return dict(totals)
