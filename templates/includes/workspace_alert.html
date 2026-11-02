@@ -1,0 +1,16 @@
+{% comment %}
+  A banner across the top of every workspace page. Takes level (error or warning), icon, title and message, and
+  optionally action_url and action_label for a button.
+{% endcomment %}
+<div class="workspace-alert workspace-alert-{{ level }}">
+  <div class="workspace-alert-icon">
+    <temba-icon name="{{ icon }}"> </temba-icon>
+  </div>
+  <div class="workspace-alert-body">
+    <span class="workspace-alert-title">{{ title }}</span>
+    {{ message }}
+  </div>
+  {% if action_url %}
+    <a href="{{ action_url }}" class="button-light workspace-alert-action">{{ action_label }}</a>
+  {% endif %}
+</div>

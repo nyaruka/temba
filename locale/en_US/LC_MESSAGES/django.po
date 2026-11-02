@@ -5498,7 +5498,10 @@ msgstr ""
 msgid "Some webhook calls from your flows are taking too long to respond or failing too frequently. If the problem persists these calls will be temporarily disabled. You can check the <a href=\"%(logs_url)s\">webhook call log</a> to see which calls are the problem."
 msgstr ""
 
-msgid "Your workspace is suspended and no longer processing messages."
+msgid "Workspace flagged"
+msgstr ""
+
+msgid "Contact your administrator."
 msgstr ""
 
 msgid "can't be deleted as it is still used by the following items:"

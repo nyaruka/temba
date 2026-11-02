@@ -15,6 +15,11 @@
     display: none;
   }
 </style>
+{% block alert-messages %}
+  {% if user_org %}
+    {% include "org_alerts_include.html" %}
+  {% endif %}
+{% endblock alert-messages %}
 {% block page-header %}
   {% csrf_token %}
   <div class="mb-4">
@@ -46,11 +51,6 @@
 {% endblock extra-style %}
 {% block extra-script %}
 {% endblock extra-script %}
-{% block alert-messages %}
-  {% if user_org %}
-    {% include "org_alerts_include.html" %}
-  {% endif %}
-{% endblock alert-messages %}
 {% block page-container %}
   {% block content %} {% endblock content %}
 {% endblock page-container %}

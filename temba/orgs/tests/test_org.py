@@ -272,20 +272,48 @@ class OrgTest(TembaTest):
 
         self.login(self.admin)
 
-        # alerts include is rendered for full page and SPA content loads even with nothing to show
-        for headers in ({}, {"HTTP_X_TEMBA_SPA": 1}):
-            response = self.client.get(inbox_url, **headers)
-            self.assertTemplateUsed(response, "org_alerts_include.html")
-            self.assertTemplateNotUsed(response, "org_suspended_include.html")
-            self.assertNotContains(response, "<temba-alert")
+        def assert_alerts(title, *, used: tuple = (), not_used: tuple = ()):
+            for headers in ({}, {"HTTP_X_TEMBA_SPA": 1}):
+                response = self.client.get(inbox_url, **headers)
+                self.assertTemplateUsed(response, "org_alerts_include.html")
+                for template in used:
+                    self.assertTemplateUsed(response, template)
+                for template in not_used:
+                    self.assertTemplateNotUsed(response, template)
 
+                content = response.content.decode()
+                if title:
+                    self.assertEqual(1, content.count('class="workspace-alert '))
+                    self.assertIn(title, content)
+
+                    # alerts come before the page header
+                    self.assertLess(content.index(title), content.index('id="title-text"'))
+                else:
+                    self.assertNotIn('class="workspace-alert ', content)
+
+        # alerts include is rendered for full page and SPA content loads even with nothing to show
+        assert_alerts(
+            None,
+            used=("org_alerts_extra_include.html",),
+            not_used=("org_suspended_include.html", "org_flagged_include.html"),
+        )
+
+        self.org.flag()
+
+        assert_alerts(
+            "Workspace flagged",
+            used=("org_flagged_include.html",),
+            not_used=("org_suspended_include.html", "org_alerts_extra_include.html"),
+        )
+
+        # suspension takes precedence over flagging
         self.org.suspend()
 
-        for headers in ({}, {"HTTP_X_TEMBA_SPA": 1}):
-            response = self.client.get(inbox_url, **headers)
-            self.assertTemplateUsed(response, "org_alerts_include.html")
-            self.assertTemplateUsed(response, "org_suspended_include.html")
-            self.assertContains(response, "Your workspace is suspended")
+        assert_alerts(
+            "Workspace suspended",
+            used=("org_suspended_include.html",),
+            not_used=("org_flagged_include.html", "org_alerts_extra_include.html"),
+        )
 
     def test_default_country(self):
         # if root location boundary is set and name is valid country, that has priority
@@ -382,7 +410,7 @@ class OrgTest(TembaTest):
 
         # check our inbox page
         response = self.client.get(reverse("msgs.msg_inbox"))
-        self.assertContains(response, "Your workspace is suspended")
+        self.assertContains(response, "Workspace suspended")
 
         # still no messages or flow starts
         self.assertEqual(Msg.objects.all().count(), 0)

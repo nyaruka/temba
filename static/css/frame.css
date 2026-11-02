@@ -315,6 +315,96 @@ temba-menu.servicing {
   flex-shrink: 0;
 }
 
+.workspace-alerts {
+  flex-shrink: 0;
+}
+
+.workspace-alert {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 12px;
+  gap: 12px;
+  border-bottom: 1px solid;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.workspace-alert-icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+}
+
+.workspace-alert-body {
+  flex-grow: 1;
+  min-width: 0;
+  color: #3f3f46;
+}
+
+.workspace-alert-title {
+  margin-right: 6px;
+  font-weight: 600;
+}
+
+.workspace-alert-action {
+  flex-shrink: 0;
+}
+
+.workspace-alert-warning {
+  border-color: #f3dcae;
+  background: #fffaf0;
+}
+
+.workspace-alert-warning .workspace-alert-icon {
+  background: #fdecc8;
+  color: #b45309;
+}
+
+.workspace-alert-warning .workspace-alert-title {
+  color: #92400e;
+}
+
+.workspace-alert-warning .button-light.workspace-alert-action {
+  box-shadow: 0 0 0 1px #f3dcae;
+  color: #92400e;
+}
+
+.workspace-alert-warning .button-light.workspace-alert-action:hover {
+  background: #fdecc8;
+}
+
+.workspace-alert-error {
+  border-color: #ecc5c0;
+  background: #fdf3f2;
+}
+
+.workspace-alert-error .workspace-alert-icon {
+  background: #f9dcd8;
+  color: #b4372b;
+}
+
+.workspace-alert-error .workspace-alert-title {
+  color: #9a2e24;
+}
+
+.workspace-alert-error .button-light.workspace-alert-action {
+  box-shadow: 0 0 0 1px #ecc5c0;
+  color: #9a2e24;
+}
+
+.workspace-alert-error .button-light.workspace-alert-action:hover {
+  background: #f9dcd8;
+}
+
+.modax-body .workspace-alerts {
+  display: none;
+}
+
 .input {
   border-radius: var(--curvature-widget);
   cursor: text;
