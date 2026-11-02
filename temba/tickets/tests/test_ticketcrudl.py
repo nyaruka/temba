@@ -165,7 +165,9 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # closed tickets don't get extra menu options
         ticket.status = Ticket.STATUS_CLOSED
-        ticket.save(update_fields=("status",))
+        ticket.closed_on = timezone.now()
+        ticket.outcome = Ticket.OUTCOME_RESOLVED
+        ticket.save(update_fields=("status", "closed_on", "outcome"))
         self.assertContentMenu(deep_link, self.admin, [])
 
     def test_list_legacy_status_redirect(self):

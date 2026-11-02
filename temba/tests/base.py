@@ -824,7 +824,7 @@ class TembaTest(SmartminTest):
             opened_by=opened_by,
             opened_in=opened_in,
             closed_on=closed_on,
-            outcome=outcome,
+            outcome=outcome or (Ticket.OUTCOME_RESOLVED if closed_on else None),
         )
 
     def set_contact_field(self, contact, key, value):

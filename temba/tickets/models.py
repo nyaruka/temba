@@ -369,6 +369,14 @@ class Ticket(models.Model):
             models.UniqueConstraint(
                 name="tickets_contact_single_active", fields=("contact",), condition=Q(status__in=("P", "O"))
             ),
+            # closed tickets have a close time and outcome, and tickets that aren't closed don't
+            models.CheckConstraint(
+                name="tickets_closed_fields",
+                condition=(
+                    Q(status="C", closed_on__isnull=False, outcome__isnull=False)
+                    | Q(status__in=("P", "O"), closed_on__isnull=True, outcome__isnull=True)
+                ),
+            ),
         ]
 
 
