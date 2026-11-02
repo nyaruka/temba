@@ -983,6 +983,7 @@ RETENTION_PERIODS = {
     "articlecount": timedelta(days=90),
     "channelevent": timedelta(days=90),
     "channellog": timedelta(days=7),
+    "dailytally": timedelta(days=365),
     "export": timedelta(days=90),
     "flowsession": timedelta(days=7),
     "httplog": timedelta(days=3),

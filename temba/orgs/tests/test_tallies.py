@@ -106,11 +106,10 @@ class DailyTallyTest(TembaTest):
         def create(scope, days_ago):
             return self.org.daily_tallies.create(scope=scope, day=today - timedelta(days=days_ago), count=1)
 
-        email1 = create("emails/shared", 366)
-        email2 = create("emails/shared", 365)
-        other1 = create("other", 91)
-        other2 = create("other", 90)
+        create("emails/shared", 366)
+        tally2 = create("emails/shared", 365)
+        create("other", 366)
+        tally4 = create("other", 10)
 
         self.assertEqual({"deleted": 2}, trim_daily_tallies())
-        self.assertEqual({email2, other2}, set(DailyTally.objects.all()))
-        self.assertFalse(DailyTally.objects.filter(id__in=(email1.id, other1.id)).exists())
+        self.assertEqual({tally2, tally4}, set(DailyTally.objects.all()))

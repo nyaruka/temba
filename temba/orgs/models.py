@@ -38,7 +38,6 @@ from temba.locations.models import AdminBoundary
 from temba.users.models import User
 from temba.utils import audit, json, languages, on_transaction_commit
 from temba.utils.dates import datetime_to_str
-from temba.utils.db.queries import or_list
 from temba.utils.email import EmailSender
 from temba.utils.models import (
     CreatedByMixin,
@@ -1869,10 +1868,6 @@ class DailyTally(BaseTally):
 
     key_prefix = "tallies:daily"
 
-    # how long to keep rows by scope prefix, with anything unmatched kept for the default
-    retention = {"emails/": timedelta(days=365)}
-    default_retention = timedelta(days=90)
-
     org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="daily_tallies", db_index=False)
     scope = models.CharField(max_length=128)
     day = models.DateField()
@@ -1899,24 +1894,6 @@ class DailyTally(BaseTally):
                 totals[(day, scope)] += count
 
         return dict(totals)
-
-    @classmethod
-    def trim(cls) -> int:
-        """
-        Deletes rows older than their retention period, returning the number deleted.
-        """
-        today = timezone.now().date()
-        num_deleted = 0
-
-        for prefix, period in cls.retention.items():
-            num_deleted += delete_in_batches(cls.objects.filter(scope__startswith=prefix, day__lt=today - period))
-
-        others = cls.objects.filter(day__lt=today - cls.default_retention).exclude(
-            or_list([Q(scope__startswith=p) for p in cls.retention])
-        )
-        num_deleted += delete_in_batches(others)
-
-        return num_deleted
 
     class Meta:
         indexes = [models.Index(name="orgdailytally_day", fields=("day",))]  # for trimming
