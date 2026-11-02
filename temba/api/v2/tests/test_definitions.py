@@ -111,6 +111,14 @@ class DefinitionsEndpointTest(APITest):
             errors={None: "dependencies must be one of none, flows, all"},
         )
 
+        # test invalid UUIDs
+        self.assertGet(
+            endpoint_url + "?flow=xyz", [self.editor], errors={None: "Param 'flow': xyz is not a valid UUID."}
+        )
+        self.assertGet(
+            endpoint_url + "?campaign=xyz", [self.editor], errors={None: "Param 'campaign': xyz is not a valid UUID."}
+        )
+
         # test that flows are migrated
         self.import_file("flows/favorites_v13.json")
 
