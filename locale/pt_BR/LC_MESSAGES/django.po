@@ -5534,6 +5534,9 @@ msgstr "Seu <a href=\"%(read_url)s\">canal do WhatsApp</a> parece não estar sin
 msgid "Some webhook calls from your flows are taking too long to respond or failing too frequently. If the problem persists these calls will be temporarily disabled. You can check the <a href=\"%(logs_url)s\">webhook call log</a> to see which calls are the problem."
 msgstr "Algumas chamadas de webhook dos seus fluxos estão demorando demais para responder ou falhando com muita frequência. Se o problema persistir, essas chamadas serão temporariamente desabilitadas. Você pode consultar o <a href=\"%(logs_url)s\">log de chamadas de webhook</a> para ver quais chamadas são o problema."
 
+msgid "Workspace flagged"
+msgstr "Área de trabalho sinalizada"
+
 msgid "Contact your administrator."
 msgstr "Entre em contato com seu administrador."
 

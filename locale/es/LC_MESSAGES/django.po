@@ -5530,6 +5530,9 @@ msgstr "Su <a href=\"%(read_url)s\">canal de WhatsApp</a> parece no estar sincro
 msgid "Some webhook calls from your flows are taking too long to respond or failing too frequently. If the problem persists these calls will be temporarily disabled. You can check the <a href=\"%(logs_url)s\">webhook call log</a> to see which calls are the problem."
 msgstr "Algunas llamadas de webhook de sus flujos están tardando demasiado en responder o fallan con demasiada frecuencia. Si el problema persiste, estas llamadas se desactivarán temporalmente. Puede consultar el <a href=\"%(logs_url)s\">registro de llamadas de webhook</a> para ver qué llamadas son el problema."
 
+msgid "Workspace flagged"
+msgstr "Workspace marcado"
+
 msgid "Contact your administrator."
 msgstr "Contacte a su administrador."
 

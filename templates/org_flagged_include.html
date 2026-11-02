@@ -1,0 +1,5 @@
+{% load i18n %}
+
+{% trans "Workspace flagged" as title %}
+{% trans "Contact your administrator." as message %}
+{% include "includes/workspace_alert.html" with level="warning" icon="org_flagged" %}

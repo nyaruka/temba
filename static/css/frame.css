@@ -315,9 +315,12 @@ temba-menu.servicing {
   flex-shrink: 0;
 }
 
+.workspace-alerts {
+  flex-shrink: 0;
+}
+
 .workspace-alert {
   display: flex;
-  flex-shrink: 0;
   align-items: center;
   margin: 0;
   padding: 12px;
@@ -398,7 +401,7 @@ temba-menu.servicing {
   background: #f9dcd8;
 }
 
-.modax-body .workspace-alert {
+.modax-body .workspace-alerts {
   display: none;
 }
 
