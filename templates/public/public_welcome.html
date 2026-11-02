@@ -113,10 +113,10 @@
         </div>
         <div class="mt-6">
           <a href="{% url 'contacts.contactimport_create' %}" class="button-primary lift mr-1 mb-1">{% trans "Import Contacts" %}</a>
-          <temba-modax endpoint="{% url 'contacts.contact_create' %}" header='{{ _("Create Contact") |escapejs }}' class="inline-block mb-1">
+          <temba-modax endpoint="{% url 'contacts.contact_create' %}" header='{{ _("Create Contact")|escapejs }}' class="inline-block mb-1">
             <div class="button-light lift mr-1">{% trans "Create Contact" %}</div>
           </temba-modax>
-          <temba-modax endpoint="{% url 'contacts.contactgroup_create' %}" header='{{ _("Create Group") |escapejs }}' class="inline-block mb-1">
+          <temba-modax endpoint="{% url 'contacts.contactgroup_create' %}" header='{{ _("Create Group")|escapejs }}' class="inline-block mb-1">
             <div class="button-light lift mr-1 mb-1">{% trans "Create Group" %}</div>
           </temba-modax>
         </div>
@@ -141,7 +141,7 @@
           {% endblocktrans %}
         </div>
         <div class="mt-6">
-          <temba-modax endpoint="{% url 'msgs.broadcast_create' %}" header='{{ _("New Broadcast") |escapejs }}' class="inline-block mb-1">
+          <temba-modax endpoint="{% url 'msgs.broadcast_create' %}" header='{{ _("New Broadcast")|escapejs }}' class="inline-block mb-1">
             <div class="button-primary lift">{% trans "Send Message" %}</div>
           </temba-modax>
         </div>

@@ -44,7 +44,7 @@
   </temba-contact-list>
   {{ list_bulk_actions|json_script:"list-bulk-actions" }}
   {% if org_perms.contacts.contact_delete %}
-    <temba-dialog header='{{ _("Delete All Contacts") |escapejs }}' primaryButtonName='{{ _("Delete") |escapejs }}' destructive="true" class="hide" id="delete-all-confirmation">
+    <temba-dialog header='{{ _("Delete All Contacts")|escapejs }}' primaryButtonName='{{ _("Delete")|escapejs }}' destructive="true" class="hide" id="delete-all-confirmation">
       <div class="p-6">{% trans "Are you sure you want to delete all archived contacts? This cannot be undone." %}</div>
     </temba-dialog>
   {% endif %}

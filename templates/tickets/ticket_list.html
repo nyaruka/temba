@@ -773,7 +773,7 @@
         {# floor) before card mode wins over tabs than on the contact read page #}
         <temba-card-layout
           id="card-layout"
-          main-name='{{ _("Chat") |escapejs }}'
+          main-name='{{ _("Chat")|escapejs }}'
           main-icon="message"
           main-min-width="480"
           settings-endpoint="{% url 'users.user_settings' %}"
@@ -796,18 +796,18 @@
             avatar="{{ branding.logos.avatar }}"
           >
           </temba-contact-chat>
-          <temba-card id="card-details" label='{{ _("Details") |escapejs }}' icon="info">
+          <temba-card id="card-details" label='{{ _("Details")|escapejs }}' icon="info">
             <temba-contact-details -temba-button-clicked="handleFieldSearch" {% if org_perms.contacts.contact_update %}editable{% endif %} {% if request.org.is_anon %}anon{% endif %}>
             </temba-contact-details>
           </temba-card>
-          <temba-card id="card-fields" label='{{ _("Fields") |escapejs }}' icon="fields">
+          <temba-card id="card-fields" label='{{ _("Fields")|escapejs }}' icon="fields">
             <temba-contact-fields timezone="{{ object.org.timezone }}" -temba-button-clicked="handleFieldSearch" role="{{ user_role }}">
               <div slot="empty" class="no-fields p-4 text-center" style="opacity: 1">
                 <div class="text-xl mb-4">{% trans "No Fields" %}</div>
               </div>
             </temba-contact-fields>
           </temba-card>
-          <temba-card id="card-notepad" variant="note" label='{{ _("Notepad") |escapejs }}' icon="notes" activity bleed>
+          <temba-card id="card-notepad" variant="note" label='{{ _("Notepad")|escapejs }}' icon="notes" activity bleed>
             <temba-contact-notepad autogrow> </temba-contact-notepad>
           </temba-card>
         </temba-card-layout>

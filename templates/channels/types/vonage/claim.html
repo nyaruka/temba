@@ -11,12 +11,12 @@
   {% endif %}
 {% endblock account-warning %}
 {% block country-select %}
-  <temba-select name="country" label='{{ _("Country") |escapejs }}' id="country">
+  <temba-select name="country" label='{{ _("Country")|escapejs }}' id="country">
     {% for country in search_countries %}
       <temba-option name="{{ country.label }}" value="{{ country.key }}"> </temba-option>
     {% endfor %}
   </temba-select>
 {% endblock country-select %}
 {% block search-pattern %}
-  <temba-textinput type="text" maxlength="7" name="pattern" label='{{ _("Pattern") |escapejs }}' id="pattern" optional> </temba-textinput>
+  <temba-textinput type="text" maxlength="7" name="pattern" label='{{ _("Pattern")|escapejs }}' id="pattern" optional> </temba-textinput>
 {% endblock search-pattern %}
