@@ -1,3 +1,7 @@
+## v26.3.171 (2026-11-02)
+ * Add Tally model for Valkey-buffered org totals
+ * Backfill outcome of closed tickets
+
 ## v26.3.170 (2026-11-02)
  * Add outcome to tickets
  * Add Direct Send setting to WhatsApp channels
