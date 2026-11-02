@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from temba.utils.crons import cron_task
 
-from .models import DailyCount, Export, Invitation, ItemCount, Org, OrgImport, OrgMembership
+from .models import DailyCount, DailyTally, Export, Invitation, ItemCount, Org, OrgImport, OrgMembership
 
 
 @cron_task()
@@ -103,3 +103,8 @@ def delete_released_orgs():
 def squash_item_counts():
     ItemCount.squash()
     DailyCount.squash()
+
+
+@cron_task(lock_timeout=7200)
+def trim_daily_tallies():
+    return {"deleted": DailyTally.trim()}

@@ -3,7 +3,7 @@ import logging
 import os
 from abc import ABCMeta
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from enum import Enum
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -38,6 +38,7 @@ from temba.locations.models import AdminBoundary
 from temba.users.models import User
 from temba.utils import audit, json, languages, on_transaction_commit
 from temba.utils.dates import datetime_to_str
+from temba.utils.db.queries import or_list
 from temba.utils.email import EmailSender
 from temba.utils.models import (
     CreatedByMixin,
@@ -1267,6 +1268,14 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         delete_in_batches(self.counts.all())
         delete_in_batches(self.daily_counts.all())
 
+        # clear buffered tallies first so that nothing is flushed after their rows are deleted
+        for tally_model in (ItemTally, DailyTally):
+            tally_model.clear_buffered(self)
+        get_valkey_connection().srem(BaseTally.PENDING_KEY, self.id)
+
+        delete_in_batches(self.tallies.all())
+        delete_in_batches(self.daily_tallies.all())
+
         # now that contacts are no longer in the database, we can start de-indexing them from search
         mailroom.get_client().org_deindex(self)
 
@@ -1770,5 +1779,143 @@ class DailyCount(BaseDailyCount):
         constraints = [
             models.UniqueConstraint(
                 name="orgdailycount_squashed", fields=("org", "day", "scope"), condition=Q(is_squashed=True)
+            )
+        ]
+
+
+class BaseTally(models.Model):
+    """
+    Base class for org-level totals of things which only go up. Writers increment per-org hashes in Valkey which
+    mailroom flushes into these rows, so a total is the sum of both. Key layout must match mailroom's tallies package.
+    """
+
+    PENDING_KEY = "tallies:pending"
+    GENERATION = "_gen"  # reserved field and scope which mailroom uses to make flushes exactly-once
+
+    key_prefix = None
+
+    id = models.BigAutoField(primary_key=True)
+    count = models.BigIntegerField()
+
+    @classmethod
+    def get_keys(cls, org) -> tuple[str, str]:
+        """
+        Gets the live and flushing hash keys for the given org.
+        """
+        key = f"{cls.key_prefix}:{org.id}"
+        return key, f"{key}:flushing"
+
+    @classmethod
+    def _get_buffered(cls, org) -> dict[str, int]:
+        r = get_valkey_connection()
+        with r.pipeline(transaction=False) as pipe:
+            for key in cls.get_keys(org):
+                pipe.hgetall(key)
+            hashes = pipe.execute()
+
+        totals = defaultdict(int)
+        for field, count in itertools.chain(*[h.items() for h in hashes]):
+            field = field.decode()
+            if field != cls.GENERATION:
+                totals[field] += int(count)
+        return totals
+
+    @classmethod
+    def clear_buffered(cls, org):
+        r = get_valkey_connection()
+        r.delete(*cls.get_keys(org))
+
+    class Meta:
+        abstract = True
+
+
+class ItemTally(BaseTally):
+    """
+    Org-level totals of things.
+    """
+
+    key_prefix = "tallies"
+
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="tallies", db_index=False)  # indexed below
+    scope = models.CharField(max_length=128)
+
+    @classmethod
+    def get_totals(cls, org, prefix: str) -> dict[str, int]:
+        """
+        Gets totals by scope for scopes with the given prefix.
+        """
+        totals = defaultdict(int)
+        rows = org.tallies.filter(scope__startswith=prefix).exclude(scope=cls.GENERATION)
+
+        for scope, count in rows.values_list("scope", "count"):
+            totals[scope] += count
+        for scope, count in cls._get_buffered(org).items():
+            if scope.startswith(prefix):
+                totals[scope] += count
+
+        return dict(totals)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint("org", OpClass("scope", name="varchar_pattern_ops"), name="orgtally_org_scope")
+        ]
+
+
+class DailyTally(BaseTally):
+    """
+    Org-level daily totals of things, where days are always UTC.
+    """
+
+    key_prefix = "tallies:daily"
+
+    # how long to keep rows by scope prefix, with anything unmatched kept for the default
+    retention = {"emails:": timedelta(days=365)}
+    default_retention = timedelta(days=90)
+
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="daily_tallies", db_index=False)
+    scope = models.CharField(max_length=128)
+    day = models.DateField()
+
+    @classmethod
+    def get_totals(cls, org, prefix: str, since: date, until: date) -> dict[tuple[date, str], int]:
+        """
+        Gets totals by day and scope for scopes with the given prefix, over the given period with exclusive end.
+        """
+        totals = defaultdict(int)
+        rows = org.daily_tallies.filter(scope__startswith=prefix, day__gte=since, day__lt=until)
+
+        for day, scope, count in rows.values_list("day", "scope", "count"):
+            totals[(day, scope)] += count
+        for field, count in cls._get_buffered(org).items():
+            scope, day = field.rsplit(":", 1)
+            day = date.fromisoformat(day)
+            if scope.startswith(prefix) and since <= day < until:
+                totals[(day, scope)] += count
+
+        return dict(totals)
+
+    @classmethod
+    def trim(cls) -> int:
+        """
+        Deletes rows older than their retention period, returning the number deleted.
+        """
+        today = timezone.now().date()
+        num_deleted = 0
+
+        for prefix, period in cls.retention.items():
+            num_deleted += delete_in_batches(cls.objects.filter(scope__startswith=prefix, day__lt=today - period))
+
+        others = cls.objects.filter(day__lt=today - cls.default_retention).exclude(
+            or_list([Q(scope__startswith=p) for p in cls.retention])
+        )
+        num_deleted += delete_in_batches(others)
+
+        return num_deleted
+
+    class Meta:
+        indexes = [models.Index(name="orgdailytally_day", fields=("day",))]  # for trimming
+        constraints = [
+            models.UniqueConstraint(
+                "org", OpClass("scope", name="varchar_pattern_ops"), "day", name="orgdailytally_org_scope_day"
             )
         ]

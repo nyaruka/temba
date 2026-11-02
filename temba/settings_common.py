@@ -797,6 +797,7 @@ CELERY_BEAT_SCHEDULE = {
     "trim-article-counts": {"task": "trim_article_counts", "schedule": crontab(hour=3, minute=0)},
     "check-helpsite-domains": {"task": "check_helpsite_domains", "schedule": crontab(hour=4, minute=0)},
     "trim-channel-events": {"task": "trim_channel_events", "schedule": crontab(hour=3, minute=0)},
+    "trim-daily-tallies": {"task": "trim_daily_tallies", "schedule": crontab(hour=3, minute=0)},
     "trim-channel-sync-events": {"task": "trim_channel_sync_events", "schedule": crontab(hour=3, minute=0)},
     "trim-exports": {"task": "trim_exports", "schedule": crontab(hour=2, minute=0)},
     "trim-flow-revisions": {"task": "trim_flow_revisions", "schedule": crontab(hour=0, minute=0)},
