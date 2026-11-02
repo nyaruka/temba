@@ -23,6 +23,9 @@ class BackfillTicketOutcomeTest(MigrationTest):
 
         self.user_close = closed_ticket(contact1, after, after)
         self.idle_close = closed_ticket(contact1, after, after - timedelta(days=30, hours=1))
+        self.idle_close_boundary = closed_ticket(contact1, after, after - timedelta(days=1))
+        self.no_closed_on = closed_ticket(contact1, after, after - timedelta(days=30))
+        Ticket.objects.filter(id=self.no_closed_on.id).update(closed_on=None)
         self.old_close = closed_ticket(contact2, before, before - timedelta(days=60))  # before auto-closing existed
         self.has_outcome = closed_ticket(contact2, after, after - timedelta(days=30), outcome=Ticket.OUTCOME_RESOLVED)
         self.open = self.create_ticket(contact2)
@@ -34,6 +37,8 @@ class BackfillTicketOutcomeTest(MigrationTest):
 
         assert_outcome(self.user_close, Ticket.OUTCOME_RESOLVED)
         assert_outcome(self.idle_close, Ticket.OUTCOME_IDLE)
+        assert_outcome(self.idle_close_boundary, Ticket.OUTCOME_IDLE)
+        assert_outcome(self.no_closed_on, Ticket.OUTCOME_RESOLVED)
         assert_outcome(self.old_close, Ticket.OUTCOME_RESOLVED)
         assert_outcome(self.has_outcome, Ticket.OUTCOME_RESOLVED)  # left as it was
         assert_outcome(self.open, None)
