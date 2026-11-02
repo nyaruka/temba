@@ -1,3 +1,10 @@
+## v26.3.170 (2026-11-02)
+ * Add outcome to tickets
+ * Add Direct Send setting to WhatsApp channels
+ * Add flagged workspace alert and restyle the suspended workspace alert as a full-width banner above the page header
+ * Return 400 for invalid UUIDs in definitions endpoint
+ * Remove unused tickets field from contacts index mapping
+
 ## v26.3.169 (2026-10-30)
  * Drop Contact.ticket_count
 
