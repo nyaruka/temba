@@ -15,7 +15,7 @@ class BackfillTicketOutcomeTest(MigrationTest):
 
         def closed_ticket(contact, closed_on, last_activity_on, outcome=None):
             ticket = self.create_ticket(contact, closed_on=closed_on, outcome=outcome)
-            Ticket.objects.filter(id=ticket.id).update(last_activity_on=last_activity_on)
+            Ticket.objects.filter(id=ticket.id).update(last_activity_on=last_activity_on, outcome=outcome)
             return ticket
 
         before = datetime(2025, 3, 1, 12, 0, tzinfo=tzone.utc)

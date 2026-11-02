@@ -725,7 +725,8 @@ class TestClient(MailroomClient):
         for ticket in tickets:
             ticket.status = Ticket.STATUS_CLOSED
             ticket.closed_on = timezone.now()
-            ticket.save(update_fields=("status", "closed_on"))
+            ticket.outcome = Ticket.OUTCOME_RESOLVED
+            ticket.save(update_fields=("status", "closed_on", "outcome"))
 
         return {"changed_uuids": [str(t.uuid) for t in tickets]}
 
@@ -741,7 +742,8 @@ class TestClient(MailroomClient):
 
             ticket.status = Ticket.STATUS_OPEN
             ticket.closed_on = None
-            ticket.save(update_fields=("status", "closed_on"))
+            ticket.outcome = None
+            ticket.save(update_fields=("status", "closed_on", "outcome"))
             reopened.append(ticket)
 
         return {"changed_uuids": [str(t.uuid) for t in reopened]}

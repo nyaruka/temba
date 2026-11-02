@@ -143,7 +143,9 @@ class ContactTest(TembaTest):
 
         # and an older ticket which has been reopened is returned rather than the newest ticket
         ticket.status = Ticket.STATUS_CLOSED
-        ticket.save(update_fields=("status",))
+        ticket.closed_on = timezone.now()
+        ticket.outcome = Ticket.OUTCOME_RESOLVED
+        ticket.save(update_fields=("status", "closed_on", "outcome"))
         older = self.create_ticket(self.joe, opened_on=timezone.now() - timedelta(days=1))
 
         self.assertEqual(older, self.joe.open_ticket(self.admin, topic=self.org.default_topic, assignee=None, note=""))

@@ -1,6 +1,9 @@
 from datetime import date
 from unittest.mock import call
 
+from django.db import IntegrityError, transaction
+from django.utils import timezone
+
 from temba.orgs.models import Org, OrgRole
 from temba.orgs.tasks import squash_item_counts
 from temba.tests import TembaTest, mock_mailroom
@@ -68,6 +71,16 @@ class TicketTest(TembaTest):
         ticket.refresh_from_db()
         self.assertEqual(Ticket.STATUS_CLOSED, ticket.status)
         self.assertEqual(Ticket.STATUS_OPEN, other.status)
+
+        # closed tickets must have a close time and outcome, and other tickets mustn't
+        for ticket_id, update in [
+            (ticket.id, {"closed_on": None}),
+            (ticket.id, {"outcome": None}),
+            (other.id, {"closed_on": timezone.now()}),
+            (other.id, {"outcome": Ticket.OUTCOME_RESOLVED}),
+        ]:
+            with self.assertRaises(IntegrityError), transaction.atomic():
+                Ticket.objects.filter(id=ticket_id).update(**update)
 
     def test_get_accessible(self):
         sales = Topic.create(self.org, self.admin, "Sales")
