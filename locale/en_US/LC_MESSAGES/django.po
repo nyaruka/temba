@@ -3425,6 +3425,12 @@ msgstr ""
 msgid "Closed"
 msgstr ""
 
+msgid "Resolved"
+msgstr ""
+
+msgid "Idle"
+msgstr ""
+
 msgid "My Tickets"
 msgstr ""
 

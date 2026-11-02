@@ -3443,6 +3443,12 @@ msgstr "Equipes podem ter no máximo %(limit)d tópicos."
 msgid "Closed"
 msgstr "Fechado"
 
+msgid "Resolved"
+msgstr "Resolvido"
+
+msgid "Idle"
+msgstr "Inativo"
+
 msgid "My Tickets"
 msgstr "Meus tickets"
 

@@ -808,6 +808,8 @@ class TembaTest(SmartminTest):
         opened_in=None,
         closed_on=None,
         closed_by=None,
+        closed_in=None,
+        outcome=None,
     ):
         if not opened_on:
             opened_on = timezone.now()
@@ -823,6 +825,9 @@ class TembaTest(SmartminTest):
             opened_by=opened_by,
             opened_in=opened_in,
             closed_on=closed_on,
+            closed_by=closed_by,
+            closed_in=closed_in,
+            outcome=outcome,
         )
 
     def set_contact_field(self, contact, key, value):
