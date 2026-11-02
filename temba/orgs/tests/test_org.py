@@ -5,6 +5,8 @@ from pathlib import Path
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
+from django_valkey import get_valkey_connection
+
 from django.conf import settings
 from django.db.models import F, Model
 from django.test.utils import override_settings
@@ -615,6 +617,7 @@ class OrgDeleteTest(TembaTest):
         self._create_ticket_content(org, user, contacts, flows, add)
         self._create_export_content(org, user, flows, groups, fields, labels, add)
         self._create_archive_content(org, add)
+        self._create_tally_content(org, add)
 
         # suspend and flag org to generate incident and notifications
         org.suspend()
@@ -907,6 +910,15 @@ class OrgDeleteTest(TembaTest):
         # extra S3 file in archive dir
         Archive.storage().save(f"{org.id}/extra_file.json", io.StringIO("[]"))
 
+    def _create_tally_content(self, org, add):
+        add(org.tallies.create(scope="foo", count=1))
+        add(org.tallies.create(scope="foo/2026-11-02", count=1, expires_on=date(2027, 11, 2)))
+
+        r = get_valkey_connection()
+        r.hset(f"tallies:{org.id}", "foo", 1)
+        r.hset(f"tallies:{org.id}:flushing", "foo/2026-11-02", 1)
+        r.sadd("tallies:pending", org.id)
+
     def _exists(self, obj) -> bool:
         return obj._meta.model.objects.filter(id=obj.id).exists()
 
@@ -1018,6 +1030,13 @@ class OrgDeleteTest(TembaTest):
 
         self.assertTrue(Archive.storage().exists(f"{self.org2.id}/extra_file.json"))
         self.assertFalse(Archive.storage().exists(f"{self.org.id}/extra_file.json"))
+
+        # buffered tallies are cleared too
+        r = get_valkey_connection()
+        self.assertFalse(r.exists(f"tallies:{self.org.id}", f"tallies:{self.org.id}:flushing"))
+        self.assertEqual(2, r.exists(f"tallies:{self.org2.id}", f"tallies:{self.org2.id}:flushing"))
+        self.assertFalse(r.sismember("tallies:pending", self.org.id))
+        self.assertTrue(r.sismember("tallies:pending", self.org2.id))
 
         # check we've initiated search de-indexing for all deleted orgs
         self.assertEqual({org1_child1, org1_child2, self.org}, {c.args[0] for c in mr_mocks.calls["org_deindex"]})
