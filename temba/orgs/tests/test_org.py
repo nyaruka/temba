@@ -912,11 +912,11 @@ class OrgDeleteTest(TembaTest):
 
     def _create_tally_content(self, org, add):
         add(org.tallies.create(scope="foo", count=1))
-        add(org.daily_tallies.create(scope="foo", day=date(2026, 11, 2), count=1))
+        add(org.tallies.create(scope="foo/2026-11-02", count=1, expires_on=date(2027, 11, 2)))
 
         r = get_valkey_connection()
         r.hset(f"tallies:{org.id}", "foo", 1)
-        r.hset(f"tallies:daily:{org.id}:flushing", "foo/2026-11-02", 1)
+        r.hset(f"tallies:{org.id}:flushing", "foo/2026-11-02", 1)
         r.sadd("tallies:pending", org.id)
 
     def _exists(self, obj) -> bool:
@@ -1033,9 +1033,10 @@ class OrgDeleteTest(TembaTest):
 
         # buffered tallies are cleared too
         r = get_valkey_connection()
-        self.assertFalse(r.exists(f"tallies:{self.org.id}", f"tallies:daily:{self.org.id}:flushing"))
-        self.assertEqual(2, r.exists(f"tallies:{self.org2.id}", f"tallies:daily:{self.org2.id}:flushing"))
-        self.assertEqual([str(self.org2.id).encode()], r.smembers("tallies:pending"))
+        self.assertFalse(r.exists(f"tallies:{self.org.id}", f"tallies:{self.org.id}:flushing"))
+        self.assertEqual(2, r.exists(f"tallies:{self.org2.id}", f"tallies:{self.org2.id}:flushing"))
+        self.assertFalse(r.sismember("tallies:pending", self.org.id))
+        self.assertTrue(r.sismember("tallies:pending", self.org2.id))
 
         # check we've initiated search de-indexing for all deleted orgs
         self.assertEqual({org1_child1, org1_child2, self.org}, {c.args[0] for c in mr_mocks.calls["org_deindex"]})

@@ -3,7 +3,7 @@ import logging
 import os
 from abc import ABCMeta
 from collections import defaultdict
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -1268,12 +1268,8 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         delete_in_batches(self.daily_counts.all())
 
         # clear buffered tallies first so that nothing is flushed after their rows are deleted
-        for tally_model in (ItemTally, DailyTally):
-            tally_model.clear_buffered(self)
-        get_valkey_connection().srem(BaseTally.PENDING_KEY, self.id)
-
+        Tally.clear_buffered(self)
         delete_in_batches(self.tallies.all())
-        delete_in_batches(self.daily_tallies.all())
 
         # now that contacts are no longer in the database, we can start de-indexing them from search
         mailroom.get_client().org_deindex(self)
@@ -1782,62 +1778,32 @@ class DailyCount(BaseDailyCount):
         ]
 
 
-class BaseTally(models.Model):
+class Tally(models.Model):
     """
-    Base class for org-level totals of things which only go up. Writers increment per-org hashes in Valkey which
-    mailroom flushes into these rows, so a total is the sum of both. Reads aren't atomic with flushes so a total can be
-    briefly off while one is in progress. Key layout must match mailroom's tallies package.
+    Org-level totals of things which only go up. Writers increment a per-org hash in Valkey which mailroom flushes into
+    these rows, so a total is the sum of both. Reads aren't atomic with flushes so a total can be briefly off while one
+    is in progress. Key layout must match mailroom's tallies package.
+
+    Daily totals end their scope with the UTC date, e.g. "emails/shared/2026-11-02", and are given an expiry by mailroom
+    when first flushed. Rows without one are kept forever.
     """
 
     PENDING_KEY = "tallies:pending"
-    GENERATION = "_gen"  # reserved hash field and ItemTally scope which mailroom uses to make flushes exactly-once
-
-    key_prefix = None
+    GENERATION = "_gen"  # reserved hash field and scope which mailroom uses to make flushes exactly-once
 
     id = models.BigAutoField(primary_key=True)
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="tallies", db_index=False)  # indexed below
+    scope = models.CharField(max_length=255)
     count = models.BigIntegerField()
+    expires_on = models.DateField(null=True)
 
     @classmethod
     def get_keys(cls, org) -> tuple[str, str]:
         """
         Gets the live and flushing hash keys for the given org.
         """
-        key = f"{cls.key_prefix}:{org.id}"
+        key = f"tallies:{org.id}"
         return key, f"{key}:flushing"
-
-    @classmethod
-    def _get_buffered(cls, org) -> dict[str, int]:
-        r = get_valkey_connection()
-        with r.pipeline(transaction=False) as pipe:
-            for key in cls.get_keys(org):
-                pipe.hgetall(key)
-            hashes = pipe.execute()
-
-        totals = defaultdict(int)
-        for field, count in itertools.chain(*[h.items() for h in hashes]):
-            field = field.decode()
-            if field != cls.GENERATION:
-                totals[field] += int(count)
-        return totals
-
-    @classmethod
-    def clear_buffered(cls, org):
-        r = get_valkey_connection()
-        r.delete(*cls.get_keys(org))
-
-    class Meta:
-        abstract = True
-
-
-class ItemTally(BaseTally):
-    """
-    Org-level totals of things.
-    """
-
-    key_prefix = "tallies"
-
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="tallies", db_index=False)  # indexed below
-    scope = models.CharField(max_length=128)
 
     @classmethod
     def get_totals(cls, org, prefix: str) -> dict[str, int]:
@@ -1849,56 +1815,33 @@ class ItemTally(BaseTally):
 
         for scope, count in rows.values_list("scope", "count"):
             totals[scope] += count
-        for scope, count in cls._get_buffered(org).items():
-            if scope.startswith(prefix):
-                totals[scope] += count
+
+        r = get_valkey_connection()
+        with r.pipeline(transaction=False) as pipe:
+            for key in cls.get_keys(org):
+                pipe.hgetall(key)
+            hashes = pipe.execute()
+
+        for field, count in itertools.chain(*[h.items() for h in hashes]):
+            scope = field.decode()
+            if scope != cls.GENERATION and scope.startswith(prefix):
+                totals[scope] += int(count)
 
         return dict(totals)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint("org", OpClass("scope", name="varchar_pattern_ops"), name="orgtally_org_scope")
-        ]
-
-
-class DailyTally(BaseTally):
-    """
-    Org-level daily totals of things, where days are always UTC.
-    """
-
-    key_prefix = "tallies:daily"
-
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="daily_tallies", db_index=False)
-    scope = models.CharField(max_length=128)
-    day = models.DateField()
 
     @classmethod
-    def get_totals(cls, org, prefix: str, since: date, until: date) -> dict[tuple[date, str], int]:
-        """
-        Gets totals by day and scope for scopes with the given prefix, over the given period with exclusive end.
-        """
-        totals = defaultdict(int)
-        rows = org.daily_tallies.filter(scope__startswith=prefix, day__gte=since, day__lt=until)
-
-        for day, scope, count in rows.values_list("day", "scope", "count"):
-            totals[(day, scope)] += count
-        for field, count in cls._get_buffered(org).items():
-            scope, _, day = field.rpartition("/")
-            if not scope.startswith(prefix):
-                continue
-            try:
-                day = date.fromisoformat(day)
-            except ValueError:
-                continue
-            if since <= day < until:
-                totals[(day, scope)] += count
-
-        return dict(totals)
+    def clear_buffered(cls, org):
+        r = get_valkey_connection()
+        with r.pipeline() as pipe:
+            pipe.delete(*cls.get_keys(org))
+            pipe.srem(cls.PENDING_KEY, org.id)
+            pipe.execute()
 
     class Meta:
-        indexes = [models.Index(name="orgdailytally_day", fields=("day",))]  # for trimming
+        indexes = [
+            # for trimming
+            models.Index(name="orgtally_expires_on", fields=("expires_on",), condition=Q(expires_on__isnull=False))
+        ]
         constraints = [
-            models.UniqueConstraint(
-                "org", OpClass("scope", name="varchar_pattern_ops"), "day", name="orgdailytally_org_scope_day"
-            )
+            models.UniqueConstraint("org", OpClass("scope", name="varchar_pattern_ops"), name="orgtally_org_scope")
         ]

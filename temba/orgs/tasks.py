@@ -10,7 +10,7 @@ from django.utils import timezone
 from temba.utils.crons import cron_task
 from temba.utils.models import delete_in_batches
 
-from .models import DailyCount, DailyTally, Export, Invitation, ItemCount, Org, OrgImport, OrgMembership
+from .models import DailyCount, Export, Invitation, ItemCount, Org, OrgImport, OrgMembership, Tally
 
 
 @cron_task()
@@ -107,9 +107,9 @@ def squash_item_counts():
 
 
 @cron_task(lock_timeout=7200)
-def trim_daily_tallies():
-    trim_before = (timezone.now() - settings.RETENTION_PERIODS["dailytally"]).date()
+def trim_tallies():
+    today = timezone.now().date()
 
-    num_deleted = delete_in_batches(DailyTally.objects.filter(day__lt=trim_before))
+    num_deleted = delete_in_batches(Tally.objects.filter(expires_on__lt=today))
 
     return {"deleted": num_deleted}
