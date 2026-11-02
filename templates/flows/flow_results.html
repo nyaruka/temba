@@ -50,7 +50,7 @@
 {% block content %}
   <temba-flow-details flow="{{ object.uuid }}" -temba-refreshed="handleFlowRefreshed"> </temba-flow-details>
   <temba-tabs -temba-context-changed="handleTabChanged" collapses="true" class="flex-grow" index="{{ request.GET.tab }}">
-    <temba-tab name='{{ _("Engagement") |escapejs }}' icon="overview">
+    <temba-tab name='{{ _("Engagement")|escapejs }}' icon="overview">
       <div class="flex flex-wrap overflow-y-scroll overflow-x-hidden p-4 gap-2">
         <temba-chart
           class="m-1"
@@ -99,7 +99,7 @@
         </temba-chart>
       </div>
     </temba-tab>
-    <temba-tab name='{{ _("Analytics") |escapejs }}' icon="analytics">
+    <temba-tab name='{{ _("Analytics")|escapejs }}' icon="analytics">
       <div class="flex flex-wrap overflow-y-scroll overflow-x-hidden p-4 gap-2">
         {% for result in results %}
           <temba-chart
@@ -116,7 +116,7 @@
         {% endfor %}
       </div>
     </temba-tab>
-    <temba-tab name='{{ _("Runs") |escapejs }}' icon="runs">
+    <temba-tab name='{{ _("Runs")|escapejs }}' icon="runs">
       <temba-run-list flow="{{ object.uuid }}" -temba-refreshed="handleRunsRefreshed" class="p-4 flex flex-col flex-grow overflow-hidden"> </temba-run-list>
     </temba-tab>
   </temba-tabs>

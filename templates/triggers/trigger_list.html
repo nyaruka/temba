@@ -39,7 +39,7 @@
   >
   </temba-trigger-list>
   {{ list_bulk_actions|json_script:"list-bulk-actions" }}
-  <temba-dialog header='{{ _("Delete All Triggers") |escapejs }}' primaryButtonName='{{ _("Delete") |escapejs }}' destructive="true" class="hide" id="delete-all-confirmation">
+  <temba-dialog header='{{ _("Delete All Triggers")|escapejs }}' primaryButtonName='{{ _("Delete")|escapejs }}' destructive="true" class="hide" id="delete-all-confirmation">
     <div class="p-6">
       {% blocktrans trimmed %}
         Are you sure you want to delete all archived triggers? This cannot be undone.

@@ -18,7 +18,7 @@
         <div class="flex items-end">
           <div class="country w-64 mr-3">
             {% block country-select %}
-              <temba-select name="country" label='{{ _("Country") |escapejs }}' id="country">
+              <temba-select name="country" label='{{ _("Country")|escapejs }}' id="country">
                 {% for country in search_countries %}
                   <temba-option name="{{ country.label }}" value="{{ country.key }}"> </temba-option>
                 {% endfor %}
@@ -27,7 +27,7 @@
           </div>
           <div class="pattern w-32 mr-3">
             {% block search-pattern %}
-              <temba-textinput type="text" maxlength="3" name="pattern" label='{{ _("Pattern") |escapejs }}' id="pattern" optional> </temba-textinput>
+              <temba-textinput type="text" maxlength="3" name="pattern" label='{{ _("Pattern")|escapejs }}' id="pattern" optional> </temba-textinput>
             {% endblock search-pattern %}
           </div>
           <input type="submit" value='{% trans "Search" %}' class="button-primary">
