@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from django.urls import reverse
 
 from temba.campaigns.models import Campaign, CampaignEvent
@@ -109,6 +111,19 @@ class DefinitionsEndpointTest(APITest):
             endpoint_url + f"?flow={flow1.uuid}&dependencies=xx",
             [self.editor],
             errors={None: "dependencies must be one of none, flows, all"},
+        )
+
+        # test invalid UUIDs
+        self.assertGet(
+            endpoint_url + "?flow=xyz", [self.editor], errors={None: "Param 'flow': xyz is not a valid UUID."}
+        )
+        self.assertGet(
+            endpoint_url + "?campaign=xyz", [self.editor], errors={None: "Param 'campaign': xyz is not a valid UUID."}
+        )
+        self.assertGet(
+            endpoint_url + "?" + "&".join([f"flow={uuid4()}" for i in range(101)]),
+            [self.editor],
+            errors={None: "Param 'flow' can have a maximum of 100 values."},
         )
 
         # test that flows are migrated
