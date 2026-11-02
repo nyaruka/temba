@@ -1,7 +1,12 @@
 {% load i18n %}
 
-<temba-alert level="warning" class="mb-3">
-  {% blocktrans trimmed %}
-    Your workspace is suspended and no longer processing messages.
-  {% endblocktrans %}
-</temba-alert>
+<div class="workspace-alert workspace-alert-error">
+  <div class="workspace-alert-icon">
+    <temba-icon name="org_suspended"> </temba-icon>
+  </div>
+  <div class="workspace-alert-body">
+    <span class="workspace-alert-title">{% trans "Workspace suspended" %}</span>
+    {% trans "Contact your administrator." %}
+  </div>
+</div>
+{% include "includes/workspace_alert_script.html" %}

@@ -1,0 +1,11 @@
+<script type="text/javascript">
+  // pages pad their content differently, so stretch the alert out to the edges of the content area by whatever padding
+  // it has, and keep the space the page had above its header below the alert instead
+  (function() {
+    var alert = document.querySelector(".spa-content > .workspace-alert");
+    if (alert) {
+      var padding = getComputedStyle(alert.parentElement);
+      alert.style.margin = "-" + padding.paddingTop + " -" + padding.paddingRight + " " + padding.paddingTop + " -" + padding.paddingLeft;
+    }
+  })();
+</script>

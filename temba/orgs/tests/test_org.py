@@ -277,7 +277,7 @@ class OrgTest(TembaTest):
             response = self.client.get(inbox_url, **headers)
             self.assertTemplateUsed(response, "org_alerts_include.html")
             self.assertTemplateNotUsed(response, "org_suspended_include.html")
-            self.assertNotContains(response, "<temba-alert")
+            self.assertNotContains(response, "workspace-alert")
 
         self.org.suspend()
 
@@ -285,7 +285,7 @@ class OrgTest(TembaTest):
             response = self.client.get(inbox_url, **headers)
             self.assertTemplateUsed(response, "org_alerts_include.html")
             self.assertTemplateUsed(response, "org_suspended_include.html")
-            self.assertContains(response, "Your workspace is suspended")
+            self.assertContains(response, "Workspace suspended")
 
     def test_default_country(self):
         # if root location boundary is set and name is valid country, that has priority
@@ -382,7 +382,7 @@ class OrgTest(TembaTest):
 
         # check our inbox page
         response = self.client.get(reverse("msgs.msg_inbox"))
-        self.assertContains(response, "Your workspace is suspended")
+        self.assertContains(response, "Workspace suspended")
 
         # still no messages or flow starts
         self.assertEqual(Msg.objects.all().count(), 0)
