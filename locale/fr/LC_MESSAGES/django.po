@@ -1559,6 +1559,12 @@ msgstr "Impossible d'abonner l'application au WABA portant l'ID %s"
 msgid "Unable to register phone with ID %s from WABA with ID %s"
 msgstr "Impossible d'enregistrer le téléphone portant l'ID %s du WABA portant l'ID %s"
 
+msgid "Direct Send"
+msgstr "Envoi direct"
+
+msgid "Sends messages outside the customer service window as utility messages without a template, if Meta has enabled Direct Send for the WhatsApp Business Account."
+msgstr "Envoie les messages en dehors de la fenêtre de service client en tant que messages utilitaires sans modèle, si Meta a activé l'envoi direct pour le compte WhatsApp Business."
+
 #, python-format
 msgid "Unable to add system user to %s, please make sure you have business admin manager privileges on the Facebook business."
 msgstr "Impossible d'ajouter un utilisateur système à %s, veuillez vous assurer que vous disposez des privilèges d'administrateur professionnel sur l'entreprise Facebook."
