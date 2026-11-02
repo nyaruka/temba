@@ -251,12 +251,6 @@ class Ticket(models.Model):
 
     # how this ticket was closed - unset on tickets closed before this was recorded
     outcome = models.CharField(max_length=1, choices=OUTCOME_CHOICES, null=True)
-    closed_in = models.ForeignKey(
-        "flows.Flow", null=True, on_delete=models.PROTECT, related_name="closed_tickets", db_index=False
-    )  # indexed below
-    closed_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, on_delete=models.PROTECT, related_name="closed_tickets", db_index=False
-    )  # indexed below
 
     # when this ticket last had activity which includes messages being sent and received, and is used for ordering
     last_activity_on = models.DateTimeField(default=timezone.now)
@@ -369,9 +363,6 @@ class Ticket(models.Model):
             # used by API tickets endpoint hence the ordering, and general fetching by org or contact
             models.Index(name="tickets_api_by_org", fields=["org", "-modified_on", "-id"]),
             models.Index(name="tickets_api_by_contact", fields=["contact", "-modified_on", "-id"]),
-            # for protected deletion checks of flows and users, partial as most tickets have neither
-            models.Index(name="tickets_closed_in", fields=["closed_in"], condition=Q(closed_in__isnull=False)),
-            models.Index(name="tickets_closed_by", fields=["closed_by"], condition=Q(closed_by__isnull=False)),
         ]
         constraints = [
             # a contact can only have one ticket that isn't closed

@@ -32,7 +32,7 @@ from temba.schedules.models import Schedule
 from temba.templates.models import TemplateTranslation
 from temba.tests import TembaTest, mock_mailroom
 from temba.tests.base import get_contact_search
-from temba.tickets.models import Shortcut, Team, Ticket, TicketExport, Topic
+from temba.tickets.models import Shortcut, Team, TicketExport, Topic
 from temba.triggers.models import Trigger
 from temba.utils import json
 from temba.utils.uuid import uuid4
@@ -809,12 +809,6 @@ class OrgDeleteTest(TembaTest):
         topic = add(Topic.create(org, user, "Spam"))
         add(self.create_ticket(contacts[0], topic))
         add(self.create_ticket(contacts[0], opened_in=flows[0], closed_on=timezone.now()))
-        add(
-            self.create_ticket(
-                contacts[0], closed_on=timezone.now(), closed_in=flows[0], outcome=Ticket.OUTCOME_RESOLVED
-            )
-        )
-        add(self.create_ticket(contacts[0], closed_on=timezone.now(), closed_by=user, outcome=Ticket.OUTCOME_RESOLVED))
         team = add(Team.create(org, user, "Spam Only", topics=[topic]))
         Invitation.create(org, user, "newagent@textit.com", OrgRole.AGENT, team=team)
 
