@@ -3445,6 +3445,12 @@ msgstr "Los equipos pueden tener como máximo %(limit)d temas."
 msgid "Closed"
 msgstr "Cerrado"
 
+msgid "Resolved"
+msgstr "Resuelto"
+
+msgid "Idle"
+msgstr "Inactivo"
+
 msgid "My Tickets"
 msgstr "Mis Tickets"
 

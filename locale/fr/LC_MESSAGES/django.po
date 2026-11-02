@@ -3445,6 +3445,12 @@ msgstr "Les équipes ne peuvent avoir que %(limit)d sujets au maximum."
 msgid "Closed"
 msgstr "Fermé"
 
+msgid "Resolved"
+msgstr "Résolu"
+
+msgid "Idle"
+msgstr "Inactif"
+
 msgid "My Tickets"
 msgstr "Mes billets"
 

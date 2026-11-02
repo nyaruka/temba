@@ -221,6 +221,10 @@ class Ticket(models.Model):
     STATUS_CLOSED = "C"
     STATUS_CHOICES = ((STATUS_PENDING, _("Pending")), (STATUS_OPEN, _("Open")), (STATUS_CLOSED, _("Closed")))
 
+    OUTCOME_RESOLVED = "R"
+    OUTCOME_IDLE = "I"
+    OUTCOME_CHOICES = ((OUTCOME_RESOLVED, _("Resolved")), (OUTCOME_IDLE, _("Idle")))
+
     MAX_NOTE_LENGTH = 10_000
 
     uuid = models.UUIDField(unique=True)
@@ -244,6 +248,9 @@ class Ticket(models.Model):
     replied_on = models.DateTimeField(null=True)
     closed_on = models.DateTimeField(null=True)
     modified_on = models.DateTimeField(default=timezone.now)
+
+    # how this ticket was closed - unset on tickets closed before this was recorded
+    outcome = models.CharField(max_length=1, choices=OUTCOME_CHOICES, null=True)
 
     # when this ticket last had activity which includes messages being sent and received, and is used for ordering
     last_activity_on = models.DateTimeField(default=timezone.now)
