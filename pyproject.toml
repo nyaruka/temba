@@ -49,7 +49,7 @@ dependencies = [
     "fido2>=2.0.0,<3.0.0",
     "elasticsearch>=9.0.0,<10.0.0",
     "tzdata>=2025.2",
-    "dnspython ~= 2.8.0",
+    "dnspython>=2.8,<2.10",
     "whitenoise[brotli]>=6.12.0,<7.0.0",
 ]
 
