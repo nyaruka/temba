@@ -26,15 +26,17 @@ class TallyTest(TembaTest):
             {"foo/1": 2, "foo/2": 3, "bar/1": 4, "emails/shared@2026-11-01": 5}, Tally.get_totals(self.org, "")
         )
 
-        self.assertEqual((f"tallies:{self.org.id}", f"tallies:{self.org.id}:flushing"), Tally.get_keys(self.org))
+        self.assertEqual(
+            (f"{{tallies}}:{self.org.id}", f"{{tallies}}:{self.org.id}:flushing"), Tally.get_keys(self.org)
+        )
 
         r.hset(
-            f"tallies:{self.org.id}",
+            f"{{tallies}}:{self.org.id}",
             mapping={"foo/1": 1, "foo/3": 6, "bar/1": 1, "emails/shared@2026-11-02": 2},
         )
-        r.hset(f"tallies:{self.org.id}:flushing", mapping={"foo/1": 10, "emails/shared@2026-11-01": 1, "_gen": 8})
-        r.hset(f"tallies:{self.org2.id}", mapping={"foo/1": 100})
-        r.sadd("tallies:pending", self.org.id, self.org2.id)
+        r.hset(f"{{tallies}}:{self.org.id}:flushing", mapping={"foo/1": 10, "emails/shared@2026-11-01": 1, "_gen": 8})
+        r.hset(f"{{tallies}}:{self.org2.id}", mapping={"foo/1": 100})
+        r.sadd("{tallies}:pending", self.org.id, self.org2.id)
 
         self.assertEqual({"foo/1": 13, "foo/2": 3, "foo/3": 6}, Tally.get_totals(self.org, "foo/"))
         self.assertEqual(
@@ -48,8 +50,8 @@ class TallyTest(TembaTest):
 
         self.assertEqual({"foo/1": 2, "foo/2": 3}, Tally.get_totals(self.org, "foo/"))
         self.assertEqual({"foo/1": 105}, Tally.get_totals(self.org2, "foo/"))
-        self.assertFalse(r.sismember("tallies:pending", self.org.id))
-        self.assertTrue(r.sismember("tallies:pending", self.org2.id))
+        self.assertFalse(r.sismember("{tallies}:pending", self.org.id))
+        self.assertTrue(r.sismember("{tallies}:pending", self.org2.id))
 
     def test_upsert(self):
         # check the unique index can be the target of the upserts used for flushing, which only set expiry on insert
