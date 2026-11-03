@@ -1782,10 +1782,10 @@ class Tally(models.Model):
     """
     Org-level totals of things which only go up. Writers increment a per-org hash in Valkey which mailroom flushes into
     these rows, so a total is the sum of both. Reads aren't atomic with flushes so a total can be briefly off while one
-    is in progress. Key layout must match mailroom's tallies package.
+    is in progress. Key layout must match gocommon's tallies package.
 
-    Daily totals end their scope with the UTC date, e.g. "emails/shared/2026-11-02", and are given an expiry by mailroom
-    when first flushed. Rows without one are kept forever.
+    Daily totals end their scope with @ and the date, e.g. "emails/shared@2026-11-02", and may be given an expiry by
+    mailroom when first flushed. Rows without one are kept forever.
     """
 
     PENDING_KEY = "tallies:pending"

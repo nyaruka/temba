@@ -912,11 +912,11 @@ class OrgDeleteTest(TembaTest):
 
     def _create_tally_content(self, org, add):
         add(org.tallies.create(scope="foo", count=1))
-        add(org.tallies.create(scope="foo/2026-11-02", count=1, expires_on=date(2027, 11, 2)))
+        add(org.tallies.create(scope="foo@2026-11-02", count=1, expires_on=date(2027, 11, 2)))
 
         r = get_valkey_connection()
         r.hset(f"tallies:{org.id}", "foo", 1)
-        r.hset(f"tallies:{org.id}:flushing", "foo/2026-11-02", 1)
+        r.hset(f"tallies:{org.id}:flushing", "foo@2026-11-02", 1)
         r.sadd("tallies:pending", org.id)
 
     def _exists(self, obj) -> bool:
