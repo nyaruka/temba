@@ -1,13 +1,10 @@
 from django.conf import settings
-from django.contrib.postgres.indexes import OpClass
 from django.db import models
-from django.db.models import Q
 from django.db.models.functions import Lower
 
 from temba import mailroom
 from temba.orgs.models import DependencyMixin, Org
-from temba.utils.models import OrgAsset, delete_in_batches
-from temba.utils.models.counts import BaseDailyCount
+from temba.utils.models import OrgAsset
 
 
 class LLMCredentialsError(Exception):
@@ -155,36 +152,5 @@ class LLM(OrgAsset, DependencyMixin):
         self.modified_by = user
         self.save(update_fields=("name", "is_active", "modified_by", "modified_on"))
 
-    def delete(self):
-        delete_in_batches(self.counts.all())
-
-        super().delete()
-
     class Meta:
         constraints = [models.UniqueConstraint("org", Lower("name"), name="unique_llm_names")]
-
-
-class LLMCount(BaseDailyCount):
-    """
-    Tracks daily counts of LLM activity (calls and tokens used) by mailroom.
-    """
-
-    squash_over = ("llm_id", "day", "scope")
-
-    SCOPE_CALLS = "calls"
-    SCOPE_TOKENS_IN = "tokens:in"
-    SCOPE_TOKENS_OUT = "tokens:out"
-
-    llm = models.ForeignKey(LLM, on_delete=models.PROTECT, related_name="counts", db_index=False)
-
-    class Meta:
-        indexes = [
-            models.Index("llm", "day", OpClass("scope", name="varchar_pattern_ops"), name="llmcount_llm_scope"),
-            # for squashing task
-            models.Index(name="llmcount_unsquashed", fields=("llm", "day", "scope"), condition=Q(is_squashed=False)),
-        ]
-        constraints = [
-            models.UniqueConstraint(
-                name="llmcount_squashed", fields=("llm", "day", "scope"), condition=Q(is_squashed=True)
-            )
-        ]
