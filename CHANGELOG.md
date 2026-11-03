@@ -1,3 +1,7 @@
+## v26.3.172 (2026-11-03)
+ * Require closed tickets to have closed_on and outcome, and other tickets neither
+ * Update dependencies, including dnspython to 2.9.0
+
 ## v26.3.171 (2026-11-02)
  * Add Tally model for Valkey-buffered org totals
  * Backfill outcome of closed tickets
