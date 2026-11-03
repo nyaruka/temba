@@ -1782,13 +1782,13 @@ class Tally(models.Model):
     """
     Org-level totals of things which only go up. Writers increment a per-org hash in Valkey which mailroom flushes into
     these rows, so a total is the sum of both. Reads aren't atomic with flushes so a total can be briefly off while one
-    is in progress. Key layout must match mailroom's tallies package.
+    is in progress. Key layout must match gocommon's tallies package.
 
-    Daily totals end their scope with the UTC date, e.g. "emails/shared/2026-11-02", and are given an expiry by mailroom
-    when first flushed. Rows without one are kept forever.
+    Daily totals end their scope with @ and the date, e.g. "emails/shared@2026-11-02", and may be given an expiry by
+    mailroom when first flushed. Rows without one are kept forever.
     """
 
-    PENDING_KEY = "tallies:pending"
+    PENDING_KEY = "{tallies}:pending"
     GENERATION = "_gen"  # reserved hash field and scope which mailroom uses to make flushes exactly-once
 
     id = models.BigAutoField(primary_key=True)
@@ -1802,7 +1802,7 @@ class Tally(models.Model):
         """
         Gets the live and flushing hash keys for the given org.
         """
-        key = f"tallies:{org.id}"
+        key = f"{{tallies}}:{org.id}"
         return key, f"{key}:flushing"
 
     @classmethod
@@ -1833,7 +1833,8 @@ class Tally(models.Model):
     def clear_buffered(cls, org):
         r = get_valkey_connection()
         with r.pipeline() as pipe:
-            pipe.delete(*cls.get_keys(org))
+            live, flushing = cls.get_keys(org)
+            pipe.delete(live, flushing, f"{live}:expiries", f"{live}:expiries:flushing")
             pipe.srem(cls.PENDING_KEY, org.id)
             pipe.execute()
 
