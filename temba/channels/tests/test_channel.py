@@ -344,6 +344,9 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
             response = self.requestView(chart_url + "?since=2024-01-01&until=2026-01-21", self.admin)
             self.assertEqual(["2025-01-20", "2026-01-21"], response.json()["period"])
 
+            response = self.requestView(chart_url + "?since=2020-01-01&until=2020-06-01", self.admin)
+            self.assertEqual(["2025-01-20", "2025-01-20"], response.json()["period"])
+
         with patch("django.utils.timezone.now", return_value=datetime(2024, 5, 20, 0, 0, 0, 0, tzone.utc)):
             response = self.requestView(read_url, self.admin)
 

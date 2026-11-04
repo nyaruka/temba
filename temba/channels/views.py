@@ -534,7 +534,9 @@ class ChannelCRUDL(SmartCRUDL):
                 if channel.last_sync and (timezone.now() - channel.last_sync.created_on).total_seconds() > 3600:
                     context["delayed_sync_event"] = True
 
-            context["chart_min"] = max(self.object.created_on.date(), timezone.now().date() - COUNTS_HISTORY)
+            context["chart_min"] = max(
+                timezone.localdate(self.object.created_on), timezone.now().date() - COUNTS_HISTORY
+            )
             context["monthly_counts"] = self.get_monthly_counts()
             return context
 
@@ -585,7 +587,8 @@ class ChannelCRUDL(SmartCRUDL):
 
         def get_chart_period(self):
             since, until = super().get_chart_period()
-            return max(since, timezone.now().date() - COUNTS_HISTORY), until
+            since = max(since, timezone.now().date() - COUNTS_HISTORY)
+            return since, max(until, since)
 
         def get_chart_data(self, since, until) -> tuple[list, list]:
             counts = (
