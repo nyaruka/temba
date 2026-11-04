@@ -1,3 +1,7 @@
+## v26.3.175 (2026-11-04)
+ * Backfill channel and workspace message tallies from channel counts for days before today
+ * Show 13 months in channel read page monthly counts table
+
 ## v26.3.174 (2026-11-04)
  * Keep barely tinted dialog colors from deepening into vivid focus colors
  * Return 404 when updating a deleted trigger
