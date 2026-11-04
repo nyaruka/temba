@@ -497,9 +497,6 @@ export class CampaignEvents extends EndpointMonitorElement {
       }
 
       @supports (color: color-mix(in srgb, red, red)) {
-        .menu-button.destructive:hover {
-          background: color-mix(in srgb, #dc2626 6%, var(--surface, #fff));
-        }
         .detail-action {
           background: color-mix(
             in srgb,

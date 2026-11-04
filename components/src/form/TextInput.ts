@@ -6,6 +6,7 @@ import { FieldElement } from './FieldElement';
 import { Modax } from '../layout/Modax';
 import { sanitizeUnintendedUnicode } from '../utils';
 import { CharCount } from '../display/CharCount';
+import { iconMuted, iconMutedHover } from '../styles/iconChrome';
 
 export enum InputType {
   Text = 'text',
@@ -65,7 +66,7 @@ export class TextInput extends FieldElement {
       }
 
       .clear-icon {
-        --icon-color: var(--color-text-dark-secondary);
+        ${iconMuted}
         cursor: pointer;
         margin: auto;
         padding-right: 10px;
@@ -73,7 +74,7 @@ export class TextInput extends FieldElement {
       }
 
       .clear-icon:hover {
-        --icon-color: var(--color-text-dark);
+        ${iconMutedHover}
       }
 
       .hidden {

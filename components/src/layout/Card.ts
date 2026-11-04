@@ -1,6 +1,8 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
+import { cardTitle } from '../styles/cardChrome';
+import { iconMuted } from '../styles/iconChrome';
 import { designTokens } from '../styles/designTokens';
 import { formatCount, getClasses } from '../utils';
 import { Icon } from '../Icons';
@@ -57,7 +59,7 @@ export class Card extends RapidElement {
       }
 
       .card-header temba-icon {
-        --icon-color: var(--text-3);
+        ${iconMuted}
       }
 
       .grip {
@@ -79,6 +81,10 @@ export class Card extends RapidElement {
         font-size: 13px;
         font-weight: var(--w-medium);
         color: var(--text-2);
+      }
+
+      .title {
+        ${cardTitle}
       }
 
       .label temba-icon {
@@ -341,7 +347,9 @@ export class Card extends RapidElement {
               ? html`<temba-icon name=${this.icon}></temba-icon>`
               : null}
             <div class="label-text">
-              <div part="title">${this.label}${this.dirty ? ' *' : ''}</div>
+              <div class="title" part="title">
+                ${this.label}${this.dirty ? ' *' : ''}
+              </div>
               <slot name="description"></slot>
             </div>
           </div>
