@@ -63,15 +63,28 @@ export const buttonChromePrimaryHover = css`
   background: var(--accent-500, #4272b9);
 `;
 
-/* a ring-style button whose action can't be undone: red text, and a red
-   ring with a faint red wash on hover */
+/* a ring-style button whose action can't be undone: tinted red throughout,
+   text and ring, with a faint red wash on hover */
 export const buttonChromeDestructive = css`
+  background: var(--surface, #fff);
   color: var(--danger, #d03f3f);
+  box-shadow:
+    0 0 0 1px var(--danger-border, #f4c8c8),
+    0 1px 2px rgba(15, 22, 36, 0.06);
 `;
 
 export const buttonChromeDestructiveHover = css`
-  background: #fdf2f2;
+  background: var(--danger-bg, #fcebeb);
+  /* pre-mixed first for browsers without color-mix(), which drop the second */
   box-shadow:
-    0 0 0 1px var(--danger, #d03f3f),
+    0 0 0 1px #e48a8a,
+    0 1px 2px rgba(15, 22, 36, 0.06);
+  box-shadow:
+    0 0 0 1px
+      color-mix(
+        in srgb,
+        var(--danger, #d03f3f) 45%,
+        var(--danger-border, #f4c8c8)
+      ),
     0 1px 2px rgba(15, 22, 36, 0.06);
 `;

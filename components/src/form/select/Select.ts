@@ -43,6 +43,7 @@ import {
 import { StyleInfo, styleMap } from 'lit-html/directives/style-map.js';
 import { Icon } from '../../Icons';
 import { msg } from '@lit/localize';
+import { iconMuted, iconMutedHover } from '../../styles/iconChrome';
 
 const LOOK_AHEAD = 20;
 
@@ -94,7 +95,7 @@ export class Select<T extends SelectOption> extends FieldElement {
         line-height: normal;
         outline: none;
         position: relative;
-        --icon-color: var(--color-text-dark-secondary);
+        ${iconMuted}
       }
 
       temba-options {
@@ -158,7 +159,7 @@ export class Select<T extends SelectOption> extends FieldElement {
 
       temba-icon.select-open:hover,
       .clear-button:hover {
-        --icon-color: var(--color-text-dark);
+        ${iconMutedHover}
       }
 
       .select-container:focus {

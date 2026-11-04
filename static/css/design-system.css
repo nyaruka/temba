@@ -360,11 +360,13 @@
 }
 .ds .btn-ghost:hover { background: var(--sunken); color: var(--text-1); }
 .ds .btn-danger {
-  background: var(--danger);
-  color: white;
+  background: var(--surface);
+  border-color: var(--danger-border);
+  color: var(--danger);
 }
 .ds .btn-danger:hover {
-  background: color-mix(in srgb, var(--danger) 88%, black);
+  background: var(--danger-bg);
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--danger-border));
 }
 .ds .btn.is-disabled,
 .ds .btn:disabled { opacity: 0.45; cursor: not-allowed; }
