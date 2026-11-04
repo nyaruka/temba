@@ -184,6 +184,9 @@ export class RangePicker extends RapidElement {
   @property({ type: String, attribute: 'max' })
   maxDate = DateTime.now().toISODate();
 
+  @property({ type: Boolean, attribute: 'hideall' })
+  hideAll = false;
+
   private handleStartClick() {
     this.editingStart = true;
   }
@@ -639,7 +642,9 @@ export class RangePicker extends RapidElement {
             <temba-icon name=${Icon.arrow_left}></temba-icon>
           </button>
           <div class="button-group" role="group" aria-label="Period">
-            ${RangePicker.RANGES.map(
+            ${RangePicker.RANGES.filter(
+              (range) => !(this.hideAll && range.type === 'ALL')
+            ).map(
               (range) =>
                 html`<button
                   class="range-btn ${this.selectedRange === range.type

@@ -129,6 +129,17 @@ describe('temba-range-picker', () => {
     await assertScreenshot('datepicker/range-picker-all', getClip(picker));
   });
 
+  it('can hide the all range button', async () => {
+    const picker: RangePicker = await createRangePicker(
+      getRangePickerHTML({ hideall: true })
+    );
+
+    const labels = Array.from(
+      picker.shadowRoot?.querySelectorAll('.range-btn') || []
+    ).map((btn) => btn.textContent.trim());
+    expect(labels).to.deep.equal(['W', 'M', 'Y']);
+  });
+
   it('enforces valid date ranges', async () => {
     const picker: RangePicker = await createRangePicker(
       getRangePickerHTML({ start: '2024-06-01', end: '2024-06-30' })
