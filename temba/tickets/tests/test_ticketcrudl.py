@@ -223,6 +223,14 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         # the search button is part of the tickets section menu so search has to be mounted here too
         self.assertContains(response, "<temba-ticket-search")
 
+        # the page uses the default header, which fetches its content menu from the page, for full page and SPA loads
+        self.assertContains(response, '<temba-header-bar fit-content class="page-header-bar">')
+        self.assertContains(response, 'content-menu-endpoint="/ticket/analytics/?"')
+        response = self.requestView(analytics_url, self.admin, HTTP_X_TEMBA_SPA=1)
+        self.assertTemplateUsed(response, "spa.html")
+        self.assertContains(response, '<temba-header-bar fit-content class="page-header-bar">')
+        self.assertContains(response, 'content-menu-endpoint="/ticket/analytics/?"')
+
         # org doesn't have the teams feature so response count chart shouldn't be split by team
         self.assertFalse(response.context["has_teams"])
         self.assertNotContains(response, 'dataname="Teams"')
@@ -235,6 +243,10 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertNotContains(response, "Response Time")
         self.assertNotContains(response, "/ticket/all/?assignee=")
         self.assertContentMenu(analytics_url, self.agent, [])
+
+        # with no content menu the default header has nothing to fetch
+        self.assertContains(response, '<temba-header-bar fit-content class="page-header-bar">')
+        self.assertNotContains(response, "content-menu-endpoint=")
 
         self.org.features = [Org.FEATURE_TEAMS]
         self.org.save(update_fields=("features",))
