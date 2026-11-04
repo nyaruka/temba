@@ -103,16 +103,11 @@ export const designTokens = css`
     --pad: 10px;
     --gap: 14px;
 
-    /* Page header strip. --header-h is the height of a header bar over a
-       single-line title (the tickets / contact chat strip). --title-line is
-       one line of that title, declared here rather than inside
-       temba-page-header because temba-header-bar derives its balanced inset
-       from it — keeping both on one definition means restyling the title
-       can't silently unbalance the strip. */
+    /* Page header strip: the height of a header bar over a single line of
+       title (temba-header-bar), and that title's type (temba-page-header). */
     --header-h: 53px;
     --title-size: 15.5px;
     --title-leading: 1.25;
-    --title-line: calc(var(--title-size) * var(--title-leading));
 
     /* shadows */
     --shadow-1:

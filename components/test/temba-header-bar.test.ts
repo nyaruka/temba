@@ -25,14 +25,10 @@ describe('temba-header-bar', () => {
     expect(getComputedStyle(content).flexGrow).to.equal('1');
   });
 
-  // The surround is measured from the rendered boxes rather than read off
-  // the declared padding — the failure mode being guarded is a height taller
-  // than its content, which leaves the declared padding untouched while
-  // handing the slack to the gap above and below the title. The gaps are
-  // compared against each other, not a hardcoded inset, so restyling the
-  // strip height or the title type stays caught by balance alone.
+  // Measured from the rendered boxes rather than read off the declared
+  // padding, so a height that hands slack to one side of the title shows up.
   for (const subtitle of ['', 'Supporting context']) {
-    it(`balances the surround of a fit-content title${subtitle ? ' with a subtitle' : ''}`, async () => {
+    it(`centers a fit-content title${subtitle ? ' with a subtitle' : ''}`, async () => {
       const bar = (await fixture(html`
         <temba-header-bar fit-content>
           <temba-page-header
@@ -47,33 +43,37 @@ describe('temba-header-bar', () => {
       await header.updateComplete;
 
       const barBox = bar.getBoundingClientRect();
-      const titleBlock = header.shadowRoot.querySelector(
-        '.title-block'
-      ) as HTMLElement;
-      const actions = header.shadowRoot.querySelector(
-        '.actions'
-      ) as HTMLElement;
-      const titleBox = titleBlock.getBoundingClientRect();
-      const actionsBox = actions.getBoundingClientRect();
+      const titleBox = header.shadowRoot
+        .querySelector('.title-block')
+        .getBoundingClientRect();
+      const actionsBox = header.shadowRoot
+        .querySelector('.actions')
+        .getBoundingClientRect();
 
+      // the content sits evenly between the top of the bar and its rule
       const above = titleBox.top - barBox.top;
       const below = barBox.bottom - titleBox.bottom;
-      const left = titleBox.left - barBox.left;
-      const right = barBox.right - actionsBox.right;
-
-      // every side matches the gap above the title
       expect(below, 'below title').to.be.closeTo(above, 0.5);
-      expect(left, 'left of title').to.be.closeTo(above, 0.5);
-      expect(right, 'right of actions').to.be.closeTo(above, 0.5);
 
-      // the strip height is a floor the content already meets, so it never
-      // leaves slack for the centering to turn into an uneven gap
-      expect(getComputedStyle(bar).minHeight).to.equal('53px');
-      expect(barBox.height).to.be.at.least(53 - 0.5);
-      expect(barBox.height, 'height is surround + content').to.be.closeTo(
-        titleBox.height + above * 2,
+      // inset at the sides like the list pages' headers
+      expect(titleBox.left - barBox.left, 'left of title').to.be.closeTo(
+        12,
         0.5
       );
+      expect(barBox.right - actionsBox.right, 'right of actions').to.be.closeTo(
+        12,
+        0.5
+      );
+
+      // the strip height is a floor: a single line fills it exactly, a
+      // subtitle grows the bar by keeping the header's own 12px padding
+      expect(getComputedStyle(bar).minHeight).to.equal('53px');
+      if (subtitle) {
+        expect(barBox.height).to.be.closeTo(titleBox.height + 24, 0.5);
+        expect(barBox.height).to.be.greaterThan(53);
+      } else {
+        expect(barBox.height).to.be.closeTo(53, 0.5);
+      }
     });
   }
 

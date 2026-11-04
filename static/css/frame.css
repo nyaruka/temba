@@ -182,19 +182,32 @@ temba-loading {
   z-index: 1000;
 }
 
-.title-text {
-  transition: opacity 100ms linear;
-}
-
-.loading .title-text {
-  opacity: 0;
-}
-
 .spa-content {
   display: flex;
   flex-direction: column;
   flex-grow: 1;
   transition: opacity 200ms linear;
+}
+
+/* the default page header runs edge to edge across the top of the content
+   area, out over its padding, with the same space below it as the padding
+   gave above, and stays pinned there while the page scrolls under it. Pages
+   that change the content padding adjust the margin to match. */
+.spa-content > .page-header-bar {
+  position: sticky;
+  /* sticky offsets are measured inside the content padding */
+  top: -1.25rem;
+  z-index: 50;
+  flex-shrink: 0;
+  margin: -1.25rem -1.25rem 1.25rem;
+}
+
+/* rich titles (an icon, breadcrumbs) sit on one line with the title */
+.page-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  min-width: 0;
 }
 
 .bg-gradient {

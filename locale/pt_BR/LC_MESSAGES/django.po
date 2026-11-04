@@ -6155,9 +6155,6 @@ msgstr "Outros idiomas"
 msgid "You are about to delete the shortcut <b>%(object)s</b>. There is no way to undo this. Are you sure?"
 msgstr "Você está prestes a deletar o atalho <b>%(object)s</b>. Não é possível reverter isso. Você tem certeza?"
 
-msgid "These are canned responses that agents can use to quickly reply to tickets."
-msgstr "Estas são respostas prontas que os agentes podem usar para responder rapidamente aos tickets."
-
 #, python-format
 msgid "Sorry, the <b>%(object)s</b> team can't be deleted while it still has agents. Move the agents to another team first and then try again."
 msgstr "Desculpe, a equipe <b>%(object)s</b> não pode ser deletada enquanto ainda tiver agentes. Mova os agentes para outra equipe primeiro e então tente novamente."

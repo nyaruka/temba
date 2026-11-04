@@ -1,20 +1,3 @@
-<style>
-  .text-container {
-    min-height: 2.5em;
-  }
-
-  .no-menu .text-container {
-    min-height: inherit;
-  }
-
-  .modax-body .text-container {
-    min-height: 0em;
-  }
-
-  .modax-body temba-alert {
-    display: none;
-  }
-</style>
 {% block alert-messages %}
   {% if user_org %}
     {% include "org_alerts_include.html" %}
@@ -22,30 +5,25 @@
 {% endblock alert-messages %}
 {% block page-header %}
   {% csrf_token %}
-  <div class="mb-4">
-    <div class="no-menu flex items-center">
-      <div class="text-container text-2xl text-gray-700">
-        <div class="flex flex-row">
-          {% block title %}
-            <div id="title-text">
-              {% block title-text %}
-                {{ title }}
-              {% endblock title-text %}
-            </div>
-          {% endblock title %}
-        </div>
+  <temba-header-bar fit-content class="page-header-bar">
+    <temba-page-header {% if has_context_menu %}content-menu-endpoint="{{ request.path }}?{{ request.GET.urlencode }}" -temba-selection="handleContentMenuSelected(event)"{% endif %}>
+      <div slot="title" class="page-header-title">
+        {% block title %}
+          <div id="title-text">
+            {% block title-text %}
+              {{ title }}
+            {% endblock title-text %}
+          </div>
+        {% endblock title %}
       </div>
-      <div class="line flex-grow mr-2 ml-6">
-        <div class="h-0 border border-gray-200"></div>
+      <div slot="subtitle">
+        {% block subtitle %} {% endblock subtitle %}
       </div>
-      {% if has_context_menu %}
-        {% include "spa_page_menu.html" %}
-      {% endif %}
-    </div>
-    <div class="text-lg text-gray-600">
-      {% block subtitle %} {% endblock subtitle %}
-    </div>
-  </div>
+    </temba-page-header>
+  </temba-header-bar>
+  {% if has_context_menu %}
+    {% include "includes/page_header_menu.html" %}
+  {% endif %}
 {% endblock page-header %}
 {% block extra-style %}
 {% endblock extra-style %}

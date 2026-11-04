@@ -14,10 +14,7 @@ export class HeaderBar extends RapidElement {
       ${designTokens}
 
       :host {
-        /* The single source for the bar's inset — it sets the horizontal
-           padding here and, for fit-content bars, the vertical padding the
-           slotted page header inherits. Both axes move together by
-           construction, so the surround can't drift. */
+        /* the bar's horizontal inset */
         --header-bar-inset: 8px;
 
         flex: 0 0 auto;
@@ -34,22 +31,15 @@ export class HeaderBar extends RapidElement {
         box-shadow: inset 0 -1px 0 0 var(--border);
       }
 
-      /* Standalone page headers keep the strip height as a floor but grow
-         for taller content (a subtitle), with the same surround on every
-         side either way.
-
-         The inset is solved for rather than picked: it's the padding that
-         makes inset + one title line + inset come out at exactly the strip
-         height, so a single-line title fills the strip with balanced
-         spacing. That's why the floor is expressed as height, not as a
-         min-height the padding has to fight — with the inset derived this
-         way the content already meets the floor, so there's never slack for
-         flex centering to absorb into an uneven gap above and below. */
+      /* Standalone page headers (the default header of every page) keep
+         the strip height as a floor, centering a single line of title or
+         buttons in it, but grow for taller content (a subtitle) — the
+         slotted page header's own padding keeps the space above and below
+         even either way. They're inset like the list pages' headers so a
+         title sits in the same place whichever kind of page it's on. */
       :host([fit-content]) {
-        --header-bar-inset: calc((var(--header-h) - var(--title-line)) / 2);
-        --page-header-padding: var(--header-bar-inset) 0;
+        --header-bar-inset: 12px;
 
-        align-items: stretch;
         height: auto;
         min-height: var(--header-h);
       }

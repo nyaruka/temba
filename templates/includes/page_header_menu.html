@@ -1,7 +1,6 @@
 {% comment %}
-  Menu dispatch for pages whose content menu lives in a temba-page-header
-  (the chat + cards pages). Same contract and function names
-  as spa_page_menu.html, so handlers written against either work.
+  Dispatches clicks on the content menu of a temba-page-header - the default page header includes it, and pages that
+  render their own header include it themselves.
 {% endcomment %}
 <script>
   function handleContentMenuSelected(event) {

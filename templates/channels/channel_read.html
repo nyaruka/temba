@@ -2,10 +2,8 @@
 {% load smartmin temba channels i18n tz %}
 
 {% block title %}
-  <temba-icon name="{{ object.type.icon }}" class="mr-2"> </temba-icon>
-  <div class="flex items-start flex-col">
-    <div class="name" id="title-text">{{ object.name }}</div>
-  </div>
+  <temba-icon name="{{ object.type.icon }}"> </temba-icon>
+  <div id="title-text">{{ object.name }}</div>
 {% endblock title %}
 {% block subtitle %}
 {% endblock subtitle %}
