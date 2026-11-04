@@ -648,7 +648,7 @@ export class Dialog extends ResizeElement {
     return 0.2126 * r + 0.7152 * g + 0.0722 * b;
   }
 
-  // the same hue and saturation at a lightness that reads against white
+  // the same hue at a lightness that reads against white
   private static deepen(channels: number[]): number[] {
     const [r, g, b] = channels.map((channel) => channel / 255);
     const max = Math.max(r, g, b);
@@ -665,7 +665,12 @@ export class Dialog extends ResizeElement {
     }
 
     const lightness = (max + min) / 2;
-    const saturation = delta ? delta / (1 - Math.abs(2 * lightness - 1)) : 0;
+    // HSL calls any pale color with a channel at 255 fully saturated, so
+    // scale by how much color there really is (its chroma) to keep a
+    // barely tinted color from deepening into a vivid one
+    const saturation = delta
+      ? (delta / (1 - Math.abs(2 * lightness - 1))) * Math.min(1, delta / 0.2)
+      : 0;
     const target = Math.min(lightness, 0.42);
 
     // back to rgb at the new lightness
