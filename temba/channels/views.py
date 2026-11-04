@@ -544,8 +544,9 @@ class ChannelCRUDL(SmartCRUDL):
             today = timezone.now().date()
             until = today + timedelta(days=1)
 
-            # for every month since this channel was started, up to 12 including this one
-            year, month = divmod(today.year * 12 + today.month - 12, 12)
+            # for every month since this channel was started, up to 13 including this one so that this month last year
+            # can be compared
+            year, month = divmod(today.year * 12 + today.month - 13, 12)
             since = max(self.object.created_on.replace(day=1).date(), today.replace(year=year, month=month + 1, day=1))
 
             # get our totals grouped by month+scope

@@ -335,11 +335,11 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         with patch("django.utils.timezone.now", return_value=datetime(2026, 1, 20, 0, 0, 0, 0, tzone.utc)):
             response = self.requestView(read_url, self.admin)
 
-            # chart can't go back more than a year, and monthly counts are only for the last 12 months
+            # chart can't go back more than a year, and monthly counts are only for the last 13 months
             self.assertEqual(date(2025, 1, 20), response.context["chart_min"])
-            self.assertEqual(12, len(response.context["monthly_counts"]))
+            self.assertEqual(13, len(response.context["monthly_counts"]))
             self.assertEqual(date(2026, 1, 1), response.context["monthly_counts"][0]["month_start"])
-            self.assertEqual(date(2025, 2, 1), response.context["monthly_counts"][-1]["month_start"])
+            self.assertEqual(date(2025, 1, 1), response.context["monthly_counts"][-1]["month_start"])
 
             response = self.requestView(chart_url + "?since=2024-01-01&until=2026-01-21", self.admin)
             self.assertEqual(["2025-01-20", "2026-01-21"], response.json()["period"])
