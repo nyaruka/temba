@@ -29,6 +29,7 @@ class TallyTest(TembaTest):
         self.assertEqual({"foo/1": 2, "foo/2": 3}, Tally.get_totals(self.org, ["foo/1", "foo/2", "foo/3"]))
         self.assertEqual({}, Tally.get_totals(self.org, ["foo/3"]))
         self.assertEqual({}, Tally.get_totals(self.org, []))
+        self.assertEqual({"foo/1": 2}, Tally.get_totals(self.org, ["foo/1", "foo/1"]))
 
         r.hset(
             "{tallies}:live",
@@ -40,6 +41,9 @@ class TallyTest(TembaTest):
         r.hset("{tallies}:batch", mapping={field(self.org, "foo/2"): 20, field(self.org2, "foo/1"): 1000})
         r.set("{tallies}:batch_id", 8)
         TallyFlush.objects.create(name="tallies", last_batch=7)
+
+        # duplicate scopes are only counted once
+        self.assertEqual({"foo/1": 13}, Tally.get_totals(self.org, ["foo/1", "foo/1"]))
 
         # batch 8 hasn't been committed so is included
         self.assertEqual(
@@ -77,12 +81,20 @@ class TallyTest(TembaTest):
 
         self.assertEqual(({"foo": 8}, False), Tally._read_totals(self.org, ["foo"]))
 
+        # same if no batch had been created when we read Valkey
+        r.delete("{tallies}:batch_id")
+        self.assertEqual(({"foo": 8}, False), Tally._read_totals(self.org, ["foo"]))
+        r.set("{tallies}:batch_id", 4)
+
         with patch.object(Tally, "_read_totals", side_effect=[({"foo": 8}, False), ({"foo": 5}, True)]) as mock_read:
             self.assertEqual({"foo": 5}, Tally.get_totals(self.org, ["foo"]))
             self.assertEqual(2, mock_read.call_count)
 
         # but only a few times
-        with patch.object(Tally, "_read_totals", wraps=Tally._read_totals) as mock_read:
+        with (
+            patch.object(Tally, "_read_totals", wraps=Tally._read_totals) as mock_read,
+            self.assertLogs("temba.orgs.models", level="WARNING"),
+        ):
             self.assertEqual({"foo": 8}, Tally.get_totals(self.org, ["foo"]))
             self.assertEqual(3, mock_read.call_count)
 

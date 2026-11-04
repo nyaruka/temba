@@ -1805,13 +1805,16 @@ class Tally(models.Model):
         """
         Gets totals by scope for the given scopes, omitting those with no total.
         """
+        scopes = list(dict.fromkeys(scopes))
         if not scopes:
             return {}
 
         for _attempt in range(cls.READ_ATTEMPTS):
             totals, consistent = cls._read_totals(org, scopes)
             if consistent:
-                break
+                return totals
+
+        logger.warning("tally totals may be overcounted after retries", extra={"org_id": org.id, "scopes": scopes})
         return totals
 
     @classmethod
@@ -1843,11 +1846,9 @@ class Tally(models.Model):
             rows = cursor.fetchall()
 
         last_batch = rows[0][0] or 0
-        include_batch, consistent = False, True
-        if batch_id is not None:
-            batch_id = int(batch_id)
-            include_batch = bool(batch_exists) and last_batch < batch_id
-            consistent = last_batch <= batch_id
+        batch_id = int(batch_id or 0)
+        include_batch = bool(batch_exists) and last_batch < batch_id
+        consistent = last_batch <= batch_id
 
         totals = defaultdict(int)
         for _last_batch, scope, count in rows:
