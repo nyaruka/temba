@@ -24,7 +24,7 @@ from django.contrib.staticfiles import finders
 from django.core.files import File
 from django.core.files.storage import default_storage
 from django.core.validators import MaxValueValidator
-from django.db import models, transaction
+from django.db import connection, models, transaction
 from django.db.models import Count, Exists, Prefetch, Q
 from django.utils import timezone
 from django.utils.encoding import force_str
@@ -1267,8 +1267,6 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         delete_in_batches(self.counts.all())
         delete_in_batches(self.daily_counts.all())
 
-        # clear buffered tallies first so that nothing is flushed after their rows are deleted
-        Tally.clear_buffered(self)
         delete_in_batches(self.tallies.all())
 
         # now that contacts are no longer in the database, we can start de-indexing them from search
@@ -1780,16 +1778,21 @@ class DailyCount(BaseDailyCount):
 
 class Tally(models.Model):
     """
-    Org-level totals of things which only go up. Writers increment a per-org hash in Valkey which mailroom flushes into
-    these rows, so a total is the sum of both. Reads aren't atomic with flushes so a total can be briefly off while one
-    is in progress. Key layout must match gocommon's tallies package.
+    Org-level totals of things which only go up. Writers increment a global hash in Valkey which mailroom flushes into
+    these rows in batches, so a total is the sum of both. Key layout, and how to read both consistently, must match
+    gocommon's tallies package.
 
     Daily totals end their scope with @ and the date, e.g. "emails/shared@2026-11-02", and may be given an expiry by
     mailroom when first flushed. Rows without one are kept forever.
     """
 
-    PENDING_KEY = "{tallies}:pending"
-    GENERATION = "_gen"  # reserved hash field and scope which mailroom uses to make flushes exactly-once
+    KEY_BASE = "tallies"
+    LIVE_KEY = "{tallies}:live"
+    FLUSHING_KEY = "{tallies}:flushing"
+    BATCH_KEY = "{tallies}:batch"
+    BATCH_ID_KEY = "{tallies}:batch_id"
+
+    READ_ATTEMPTS = 3
 
     id = models.BigAutoField(primary_key=True)
     org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="tallies", db_index=False)  # indexed below
@@ -1798,45 +1801,65 @@ class Tally(models.Model):
     expires_on = models.DateField(null=True)
 
     @classmethod
-    def get_keys(cls, org) -> tuple[str, str]:
+    def get_totals(cls, org, scopes: list[str]) -> dict[str, int]:
         """
-        Gets the live and flushing hash keys for the given org.
+        Gets totals by scope for the given scopes, omitting those with no total.
         """
-        key = f"{{tallies}}:{org.id}"
-        return key, f"{key}:flushing"
+        if not scopes:
+            return {}
+
+        for _attempt in range(cls.READ_ATTEMPTS):
+            totals, consistent = cls._read_totals(org, scopes)
+            if consistent:
+                break
+        return totals
 
     @classmethod
-    def get_totals(cls, org, prefix: str) -> dict[str, int]:
+    def _read_totals(cls, org, scopes: list[str]) -> tuple[dict[str, int], bool]:
         """
-        Gets totals by scope for scopes with the given prefix.
+        Reads totals from Valkey and then the database, returning them and whether they're consistent, which they aren't
+        if a batch was flushed in between, as it may have moved counts we read from Valkey into the rows we read.
         """
+        fields = [f"{org.id}|{scope}" for scope in scopes]
+
+        r = get_valkey_connection()
+        with r.pipeline(transaction=True) as pipe:
+            for key in (cls.LIVE_KEY, cls.FLUSHING_KEY, cls.BATCH_KEY):
+                pipe.hmget(key, fields)
+            pipe.exists(cls.BATCH_KEY)
+            pipe.get(cls.BATCH_ID_KEY)
+            live, flushing, batch, batch_exists, batch_id = pipe.execute()
+
+        # one statement so that the counts and the last batch come from the same snapshot
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT f.last_batch, t.scope, t.count
+                  FROM (SELECT (SELECT last_batch FROM orgs_tallyflush WHERE name = %s) AS last_batch) f
+             LEFT JOIN orgs_tally t ON t.org_id = %s AND t.scope = ANY(%s)
+                """,
+                (cls.KEY_BASE, org.id, scopes),
+            )
+            rows = cursor.fetchall()
+
+        last_batch = rows[0][0] or 0
+        include_batch, consistent = False, True
+        if batch_id is not None:
+            batch_id = int(batch_id)
+            include_batch = bool(batch_exists) and last_batch < batch_id
+            consistent = last_batch <= batch_id
+
         totals = defaultdict(int)
-        rows = org.tallies.filter(scope__startswith=prefix).exclude(scope=cls.GENERATION)
+        for _last_batch, scope, count in rows:
+            if scope is not None:
+                totals[scope] += count
 
-        for scope, count in rows.values_list("scope", "count"):
-            totals[scope] += count
+        for values in (live, flushing, batch if include_batch else []):
+            for scope, count in zip(scopes, values):
+                if count is not None:
+                    totals[scope] += int(count)
 
-        r = get_valkey_connection()
-        with r.pipeline(transaction=False) as pipe:
-            for key in cls.get_keys(org):
-                pipe.hgetall(key)
-            hashes = pipe.execute()
-
-        for field, count in itertools.chain(*[h.items() for h in hashes]):
-            scope = field.decode()
-            if scope != cls.GENERATION and scope.startswith(prefix):
-                totals[scope] += int(count)
-
-        return dict(totals)
-
-    @classmethod
-    def clear_buffered(cls, org):
-        r = get_valkey_connection()
-        with r.pipeline() as pipe:
-            live, flushing = cls.get_keys(org)
-            pipe.delete(live, flushing, f"{live}:expiries", f"{live}:expiries:flushing")
-            pipe.srem(cls.PENDING_KEY, org.id)
-            pipe.execute()
+        return dict(totals), consistent
 
     class Meta:
         indexes = [
@@ -1846,3 +1869,13 @@ class Tally(models.Model):
         constraints = [
             models.UniqueConstraint("org", OpClass("scope", name="varchar_pattern_ops"), name="orgtally_org_scope")
         ]
+
+
+class TallyFlush(models.Model):
+    """
+    The last batch of tallies committed by mailroom's flush, by key base. Mailroom updates it in the same transaction as
+    the counts so that flushes are exactly-once, and readers use it to tell whether a batch in Valkey is already here.
+    """
+
+    name = models.CharField(max_length=64, primary_key=True)
+    last_batch = models.BigIntegerField()
