@@ -1,3 +1,13 @@
+## v26.3.174 (2026-11-04)
+ * Keep barely tinted dialog colors from deepening into vivid focus colors
+ * Return 404 when updating a deleted trigger
+ * Make themed dialogs work with light colors and label the note button Add Note
+ * Stop the review workflow adding Claude Code attribution
+ * Limit channel read page charts and monthly counts to the last year
+ * Give field and card icons one shared muted color
+ * Delete a channel's tallies when deleting the channel
+ * Add a shared card title style and soften destructive buttons to a red-tinted ring
+
 ## v26.3.173 (2026-11-04)
  * Add TallyFlush and read tallies from the global Valkey layout using the current key layout and daily scope format
  * Drop LLMCount now that mailroom tallies LLM usage
