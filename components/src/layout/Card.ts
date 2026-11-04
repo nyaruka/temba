@@ -1,7 +1,8 @@
 import { css, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
-import { cardTitle, cardTitleIcon } from '../styles/cardChrome';
+import { cardTitle } from '../styles/cardChrome';
+import { iconMuted } from '../styles/iconChrome';
 import { designTokens } from '../styles/designTokens';
 import { formatCount, getClasses } from '../utils';
 import { Icon } from '../Icons';
@@ -58,7 +59,7 @@ export class Card extends RapidElement {
       }
 
       .card-header temba-icon {
-        ${cardTitleIcon}
+        ${iconMuted}
       }
 
       .grip {

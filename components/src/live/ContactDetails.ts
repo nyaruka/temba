@@ -10,6 +10,7 @@ import { TextInput } from '../form/TextInput';
 import { ContactFieldEditor } from './ContactFieldEditor';
 import { ContactStoreElement, getDestinationURN } from './ContactStoreElement';
 import { Events } from '../events/eventRenderers';
+import { iconMuted, iconMutedHover } from '../styles/iconChrome';
 
 interface Option {
   name: string;
@@ -196,12 +197,12 @@ export class ContactDetails extends ContactStoreElement {
         margin-top: 22px;
         justify-self: center;
         cursor: pointer;
-        --icon-color: var(--text-2);
+        ${iconMuted}
       }
 
       .urn-edit-icon:hover,
       .urn-edit-icon:focus-visible {
-        --icon-color: var(--text-1);
+        ${iconMutedHover}
       }
 
       .urn-sendability {

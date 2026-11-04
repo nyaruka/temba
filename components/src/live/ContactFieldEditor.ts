@@ -7,6 +7,7 @@ import { Icon } from '../Icons';
 import { getClasses, WebResponse } from '../utils';
 import { Select } from '../form/select/Select';
 import { FieldElement } from '../form/FieldElement';
+import { iconMuted, iconMutedHover } from '../styles/iconChrome';
 
 enum Status {
   Success = 'success',
@@ -172,17 +173,13 @@ export class ContactFieldEditor extends RapidElement {
         margin: -1px;
       }
 
-      temba-icon[name='calendar'] {
-        --icon-color: rgba(0, 0, 0, 0.2);
+      temba-icon {
+        cursor: pointer;
+        ${iconMuted}
       }
 
       temba-icon:hover {
-        --icon-color: rgba(0, 0, 0, 0.5);
-      }
-
-      temba-icon {
-        cursor: pointer;
-        --icon-color: rgba(0, 0, 0, 0.3);
+        ${iconMutedHover}
       }
 
       /* set on the icon itself, since the generic icon rules above would beat an inherited color */
