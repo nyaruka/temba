@@ -81,7 +81,7 @@ export class Button extends LitElement {
          a ground shadow so it sits a touch above the surface */
       .primary-button {
         background: var(--accent, #497fce);
-        color: #fff;
+        color: var(--accent-text, #fff);
         box-shadow:
           inset 0 1px 0 rgba(255, 255, 255, 0.14),
           0 0 0 1px var(--accent-600, #3a66a5),

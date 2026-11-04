@@ -301,6 +301,78 @@ describe('temba-dialog', () => {
     });
   });
 
+  describe('theme', () => {
+    const openThemed = async (color: string) => {
+      const dialog: Dialog = await fixture(
+        `<temba-dialog header="Themed" primaryButtonName="Add" style="--header-bg: ${color}"></temba-dialog>`
+      );
+      await open(dialog);
+      await dialog.updateComplete;
+      return dialog.shadowRoot.querySelector(
+        '.dialog-container'
+      ) as HTMLElement;
+    };
+
+    it('focuses with the color itself when it carries white text', async () => {
+      const container = await openThemed('#8e5ea7');
+      expect(container.classList.contains('themed')).to.equal(true);
+      expect(container.classList.contains('light')).to.equal(false);
+      expect(container.style.getPropertyValue('--focus-rgb')).to.equal(
+        '142, 94, 167'
+      );
+    });
+
+    it('uses dark text and a deeper focus for a light color', async () => {
+      const container = await openThemed('rgb(255, 249, 194)');
+      expect(container.classList.contains('light')).to.equal(true);
+
+      // same hue, darkened enough to read against white
+      expect(container.style.getPropertyValue('--focus-rgb')).to.equal(
+        '214, 193, 0'
+      );
+
+      // white header text would be unreadable on it
+      const title = container.querySelector('.header-text') as HTMLElement;
+      const [r, g, b] = getComputedStyle(title)
+        .color.match(/[\d.]+/g)
+        .map(Number);
+      expect(r + g + b).to.be.lessThan(200);
+    });
+
+    it('gives the primary button dark text on a light color', async () => {
+      const container = await openThemed('rgb(255, 249, 194)');
+      const button = container.querySelector(
+        'temba-button[primary]'
+      ) as HTMLElement;
+      await (button as any).updateComplete;
+      const inner = button.shadowRoot.querySelector(
+        '.button-container'
+      ) as HTMLElement;
+      const [r, g, b] = getComputedStyle(inner)
+        .color.match(/[\d.]+/g)
+        .map(Number);
+      expect(r + g + b).to.be.lessThan(200);
+    });
+
+    it('keeps the focus of a barely tinted color muted', async () => {
+      // ivory: light, but with almost no color to deepen
+      const container = await openThemed('#fffff0');
+      expect(container.classList.contains('light')).to.equal(true);
+
+      const [r, g, b] = container.style
+        .getPropertyValue('--focus-rgb')
+        .split(',')
+        .map(Number);
+      expect(Math.max(r, g, b) - Math.min(r, g, b)).to.be.lessThan(80);
+    });
+
+    it('leaves an unthemed dialog alone', async () => {
+      const container = await openThemed('');
+      expect(container.classList.contains('themed')).to.equal(false);
+      expect(container.classList.contains('light')).to.equal(false);
+    });
+  });
+
   describe('exit', () => {
     it("finishes right away when it can't animate", async () => {
       // the suite runs with reduced motion, as some users do

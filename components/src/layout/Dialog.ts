@@ -174,6 +174,13 @@ export class Dialog extends ResizeElement {
            primary color stays lighter, like the primary buttons */
         .dialog-mask .dialog-container.themed {
           --dialog-shade: 78%;
+          /* a black shadow grays out the header, so it's a deep shade of
+             the color instead */
+          --dialog-sheet-shadow: color-mix(
+            in srgb,
+            color-mix(in srgb, var(--dialog-color) 45%, #000) 40%,
+            transparent
+          );
           /* the highlighted row in dropdowns follows the theme too */
           --temba-options-option-focus-bg: var(--focus-50);
           --temba-options-option-focus-text: var(--focus-700);
@@ -185,6 +192,53 @@ export class Dialog extends ResizeElement {
           --accent-500: color-mix(in srgb, var(--dialog-color) 90%, black);
           --accent-600: color-mix(in srgb, var(--dialog-color) 80%, black);
         }
+      }
+
+      /* A light color (a pale note yellow, say) can't carry white text, and
+         shading it toward black turns it muddy, so it gets a lighter
+         gradient deepened toward its own hue, dark text (whatever
+         --header-text says, since that defaults to white), and a primary
+         button filled with the color itself. --focus is a darker shade of
+         the color (see updateThemeFocus) so rings and edges stay visible. */
+      @supports (color: color-mix(in srgb, red, red)) {
+        .dialog-mask .dialog-container.themed.light {
+          --dialog-ink: color-mix(in srgb, var(--focus) 30%, #1a1f26);
+          /* brightest behind the title, deepening across the header; it
+             runs sideways since only the top of the container shows */
+          background: linear-gradient(
+            110deg,
+            color-mix(in srgb, var(--dialog-color) 75%, #fff),
+            var(--dialog-color) 35%,
+            color-mix(in srgb, var(--dialog-color) 55%, var(--focus))
+          );
+          --dialog-sheet-shadow: color-mix(
+            in srgb,
+            var(--focus) 45%,
+            transparent
+          );
+        }
+
+        .dialog-mask
+          .dialog-container.themed.light
+          .dialog-footer
+          temba-button {
+          --accent: var(--dialog-color);
+          --accent-500: color-mix(
+            in srgb,
+            var(--dialog-color) 85%,
+            var(--focus)
+          );
+          --accent-600: color-mix(
+            in srgb,
+            var(--focus) 55%,
+            var(--dialog-color)
+          );
+          --accent-text: var(--dialog-ink);
+        }
+      }
+
+      .dialog-mask .dialog-container.themed.light .header-text {
+        color: var(--dialog-ink, #1a1f26);
       }
 
       /* Focus rings inside a themed dialog follow its color: --focus-rgb is
@@ -269,7 +323,8 @@ export class Dialog extends ResizeElement {
         margin-top: calc(var(--dialog-sheet-overlap, 22px) * -1);
         background: var(--surface, #fff);
         border-radius: 16px 16px 0 0;
-        box-shadow: 0 -6px 18px -6px rgba(0, 0, 0, 0.22);
+        box-shadow: 0 -6px 18px -6px
+          var(--dialog-sheet-shadow, rgba(0, 0, 0, 0.22));
       }
 
       .headless .dialog-sheet {
@@ -445,6 +500,10 @@ export class Dialog extends ResizeElement {
   @state()
   private themeFocusRgb = '';
 
+  // whether the dialog color is too light to carry white text
+  @state()
+  private themeLight = false;
+
   private static colorCanvas: CanvasRenderingContext2D | null = null;
 
   // set while the exit plays, so repeat calls share it
@@ -563,7 +622,74 @@ export class Dialog extends ResizeElement {
   // --header-bg once their content has loaded
   private updateThemeFocus(): void {
     const color = getComputedStyle(this).getPropertyValue('--header-bg').trim();
-    this.themeFocusRgb = color ? Dialog.toRgbTriplet(color) : '';
+    const rgb = color ? Dialog.toRgbTriplet(color) : '';
+    const channels = rgb ? rgb.split(',').map((part) => Number(part)) : [];
+
+    this.themeLight =
+      channels.length === 3 &&
+      Dialog.luminance(channels) > Dialog.LIGHT_LUMINANCE;
+
+    // a light color makes a faint ring, so focus uses a deeper shade of it
+    this.themeFocusRgb = this.themeLight
+      ? Dialog.deepen(channels).join(', ')
+      : rgb;
+  }
+
+  // relative luminance above which a color is too light for white text,
+  // well clear of the mid-tone colors (node types, say) that carry it fine
+  private static LIGHT_LUMINANCE = 0.6;
+
+  // WCAG relative luminance of 0-255 rgb channels
+  private static luminance(channels: number[]): number {
+    const [r, g, b] = channels.map((channel) => {
+      const c = channel / 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  }
+
+  // the same hue at a lightness that reads against white
+  private static deepen(channels: number[]): number[] {
+    const [r, g, b] = channels.map((channel) => channel / 255);
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+
+    let hue = 0;
+    if (delta) {
+      if (max === r) hue = ((g - b) / delta) % 6;
+      else if (max === g) hue = (b - r) / delta + 2;
+      else hue = (r - g) / delta + 4;
+      hue *= 60;
+      if (hue < 0) hue += 360;
+    }
+
+    const lightness = (max + min) / 2;
+    // HSL calls any pale color with a channel at 255 fully saturated, so
+    // scale by how much color there really is (its chroma) to keep a
+    // barely tinted color from deepening into a vivid one
+    const saturation = delta
+      ? (delta / (1 - Math.abs(2 * lightness - 1))) * Math.min(1, delta / 0.2)
+      : 0;
+    const target = Math.min(lightness, 0.42);
+
+    // back to rgb at the new lightness
+    const chroma = (1 - Math.abs(2 * target - 1)) * saturation;
+    const x = chroma * (1 - Math.abs(((hue / 60) % 2) - 1));
+    const m = target - chroma / 2;
+    const [r1, g1, b1] =
+      hue < 60
+        ? [chroma, x, 0]
+        : hue < 120
+          ? [x, chroma, 0]
+          : hue < 180
+            ? [0, chroma, x]
+            : hue < 240
+              ? [0, x, chroma]
+              : hue < 300
+                ? [x, 0, chroma]
+                : [chroma, 0, x];
+    return [r1, g1, b1].map((channel) => Math.round((channel + m) * 255));
   }
 
   private static toRgbTriplet(color: string): string {
@@ -911,9 +1037,11 @@ export class Dialog extends ResizeElement {
             <div class="header-text">
               <div class="titles">
                 <div class="title">${this.header}</div>
-                ${this.subtitle
-                  ? html`<div class="subtitle">${this.subtitle}</div>`
-                  : null}
+                ${
+                  this.subtitle
+                    ? html`<div class="subtitle">${this.subtitle}</div>`
+                    : null
+                }
               </div>
             </div>
           </div>
@@ -955,7 +1083,8 @@ export class Dialog extends ResizeElement {
             style=${styleMap(dialogStyle)}
             class="dialog-container ${getClasses({
               headless: !this.header,
-              themed: !!this.themeFocusRgb
+              themed: !!this.themeFocusRgb,
+              light: this.themeLight
             })}"
           >
             ${header}
@@ -977,13 +1106,16 @@ export class Dialog extends ResizeElement {
                         (button: DialogButton, index) => html`
                           <temba-button
                             name=${button.name}
-                            ?destructive=${button.type == 'primary' &&
-                            this.destructive}
-                            ?primary=${button.type == 'primary' &&
-                            !this.destructive}
+                            ?destructive=${
+                              button.type == 'primary' && this.destructive
+                            }
+                            ?primary=${
+                              button.type == 'primary' && !this.destructive
+                            }
                             ?secondary=${button.type == 'secondary'}
-                            ?submitting=${this.submitting &&
-                            button.type == 'primary'}
+                            ?submitting=${
+                              this.submitting && button.type == 'primary'
+                            }
                             ?disabled=${this.disabled && !button.closes}
                             index=${index}
                             @click=${this.handleClick}

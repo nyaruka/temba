@@ -743,7 +743,7 @@ class TicketCRUDL(SmartCRUDL):
         fields = ("note",)
         success_url = "hide"
         slug_url_kwarg = "uuid"
-        submit_button_name = _("Save")
+        submit_button_name = _("Add Note")
 
         def form_valid(self, form):
             self.get_object().add_note(self.request.user, note=form.cleaned_data["note"])
