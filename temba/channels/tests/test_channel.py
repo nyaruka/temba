@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone as tzone
+from datetime import date, datetime, timedelta, timezone as tzone
 from unittest.mock import call, patch
 
 from django.urls import reverse
@@ -324,6 +324,35 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
 
             # two outgoing messages in the second entry
             self.assertEqual(2, chart["data"]["datasets"][1]["data"][0])
+
+    def test_read_history_limits(self):
+        read_url = reverse("channels.channel_read", args=[self.tel_channel.uuid])
+        chart_url = reverse("channels.channel_chart", args=[self.tel_channel.uuid])
+
+        self.tel_channel.created_on = datetime(2024, 3, 15, 0, 0, 0, 0, tzone.utc)
+        self.tel_channel.save(update_fields=("created_on",))
+
+        with patch("django.utils.timezone.now", return_value=datetime(2026, 1, 20, 0, 0, 0, 0, tzone.utc)):
+            response = self.requestView(read_url, self.admin)
+
+            # chart can't go back more than a year, and monthly counts are only for the last 12 months
+            self.assertEqual(date(2025, 1, 20), response.context["chart_min"])
+            self.assertEqual(12, len(response.context["monthly_counts"]))
+            self.assertEqual(date(2026, 1, 1), response.context["monthly_counts"][0]["month_start"])
+            self.assertEqual(date(2025, 2, 1), response.context["monthly_counts"][-1]["month_start"])
+
+            response = self.requestView(chart_url + "?since=2024-01-01&until=2026-01-21", self.admin)
+            self.assertEqual(["2025-01-20", "2026-01-21"], response.json()["period"])
+
+            response = self.requestView(chart_url + "?since=2020-01-01&until=2020-06-01", self.admin)
+            self.assertEqual(["2025-01-20", "2025-01-20"], response.json()["period"])
+
+        with patch("django.utils.timezone.now", return_value=datetime(2024, 5, 20, 0, 0, 0, 0, tzone.utc)):
+            response = self.requestView(read_url, self.admin)
+
+            # but are limited by the age of the channel
+            self.assertEqual(date(2024, 3, 15), response.context["chart_min"])
+            self.assertEqual(3, len(response.context["monthly_counts"]))
 
     def test_read(self):
         SyncEvent.create(

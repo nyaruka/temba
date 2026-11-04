@@ -53,7 +53,7 @@
   </div>
   <div class="shadow flex px-4 rounded-lg mb-6 bg-white">
     <div class="flex-grow"></div>
-    <temba-range-picker min='{{ object.created_on|date:"Y-m-d" }}'> </temba-range-picker>
+    <temba-range-picker min='{{ chart_min|date:"Y-m-d" }}' hideall> </temba-range-picker>
   </div>
   {% block charts-zone %}
     {% if object.is_android %}
