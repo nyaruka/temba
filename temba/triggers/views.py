@@ -358,6 +358,9 @@ class TriggerCRUDL(SmartCRUDL):
         slug_url_kwarg = "uuid"
         submit_button_name = _("Save")
 
+        def get_queryset(self):
+            return Trigger.objects.filter(is_active=True)
+
         def get_form_class(self):
             return self.object.type.form
 

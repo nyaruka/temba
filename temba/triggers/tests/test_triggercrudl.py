@@ -932,6 +932,11 @@ class TriggerCRUDLTest(TembaTest, CRUDLTestMixin):
         next_fire = trigger.schedule.calculate_next_fire(datetime(2021, 6, 23, 12, 0, 0, 0, tzone.utc))  # Wed 23rd
         self.assertEqual(datetime(2021, 6, 24, 12, 0, 0, 0).replace(tzinfo=tz), next_fire)  # Thu 24th
 
+        # deleted triggers can't be updated
+        trigger.release(self.admin)
+
+        self.assertRequestDisallowed(update_url, [self.admin])
+
     @patch("temba.channels.types.facebook_legacy.FacebookLegacyType.deactivate_trigger")
     @patch("temba.channels.types.facebook_legacy.FacebookLegacyType.activate_trigger")
     def test_list(self, mock_activate_trigger, mock_deactivate_trigger):
