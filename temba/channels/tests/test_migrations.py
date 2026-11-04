@@ -41,6 +41,8 @@ class BackfillChannelTalliesTest(MigrationTest):
         # yesterday's tally is incomplete and today's is being written alongside its counts
         self.org.tallies.create(scope=f"{self.tally_prefix1}text:out@{self.yesterday}", count=1)
         self.org.tallies.create(scope=f"{self.tally_prefix1}text:in@{self.today}", count=6)
+        self.org.tallies.create(scope=f"msgs/text:out@{self.yesterday}", count=1)
+        self.org.tallies.create(scope=f"msgs/text:in@{self.today}", count=6)
 
         Org.objects.filter(id=self.org2.id).update(is_active=False)
 
@@ -59,5 +61,17 @@ class BackfillChannelTalliesTest(MigrationTest):
                 (f"{p2}text:out@{self.yesterday}", 8, expires(self.yesterday)),
             },
             set(self.org.tallies.filter(scope__startswith="channels/").values_list("scope", "count", "expires_on")),
+        )
+
+        # workspace totals across all channels, kept forever
+        self.assertEqual(
+            {
+                (f"msgs/text:in@{self.yesterday}", 7, None),
+                (f"msgs/text:out@{self.yesterday}", 11, None),
+                (f"msgs/voice:in@{self.last_week}", 4, None),
+                (f"msgs/text:in@{self.expired}", 7, None),
+                (f"msgs/text:in@{self.today}", 6, None),
+            },
+            set(self.org.tallies.filter(scope__startswith="msgs/").values_list("scope", "count", "expires_on")),
         )
         self.assertFalse(self.org2.tallies.exists())
