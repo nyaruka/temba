@@ -1,3 +1,7 @@
+## v26.3.173 (2026-11-04)
+ * Add TallyFlush and read tallies from the global Valkey layout using the current key layout and daily scope format
+ * Drop LLMCount now that mailroom tallies LLM usage
+
 ## v26.3.172 (2026-11-03)
  * Require closed tickets to have closed_on and outcome, and other tickets neither
  * Update dependencies, including dnspython to 2.9.0
