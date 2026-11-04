@@ -839,19 +839,21 @@ a:hover {
   text-decoration: none;
 }
 
-/* destructive — red */
+/* destructive — tinted red throughout, text and ring */
 
 .button-danger {
-  background: var(--danger, rgb(var(--error-rgb)));
-  color: #fff;
+  background: var(--surface);
+  color: var(--danger, rgb(var(--error-rgb)));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    0 0 0 1px color-mix(in srgb, var(--danger, rgb(var(--error-rgb))) 80%, black),
-    0 1px 3px rgba(15, 22, 36, 0.16);
+    0 0 0 1px var(--danger-border),
+    0 1px 2px rgba(15, 22, 36, 0.06);
 }
 
 .button-danger:hover {
-  background: color-mix(in srgb, var(--danger, rgb(var(--error-rgb))) 88%, black);
+  background: var(--danger-bg);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--danger, rgb(var(--error-rgb))) 45%, var(--danger-border)),
+    0 1px 2px rgba(15, 22, 36, 0.06);
   text-decoration: none;
 }
 
@@ -865,6 +867,33 @@ a:hover {
 .button-dark-alpha:hover {
   background: rgba(0, 0, 0, 0.08);
   text-decoration: none;
+}
+
+/* a smaller size for any of the buttons above, for tight rows like card and page header actions
+   (matches the components' buttonChromeCompact) */
+
+.button-compact {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 7px;
+  font-size: 12.5px;
+}
+
+/* the heading at the top of a card, beside its icon (matches the components' cardTitle) */
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: var(--w-medium, 500);
+  color: var(--text-1);
+  letter-spacing: -0.006em;
+  white-space: nowrap;
+}
+
+.card-title temba-icon {
+  --icon-color: var(--text-3);
 }
 
 .p-icon {

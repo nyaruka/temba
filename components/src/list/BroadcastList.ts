@@ -246,9 +246,6 @@ export class BroadcastList extends ContentList<Broadcast> {
       }
 
       @supports (color: color-mix(in srgb, red, red)) {
-        .menu-button.destructive:hover {
-          background: color-mix(in srgb, #dc2626 6%, var(--surface, #fff));
-        }
         .detail-message {
           background: color-mix(
             in srgb,

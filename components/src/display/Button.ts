@@ -1,5 +1,9 @@
 import { LitElement, TemplateResult, html, css } from 'lit';
 import { getClasses } from '../utils';
+import {
+  buttonChromeDestructive,
+  buttonChromeDestructiveHover
+} from '../styles/buttonChrome';
 
 import { property } from 'lit/decorators.js';
 
@@ -122,24 +126,16 @@ export class Button extends LitElement {
       }
 
       .destructive-button {
-        background: var(--danger, #d03f3f);
-        color: #fff;
-        box-shadow:
-          inset 0 1px 0 rgba(255, 255, 255, 0.14),
-          0 0 0 1px #b73737,
-          0 1px 3px rgba(15, 22, 36, 0.16);
+        ${buttonChromeDestructive}
       }
       .destructive-button:hover {
-        background: #b73737;
+        ${buttonChromeDestructiveHover}
       }
 
       @supports (color: color-mix(in srgb, red, red)) {
         .attention-button:hover,
         .affirmative:hover {
           background: color-mix(in srgb, var(--success, #16a34a) 88%, black);
-        }
-        .destructive-button:hover {
-          background: color-mix(in srgb, var(--danger, #d03f3f) 88%, black);
         }
       }
 
@@ -276,7 +272,11 @@ export class Button extends LitElement {
   public render(): TemplateResult {
     const buttonName = this.submitting
       ? html`<div class="submit-animation">
-          <temba-loading units="3" size="8" color="#eee"></temba-loading>
+          <temba-loading
+            units="3"
+            size="8"
+            color=${this.destructive ? 'var(--danger, #d03f3f)' : '#eee'}
+          ></temba-loading>
         </div>`
       : this.name;
 

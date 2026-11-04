@@ -373,12 +373,6 @@ export class FieldList extends EndpointMonitorElement {
         ${buttonChromeDestructiveHover}
       }
 
-      @supports (color: color-mix(in srgb, red, red)) {
-        .menu-button.destructive:hover {
-          background: color-mix(in srgb, #dc2626 6%, var(--surface, #fff));
-        }
-      }
-
       .detail-body {
         display: flex;
         flex-direction: column;
