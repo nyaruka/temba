@@ -138,6 +138,8 @@ describe('temba-range-picker', () => {
       picker.shadowRoot?.querySelectorAll('.range-btn') || []
     ).map((btn) => btn.textContent.trim());
     expect(labels).to.deep.equal(['W', 'M', 'Y']);
+
+    await assertScreenshot('datepicker/range-picker-hide-all', getClip(picker));
   });
 
   it('enforces valid date ranges', async () => {
