@@ -5155,6 +5155,18 @@ msgstr "Resultados %(start)s - %(end)s de %(total)s"
 msgid "%(start)s - %(end)s of %(total)s"
 msgstr "%(start)s - %(end)s de %(total)s"
 
+msgid "Update Shortcut"
+msgstr "Actualizar atajo"
+
+msgid "Delete Shortcut"
+msgstr "Eliminar atajo"
+
+msgid "No shortcuts"
+msgstr "Sin atajos"
+
+msgid "Canned responses that agents can use to quickly reply to tickets."
+msgstr "Respuestas predefinidas que los agentes pueden utilizar para responder rápidamente a los tickets."
+
 msgid "Servicing"
 msgstr "Dando servicio"
 
@@ -5267,18 +5279,6 @@ msgstr "Está a punto de eliminar el documento <b>%(object.name)s</b> y todo lo 
 #, python-format
 msgid "You are about to delete the knowledge source <b>%(object)s</b> and everything indexed from it. There is no way to undo this. Are you sure?"
 msgstr "Está a punto de eliminar la fuente de conocimiento <b>%(object)s</b> y todo lo indexado a partir de ella. No hay forma de deshacer esto. ¿Está seguro?"
-
-msgid "Update Shortcut"
-msgstr "Actualizar atajo"
-
-msgid "Delete Shortcut"
-msgstr "Eliminar atajo"
-
-msgid "No shortcuts"
-msgstr "Sin atajos"
-
-msgid "Canned responses that agents can use to quickly reply to tickets."
-msgstr "Respuestas predefinidas que los agentes pueden utilizar para responder rápidamente a los tickets."
 
 msgid "Delete Document"
 msgstr "Eliminar documento"

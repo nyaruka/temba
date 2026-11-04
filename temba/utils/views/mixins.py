@@ -1,7 +1,7 @@
 import json
 import logging
 from datetime import date, datetime, timedelta
-from urllib.parse import quote, urlencode
+from urllib.parse import quote
 
 from smartmin.views import SmartFormView, SmartModelActionView, SmartModelFormView
 
@@ -193,10 +193,6 @@ class ContextMenuMixin:
 
         # does the page have a content menu?
         context["has_context_menu"] = self.has_context_menu()
-
-        # does the page have a search query?
-        if "search" in self.request.GET:
-            context["has_search_query"] = urlencode({"search": self.request.GET["search"]})
 
         return context
 
