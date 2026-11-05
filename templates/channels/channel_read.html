@@ -40,7 +40,7 @@
       <div class="label">{% trans "Status" %}</div>
       <div class="value">
         {% if not object.is_enabled %}
-          <temba-label icon="slash" backgroundcolor="#eee" textcolor="#999">{% trans "Disabled" %}</temba-label>
+          <temba-label icon="org_suspended" backgroundcolor="#eee" textcolor="#999">{% trans "Disabled" %}</temba-label>
         {% elif send_paused %}
           <temba-label icon="alert_warning" danger title="{% trans "Sending is paused because the provider isn't accepting messages." %}">
             {% trans "Paused" %}
