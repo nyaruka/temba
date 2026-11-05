@@ -393,6 +393,14 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
             self.assertContains(response, "Paused")
             self.assertNotContains(response, '<div class="value">Ready</div>', html=True)
 
+            # a disabled channel shows as that whether or not it's paused
+            self.tel_channel.is_enabled = False
+            self.tel_channel.save(update_fields=("is_enabled",))
+
+            response = self.requestView(read_url, self.admin)
+            self.assertContains(response, "Disabled")
+            self.assertNotContains(response, "Paused")
+
             # pause ended recently so still counts
             r.hset(state_key, "paused_until", "1579478370")
             self.assertTrue(self.tel_channel.is_send_paused())

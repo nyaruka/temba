@@ -38,7 +38,9 @@
     </div>
     <div class="detail">
       <div class="label">{% trans "Status" %}</div>
-      {% if send_paused %}
+      {% if not object.is_enabled %}
+        <div class="value text-error">{% trans "Disabled" %}</div>
+      {% elif send_paused %}
         <div class="value text-error" title="{% trans "Sending is paused because the provider isn't accepting messages." %}">{% trans "Paused" %}</div>
       {% else %}
         <div class="value">{% trans "Ready" %}</div>
