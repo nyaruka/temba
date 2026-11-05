@@ -10,7 +10,7 @@ from django.utils import timezone
 from temba.utils.crons import cron_task
 from temba.utils.models import delete_in_batches
 
-from .models import DailyCount, Export, Invitation, ItemCount, Org, OrgImport, OrgMembership, Tally
+from .models import DailyCount, Export, Invitation, ItemCount, Org, OrgImport, OrgMembership, OrgTally, Tally
 
 
 @cron_task()
@@ -111,5 +111,6 @@ def trim_tallies():
     today = timezone.now().date()
 
     num_deleted = delete_in_batches(Tally.objects.filter(expires_on__lt=today))
+    num_org_deleted = delete_in_batches(OrgTally.objects.filter(expires_on__lt=today), pk="pk")
 
-    return {"deleted": num_deleted}
+    return {"deleted": num_deleted, "org_deleted": num_org_deleted}

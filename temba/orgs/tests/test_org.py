@@ -928,9 +928,11 @@ class OrgDeleteTest(TembaTest):
     def _create_tally_content(self, org, add):
         add(org.tallies.create(scope="foo", count=1))
         add(org.tallies.create(scope="foo@2026-11-02", count=1, expires_on=date(2027, 11, 2)))
+        add(org.org_tallies.create(scope="foo", count=1))
+        add(org.org_tallies.create(scope="foo@2026-11-02", count=1, expires_on=date(2027, 11, 2)))
 
     def _exists(self, obj) -> bool:
-        return obj._meta.model.objects.filter(id=obj.id).exists()
+        return obj._meta.model.objects.filter(pk=obj.pk).exists()
 
     def assertOrgActive(self, org, org_content=()):
         org.refresh_from_db()
