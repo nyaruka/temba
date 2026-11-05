@@ -9,13 +9,13 @@ from temba.tests import TembaTest
 
 class DashboardTest(TembaTest):
     def create_activity(self):
-        # and some message and call activity
-        joe = self.create_contact("Joe", phone="+593979099111")
-        self.create_outgoing_msg(joe, "Tea of coffee?")
-        self.create_incoming_msg(joe, "Coffee")
-        self.create_outgoing_msg(joe, "OK")
-        self.create_outgoing_msg(joe, "Wanna hang?", voice=True)
-        self.create_incoming_msg(joe, "Sure", voice=True)
+        # some message and call activity today
+        today = timezone.now().date().isoformat()
+        for scope, count in (("text:in", 1), ("text:out", 2), ("voice:in", 1), ("voice:out", 1)):
+            self.org.tallies.create(scope=f"msgs/{scope}@{today}", count=count)
+
+        # and on another workspace
+        self.org2.tallies.create(scope=f"msgs/text:in@{today}", count=5)
 
     def test_dashboard_home(self):
         dashboard_url = reverse("dashboard.dashboard_home")

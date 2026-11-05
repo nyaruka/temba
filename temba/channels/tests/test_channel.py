@@ -4,7 +4,6 @@ from unittest.mock import call, patch
 from django.urls import reverse
 
 from temba import mailroom
-from temba.msgs.models import Msg
 from temba.notifications.incidents.builtin import ChannelDisconnectedIncidentType
 from temba.templates.models import TemplateTranslation
 from temba.tests import CRUDLTestMixin, MockResponse, TembaTest, mock_mailroom
@@ -302,28 +301,40 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.assertRequestDisallowed(chart_url, [None, self.agent, self.admin2])
         self.assertReadFetch(chart_url, [self.editor, self.admin])
 
-        # create some test messages
-        test_date = datetime(2020, 1, 20, 0, 0, 0, 0, tzone.utc)
-        test_date - timedelta(hours=2)
-        bob = self.create_contact("Bob", phone="+250785551212")
-        joe = self.create_contact("Joe", phone="+2501234567890")
+        self.create_channel_tally(self.tel_channel, "text:out", date(2020, 1, 18), 3)
+        self.create_channel_tally(self.tel_channel, "text:in", date(2020, 1, 20), 1)
+        self.create_channel_tally(self.tel_channel, "text:out", date(2020, 1, 20), 2)
+        self.create_channel_tally(self.tel_channel, "text:out", date(2019, 12, 1), 5)  # outside of period
+        self.create_channel_tally(self.channel, "text:out", date(2020, 1, 20), 4)  # other channel
 
-        with patch("django.utils.timezone.now", return_value=test_date):
-            self.create_outgoing_msg(bob, "Hey there Bob", channel=self.tel_channel)
-            self.create_incoming_msg(joe, "This incoming message will be counted", channel=self.tel_channel)
-            self.create_outgoing_msg(joe, "This outgoing message will be counted", channel=self.tel_channel)
+        with patch("django.utils.timezone.now", return_value=datetime(2020, 1, 20, 0, 0, 0, 0, tzone.utc)):
+            response = self.requestView(chart_url, self.admin)
+
+            self.assertEqual(
+                {
+                    "labels": ["2020-01-18", "2020-01-20"],
+                    "datasets": [{"label": "Incoming", "data": [0, 1]}, {"label": "Outgoing", "data": [3, 2]}],
+                },
+                response.json()["data"],
+            )
+
+            # voice datasets are included if there are voice counts in the period
+            self.create_channel_tally(self.tel_channel, "voice:in", date(2020, 1, 20), 6)
 
             response = self.requestView(chart_url, self.admin)
-            chart = response.json()
 
-            # an entry for each incoming and outgoing
-            self.assertEqual(2, len(chart["data"]["datasets"]))
-
-            # one incoming message in the first entry
-            self.assertEqual(1, chart["data"]["datasets"][0]["data"][0])
-
-            # two outgoing messages in the second entry
-            self.assertEqual(2, chart["data"]["datasets"][1]["data"][0])
+            self.assertEqual(
+                {
+                    "labels": ["2020-01-18", "2020-01-20"],
+                    "datasets": [
+                        {"label": "Incoming Text", "data": [0, 1]},
+                        {"label": "Outgoing Text", "data": [3, 2]},
+                        {"label": "Incoming Voice", "data": [0, 6]},
+                        {"label": "Outgoing Voice", "data": [0, 0]},
+                    ],
+                },
+                response.json()["data"],
+            )
 
     def test_read_history_limits(self):
         read_url = reverse("channels.channel_read", args=[self.tel_channel.uuid])
@@ -399,16 +410,12 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
             sync.save()
 
         # an outgoing message from a couple of hours ago, which counts in this month's chart below
-        bob = self.create_contact("Bob", phone="+250785551212")
-        with patch("django.utils.timezone.now", return_value=two_hours_ago):
-            self.create_outgoing_msg(bob, "hello", status=Msg.STATUS_QUEUED, channel=self.tel_channel)
+        self.create_channel_tally(self.tel_channel, "text:out", date(2020, 1, 19), 1)
 
         with patch("django.utils.timezone.now", return_value=test_date):
             response = self.requestView(tel_channel_read_url, self.admin)
             self.assertIn("delayed_sync_event", response.context_data.keys())
-
-            # now that we can access the channel, which messages do we display in the chart?
-            joe = self.create_contact("Joe", phone="+2501234567890")
+            self.assertFalse(response.context["has_voice"])
 
             # we have one row for the message stats table
             self.assertEqual(1, len(response.context["monthly_counts"]))
@@ -419,8 +426,8 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
             self.assertEqual(0, response.context["monthly_counts"][0]["voice_out"])
 
             # send messages
-            self.create_incoming_msg(joe, "This incoming message will be counted", channel=self.tel_channel)
-            self.create_outgoing_msg(joe, "This outgoing message will be counted", channel=self.tel_channel)
+            self.create_channel_tally(self.tel_channel, "text:in", date(2020, 1, 20), 1)
+            self.create_channel_tally(self.tel_channel, "text:out", date(2020, 1, 20), 1)
 
             # now we have an inbound message and two outbounds
             response = self.requestView(tel_channel_read_url, self.admin)
@@ -438,9 +445,10 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
             self.tel_channel.save()
 
             # now let's create an ivr interaction
-            self.create_incoming_msg(joe, "incoming ivr", channel=self.tel_channel, voice=True)
-            self.create_outgoing_msg(joe, "outgoing ivr", channel=self.tel_channel, voice=True)
+            self.create_channel_tally(self.tel_channel, "voice:in", date(2020, 1, 20), 1)
+            self.create_channel_tally(self.tel_channel, "voice:out", date(2020, 1, 20), 1)
             response = self.requestView(tel_channel_read_url, self.admin)
+            self.assertTrue(response.context["has_voice"])
 
             self.assertEqual(1, len(response.context["monthly_counts"]))
             self.assertEqual(1, response.context["monthly_counts"][0]["text_in"])

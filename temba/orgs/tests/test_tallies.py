@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone as tzone
 from unittest.mock import patch
 
 from django_valkey import get_valkey_connection
@@ -68,6 +68,55 @@ class TallyTest(TembaTest):
         self.assertEqual(
             {"foo/1": 13, "foo/2": 23, "foo/3": 6}, Tally.get_totals(self.org, ["foo/1", "foo/2", "foo/3"])
         )
+
+    @cleanup(valkey=True)
+    def test_get_daily_totals(self):
+        r = get_valkey_connection()
+
+        def tally(org, scope: str, count: int):
+            org.tallies.create(scope=scope, count=count, expires_on=date(2027, 11, 5))
+
+        tally(self.org, "foo/1@2026-10-31", 1)
+        tally(self.org, "foo/1@2026-11-01", 2)
+        tally(self.org, "foo/1@2026-11-04", 3)
+        tally(self.org, "foo/1@2026-11-05", 4)
+        tally(self.org, "foo/2@2026-11-01", 5)
+        tally(self.org, "foo/10@2026-11-01", 6)  # shares foo/1's prefix
+        tally(self.org, "foo/1/x@2026-11-01", 7)
+        tally(self.org2, "foo/1@2026-11-01", 8)
+        self.org.tallies.create(scope="foo/1", count=9)
+
+        # only today's are read from Valkey
+        r.hset(
+            "{tallies}:live",
+            mapping={field(self.org, "foo/1@2026-11-05"): 10, field(self.org, "foo/1@2026-11-04"): 100},
+        )
+
+        with patch("django.utils.timezone.now", return_value=datetime(2026, 11, 5, 12, 0, 0, 0, tzone.utc)):
+            self.assertEqual(
+                {
+                    (date(2026, 11, 1), "foo/1"): 2,
+                    (date(2026, 11, 4), "foo/1"): 3,
+                    (date(2026, 11, 5), "foo/1"): 14,
+                    (date(2026, 11, 1), "foo/2"): 5,
+                },
+                Tally.get_daily_totals(self.org, ["foo/1", "foo/2", "foo/1"], date(2026, 11, 1), date(2026, 11, 6)),
+            )
+
+            # until is exclusive
+            self.assertEqual(
+                {(date(2026, 10, 31), "foo/1"): 1, (date(2026, 11, 1), "foo/1"): 2},
+                Tally.get_daily_totals(self.org, ["foo/1"], date(2026, 10, 1), date(2026, 11, 4)),
+            )
+
+            # just today
+            self.assertEqual(
+                {(date(2026, 11, 5), "foo/1"): 14},
+                Tally.get_daily_totals(self.org, ["foo/1"], date(2026, 11, 5), date(2026, 11, 6)),
+            )
+
+            self.assertEqual({}, Tally.get_daily_totals(self.org, ["foo/3"], date(2026, 11, 1), date(2026, 11, 6)))
+            self.assertEqual({}, Tally.get_daily_totals(self.org, [], date(2026, 11, 1), date(2026, 11, 6)))
 
     @cleanup(valkey=True)
     def test_get_totals_retries(self):

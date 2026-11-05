@@ -1,6 +1,6 @@
 import copy
 import os
-from datetime import datetime
+from datetime import date, datetime
 from functools import wraps
 from io import BytesIO
 from pathlib import Path
@@ -736,6 +736,12 @@ class TembaTest(SmartminTest):
             created_by=self.admin,
             modified_by=self.admin,
         )
+
+    def create_channel_tally(self, channel, scope: str, day: date, count: int):
+        """
+        Creates a flushed daily tally for the given channel, e.g. of text:in.
+        """
+        channel.org.tallies.create(scope=f"channels/{channel.id}/{scope}@{day.isoformat()}", count=count)
 
     def create_channel_log(self, channel, log_type: str, *, http_logs=(), errors=()) -> dict:
         def is_error():

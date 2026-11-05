@@ -1,7 +1,7 @@
 import logging
 from abc import ABCMeta
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from enum import Enum
 
 import iso8601
@@ -24,7 +24,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 from temba import mailroom
-from temba.orgs.models import DependencyMixin, Org
+from temba.orgs.models import DependencyMixin, Org, Tally
 from temba.utils import dynamo, on_transaction_commit, redact
 from temba.utils.models import (
     JSONAsTextField,
@@ -666,15 +666,14 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
 
         super().delete()
 
-    def get_msg_count(self, since=None):
-        counts = self.counts.filter(scope__in=[ChannelCount.SCOPE_TEXT_IN, ChannelCount.SCOPE_TEXT_OUT])
-        if since:
-            counts = counts.filter(day__gte=since)
-
-        return counts.sum()
-
-    def get_ivr_count(self):
-        return self.counts.filter(scope__in=[ChannelCount.SCOPE_VOICE_IN, ChannelCount.SCOPE_VOICE_OUT]).sum()
+    def get_daily_counts(self, since: date, until: date, scopes=None) -> dict[tuple[date, str], int]:
+        """
+        Gets message counts by day and scope, e.g. text:in, over days from since up to until.
+        """
+        prefix = f"channels/{self.id}/"
+        scopes = [prefix + s for s in (scopes or ChannelCount.SCOPES)]
+        totals = Tally.get_daily_totals(self.org, scopes, since, until)
+        return {(day, scope.removeprefix(prefix)): count for (day, scope), count in totals.items()}
 
     class Meta:
         ordering = ("-last_seen", "-pk")
@@ -699,6 +698,7 @@ class ChannelCount(BaseDailyCount):
     SCOPE_TEXT_OUT = "text:out"
     SCOPE_VOICE_IN = "voice:in"
     SCOPE_VOICE_OUT = "voice:out"
+    SCOPES = (SCOPE_TEXT_IN, SCOPE_TEXT_OUT, SCOPE_VOICE_IN, SCOPE_VOICE_OUT)
 
     channel = models.ForeignKey(Channel, on_delete=models.PROTECT, related_name="counts", db_index=False)
 

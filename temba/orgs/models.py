@@ -3,7 +3,7 @@ import logging
 import os
 from abc import ABCMeta
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from enum import Enum
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -668,13 +668,21 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         """
         Estimates the time it will take to send the given number of messages
         """
+        from temba.channels.models import ChannelCount
+
         channels = self.channels.filter(is_active=True)
         channel_counts = {}
-        month_ago = timezone.now() - timedelta(days=30)
+        today = timezone.now().date()
         total_count = 0
 
         for channel in channels:
-            channel_count = channel.get_msg_count(since=month_ago)
+            channel_count = sum(
+                channel.get_daily_counts(
+                    today - timedelta(days=30),
+                    today + timedelta(days=1),
+                    scopes=(ChannelCount.SCOPE_TEXT_IN, ChannelCount.SCOPE_TEXT_OUT),
+                ).values()
+            )
             total_count += channel_count
             channel_counts[channel.uuid] = {"count": channel_count, "tps": channel.tps or 10}
 
@@ -1815,6 +1823,40 @@ class Tally(models.Model):
                 return totals
 
         logger.warning("tally totals may be overcounted after retries", extra={"org_id": org.id, "scopes": scopes})
+        return totals
+
+    @classmethod
+    def get_daily_totals(cls, org, scopes: list[str], since: date, until: date) -> dict[tuple[date, str], int]:
+        """
+        Gets totals by day and scope for the given undated scopes over days from since up to until, omitting those with
+        no total. Only today's are read from Valkey too, as earlier days have been flushed.
+        """
+        scopes = list(dict.fromkeys(scopes))
+        if not scopes:
+            return {}
+
+        today = timezone.now().date()
+        totals = {}
+
+        # each scope's dated rows are a range under the pattern ops of the unique index, as dates are fixed width
+        if since < (before := min(until, today)):
+            conds = " OR ".join(["(scope ~>=~ %s AND scope ~<~ %s)"] * len(scopes))
+            bounds = [f"{s}@{d.isoformat()}" for s in scopes for d in (since, before)]
+
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"SELECT scope, count FROM orgs_tally WHERE org_id = %s AND ({conds})", [org.id, *bounds]
+                )
+
+                for scope, count in cursor.fetchall():
+                    undated, day = scope.rsplit("@", 1)
+                    totals[(date.fromisoformat(day), undated)] = count
+
+        if since <= today < until:
+            suffix = f"@{today.isoformat()}"
+            for scope, count in cls.get_totals(org, [s + suffix for s in scopes]).items():
+                totals[(today, scope.removesuffix(suffix))] = count
+
         return totals
 
     @classmethod

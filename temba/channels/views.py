@@ -523,8 +523,6 @@ class ChannelCRUDL(SmartCRUDL):
             channel = self.object
 
             context["last_sync"] = channel.last_sync
-            context["msg_count"] = channel.get_msg_count()
-            context["ivr_count"] = channel.get_ivr_count()
 
             if channel.is_android:
                 context["latest_sync_events"] = channel.sync_events.order_by("-created_on")[:10]
@@ -537,7 +535,8 @@ class ChannelCRUDL(SmartCRUDL):
             context["chart_min"] = max(
                 timezone.localdate(self.object.created_on), timezone.now().date() - COUNTS_HISTORY
             )
-            context["monthly_counts"] = self.get_monthly_counts()
+            context["monthly_counts"] = monthly_counts = self.get_monthly_counts()
+            context["has_voice"] = any(m["voice_in"] or m["voice_out"] for m in monthly_counts)
             return context
 
         def get_monthly_counts(self) -> list:
@@ -550,18 +549,9 @@ class ChannelCRUDL(SmartCRUDL):
             since = max(self.object.created_on.replace(day=1).date(), today.replace(year=year, month=month + 1, day=1))
 
             # get our totals grouped by month+scope
-            counts = (
-                self.object.counts.period(since, until)
-                .filter(
-                    scope__in=[
-                        ChannelCount.SCOPE_TEXT_IN,
-                        ChannelCount.SCOPE_TEXT_OUT,
-                        ChannelCount.SCOPE_VOICE_IN,
-                        ChannelCount.SCOPE_VOICE_OUT,
-                    ]
-                )
-                .month_totals(scoped=True)
-            )
+            counts = defaultdict(int)
+            for (day, scope), count in self.object.get_daily_counts(since, until).items():
+                counts[(day.replace(day=1), scope)] += count
 
             # covert into a table of totals by month
             by_month = []
@@ -592,18 +582,7 @@ class ChannelCRUDL(SmartCRUDL):
             return since, max(until, since)
 
         def get_chart_data(self, since, until) -> tuple[list, list]:
-            counts = (
-                self.object.counts.period(since, until)
-                .filter(
-                    scope__in=[
-                        ChannelCount.SCOPE_TEXT_IN,
-                        ChannelCount.SCOPE_TEXT_OUT,
-                        ChannelCount.SCOPE_VOICE_IN,
-                        ChannelCount.SCOPE_VOICE_OUT,
-                    ],
-                )
-                .day_totals(scoped=True)
-            )
+            counts = self.object.get_daily_counts(since, until)
 
             # collect all dates and values by scope
             dates_set = set()
@@ -621,21 +600,23 @@ class ChannelCRUDL(SmartCRUDL):
             # create sorted list of dates
             labels = sorted(list(dates_set))
 
-            ivr_count = self.object.get_ivr_count()
+            has_voice = any(values_by_scope[ChannelCount.SCOPE_VOICE_IN]) or any(
+                values_by_scope[ChannelCount.SCOPE_VOICE_OUT]
+            )
 
             # create datasets with fixed splits for Msg In, Msg Out, Voice In, Voice Out
             datasets = [
                 {
-                    "label": _("Incoming") if not ivr_count else _("Incoming Text"),
+                    "label": _("Incoming") if not has_voice else _("Incoming Text"),
                     "data": [values_by_scope[ChannelCount.SCOPE_TEXT_IN].get(date, 0) for date in labels],
                 },
                 {
-                    "label": _("Outgoing") if not ivr_count else _("Outgoing Text"),
+                    "label": _("Outgoing") if not has_voice else _("Outgoing Text"),
                     "data": [values_by_scope[ChannelCount.SCOPE_TEXT_OUT].get(date, 0) for date in labels],
                 },
             ]
 
-            if ivr_count:
+            if has_voice:
                 datasets.extend(
                     [
                         {
