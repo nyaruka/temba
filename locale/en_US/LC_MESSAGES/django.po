@@ -4100,6 +4100,9 @@ msgstr ""
 msgid "Duration"
 msgstr ""
 
+msgid "Sending is paused because the provider isn't accepting messages."
+msgstr ""
+
 msgid "Last Synced"
 msgstr ""
 

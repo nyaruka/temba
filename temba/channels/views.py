@@ -523,6 +523,7 @@ class ChannelCRUDL(SmartCRUDL):
             channel = self.object
 
             context["last_sync"] = channel.last_sync
+            context["send_paused"] = channel.is_send_paused()
 
             if channel.is_android:
                 context["latest_sync_events"] = channel.sync_events.order_by("-created_on")[:10]
