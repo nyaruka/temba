@@ -1274,6 +1274,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         delete_in_batches(self.daily_counts.all())
 
         delete_in_batches(self.tallies.all())
+        delete_in_batches(self.org_tallies.all(), pk="pk")
 
         # now that contacts are no longer in the database, we can start de-indexing them from search
         mailroom.get_client().org_deindex(self)
@@ -1932,6 +1933,25 @@ class Tally(models.Model):
         ]
         constraints = [
             models.UniqueConstraint("org", OpClass("scope", name="varchar_pattern_ops"), name="orgtally_org_scope")
+        ]
+
+
+class OrgTally(models.Model):
+    """
+    Same totals as Tally, keyed by org and scope without a surrogate id. Scopes use the C collation so that the key can
+    serve exact, prefix and range lookups without a separate pattern ops index.
+    """
+
+    pk = models.CompositePrimaryKey("org", "scope")
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="org_tallies", db_index=False)  # leads the key
+    scope = models.CharField(max_length=255, db_collation="C")
+    count = models.BigIntegerField()
+    expires_on = models.DateField(null=True)
+
+    class Meta:
+        indexes = [
+            # for trimming
+            models.Index(name="orgorgtally_expires_on", fields=("expires_on",), condition=Q(expires_on__isnull=False))
         ]
 
 
