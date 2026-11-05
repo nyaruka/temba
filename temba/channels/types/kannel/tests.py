@@ -57,6 +57,10 @@ class KannelTypeTest(TembaTest):
             # our configuration page should list our receive URL
             self.assertContains(response, "https://temba.io" + f"/c/kn/{channel.uuid}/receive")
 
+            # and the config stanza should be one setting per line, with groups separated by a blank line
+            self.assertContains(response, "group = sendsms-user\nusername = ")
+            self.assertContains(response, "\n\ngroup = sms-service\nkeyword = default\n")
+
         with override_settings(ORG_LIMIT_DEFAULTS={"channels": 1}):
             response = self.client.get(claim_url)
             self.assertRedirect(response, "/org/workspace/")
