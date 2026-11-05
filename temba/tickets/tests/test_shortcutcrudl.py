@@ -161,15 +161,18 @@ class ShortcutCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(reverse("knowledge.knowledgesource_shortcuts"), response.url)
 
     def test_list(self):
-        shortcut1 = Shortcut.create(self.org, self.admin, "Planes", "Planes are...")
-        shortcut2 = Shortcut.create(self.org, self.admin, "Trains", "Trains are...")
-        Shortcut.create(self.org2, self.admin, "Cars", "Other org")
-
         list_url = reverse("tickets.shortcut_list")
 
         self.assertRequestDisallowed(list_url, [None, self.agent])
 
-        response = self.assertListFetch(list_url, [self.editor, self.admin], context_objects=[shortcut1, shortcut2])
+        # the page is the component driven shortcut list, which fetches the shortcuts itself
+        for user in (self.editor, self.admin):
+            response = self.requestView(list_url, user)
+            self.assertEqual(200, response.status_code)
+
+        self.assertEqual(f"{reverse('api.internal.shortcuts')}.json", response.context["shortcuts_endpoint"])
+        self.assertContains(response, "temba-shortcut-list")
+        self.assertContentMenu(list_url, self.admin, ["New"])
 
         # the search button is part of the tickets section menu so search has to be mounted here too
         self.assertContains(response, "<temba-ticket-search")

@@ -44,4 +44,21 @@ describe('temba-page-header', () => {
     expect(event.detail.item.label).to.equal('Start Flow');
     expect(event.detail.item.disabled).to.be.true;
   });
+
+  it('treats an empty subtitle slot as no subtitle', async () => {
+    // server templates always emit the slot, whether or not it has content
+    const header = (await fixture(html`
+      <temba-page-header header-title="Test">
+        <div slot="subtitle"></div>
+      </temba-page-header>
+    `)) as PageHeader;
+    expect(header.shadowRoot.querySelector('.subtitle')).to.be.null;
+
+    const withSubtitle = (await fixture(html`
+      <temba-page-header header-title="Test">
+        <div slot="subtitle">Supporting context</div>
+      </temba-page-header>
+    `)) as PageHeader;
+    expect(withSubtitle.shadowRoot.querySelector('.subtitle')).to.not.be.null;
+  });
 });

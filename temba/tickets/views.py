@@ -117,11 +117,19 @@ class ShortcutCRUDL(SmartCRUDL):
         def get_redirect_url(self, **kwargs):
             return shortcuts_url(self.request.org)
 
-    class List(SpaMixin, SearchMixin, ContextMenuMixin, BaseListView):
+    class List(SpaMixin, SearchMixin, ContextMenuMixin, OrgPermsMixin, SmartTemplateView):
+        """
+        The shortcuts page for orgs without the agents feature (they get the knowledge one) - the same component
+        driven list, fetching its shortcuts from the internal API.
+        """
+
+        title = _("Shortcuts")
         menu_path = "/ticket/shortcuts"
 
-        def derive_queryset(self, **kwargs):
-            return super().derive_queryset(**kwargs).order_by(Lower("name"))
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            context["shortcuts_endpoint"] = f"{reverse('api.internal.shortcuts')}.json"
+            return context
 
         def build_context_menu(self, menu):
             if self.has_org_perm("tickets.shortcut_create"):

@@ -31,7 +31,7 @@
   {{ block.super }}
   <script>
     onSpload(function() {
-      document.querySelector("temba-content-menu").addEventListener("temba-selection", function(event) {
+      document.querySelector(".page-header-bar temba-page-header").addEventListener("temba-selection", function(event) {
         var item = event.detail.item;
         if (item.id === "export_download") {
           location.href = "{% url "orgs.export_download" object.uuid %}?raw=1"

@@ -2,16 +2,12 @@
 {% load temba i18n %}
 
 {% block title %}
-  <div class="flex">
-    <div class="flex items-center text-gray-600">
-      {% if object.flow_type == "V" %}
-        <temba-icon name="flow_ivr" class="mr-3"> </temba-icon>
-      {% elif object.flow_type == "B" %}
-        <temba-icon name="flow_background" class="mr-3"> </temba-icon>
-      {% endif %}
-    </div>
-    <div id="title-text">{{ title }}</div>
-  </div>
+  {% if object.flow_type == "V" %}
+    <temba-icon name="flow_ivr"> </temba-icon>
+  {% elif object.flow_type == "B" %}
+    <temba-icon name="flow_background"> </temba-icon>
+  {% endif %}
+  <div id="title-text">{{ title }}</div>
 {% endblock title %}
 {% block extra-style %}
   {{ block.super }}
@@ -21,13 +17,13 @@
       flex: 1;
       flex-direction: column;
       min-height: 0;
-      padding-right: 0px !important;
-      padding-bottom: 0px !important;
-      padding-left: 0px !important;
+      padding: 0 !important;
     }
 
-    .no-menu {
-      padding: 0 1em;
+    /* the editor sits right under the header, which supplies the rule */
+    .spa-content > .page-header-bar {
+      top: 0;
+      margin: 0;
     }
 
     .spa-footer {
@@ -41,12 +37,7 @@
       /* the toolbar below pads its widgets by 6px, so this leaves the bar the
          same 12px of space below as above */
       padding: 12px 1em 6px;
-      border-top: 1px solid #e7e7e7;
       background: #fff;
-    }
-
-    temba-start-progress + temba-flow-editor {
-      border-top: none;
     }
 
     temba-flow-editor {
@@ -55,7 +46,6 @@
       flex-direction: column;
       width: 100%;
       min-height: 0;
-      border-top: 1px solid #e7e7e7;
     }
 
     temba-flow-editor[message-view] + temba-simulator {

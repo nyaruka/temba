@@ -1,0 +1,50 @@
+{% load i18n %}
+{% comment %}
+  The component driven shortcut list, shared by the tickets and knowledge shortcuts pages. The page includes this as
+  its content, renders no page header of its own (the list brings one, with the content menu) and includes
+  includes/page_header_menu.html to dispatch that menu.
+{% endcomment %}
+<style>
+  /* the list component fills its container edge to edge and brings its own surface */
+  .spa-content {
+    padding: 0 !important;
+  }
+</style>
+<temba-modax header='{{ _("Update Shortcut")|escapejs }}' id="update-shortcut"> </temba-modax>
+<temba-modax header='{{ _("Delete Shortcut")|escapejs }}' id="delete-shortcut"> </temba-modax>
+<temba-shortcut-list
+  id="shortcut-list"
+  fill-window
+  list-title="{{ title }}"
+  searchable
+  endpoint="{{ shortcuts_endpoint }}"
+  content-menu-endpoint="{{ request.path }}"
+  -temba-selection="handleContentMenuSelected(event)"
+  -temba-shortcut-edit="showUpdateShortcutModal(event.detail.item.uuid)"
+  -temba-shortcut-delete="showDeleteShortcutModal(event.detail.item.uuid)"
+  {% if org_perms.tickets.shortcut_update %}editable{% endif %}
+  {% if org_perms.tickets.shortcut_delete %}deletable{% endif %}
+  empty-message='{% trans "No shortcuts" %}'
+>
+  <div slot="subtitle">
+    {% blocktrans trimmed %}
+      Canned responses that agents can use to quickly reply to tickets.
+    {% endblocktrans %}
+  </div>
+</temba-shortcut-list>
+<script>
+  // refresh our cached shortcuts in case we just created one
+  document.querySelector("temba-store").refreshShortcuts();
+
+  function showUpdateShortcutModal(uuid) {
+    var modax = document.querySelector('#update-shortcut');
+    modax.endpoint = `/shortcut/update/${uuid}/`;
+    modax.open = true;
+  }
+
+  function showDeleteShortcutModal(uuid) {
+    var modax = document.querySelector('#delete-shortcut');
+    modax.endpoint = `/shortcut/delete/${uuid}/`;
+    modax.open = true;
+  }
+</script>

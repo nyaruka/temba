@@ -57,19 +57,16 @@ export class PageHeader extends RapidElement {
       /* One row: the title/subtitle block on the left and the
          actions/content-menu on the right, vertically centered against
          each other. The title block is the flexing column so the
-         actions hold their size. Hosts tune the vertical padding to match
-         their own horizontal inset — list panels use the default, header
-         bars pass down theirs — so the header always ends up with an even
-         surround. The height follows from that padding plus the content; a
-         host wanting a taller strip should raise the padding rather than
-         impose a height, which would be absorbed into the gap around the
-         title instead of growing the box. */
+         actions hold their size. The height follows from the padding plus
+         the content; a host wanting a taller strip should raise the padding
+         rather than impose a height, which would be absorbed into the gap
+         around the title instead of growing the box. */
       .header {
         box-sizing: border-box;
         display: flex;
         align-items: center;
         gap: var(--gap);
-        padding: var(--page-header-padding, 12px 0);
+        padding: 12px 0;
       }
       /* Title + subtitle stacked tight, sharing the left column. It
          flexes and clips so a long subtitle truncates against the
@@ -81,8 +78,7 @@ export class PageHeader extends RapidElement {
         flex-direction: column;
         gap: 1px;
       }
-      /* Sized from the shared tokens — temba-header-bar solves its inset
-         against --title-line, so the two stay in step. */
+      /* sized from the shared tokens */
       .title {
         font-size: var(--title-size);
         /* slotted contact names render at the title's size */
@@ -320,10 +316,14 @@ export class PageHeader extends RapidElement {
 
   public render(): TemplateResult {
     const slotted = this.querySelector('[slot="subtitle"]');
-    const hasSubtitle = this.subtitle || slotted;
     // Full subtitle text for the hover tooltip — the bar truncates a
     // long subtitle, so the native title surfaces the rest on hover.
     const subtitleText = (this.subtitle || slotted?.textContent || '').trim();
+    // Server-rendered pages always emit the subtitle slot (a template
+    // can't tell whether its block is empty), so an empty one counts as
+    // no subtitle rather than an empty line under the title.
+    const hasSubtitle =
+      this.subtitle || subtitleText || slotted?.children.length > 0;
     return html`
       <div class="header">
         <div class="title-block">

@@ -7,10 +7,8 @@
   {% endblocktrans %}
 {% endblock title-text %}
 {% block subtitle %}
-  <div class="text-gray-500 text-xl">
-    {{ object.type.name }}:
-    {{ object.get_address_display }}
-  </div>
+  {{ object.type.name }}:
+  {{ object.get_address_display }}
 {% endblock subtitle %}
 {% block content %}
   {{ blurb }}

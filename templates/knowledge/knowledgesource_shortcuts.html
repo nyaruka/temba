@@ -1,60 +1,13 @@
 {% extends "smartmin/read.html" %}
-{% load smartmin temba i18n %}
 
 {% block page-header %}
-  {# the shortcut list component renders its own header with the content menu #}
   {% csrf_token %}
   <div id="title-text" class="hide">{{ title }}</div>
 {% endblock page-header %}
 {% block content %}
-  <temba-modax header='{{ _("Update Shortcut")|escapejs }}' id="update-shortcut"> </temba-modax>
-  <temba-modax header='{{ _("Delete Shortcut")|escapejs }}' id="delete-shortcut"> </temba-modax>
-  <temba-shortcut-list
-    id="shortcut-list"
-    fill-window
-    list-title='{% trans "Shortcuts" %}'
-    searchable
-    endpoint="{{ shortcuts_endpoint }}"
-    content-menu-endpoint="{{ request.path }}"
-    -temba-selection="handleContentMenuSelected(event)"
-    -temba-shortcut-edit="showUpdateShortcutModal(event.detail.item.uuid)"
-    -temba-shortcut-delete="showDeleteShortcutModal(event.detail.item.uuid)"
-    {% if org_perms.tickets.shortcut_update %}editable{% endif %}
-    {% if org_perms.tickets.shortcut_delete %}deletable{% endif %}
-    empty-message='{% trans "No shortcuts" %}'
-  >
-    <div slot="subtitle">
-      {% blocktrans trimmed %}
-        Canned responses that agents can use to quickly reply to tickets.
-      {% endblocktrans %}
-    </div>
-  </temba-shortcut-list>
+  {% include "includes/shortcut_list.html" %}
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
   {% include "includes/page_header_menu.html" %}
-  <script>
-    function showUpdateShortcutModal(uuid) {
-      var modax = document.querySelector('#update-shortcut');
-      modax.endpoint = `/shortcut/update/${uuid}/`;
-      modax.open = true;
-    }
-
-    function showDeleteShortcutModal(uuid) {
-      var modax = document.querySelector('#delete-shortcut');
-      modax.endpoint = `/shortcut/delete/${uuid}/`;
-      modax.open = true;
-    }
-  </script>
 {% endblock extra-script %}
-{% block extra-style %}
-  {{ block.super }}
-  <style>
-    /* The list component fills its container edge to edge and brings
-       its own surface, so drop the SPA content padding (and the grey
-       page background it would otherwise reveal around the list). */
-    .spa-content {
-      padding: 0 !important;
-    }
-  </style>
-{% endblock extra-style %}

@@ -5155,6 +5155,18 @@ msgstr "Resultats %(start)s - %(end)s sur %(total)s"
 msgid "%(start)s - %(end)s of %(total)s"
 msgstr "%(start)s - %(end)s sur %(total)s"
 
+msgid "Update Shortcut"
+msgstr "Mettre à jour le raccourci"
+
+msgid "Delete Shortcut"
+msgstr "Supprimer le raccourci"
+
+msgid "No shortcuts"
+msgstr "Aucun raccourci"
+
+msgid "Canned responses that agents can use to quickly reply to tickets."
+msgstr "Réponses préenregistrées que les agents peuvent utiliser pour répondre rapidement aux billets."
+
 msgid "Servicing"
 msgstr "Assistance"
 
@@ -5267,18 +5279,6 @@ msgstr "Vous êtes sur le point de supprimer le document <b>%(object.name)s</b> 
 #, python-format
 msgid "You are about to delete the knowledge source <b>%(object)s</b> and everything indexed from it. There is no way to undo this. Are you sure?"
 msgstr "Vous êtes sur le point de supprimer la source de connaissances <b>%(object)s</b> et tout ce qui en a été indexé. Cette action est irréversible. Voulez-vous continuer ?"
-
-msgid "Update Shortcut"
-msgstr "Mettre à jour le raccourci"
-
-msgid "Delete Shortcut"
-msgstr "Supprimer le raccourci"
-
-msgid "No shortcuts"
-msgstr "Aucun raccourci"
-
-msgid "Canned responses that agents can use to quickly reply to tickets."
-msgstr "Réponses préenregistrées que les agents peuvent utiliser pour répondre rapidement aux billets."
 
 msgid "Delete Document"
 msgstr "Supprimer le document"
@@ -6150,9 +6150,6 @@ msgstr "Autres langues"
 #, python-format
 msgid "You are about to delete the shortcut <b>%(object)s</b>. There is no way to undo this. Are you sure?"
 msgstr "Vous êtes sur le point de supprimer le raccourci <b>%(object)s</b>. Cette action est irréversible. Voulez-vous continuer ?"
-
-msgid "These are canned responses that agents can use to quickly reply to tickets."
-msgstr "Il s'agit de réponses préenregistrées que les agents peuvent utiliser pour répondre rapidement aux billets."
 
 #, python-format
 msgid "Sorry, the <b>%(object)s</b> team can't be deleted while it still has agents. Move the agents to another team first and then try again."

@@ -5131,6 +5131,18 @@ msgstr ""
 msgid "%(start)s - %(end)s of %(total)s"
 msgstr ""
 
+msgid "Update Shortcut"
+msgstr ""
+
+msgid "Delete Shortcut"
+msgstr ""
+
+msgid "No shortcuts"
+msgstr ""
+
+msgid "Canned responses that agents can use to quickly reply to tickets."
+msgstr ""
+
 msgid "Servicing"
 msgstr ""
 
@@ -5242,18 +5254,6 @@ msgstr ""
 
 #, python-format
 msgid "You are about to delete the knowledge source <b>%(object)s</b> and everything indexed from it. There is no way to undo this. Are you sure?"
-msgstr ""
-
-msgid "Update Shortcut"
-msgstr ""
-
-msgid "Delete Shortcut"
-msgstr ""
-
-msgid "No shortcuts"
-msgstr ""
-
-msgid "Canned responses that agents can use to quickly reply to tickets."
 msgstr ""
 
 msgid "Delete Document"
@@ -6115,9 +6115,6 @@ msgstr ""
 
 #, python-format
 msgid "You are about to delete the shortcut <b>%(object)s</b>. There is no way to undo this. Are you sure?"
-msgstr ""
-
-msgid "These are canned responses that agents can use to quickly reply to tickets."
 msgstr ""
 
 #, python-format
