@@ -1,3 +1,10 @@
+## v26.3.177 (2026-11-05)
+ * Add OrgTally model keyed by org and scope
+ * Show the channel's country code on the channel read page and drop the activated date
+ * Show the channel's sending status on its read page as a coloured pill, with Ready, Paused (when courier has paused sending) and Disabled states
+ * Use the new page header on every page, pinned above the scrolling content, with the flow editor header pinned at the top, a shared shortcut list for the tickets and knowledge pages, and the unused search query context dropped
+ * Test the default page header for pages with and without a content menu
+
 ## v26.3.176 (2026-11-05)
  * Read channel and workspace message counts from tallies, batching reads across workspaces for the dashboard and across channels for send estimates
  * Fix Kannel config page stanza being reflowed into a single block, with padding and a test of its line structure
