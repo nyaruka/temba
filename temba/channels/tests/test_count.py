@@ -1,8 +1,6 @@
-from datetime import date, datetime, timezone as tzone
+from datetime import date
 
-from temba.msgs.models import Msg
 from temba.tests import TembaTest
-from temba.utils.uuid import uuid7
 
 from ..models import ChannelCount
 from ..tasks import squash_channel_counts
@@ -12,118 +10,29 @@ class ChannelCountTest(TembaTest):
     def test_counts(self):
         contact = self.create_contact("Joe", phone="+250788111222")
 
+        # messages no longer write channel counts
+        self.create_incoming_msg(contact, "A")
+        self.create_outgoing_msg(contact, "B")
         self.assertEqual(0, ChannelCount.objects.count())
 
-        # message without a channel won't be recorded
-        self.create_outgoing_msg(contact, "X", failed_reason=Msg.FAILED_NO_DESTINATION)
-        self.assertEqual(0, ChannelCount.objects.count())
+        def add(day, scope, count):
+            ChannelCount.objects.create(channel=self.channel, day=day, scope=scope, count=count, is_squashed=False)
 
-        # create some messages...
-        self.create_incoming_msg(contact, "A", created_on=datetime(2023, 5, 31, 13, 0, 30, 0, tzone.utc))
-        self.create_incoming_msg(contact, "B", created_on=datetime(2023, 6, 1, 13, 0, 30, 0, tzone.utc))
-        self.create_incoming_msg(contact, "C", created_on=datetime(2023, 6, 1, 13, 0, 30, 0, tzone.utc))
-        self.create_incoming_msg(contact, "D", created_on=datetime(2023, 6, 1, 13, 0, 30, 0, tzone.utc), voice=True)
-        self.create_outgoing_msg(contact, "E", created_on=datetime(2023, 6, 1, 13, 0, 30, 0, tzone.utc))
+        add(date(2023, 5, 31), "text:in", 1)
+        add(date(2023, 6, 1), "text:in", 1)
+        add(date(2023, 6, 1), "text:in", 1)
+        add(date(2023, 6, 1), "text:out", 3)
+        add(date(2023, 6, 1), "voice:in", 1)
 
-        # and 3 in bulk
-        Msg.objects.bulk_create(
-            [
-                Msg(
-                    uuid=uuid7(),
-                    org=self.org,
-                    channel=self.channel,
-                    contact=contact,
-                    text="F",
-                    direction="O",
-                    msg_type="T",
-                    status="Q",
-                    folder="O",
-                    is_android=False,
-                    created_on=datetime(2023, 6, 1, 13, 0, 30, 0, tzone.utc),
-                    modified_on=datetime(2023, 6, 1, 13, 0, 30, 0, tzone.utc),
-                ),
-                Msg(
-                    uuid=uuid7(),
-                    org=self.org,
-                    channel=self.channel,
-                    contact=contact,
-                    text="G",
-                    direction="O",
-                    msg_type="T",
-                    status="Q",
-                    folder="O",
-                    is_android=False,
-                    created_on=datetime(2023, 6, 1, 13, 0, 30, 0, tzone.utc),
-                    modified_on=datetime(2023, 6, 1, 13, 0, 30, 0, tzone.utc),
-                ),
-                Msg(
-                    uuid=uuid7(),
-                    org=self.org,
-                    channel=self.channel,
-                    contact=contact,
-                    text="H",
-                    direction="O",
-                    msg_type="V",
-                    status="Q",
-                    folder="O",
-                    is_android=False,
-                    created_on=datetime(2023, 6, 1, 13, 0, 30, 0, tzone.utc),
-                    modified_on=datetime(2023, 6, 1, 13, 0, 30, 0, tzone.utc),
-                ),
-            ]
-        )
+        expected = {
+            (date(2023, 5, 31), "text:in"): 1,
+            (date(2023, 6, 1), "text:in"): 2,
+            (date(2023, 6, 1), "text:out"): 3,
+            (date(2023, 6, 1), "voice:in"): 1,
+        }
+        self.assertEqual(expected, self.channel.counts.day_totals(scoped=True))
 
-        self.assertEqual(
-            {
-                (date(2023, 5, 31), "text:in"): 1,
-                (date(2023, 6, 1), "text:in"): 2,
-                (date(2023, 6, 1), "text:out"): 3,
-                (date(2023, 6, 1), "voice:in"): 1,
-                (date(2023, 6, 1), "voice:out"): 1,
-            },
-            self.channel.counts.day_totals(scoped=True),
-        )
-
-        # squash our counts
         squash_channel_counts()
 
-        self.assertEqual(ChannelCount.objects.all().count(), 5)
-
-        self.assertEqual(
-            {
-                (date(2023, 5, 31), "text:in"): 1,
-                (date(2023, 6, 1), "text:in"): 2,
-                (date(2023, 6, 1), "text:out"): 3,
-                (date(2023, 6, 1), "voice:in"): 1,
-                (date(2023, 6, 1), "voice:out"): 1,
-            },
-            self.channel.counts.day_totals(scoped=True),
-        )
-
-        # soft deleting a message doesn't decrement the count
-        Msg.objects.filter(text="A").update(visibility=Msg.VISIBILITY_DELETED_BY_USER)
-
-        self.assertEqual(
-            {
-                (date(2023, 5, 31), "text:in"): 1,
-                (date(2023, 6, 1), "text:in"): 2,
-                (date(2023, 6, 1), "text:out"): 3,
-                (date(2023, 6, 1), "voice:in"): 1,
-                (date(2023, 6, 1), "voice:out"): 1,
-            },
-            self.channel.counts.day_totals(scoped=True),
-        )
-
-        # nor hard deleting
-        Msg.bulk_delete([Msg.objects.get(text="B")])
-
-        self.assertEqual(
-            {
-                (date(2023, 5, 31), "text:in"): 1,
-                (date(2023, 6, 1), "text:in"): 2,
-                (date(2023, 6, 1), "text:out"): 3,
-                (date(2023, 6, 1), "voice:in"): 1,
-                (date(2023, 6, 1), "voice:out"): 1,
-            },
-            self.channel.counts.day_totals(scoped=True),
-        )
+        self.assertEqual(4, ChannelCount.objects.count())
+        self.assertEqual(expected, self.channel.counts.day_totals(scoped=True))
