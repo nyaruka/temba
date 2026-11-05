@@ -4115,9 +4115,6 @@ msgstr "a"
 msgid "Duration"
 msgstr "Duración"
 
-msgid "Activated"
-msgstr "Activado"
-
 msgid "Last Synced"
 msgstr "Última sincronización"
 

@@ -4100,9 +4100,6 @@ msgstr ""
 msgid "Duration"
 msgstr ""
 
-msgid "Activated"
-msgstr ""
-
 msgid "Last Synced"
 msgstr ""
 

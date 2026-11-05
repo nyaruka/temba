@@ -28,14 +28,16 @@
         <div class="label">{% trans "Address" %}</div>
         <div class="value">
           {{ object.get_address_display }}
-          {% if object.country %}({{ object.get_country_display }}){% endif %}
+          {% if object.country %}({{ object.country.code }}){% endif %}
         </div>
       </div>
     {% endif %}
-    <div class="detail">
-      <div class="label">{% trans "Activated" %}</div>
-      <div class="value">{{ object.created_on|day }}</div>
-    </div>
+    {% if object.tps %}
+      <div class="detail">
+        <div class="label">{% trans "TPS" %}</div>
+        <div class="value">{{ object.tps }}</div>
+      </div>
+    {% endif %}
     {% if object.is_android %}
       <div class="detail">
         <div class="label">{% trans "Last Synced" %}</div>
