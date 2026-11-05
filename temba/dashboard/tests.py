@@ -14,10 +14,10 @@ class DashboardTest(TembaTest):
         # some message and call activity today
         today = timezone.now().date().isoformat()
         for scope, count in (("text:in", 1), ("text:out", 2), ("voice:in", 1), ("voice:out", 1)):
-            self.org.tallies.create(scope=f"msgs/{scope}@{today}", count=count)
+            self.org.org_tallies.create(scope=f"msgs/{scope}@{today}", count=count)
 
         # and on another workspace
-        self.org2.tallies.create(scope=f"msgs/text:in@{today}", count=5)
+        self.org2.org_tallies.create(scope=f"msgs/text:in@{today}", count=5)
 
     def test_dashboard_home(self):
         dashboard_url = reverse("dashboard.dashboard_home")
@@ -146,7 +146,7 @@ class DashboardTest(TembaTest):
         # child has flushed counts for yesterday and counts for today still in Valkey
         today = timezone.now().date()
         yesterday = today - timedelta(days=1)
-        child.tallies.create(scope=f"msgs/text:out@{yesterday.isoformat()}", count=4)
+        child.org_tallies.create(scope=f"msgs/text:out@{yesterday.isoformat()}", count=4)
         get_valkey_connection().hset("{tallies}:live", f"{child.id}|msgs/text:in@{today.isoformat()}", 3)
 
         self.login(self.admin, choose_org=self.org)

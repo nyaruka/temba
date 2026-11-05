@@ -24,7 +24,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 from temba import mailroom
-from temba.orgs.models import DependencyMixin, Org, Tally
+from temba.orgs.models import DependencyMixin, Org, OrgTally
 from temba.utils import dynamo, on_transaction_commit, redact
 from temba.utils.models import (
     JSONAsTextField,
@@ -677,6 +677,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         delete_in_batches(self.template_translations.all())
         delete_in_batches(self.counts.all())
         delete_in_batches(self.org.tallies.filter(scope__startswith=f"channels/{self.id}/"))
+        delete_in_batches(self.org.org_tallies.filter(scope__startswith=f"channels/{self.id}/"), pk="pk")
 
         super().delete()
 
@@ -685,7 +686,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         Gets message counts by day and scope, e.g. text:in, over days from since up to until.
         """
         prefix = f"channels/{self.id}/"
-        totals = Tally.get_daily_totals(self.org, [prefix + s for s in ChannelCount.SCOPES], since, until)
+        totals = OrgTally.get_daily_totals(self.org, [prefix + s for s in ChannelCount.SCOPES], since, until)
         return {(day, scope.removeprefix(prefix)): count for (day, scope), count in totals.items()}
 
     class Meta:

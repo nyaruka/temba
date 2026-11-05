@@ -674,7 +674,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         total_count = 0
 
         scopes = [f"channels/{c.id}/{s}" for c in channels for s in ("text:in", "text:out")]
-        daily_totals = Tally.get_daily_totals(self, scopes, today - timedelta(days=30), today + timedelta(days=1))
+        daily_totals = OrgTally.get_daily_totals(self, scopes, today - timedelta(days=30), today + timedelta(days=1))
         counts_by_channel = defaultdict(int)
         for (_day, scope), count in daily_totals.items():
             counts_by_channel[int(scope.split("/")[1])] += count
@@ -1785,12 +1785,35 @@ class DailyCount(BaseDailyCount):
 
 class Tally(models.Model):
     """
+    The original table of OrgTally's totals, still written by mailroom but no longer read.
+    """
+
+    id = models.BigAutoField(primary_key=True)
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="tallies", db_index=False)  # indexed below
+    scope = models.CharField(max_length=255)
+    count = models.BigIntegerField()
+    expires_on = models.DateField(null=True)
+
+    class Meta:
+        indexes = [
+            # for trimming
+            models.Index(name="orgtally_expires_on", fields=("expires_on",), condition=Q(expires_on__isnull=False))
+        ]
+        constraints = [
+            models.UniqueConstraint("org", OpClass("scope", name="varchar_pattern_ops"), name="orgtally_org_scope")
+        ]
+
+
+class OrgTally(models.Model):
+    """
     Org-level totals of things which only go up. Writers increment a global hash in Valkey which mailroom flushes into
     these rows in batches, so a total is the sum of both. Key layout, and how to read both consistently, must match
     gocommon's tallies package.
 
     Daily totals end their scope with @ and the date, e.g. "emails/shared@2026-11-02", and may be given an expiry by
     mailroom when first flushed. Rows without one are kept forever.
+
+    Scopes use the C collation so that the primary key can serve exact, prefix and range lookups with plain operators.
     """
 
     KEY_BASE = "tallies"
@@ -1801,9 +1824,9 @@ class Tally(models.Model):
 
     READ_ATTEMPTS = 3
 
-    id = models.BigAutoField(primary_key=True)
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="tallies", db_index=False)  # indexed below
-    scope = models.CharField(max_length=255)
+    pk = models.CompositePrimaryKey("org", "scope")
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="org_tallies", db_index=False)  # leads the key
+    scope = models.CharField(max_length=255, db_collation="C")
     count = models.BigIntegerField()
     expires_on = models.DateField(null=True)
 
@@ -1858,14 +1881,14 @@ class Tally(models.Model):
         today = timezone.now().date()
         totals = {}
 
-        # each scope's dated rows are a range under the pattern ops of the unique index, as dates are fixed width
+        # each scope's dated rows are a range of the primary key, as dates are fixed width
         if since < (before := min(until, today)):
-            conds = " OR ".join(["(scope ~>=~ %s AND scope ~<~ %s)"] * len(scopes))
+            conds = " OR ".join(["(scope >= %s AND scope < %s)"] * len(scopes))
             bounds = [f"{s}@{d.isoformat()}" for s in scopes for d in (since, before)]
 
             with connection.cursor() as cursor:
                 cursor.execute(
-                    f"SELECT org_id, scope, count FROM orgs_tally WHERE org_id = ANY(%s) AND ({conds})",
+                    f"SELECT org_id, scope, count FROM orgs_orgtally WHERE org_id = ANY(%s) AND ({conds})",
                     [org_ids, *bounds],
                 )
 
@@ -1903,7 +1926,7 @@ class Tally(models.Model):
                 """
                 SELECT f.last_batch, t.org_id, t.scope, t.count
                   FROM (SELECT (SELECT last_batch FROM orgs_tallyflush WHERE name = %s) AS last_batch) f
-             LEFT JOIN orgs_tally t ON t.org_id = ANY(%s) AND t.scope = ANY(%s)
+             LEFT JOIN orgs_orgtally t ON t.org_id = ANY(%s) AND t.scope = ANY(%s)
                 """,
                 (cls.KEY_BASE, org_ids, scopes),
             )
@@ -1925,28 +1948,6 @@ class Tally(models.Model):
                     totals[key] += int(count)
 
         return dict(totals), consistent
-
-    class Meta:
-        indexes = [
-            # for trimming
-            models.Index(name="orgtally_expires_on", fields=("expires_on",), condition=Q(expires_on__isnull=False))
-        ]
-        constraints = [
-            models.UniqueConstraint("org", OpClass("scope", name="varchar_pattern_ops"), name="orgtally_org_scope")
-        ]
-
-
-class OrgTally(models.Model):
-    """
-    Same totals as Tally, keyed by org and scope without a surrogate id. Scopes use the C collation so that the key can
-    serve exact, prefix and range lookups without a separate pattern ops index.
-    """
-
-    pk = models.CompositePrimaryKey("org", "scope")
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="org_tallies", db_index=False)  # leads the key
-    scope = models.CharField(max_length=255, db_collation="C")
-    count = models.BigIntegerField()
-    expires_on = models.DateField(null=True)
 
     class Meta:
         indexes = [

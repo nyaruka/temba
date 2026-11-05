@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from temba.orgs.models import Org, Tally
+from temba.orgs.models import Org, OrgTally
 from temba.orgs.views.mixins import OrgPermsMixin
 from temba.utils.views.mixins import ChartViewMixin, SpaMixin
 
@@ -43,7 +43,7 @@ class MessageHistory(OrgPermsMixin, ChartViewMixin, SmartTemplateView):
         dates_set = set()
         values_by_scope = {SCOPE_TEXT_IN: defaultdict(int), SCOPE_TEXT_OUT: defaultdict(int)}
 
-        daily_totals = Tally.get_daily_totals_by_org(orgs, list(values_by_scope), since, until + timedelta(days=1))
+        daily_totals = OrgTally.get_daily_totals_by_org(orgs, list(values_by_scope), since, until + timedelta(days=1))
         for (_org_id, day, scope), count in daily_totals.items():
             dates_set.add(day)
             values_by_scope[scope][day] += count
@@ -93,7 +93,7 @@ class WorkspaceStats(OrgPermsMixin, SmartTemplateView):
         outbound = []
 
         totals = defaultdict(int)
-        daily_totals = Tally.get_daily_totals_by_org(
+        daily_totals = OrgTally.get_daily_totals_by_org(
             orgs, [SCOPE_TEXT_IN, SCOPE_TEXT_OUT], since, until + timedelta(days=1)
         )
         for (org_id, _day, scope), count in daily_totals.items():
