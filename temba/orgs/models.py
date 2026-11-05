@@ -668,21 +668,19 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         """
         Estimates the time it will take to send the given number of messages
         """
-        from temba.channels.models import ChannelCount
-
-        channels = self.channels.filter(is_active=True)
+        channels = list(self.channels.filter(is_active=True))
         channel_counts = {}
         today = timezone.now().date()
         total_count = 0
 
+        scopes = [f"channels/{c.id}/{s}" for c in channels for s in ("text:in", "text:out")]
+        daily_totals = Tally.get_daily_totals(self, scopes, today - timedelta(days=30), today + timedelta(days=1))
+        counts_by_channel = defaultdict(int)
+        for (_day, scope), count in daily_totals.items():
+            counts_by_channel[int(scope.split("/")[1])] += count
+
         for channel in channels:
-            channel_count = sum(
-                channel.get_daily_counts(
-                    today - timedelta(days=30),
-                    today + timedelta(days=1),
-                    scopes=(ChannelCount.SCOPE_TEXT_IN, ChannelCount.SCOPE_TEXT_OUT),
-                ).values()
-            )
+            channel_count = counts_by_channel[channel.id]
             total_count += channel_count
             channel_counts[channel.uuid] = {"count": channel_count, "tps": channel.tps or 10}
 
@@ -1813,26 +1811,47 @@ class Tally(models.Model):
         """
         Gets totals by scope for the given scopes, omitting those with no total.
         """
+        return {scope: count for (_, scope), count in cls.get_totals_by_org([org], scopes).items()}
+
+    @classmethod
+    def get_totals_by_org(cls, orgs, scopes: list[str]) -> dict[tuple[int, str], int]:
+        """
+        Gets totals by org id and scope for the given scopes in each of the given orgs, omitting those with no total.
+        """
+        org_ids = list(dict.fromkeys(o.id for o in orgs))
         scopes = list(dict.fromkeys(scopes))
-        if not scopes:
+        if not org_ids or not scopes:
             return {}
 
         for _attempt in range(cls.READ_ATTEMPTS):
-            totals, consistent = cls._read_totals(org, scopes)
+            totals, consistent = cls._read_totals(org_ids, scopes)
             if consistent:
                 return totals
 
-        logger.warning("tally totals may be overcounted after retries", extra={"org_id": org.id, "scopes": scopes})
+        logger.warning("tally totals may be overcounted after retries", extra={"org_ids": org_ids, "scopes": scopes})
         return totals
 
     @classmethod
     def get_daily_totals(cls, org, scopes: list[str], since: date, until: date) -> dict[tuple[date, str], int]:
         """
         Gets totals by day and scope for the given undated scopes over days from since up to until, omitting those with
-        no total. Only today's are read from Valkey too, as earlier days have been flushed.
+        no total.
         """
+        totals = cls.get_daily_totals_by_org([org], scopes, since, until)
+        return {(day, scope): count for (_, day, scope), count in totals.items()}
+
+    @classmethod
+    def get_daily_totals_by_org(
+        cls, orgs, scopes: list[str], since: date, until: date
+    ) -> dict[tuple[int, date, str], int]:
+        """
+        Gets totals by org id, day and scope for the given undated scopes in each of the given orgs over days from since
+        up to until, omitting those with no total. Only today's are read from Valkey too, as earlier days have been
+        flushed.
+        """
+        org_ids = list(dict.fromkeys(o.id for o in orgs))
         scopes = list(dict.fromkeys(scopes))
-        if not scopes:
+        if not org_ids or not scopes:
             return {}
 
         today = timezone.now().date()
@@ -1845,27 +1864,29 @@ class Tally(models.Model):
 
             with connection.cursor() as cursor:
                 cursor.execute(
-                    f"SELECT scope, count FROM orgs_tally WHERE org_id = %s AND ({conds})", [org.id, *bounds]
+                    f"SELECT org_id, scope, count FROM orgs_tally WHERE org_id = ANY(%s) AND ({conds})",
+                    [org_ids, *bounds],
                 )
 
-                for scope, count in cursor.fetchall():
+                for org_id, scope, count in cursor.fetchall():
                     undated, day = scope.rsplit("@", 1)
-                    totals[(date.fromisoformat(day), undated)] = count
+                    totals[(org_id, date.fromisoformat(day), undated)] = count
 
         if since <= today < until:
             suffix = f"@{today.isoformat()}"
-            for scope, count in cls.get_totals(org, [s + suffix for s in scopes]).items():
-                totals[(today, scope.removesuffix(suffix))] = count
+            for (org_id, scope), count in cls.get_totals_by_org(orgs, [s + suffix for s in scopes]).items():
+                totals[(org_id, today, scope.removesuffix(suffix))] = count
 
         return totals
 
     @classmethod
-    def _read_totals(cls, org, scopes: list[str]) -> tuple[dict[str, int], bool]:
+    def _read_totals(cls, org_ids: list[int], scopes: list[str]) -> tuple[dict[tuple[int, str], int], bool]:
         """
         Reads totals from Valkey and then the database, returning them and whether they're consistent, which they aren't
         if a batch was flushed in between, as it may have moved counts we read from Valkey into the rows we read.
         """
-        fields = [f"{org.id}|{scope}" for scope in scopes]
+        keys = [(org_id, scope) for org_id in org_ids for scope in scopes]
+        fields = [f"{org_id}|{scope}" for org_id, scope in keys]
 
         r = get_valkey_connection()
         with r.pipeline(transaction=True) as pipe:
@@ -1879,11 +1900,11 @@ class Tally(models.Model):
         with connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT f.last_batch, t.scope, t.count
+                SELECT f.last_batch, t.org_id, t.scope, t.count
                   FROM (SELECT (SELECT last_batch FROM orgs_tallyflush WHERE name = %s) AS last_batch) f
-             LEFT JOIN orgs_tally t ON t.org_id = %s AND t.scope = ANY(%s)
+             LEFT JOIN orgs_tally t ON t.org_id = ANY(%s) AND t.scope = ANY(%s)
                 """,
-                (cls.KEY_BASE, org.id, scopes),
+                (cls.KEY_BASE, org_ids, scopes),
             )
             rows = cursor.fetchall()
 
@@ -1893,14 +1914,14 @@ class Tally(models.Model):
         consistent = last_batch <= batch_id
 
         totals = defaultdict(int)
-        for _last_batch, scope, count in rows:
+        for _last_batch, org_id, scope, count in rows:
             if scope is not None:
-                totals[scope] += count
+                totals[(org_id, scope)] += count
 
         for values in (live, flushing, batch if include_batch else []):
-            for scope, count in zip(scopes, values):
+            for key, count in zip(keys, values):
                 if count is not None:
-                    totals[scope] += int(count)
+                    totals[key] += int(count)
 
         return dict(totals), consistent
 

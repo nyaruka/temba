@@ -37,17 +37,16 @@ class MessageHistory(OrgPermsMixin, ChartViewMixin, SmartTemplateView):
 
     def get_chart_data(self, since, until) -> tuple[list, list]:
         org = self.request.org
-        orgs = Org.objects.filter(Q(id=org.id) | Q(parent=org))
+        orgs = list(Org.objects.filter(Q(id=org.id) | Q(parent=org)))
 
         # collect all dates and values by scope across our workspaces, including the until day
         dates_set = set()
         values_by_scope = {SCOPE_TEXT_IN: defaultdict(int), SCOPE_TEXT_OUT: defaultdict(int)}
 
-        for o in orgs:
-            daily_totals = Tally.get_daily_totals(o, list(values_by_scope), since, until + timedelta(days=1))
-            for (day, scope), count in daily_totals.items():
-                dates_set.add(day)
-                values_by_scope[scope][day] += count
+        daily_totals = Tally.get_daily_totals_by_org(orgs, list(values_by_scope), since, until + timedelta(days=1))
+        for (_org_id, day, scope), count in daily_totals.items():
+            dates_set.add(day)
+            values_by_scope[scope][day] += count
 
         labels = sorted(list(dates_set))
 
@@ -85,7 +84,7 @@ class WorkspaceStats(OrgPermsMixin, SmartTemplateView):
 
     def render_to_response(self, context, **response_kwargs):
         org = self.request.org
-        orgs = Org.objects.filter(Q(id=org.id) | Q(parent=org))
+        orgs = list(Org.objects.filter(Q(id=org.id) | Q(parent=org)))
 
         since, until = self.get_period()
 
@@ -93,21 +92,23 @@ class WorkspaceStats(OrgPermsMixin, SmartTemplateView):
         inbound = []
         outbound = []
 
+        totals = defaultdict(int)
+        daily_totals = Tally.get_daily_totals_by_org(
+            orgs, [SCOPE_TEXT_IN, SCOPE_TEXT_OUT], since, until + timedelta(days=1)
+        )
+        for (org_id, _day, scope), count in daily_totals.items():
+            totals[(org_id, scope)] += count
+
         for org in orgs:
-            totals = defaultdict(int)
-            daily_totals = Tally.get_daily_totals(
-                org, [SCOPE_TEXT_IN, SCOPE_TEXT_OUT], since, until + timedelta(days=1)
-            )
-            for (_day, scope), count in daily_totals.items():
-                totals[scope] += count
+            inbound_count, outbound_count = totals[(org.id, SCOPE_TEXT_IN)], totals[(org.id, SCOPE_TEXT_OUT)]
 
             # ignore orgs with no activity in this period
-            if not totals:
+            if not inbound_count and not outbound_count:
                 continue
 
             categories.append(org.name)
-            inbound.append(totals[SCOPE_TEXT_IN])
-            outbound.append(totals[SCOPE_TEXT_OUT])
+            inbound.append(inbound_count)
+            outbound.append(outbound_count)
 
         return JsonResponse(
             {

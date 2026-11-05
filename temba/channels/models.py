@@ -666,13 +666,12 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
 
         super().delete()
 
-    def get_daily_counts(self, since: date, until: date, scopes=None) -> dict[tuple[date, str], int]:
+    def get_daily_counts(self, since: date, until: date) -> dict[tuple[date, str], int]:
         """
         Gets message counts by day and scope, e.g. text:in, over days from since up to until.
         """
         prefix = f"channels/{self.id}/"
-        scopes = [prefix + s for s in (scopes or ChannelCount.SCOPES)]
-        totals = Tally.get_daily_totals(self.org, scopes, since, until)
+        totals = Tally.get_daily_totals(self.org, [prefix + s for s in ChannelCount.SCOPES], since, until)
         return {(day, scope.removeprefix(prefix)): count for (day, scope), count in totals.items()}
 
     class Meta:
