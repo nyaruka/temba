@@ -36,6 +36,20 @@
       <div class="label">{% trans "Activated" %}</div>
       <div class="value">{{ object.created_on|day }}</div>
     </div>
+    <div class="detail">
+      <div class="label">{% trans "Status" %}</div>
+      <div class="value">
+        {% if not object.is_enabled %}
+          <temba-label icon="org_suspended" backgroundcolor="#eee" textcolor="#999">{% trans "Disabled" %}</temba-label>
+        {% elif send_paused %}
+          <temba-label icon="alert_warning" danger title="{% trans "Sending is paused because the provider isn't accepting messages." %}">
+            {% trans "Paused" %}
+          </temba-label>
+        {% else %}
+          <temba-label icon="check" backgroundcolor="rgb(136 193 122)" textcolor="white">{% trans "Ready" %}</temba-label>
+        {% endif %}
+      </div>
+    </div>
     {% if object.is_android %}
       <div class="detail">
         <div class="label">{% trans "Last Synced" %}</div>
