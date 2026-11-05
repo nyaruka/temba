@@ -4100,9 +4100,6 @@ msgstr ""
 msgid "Duration"
 msgstr ""
 
-msgid "Activated"
-msgstr ""
-
 msgid "Sending is paused because the provider isn't accepting messages."
 msgstr ""
 

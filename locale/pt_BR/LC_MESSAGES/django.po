@@ -4119,9 +4119,6 @@ msgstr "para"
 msgid "Duration"
 msgstr "Duração"
 
-msgid "Activated"
-msgstr "Ativado"
-
 msgid "Sending is paused because the provider isn't accepting messages."
 msgstr "O envio está pausado porque o provedor não está aceitando mensagens."
 
