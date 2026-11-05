@@ -973,6 +973,9 @@ MFA_ADAPTER = "temba.users.adapter.TembaMFAAdapter"
 SOCIALACCOUNT_PROVIDERS = {}
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+# Entra already authenticates the mailbox; mandatory verification after SSO
+# sends existing UNICEF users into the confirm-email / Account Already Exists loop.
+SOCIALACCOUNT_EMAIL_VERIFICATION = "none"
 SOCIALACCOUNT_LOGIN_ON_GET = True
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 

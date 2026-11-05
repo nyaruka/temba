@@ -1,4 +1,5 @@
 from allauth.account.adapter import DefaultAccountAdapter
+from allauth.account.internal.emailkit import valid_email_or_none
 from allauth.account.models import EmailAddress
 from allauth.core import context as allauth_context
 from allauth.mfa.adapter import DefaultMFAAdapter
@@ -72,7 +73,9 @@ class InviteAdapterMixin:
 class TembaAccountAdapter(InviteAdapterMixin, DefaultAccountAdapter):
     def send_mail(self, template_prefix, email, context):
 
-        # our emails need some additional context
+        # allauth's default send_mail puts `email` in the template context;
+        # keep that contract so templates like account_already_exists render it.
+        context.setdefault("email", email)
         context["branding"] = self.request.branding
         context["now"] = timezone.now()
 
@@ -81,18 +84,43 @@ class TembaAccountAdapter(InviteAdapterMixin, DefaultAccountAdapter):
 
 
 class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter):
+    EMAIL_CLAIM_KEYS = ("email", "upn", "preferred_username", "mail")
 
-    @staticmethod
-    def extract_email(sociallogin):
-        for address in getattr(sociallogin, "email_addresses", []) or []:
-            if address.email:
-                return address.email
-
-        if not hasattr(sociallogin, "account") or not hasattr(sociallogin.account, "extra_data"):
+    @classmethod
+    def email_from_mapping(cls, data):
+        if not isinstance(data, dict):
             return None
 
-        extra_data = sociallogin.account.extra_data
-        return extra_data.get("email") or extra_data.get("upn") or extra_data.get("preferred_username")
+        for key in cls.EMAIL_CLAIM_KEYS:
+            email = valid_email_or_none(data.get(key))
+            if email:
+                return email
+        return None
+
+    @classmethod
+    def extract_email(cls, sociallogin):
+        for address in getattr(sociallogin, "email_addresses", []) or []:
+            email = valid_email_or_none(getattr(address, "email", None))
+            if email:
+                return email
+
+        extra_data = getattr(getattr(sociallogin, "account", None), "extra_data", None) or {}
+        # allauth >= 65.11 stores OIDC payloads as {userinfo, id_token}; older
+        # versions keep claims at the top level.
+        return (
+            cls.email_from_mapping(extra_data)
+            or cls.email_from_mapping(extra_data.get("userinfo"))
+            or cls.email_from_mapping(extra_data.get("id_token"))
+        )
+
+    @staticmethod
+    def find_existing_user(email):
+        user = User.get_by_email(email)
+        if user:
+            return user
+
+        address = EmailAddress.objects.filter(email__iexact=email).select_related("user").first()
+        return address.user if address else None
 
     @staticmethod
     def mark_email_verified(user, email):
@@ -103,26 +131,33 @@ class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter)
                 address.primary = True
                 address.save(update_fields=["verified", "primary"])
         else:
-            EmailAddress.objects.create(user=user, email=user.email, verified=True, primary=True)
+            EmailAddress.objects.create(user=user, email=email, verified=True, primary=True)
 
     @staticmethod
     def ensure_verified_email_addresses(sociallogin, email):
         sociallogin.email_addresses = [EmailAddress(email=email, verified=True, primary=True)]
 
     def is_email_verified(self, provider, email):
-        # Microsoft Entra is a trusted IdP; treat OIDC emails as verified so allauth
-        # lookup() can match existing accounts before auto-signup runs.
-        if provider.id == "openid_connect" and email:
+        # Microsoft Entra is a trusted IdP; treat social emails as verified so
+        # allauth lookup() can match existing accounts before auto-signup runs.
+        if email:
             return True
         return super().is_email_verified(provider, email)
 
+    def can_authenticate_by_email(self, login, email):
+        # Do not depend on SocialApp.settings in the DB matching settings.py.
+        return True
+
     def populate_user(self, request, sociallogin, data):
         user = super().populate_user(request, sociallogin, data)
-        email = self.extract_email(sociallogin)
-        if not user.email:
-            user.email = email
-        if "email" not in data and email:
+        email = self.extract_email(sociallogin) or self.email_from_mapping(data)
+        if email:
+            if not user.email:
+                user.email = email
             data["email"] = email
+            # lookup() runs after populate_user and only considers verified
+            # email_addresses — fill them here, not in pre_social_login.
+            self.ensure_verified_email_addresses(sociallogin, email)
         return user
 
     def save_user(self, request, sociallogin, form=None):
@@ -140,7 +175,7 @@ class TembaSocialAccountAdapter(InviteAdapterMixin, DefaultSocialAccountAdapter)
 
         sociallogin_user = getattr(sociallogin, "user", None)
         if sociallogin_user is None or sociallogin_user.pk is None:
-            user = User.get_by_email(email)
+            user = self.find_existing_user(email)
             if user:
                 sociallogin.connect(request, user)
                 self.mark_email_verified(user, email)

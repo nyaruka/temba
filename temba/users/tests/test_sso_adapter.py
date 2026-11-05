@@ -51,6 +51,19 @@ class SSOAdapterTest(TembaTest):
         sociallogin = self._make_sociallogin("", upn="user@unicef.org")
         self.assertEqual("user@unicef.org", TembaSocialAccountAdapter.extract_email(sociallogin))
 
+    def test_extract_email_from_nested_userinfo(self):
+        sociallogin = SocialLogin()
+        sociallogin.user = User()
+        sociallogin.account = SocialAccount(
+            provider="unicef",
+            uid="uid-nested",
+            extra_data={
+                "userinfo": {"preferred_username": "user@unicef.org", "email_verified": False},
+                "id_token": {"sub": "oid-123"},
+            },
+        )
+        self.assertEqual("user@unicef.org", TembaSocialAccountAdapter.extract_email(sociallogin))
+
     def test_extract_email_from_email_addresses(self):
         sociallogin = self._make_sociallogin("")
         sociallogin.email_addresses = [EmailAddress(email="user@unicef.org", verified=False, primary=True)]
@@ -58,8 +71,28 @@ class SSOAdapterTest(TembaTest):
 
     def test_is_email_verified_for_openid_connect(self):
         provider = MagicMock()
-        provider.id = "openid_connect"
+        provider.id = "unicef"
         self.assertTrue(self.adapter.is_email_verified(provider, "user@unicef.org"))
+
+    def test_can_authenticate_by_email(self):
+        self.assertTrue(self.adapter.can_authenticate_by_email(MagicMock(), "user@unicef.org"))
+
+    def test_populate_user_marks_email_addresses_verified(self):
+        request = self._make_request()
+        sociallogin = SocialLogin()
+        sociallogin.user = User()
+        sociallogin.account = SocialAccount(
+            provider="unicef",
+            uid="uid-populate",
+            extra_data={"userinfo": {"preferred_username": "user@unicef.org"}},
+        )
+
+        user = self.adapter.populate_user(request, sociallogin, {})
+
+        self.assertEqual("user@unicef.org", user.email)
+        self.assertEqual(1, len(sociallogin.email_addresses))
+        self.assertEqual("user@unicef.org", sociallogin.email_addresses[0].email)
+        self.assertTrue(sociallogin.email_addresses[0].verified)
 
     def test_pre_social_login_replaces_unverified_email_addresses(self):
         user = User.objects.create_user(
@@ -111,6 +144,24 @@ class SSOAdapterTest(TembaTest):
 
         self.assertEqual(user, sociallogin.user)
         self.assertTrue(EmailAddress.objects.get(user=user).verified)
+
+    def test_pre_social_login_finds_user_by_emailaddress_when_user_email_differs(self):
+        user = User.objects.create_user(
+            email="old@unicef.org",
+            password=self.default_password,
+            first_name="Test",
+            last_name="User",
+        )
+        EmailAddress.objects.filter(user=user).delete()
+        EmailAddress.objects.create(user=user, email="user@unicef.org", verified=False, primary=True)
+
+        request = self._make_request()
+        sociallogin = self._make_sociallogin("user@unicef.org")
+
+        self._run_pre_social_login(request, sociallogin)
+
+        self.assertEqual(user, sociallogin.user)
+        self.assertTrue(EmailAddress.objects.get(user=user, email="user@unicef.org").verified)
 
     def test_pre_social_login_keeps_verified_email_for_existing_user(self):
         user = User.objects.create_user(
@@ -216,3 +267,19 @@ class SSOAdapterTest(TembaTest):
         account_post_login.assert_called_once()
         invitation.refresh_from_db()
         self.assertFalse(invitation.is_active)
+
+    def test_send_mail_includes_email_in_context(self):
+        request = self._make_request()
+        self.account_adapter.request = request
+        context = {"password_reset_url": "https://example.com/reset"}
+
+        with patch("temba.users.adapter.EmailSender.from_email_type") as from_email_type:
+            sender = MagicMock()
+            from_email_type.return_value = sender
+            self.account_adapter.send_mail("account/email/account_already_exists", "user@unicef.org", context)
+
+        sender.send.assert_called_once()
+        recipients, template, sent_context = sender.send.call_args.args
+        self.assertEqual(["user@unicef.org"], recipients)
+        self.assertEqual("account/email/account_already_exists", template)
+        self.assertEqual("user@unicef.org", sent_context["email"])
