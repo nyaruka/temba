@@ -4122,6 +4122,9 @@ msgstr "Duração"
 msgid "Activated"
 msgstr "Ativado"
 
+msgid "Sending is paused because the provider isn't accepting messages."
+msgstr "O envio está pausado porque o provedor não está aceitando mensagens."
+
 msgid "Last Synced"
 msgstr "Última sincronização"
 
@@ -4131,9 +4134,6 @@ msgstr "%(last_sync)s atrás"
 
 msgid "Not synced yet"
 msgstr "Não está sincronizado ainda"
-
-msgid "Sending is paused because the provider isn't accepting messages."
-msgstr "O envio está pausado porque o provedor não está aceitando mensagens."
 
 msgid "ON"
 msgstr "LIGADO"

@@ -376,6 +376,7 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         # no queue state for this channel
         response = self.requestView(read_url, self.admin)
         self.assertFalse(response.context["send_paused"])
+        self.assertContains(response, '<div class="value">Ready</div>', html=True)
         self.assertNotContains(response, "Paused")
 
         # throttled by its TPS but not paused
@@ -390,6 +391,7 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
             response = self.requestView(read_url, self.admin)
             self.assertTrue(response.context["send_paused"])
             self.assertContains(response, "Paused")
+            self.assertNotContains(response, '<div class="value">Ready</div>', html=True)
 
             # pause ended recently so still counts
             r.hset(state_key, "paused_until", "1579478370")

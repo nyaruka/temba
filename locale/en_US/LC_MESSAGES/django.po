@@ -4103,6 +4103,9 @@ msgstr ""
 msgid "Activated"
 msgstr ""
 
+msgid "Sending is paused because the provider isn't accepting messages."
+msgstr ""
+
 msgid "Last Synced"
 msgstr ""
 
@@ -4111,9 +4114,6 @@ msgid "%(last_sync)s ago"
 msgstr ""
 
 msgid "Not synced yet"
-msgstr ""
-
-msgid "Sending is paused because the provider isn't accepting messages."
 msgstr ""
 
 msgid "ON"

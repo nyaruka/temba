@@ -36,6 +36,14 @@
       <div class="label">{% trans "Activated" %}</div>
       <div class="value">{{ object.created_on|day }}</div>
     </div>
+    <div class="detail">
+      <div class="label">{% trans "Status" %}</div>
+      {% if send_paused %}
+        <div class="value text-error" title="{% trans "Sending is paused because the provider isn't accepting messages." %}">{% trans "Paused" %}</div>
+      {% else %}
+        <div class="value">{% trans "Ready" %}</div>
+      {% endif %}
+    </div>
     {% if object.is_android %}
       <div class="detail">
         <div class="label">{% trans "Last Synced" %}</div>
@@ -48,11 +56,6 @@
             {% trans "Not synced yet" %}
           {% endif %}
         </div>
-      </div>
-    {% endif %}
-    {% if send_paused %}
-      <div class="ml-auto self-center" title="{% trans "Sending is paused because the provider isn't accepting messages." %}">
-        <temba-label danger icon="alert_warning">{% trans "Paused" %}</temba-label>
       </div>
     {% endif %}
   </div>
