@@ -3,13 +3,15 @@ from django.db.models import Max
 
 ORG_BATCH_SIZE = 10
 
-# totals only go up, so where flushes have already written a row the larger count is the more recent one
+# totals only go up, so where flushes have already written a row the larger count is the more recent one, and source
+# rows are locked so that a flush committing mid-statement is re-read rather than lost
 BACKFILL_SQL = """
 INSERT INTO orgs_orgtally AS t (org_id, scope, count, expires_on)
      SELECT org_id, scope, count, expires_on
        FROM orgs_tally
       WHERE org_id > %(from_id)s AND org_id <= %(to_id)s
    ORDER BY org_id, scope
+        FOR UPDATE
 ON CONFLICT (org_id, scope) DO UPDATE SET count = GREATEST(t.count, excluded.count), expires_on = excluded.expires_on"""
 
 

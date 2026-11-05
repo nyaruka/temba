@@ -17,6 +17,7 @@ class BackfillOrgTalliesTest(MigrationTest):
         # already written by a flush with a higher count, or with a lower one
         self.org.org_tallies.create(scope="foo/1", count=6)
         self.org.org_tallies.create(scope="foo/3", count=2)
+        self.org.org_tallies.create(scope="foo/2@2026-11-02", count=1, expires_on=date(2028, 1, 1))
 
     def test_migration(self):
         self.assertEqual(
