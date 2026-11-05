@@ -1,3 +1,8 @@
+## v26.3.178 (2026-11-05)
+ * Add data migration to backfill org tallies from tallies, locking source tallies while it runs
+ * Stop writing channel counts from the msg insert trigger
+ * Test expiry of existing org tallies
+
 ## v26.3.177 (2026-11-05)
  * Add OrgTally model keyed by org and scope
  * Show the channel's country code on the channel read page and drop the activated date
