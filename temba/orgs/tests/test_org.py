@@ -159,6 +159,23 @@ class OrgTest(TembaTest):
 
         self.assertEqual(self.org.format_datetime(invalid_date), "")
 
+    def test_get_estimated_send_time(self):
+        channel2 = self.create_channel("TG", "Telegram", "1234")
+        channel2.tps = 100
+        channel2.save(update_fields=("tps",))
+
+        # with no recent counts, messages are balanced equally across channels
+        self.assertEqual(timedelta(seconds=50), self.org.get_estimated_send_time(1000))
+
+        today = timezone.now().date()
+        self.create_channel_tally(self.channel, "text:out", today - timedelta(days=1), 90)
+        self.create_channel_tally(channel2, "text:in", today, 10)
+        self.create_channel_tally(channel2, "text:out", today - timedelta(days=31), 1000)  # too old
+        self.create_channel_tally(channel2, "voice:out", today, 1000)  # not text
+
+        # otherwise by their share of recent messages, so 900 messages at 10/s is the longest
+        self.assertEqual(timedelta(seconds=90), self.org.get_estimated_send_time(1000))
+
     def test_get_unique_slug(self):
         self.org.slug = "allo"
         self.org.save()

@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from smartmin.views import SmartTemplateView
 
-from django.db.models import OuterRef, Prefetch, Q, Sum
+from django.db.models import OuterRef, Prefetch, Q
 from django.utils.translation import gettext_lazy as _
 
 from temba.archives.models import Archive
@@ -24,7 +24,7 @@ from temba.globals.models import Global
 from temba.knowledge.models import Article, KnowledgeSource
 from temba.locations.models import AdminBoundary, BoundaryAlias
 from temba.msgs.models import Broadcast, BroadcastMsgCount, Label, LabelCount, Media, Msg, MsgFolder
-from temba.orgs.models import Org, OrgMembership
+from temba.orgs.models import Org, OrgMembership, Tally
 from temba.orgs.views.mixins import OrgPermsMixin
 from temba.tickets.models import Ticket, Topic
 from temba.users.models import User
@@ -3168,13 +3168,6 @@ class StatisticsEndpoint(BaseEndpoint):
     model = ChannelCount
     permission = "channels.channel_list"
 
-    SCOPES = (
-        ChannelCount.SCOPE_TEXT_IN,
-        ChannelCount.SCOPE_TEXT_OUT,
-        ChannelCount.SCOPE_VOICE_IN,
-        ChannelCount.SCOPE_VOICE_OUT,
-    )
-
     def get(self, request, *args, **kwargs):
         if self.is_docs():
             return Response({"results": []})
@@ -3186,27 +3179,16 @@ class StatisticsEndpoint(BaseEndpoint):
         if (until - since).days > 366:
             raise InvalidQueryError("Date range can't be more than 366 days.")
 
-        counts = (
-            ChannelCount.objects.filter(
-                channel__org=request.org,
-                channel__is_active=True,
-                day__gte=since,
-                day__lt=until,
-                scope__in=self.SCOPES,
-            )
-            .values("day", "channel__uuid", "channel__channel_type", "scope")
-            .annotate(count_sum=Sum("count"))
-            .order_by("day")
-        )
+        channels = request.org.channels.filter(is_active=True).only("uuid", "channel_type")
+        by_prefix = {f"channels/{c.id}/": c for c in channels}
+        scopes = [prefix + scope for prefix in by_prefix for scope in ChannelCount.SCOPES]
 
         # group by day then channel
-        by_day = defaultdict(lambda: defaultdict(lambda: {"type": None}))
-        for row in counts:
-            day = row["day"]
-            ch_uuid = str(row["channel__uuid"])
-            entry = by_day[day][ch_uuid]
-            entry["type"] = Channel.get_type_from_code(row["channel__channel_type"]).slug
-            entry[row["scope"]] = row["count_sum"]
+        by_day = defaultdict(dict)
+        for (day, scope), count in Tally.get_daily_totals(request.org, scopes, since, until).items():
+            prefix, scope = scope.rsplit("/", 1)
+            channel = by_prefix[prefix + "/"]
+            by_day[day].setdefault(str(channel.uuid), {"type": channel.type.slug})[scope] = count
 
         results = [{"date": day.isoformat(), "channels": dict(channels)} for day, channels in sorted(by_day.items())]
 

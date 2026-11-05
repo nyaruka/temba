@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone as tzone
 from unittest.mock import patch
 
 from django_valkey import get_valkey_connection
@@ -51,6 +51,11 @@ class TallyTest(TembaTest):
             Tally.get_totals(self.org, ["foo/1", "foo/2", "foo/3", "emails/shared@2026-11-01"]),
         )
         self.assertEqual({"foo/1": 1105}, Tally.get_totals(self.org2, ["foo/1"]))
+        self.assertEqual(
+            {(self.org.id, "foo/1"): 13, (self.org.id, "foo/3"): 6, (self.org2.id, "foo/1"): 1105},
+            Tally.get_totals_by_org([self.org, self.org2], ["foo/1", "foo/3"]),
+        )
+        self.assertEqual({}, Tally.get_totals_by_org([], ["foo/1"]))
 
         # batch 8 has been committed but not yet deleted, so is only counted in the rows
         TallyFlush.objects.filter(name="tallies").update(last_batch=8)
@@ -70,6 +75,72 @@ class TallyTest(TembaTest):
         )
 
     @cleanup(valkey=True)
+    def test_get_daily_totals(self):
+        r = get_valkey_connection()
+
+        def tally(org, scope: str, count: int):
+            org.tallies.create(scope=scope, count=count, expires_on=date(2027, 11, 5))
+
+        tally(self.org, "foo/1@2026-10-31", 1)
+        tally(self.org, "foo/1@2026-11-01", 2)
+        tally(self.org, "foo/1@2026-11-04", 3)
+        tally(self.org, "foo/1@2026-11-05", 4)
+        tally(self.org, "foo/2@2026-11-01", 5)
+        tally(self.org, "foo/10@2026-11-01", 6)  # shares foo/1's prefix
+        tally(self.org, "foo/1/x@2026-11-01", 7)
+        tally(self.org2, "foo/1@2026-11-01", 8)
+        self.org.tallies.create(scope="foo/1", count=9)
+
+        # only today's are read from Valkey
+        r.hset(
+            "{tallies}:live",
+            mapping={
+                field(self.org, "foo/1@2026-11-05"): 10,
+                field(self.org, "foo/1@2026-11-04"): 100,
+                field(self.org2, "foo/1@2026-11-05"): 20,
+            },
+        )
+
+        with patch("django.utils.timezone.now", return_value=datetime(2026, 11, 5, 12, 0, 0, 0, tzone.utc)):
+            self.assertEqual(
+                {
+                    (date(2026, 11, 1), "foo/1"): 2,
+                    (date(2026, 11, 4), "foo/1"): 3,
+                    (date(2026, 11, 5), "foo/1"): 14,
+                    (date(2026, 11, 1), "foo/2"): 5,
+                },
+                Tally.get_daily_totals(self.org, ["foo/1", "foo/2", "foo/1"], date(2026, 11, 1), date(2026, 11, 6)),
+            )
+
+            # until is exclusive
+            self.assertEqual(
+                {(date(2026, 10, 31), "foo/1"): 1, (date(2026, 11, 1), "foo/1"): 2},
+                Tally.get_daily_totals(self.org, ["foo/1"], date(2026, 10, 1), date(2026, 11, 4)),
+            )
+
+            # just today
+            self.assertEqual(
+                {(date(2026, 11, 5), "foo/1"): 14},
+                Tally.get_daily_totals(self.org, ["foo/1"], date(2026, 11, 5), date(2026, 11, 6)),
+            )
+
+            self.assertEqual({}, Tally.get_daily_totals(self.org, ["foo/3"], date(2026, 11, 1), date(2026, 11, 6)))
+            self.assertEqual({}, Tally.get_daily_totals(self.org, [], date(2026, 11, 1), date(2026, 11, 6)))
+
+            # across workspaces
+            self.assertEqual(
+                {
+                    (self.org.id, date(2026, 11, 1), "foo/1"): 2,
+                    (self.org.id, date(2026, 11, 4), "foo/1"): 3,
+                    (self.org.id, date(2026, 11, 5), "foo/1"): 14,
+                    (self.org2.id, date(2026, 11, 1), "foo/1"): 8,
+                    (self.org2.id, date(2026, 11, 5), "foo/1"): 20,
+                },
+                Tally.get_daily_totals_by_org([self.org, self.org2], ["foo/1"], date(2026, 11, 1), date(2026, 11, 6)),
+            )
+            self.assertEqual({}, Tally.get_daily_totals_by_org([], ["foo/1"], date(2026, 11, 1), date(2026, 11, 6)))
+
+    @cleanup(valkey=True)
     def test_get_totals_retries(self):
         r = get_valkey_connection()
 
@@ -79,14 +150,16 @@ class TallyTest(TembaTest):
         r.set("{tallies}:batch_id", 4)
         TallyFlush.objects.create(name="tallies", last_batch=5)
 
-        self.assertEqual(({"foo": 8}, False), Tally._read_totals(self.org, ["foo"]))
+        self.assertEqual(({(self.org.id, "foo"): 8}, False), Tally._read_totals([self.org.id], ["foo"]))
 
         # same if no batch had been created when we read Valkey
         r.delete("{tallies}:batch_id")
-        self.assertEqual(({"foo": 8}, False), Tally._read_totals(self.org, ["foo"]))
+        self.assertEqual(({(self.org.id, "foo"): 8}, False), Tally._read_totals([self.org.id], ["foo"]))
         r.set("{tallies}:batch_id", 4)
 
-        with patch.object(Tally, "_read_totals", side_effect=[({"foo": 8}, False), ({"foo": 5}, True)]) as mock_read:
+        with patch.object(
+            Tally, "_read_totals", side_effect=[({(self.org.id, "foo"): 8}, False), ({(self.org.id, "foo"): 5}, True)]
+        ) as mock_read:
             self.assertEqual({"foo": 5}, Tally.get_totals(self.org, ["foo"]))
             self.assertEqual(2, mock_read.call_count)
 

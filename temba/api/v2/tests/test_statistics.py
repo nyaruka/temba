@@ -2,8 +2,6 @@ from datetime import date
 
 from django.urls import reverse
 
-from temba.channels.models import ChannelCount
-
 from . import APITest
 
 
@@ -43,18 +41,24 @@ class StatisticsEndpointTest(APITest):
 
         # add some counts
         d1, d2 = date(2026, 2, 10), date(2026, 2, 11)
-        ChannelCount.objects.create(channel=self.channel, day=d1, scope=ChannelCount.SCOPE_TEXT_IN, count=100)
-        ChannelCount.objects.create(channel=self.channel, day=d1, scope=ChannelCount.SCOPE_TEXT_OUT, count=200)
-        ChannelCount.objects.create(channel=self.channel, day=d1, scope=ChannelCount.SCOPE_VOICE_IN, count=10)
-        ChannelCount.objects.create(channel=self.channel, day=d1, scope=ChannelCount.SCOPE_VOICE_OUT, count=20)
-        ChannelCount.objects.create(channel=channel2, day=d1, scope=ChannelCount.SCOPE_TEXT_IN, count=50)
-        ChannelCount.objects.create(channel=channel2, day=d1, scope=ChannelCount.SCOPE_TEXT_OUT, count=75)
-        ChannelCount.objects.create(channel=self.channel, day=d2, scope=ChannelCount.SCOPE_TEXT_IN, count=300)
-        ChannelCount.objects.create(channel=self.channel, day=d2, scope=ChannelCount.SCOPE_TEXT_OUT, count=400)
+        self.create_channel_tally(self.channel, "text:in", d1, 100)
+        self.create_channel_tally(self.channel, "text:out", d1, 200)
+        self.create_channel_tally(self.channel, "voice:in", d1, 10)
+        self.create_channel_tally(self.channel, "voice:out", d1, 20)
+        self.create_channel_tally(channel2, "text:in", d1, 50)
+        self.create_channel_tally(channel2, "text:out", d1, 75)
+        self.create_channel_tally(self.channel, "text:in", d2, 300)
+        self.create_channel_tally(self.channel, "text:out", d2, 400)
 
         # counts on other org shouldn't appear
         org2_channel = self.create_channel("A", "Org2Channel", "123456", country="RW", org=self.org2)
-        ChannelCount.objects.create(channel=org2_channel, day=d1, scope=ChannelCount.SCOPE_TEXT_IN, count=999)
+        self.create_channel_tally(org2_channel, "text:in", d1, 999)
+
+        # nor counts on inactive channels
+        channel3 = self.create_channel("FBA", "Facebook", "23456")
+        channel3.is_active = False
+        channel3.save(update_fields=("is_active",))
+        self.create_channel_tally(channel3, "text:in", d1, 888)
 
         self.assertGet(
             endpoint_url + "?since=2026-02-10&until=2026-02-12",

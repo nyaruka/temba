@@ -108,20 +108,20 @@
         <tr>
           <th>{% trans "Month" %}</th>
           <th class="text-right">
-            {% if ivr_count %}
+            {% if has_voice %}
               {% trans "Incoming Text" %}
             {% else %}
               {% trans "Incoming" %}
             {% endif %}
           </th>
           <th class="text-right">
-            {% if ivr_count %}
+            {% if has_voice %}
               {% trans "Outgoing Text" %}
             {% else %}
               {% trans "Outgoing" %}
             {% endif %}
           </th>
-          {% if ivr_count %}
+          {% if has_voice %}
             <th class="text-right">{% trans "Incoming Voice" %}</th>
             <th class="text-right">{% trans "Outgoing Voice" %}</th>
           {% endif %}
@@ -133,7 +133,7 @@
             <td>{{ month_data.month_start|date:"F Y" }}</td>
             <td class="text-right">{{ month_data.text_in|intcomma }}</td>
             <td class="text-right">{{ month_data.text_out|intcomma }}</td>
-            {% if ivr_count %}
+            {% if has_voice %}
               <td class="text-right">{{ month_data.voice_in|intcomma }}</td>
               <td class="text-right">{{ month_data.voice_out|intcomma }}</td>
             {% endif %}

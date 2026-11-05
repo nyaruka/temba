@@ -1,16 +1,19 @@
+from collections import defaultdict
 from datetime import datetime, timedelta
 
 from smartmin.views import SmartTemplateView
 
-from django.db.models import Q, Sum
+from django.db.models import Q
 from django.http import JsonResponse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from temba.channels.models import ChannelCount
-from temba.orgs.models import Org
+from temba.orgs.models import Org, Tally
 from temba.orgs.views.mixins import OrgPermsMixin
 from temba.utils.views.mixins import ChartViewMixin, SpaMixin
+
+SCOPE_TEXT_IN = "msgs/text:in"
+SCOPE_TEXT_OUT = "msgs/text:out"
 
 
 class Home(SpaMixin, OrgPermsMixin, SmartTemplateView):
@@ -34,37 +37,27 @@ class MessageHistory(OrgPermsMixin, ChartViewMixin, SmartTemplateView):
 
     def get_chart_data(self, since, until) -> tuple[list, list]:
         org = self.request.org
-        orgs = Org.objects.filter(Q(id=org.id) | Q(parent=org))
+        orgs = list(Org.objects.filter(Q(id=org.id) | Q(parent=org)))
 
-        # get all our counts for that period
-        daily_counts = ChannelCount.objects.filter(scope__in=[ChannelCount.SCOPE_TEXT_IN, ChannelCount.SCOPE_TEXT_OUT])
-        daily_counts = daily_counts.filter(day__gte=since).filter(day__lte=until)
-        daily_counts = daily_counts.filter(channel__org__in=orgs)
-
-        daily_counts = list(
-            daily_counts.values("day", "scope").order_by("day", "scope").annotate(count_sum=Sum("count"))
-        )
-
-        # collect all dates and values by scope
+        # collect all dates and values by scope across our workspaces, including the until day
         dates_set = set()
-        values_by_scope = {
-            ChannelCount.SCOPE_TEXT_IN: {},
-            ChannelCount.SCOPE_TEXT_OUT: {},
-        }
+        values_by_scope = {SCOPE_TEXT_IN: defaultdict(int), SCOPE_TEXT_OUT: defaultdict(int)}
 
-        for count in daily_counts:
-            dates_set.add(count["day"])
-            values_by_scope[count["scope"]][count["day"]] = count["count_sum"]  # create sorted list of dates
+        daily_totals = Tally.get_daily_totals_by_org(orgs, list(values_by_scope), since, until + timedelta(days=1))
+        for (_org_id, day, scope), count in daily_totals.items():
+            dates_set.add(day)
+            values_by_scope[scope][day] += count
+
         labels = sorted(list(dates_set))
 
         return [d.strftime("%Y-%m-%d") for d in labels], [
             {
                 "label": _("Incoming"),
-                "data": [values_by_scope[ChannelCount.SCOPE_TEXT_IN].get(d, 0) for d in labels],
+                "data": [values_by_scope[SCOPE_TEXT_IN].get(d, 0) for d in labels],
             },
             {
                 "label": _("Outgoing"),
-                "data": [values_by_scope[ChannelCount.SCOPE_TEXT_OUT].get(d, 0) for d in labels],
+                "data": [values_by_scope[SCOPE_TEXT_OUT].get(d, 0) for d in labels],
             },
         ]
 
@@ -91,44 +84,27 @@ class WorkspaceStats(OrgPermsMixin, SmartTemplateView):
 
     def render_to_response(self, context, **response_kwargs):
         org = self.request.org
-        orgs = Org.objects.filter(Q(id=org.id) | Q(parent=org))
+        orgs = list(Org.objects.filter(Q(id=org.id) | Q(parent=org)))
 
         since, until = self.get_period()
-
-        # get all our counts for that period
-        daily_counts = ChannelCount.objects.filter(
-            scope__in=[
-                ChannelCount.SCOPE_TEXT_IN,
-                ChannelCount.SCOPE_TEXT_OUT,
-            ]
-        )
-
-        daily_counts = daily_counts.filter(day__gte=since).filter(day__lte=until)
-        daily_counts = daily_counts.filter(channel__org__in=orgs)
 
         categories = []
         inbound = []
         outbound = []
 
+        totals = defaultdict(int)
+        daily_totals = Tally.get_daily_totals_by_org(
+            orgs, [SCOPE_TEXT_IN, SCOPE_TEXT_OUT], since, until + timedelta(days=1)
+        )
+        for (org_id, _day, scope), count in daily_totals.items():
+            totals[(org_id, scope)] += count
+
         for org in orgs:
-            org_daily_counts = list(
-                daily_counts.filter(channel__org_id=org.id)
-                .values("scope")
-                .order_by("scope")
-                .annotate(count_sum=Sum("count"))
-            )
+            inbound_count, outbound_count = totals[(org.id, SCOPE_TEXT_IN)], totals[(org.id, SCOPE_TEXT_OUT)]
 
             # ignore orgs with no activity in this period
-            if not org_daily_counts:
+            if not inbound_count and not outbound_count:
                 continue
-
-            inbound_count, outbound_count = 0, 0
-
-            for count in org_daily_counts:
-                if count["scope"] == ChannelCount.SCOPE_TEXT_IN:
-                    inbound_count = count["count_sum"]
-                elif count["scope"] == ChannelCount.SCOPE_TEXT_OUT:
-                    outbound_count = count["count_sum"]
 
             categories.append(org.name)
             inbound.append(inbound_count)

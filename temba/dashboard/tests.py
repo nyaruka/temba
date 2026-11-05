@@ -1,21 +1,23 @@
 from datetime import timedelta, timezone as tzone
 
+from django_valkey import get_valkey_connection
+
 from django.urls import reverse
 from django.utils import timezone
 
 from temba.orgs.models import Org
-from temba.tests import TembaTest
+from temba.tests import TembaTest, cleanup
 
 
 class DashboardTest(TembaTest):
     def create_activity(self):
-        # and some message and call activity
-        joe = self.create_contact("Joe", phone="+593979099111")
-        self.create_outgoing_msg(joe, "Tea of coffee?")
-        self.create_incoming_msg(joe, "Coffee")
-        self.create_outgoing_msg(joe, "OK")
-        self.create_outgoing_msg(joe, "Wanna hang?", voice=True)
-        self.create_incoming_msg(joe, "Sure", voice=True)
+        # some message and call activity today
+        today = timezone.now().date().isoformat()
+        for scope, count in (("text:in", 1), ("text:out", 2), ("voice:in", 1), ("voice:out", 1)):
+            self.org.tallies.create(scope=f"msgs/{scope}@{today}", count=count)
+
+        # and on another workspace
+        self.org2.tallies.create(scope=f"msgs/text:in@{today}", count=5)
 
     def test_dashboard_home(self):
         dashboard_url = reverse("dashboard.dashboard_home")
@@ -130,3 +132,31 @@ class DashboardTest(TembaTest):
         self.assertEqual(2, len(data["datasets"]))
         self.assertEqual([], data["datasets"][0]["data"])  # no incoming data
         self.assertEqual([], data["datasets"][1]["data"])  # no outgoing data
+
+    @cleanup(valkey=True)
+    def test_child_workspaces(self):
+        history_url = reverse("dashboard.dashboard_message_history")
+        stats_url = reverse("dashboard.dashboard_workspace_stats")
+
+        self.create_activity()
+
+        self.org.features += [Org.FEATURE_CHILD_ORGS]
+        child = self.org.create_new(self.admin, "Child Org", tzone.utc, as_child=True)
+
+        # child has flushed counts for yesterday and counts for today still in Valkey
+        today = timezone.now().date()
+        yesterday = today - timedelta(days=1)
+        child.tallies.create(scope=f"msgs/text:out@{yesterday.isoformat()}", count=4)
+        get_valkey_connection().hset("{tallies}:live", f"{child.id}|msgs/text:in@{today.isoformat()}", 3)
+
+        self.login(self.admin, choose_org=self.org)
+
+        data = self.client.get(history_url).json()["data"]
+        self.assertEqual([yesterday.isoformat(), today.isoformat()], data["labels"])
+        self.assertEqual([0, 4], data["datasets"][0]["data"])  # incoming
+        self.assertEqual([4, 2], data["datasets"][1]["data"])  # outgoing
+
+        data = self.client.get(stats_url, {"since": yesterday.isoformat()}).json()["data"]
+        self.assertEqual(["Nyaruka", "Child Org"], data["labels"])
+        self.assertEqual([1, 3], data["datasets"][0]["data"])  # incoming
+        self.assertEqual([2, 4], data["datasets"][1]["data"])  # outgoing
