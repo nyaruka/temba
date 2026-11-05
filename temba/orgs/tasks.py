@@ -111,6 +111,6 @@ def trim_tallies():
     today = timezone.now().date()
 
     num_deleted = delete_in_batches(Tally.objects.filter(expires_on__lt=today))
-    delete_in_batches(OrgTally.objects.filter(expires_on__lt=today), pk="pk")
+    num_org_deleted = delete_in_batches(OrgTally.objects.filter(expires_on__lt=today), pk="pk")
 
-    return {"deleted": num_deleted}
+    return {"deleted": num_deleted, "org_deleted": num_org_deleted}

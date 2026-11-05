@@ -196,7 +196,7 @@ class TallyTest(TembaTest):
         self.org.org_tallies.create(scope="foo/2@2025-11-01", count=1, expires_on=today - timedelta(days=1))
         org_tally3 = self.org.org_tallies.create(scope="foo/2@2025-11-02", count=1, expires_on=today)
 
-        self.assertEqual({"deleted": 1}, trim_tallies())
+        self.assertEqual({"deleted": 1, "org_deleted": 1}, trim_tallies())
         self.assertEqual({tally1, tally3}, set(Tally.objects.all()))
         self.assertEqual({org_tally1, org_tally3}, set(OrgTally.objects.all()))
 
@@ -216,8 +216,16 @@ class TallyTest(TembaTest):
         self.assertEqual(date(2027, 11, 2), self.org.org_tallies.get(scope="foo/2@2026-11-02").expires_on)
 
     def test_org_tally_ranges(self):
-        # under the C collation, a scope's dated rows are a range under plain comparison
-        for scope in ("foo@2026-11-01", "foo@2026-11-02", "foo@2026-11-03", "foo/1@2026-11-02", "fooa@2026-11-02"):
+        # under the C collation, a scope's dated rows are a range under plain comparison, whereas under a locale
+        # collation punctuation is ignored at first so foo-2026-11-03 would sort between them
+        for scope in (
+            "foo@2026-11-01",
+            "foo@2026-11-02",
+            "foo@2026-11-03",
+            "foo/1@2026-11-02",
+            "fooa@2026-11-02",
+            "foo-2026-11-03",
+        ):
             self.org.org_tallies.create(scope=scope, count=1)
 
         in_range = self.org.org_tallies.filter(scope__gte="foo@2026-11-02", scope__lt="foo@2026-11-04")
