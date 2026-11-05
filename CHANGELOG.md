@@ -1,3 +1,7 @@
+## v26.3.176 (2026-11-05)
+ * Read channel and workspace message counts from tallies, batching reads across workspaces for the dashboard and across channels for send estimates
+ * Fix Kannel config page stanza being reflowed into a single block, with padding and a test of its line structure
+
 ## v26.3.175 (2026-11-04)
  * Backfill channel and workspace message tallies from channel counts for days before today
  * Show 13 months in channel read page monthly counts table
