@@ -4113,6 +4113,9 @@ msgstr ""
 msgid "Not synced yet"
 msgstr ""
 
+msgid "Sending is paused because the provider isn't accepting messages."
+msgstr ""
+
 msgid "ON"
 msgstr ""
 

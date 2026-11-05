@@ -1,12 +1,14 @@
 from datetime import date, datetime, timedelta, timezone as tzone
 from unittest.mock import call, patch
 
+from django_valkey import get_valkey_connection
+
 from django.urls import reverse
 
 from temba import mailroom
 from temba.notifications.incidents.builtin import ChannelDisconnectedIncidentType
 from temba.templates.models import TemplateTranslation
-from temba.tests import CRUDLTestMixin, MockResponse, TembaTest, mock_mailroom
+from temba.tests import CRUDLTestMixin, MockResponse, TembaTest, cleanup, mock_mailroom
 from temba.tests.crudl import StaffRedirect
 from temba.triggers.models import Trigger
 from temba.utils import json
@@ -364,6 +366,38 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
             # but are limited by the age of the channel
             self.assertEqual(date(2024, 3, 15), response.context["chart_min"])
             self.assertEqual(3, len(response.context["monthly_counts"]))
+
+    @cleanup(valkey=True)
+    def test_read_send_paused(self):
+        read_url = reverse("channels.channel_read", args=[self.tel_channel.uuid])
+        r = get_valkey_connection()
+        state_key = f"{{msgs}}:ch:{self.tel_channel.uuid}"
+
+        # no queue state for this channel
+        response = self.requestView(read_url, self.admin)
+        self.assertFalse(response.context["send_paused"])
+        self.assertNotContains(response, "Paused")
+
+        # throttled by its TPS but not paused
+        r.hset(state_key, mapping={"tps": 10, "sec": 1579478400, "used": 10})
+        self.assertFalse(self.tel_channel.is_send_paused())
+
+        with patch("django.utils.timezone.now", return_value=datetime(2020, 1, 20, 0, 0, 0, 0, tzone.utc)):
+            # paused until a few seconds from now
+            r.hset(state_key, "paused_until", "1579478410.5")
+            self.assertTrue(self.tel_channel.is_send_paused())
+
+            response = self.requestView(read_url, self.admin)
+            self.assertTrue(response.context["send_paused"])
+            self.assertContains(response, "Paused")
+
+            # pause ended recently so still counts
+            r.hset(state_key, "paused_until", "1579478370")
+            self.assertTrue(self.tel_channel.is_send_paused())
+
+            # pause ended over a minute ago
+            r.hset(state_key, "paused_until", "1579478330")
+            self.assertFalse(self.tel_channel.is_send_paused())
 
     def test_read(self):
         SyncEvent.create(

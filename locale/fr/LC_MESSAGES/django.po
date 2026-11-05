@@ -4128,6 +4128,9 @@ msgstr "depuis %(last_sync)s "
 msgid "Not synced yet"
 msgstr "Pas encore synchronisé"
 
+msgid "Sending is paused because the provider isn't accepting messages."
+msgstr "L'envoi est en pause car le fournisseur n'accepte pas de messages."
+
 msgid "ON"
 msgstr "ON"
 

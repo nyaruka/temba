@@ -599,6 +599,16 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         # is this channel newer than an hour
         return self.created_on > timezone.now() - timedelta(hours=1) or not self.last_sync
 
+    def is_send_paused(self) -> bool:
+        """
+        Whether courier has paused sending on this channel because its provider can't take more messages. Pauses are
+        short and renewed by the next send that fails, so one that ended in the last minute still counts.
+        """
+        r = get_valkey_connection()
+        paused_until = r.hget(f"{{msgs}}:ch:{self.uuid}", "paused_until")
+
+        return paused_until is not None and float(paused_until) > (timezone.now() - timedelta(minutes=1)).timestamp()
+
     def check_credentials(self) -> bool:
         return self.type.check_credentials(self.config)
 

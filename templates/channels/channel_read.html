@@ -50,6 +50,11 @@
         </div>
       </div>
     {% endif %}
+    {% if send_paused %}
+      <div class="ml-auto self-center" title="{% trans "Sending is paused because the provider isn't accepting messages." %}">
+        <temba-label danger icon="alert_warning">{% trans "Paused" %}</temba-label>
+      </div>
+    {% endif %}
   </div>
   <div class="shadow flex px-4 rounded-lg mb-6 bg-white">
     <div class="flex-grow"></div>
