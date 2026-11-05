@@ -14,7 +14,7 @@ from temba.triggers.models import Trigger
 from temba.utils import json
 from temba.utils.views.mixins import TEMBA_MENU_SELECTION
 
-from ..models import Channel, SyncEvent
+from ..models import COURIER_QUEUE_STATE_KEY, Channel, SyncEvent
 
 
 class ChannelTest(TembaTest, CRUDLTestMixin):
@@ -371,7 +371,7 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
     def test_read_send_paused(self):
         read_url = reverse("channels.channel_read", args=[self.tel_channel.uuid])
         r = get_valkey_connection()
-        state_key = f"{{msgs}}:ch:{self.tel_channel.uuid}"
+        state_key = COURIER_QUEUE_STATE_KEY % self.tel_channel.uuid
 
         # no queue state for this channel
         response = self.requestView(read_url, self.admin)

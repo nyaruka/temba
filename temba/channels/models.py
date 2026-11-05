@@ -39,6 +39,10 @@ from temba.utils.text import generate_secret
 
 logger = logging.getLogger(__name__)
 
+# a channel's state in courier's outgoing message queue (gocommon's queues.MsgsV2) and its field set by a pause
+COURIER_QUEUE_STATE_KEY = "{msgs}:ch:%s"
+COURIER_QUEUE_PAUSED_FIELD = "paused_until"
+
 
 @dataclass
 class ConfigUI:
@@ -605,7 +609,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         short and renewed by the next send that fails, so one that ended in the last minute still counts.
         """
         r = get_valkey_connection()
-        paused_until = r.hget(f"{{msgs}}:ch:{self.uuid}", "paused_until")
+        paused_until = r.hget(COURIER_QUEUE_STATE_KEY % self.uuid, COURIER_QUEUE_PAUSED_FIELD)
 
         return paused_until is not None and float(paused_until) > (timezone.now() - timedelta(minutes=1)).timestamp()
 
