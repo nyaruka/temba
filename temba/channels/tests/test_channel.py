@@ -376,7 +376,7 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         # no queue state for this channel
         response = self.requestView(read_url, self.admin)
         self.assertFalse(response.context["send_paused"])
-        self.assertContains(response, '<div class="value">Ready</div>', html=True)
+        self.assertContains(response, ">Ready</temba-label>")
         self.assertNotContains(response, "Paused")
 
         # throttled by its TPS but not paused
@@ -391,7 +391,7 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
             response = self.requestView(read_url, self.admin)
             self.assertTrue(response.context["send_paused"])
             self.assertContains(response, "Paused")
-            self.assertNotContains(response, '<div class="value">Ready</div>', html=True)
+            self.assertNotContains(response, ">Ready</temba-label>")
 
             # a disabled channel shows as that whether or not it's paused
             self.tel_channel.is_enabled = False
