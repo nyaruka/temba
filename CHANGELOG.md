@@ -1,3 +1,6 @@
+## v26.3.179 (2026-11-05)
+ * Read tally totals from OrgTally instead of Tally
+
 ## v26.3.178 (2026-11-05)
  * Add data migration to backfill org tallies from tallies, locking source tallies while it runs
  * Stop writing channel counts from the msg insert trigger
