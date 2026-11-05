@@ -24,7 +24,7 @@ from temba.globals.models import Global
 from temba.knowledge.models import Article, KnowledgeSource
 from temba.locations.models import AdminBoundary, BoundaryAlias
 from temba.msgs.models import Broadcast, BroadcastMsgCount, Label, LabelCount, Media, Msg, MsgFolder
-from temba.orgs.models import Org, OrgMembership, Tally
+from temba.orgs.models import Org, OrgMembership, OrgTally
 from temba.orgs.views.mixins import OrgPermsMixin
 from temba.tickets.models import Ticket, Topic
 from temba.users.models import User
@@ -3185,7 +3185,7 @@ class StatisticsEndpoint(BaseEndpoint):
 
         # group by day then channel
         by_day = defaultdict(dict)
-        for (day, scope), count in Tally.get_daily_totals(request.org, scopes, since, until).items():
+        for (day, scope), count in OrgTally.get_daily_totals(request.org, scopes, since, until).items():
             prefix, scope = scope.rsplit("/", 1)
             channel = by_prefix[prefix + "/"]
             by_day[day].setdefault(str(channel.uuid), {"type": channel.type.slug})[scope] = count
