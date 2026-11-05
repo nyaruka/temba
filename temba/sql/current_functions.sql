@@ -293,20 +293,6 @@ END;
 $$ LANGUAGE plpgsql;
 
 ----------------------------------------------------------------------
--- Determines the channel count scope for a message
-----------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION temba_msg_channel_countscope(_msg msgs_msg) RETURNS TEXT STABLE AS $$
-BEGIN
-  IF _msg.direction = 'I' THEN
-    IF _msg.msg_type = 'V' THEN RETURN 'voice:in'; ELSE RETURN 'text:in'; END IF;
-  ELSE
-    IF _msg.msg_type = 'V' THEN RETURN 'voice:out'; ELSE RETURN 'text:out'; END IF;
-  END IF;
-  RETURN NULL;
-END;
-$$ LANGUAGE plpgsql;
-
-----------------------------------------------------------------------
 -- Determines the item count scope for a msg record
 ----------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION temba_msg_countscope(_msg msgs_msg) RETURNS TEXT STABLE AS $$
@@ -401,11 +387,6 @@ BEGIN
     SELECT org_id, temba_msg_countscope(newtab), count(*), FALSE FROM newtab
     WHERE temba_msg_countscope(newtab) IS NOT NULL
     GROUP BY 1, 2;
-
-    -- add channel counts for all messages with a channel
-    INSERT INTO channels_channelcount("channel_id", "scope", "day", "count", "is_squashed")
-    SELECT channel_id, temba_msg_channel_countscope(newtab), created_on::date, count(*), FALSE FROM newtab
-    WHERE channel_id IS NOT NULL GROUP BY channel_id, temba_msg_channel_countscope(newtab), created_on::date;
 
     RETURN NULL;
 END;

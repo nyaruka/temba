@@ -63,11 +63,6 @@ class BroadcastTest(TembaTest):
         self.assertEqual(msg_counts[MsgFolder.SENT], 6)
         self.assertEqual(msg_counts[MsgFolder.FAILED], 1)
 
-        today = timezone.now().date()
-
-        self.assertEqual({(today, "text:in"): 3, (today, "text:out"): 6}, self.channel.counts.day_totals(scoped=True))
-        self.assertEqual({(today, "text:out"): 1}, self.facebook_channel.counts.day_totals(scoped=True))
-
         # delete all our messages save for our flow incoming message
         for m in Msg.objects.exclude(id=msg_in3.id):
             m.delete()
@@ -84,10 +79,6 @@ class BroadcastTest(TembaTest):
 
         # check user label
         self.assertEqual(0, LabelCount.get_totals([label])[label])
-
-        # but daily channel counts should be unchanged
-        self.assertEqual({(today, "text:in"): 3, (today, "text:out"): 6}, self.channel.counts.day_totals(scoped=True))
-        self.assertEqual({(today, "text:out"): 1}, self.facebook_channel.counts.day_totals(scoped=True))
 
     def test_model(self):
         schedule = Schedule.create(self.org, timezone.now(), Schedule.REPEAT_MONTHLY)
