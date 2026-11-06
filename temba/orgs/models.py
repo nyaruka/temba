@@ -1273,7 +1273,6 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         delete_in_batches(self.counts.all())
         delete_in_batches(self.daily_counts.all())
 
-        delete_in_batches(self.tallies.all())
         delete_in_batches(self.org_tallies.all(), pk="pk")
 
         # now that contacts are no longer in the database, we can start de-indexing them from search
@@ -1780,27 +1779,6 @@ class DailyCount(BaseDailyCount):
             models.UniqueConstraint(
                 name="orgdailycount_squashed", fields=("org", "day", "scope"), condition=Q(is_squashed=True)
             )
-        ]
-
-
-class Tally(models.Model):
-    """
-    The original table of OrgTally's totals, still written by mailroom but no longer read.
-    """
-
-    id = models.BigAutoField(primary_key=True)
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="tallies", db_index=False)  # indexed below
-    scope = models.CharField(max_length=255)
-    count = models.BigIntegerField()
-    expires_on = models.DateField(null=True)
-
-    class Meta:
-        indexes = [
-            # for trimming
-            models.Index(name="orgtally_expires_on", fields=("expires_on",), condition=Q(expires_on__isnull=False))
-        ]
-        constraints = [
-            models.UniqueConstraint("org", OpClass("scope", name="varchar_pattern_ops"), name="orgtally_org_scope")
         ]
 
 

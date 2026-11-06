@@ -36,7 +36,7 @@ INSERT INTO orgs_tally AS t (org_id, scope, count)
 ON CONFLICT (org_id, scope) DO UPDATE SET count = excluded.count"""
 
 
-def backfill_channel_tallies(apps, schema_editor):
+def backfill_channel_tallies(apps, schema_editor):  # pragma: no cover
     Channel = apps.get_model("channels", "Channel")
     Org = apps.get_model("orgs", "Org")
 
