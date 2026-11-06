@@ -5,6 +5,7 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
     dependencies = [
+        ("channels", "0221_backfill_channel_tallies"),
         ("orgs", "0200_backfill_org_tallies"),
     ]
 
