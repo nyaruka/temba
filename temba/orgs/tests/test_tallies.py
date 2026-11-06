@@ -6,7 +6,7 @@ from django_valkey import get_valkey_connection
 from django.db import connection
 from django.utils import timezone
 
-from temba.orgs.models import OrgTally, Tally, TallyFlush
+from temba.orgs.models import OrgTally, TallyFlush
 from temba.orgs.tasks import trim_tallies
 from temba.tests import TembaTest, cleanup
 
@@ -175,38 +175,17 @@ class TallyTest(TembaTest):
             self.assertEqual({"foo": 8}, OrgTally.get_totals(self.org, ["foo"]))
             self.assertEqual(3, mock_read.call_count)
 
-    def test_upsert(self):
-        # check the unique index can be the target of the upserts used for flushing, which only set expiry on insert
-        sql = """
-        INSERT INTO orgs_tally AS t (org_id, scope, count, expires_on)
-        SELECT %s, unnest(%s::text[]), unnest(%s::bigint[]), unnest(%s::date[])
-        ON CONFLICT (org_id, scope) DO UPDATE SET count = t.count + excluded.count
-        """
-        with connection.cursor() as cursor:
-            cursor.execute(sql, (self.org.id, ["foo/1", "foo/2@2026-11-02"], [2, 3], [None, date(2027, 11, 2)]))
-            cursor.execute(sql, (self.org.id, ["foo/1", "foo/2@2026-11-02"], [4, 1], [None, date(2028, 1, 1)]))
-
-        self.assertEqual(
-            {("foo/1", 6, None), ("foo/2@2026-11-02", 4, date(2027, 11, 2))},
-            set(self.org.tallies.values_list("scope", "count", "expires_on")),
-        )
-
     def test_trim(self):
         today = timezone.now().date()
 
-        tally1 = self.org.tallies.create(scope="foo/1", count=1)
-        self.org.tallies.create(scope="foo/2@2025-11-01", count=1, expires_on=today - timedelta(days=1))
-        tally3 = self.org.tallies.create(scope="foo/2@2025-11-02", count=1, expires_on=today)
-
-        org_tally1 = self.org.org_tallies.create(scope="foo/1", count=1)
+        tally1 = self.org.org_tallies.create(scope="foo/1", count=1)
         self.org.org_tallies.create(scope="foo/2@2025-11-01", count=1, expires_on=today - timedelta(days=1))
-        org_tally3 = self.org.org_tallies.create(scope="foo/2@2025-11-02", count=1, expires_on=today)
+        tally3 = self.org.org_tallies.create(scope="foo/2@2025-11-02", count=1, expires_on=today)
 
-        self.assertEqual({"deleted": 1, "org_deleted": 1}, trim_tallies())
-        self.assertEqual({tally1, tally3}, set(Tally.objects.all()))
-        self.assertEqual({org_tally1, org_tally3}, set(OrgTally.objects.all()))
+        self.assertEqual({"deleted": 1}, trim_tallies())
+        self.assertEqual({tally1, tally3}, set(OrgTally.objects.all()))
 
-    def test_org_tally_upsert(self):
+    def test_upsert(self):
         # check the primary key can be the target of the upserts used for flushing
         sql = """
         INSERT INTO orgs_orgtally AS t (org_id, scope, count, expires_on)
@@ -221,7 +200,7 @@ class TallyTest(TembaTest):
         self.assertEqual(4, self.org.org_tallies.get(scope="foo/2@2026-11-02").count)
         self.assertEqual(date(2027, 11, 2), self.org.org_tallies.get(scope="foo/2@2026-11-02").expires_on)
 
-    def test_org_tally_ranges(self):
+    def test_ranges(self):
         # under the C collation, a scope's dated rows are a range under plain comparison, whereas under a locale
         # collation punctuation is ignored at first so foo-2026-11-03 would sort between them
         for scope in (

@@ -676,7 +676,6 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         delete_in_batches(self.http_logs.all())
         delete_in_batches(self.template_translations.all())
         delete_in_batches(self.counts.all())
-        delete_in_batches(self.org.tallies.filter(scope__startswith=f"channels/{self.id}/"))
         delete_in_batches(self.org.org_tallies.filter(scope__startswith=f"channels/{self.id}/"), pk="pk")
 
         super().delete()
