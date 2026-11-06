@@ -1,6 +1,4 @@
 import itertools
-from collections import defaultdict
-from datetime import date, timedelta
 from enum import Enum
 from functools import cached_property
 
@@ -17,14 +15,14 @@ from django.utils.translation import gettext_lazy as _
 
 from temba.archives.models import Archive
 from temba.campaigns.models import Campaign, CampaignEvent
-from temba.channels.models import Channel, ChannelCount, ChannelEvent
+from temba.channels.models import Channel, ChannelEvent
 from temba.contacts.models import Contact, ContactField, ContactGroup, ContactNote, ContactURN
 from temba.flows.models import Flow, FlowRun, FlowStart, FlowStartCount
 from temba.globals.models import Global
 from temba.knowledge.models import Article, KnowledgeSource
 from temba.locations.models import AdminBoundary, BoundaryAlias
 from temba.msgs.models import Broadcast, BroadcastMsgCount, Label, LabelCount, Media, Msg, MsgFolder
-from temba.orgs.models import Org, OrgMembership, OrgTally
+from temba.orgs.models import Org, OrgMembership
 from temba.orgs.views.mixins import OrgPermsMixin
 from temba.tickets.models import Ticket, Topic
 from temba.users.models import User
@@ -3158,50 +3156,6 @@ class FlowStartsEndpoint(ListAPIMixin, WriteAPIMixin, BaseEndpoint):
             ],
             example=dict(body='{"flow":"f5901b62-ba76-4003-9c62-72fdacc1b7b7","urns":["twitter:sirmixalot"]}'),
         )
-
-
-class StatisticsEndpoint(BaseEndpoint):
-    """
-    Unpublicized endpoint for daily statistics including per-channel message counts.
-    """
-
-    model = ChannelCount
-    permission = "channels.channel_list"
-
-    def get(self, request, *args, **kwargs):
-        if self.is_docs():
-            return Response({"results": []})
-
-        today = date.today()
-        since = self._parse_date("since", default=today - timedelta(days=90))
-        until = self._parse_date("until", default=today + timedelta(days=1))
-
-        if (until - since).days > 366:
-            raise InvalidQueryError("Date range can't be more than 366 days.")
-
-        channels = request.org.channels.filter(is_active=True).only("uuid", "channel_type")
-        by_prefix = {f"channels/{c.id}/": c for c in channels}
-        scopes = [prefix + scope for prefix in by_prefix for scope in ChannelCount.SCOPES]
-
-        # group by day then channel
-        by_day = defaultdict(dict)
-        for (day, scope), count in OrgTally.get_daily_totals(request.org, scopes, since, until).items():
-            prefix, scope = scope.rsplit("/", 1)
-            channel = by_prefix[prefix + "/"]
-            by_day[day].setdefault(str(channel.uuid), {"type": channel.type.slug})[scope] = count
-
-        results = [{"date": day.isoformat(), "channels": dict(channels)} for day, channels in sorted(by_day.items())]
-
-        return Response({"results": results})
-
-    def _parse_date(self, param, default=None):
-        value = self.request.query_params.get(param)
-        if not value:
-            return default
-        try:
-            return date.fromisoformat(value)
-        except ValueError:
-            raise InvalidQueryError(f"Invalid date value for '{param}'.")
 
 
 class TicketsEndpoint(ListAPIMixin, BaseEndpoint):

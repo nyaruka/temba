@@ -11,7 +11,7 @@ from temba import mailroom
 from temba.utils.crons import cron_task
 from temba.utils.models import delete_in_batches
 
-from .models import Channel, ChannelCount, ChannelEvent, SyncEvent
+from .models import Channel, ChannelEvent, SyncEvent
 from .types.android import AndroidType
 
 logger = logging.getLogger(__name__)
@@ -93,8 +93,3 @@ def trim_channel_sync_events():
         num_deleted += len(event_ids)
 
     return {"deleted": num_deleted}
-
-
-@cron_task(lock_timeout=7200)
-def squash_channel_counts():
-    ChannelCount.squash()
