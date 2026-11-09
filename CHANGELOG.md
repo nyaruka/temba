@@ -1,3 +1,7 @@
+## v26.3.181 (2026-11-09)
+ * Add FlowTally model for flow-level tallies
+ * Read O-prefixed tally fields and include the until day in channel charts
+
 ## v26.3.180 (2026-11-09)
  * Drop orgs.Tally in favor of orgs.OrgTally
  * Drop ChannelCount and the unused statistics endpoint
