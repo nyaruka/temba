@@ -15,7 +15,7 @@ INSERT INTO orgs_orgtally AS t (org_id, scope, count, expires_on)
 ON CONFLICT (org_id, scope) DO UPDATE SET count = GREATEST(t.count, excluded.count), expires_on = excluded.expires_on"""
 
 
-def backfill_org_tallies(apps, schema_editor):
+def backfill_org_tallies(apps, schema_editor):  # pragma: no cover
     Org = apps.get_model("orgs", "Org")
 
     max_org_id = Org.objects.aggregate(max_id=Max("id"))["max_id"] or 0
