@@ -1,3 +1,7 @@
+## v26.3.180 (2026-11-09)
+ * Drop orgs.Tally in favor of orgs.OrgTally
+ * Drop ChannelCount and the unused statistics endpoint
+
 ## v26.3.179 (2026-11-05)
  * Read tally totals from OrgTally instead of Tally
 
