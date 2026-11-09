@@ -97,6 +97,15 @@ msgstr "Asegúrese de que este campo no tenga más de {max_length} elementos."
 msgid "API Explorer"
 msgstr "Explorador de API"
 
+msgid "Documentation"
+msgstr "Documentación"
+
+msgid "Endpoints"
+msgstr "Endpoints"
+
+msgid "Explorer"
+msgstr "Explorador"
+
 msgid "Extra parameters that will be accessible in the flow"
 msgstr "Parámetros adicionales que estarán accesibles en el flujo"
 
@@ -3958,15 +3967,6 @@ msgstr "Último uso"
 
 msgid "No tokens"
 msgstr "Sin tokens"
-
-msgid "Endpoints"
-msgstr "Endpoints"
-
-msgid "Explorer"
-msgstr "Explorador"
-
-msgid "Documentation"
-msgstr "Documentación"
 
 #, python-format
 msgid "All operations work against real data in the <b>%(org)s</b> workspace."

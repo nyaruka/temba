@@ -91,6 +91,15 @@ msgstr ""
 msgid "API Explorer"
 msgstr ""
 
+msgid "Documentation"
+msgstr ""
+
+msgid "Endpoints"
+msgstr ""
+
+msgid "Explorer"
+msgstr ""
+
 msgid "Extra parameters that will be accessible in the flow"
 msgstr ""
 
@@ -3942,15 +3951,6 @@ msgid "Last Used"
 msgstr ""
 
 msgid "No tokens"
-msgstr ""
-
-msgid "Endpoints"
-msgstr ""
-
-msgid "Explorer"
-msgstr ""
-
-msgid "Documentation"
 msgstr ""
 
 #, python-format
