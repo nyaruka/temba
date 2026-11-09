@@ -12,7 +12,7 @@ from temba.tests import TembaTest, cleanup
 
 
 def field(org, scope: str) -> str:
-    return f"{org.id}|{scope}"
+    return f"O{org.id}|{scope}"
 
 
 class TallyTest(TembaTest):
@@ -73,6 +73,11 @@ class TallyTest(TembaTest):
         self.assertEqual(
             {"foo/1": 13, "foo/2": 23, "foo/3": 6}, OrgTally.get_totals(self.org, ["foo/1", "foo/2", "foo/3"])
         )
+
+        # fields with an unprefixed org from older writers are also counted
+        r.hset("{tallies}:live", f"{self.org.id}|foo/1", 100)
+
+        self.assertEqual({"foo/1": 113}, OrgTally.get_totals(self.org, ["foo/1"]))
 
     @cleanup(valkey=True)
     def test_get_daily_totals(self):

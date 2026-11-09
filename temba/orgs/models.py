@@ -1887,8 +1887,9 @@ class OrgTally(models.Model):
         Reads totals from Valkey and then the database, returning them and whether they're consistent, which they aren't
         if a batch was flushed in between, as it may have moved counts we read from Valkey into the rows we read.
         """
-        keys = [(org_id, scope) for org_id in org_ids for scope in scopes]
-        fields = [f"{org_id}|{scope}" for org_id, scope in keys]
+        # writers prefix the org with O, but older ones may still be writing it unprefixed so we read both
+        keys = [(org_id, scope) for org_id in org_ids for scope in scopes for _ in range(2)]
+        fields = [f"{p}{org_id}|{scope}" for org_id in org_ids for scope in scopes for p in ("O", "")]
 
         r = get_valkey_connection()
         with r.pipeline(transaction=True) as pipe:
