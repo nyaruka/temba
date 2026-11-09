@@ -147,7 +147,7 @@ class DashboardTest(TembaTest):
         today = timezone.now().date()
         yesterday = today - timedelta(days=1)
         child.org_tallies.create(scope=f"msgs/text:out@{yesterday.isoformat()}", count=4)
-        get_valkey_connection().hset("{tallies}:live", f"{child.id}|msgs/text:in@{today.isoformat()}", 3)
+        get_valkey_connection().hset("{tallies}:live", f"O{child.id}|msgs/text:in@{today.isoformat()}", 3)
 
         self.login(self.admin, choose_org=self.org)
 

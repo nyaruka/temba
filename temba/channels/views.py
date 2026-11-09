@@ -583,7 +583,8 @@ class ChannelCRUDL(SmartCRUDL):
             return since, max(until, since)
 
         def get_chart_data(self, since, until) -> tuple[list, list]:
-            counts = self.object.get_daily_counts(since, until)
+            # the picker's until is the last day shown
+            counts = self.object.get_daily_counts(since, until + timedelta(days=1))
 
             # collect all dates and values by scope
             dates_set = set()

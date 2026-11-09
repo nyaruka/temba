@@ -1803,7 +1803,7 @@ class BaseTally(models.Model):
     READ_ATTEMPTS = 3
 
     owner_field: str  # the foreign key leading the primary key
-    field_prefix: str  # prefixes the owner id in Valkey hash fields
+    field_prefixes: tuple[str, ...]  # prefixes of the owner id in Valkey hash fields, all of which are read
 
     scope = models.CharField(max_length=255, db_collation="C")
     count = models.BigIntegerField()
@@ -1833,8 +1833,9 @@ class BaseTally(models.Model):
         Reads totals from Valkey and then the database, returning them and whether they're consistent, which they aren't
         if a batch was flushed in between, as it may have moved counts we read from Valkey into the rows we read.
         """
-        keys = [(owner_id, scope) for owner_id in owner_ids for scope in scopes]
-        fields = [f"{cls.field_prefix}{owner_id}|{scope}" for owner_id, scope in keys]
+        # one loop so that each field stays aligned with the key it counts towards
+        pairs = [((o, s), f"{p}{o}|{s}") for o in owner_ids for s in scopes for p in cls.field_prefixes]
+        keys, fields = [k for k, _ in pairs], [f for _, f in pairs]
 
         r = get_valkey_connection()
         with r.pipeline(transaction=True) as pipe:
@@ -1885,7 +1886,7 @@ class OrgTally(BaseTally):
     """
 
     owner_field = "org"
-    field_prefix = ""
+    field_prefixes = ("O", "")  # older writers may still be writing the org unprefixed
 
     pk = models.CompositePrimaryKey("org", "scope")
     org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="org_tallies", db_index=False)  # leads the key

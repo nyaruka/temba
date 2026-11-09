@@ -1425,7 +1425,7 @@ class FlowTally(BaseTally):
     """
 
     owner_field = "flow"
-    field_prefix = "F"
+    field_prefixes = ("F",)
 
     pk = models.CompositePrimaryKey("flow", "scope")
     flow = models.ForeignKey(Flow, on_delete=models.PROTECT, related_name="tallies", db_index=False)  # leads the key

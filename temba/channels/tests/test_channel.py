@@ -338,6 +338,10 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
                 response.json()["data"],
             )
 
+            # the until day is included
+            response = self.requestView(chart_url + "?since=2020-01-18&until=2020-01-20", self.admin)
+            self.assertEqual(["2020-01-18", "2020-01-20"], response.json()["data"]["labels"])
+
     def test_read_history_limits(self):
         read_url = reverse("channels.channel_read", args=[self.tel_channel.uuid])
         chart_url = reverse("channels.channel_chart", args=[self.tel_channel.uuid])
