@@ -33,7 +33,7 @@ from temba.utils import audit, countries
 from temba.utils.fields import SelectWidget
 from temba.utils.views.mixins import ChartViewMixin, ComponentFormMixin, ContextMenuMixin, ModalFormMixin, SpaMixin
 
-from .models import Channel, ChannelCount, ChannelLog
+from .models import Channel, ChannelLog
 
 logger = logging.getLogger(__name__)
 
@@ -561,10 +561,10 @@ class ChannelCRUDL(SmartCRUDL):
                 by_month.append(
                     dict(
                         month_start=month,
-                        text_in=counts.get((month, ChannelCount.SCOPE_TEXT_IN), 0),
-                        text_out=counts.get((month, ChannelCount.SCOPE_TEXT_OUT), 0),
-                        voice_in=counts.get((month, ChannelCount.SCOPE_VOICE_IN), 0),
-                        voice_out=counts.get((month, ChannelCount.SCOPE_VOICE_OUT), 0),
+                        text_in=counts.get((month, Channel.TALLY_TEXT_IN), 0),
+                        text_out=counts.get((month, Channel.TALLY_TEXT_OUT), 0),
+                        voice_in=counts.get((month, Channel.TALLY_VOICE_IN), 0),
+                        voice_out=counts.get((month, Channel.TALLY_VOICE_OUT), 0),
                     )
                 )
                 month = (month + timedelta(days=32)).replace(day=1)
@@ -588,10 +588,10 @@ class ChannelCRUDL(SmartCRUDL):
             # collect all dates and values by scope
             dates_set = set()
             values_by_scope = {
-                ChannelCount.SCOPE_TEXT_IN: {},
-                ChannelCount.SCOPE_TEXT_OUT: {},
-                ChannelCount.SCOPE_VOICE_IN: {},
-                ChannelCount.SCOPE_VOICE_OUT: {},
+                Channel.TALLY_TEXT_IN: {},
+                Channel.TALLY_TEXT_OUT: {},
+                Channel.TALLY_VOICE_IN: {},
+                Channel.TALLY_VOICE_OUT: {},
             }
 
             for (day, scope), count in counts.items():
@@ -601,19 +601,17 @@ class ChannelCRUDL(SmartCRUDL):
             # create sorted list of dates
             labels = sorted(list(dates_set))
 
-            has_voice = any(values_by_scope[ChannelCount.SCOPE_VOICE_IN]) or any(
-                values_by_scope[ChannelCount.SCOPE_VOICE_OUT]
-            )
+            has_voice = any(values_by_scope[Channel.TALLY_VOICE_IN]) or any(values_by_scope[Channel.TALLY_VOICE_OUT])
 
             # create datasets with fixed splits for Msg In, Msg Out, Voice In, Voice Out
             datasets = [
                 {
                     "label": _("Incoming") if not has_voice else _("Incoming Text"),
-                    "data": [values_by_scope[ChannelCount.SCOPE_TEXT_IN].get(date, 0) for date in labels],
+                    "data": [values_by_scope[Channel.TALLY_TEXT_IN].get(date, 0) for date in labels],
                 },
                 {
                     "label": _("Outgoing") if not has_voice else _("Outgoing Text"),
-                    "data": [values_by_scope[ChannelCount.SCOPE_TEXT_OUT].get(date, 0) for date in labels],
+                    "data": [values_by_scope[Channel.TALLY_TEXT_OUT].get(date, 0) for date in labels],
                 },
             ]
 
@@ -622,11 +620,11 @@ class ChannelCRUDL(SmartCRUDL):
                     [
                         {
                             "label": _("Incoming Voice"),
-                            "data": [values_by_scope[ChannelCount.SCOPE_VOICE_IN].get(date, 0) for date in labels],
+                            "data": [values_by_scope[Channel.TALLY_VOICE_IN].get(date, 0) for date in labels],
                         },
                         {
                             "label": _("Outgoing Voice"),
-                            "data": [values_by_scope[ChannelCount.SCOPE_VOICE_OUT].get(date, 0) for date in labels],
+                            "data": [values_by_scope[Channel.TALLY_VOICE_OUT].get(date, 0) for date in labels],
                         },
                     ]
                 )
