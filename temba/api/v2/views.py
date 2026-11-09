@@ -174,7 +174,7 @@ class BaseEndpoint(BaseAPIView):
 
     def dispatch(self, request, *args, **kwargs):
         # when docs are rendered inside the SPA frame, its page header asks the page for its context menu
-        if "HTTP_X_TEMBA_CONTENT_MENU" in request.META:
+        if request.method == "GET" and "HTTP_X_TEMBA_CONTENT_MENU" in request.META:
             return JsonResponse({"items": self.get_docs_menu(request)})
 
         return super().dispatch(request, *args, **kwargs)

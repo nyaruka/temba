@@ -210,6 +210,7 @@ class DocumentationRenderer(BrowsableAPIRenderer):
             "is_spa": is_spa,
             "is_content_only": is_content_only,
             "has_context_menu": is_spa,
+            "active_org": request.org if is_spa else None,
             "temba_version": temba_version,
             TEMBA_MENU_SELECTION: self.menu_path,
         }

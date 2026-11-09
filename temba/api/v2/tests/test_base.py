@@ -241,6 +241,7 @@ class EndpointsTest(APITest):
 
         # which renders them inside the SPA frame
         self.assertEqual("frame.html", response.context["base_template"])
+        self.assertEqual(self.org, response.context["active_org"])
         self.assertEqual("/settings/api-tokens", response.headers["temba_menu_selection"])
         self.assertEqual("0", response.headers["X-Temba-Content-Only"])
 
@@ -262,6 +263,10 @@ class EndpointsTest(APITest):
 
         response = self.client.get(reverse("api.v2.root"), HTTP_X_TEMBA_CONTENT_MENU=1, HTTP_X_TEMBA_SPA=1)
         self.assertEqual(["Explorer"], [i["label"] for i in response.json()["items"]])
+
+        # but other methods are never answered with the menu
+        response = self.client.post(messages_url + ".json", {}, HTTP_X_TEMBA_CONTENT_MENU=1)
+        self.assertNotIn("items", response.json())
 
         # agents can browse docs but not use the explorer
         self.login(self.agent)
