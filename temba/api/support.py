@@ -12,8 +12,10 @@ from django.conf import settings
 from django.http import HttpResponse, HttpResponseServerError
 from django.utils import timezone
 
+from temba import __version__ as temba_version
 from temba.users.models import User
 from temba.utils import str_to_bool
+from temba.utils.views.mixins import TEMBA_CONTENT_ONLY, TEMBA_MENU_SELECTION, TEMBA_VERSION
 
 from .models import APIToken
 
@@ -159,15 +161,42 @@ class DocumentationRenderer(BrowsableAPIRenderer):
     """
     The regular REST framework browsable API renderer includes a form on each endpoint. We don't provide that and
     instead have a separate API explorer page. This render then just displays the endpoint docs.
+
+    For a user logged into a workspace the docs are rendered inside the SPA frame like any other page, and anyone else
+    (they're public) gets the standalone no-nav page.
     """
 
     template = "api/docs.html"
+    menu_path = "/settings/api-tokens"
 
     def get_context(self, data, accepted_media_type, renderer_context):
         view = renderer_context["view"]
         request = renderer_context["request"]
         response = renderer_context["response"]
         renderer = self.get_default_renderer(view)
+        name = self.get_name(view)
+
+        is_spa = request.user.is_authenticated and getattr(request, "org", None) is not None
+        is_content_only = is_spa and "HTTP_X_TEMBA_SPA" in request.META
+
+        if is_spa:
+            base_template = "spa.html" if is_content_only else "frame.html"
+
+            # the same headers SpaMixin sets, which the frame uses to decide how to load the response
+            response[TEMBA_VERSION] = temba_version
+            response[TEMBA_MENU_SELECTION] = self.menu_path
+            response[TEMBA_CONTENT_ONLY] = 1 if is_content_only else 0
+
+            # endpoints that only take POSTs return their docs with a 405 for a GET, which the frame would treat as a
+            # failed page load, so for it these are just pages like any other
+            if (
+                is_content_only
+                and request.method == "GET"
+                and response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
+            ):
+                response.status_code = status.HTTP_200_OK
+        else:
+            base_template = "no_nav.html"
 
         return {
             "content": self.get_content(renderer, data, accepted_media_type, renderer_context),
@@ -175,7 +204,14 @@ class DocumentationRenderer(BrowsableAPIRenderer):
             "request": request,
             "response": response,
             "description": view.get_view_description(html=True),
-            "name": self.get_name(view),
+            "name": name,
+            "title": name,
+            "base_template": base_template,
+            "is_spa": is_spa,
+            "is_content_only": is_content_only,
+            "has_context_menu": is_spa,
+            "temba_version": temba_version,
+            TEMBA_MENU_SELECTION: self.menu_path,
         }
 
 

@@ -11,6 +11,7 @@ from rest_framework.reverse import reverse
 from smartmin.views import SmartTemplateView
 
 from django.db.models import OuterRef, Prefetch, Q
+from django.http import JsonResponse
 from django.utils.translation import gettext_lazy as _
 
 from temba.archives.models import Archive
@@ -29,6 +30,7 @@ from temba.users.models import User
 from temba.utils import str_to_bool
 from temba.utils.db.queries import SubqueryCount, or_list
 from temba.utils.uuid import is_uuid
+from temba.utils.views.mixins import ContextMenuMixin, SpaMixin
 
 from ..models import APIPermission, Resthook, ResthookSubscriber, SSLPermission, WebHookEvent
 from ..support import (
@@ -92,7 +94,7 @@ from .serializers import (
 )
 
 
-class ExplorerView(OrgPermsMixin, SmartTemplateView):
+class ExplorerView(SpaMixin, ContextMenuMixin, OrgPermsMixin, SmartTemplateView):
     """
     Explorer view which lets users experiment with endpoints against their own data
     """
@@ -100,6 +102,10 @@ class ExplorerView(OrgPermsMixin, SmartTemplateView):
     permission = "api.apitoken_explorer"
     template_name = "api/v2/explorer.html"
     title = _("API Explorer")
+    menu_path = "/settings/api-tokens"
+
+    def build_context_menu(self, menu):
+        menu.add_link(_("Documentation"), reverse("api.v2.root"), as_button=True)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -165,6 +171,27 @@ class BaseEndpoint(BaseAPIView):
     renderer_classes = (DocumentationRenderer, JSONRenderer)
     throttle_classes = (OrgUserRateThrottle,)
     throttle_scope = "v2"
+
+    def dispatch(self, request, *args, **kwargs):
+        # when docs are rendered inside the SPA frame, its page header asks the page for its context menu
+        if "HTTP_X_TEMBA_CONTENT_MENU" in request.META:
+            return JsonResponse({"items": self.get_docs_menu(request)})
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_docs_menu(self, request) -> list:
+        """
+        Builds the context menu shown in the page header of the docs when they're rendered in the SPA frame
+        """
+        menu = ContextMenuMixin.Menu()
+        if request.path != reverse("api.v2.root"):
+            menu.add_link(_("Endpoints"), reverse("api.v2.root"), as_button=True)
+
+        org, user = getattr(request, "org", None), request.user
+        if org and user.is_authenticated and (user.is_staff or user.has_org_perm(org, "api.apitoken_explorer")):
+            menu.add_link(_("Explorer"), reverse("api.v2.explorer"), as_button=True)
+
+        return menu.as_items()
 
 
 class RootView(BaseEndpoint):

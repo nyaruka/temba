@@ -1,81 +1,49 @@
-{% extends "no_nav.html" %}
+{% extends base_template %}
 {% load rest_framework static smartmin i18n %}
 
 {% block head-title %}
   {{ name }}
 {% endblock head-title %}
-{% block page-top %}
-{% endblock page-top %}
 {% block extra-style %}
   {{ block.super }}
   <link rel="stylesheet" href='{% static "rest_framework/css/prettify.css" %}'>
   <style>
-    .main-logo {
-      margin: 1.5em;
-    }
+    {% if not is_spa %}
+      .content-card {
+        width: 80%;
+      }
+    {% endif %}
 
-    .content-card {
-      width: 80%;
-    }
-
-    .content-main li {
+    .api-docs .content-main li {
       margin: 0.4em 0em;
     }
 
-    .content-main ul {
+    .api-docs .content-main ul {
       margin-top: 1em;
       margin-bottom: 1em;
     }
 
-    code {
+    .api-docs code {
       padding: 0.2em 0.5em;
       font-size: 0.9em;
     }
 
-    .card {
-      margin: 1em 2em;
-      padding: 0;
-    }
-
-    .page-content {
-      max-width: 100%;
-    }
-
-    .button-form {
-      float: right;
-    }
-
-    #get-form {
-      margin-left: 5px;
-    }
-
-    .form-horizontal .form-actions {
-      margin-top: 0px;
-      margin-bottom: 0px;
-      padding-top: 0px;
-      padding-bottom: 0px;
-    }
-
-    .nav.nav-tabs {
-      margin-bottom: 0px;
-    }
-
-    pre {
+    .api-docs pre {
       font-size: 12px;
       line-height: 18px;
       font-family: monospace;
     }
 
-    .str,
-    .atv {
+    .api-docs .str,
+    .api-docs .atv {
       color: teal;
     }
 
-    h1,
-    h2,
-    h3,
-    h4,
-    h5 {
+    .api-docs h1,
+    .api-docs h2,
+    .api-docs h3,
+    .api-docs h4,
+    .api-docs h5 {
       margin-top: 2rem;
       margin-bottom: 0.75rem;
       padding: 0;
@@ -83,55 +51,69 @@
       text-transform: none;
     }
 
-    h1 {
+    .api-docs h1 {
       font-size: 24px;
       line-height: 40px;
     }
 
-    h2 {
+    .api-docs h2 {
       font-size: 42px;
     }
 
-    h3 {
+    .api-docs h3 {
       font-size: 26px;
     }
 
-    h5 {
+    .api-docs h5 {
       margin-bottom: 5px;
     }
 
-    ul,
-    ol {
+    .api-docs ul,
+    .api-docs ol {
       margin: 0 0 10px 25px;
       padding: 0;
     }
 
-    strong {
+    .api-docs strong {
       font-weight: bold;
     }
   </style>
 {% endblock extra-style %}
 {% block content %}
-  <div id="content" class="px-8 pb-8">
+  <div class="api-docs{% if not is_spa %} px-8 pb-8{% endif %}">
     <div class="content-main">
-      <div class="flex mb-8">
-        <div class="flex-grow page-title">{{ name }}</div>
-        <div>
-          {% block api-menu %} {% endblock api-menu %}
+      {% if not is_spa %}
+        {# inside the SPA frame the title and menu are in the page header #}
+        <div class="flex mb-8">
+          <div class="flex-grow page-title">{{ name }}</div>
+          <div>
+            {% block api-menu %} {% endblock api-menu %}
+          </div>
         </div>
-      </div>
+      {% endif %}
       {{ description }}
     </div>
   </div>
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
-  <script src="{{ STATIC_URL }}rest_framework/js/prettify-min.js"></script>
   <script>
-    document.querySelectorAll('pre').forEach(function(pre) {
-      if (pre.querySelector('code')) {
-        prettyPrint();
+    (function() {
+      // scripts added to SPA content load asynchronously so wait for prettify before using it
+      function prettify() {
+        if (document.querySelector('.api-docs pre code')) {
+          prettyPrint();
+        }
       }
-    });
+
+      if (window.prettyPrint) {
+        prettify();
+      } else {
+        var script = document.createElement('script');
+        script.src = '{% static "rest_framework/js/prettify-min.js" %}';
+        script.onload = prettify;
+        document.head.appendChild(script);
+      }
+    })();
   </script>
 {% endblock extra-script %}

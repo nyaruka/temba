@@ -1,20 +1,11 @@
-{% extends "no_nav.html" %}
+{% extends base_template %}
 {% load smartmin i18n %}
 
-{% block page-title %}
-  {{ branding.name }} - {% trans "API Explorer" %}
-{% endblock page-title %}
 {% block content %}
   <script>
     var org_id = {% if user_org %}{{ user_org.id }}{% else %}null{% endif %};
   </script>
-  <div class="px-8 pb-8">
-    <div class="flex mb-4">
-      <div class="flex-grow page-title">{% trans "API Explorer" %}</div>
-      <div>
-        <a class="button-light ml-4" href='{% url "api.v2.root" %}'>{% trans "Documentation" %}</a>
-      </div>
-    </div>
+  <div class="api-explorer">
     <div class="mb-4">
       <temba-alert level="warning">
         {% blocktrans trimmed with org=user_org.name %}
@@ -170,45 +161,33 @@
 {% block extra-style %}
   {{ block.super }}
   <style>
-    .main-logo {
-      margin: 1.5em;
-    }
-
-    .content-card {
-      width: 80%;
-    }
-
-    .breadcrumb {
+    .api-explorer .breadcrumb {
       display: flex;
       flex-wrap: wrap;
     }
 
-    .token {
+    .api-explorer .token {
       white-space: nowrap;
     }
 
-    .card {
+    .api-explorer .card {
       padding: 0;
     }
 
-    .page-content {
-      max-width: 100%;
-    }
-
-    .expanded .endpoint {
+    .api-explorer .expanded .endpoint {
       display: block;
     }
 
-    .endpoint-title {
+    .api-explorer .endpoint-title {
       padding: 1em;
     }
 
-    .endpoint {
+    .api-explorer .endpoint {
       display: none;
       padding: 2em;
     }
 
-    .method-get {
+    .api-explorer .method-get {
       display: inline-block;
       width: 60px;
       margin-right: 15px;
@@ -218,7 +197,7 @@
       text-align: center;
     }
 
-    .method-delete {
+    .api-explorer .method-delete {
       display: inline-block;
       width: 60px;
       margin-right: 15px;
@@ -228,7 +207,7 @@
       text-align: center;
     }
 
-    .method-post {
+    .api-explorer .method-post {
       display: inline-block;
       width: 60px;
       margin-right: 15px;
@@ -238,26 +217,26 @@
       text-align: center;
     }
 
-    table.list tr td:first-child {
+    .api-explorer table.list tr td:first-child {
       width: 14rem;
     }
 
-    .result {
+    .api-explorer .result {
       display: none;
     }
 
-    .request-form {
+    .api-explorer .request-form {
       overflow-x: hidden;
     }
 
-    .request-query {
+    .api-explorer .request-query {
       width: 100%;
       max-width: 700px;
       min-height: 30px;
       font-family: monospace;
     }
 
-    .request-body {
+    .api-explorer .request-body {
       width: 100%;
       max-width: 700px;
       height: 110px;

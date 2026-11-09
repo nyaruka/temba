@@ -230,10 +230,43 @@ class EndpointsTest(APITest):
         response = self.client.post(messages_url, {})
         self.assertContains(response, "This endpoint allows you to list messages in your account.", status_code=403)
 
+        # anonymous users get the standalone page
+        self.assertEqual("no_nav.html", response.context["base_template"])
+        self.assertNotIn("X-Temba-Content-Only", response.headers)
+
         # test fetching docs logged in
         self.login(self.editor)
         response = self.client.get(messages_url)
         self.assertContains(response, "This endpoint allows you to list messages in your account.")
+
+        # which renders them inside the SPA frame
+        self.assertEqual("frame.html", response.context["base_template"])
+        self.assertEqual("/settings/api-tokens", response.headers["temba_menu_selection"])
+        self.assertEqual("0", response.headers["X-Temba-Content-Only"])
+
+        # or as content only when requested by the frame
+        response = self.client.get(messages_url, HTTP_X_TEMBA_SPA=1)
+        self.assertContains(response, "This endpoint allows you to list messages in your account.")
+        self.assertEqual("spa.html", response.context["base_template"])
+        self.assertEqual("1", response.headers["X-Temba-Content-Only"])
+
+        # docs of endpoints which don't support GET are just pages in the frame
+        response = self.client.get(reverse("api.v2.contact_actions"), HTTP_X_TEMBA_SPA=1)
+        self.assertContains(response, "Bulk Contact Updating")
+        response = self.client.get(reverse("api.v2.contact_actions"))
+        self.assertContains(response, "Bulk Contact Updating", status_code=405)
+
+        # and the frame can fetch their context menu
+        response = self.client.get(messages_url, HTTP_X_TEMBA_CONTENT_MENU=1, HTTP_X_TEMBA_SPA=1)
+        self.assertEqual(["Endpoints", "Explorer"], [i["label"] for i in response.json()["items"]])
+
+        response = self.client.get(reverse("api.v2.root"), HTTP_X_TEMBA_CONTENT_MENU=1, HTTP_X_TEMBA_SPA=1)
+        self.assertEqual(["Explorer"], [i["label"] for i in response.json()["items"]])
+
+        # agents can browse docs but not use the explorer
+        self.login(self.agent)
+        response = self.client.get(messages_url, HTTP_X_TEMBA_CONTENT_MENU=1, HTTP_X_TEMBA_SPA=1)
+        self.assertEqual(["Endpoints"], [i["label"] for i in response.json()["items"]])
 
     def test_explorer(self):
         explorer_url = reverse("api.v2.explorer")
@@ -256,6 +289,14 @@ class EndpointsTest(APITest):
 
         response = self.client.get(explorer_url)
         self.assertContains(response, "All operations work against real data in the <b>Nyaruka</b> workspace.")
+        self.assertEqual("frame.html", response.context["base_template"])
+        self.assertEqual("/settings/api-tokens", response.headers["temba_menu_selection"])
+
+        response = self.client.get(explorer_url, HTTP_X_TEMBA_SPA=1)
+        self.assertEqual("spa.html", response.context["base_template"])
+
+        response = self.client.get(explorer_url, HTTP_X_TEMBA_CONTENT_MENU=1, HTTP_X_TEMBA_SPA=1)
+        self.assertEqual(["Documentation"], [i["label"] for i in response.json()["items"]])
 
     def test_pagination(self):
         endpoint_url = reverse("api.v2.runs") + ".json"
