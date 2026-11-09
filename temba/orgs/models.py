@@ -1782,11 +1782,11 @@ class DailyCount(BaseDailyCount):
         ]
 
 
-class OrgTally(models.Model):
+class BaseTally(models.Model):
     """
-    Org-level totals of things which only go up. Writers increment a global hash in Valkey which mailroom flushes into
+    Base for totals keyed by an owner and a scope. Writers increment a global hash in Valkey which mailroom flushes into
     these rows in batches, so a total is the sum of both. Key layout, and how to read both consistently, must match
-    gocommon's tallies package.
+    gocommon's tallies package. Mailroom drops rows whose total reaches zero, so a missing row means zero.
 
     Daily totals end their scope with @ and the date, e.g. "emails/shared@2026-11-02", and may be given an expiry by
     mailroom when first flushed. Rows without one are kept forever.
@@ -1802,11 +1802,93 @@ class OrgTally(models.Model):
 
     READ_ATTEMPTS = 3
 
-    pk = models.CompositePrimaryKey("org", "scope")
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="org_tallies", db_index=False)  # leads the key
+    owner_field: str  # the foreign key leading the primary key
+    field_prefix: str  # prefixes the owner id in Valkey hash fields
+
     scope = models.CharField(max_length=255, db_collation="C")
     count = models.BigIntegerField()
     expires_on = models.DateField(null=True)
+
+    @classmethod
+    def _get_totals(cls, owner_ids: list[int], scopes: list[str]) -> dict[tuple[int, str], int]:
+        owner_ids = list(dict.fromkeys(owner_ids))
+        scopes = list(dict.fromkeys(scopes))
+        if not owner_ids or not scopes:
+            return {}
+
+        for _attempt in range(cls.READ_ATTEMPTS):
+            totals, consistent = cls._read_totals(owner_ids, scopes)
+            if consistent:
+                return totals
+
+        logger.warning(
+            "tally totals may be overcounted after retries",
+            extra={"table": cls._meta.db_table, "owner_ids": owner_ids, "scopes": scopes},
+        )
+        return totals
+
+    @classmethod
+    def _read_totals(cls, owner_ids: list[int], scopes: list[str]) -> tuple[dict[tuple[int, str], int], bool]:
+        """
+        Reads totals from Valkey and then the database, returning them and whether they're consistent, which they aren't
+        if a batch was flushed in between, as it may have moved counts we read from Valkey into the rows we read.
+        """
+        keys = [(owner_id, scope) for owner_id in owner_ids for scope in scopes]
+        fields = [f"{cls.field_prefix}{owner_id}|{scope}" for owner_id, scope in keys]
+
+        r = get_valkey_connection()
+        with r.pipeline(transaction=True) as pipe:
+            for key in (cls.LIVE_KEY, cls.FLUSHING_KEY, cls.BATCH_KEY):
+                pipe.hmget(key, fields)
+            pipe.exists(cls.BATCH_KEY)
+            pipe.get(cls.BATCH_ID_KEY)
+            live, flushing, batch, batch_exists, batch_id = pipe.execute()
+
+        # one statement so that the counts and the last batch come from the same snapshot
+        owner_col = f"{cls.owner_field}_id"
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"""
+                SELECT f.last_batch, t.{owner_col}, t.scope, t.count
+                  FROM (SELECT (SELECT last_batch FROM orgs_tallyflush WHERE name = %s) AS last_batch) f
+             LEFT JOIN {cls._meta.db_table} t ON t.{owner_col} = ANY(%s) AND t.scope = ANY(%s)
+                """,
+                (cls.KEY_BASE, owner_ids, scopes),
+            )
+            rows = cursor.fetchall()
+
+        last_batch = rows[0][0] or 0
+        batch_id = int(batch_id or 0)
+        include_batch = bool(batch_exists) and last_batch < batch_id
+        consistent = last_batch <= batch_id
+
+        totals = defaultdict(int)
+        for _last_batch, owner_id, scope, count in rows:
+            if scope is not None:
+                totals[(owner_id, scope)] += count
+
+        for values in (live, flushing, batch if include_batch else []):
+            for key, count in zip(keys, values):
+                if count is not None:
+                    totals[key] += int(count)
+
+        # totals which can go down may be buffered back to zero
+        return {k: v for k, v in totals.items() if v != 0}, consistent
+
+    class Meta:
+        abstract = True
+
+
+class OrgTally(BaseTally):
+    """
+    Org-level totals of things which only go up.
+    """
+
+    owner_field = "org"
+    field_prefix = ""
+
+    pk = models.CompositePrimaryKey("org", "scope")
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="org_tallies", db_index=False)  # leads the key
 
     @classmethod
     def get_totals(cls, org, scopes: list[str]) -> dict[str, int]:
@@ -1820,18 +1902,7 @@ class OrgTally(models.Model):
         """
         Gets totals by org id and scope for the given scopes in each of the given orgs, omitting those with no total.
         """
-        org_ids = list(dict.fromkeys(o.id for o in orgs))
-        scopes = list(dict.fromkeys(scopes))
-        if not org_ids or not scopes:
-            return {}
-
-        for _attempt in range(cls.READ_ATTEMPTS):
-            totals, consistent = cls._read_totals(org_ids, scopes)
-            if consistent:
-                return totals
-
-        logger.warning("tally totals may be overcounted after retries", extra={"org_ids": org_ids, "scopes": scopes})
-        return totals
+        return cls._get_totals([o.id for o in orgs], scopes)
 
     @classmethod
     def get_daily_totals(cls, org, scopes: list[str], since: date, until: date) -> dict[tuple[date, str], int]:
@@ -1880,52 +1951,6 @@ class OrgTally(models.Model):
                 totals[(org_id, today, scope.removesuffix(suffix))] = count
 
         return totals
-
-    @classmethod
-    def _read_totals(cls, org_ids: list[int], scopes: list[str]) -> tuple[dict[tuple[int, str], int], bool]:
-        """
-        Reads totals from Valkey and then the database, returning them and whether they're consistent, which they aren't
-        if a batch was flushed in between, as it may have moved counts we read from Valkey into the rows we read.
-        """
-        keys = [(org_id, scope) for org_id in org_ids for scope in scopes]
-        fields = [f"{org_id}|{scope}" for org_id, scope in keys]
-
-        r = get_valkey_connection()
-        with r.pipeline(transaction=True) as pipe:
-            for key in (cls.LIVE_KEY, cls.FLUSHING_KEY, cls.BATCH_KEY):
-                pipe.hmget(key, fields)
-            pipe.exists(cls.BATCH_KEY)
-            pipe.get(cls.BATCH_ID_KEY)
-            live, flushing, batch, batch_exists, batch_id = pipe.execute()
-
-        # one statement so that the counts and the last batch come from the same snapshot
-        with connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT f.last_batch, t.org_id, t.scope, t.count
-                  FROM (SELECT (SELECT last_batch FROM orgs_tallyflush WHERE name = %s) AS last_batch) f
-             LEFT JOIN orgs_orgtally t ON t.org_id = ANY(%s) AND t.scope = ANY(%s)
-                """,
-                (cls.KEY_BASE, org_ids, scopes),
-            )
-            rows = cursor.fetchall()
-
-        last_batch = rows[0][0] or 0
-        batch_id = int(batch_id or 0)
-        include_batch = bool(batch_exists) and last_batch < batch_id
-        consistent = last_batch <= batch_id
-
-        totals = defaultdict(int)
-        for _last_batch, org_id, scope, count in rows:
-            if scope is not None:
-                totals[(org_id, scope)] += count
-
-        for values in (live, flushing, batch if include_batch else []):
-            for key, count in zip(keys, values):
-                if count is not None:
-                    totals[key] += int(count)
-
-        return dict(totals), consistent
 
     class Meta:
         indexes = [
