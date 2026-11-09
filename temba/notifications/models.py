@@ -243,12 +243,6 @@ class Notification(models.Model):
             logger.exception("error publishing notifications to mailroom")
 
     def send_email(self):
-        # a released user's address has been scrubbed to one that can't receive mail
-        if not self.user.is_active:
-            self.email_status = Notification.EMAIL_STATUS_NONE
-            self.save(update_fields=("email_status",))
-            return
-
         subject = self.type.get_email_subject(self)
         template = self.type.get_email_template(self)
         context = self.type.get_email_context(self, self.org.branding)

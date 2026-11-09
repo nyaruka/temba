@@ -130,7 +130,7 @@ class NotificationTest(TembaTest):
         # user is released before the email goes out
         self.editor.release(self.customer_support)
 
-        send_notification_emails()
+        self.assertEqual({"sent": 0, "errored": 0}, send_notification_emails())
 
         # no email sent and the notification is no longer pending
         self.assertEqual(0, len(mail.outbox))
