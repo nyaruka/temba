@@ -1833,8 +1833,9 @@ class BaseTally(models.Model):
         Reads totals from Valkey and then the database, returning them and whether they're consistent, which they aren't
         if a batch was flushed in between, as it may have moved counts we read from Valkey into the rows we read.
         """
-        keys = [(owner_id, scope) for owner_id in owner_ids for scope in scopes for _ in cls.field_prefixes]
-        fields = [f"{p}{owner_id}|{scope}" for owner_id in owner_ids for scope in scopes for p in cls.field_prefixes]
+        # one loop so that each field stays aligned with the key it counts towards
+        pairs = [((o, s), f"{p}{o}|{s}") for o in owner_ids for s in scopes for p in cls.field_prefixes]
+        keys, fields = [k for k, _ in pairs], [f for _, f in pairs]
 
         r = get_valkey_connection()
         with r.pipeline(transaction=True) as pipe:
