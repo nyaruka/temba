@@ -14,7 +14,6 @@ from twilio.base.exceptions import TwilioRestException
 
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
-from django.contrib.postgres.indexes import OpClass
 from django.db import models
 from django.db.models import Q
 from django.template import Engine
@@ -34,7 +33,6 @@ from temba.utils.models import (
     delete_in_batches,
     generate_uuid,
 )
-from temba.utils.models.counts import BaseDailyCount
 from temba.utils.text import generate_secret
 
 logger = logging.getLogger(__name__)
@@ -288,6 +286,13 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         (ENCODING_SMART, _("Smart Encoding")),
         (ENCODING_UNICODE, _("Unicode Encoding")),
     )
+
+    # suffixes of the per-channel message tally scopes
+    TALLY_TEXT_IN = "text:in"
+    TALLY_TEXT_OUT = "text:out"
+    TALLY_VOICE_IN = "voice:in"
+    TALLY_VOICE_OUT = "voice:out"
+    TALLY_SCOPES = (TALLY_TEXT_IN, TALLY_TEXT_OUT, TALLY_VOICE_IN, TALLY_VOICE_OUT)
 
     # the role types for our channels
     ROLE_SEND = "S"
@@ -675,7 +680,6 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         delete_in_batches(self.sync_events.all())
         delete_in_batches(self.http_logs.all())
         delete_in_batches(self.template_translations.all())
-        delete_in_batches(self.counts.all())
         delete_in_batches(self.org.tallies.filter(scope__startswith=f"channels/{self.id}/"))
         delete_in_batches(self.org.org_tallies.filter(scope__startswith=f"channels/{self.id}/"), pk="pk")
 
@@ -686,7 +690,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         Gets message counts by day and scope, e.g. text:in, over days from since up to until.
         """
         prefix = f"channels/{self.id}/"
-        totals = OrgTally.get_daily_totals(self.org, [prefix + s for s in ChannelCount.SCOPES], since, until)
+        totals = OrgTally.get_daily_totals(self.org, [prefix + s for s in self.TALLY_SCOPES], since, until)
         return {(day, scope.removeprefix(prefix)): count for (day, scope), count in totals.items()}
 
     class Meta:
@@ -698,38 +702,6 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
                 fields=("last_seen",),
                 condition=Q(channel_type="A", is_active=True, last_seen__isnull=False),
             ),
-        ]
-
-
-class ChannelCount(BaseDailyCount):
-    """
-    Tracks counts of messages in/out every day.
-    """
-
-    squash_over = ("channel_id", "day", "scope")
-
-    SCOPE_TEXT_IN = "text:in"
-    SCOPE_TEXT_OUT = "text:out"
-    SCOPE_VOICE_IN = "voice:in"
-    SCOPE_VOICE_OUT = "voice:out"
-    SCOPES = (SCOPE_TEXT_IN, SCOPE_TEXT_OUT, SCOPE_VOICE_IN, SCOPE_VOICE_OUT)
-
-    channel = models.ForeignKey(Channel, on_delete=models.PROTECT, related_name="counts", db_index=False)
-
-    class Meta:
-        indexes = [
-            models.Index(
-                "channel", "day", OpClass("scope", name="varchar_pattern_ops"), name="channelcount_channel_scope"
-            ),
-            # for squashing task
-            models.Index(
-                name="channelcount_unsquashed", fields=("channel", "day", "scope"), condition=Q(is_squashed=False)
-            ),
-        ]
-        constraints = [
-            models.UniqueConstraint(
-                name="channelcount_squashed", fields=("channel", "day", "scope"), condition=Q(is_squashed=True)
-            )
         ]
 
 
