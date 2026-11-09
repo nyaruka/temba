@@ -164,6 +164,7 @@ class FlowTest(TembaTest, CRUDLTestMixin):
         global1 = Global.get_or_create(self.org, self.admin, "api_key", "API Key", "234325")
         flow = self.create_flow("Test")
         flow.global_dependencies.add(global1)
+        flow.tallies.create(scope="segment:a:b", count=1)
 
         flow.release(self.admin)
 
@@ -174,6 +175,7 @@ class FlowTest(TembaTest, CRUDLTestMixin):
         self.assertFalse(flow.is_archived)
         self.assertFalse(flow.is_active)
         self.assertEqual(0, flow.global_dependencies.count())
+        self.assertEqual(0, flow.tallies.count())
 
     def test_get_definition(self):
         favorites = self.get_flow("favorites_v13")
