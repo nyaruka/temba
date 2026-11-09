@@ -13,11 +13,12 @@ logger = logging.getLogger(__name__)
 
 @cron_task(lock_timeout=1800)
 def send_notification_emails():
-    pending = list(
-        Notification.objects.filter(email_status=Notification.EMAIL_STATUS_PENDING)
-        .select_related("org", "user")
-        .order_by("created_on")
-    )
+    pending = Notification.objects.filter(email_status=Notification.EMAIL_STATUS_PENDING)
+
+    # a released user's address has been scrubbed to one that can't receive mail
+    pending.filter(user__is_active=False).update(email_status=Notification.EMAIL_STATUS_NONE)
+
+    pending = list(pending.filter(user__is_active=True).select_related("org", "user").order_by("created_on"))
 
     num_sent, num_errored = 0, 0
 

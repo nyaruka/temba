@@ -118,6 +118,25 @@ class NotificationTest(TembaTest):
 
         self.assertEqual(0, len(mail.outbox))
 
+    def test_released_user(self):
+        export = ContactExport.create(self.org, self.editor)
+        export.perform()
+
+        ExportFinishedNotificationType.create(export)
+
+        notification = self.editor.notifications.get(export=export)
+        self.assertEqual(Notification.EMAIL_STATUS_PENDING, notification.email_status)
+
+        # user is released before the email goes out
+        self.editor.release(self.customer_support)
+
+        self.assertEqual({"sent": 0, "errored": 0}, send_notification_emails())
+
+        # no email sent and the notification is no longer pending
+        self.assertEqual(0, len(mail.outbox))
+        notification.refresh_from_db()
+        self.assertEqual(Notification.EMAIL_STATUS_NONE, notification.email_status)
+
     def test_message_export_finished(self):
         export = MessageExport.create(
             self.org, self.editor, start_date=date.today(), end_date=date.today(), folder=MsgFolder.INBOX
