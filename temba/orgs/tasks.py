@@ -7,6 +7,7 @@ from celery import shared_task
 from django.conf import settings
 from django.utils import timezone
 
+from temba.flows.models import FlowTally
 from temba.utils.crons import cron_task
 from temba.utils.models import delete_in_batches
 
@@ -110,6 +111,8 @@ def squash_item_counts():
 def trim_tallies():
     today = timezone.now().date()
 
-    num_deleted = delete_in_batches(OrgTally.objects.filter(expires_on__lt=today), pk="pk")
+    num_deleted = 0
+    for model in (OrgTally, FlowTally):
+        num_deleted += delete_in_batches(model.objects.filter(expires_on__lt=today), pk="pk")
 
     return {"deleted": num_deleted}

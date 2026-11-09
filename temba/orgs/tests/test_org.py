@@ -669,6 +669,7 @@ class OrgDeleteTest(TembaTest):
 
         start1 = add(FlowStart.objects.create(org=org, flow=flow1))
         add(FlowStartCount.objects.create(start=start1, count=1))
+        add(flow1.tallies.create(scope="segment:foo", count=1))
 
         add(
             Trigger.create(

@@ -26,7 +26,7 @@ from temba.channels.models import Channel
 from temba.contacts.models import Contact, ContactField, ContactGroup
 from temba.globals.models import Global
 from temba.msgs.models import Label
-from temba.orgs.models import DependencyMixin, Export, ExportType, Org
+from temba.orgs.models import BaseTally, DependencyMixin, Export, ExportType, Org
 from temba.orgs.realtime import PublishedAssetMixin
 from temba.templates.models import Template
 from temba.tickets.models import Topic
@@ -1019,6 +1019,7 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         self.user_dependencies.clear()
 
         self.counts.all().delete()
+        self.tallies.all().delete()
 
         # call mailroom to interrupt sessions where contact is currently in this flow
         if interrupt_sessions:
@@ -1043,6 +1044,7 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
 
         delete_in_batches(self.counts.all())
         delete_in_batches(self.result_counts.all())
+        delete_in_batches(self.tallies.all(), pk="pk")
 
         super().delete()
 
@@ -1414,6 +1416,51 @@ class FlowResultCount(BaseSquashableCount):
             models.UniqueConstraint(
                 name="flowresultcount_squashed", fields=("flow", "result", "category"), condition=Q(is_squashed=True)
             )
+        ]
+
+
+class FlowTally(BaseTally):
+    """
+    Flow-level totals, e.g. of segment or result category counts, which unlike org tallies can go down.
+    """
+
+    owner_field = "flow"
+    field_prefixes = ("F",)
+
+    pk = models.CompositePrimaryKey("flow", "scope")
+    flow = models.ForeignKey(Flow, on_delete=models.PROTECT, related_name="tallies", db_index=False)  # leads the key
+
+    @classmethod
+    def get_totals(cls, flow, scopes: list[str]) -> dict[str, int]:
+        """
+        Gets totals by scope for the given scopes, omitting those with no total.
+        """
+        return {scope: count for (_, scope), count in cls.get_totals_by_flow([flow], scopes).items()}
+
+    @classmethod
+    def get_totals_by_flow(cls, flows, scopes: list[str]) -> dict[tuple[int, str], int]:
+        """
+        Gets totals by flow id and scope for the given scopes in each of the given flows, omitting those with no total.
+        """
+        return cls._get_totals([f.id for f in flows], scopes)
+
+    @classmethod
+    def get_prefix_totals(cls, flow, prefix: str, scopes: list[str] = ()) -> dict[str, int]:
+        """
+        Gets totals by scope for all scopes with the given prefix, omitting those with no total. Valkey's hash can't be
+        searched by prefix so scopes are found in the database, plus any given ones the caller knows of, e.g. from the
+        flow definition. A scope that is neither given nor flushed yet is missed until it is.
+        """
+        assert all(s.startswith(prefix) for s in scopes), "given scopes must have the prefix"
+
+        flushed = cls.objects.filter(flow=flow, scope__startswith=prefix).values_list("scope", flat=True)
+
+        return cls.get_totals(flow, [*scopes, *flushed])
+
+    class Meta:
+        indexes = [
+            # for trimming
+            models.Index(name="flowtally_expires_on", fields=("expires_on",), condition=Q(expires_on__isnull=False))
         ]
 
 
