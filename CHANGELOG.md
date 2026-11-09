@@ -1,3 +1,6 @@
+## v26.3.182 (2026-11-09)
+ * Don't send notification emails to released users
+
 ## v26.3.181 (2026-11-09)
  * Add FlowTally model for flow-level tallies
  * Read O-prefixed tally fields and include the until day in channel charts
