@@ -3,6 +3,7 @@ import { localizedOption, renderClamped } from '../utils';
 import { html } from 'lit-html';
 import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, SetContactStatus } from '../../store/flow-definition';
+import { titleCase } from '../../utils';
 
 const STATUS_OPTIONS = [
   localizedOption('active', () => msg('Active')),
@@ -11,8 +12,10 @@ const STATUS_OPTIONS = [
   localizedOption('blocked', () => msg('Blocked'))
 ];
 
+// a status this editor doesn't offer is kept as it is rather than replaced
 const getStatusOption = (status: string) =>
-  STATUS_OPTIONS.find((option) => option.value === status) || STATUS_OPTIONS[0];
+  STATUS_OPTIONS.find((option) => option.value === status) ||
+  (status ? { value: status, name: titleCase(status) } : STATUS_OPTIONS[0]);
 
 export const set_contact_status: ActionConfig = {
   get name() {

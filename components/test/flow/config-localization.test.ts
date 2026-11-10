@@ -24,6 +24,15 @@ const TEXT_KEYS = new Set([
   'description'
 ]);
 
+// fields whose option names aren't the config's own text: they are saved into
+// the flow definition, or come from a data table shared with other code
+const EXEMPT_OPTION_NAMES = new Set([
+  'split_by_contact_field.form.field',
+  'add_contact_urn.form.scheme',
+  'split_by_scheme.form.schemes',
+  'split_by_airtime.form.amounts.itemConfig.currency'
+]);
+
 // Collects the paths of text held as a plain string. Configs are module-level
 // constants, so a plain string is fixed in whichever locale was active when the
 // module loaded, where a getter is read again on every render.
@@ -45,6 +54,13 @@ const findPlainText = (
       if (!descriptor.get) {
         found.push(`${path}.${key}`);
       }
+    } else if (key === 'options' && Array.isArray(child)) {
+      child.forEach((option, index) => {
+        const name = Object.getOwnPropertyDescriptor(Object(option), 'name');
+        if (name && !name.get && !EXEMPT_OPTION_NAMES.has(path)) {
+          found.push(`${path}.options[${index}].name`);
+        }
+      });
     } else {
       findPlainText(child, `${path}.${key}`, found, seen);
     }
