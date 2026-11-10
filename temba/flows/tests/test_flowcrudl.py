@@ -1881,7 +1881,6 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
 
     @patch("django.utils.timezone.now")
     def test_engagement_timeline(self, mock_now):
-        """Test timeline rollup modes for different date ranges"""
         mock_now.return_value = datetime(2024, 11, 25, 12, 5, 0, tzinfo=tzone.utc)
 
         flow1 = self.create_flow("Test 1")
@@ -1892,33 +1891,17 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # empty timeline
         response = self.requestView(timeline_url, self.admin).json()
+        self.assertEqual({"labels": [], "datasets": [{"label": "Messages", "data": []}]}, response["data"])
 
-        # should be empty
-        self.assertEqual(response["rollup_by"], "day")
-        self.assertEqual(len(response["data"]["labels"]), 0)
-        self.assertEqual(response["data"]["datasets"][0]["data"], [])
+        # only the last year of days is included, even if older ones haven't been trimmed yet
+        flow1.tallies.create(scope="msgsin:date:2023-11-26", count=5)  # 1 day too old
+        flow1.tallies.create(scope="msgsin:date:2023-11-27", count=50)
+        flow1.tallies.create(scope="msgsin:date:2024-11-25", count=8)
+        flow1.tallies.create(scope="msgsin:hour:9", count=3)
 
-        # test week rollup mode (1-3 years ago)
-        flow1.tallies.create(scope="msgsin:date:2022-11-25", count=5)
-        flow1.tallies.create(scope="msgsin:date:2022-11-29", count=50)
-        flow1.tallies.create(scope="msgsin:date:2022-12-01", count=8)
         response = self.requestView(timeline_url, self.admin).json()
-
-        self.assertEqual("week", response["rollup_by"])
-        self.assertEqual(["2022-11-21", "2022-11-28"], response["data"]["labels"][0:2])
-        self.assertEqual(5, response["data"]["datasets"][0]["data"][0])
-        self.assertEqual(58, response["data"]["datasets"][0]["data"][1])
-        flow1.tallies.all().delete()
-
-        # test month rollup mode (>3 years ago)
-        flow1.tallies.create(scope="msgsin:date:2020-11-25", count=10)
-        flow1.tallies.create(scope="msgsin:date:2020-12-26", count=5)
-        flow1.tallies.create(scope="msgsin:date:2020-12-27", count=6)
-        response = self.requestView(timeline_url, self.admin).json()
-        self.assertEqual("month", response["rollup_by"])
-        self.assertEqual(["2020-11-01", "2020-12-01"], response["data"]["labels"][0:2])
-        self.assertEqual(10, response["data"]["datasets"][0]["data"][0])
-        self.assertEqual(11, response["data"]["datasets"][0]["data"][1])
+        self.assertEqual(["2023-11-27", "2024-11-25"], response["data"]["labels"])
+        self.assertEqual([50, 8], response["data"]["datasets"][0]["data"])
 
     @patch("django.utils.timezone.now")
     def test_engagement_progress(self, mock_now):

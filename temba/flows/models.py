@@ -7,7 +7,6 @@ from datetime import date, datetime, timedelta, timezone as tzone
 from uuid import UUID
 
 import iso8601
-from dateutil.relativedelta import relativedelta
 from django_valkey import get_valkey_connection
 from packaging.version import Version
 
@@ -115,6 +114,10 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
 
     # how many days of daily incoming-message counts make up the list view's activity sparkline
     ACTIVITY_SERIES_DAYS = 14
+
+    # how many days of daily incoming-message counts make up the results engagement timeline, which can't be more than
+    # the days mailroom keeps them for
+    ENGAGEMENT_TIMELINE_DAYS = 365
 
     FINAL_LEGACY_VERSION = legacy.VERSIONS[-1]
     INITIAL_GOFLOW_VERSION = "13.0.0"  # initial version of flow spec to use new engine
@@ -922,43 +925,19 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         dependents["trigger"] = self.triggers.filter(is_active=True)
         return dependents
 
-    def get_engagement_start(self) -> date:
+    def get_engagement_timeline(self) -> dict:
         """
-        Gets earliest date of recorded engagement (i.e. messages in) for this flow.
+        Gets daily engagement counts (i.e. messages in) for the last ENGAGEMENT_TIMELINE_DAYS days.
         """
-        first = self.tallies.filter(scope__startswith="msgsin:date:").order_by("scope").first()
+        since = timezone.now().date() - timedelta(days=self.ENGAGEMENT_TIMELINE_DAYS - 1)
 
-        utc_timezone = tzone.utc
-
-        return datetime.fromisoformat(first.scope[12:]).replace(tzinfo=utc_timezone).date() if first else None
-
-    def get_engagement_timeline(self, since, until) -> dict:
-        rollup_by = "day"
-
-        # bucket dates into months or weeks depending on the range
-        if since < until - relativedelta(years=3):
-            rollup_by = "month"
-        elif since < until - relativedelta(years=1):
-            rollup_by = "week"
-
-        dates = (
-            self.tallies.filter(scope__startswith="msgsin:date:")
-            .extra({"date": f"date_trunc('{rollup_by}', split_part(scope, ':', 3)::date)"})
-            .values("date")
-            .annotate(count=Sum("count"))
-            .order_by("date")
+        counts = (
+            self.tallies.filter(scope__startswith="msgsin:date:", scope__gte=f"msgsin:date:{since}")
+            .order_by("scope")
+            .values_list("scope", "count")
         )
 
-        since = dates[0]["date"].date() if len(dates) > 0 else since
-
-        all_dates = []
-        counts = []
-
-        for d in dates:
-            all_dates.append(d["date"].date())
-            counts.append(d["count"])
-
-        return {"dates": all_dates, "counts": counts, "rollup_by": rollup_by}
+        return {"dates": [date.fromisoformat(scope[12:]) for scope, _ in counts], "counts": [c for _, c in counts]}
 
     def get_engagement_by_weekday(self) -> dict[int, int]:
         """
