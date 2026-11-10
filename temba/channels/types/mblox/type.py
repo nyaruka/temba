@@ -8,7 +8,7 @@ from ...models import ChannelType, ConfigUI
 
 class MbloxType(ChannelType):
     """
-    A Mblox channel (https://www.mblox.com/)
+    A Mblox channel, which uses the Sinch SMS API (https://developers.sinch.com/docs/sms/api-reference)
     """
 
     code = "MB"
@@ -17,21 +17,30 @@ class MbloxType(ChannelType):
 
     schemes = [URN.TEL_SCHEME]
 
-    claim_blurb = _("Easily add a two way number you have configured with %(link)s using their APIs.") % {
-        "link": '<a target="_blank" href="https://www.mblox.com/">Mblox</a>'
-    }
+    claim_blurb = _(
+        "If you have a number on an existing %(link)s SMS service plan, formerly Mblox, you can connect it using "
+        "their APIs."
+    ) % {"link": '<a target="_blank" href="https://sinch.com/">Sinch</a>'}
     claim_view = AuthenticatedExternalClaimView
+    claim_view_kwargs = {
+        "username_label": _("Service Plan ID"),
+        "username_help": _("Found on your Sinch dashboard."),
+        "password_label": _("API Token"),
+        "password_help": _("Found on your Sinch dashboard."),
+        "form_blurb": _("You can connect your Sinch number by entering the settings below."),
+    }
 
     config_ui = ConfigUI(
         blurb=_(
-            "To finish configuring this channel, you'll need to set the following callback URL on your Mblox account."
+            "To finish configuring this channel, you'll need to set the following callback URL on your Sinch SMS "
+            "service plan."
         ),
         endpoints=[
             ConfigUI.Endpoint(
                 courier="receive",
                 label=_("Callback URL"),
                 help=_(
-                    "This endpoint will be called by Mblox when new messages are received to your number and for delivery "
+                    "This endpoint will be called by Sinch when new messages are received to your number and for delivery "
                     "reports."
                 ),
             ),

@@ -19,6 +19,9 @@ class MbloxTypeTest(TembaTest):
 
         # try to claim a channel
         response = self.client.get(url)
+        self.assertContains(response, "Service Plan ID")
+        self.assertContains(response, "API Token")
+
         post_data = response.context["form"].initial
 
         post_data["country"] = "RW"

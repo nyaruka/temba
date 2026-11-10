@@ -1021,11 +1021,27 @@ msgstr "Este terminar deverá ser chamado pela MACROKIOSK quando o status de men
 msgid "Sender ID"
 msgstr "ID do Remetente"
 
-msgid "To finish configuring this channel, you'll need to set the following callback URL on your Mblox account."
-msgstr "Para concluir a configuração deste canal, você precisará definir a seguinte URL de retorno de chamada na sua conta da Mblox."
+#, python-format
+msgid "If you have a number on an existing %(link)s SMS service plan, formerly Mblox, you can connect it using their APIs."
+msgstr "Se você tem um número em um plano de serviço SMS existente da %(link)s, anteriormente Mblox, pode conectá-lo usando as APIs deles."
 
-msgid "This endpoint will be called by Mblox when new messages are received to your number and for delivery reports."
-msgstr "Este terminal será chamado pelo Mblox quando novas mensagens forem recebidas pelo seu número e para relatórios de entrega."
+msgid "Service Plan ID"
+msgstr "ID do plano de serviço"
+
+msgid "Found on your Sinch dashboard."
+msgstr "Encontrado no seu painel da Sinch."
+
+msgid "API Token"
+msgstr "Token API"
+
+msgid "You can connect your Sinch number by entering the settings below."
+msgstr "Você pode conectar seu número da Sinch ao entrar nas configurações abaixo."
+
+msgid "To finish configuring this channel, you'll need to set the following callback URL on your Sinch SMS service plan."
+msgstr "Para concluir a configuração deste canal, você precisará definir a seguinte URL de retorno de chamada no seu plano de serviço SMS da Sinch."
+
+msgid "This endpoint will be called by Sinch when new messages are received to your number and for delivery reports."
+msgstr "Este terminal será chamado pela Sinch quando novas mensagens forem recebidas pelo seu número e para relatórios de entrega."
 
 msgid "To finish configuring this channel, you'll have to configure the Messagebird to send raw received SMS messages to the URL below either with a flow or by registering the webhook with them. Configure the status URL under Developer Settings to receive status updates for your messages."
 msgstr "Para concluir a configuração deste canal, você terá que configurar o Messagebird para enviar as mensagens SMS recebidas brutas para a URL abaixo, seja com um fluxo ou registrando o webhook com eles. Configure a URL de estado em Developer Settings para receber atualizações de estado das suas mensagens."
@@ -1569,9 +1585,6 @@ msgstr "Não foi possível registrar as assinaturas de webhook: %(resp)s"
 #, python-format
 msgid "Unable to remove webhook subscriptions: %(resp)s"
 msgstr "Não foi possível remover as assinaturas de webhook: %(resp)s"
-
-msgid "API Token"
-msgstr "Token API"
 
 msgid "Invalid token. Please check your Zenvia account settings."
 msgstr "Token inválido. Por favor verifique as configurações da sua conta da Zenvia."

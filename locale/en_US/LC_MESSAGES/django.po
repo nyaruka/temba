@@ -1003,10 +1003,26 @@ msgstr ""
 msgid "Sender ID"
 msgstr ""
 
-msgid "To finish configuring this channel, you'll need to set the following callback URL on your Mblox account."
+#, python-format
+msgid "If you have a number on an existing %(link)s SMS service plan, formerly Mblox, you can connect it using their APIs."
 msgstr ""
 
-msgid "This endpoint will be called by Mblox when new messages are received to your number and for delivery reports."
+msgid "Service Plan ID"
+msgstr ""
+
+msgid "Found on your Sinch dashboard."
+msgstr ""
+
+msgid "API Token"
+msgstr ""
+
+msgid "You can connect your Sinch number by entering the settings below."
+msgstr ""
+
+msgid "To finish configuring this channel, you'll need to set the following callback URL on your Sinch SMS service plan."
+msgstr ""
+
+msgid "This endpoint will be called by Sinch when new messages are received to your number and for delivery reports."
 msgstr ""
 
 msgid "To finish configuring this channel, you'll have to configure the Messagebird to send raw received SMS messages to the URL below either with a flow or by registering the webhook with them. Configure the status URL under Developer Settings to receive status updates for your messages."
@@ -1550,9 +1566,6 @@ msgstr ""
 
 #, python-format
 msgid "Unable to remove webhook subscriptions: %(resp)s"
-msgstr ""
-
-msgid "API Token"
 msgstr ""
 
 msgid "Invalid token. Please check your Zenvia account settings."

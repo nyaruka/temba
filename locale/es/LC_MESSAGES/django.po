@@ -1017,11 +1017,27 @@ msgstr "MACROKIOSK debería llamar a este punto final cuando cambie el estado de
 msgid "Sender ID"
 msgstr "Sender ID"
 
-msgid "To finish configuring this channel, you'll need to set the following callback URL on your Mblox account."
-msgstr "Para terminar de configurar este canal, deberá establecer la siguiente URL de callback en su cuenta de Mblox."
+#, python-format
+msgid "If you have a number on an existing %(link)s SMS service plan, formerly Mblox, you can connect it using their APIs."
+msgstr "Si tiene un número en un plan de servicio SMS existente de %(link)s, anteriormente Mblox, puede conectarlo usando sus API."
 
-msgid "This endpoint will be called by Mblox when new messages are received to your number and for delivery reports."
-msgstr "Mblox llamará a este punto final cuando se reciban nuevos mensajes a su número y para informes de entrega."
+msgid "Service Plan ID"
+msgstr "ID del plan de servicio"
+
+msgid "Found on your Sinch dashboard."
+msgstr "Se encuentra en su panel de Sinch."
+
+msgid "API Token"
+msgstr "Token API"
+
+msgid "You can connect your Sinch number by entering the settings below."
+msgstr "Puede conectar su número de Sinch ingresando la configuración a continuación."
+
+msgid "To finish configuring this channel, you'll need to set the following callback URL on your Sinch SMS service plan."
+msgstr "Para terminar de configurar este canal, deberá establecer la siguiente URL de callback en su plan de servicio SMS de Sinch."
+
+msgid "This endpoint will be called by Sinch when new messages are received to your number and for delivery reports."
+msgstr "Sinch llamará a este punto final cuando se reciban nuevos mensajes a su número y para informes de entrega."
 
 msgid "To finish configuring this channel, you'll have to configure the Messagebird to send raw received SMS messages to the URL below either with a flow or by registering the webhook with them. Configure the status URL under Developer Settings to receive status updates for your messages."
 msgstr "Para terminar de configurar este canal, deberá configurar Messagebird para que envíe los mensajes SMS recibidos sin procesar a la URL de abajo, ya sea con un flujo o registrando el webhook con ellos. Configure la URL de estado en Developer Settings para recibir actualizaciones de estado de sus mensajes."
@@ -1565,9 +1581,6 @@ msgstr "No se pueden registrar suscripciones de webhook: %(resp)s"
 #, python-format
 msgid "Unable to remove webhook subscriptions: %(resp)s"
 msgstr "No se pueden eliminar las suscripciones a webhook: %(resp)s"
-
-msgid "API Token"
-msgstr "Token API"
 
 msgid "Invalid token. Please check your Zenvia account settings."
 msgstr "Simbolo no valido. Verifique la configuración de su cuenta de Zenvia."
