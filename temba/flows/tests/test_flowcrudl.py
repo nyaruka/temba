@@ -1943,6 +1943,13 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(["2023-11-27", "2024-11-18", "2024-11-25"], response["data"]["labels"])
         self.assertEqual([54, 3, 8], response["data"]["datasets"][0]["data"])
 
+        # when the year starts mid-week, that partial first week is left out
+        mock_now.return_value = datetime(2024, 11, 27, 12, 5, 0, tzinfo=tzone.utc)
+
+        response = self.requestView(timeline_url, self.admin).json()
+        self.assertEqual(["2024-11-18", "2024-11-25"], response["data"]["labels"])
+        self.assertEqual([3, 8], response["data"]["datasets"][0]["data"])
+
     @patch("django.utils.timezone.now")
     def test_engagement_progress(self, mock_now):
         mock_now.return_value = datetime(2024, 11, 25, 12, 5, 0, tzinfo=tzone.utc)

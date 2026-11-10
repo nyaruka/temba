@@ -931,6 +931,7 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         starting on Mondays so that a year of them is still readable as a bar chart.
         """
         since = timezone.now().date() - timedelta(days=self.ENGAGEMENT_TIMELINE_DAYS - 1)
+        since += timedelta(days=-since.weekday() % 7)  # drop any partial first week as older days may be trimmed
 
         daily = (
             self.tallies.filter(scope__startswith="msgsin:date:", scope__gte=f"msgsin:date:{since}")
