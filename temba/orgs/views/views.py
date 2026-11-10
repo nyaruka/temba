@@ -904,7 +904,7 @@ class OrgCRUDL(SmartCRUDL):
             from_email_default = None
             if org.is_child and org.parent.flow_smtp:
                 from_email_default = extract_from(org.parent.flow_smtp)
-            elif org.has_shared_email:
+            elif Org.FEATURE_SHARED_EMAIL in org.features:
                 from_email_default = settings.FLOW_FROM_EMAIL
 
             from_email_custom = extract_from(org.flow_smtp) if org.flow_smtp else None

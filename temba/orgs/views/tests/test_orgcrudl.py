@@ -239,12 +239,21 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("Temba <no-reply@temba.io>", response.context["from_email_default"])  # from settings
         self.assertEqual(None, response.context["from_email_custom"])
 
-        # make org a child to a parent that also doesn't have SMTP settings, but which has the shared email service
+        # make org a child to a parent that also doesn't have SMTP settings, but which has the shared email service..
+        # which the child doesn't get from it
         self.org.features = []
         self.org.parent = self.org2
         self.org.save(update_fields=("features", "parent"))
         self.org2.features = [Org.FEATURE_SHARED_EMAIL]
         self.org2.save(update_fields=("features",))
+
+        response = self.client.get(config_url)
+        self.assertContains(response, "Flows can only send emails using your own SMTP settings.")
+        self.assertIsNone(response.context["from_email_default"])
+
+        # unless it has been granted it too
+        self.org.features = [Org.FEATURE_SHARED_EMAIL]
+        self.org.save(update_fields=("features",))
 
         response = self.client.get(config_url)
         self.assertContains(response, "You can add your own SMTP settings for emails sent from flows.")

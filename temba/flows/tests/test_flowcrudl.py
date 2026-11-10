@@ -1403,10 +1403,14 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         self.org2.save(update_fields=("flow_smtp",))
         assert_features({"auto_translate", "email", "airtime", "resthook", "locations"})
 
-        # or use the shared email service
+        # but they don't inherit the shared email service
         self.org2.flow_smtp = None
         self.org2.features = [Org.FEATURE_SHARED_EMAIL]
         self.org2.save(update_fields=("flow_smtp", "features"))
+        assert_features({"auto_translate", "airtime", "resthook", "locations"})
+
+        self.org.features = [Org.FEATURE_SHARED_EMAIL]
+        self.org.save(update_fields=("features",))
         assert_features({"auto_translate", "email", "airtime", "resthook", "locations"})
 
     @mock_mailroom
