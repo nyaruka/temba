@@ -99,17 +99,30 @@ export class NodeEditor extends RapidElement {
         cursor: pointer;
       }
 
+      /* matches the warning banners shown across the top of workspace pages */
       .feature-warning {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 10px 12px;
+        gap: 12px;
+        padding: 12px;
+        border: 1px solid #f3dcae;
         border-radius: var(--curvature);
-        font-size: 13px;
-        color: #8a5a00;
-        background: #fff4d6;
-        border: 1px solid #f3dfa6;
-        --icon-color: #c98a00;
+        background: #fffaf0;
+        color: #3f3f46;
+        font-size: 14px;
+        line-height: 20px;
+      }
+
+      .feature-warning-icon {
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 9999px;
+        background: #fdecc8;
+        --icon-color: #b45309;
       }
 
       .issue-warning:hover .issue-text {
@@ -3425,7 +3438,9 @@ export class NodeEditor extends RapidElement {
     }
 
     return html`<div class="feature-warning">
-      <temba-icon name="alert_warning" size="1.2"></temba-icon>
+      <div class="feature-warning-icon">
+        <temba-icon name="alert_warning"></temba-icon>
+      </div>
       <span>${needs.warning}</span>
     </div>`;
   }
