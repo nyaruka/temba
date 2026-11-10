@@ -899,14 +899,19 @@ class OrgCRUDL(SmartCRUDL):
             def extract_from(smtp_url: str) -> str:
                 return parse_smtp_url(smtp_url)[4]
 
-            from_email_default = settings.FLOW_FROM_EMAIL
+            # without SMTP settings of its own, an org sends with its parent's, or the shared email service if it has
+            # been granted that, or not at all
+            from_email_default = None
             if org.is_child and org.parent.flow_smtp:
                 from_email_default = extract_from(org.parent.flow_smtp)
+            elif org.has_shared_email:
+                from_email_default = settings.FLOW_FROM_EMAIL
 
             from_email_custom = extract_from(org.flow_smtp) if org.flow_smtp else None
 
             context["from_email_default"] = from_email_default
             context["from_email_custom"] = from_email_custom
+            context["has_children"] = bool(from_email_custom) and org.children.filter(is_active=True).exists()
             return context
 
     class Update(ModalFormMixin, OrgObjPermsMixin, SmartUpdateView):

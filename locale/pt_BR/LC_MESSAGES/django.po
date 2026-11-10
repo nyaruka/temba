@@ -2920,6 +2920,9 @@ msgstr "Webhooks sem restrições"
 msgid "Ticket Triggers"
 msgstr "Disparadores de tickets"
 
+msgid "Shared Email"
+msgstr "E-mail compartilhado"
+
 msgid "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please contact support."
 msgstr "Desculpe, sua área de trabalho está suspensa no momento. Para voltar a iniciar fluxos e enviar mensagens, por favor entre em contato com o suporte."
 
@@ -5736,11 +5739,17 @@ msgstr "Selecionar Tudo"
 msgid "Emails sent from flows will be sent from <b>%(from_email)s</b>."
 msgstr "Os e-mails enviados a partir dos fluxos serão enviados de <b>%(from_email)s</b>."
 
+msgid "Emails can't be sent from flows until SMTP settings are added."
+msgstr "Não é possível enviar e-mails a partir dos fluxos até que sejam adicionadas configurações de SMTP."
+
 msgid "If you no longer want to use these SMTP settings to send emails from flows, <a onclick=\"confirmSMTPRemove()\">click here</a>."
 msgstr "Se você não quer mais usar estas configurações de SMTP para enviar e-mails a partir dos fluxos, <a onclick=\"confirmSMTPRemove()\">clique aqui</a>."
 
 msgid "You can add your own SMTP settings for emails sent from flows."
 msgstr "Você pode adicionar suas próprias configurações de SMTP para os e-mails enviados a partir dos fluxos."
+
+msgid "Flows can only send emails using your own SMTP settings."
+msgstr "Os fluxos só podem enviar e-mails usando suas próprias configurações de SMTP."
 
 msgid "Remove SMTP Settings"
 msgstr "Remover configurações de SMTP"
@@ -5748,6 +5757,12 @@ msgstr "Remover configurações de SMTP"
 #, python-format
 msgid "Removing these settings will mean that emails sent from flows will come from <b>%(from_email)s</b>. Are you sure you want to continue?"
 msgstr "Remover estas configurações significa que os e-mails enviados a partir dos fluxos virão de <b>%(from_email)s</b>. Você tem certeza que quer continuar?"
+
+msgid "Removing these settings will mean that emails can't be sent from flows. Are you sure you want to continue?"
+msgstr "Remover estas configurações significa que não será possível enviar e-mails a partir dos fluxos. Você tem certeza que quer continuar?"
+
+msgid "Child workspaces without their own SMTP settings will also be affected."
+msgstr "As áreas de trabalho filhas sem suas próprias configurações de SMTP também serão afetadas."
 
 #, python-format
 msgid "Sign in to join the <b>%(org)s</b> workspace."
