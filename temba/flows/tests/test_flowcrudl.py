@@ -24,7 +24,7 @@ from temba.flows.models import (
 )
 from temba.mailroom.client.types import Exclusions
 from temba.orgs.integrations.dtone.type import DTOneType
-from temba.orgs.models import Export
+from temba.orgs.models import Export, Org
 from temba.templates.models import TemplateTranslation
 from temba.tests import CRUDLTestMixin, MockResponse, TembaTest, cleanup, matchers, mock_mailroom
 from temba.tests.base import get_contact_search, override_brand
@@ -1352,30 +1352,66 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
             response = self.client.get(reverse("flows.flow_editor", args=[flow.uuid]))
             self.assertEqual(features, set(json.loads(response.context["feature_filters"])))
 
-        # auto_translate is always available
-        assert_features({"auto_translate"})
+        # auto_translate is always available, and we have a channel that can send
+        assert_features({"auto_translate", "messaging"})
 
         # add a resthook
         Resthook.objects.create(org=flow.org, created_by=self.admin, modified_by=self.admin)
-        assert_features({"auto_translate", "resthook"})
+        assert_features({"auto_translate", "messaging", "resthook"})
 
         # add a DT One integration
         DTOneType().connect(flow.org, self.admin, "login", "token")
-        assert_features({"auto_translate", "airtime", "resthook"})
+        assert_features({"auto_translate", "messaging", "airtime", "resthook"})
 
         # change our channel to use a whatsapp scheme
         self.channel.schemes = [URN.WHATSAPP_SCHEME]
         self.channel.save()
-        assert_features({"auto_translate", "whatsapp", "airtime", "resthook"})
+        assert_features({"auto_translate", "messaging", "whatsapp", "airtime", "resthook"})
 
         # change our channel to use a facebook scheme
         self.channel.schemes = [URN.FACEBOOK_SCHEME]
         self.channel.save()
-        assert_features({"auto_translate", "airtime", "resthook"})
+        assert_features({"auto_translate", "messaging", "airtime", "resthook"})
 
         self.setUpLocations()
 
+        assert_features({"auto_translate", "messaging", "airtime", "resthook", "locations"})
+
+        # make our channel one that can also make and answer calls
+        self.channel.schemes = [URN.TEL_SCHEME]
+        self.channel.role = "SRCA"
+        self.channel.save()
+        assert_features({"auto_translate", "messaging", "ivr", "airtime", "resthook", "locations"})
+
+        # or make it receive only
+        self.channel.role = "R"
+        self.channel.save()
         assert_features({"auto_translate", "airtime", "resthook", "locations"})
+
+        # configure SMTP for flow emails
+        self.org.flow_smtp = "smtp://bob:secret@example.com/?from=bob%40example.com"
+        self.org.save(update_fields=("flow_smtp",))
+        assert_features({"auto_translate", "email", "airtime", "resthook", "locations"})
+
+        # which child workspaces inherit
+        self.org.flow_smtp = None
+        self.org.parent = self.org2
+        self.org.save(update_fields=("flow_smtp", "parent"))
+        assert_features({"auto_translate", "airtime", "resthook", "locations"})
+
+        self.org2.flow_smtp = "smtp://bob:secret@example.com/?from=bob%40example.com"
+        self.org2.save(update_fields=("flow_smtp",))
+        assert_features({"auto_translate", "email", "airtime", "resthook", "locations"})
+
+        # but they don't inherit the shared email service
+        self.org2.flow_smtp = None
+        self.org2.features = [Org.FEATURE_SHARED_EMAIL]
+        self.org2.save(update_fields=("flow_smtp", "features"))
+        assert_features({"auto_translate", "airtime", "resthook", "locations"})
+
+        self.org.features = [Org.FEATURE_SHARED_EMAIL]
+        self.org.save(update_fields=("features",))
+        assert_features({"auto_translate", "email", "airtime", "resthook", "locations"})
 
     @mock_mailroom
     def test_template_warnings(self, mr_mocks):

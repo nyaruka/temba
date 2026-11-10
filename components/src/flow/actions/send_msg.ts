@@ -4,7 +4,8 @@ import {
   ACTION_GROUPS,
   FormData,
   ValidationResult,
-  FlowTypes
+  FlowTypes,
+  Features
 } from '../types';
 import { Node, SendMsg } from '../../store/flow-definition';
 import { titleCase } from '../../utils';
@@ -29,6 +30,10 @@ export const send_msg: ActionConfig = {
     "Reply on the channel they're using, with quick replies or attachments.",
   group: ACTION_GROUPS.send,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
+  needs: {
+    feature: Features.MESSAGING,
+    warning: 'This workspace has no channel that can send messages.'
+  },
   hideFromActions: true,
   render: (_node: Node, action: SendMsg) => {
     const sms = splitSMS(action.text);

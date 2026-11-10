@@ -18,6 +18,18 @@ describe('send_email action config', () => {
   });
 
   describe('action scenarios', () => {
+    helper.testEditor(
+      {
+        uuid: 'test-action-1',
+        type: 'send_email',
+        addresses: ['user@example.com'],
+        subject: 'Welcome!',
+        body: 'Thank you for signing up.'
+      } as SendEmail,
+      'missing-feature',
+      []
+    );
+
     helper.testAction(
       {
         uuid: 'test-action-1',

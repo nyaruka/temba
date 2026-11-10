@@ -99,6 +99,32 @@ export class NodeEditor extends RapidElement {
         cursor: pointer;
       }
 
+      /* sits in the footer, which takes on the colours of the warning banners
+         across the top of workspace pages, so it doesn't read as a validation
+         error on the form */
+      .feature-warning {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        /* pulls it in to the same inset as the buttons on the right */
+        margin-left: -8px;
+        color: #3f3f46;
+        font-size: 14px;
+        line-height: 20px;
+      }
+
+      .feature-warning-icon {
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 9999px;
+        background: #fdecc8;
+        --icon-color: #b45309;
+      }
+
       .issue-warning:hover .issue-text {
         text-decoration: underline;
       }
@@ -712,6 +738,9 @@ export class NodeEditor extends RapidElement {
 
   @fromStore(zustand, (state: AppState) => state.flowInfo)
   private flowInfo!: FlowInfo;
+
+  @fromStore(zustand, (state: AppState) => state.features)
+  private features!: string[];
 
   @fromStore(zustand, (state: AppState) => state.issuesByNode)
   private issuesByNode!: Map<string, FlowIssue[]>;
@@ -3398,6 +3427,24 @@ export class NodeEditor extends RapidElement {
     `;
   }
 
+  private renderFeatureWarning(): TemplateResult | string {
+    const needs = this.action && ACTION_CONFIG[this.action.type]?.needs;
+    if (
+      !needs ||
+      this.isTranslating ||
+      this.features?.includes(needs.feature)
+    ) {
+      return '';
+    }
+
+    return html`<div class="feature-warning">
+      <div class="feature-warning-icon">
+        <temba-icon name="alert_warning"></temba-icon>
+      </div>
+      <span>${needs.warning}</span>
+    </div>`;
+  }
+
   render(): TemplateResult {
     if (!this.isOpen) {
       return html``;
@@ -3417,6 +3464,8 @@ export class NodeEditor extends RapidElement {
       header = languageName ? msg(str`${languageName} - ${header}`) : header;
     }
 
+    const warning = this.renderFeatureWarning();
+
     return html`
       <temba-dialog
         header="${header}"
@@ -3428,7 +3477,9 @@ export class NodeEditor extends RapidElement {
         @temba-button-clicked=${this.handleDialogButtonClick}
         primaryButtonName="${msg('Save')}"
         cancelButtonName="${msg('Cancel')}"
-        style="--header-bg: ${headerColor}; --header-text: ${headerTextColor};"
+        style="--header-bg: ${headerColor}; --header-text: ${headerTextColor}; ${warning
+          ? '--dialog-footer-background: #fffaf0;'
+          : ''}"
         size="${dialogSize}"
       >
         <div class="node-editor-form">
@@ -3439,7 +3490,7 @@ export class NodeEditor extends RapidElement {
           ${this.renderIssueWarnings()}
         </div>
 
-        <div slot="gutter">${this.renderGutter()}</div>
+        <div slot="gutter">${warning} ${this.renderGutter()}</div>
       </temba-dialog>
     `;
   }

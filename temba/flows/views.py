@@ -784,6 +784,14 @@ class FlowCRUDL(SmartCRUDL):
             if org.root_location_id:
                 features.append("locations")
 
+            # the editor warns on actions that need one of these and won't work without it
+            if org.get_send_channel():
+                features.append("messaging")
+            if org.supports_ivr():
+                features.append("ivr")
+            if org.has_flow_email:
+                features.append("email")
+
             return features
 
         def build_context_menu(self, menu):

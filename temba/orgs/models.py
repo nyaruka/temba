@@ -433,12 +433,12 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         return bool(self.parent_id)
 
     @property
-    def has_shared_email(self) -> bool:
+    def has_flow_email(self) -> bool:
         """
-        Whether flows can send email using the shared email service, which child orgs inherit from their parent
+        Whether flows can send email at all: with SMTP settings of our own or our parent's, or the shared email service
         """
-        return Org.FEATURE_SHARED_EMAIL in self.features or (
-            self.is_child and Org.FEATURE_SHARED_EMAIL in self.parent.features
+        return bool(
+            self.flow_smtp or (self.is_child and self.parent.flow_smtp) or Org.FEATURE_SHARED_EMAIL in self.features
         )
 
     @property

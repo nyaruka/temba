@@ -3,6 +3,8 @@ import { html } from 'lit';
 import { Action, Node } from '../src/store/flow-definition';
 import { assertScreenshot, getClip } from './utils.test';
 import { Editor } from '../src/flow/Editor';
+import { Features } from '../src/flow/types';
+import { zustand } from '../src/store/AppState';
 import '../temba-modules';
 
 /**
@@ -58,7 +60,12 @@ export class ActionTest<T extends Action> {
   /**
    * Opens the node editor for an action and returns the editor element
    */
-  private async openNodeEditor(action: T): Promise<HTMLElement> {
+  private async openNodeEditor(
+    action: T,
+    features: string[] = Object.values(Features)
+  ): Promise<HTMLElement> {
+    zustand.getState().setFeatures(features);
+
     const nodeEditor = (await fixture(html`
       <temba-node-editor .action=${action} .isOpen=${true}></temba-node-editor>
     `)) as HTMLElement;
@@ -147,6 +154,20 @@ export class ActionTest<T extends Action> {
       await assertScreenshot(
         `actions/${this.actionName}/render/${testName}`,
         getClip(flowNode)
+      );
+    });
+  }
+
+  /**
+   * Opens the editor for an action in a workspace with only the given
+   * features and screenshots it
+   */
+  async testEditor(action: T, testName: string, features: string[]) {
+    it(`${testName}`, async () => {
+      const nodeEditor = await this.openNodeEditor(action, features);
+      await this.assertDialogScreenshot(
+        nodeEditor,
+        `actions/${this.actionName}/editor/${testName}`
       );
     });
   }

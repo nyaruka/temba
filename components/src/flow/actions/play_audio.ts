@@ -1,5 +1,11 @@
 import { html } from 'lit-html';
-import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
+import {
+  ActionConfig,
+  ACTION_GROUPS,
+  FormData,
+  FlowTypes,
+  Features
+} from '../types';
 import { Node, PlayAudio } from '../../store/flow-definition';
 import { renderHighlightedText } from '../utils';
 
@@ -8,6 +14,10 @@ export const play_audio: ActionConfig = {
   subtitle: 'Use a recorded prompt instead of text-to-speech.',
   group: ACTION_GROUPS.send,
   flowTypes: [FlowTypes.VOICE],
+  needs: {
+    feature: Features.IVR,
+    warning: 'This workspace has no voice channel.'
+  },
   render: (_node: Node, action: PlayAudio) => {
     return html`
       <div style="display: flex; align-items: center; gap: 0.3em;">

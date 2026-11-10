@@ -1,5 +1,11 @@
 import { html } from 'lit-html';
-import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
+import {
+  ActionConfig,
+  ACTION_GROUPS,
+  FormData,
+  FlowTypes,
+  Features
+} from '../types';
 import { Node, SayMsg } from '../../store/flow-definition';
 import { renderAudioPlayer } from './audio-player';
 import { renderClamped, renderHighlightedText } from '../utils';
@@ -10,6 +16,10 @@ export const say_msg: ActionConfig = {
     'Spoken to the caller with text-to-speech, or played from a recording.',
   group: ACTION_GROUPS.send,
   flowTypes: [FlowTypes.VOICE],
+  needs: {
+    feature: Features.IVR,
+    warning: 'This workspace has no voice channel.'
+  },
   render: (_node: Node, action: SayMsg) => {
     return html`
       ${renderClamped(
