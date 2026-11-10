@@ -2916,6 +2916,9 @@ msgstr "Webhooks sans restriction"
 msgid "Ticket Triggers"
 msgstr "Déclencheurs de billets"
 
+msgid "Shared Email"
+msgstr "E-mail partagé"
+
 msgid "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please contact support."
 msgstr "Désolé, votre espace de travail est actuellement suspendu. Pour réactiver le lancement de flux et l'envoi de messages, veuillez contacter le support."
 
@@ -5732,11 +5735,17 @@ msgstr "Tout sélectionner"
 msgid "Emails sent from flows will be sent from <b>%(from_email)s</b>."
 msgstr "Les courriels émis à partir des flux seront envoyés depuis <b>%(from_email)s</b>."
 
+msgid "Emails can't be sent from flows until SMTP settings are added."
+msgstr "Les e-mails ne peuvent pas être envoyés depuis les flux tant que des paramètres SMTP n'ont pas été ajoutés."
+
 msgid "If you no longer want to use these SMTP settings to send emails from flows, <a onclick=\"confirmSMTPRemove()\">click here</a>."
 msgstr "Si vous ne souhaitez plus utiliser ces paramètres SMTP pour envoyer les e-mails depuis les flux, <a onclick=\"confirmSMTPRemove()\">cliquez ici</a>."
 
 msgid "You can add your own SMTP settings for emails sent from flows."
 msgstr "Vous pouvez ajouter vos propres paramètres SMTP pour les e-mails envoyés depuis les flux."
+
+msgid "Flows can only send emails using your own SMTP settings."
+msgstr "Les flux ne peuvent envoyer des e-mails qu'en utilisant vos propres paramètres SMTP."
 
 msgid "Remove SMTP Settings"
 msgstr "Supprimer les paramètres SMTP"
@@ -5744,6 +5753,9 @@ msgstr "Supprimer les paramètres SMTP"
 #, python-format
 msgid "Removing these settings will mean that emails sent from flows will come from <b>%(from_email)s</b>. Are you sure you want to continue?"
 msgstr "La suppression de ces paramètres signifie que les e-mails envoyés depuis les flux proviendront de <b>%(from_email)s</b>. Voulez-vous vraiment continuer ?"
+
+msgid "Removing these settings will mean that emails can't be sent from flows. Are you sure you want to continue?"
+msgstr "Supprimer ces paramètres signifie que les e-mails ne pourront plus être envoyés depuis les flux. Êtes-vous sûr de vouloir continuer ?"
 
 #, python-format
 msgid "Sign in to join the <b>%(org)s</b> workspace."

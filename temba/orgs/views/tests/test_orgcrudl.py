@@ -218,7 +218,20 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         settings_url = reverse("orgs.org_workspace")
         config_url = reverse("orgs.org_flow_smtp")
 
-        # orgs without SMTP settings see default from address
+        # orgs without SMTP settings or the shared email service can't send emails from flows
+        response = self.client.get(settings_url)
+        self.assertContains(response, "Emails can't be sent from flows until SMTP settings are added.")
+        self.assertIsNone(response.context["from_email_default"])
+        self.assertIsNone(response.context["from_email_custom"])
+
+        response = self.client.get(config_url)
+        self.assertContains(response, "Flows can only send emails using your own SMTP settings.")
+        self.assertContains(response, "Removing these settings will mean that emails can't be sent from flows.")
+
+        # orgs with the shared email service see its from address
+        self.org.features = [Org.FEATURE_SHARED_EMAIL]
+        self.org.save(update_fields=("features",))
+
         response = self.client.get(settings_url)
         self.assertContains(
             response, "Emails sent from flows will be sent from <b>Temba &lt;no-reply@temba.io&gt;</b>."
@@ -226,9 +239,12 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("Temba <no-reply@temba.io>", response.context["from_email_default"])  # from settings
         self.assertEqual(None, response.context["from_email_custom"])
 
-        # make org a child to a parent that alsos doesn't have SMTP settings
+        # make org a child to a parent that also doesn't have SMTP settings, but which has the shared email service
+        self.org.features = []
         self.org.parent = self.org2
-        self.org.save(update_fields=("parent",))
+        self.org.save(update_fields=("features", "parent"))
+        self.org2.features = [Org.FEATURE_SHARED_EMAIL]
+        self.org2.save(update_fields=("features",))
 
         response = self.client.get(config_url)
         self.assertContains(response, "You can add your own SMTP settings for emails sent from flows.")

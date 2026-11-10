@@ -254,6 +254,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     FEATURE_AGENTS = "agents"  # can create AI agents to handle contact conversations
     FEATURE_UNRESTRICTED_WEBHOOKS = "unrestricted_webhooks"  # can call webhooks to otherwise blocked domains
     FEATURE_TICKET_TRIGGERS = "ticket_triggers"  # triggers still fire for contacts with open tickets
+    FEATURE_SHARED_EMAIL = "shared_email"  # flows can send email using the shared email service
     FEATURES_CHOICES = (
         (FEATURE_USERS, _("Users")),
         (FEATURE_NEW_ORGS, _("New Orgs")),
@@ -264,6 +265,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         (FEATURE_AGENTS, _("Agents")),
         (FEATURE_UNRESTRICTED_WEBHOOKS, _("Unrestricted Webhooks")),
         (FEATURE_TICKET_TRIGGERS, _("Ticket Triggers")),
+        (FEATURE_SHARED_EMAIL, _("Shared Email")),
     )
 
     LIMIT_CHANNELS = "channels"
@@ -429,6 +431,15 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     @property
     def is_child(self) -> bool:
         return bool(self.parent_id)
+
+    @property
+    def has_shared_email(self) -> bool:
+        """
+        Whether flows can send email using the shared email service, which child orgs inherit from their parent
+        """
+        return Org.FEATURE_SHARED_EMAIL in self.features or (
+            self.is_child and Org.FEATURE_SHARED_EMAIL in self.parent.features
+        )
 
     @property
     def is_verified(self):

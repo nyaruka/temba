@@ -2916,6 +2916,9 @@ msgstr "Webhooks sin restricciones"
 msgid "Ticket Triggers"
 msgstr "Activadores de tickets"
 
+msgid "Shared Email"
+msgstr "Correo electrónico compartido"
+
 msgid "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please contact support."
 msgstr "Lo sentimos, su workspace está suspendido actualmente. Para volver a habilitar el inicio de flujos y el envío de mensajes, póngase en contacto con el soporte."
 
@@ -5732,11 +5735,17 @@ msgstr "Elegir todos"
 msgid "Emails sent from flows will be sent from <b>%(from_email)s</b>."
 msgstr "Los correos electrónicos enviados desde los flujos se enviarán desde <b>%(from_email)s</b>."
 
+msgid "Emails can't be sent from flows until SMTP settings are added."
+msgstr "No se pueden enviar correos electrónicos desde los flujos hasta que se agreguen configuraciones de SMTP."
+
 msgid "If you no longer want to use these SMTP settings to send emails from flows, <a onclick=\"confirmSMTPRemove()\">click here</a>."
 msgstr "Si ya no desea utilizar esta configuración SMTP para enviar correos electrónicos desde los flujos, <a onclick=\"confirmSMTPRemove()\">haga clic aquí</a>."
 
 msgid "You can add your own SMTP settings for emails sent from flows."
 msgstr "Puede añadir su propia configuración SMTP para los correos electrónicos enviados desde los flujos."
+
+msgid "Flows can only send emails using your own SMTP settings."
+msgstr "Los flujos solo pueden enviar correos electrónicos usando sus propias configuraciones de SMTP."
 
 msgid "Remove SMTP Settings"
 msgstr "Eliminar la configuración de SMTP"
@@ -5744,6 +5753,9 @@ msgstr "Eliminar la configuración de SMTP"
 #, python-format
 msgid "Removing these settings will mean that emails sent from flows will come from <b>%(from_email)s</b>. Are you sure you want to continue?"
 msgstr "Eliminar esta configuración significará que los correos electrónicos enviados desde los flujos procederán de <b>%(from_email)s</b>. ¿Está seguro de que desea continuar?"
+
+msgid "Removing these settings will mean that emails can't be sent from flows. Are you sure you want to continue?"
+msgstr "Eliminar estas configuraciones significará que no se podrán enviar correos electrónicos desde los flujos. ¿Está seguro de que desea continuar?"
 
 #, python-format
 msgid "Sign in to join the <b>%(org)s</b> workspace."

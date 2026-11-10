@@ -2902,6 +2902,9 @@ msgstr ""
 msgid "Ticket Triggers"
 msgstr ""
 
+msgid "Shared Email"
+msgstr ""
+
 msgid "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please contact support."
 msgstr ""
 
@@ -5700,10 +5703,16 @@ msgstr ""
 msgid "Emails sent from flows will be sent from <b>%(from_email)s</b>."
 msgstr ""
 
+msgid "Emails can't be sent from flows until SMTP settings are added."
+msgstr ""
+
 msgid "If you no longer want to use these SMTP settings to send emails from flows, <a onclick=\"confirmSMTPRemove()\">click here</a>."
 msgstr ""
 
 msgid "You can add your own SMTP settings for emails sent from flows."
+msgstr ""
+
+msgid "Flows can only send emails using your own SMTP settings."
 msgstr ""
 
 msgid "Remove SMTP Settings"
@@ -5711,6 +5720,9 @@ msgstr ""
 
 #, python-format
 msgid "Removing these settings will mean that emails sent from flows will come from <b>%(from_email)s</b>. Are you sure you want to continue?"
+msgstr ""
+
+msgid "Removing these settings will mean that emails can't be sent from flows. Are you sure you want to continue?"
 msgstr ""
 
 #, python-format
