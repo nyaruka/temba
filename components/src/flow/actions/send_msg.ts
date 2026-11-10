@@ -32,7 +32,7 @@ export const send_msg: ActionConfig = {
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   needs: {
     feature: Features.MESSAGING,
-    warning: 'This workspace has no channel that can send messages.'
+    warning: 'This workspace has no messaging channel.'
   },
   hideFromActions: true,
   render: (_node: Node, action: SendMsg) => {
