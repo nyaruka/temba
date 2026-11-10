@@ -11,13 +11,18 @@ import { validateWith } from '../utils';
 import { html } from 'lit';
 import { msg, str } from '@lit/localize';
 import { CURRENCY_OPTIONS, CURRENCIES } from '../currencies';
-import { resultNameField } from './shared';
+import { labeledResultNameField } from './shared';
 
 export const split_by_airtime: NodeConfig = {
   type: 'split_by_airtime',
-  name: 'Send Airtime',
-  subtitle:
-    "Top up the contact's phone. The transfer completes in the background.",
+  get name() {
+    return msg('Send Airtime');
+  },
+  get subtitle() {
+    return msg(
+      "Top up the contact's phone. The transfer completes in the background."
+    );
+  },
   group: ACTION_GROUPS.services,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   features: [Features.AIRTIME],
@@ -25,11 +30,18 @@ export const split_by_airtime: NodeConfig = {
   form: {
     amounts: {
       type: 'array',
-      label: 'Airtime Amounts',
-      helpText:
-        "The contact receives the amount in their mobile network's currency.",
+      get label() {
+        return msg('Airtime Amounts');
+      },
+      get helpText() {
+        return msg(
+          "The contact receives the amount in their mobile network's currency."
+        );
+      },
       required: true,
-      itemLabel: 'Amount',
+      get itemLabel() {
+        return msg('Amount');
+      },
       sortable: false,
       minItems: 1,
       maxItems: 10,
@@ -39,7 +51,9 @@ export const split_by_airtime: NodeConfig = {
       itemConfig: {
         currency: {
           type: 'select',
-          placeholder: 'Select a currency',
+          get placeholder() {
+            return msg('Select a currency');
+          },
           required: true,
           options: CURRENCY_OPTIONS,
           searchable: true,
@@ -48,12 +62,14 @@ export const split_by_airtime: NodeConfig = {
         },
         amount: {
           type: 'text',
-          placeholder: 'Amount',
+          get placeholder() {
+            return msg('Amount');
+          },
           required: true
         }
       }
     },
-    result_name: { ...resultNameField, label: 'Result Name' }
+    result_name: labeledResultNameField
   },
   layout: ['amounts', 'result_name'],
   validate: validateWith((formData, errors) => {

@@ -1,11 +1,18 @@
+import { msg } from '@lit/localize';
 import { html } from 'lit-html';
 import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, AddInputLabels } from '../../store/flow-definition';
 import { renderNamedObjects } from '../utils';
 
 export const add_input_labels: ActionConfig = {
-  name: 'Add Input Labels',
-  subtitle: "Tag the contact's last message so it's easy to find in the inbox.",
+  get name() {
+    return msg('Add Input Labels');
+  },
+  get subtitle() {
+    return msg(
+      "Tag the contact's last message so it's easy to find in the inbox."
+    );
+  },
   group: ACTION_GROUPS.save,
   // Not allowed in background flows: goflow treats add_input_labels as an interactive
   // action (messaging, messaging_offline, voice only), so offering it in a
@@ -25,8 +32,12 @@ export const add_input_labels: ActionConfig = {
   form: {
     labels: {
       type: 'select',
-      label: 'Labels',
-      helpText: 'Typing a new name creates a new label.',
+      get label() {
+        return msg('Labels');
+      },
+      get helpText() {
+        return msg('Typing a new name creates a new label.');
+      },
       required: true,
       options: [],
       multi: true,

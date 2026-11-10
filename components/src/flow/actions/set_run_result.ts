@@ -1,3 +1,4 @@
+import { msg, str } from '@lit/localize';
 import { html } from 'lit-html';
 import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, SetRunResult } from '../../store/flow-definition';
@@ -5,23 +6,32 @@ import { getStore } from '../../store/Store';
 import { renderClamped, renderHighlightedText } from '../utils';
 
 export const set_run_result: ActionConfig = {
-  name: 'Save Flow Result',
-  subtitle:
-    'Results show up in flow reports and can be used later in the flow.',
+  get name() {
+    return msg('Save Flow Result');
+  },
+  get subtitle() {
+    return msg(
+      'Results show up in flow reports and can be used later in the flow.'
+    );
+  },
   group: ACTION_GROUPS.save,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SetRunResult) => {
+    const value = renderHighlightedText(action.value, true);
     return renderClamped(
-      html`Set <strong>${action.name}</strong> to
-        ${renderHighlightedText(action.value, true)}`,
-      `Set ${action.name} to ${action.value}`
+      msg(html`Set <strong>${action.name}</strong> to ${value}`),
+      msg(str`Set ${action.name} to ${action.value}`)
     );
   },
   form: {
     name: {
       type: 'select',
-      label: 'Result Name',
-      helpText: 'Typing a new name creates a new result.',
+      get label() {
+        return msg('Result Name');
+      },
+      get helpText() {
+        return msg('Typing a new name creates a new result.');
+      },
       required: true,
       maxLength: 64,
       createArbitraryOption: (input, options) => {
@@ -48,15 +58,21 @@ export const set_run_result: ActionConfig = {
     },
     value: {
       type: 'textarea',
-      label: 'Value',
-      helpText: 'Can include expressions, e.g. `@input.text`.',
+      get label() {
+        return msg('Value');
+      },
+      get helpText() {
+        return msg('Can include expressions, e.g. `@input.text`.');
+      },
       required: false,
       evaluated: true,
       maxLength: 10000
     },
     category: {
       type: 'text',
-      label: 'Category',
+      get label() {
+        return msg('Category');
+      },
       required: false,
       maxLength: 36
     }

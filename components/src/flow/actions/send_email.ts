@@ -1,3 +1,4 @@
+import { msg } from '@lit/localize';
 import { html } from 'lit-html';
 import {
   ActionConfig,
@@ -16,13 +17,19 @@ import {
 import { Icon } from '../../Icons';
 
 export const send_email: ActionConfig = {
-  name: 'Send Email',
-  subtitle: 'Notify your team or anyone else, with details from the flow.',
+  get name() {
+    return msg('Send Email');
+  },
+  get subtitle() {
+    return msg('Notify your team or anyone else, with details from the flow.');
+  },
   group: ACTION_GROUPS.broadcast,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   needs: {
     feature: Features.EMAIL,
-    warning: 'This workspace has no email configuration.'
+    get warning() {
+      return msg('This workspace has no email configuration.');
+    }
   },
   render: (_node: Node, action: SendEmail) => {
     return html`<div>
@@ -38,7 +45,9 @@ export const send_email: ActionConfig = {
   form: {
     addresses: {
       type: 'select',
-      label: 'Recipients',
+      get label() {
+        return msg('Recipients');
+      },
       multi: true,
       searchable: true,
       emails: true,
@@ -46,7 +55,9 @@ export const send_email: ActionConfig = {
     },
     subject: {
       type: 'text',
-      label: 'Subject',
+      get label() {
+        return msg('Subject');
+      },
       required: true,
       evaluated: true,
       maxLength: 1000
@@ -73,7 +84,9 @@ export const send_email: ActionConfig = {
   localizable: ['subject', 'body'],
   validate: validateWith((formData, errors) => {
     if (!formData.addresses || formData.addresses.length === 0) {
-      errors.addresses = 'At least one recipient email address is required';
+      errors.addresses = msg(
+        'At least one recipient email address is required'
+      );
     }
   })
 };

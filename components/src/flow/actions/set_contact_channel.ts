@@ -1,23 +1,32 @@
+import { msg, str } from '@lit/localize';
 import { html } from 'lit-html';
 import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, SetContactChannel } from '../../store/flow-definition';
 import { renderClamped } from '../utils';
 
 export const set_contact_channel: ActionConfig = {
-  name: 'Update Channel',
-  subtitle: 'Choose which of your channels reaches this contact from now on.',
+  get name() {
+    return msg('Update Channel');
+  },
+  get subtitle() {
+    return msg(
+      'Choose which of your channels reaches this contact from now on.'
+    );
+  },
   group: ACTION_GROUPS.contacts,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SetContactChannel) => {
     return renderClamped(
-      html`Set to <strong>${action.channel.name}</strong>`,
-      `Set to ${action.channel.name}`
+      msg(html`Set to <strong>${action.channel.name}</strong>`),
+      msg(str`Set to ${action.channel.name}`)
     );
   },
   form: {
     channel: {
       type: 'select',
-      label: 'Channel',
+      get label() {
+        return msg('Channel');
+      },
       required: true,
       searchable: true,
       clearable: false,

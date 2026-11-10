@@ -1,3 +1,11 @@
+import { msg } from '@lit/localize';
+import {
+  localizedOption,
+  renderMixedList,
+  renderFlowLinks,
+  renderHighlightedText,
+  validateRecipients
+} from '../utils';
 import { html } from 'lit-html';
 import {
   ActionConfig,
@@ -7,24 +15,28 @@ import {
   FlowTypes
 } from '../types';
 import { Node, StartSession } from '../../store/flow-definition';
-import {
-  renderMixedList,
-  renderFlowLinks,
-  renderHighlightedText,
-  validateRecipients
-} from '../utils';
 import { Icon } from '../../Icons';
 import { CustomEventType } from '../../interfaces';
 
+const START_TYPE_OPTIONS = [
+  localizedOption('manual', () => msg('Select recipients manually')),
+  localizedOption('query', () => msg('Select a contact with a query')),
+  localizedOption('create', () => msg('Create a new contact'))
+];
+
 export const start_session: ActionConfig = {
-  name: 'Start Flow',
-  subtitle: 'Kick off a flow for other contacts, separate from this one.',
+  get name() {
+    return msg('Start Flow');
+  },
+  get subtitle() {
+    return msg('Kick off a flow for other contacts, separate from this one.');
+  },
   group: ACTION_GROUPS.broadcast,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: StartSession) => {
     let recipientsDisplay = html``;
     if (action.create_contact) {
-      recipientsDisplay = html`Create a new contact`;
+      recipientsDisplay = html`${msg('Create a new contact')}`;
     } else if ((action as any).contact_query) {
       recipientsDisplay = html`${renderHighlightedText(
         (action as any).contact_query,
@@ -78,14 +90,9 @@ export const start_session: ActionConfig = {
     }
 
     // Map value to full option object for proper display
-    const startTypeOptions = [
-      { value: 'manual', name: 'Select recipients manually' },
-      { value: 'query', name: 'Select a contact with a query' },
-      { value: 'create', name: 'Create a new contact' }
-    ];
     const startType =
-      startTypeOptions.find((opt) => opt.value === startTypeValue) ||
-      startTypeOptions[0];
+      START_TYPE_OPTIONS.find((opt) => opt.value === startTypeValue) ||
+      START_TYPE_OPTIONS[0];
 
     return {
       flow: action.flow ? [action.flow] : null,
@@ -116,7 +123,9 @@ export const start_session: ActionConfig = {
   form: {
     flow: {
       type: 'select',
-      label: 'Flow',
+      get label() {
+        return msg('Flow');
+      },
       required: true,
       searchable: true,
       endpoint: '/api/v2/flows.json?archived=false',
@@ -125,17 +134,17 @@ export const start_session: ActionConfig = {
     },
     startType: {
       type: 'select',
-      label: 'Start Type',
+      get label() {
+        return msg('Start Type');
+      },
       required: true,
-      options: [
-        { value: 'manual', name: 'Select recipients manually' },
-        { value: 'query', name: 'Select a contact with a query' },
-        { value: 'create', name: 'Create a new contact' }
-      ]
+      options: START_TYPE_OPTIONS
     },
     recipients: {
       type: 'select',
-      label: 'Recipients',
+      get label() {
+        return msg('Recipients');
+      },
       multi: true,
       searchable: true,
       endpoint: '/contact/omnibox/?types=gc',
@@ -153,10 +162,16 @@ export const start_session: ActionConfig = {
     contactQuery: {
       type: 'text',
       evaluated: true,
-      label: 'Contact Query',
-      helpText: 'Only one matching contact is started.',
+      get label() {
+        return msg('Contact Query');
+      },
+      get helpText() {
+        return msg('Only one matching contact is started.');
+      },
       maxLength: 10000,
-      placeholder: 'e.g. household_id = @fields.household_id',
+      get placeholder() {
+        return msg('e.g. household_id = @fields.household_id');
+      },
       conditions: {
         visible: (formData: FormData) => {
           const startType = formData.startType?.[0]?.value;
@@ -166,8 +181,12 @@ export const start_session: ActionConfig = {
     },
     skipContactsInFlow: {
       type: 'checkbox',
-      label: 'Skip contacts currently in a flow',
-      helpText: 'Prevents interrupting contacts who are already in a flow.'
+      get label() {
+        return msg('Skip contacts currently in a flow');
+      },
+      get helpText() {
+        return msg('Prevents interrupting contacts who are already in a flow.');
+      }
     }
   },
 
@@ -189,7 +208,7 @@ export const start_session: ActionConfig = {
       startType === 'manual' &&
       (!formData.recipients || formData.recipients.length === 0)
     ) {
-      errors.recipients = 'At least one contact or group must be selected';
+      errors.recipients = msg('At least one contact or group must be selected');
     }
 
     if (startType === 'manual') {
@@ -204,7 +223,7 @@ export const start_session: ActionConfig = {
       startType === 'query' &&
       (!formData.contactQuery || !formData.contactQuery.trim())
     ) {
-      errors.contactQuery = 'Contact query is required';
+      errors.contactQuery = msg('Contact query is required');
     }
 
     return {

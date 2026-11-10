@@ -71,9 +71,14 @@ const defaultPost = `@(json(object(
 
 export const split_by_webhook: NodeConfig = {
   type: 'split_by_webhook',
-  name: 'Call Webhook',
-  subtitle:
-    'Send or fetch data from your own systems, then branch on the response.',
+  get name() {
+    return msg('Call Webhook');
+  },
+  get subtitle() {
+    return msg(
+      'Send or fetch data from your own systems, then branch on the response.'
+    );
+  },
   group: ACTION_GROUPS.services,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   showAsAction: true,
@@ -90,14 +95,20 @@ export const split_by_webhook: NodeConfig = {
       required: true,
       evaluated: true,
       maxLength: 8192,
-      placeholder: 'e.g. https://example.com/webhook'
+      get placeholder() {
+        return msg('e.g. https://example.com/webhook');
+      }
     },
     headers: {
       type: 'key-value',
       sortable: true,
       evaluated: true,
-      keyPlaceholder: 'Header name',
-      valuePlaceholder: 'Header value',
+      get keyPlaceholder() {
+        return msg('Header name');
+      },
+      get valuePlaceholder() {
+        return msg('Header value');
+      },
       maxItems: 100,
       keyMaxLength: 100,
       valueMaxLength: 8192,
@@ -121,7 +132,9 @@ export const split_by_webhook: NodeConfig = {
       type: 'textarea',
       evaluated: true,
       maxLength: 20000,
-      placeholder: 'Request body content (JSON, XML, etc.)',
+      get placeholder() {
+        return msg('Request body content (JSON, XML, etc.)');
+      },
       minHeight: 200,
       dependsOn: ['method'],
       computeValue: (
@@ -163,7 +176,9 @@ export const split_by_webhook: NodeConfig = {
       type: 'extras',
       sections: [
         {
-          label: 'Headers',
+          get label() {
+            return msg('Headers');
+          },
           hasValue: (formData: FormData) =>
             !headersMatchDefaults(formData.headers),
           onRemove: (formData: FormData) => ({
@@ -172,7 +187,9 @@ export const split_by_webhook: NodeConfig = {
           items: ['headers']
         },
         {
-          label: 'Body',
+          get label() {
+            return msg('Body');
+          },
           hasValue: (formData: FormData) =>
             !!(
               formData.body &&

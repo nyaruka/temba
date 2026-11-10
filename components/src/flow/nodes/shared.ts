@@ -24,7 +24,22 @@ export const resultNameField: TextFieldConfig = {
   type: 'text',
   required: false,
   maxLength: 64,
-  helpText: 'Used to reference this result elsewhere in the flow.'
+  get helpText() {
+    return msg('Used to reference this result elsewhere in the flow.');
+  }
+};
+
+// the same field for forms that show it with a label rather than in a sentence
+export const labeledResultNameField: TextFieldConfig = {
+  type: 'text',
+  required: false,
+  maxLength: 64,
+  get label() {
+    return msg('Result Name');
+  },
+  get helpText() {
+    return resultNameField.helpText as string;
+  }
 };
 
 /**
@@ -91,7 +106,9 @@ export const getDefaultResultName = (nodeUuid?: string): string => {
 };
 
 export const resultNameSection: ExtrasSection = {
-  label: 'Save Result',
+  get label() {
+    return msg('Save Result');
+  },
   localizable: false,
   items: ['result_name'],
   onAdd: (formData: FormData) => ({
@@ -105,7 +122,9 @@ export const resultNameSection: ExtrasSection = {
 };
 
 const advancedSection: ExtrasSection = {
-  label: 'Translations',
+  get label() {
+    return msg('Translations');
+  },
   localizable: false,
   items: ['localizeRules', 'localizeCategories'],
   sentence: () =>
@@ -116,7 +135,9 @@ const advancedSection: ExtrasSection = {
 };
 
 const categoriesLocalizationSection: ExtrasSection = {
-  label: 'Translations',
+  get label() {
+    return msg('Translations');
+  },
   localizable: false,
   items: ['localizeCategories'],
   sentence: () =>

@@ -1,3 +1,4 @@
+import { msg, str } from '@lit/localize';
 import { html } from 'lit-html';
 import { ActionConfig, ACTION_GROUPS } from '../types';
 import { Node, RequestOptin } from '../../store/flow-definition';
@@ -7,15 +8,19 @@ import { renderClamped } from '../utils';
 // that actions left behind in older flow definitions still render. It has
 // no form, which makes the action read-only in the editor.
 export const request_optin: ActionConfig = {
-  name: 'Request Opt-In',
-  subtitle: 'No longer supported. Shown so older flows still open.',
+  get name() {
+    return msg('Request Opt-In');
+  },
+  get subtitle() {
+    return msg('No longer supported. Shown so older flows still open.');
+  },
   group: ACTION_GROUPS.send,
   flowTypes: [],
   render: (_node: Node, action: RequestOptin) => {
-    const optinName = action.optin?.name || 'Unknown opt-in';
+    const optinName = action.optin?.name || msg('Unknown opt-in');
     return renderClamped(
-      html`Request <strong>${optinName}</strong>`,
-      `Request ${optinName}`
+      msg(html`Request <strong>${optinName}</strong>`),
+      msg(str`Request ${optinName}`)
     );
   }
 };

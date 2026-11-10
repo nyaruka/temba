@@ -1,3 +1,4 @@
+import { msg } from '@lit/localize';
 import { ACTION_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { Node, SetRunResult } from '../../store/flow-definition';
 import { generateUUID } from '../../utils';
@@ -7,9 +8,14 @@ import { shouldExcludeFlow } from '../flow-utils';
 
 export const split_by_subflow: NodeConfig = {
   type: 'split_by_subflow',
-  name: 'Enter a Flow',
-  subtitle:
-    'Run another flow, then come back here when it completes or expires.',
+  get name() {
+    return msg('Enter a Flow');
+  },
+  get subtitle() {
+    return msg(
+      'Run another flow, then come back here when it completes or expires.'
+    );
+  },
   group: ACTION_GROUPS.trigger,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   showAsAction: true,
@@ -18,9 +24,14 @@ export const split_by_subflow: NodeConfig = {
       type: 'select',
       required: true,
       searchable: true,
-      placeholder: 'Select a flow...',
-      helpText:
-        'The contact returns here once the subflow completes or expires.',
+      get placeholder() {
+        return msg('Select a flow...');
+      },
+      get helpText() {
+        return msg(
+          'The contact returns here once the subflow completes or expires.'
+        );
+      },
       endpoint: '/api/v2/flows.json?archived=false',
       valueKey: 'uuid',
       nameKey: 'name',
@@ -28,9 +39,15 @@ export const split_by_subflow: NodeConfig = {
     },
     params: {
       type: 'key-value',
-      label: 'Parameters',
-      keyPlaceholder: 'Parameter name',
-      valuePlaceholder: 'Value',
+      get label() {
+        return msg('Parameters');
+      },
+      get keyPlaceholder() {
+        return msg('Parameter name');
+      },
+      get valuePlaceholder() {
+        return msg('Value');
+      },
       minRows: 0,
       readOnlyKeys: true,
       dependsOn: ['flow'],

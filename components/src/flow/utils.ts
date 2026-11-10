@@ -1044,3 +1044,17 @@ export const showLoadErrorDialog = (error: Error): void => {
   console.error('Failed to load flow:', error);
   showErrorDialog(msg('Load Failed'), error.message);
 };
+
+/**
+ * A select option whose name is read through a getter, so that an option
+ * declared in a module-level constant still follows the active locale.
+ */
+export const localizedOption = <V extends string>(
+  value: V,
+  name: () => string
+): { value: V; name: string } => ({
+  value,
+  get name() {
+    return name();
+  }
+});

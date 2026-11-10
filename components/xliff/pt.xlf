@@ -1615,6 +1615,7 @@
 </trans-unit>
 <trans-unit id="s57adf424d57c8a0f">
   <source>Send</source>
+  <target>Enviar</target>
 </trans-unit>
 <trans-unit id="s2d9a6ca558b0444d">
   <source>Drop files to attach them</source>
@@ -1666,30 +1667,37 @@
 </trans-unit>
 <trans-unit id="s33d494d91061e06d">
   <source>Save the result as {name}</source>
+  <target>Salvar o resultado como {name}</target>
   <note from="lit-localize">{name} is a text box for the result name. Keep {name} as it is.</note>
 </trans-unit>
 <trans-unit id="s2f1345908b7598ed">
   <source>Each language must translate its {categories}</source>
+  <target>Cada idioma deve traduzir suas {categories}</target>
   <note from="lit-localize">{categories} is a checkbox labeled "categories". Keep it as it is.</note>
 </trans-unit>
 <trans-unit id="s07638cdeb02122f4">
   <source>Each language must translate its {rules} {categories}</source>
+  <target>Cada idioma deve traduzir suas {rules} {categories}</target>
   <note from="lit-localize">{rules} and {categories} are checkboxes labeled "rules" and "categories". Keep them as they are.</note>
 </trans-unit>
 <trans-unit id="s67124f6a285153c0">
   <source>rules</source>
+  <target>regras</target>
   <note from="lit-localize">A checkbox in "Each language must translate its {rules} {categories}"</note>
 </trans-unit>
 <trans-unit id="sa9b45f49b577aded">
   <source>categories</source>
+  <target>categorias</target>
   <note from="lit-localize">A checkbox in "Each language must translate its {rules} {categories}"</note>
 </trans-unit>
 <trans-unit id="s1c0a25d505a394f0">
   <source>If there's no reply after {duration} go to **No Response**</source>
+  <target>Se não houver resposta após {duration}, ir para **No Response**</target>
   <note from="lit-localize">{duration} is a dropdown of times, e.g. "5 minutes". Keep {duration} and the ** markers as they are.</note>
 </trans-unit>
 <trans-unit id="s74b6c3618d370674">
   <source>Require {confidence} confidence or higher, or go to **Other**</source>
+  <target>Exigir confiança {confidence} ou superior, ou ir para **Other**</target>
   <note from="lit-localize">{confidence} is a dropdown of "low", "medium" and "high". Keep {confidence} and the ** markers as they are.</note>
 </trans-unit>
 <trans-unit id="ha37d55c66580b850">
@@ -1717,6 +1725,1105 @@
 <trans-unit id="scc7a3682dd25ae19">
   <source>Optional</source>
   <target>Opcional</target>
+</trans-unit>
+<trans-unit id="s2fd07bfa38737ad6">
+  <source>Add to Group</source>
+  <target>Adicionar a um grupo</target>
+</trans-unit>
+<trans-unit id="s01331ea608ccd7e0">
+  <source>Good for triggering campaigns or targeting later broadcasts.</source>
+  <target>Útil para acionar campanhas ou direcionar transmissões futuras.</target>
+</trans-unit>
+<trans-unit id="s032a05c67d2ee46f">
+  <source>Add URN</source>
+  <target>Adicionar URN</target>
+</trans-unit>
+<trans-unit id="sfc4ce11ec960dd3f">
+  <source>Save another phone number, handle or address for the contact.</source>
+  <target>Salva outro número de telefone, usuário ou endereço do contato.</target>
+</trans-unit>
+<trans-unit id="hf049d4c794515a64">
+  <source>Add <x id="0" equiv-text="${friendlyScheme} ${renderHighlightedText(action.path, true)}"/></source>
+  <target>Adicionar <x id="0" equiv-text="${friendlyScheme} ${renderHighlightedText(action.path, true)}"/></target>
+</trans-unit>
+<trans-unit id="sf049d4c794515a64">
+  <source>Add <x id="0" equiv-text="${friendlyScheme} ${action.path}"/></source>
+  <target>Adicionar <x id="0" equiv-text="${friendlyScheme} ${action.path}"/></target>
+</trans-unit>
+<trans-unit id="sa779ce5fd6696179">
+  <source>URN Value</source>
+  <target>Valor do URN</target>
+</trans-unit>
+<trans-unit id="s9d7e964406d3222f">
+  <source>e.g. a phone number or Facebook ID</source>
+  <target>ex.: um número de telefone ou um ID do Facebook</target>
+</trans-unit>
+<trans-unit id="s0f7ff719a33a4571">
+  <source>URN type is required</source>
+  <target>O tipo de URN é obrigatório</target>
+</trans-unit>
+<trans-unit id="s707483d0152b4358">
+  <source>URN value is required</source>
+  <target>O valor do URN é obrigatório</target>
+</trans-unit>
+<trans-unit id="sa10e46deca3ff747">
+  <source>Add Input Labels</source>
+  <target>Rotular mensagem</target>
+</trans-unit>
+<trans-unit id="s324f689858f58660">
+  <source>Tag the contact's last message so it's easy to find in the inbox.</source>
+  <target>Rotula a última mensagem do contato para encontrá-la facilmente na caixa de entrada.</target>
+</trans-unit>
+<trans-unit id="s8a9eb438abac7c6a">
+  <source>Labels</source>
+  <target>Rótulos</target>
+</trans-unit>
+<trans-unit id="s913674ec4365e88a">
+  <source>Typing a new name creates a new label.</source>
+  <target>Digitar um novo nome cria um novo rótulo.</target>
+</trans-unit>
+<trans-unit id="s7a3db3fc50f93b32">
+  <source>Enter a Flow</source>
+  <target>Entrar em um fluxo</target>
+</trans-unit>
+<trans-unit id="s3902a35dd971ad18">
+  <source>The contact runs another flow, then carries on here once it's done.</source>
+  <target>O contato executa outro fluxo e continua aqui quando ele termina.</target>
+</trans-unit>
+<trans-unit id="sd939185840181160">
+  <source>Select a flow...</source>
+  <target>Selecione um fluxo...</target>
+</trans-unit>
+<trans-unit id="saae4e7e3f52d4c20">
+  <source>Play Recording</source>
+  <target>Reproduzir gravação</target>
+</trans-unit>
+<trans-unit id="s5c1326613974de5a">
+  <source>Use a recorded prompt instead of text-to-speech.</source>
+  <target>Usa uma mensagem gravada em vez da síntese de voz.</target>
+</trans-unit>
+<trans-unit id="s568cd6561a579d9d">
+  <source>Recording URL</source>
+  <target>URL da gravação</target>
+</trans-unit>
+<trans-unit id="sbb5c47908a5c4898">
+  <source>Remove from Group</source>
+  <target>Remover de um grupo</target>
+</trans-unit>
+<trans-unit id="s2e5333dee46532ad">
+  <source>Takes effect right away, including for campaigns based on the group.</source>
+  <target>Entra em vigor imediatamente, inclusive para campanhas baseadas no grupo.</target>
+</trans-unit>
+<trans-unit id="s3a9a569100d13628">
+  <source>Remove from all groups</source>
+  <target>Remover de todos os grupos</target>
+</trans-unit>
+<trans-unit id="s1a3fe5e9d273a3e5">
+  <source>At least one group must be selected or check "Remove from all groups"</source>
+  <target>Selecione pelo menos um grupo ou marque "Remover de todos os grupos"</target>
+</trans-unit>
+<trans-unit id="se2e05cecad487e39">
+  <source>Request Opt-In</source>
+  <target>Solicitar adesão</target>
+</trans-unit>
+<trans-unit id="s1704bb7e38edbd91">
+  <source>No longer supported. Shown so older flows still open.</source>
+  <target>Não é mais compatível. Exibido para que fluxos antigos ainda possam ser abertos.</target>
+</trans-unit>
+<trans-unit id="s5d393b74f865c18c">
+  <source>Unknown opt-in</source>
+  <target>Adesão desconhecida</target>
+</trans-unit>
+<trans-unit id="h0a4358ee717631cb">
+  <source>Request <x id="0" equiv-text="&lt;strong&gt;${optinName}&lt;/strong&gt;"/></source>
+  <target>Solicitar <x id="0" equiv-text="&lt;strong&gt;${optinName}&lt;/strong&gt;"/></target>
+</trans-unit>
+<trans-unit id="sd25df37df7cb7738">
+  <source>Request <x id="0" equiv-text="${optinName}"/></source>
+  <target>Solicitar <x id="0" equiv-text="${optinName}"/></target>
+</trans-unit>
+<trans-unit id="s7e2dfd47326f3594">
+  <source>Spoken to the caller with text-to-speech, or played from a recording.</source>
+  <target>Falado a quem liga com síntese de voz ou reproduzido de uma gravação.</target>
+</trans-unit>
+<trans-unit id="s3e100c9e53f1536c">
+  <source>This workspace has no voice channel.</source>
+  <target>Este espaço de trabalho não tem um canal de voz.</target>
+</trans-unit>
+<trans-unit id="seb8c7c11a6c3f9ec">
+  <source>Recording</source>
+  <target>Gravação</target>
+</trans-unit>
+<trans-unit id="sfa45eb738eca18ec">
+  <source>Add a recording</source>
+  <target>Adicionar uma gravação</target>
+</trans-unit>
+<trans-unit id="s3d6120c4498a9e8c">
+  <source>Send Broadcast</source>
+  <target>Enviar transmissão</target>
+</trans-unit>
+<trans-unit id="s321ff9e7ab41ee81">
+  <source>Reach other contacts or groups, not just the one in this flow.</source>
+  <target>Alcança outros contatos ou grupos, não apenas o que está neste fluxo.</target>
+</trans-unit>
+<trans-unit id="scd4476e8227087fe">
+  <source>Can include attachments and expressions, e.g. `@contact.name`.</source>
+  <target>Pode incluir anexos e expressões, ex.: `@contact.name`.</target>
+</trans-unit>
+<trans-unit id="s0003de96ed16b30b">
+  <source>WhatsApp Template</source>
+  <target>Modelo do WhatsApp</target>
+</trans-unit>
+<trans-unit id="s4bf2701342c16a3f">
+  <source>Send Email</source>
+  <target>Enviar e-mail</target>
+</trans-unit>
+<trans-unit id="sded32fa47b74dfa1">
+  <source>Notify your team or anyone else, with details from the flow.</source>
+  <target>Notifica sua equipe ou qualquer outra pessoa, com detalhes do fluxo.</target>
+</trans-unit>
+<trans-unit id="s484729ac1ed1e0bd">
+  <source>This workspace has no email configuration.</source>
+  <target>Este espaço de trabalho não tem configuração de e-mail.</target>
+</trans-unit>
+<trans-unit id="sbbc53e0e54d7946f">
+  <source>Subject</source>
+  <target>Assunto</target>
+</trans-unit>
+<trans-unit id="s018fe77d21c7f327">
+  <source>At least one recipient email address is required</source>
+  <target>Pelo menos um endereço de e-mail de destinatário é obrigatório</target>
+</trans-unit>
+<trans-unit id="sa311a24c1471a974">
+  <source>Document</source>
+  <target>Documento</target>
+</trans-unit>
+<trans-unit id="s388b8fb3add8a81a">
+  <source>Reply on the channel they're using, with quick replies or attachments.</source>
+  <target>Responde pelo canal que está sendo usado, com respostas rápidas ou anexos.</target>
+</trans-unit>
+<trans-unit id="s560a25c1e3262436">
+  <source>This workspace has no messaging channel.</source>
+  <target>Este espaço de trabalho não tem um canal de mensagens.</target>
+</trans-unit>
+<trans-unit id="seb3bbb4d6bc4c5df">
+  <source>Add quick replies...</source>
+  <target>Adicionar respostas rápidas...</target>
+</trans-unit>
+<trans-unit id="s03952457b9f76558">
+  <source>Expression (e.g. @contact.photo)</source>
+  <target>Expressão (ex.: @contact.photo)</target>
+</trans-unit>
+<trans-unit id="s8793201107228dc4">
+  <source>Quick Replies</source>
+  <target>Respostas rápidas</target>
+</trans-unit>
+<trans-unit id="s49ff9c2e09502555">
+  <source>Runtime Attachments</source>
+  <target>Anexos dinâmicos</target>
+</trans-unit>
+<trans-unit id="sa8c47fc4836560ea">
+  <source>Each message can only have up to 10 attachments</source>
+  <target>Cada mensagem pode ter no máximo 10 anexos</target>
+</trans-unit>
+<trans-unit id="sc31c8d023868f958">
+  <source>Each message can only have up to 10 total attachments</source>
+  <target>Cada mensagem pode ter no máximo 10 anexos no total</target>
+</trans-unit>
+<trans-unit id="s95941fd6d5c40b1f">
+  <source>Update Channel</source>
+  <target>Atualizar canal</target>
+</trans-unit>
+<trans-unit id="sd38be25b3eff48a9">
+  <source>Choose which of your channels reaches this contact from now on.</source>
+  <target>Escolhe qual dos seus canais será usado com este contato daqui em diante.</target>
+</trans-unit>
+<trans-unit id="hb7cbd5c26acd003d">
+  <source>Set to <x id="0" equiv-text="&lt;strong&gt;${action.channel.name}&lt;/strong&gt;"/></source>
+  <target>Definir como <x id="0" equiv-text="&lt;strong&gt;${action.channel.name}&lt;/strong&gt;"/></target>
+</trans-unit>
+<trans-unit id="sbf048fea6f2f38f2">
+  <source>Set to <x id="0" equiv-text="${action.channel.name}"/></source>
+  <target>Definir como <x id="0" equiv-text="${action.channel.name}"/></target>
+</trans-unit>
+<trans-unit id="s1da50951bdd7a204">
+  <source>Channel</source>
+  <target>Canal</target>
+</trans-unit>
+<trans-unit id="s8ac0de69676edbd4">
+  <source>Update Email</source>
+  <target>Atualizar e-mail</target>
+</trans-unit>
+<trans-unit id="sf4affe3c8d01ac00">
+  <source>Keep the address the contact gave you on their profile.</source>
+  <target>Mantém no perfil do contato o endereço que ele informou.</target>
+</trans-unit>
+<trans-unit id="s8e0910edc6a3ecf2">
+  <source>Clear email</source>
+  <target>Limpar e-mail</target>
+</trans-unit>
+<trans-unit id="s778f59b0ab6e8ec0">
+  <source>Update Field</source>
+  <target>Atualizar campo</target>
+</trans-unit>
+<trans-unit id="s985f89125bb65e69">
+  <source>Store what you learn about the contact for later flows and reports.</source>
+  <target>Armazena o que você descobrir sobre o contato para fluxos e relatórios futuros.</target>
+</trans-unit>
+<trans-unit id="s601619faa90965b0">
+  <source>Set <x id="0" equiv-text="${action.field.name}"/> to <x id="1" equiv-text="${action.value}"/></source>
+  <target>Definir <x id="0" equiv-text="${action.field.name}"/> como <x id="1" equiv-text="${action.value}"/></target>
+</trans-unit>
+<trans-unit id="he6ea16cd53884fbb">
+  <source>Clear <x id="0" equiv-text="&lt;strong&gt;${action.field.name}&lt;/strong&gt;"/></source>
+  <target>Limpar <x id="0" equiv-text="&lt;strong&gt;${action.field.name}&lt;/strong&gt;"/></target>
+</trans-unit>
+<trans-unit id="s39361dd7dca92508">
+  <source>Clear <x id="0" equiv-text="${action.field.name}"/></source>
+  <target>Limpar <x id="0" equiv-text="${action.field.name}"/></target>
+</trans-unit>
+<trans-unit id="s42a1ebe17efda727">
+  <source>Field</source>
+  <target>Campo</target>
+</trans-unit>
+<trans-unit id="sc86ef9aedea74460">
+  <source>Typing a new name creates a new field.</source>
+  <target>Digitar um novo nome cria um novo campo.</target>
+</trans-unit>
+<trans-unit id="s993a806ae14d4f1c">
+  <source>Clears it when empty, and can include expressions, e.g. `@input.text`.</source>
+  <target>É limpo quando vazio, e pode incluir expressões, ex.: `@input.text`.</target>
+</trans-unit>
+<trans-unit id="s6e25707d75fc8fc6">
+  <source>Update Language</source>
+  <target>Atualizar idioma</target>
+</trans-unit>
+<trans-unit id="s3297be13910c692f">
+  <source>Later messages and flows will use translations in this language.</source>
+  <target>As mensagens e os fluxos seguintes usarão as traduções neste idioma.</target>
+</trans-unit>
+<trans-unit id="s2d56aac296b6da5e">
+  <source>Language is required</source>
+  <target>Um idioma é obrigatório</target>
+</trans-unit>
+<trans-unit id="s902c9f75eb5d9a97">
+  <source>Update Name</source>
+  <target>Atualizar nome</target>
+</trans-unit>
+<trans-unit id="s5e04f0dbb8167d38">
+  <source>Useful once the contact has told you what to call them.</source>
+  <target>Útil depois que o contato informou como quer ser chamado.</target>
+</trans-unit>
+<trans-unit id="sf5d335c2c4a295e5">
+  <source>Clear name</source>
+  <target>Limpar nome</target>
+</trans-unit>
+<trans-unit id="hbf048fea6f2f38f2">
+  <source>Set to <x id="0" equiv-text="${renderHighlightedText(action.name, true)}"/></source>
+  <target>Definir como <x id="0" equiv-text="${renderHighlightedText(action.name, true)}"/></target>
+</trans-unit>
+<trans-unit id="s8c379fa73cf75fe6">
+  <source>Update Status</source>
+  <target>Atualizar status</target>
+</trans-unit>
+<trans-unit id="s726a88a7e432e278">
+  <source>Stopped and blocked contacts won't get any more messages.</source>
+  <target>Contatos interrompidos e bloqueados não receberão mais mensagens.</target>
+</trans-unit>
+<trans-unit id="sc711b897542642d9">
+  <source>Save Flow Result</source>
+  <target>Salvar resultado do fluxo</target>
+</trans-unit>
+<trans-unit id="s7c9c59c9097ac27c">
+  <source>Results show up in flow reports and can be used later in the flow.</source>
+  <target>Os resultados aparecem nos relatórios do fluxo e podem ser usados mais adiante no fluxo.</target>
+</trans-unit>
+<trans-unit id="s0e88f6c884f1be97">
+  <source>Typing a new name creates a new result.</source>
+  <target>Digitar um novo nome cria um novo resultado.</target>
+</trans-unit>
+<trans-unit id="s8ee2794a6bca6fe7">
+  <source>Can include expressions, e.g. `@input.text`.</source>
+  <target>Pode incluir expressões, ex.: `@input.text`.</target>
+</trans-unit>
+<trans-unit id="sf434091ccc026bc0">
+  <source>Select recipients manually</source>
+  <target>Selecionar destinatários manualmente</target>
+</trans-unit>
+<trans-unit id="sae4c7ccd2f1367a1">
+  <source>Select a contact with a query</source>
+  <target>Selecionar um contato com uma consulta</target>
+</trans-unit>
+<trans-unit id="s2ee0786aaa39a99c">
+  <source>Create a new contact</source>
+  <target>Criar um novo contato</target>
+</trans-unit>
+<trans-unit id="s61619e86b41f611d">
+  <source>Start Flow</source>
+  <target>Iniciar fluxo</target>
+</trans-unit>
+<trans-unit id="sc7008c6faf5a09e4">
+  <source>Kick off a flow for other contacts, separate from this one.</source>
+  <target>Inicia um fluxo para outros contatos, separado deste.</target>
+</trans-unit>
+<trans-unit id="s8ce6c7f8426be4c5">
+  <source>Start Type</source>
+  <target>Tipo de início</target>
+</trans-unit>
+<trans-unit id="s64ad1705909f288f">
+  <source>Contact Query</source>
+  <target>Consulta de contatos</target>
+</trans-unit>
+<trans-unit id="s7ae012587bc4bd7f">
+  <source>Only one matching contact is started.</source>
+  <target>Apenas um contato correspondente é iniciado.</target>
+</trans-unit>
+<trans-unit id="s8dbbbb3a2fb78e9d">
+  <source>e.g. household_id = @fields.household_id</source>
+  <target>ex.: household_id = @fields.household_id</target>
+</trans-unit>
+<trans-unit id="sd149dff460c8dc41">
+  <source>Skip contacts currently in a flow</source>
+  <target>Ignorar contatos que estão em um fluxo</target>
+</trans-unit>
+<trans-unit id="s64760e9238dc9b70">
+  <source>Prevents interrupting contacts who are already in a flow.</source>
+  <target>Evita interromper contatos que já estão em um fluxo.</target>
+</trans-unit>
+<trans-unit id="s0c3e5e78f4560bfc">
+  <source>At least one contact or group must be selected</source>
+  <target>Selecione pelo menos um contato ou grupo</target>
+</trans-unit>
+<trans-unit id="s3c4dd7825ccc6b22">
+  <source>Contact query is required</source>
+  <target>Uma consulta de contatos é obrigatória</target>
+</trans-unit>
+<trans-unit id="s669b18c6d2d9c95b">
+  <source>None</source>
+  <target>Nenhum</target>
+</trans-unit>
+<trans-unit id="see522a0ebbc0f0f7">
+  <source>Responses are categorized by the first rule they match.</source>
+  <target>As respostas são categorizadas pela primeira regra a que correspondem.</target>
+</trans-unit>
+<trans-unit id="sea74bf2b70c27113">
+  <source>Rule</source>
+  <target>Regra</target>
+</trans-unit>
+<trans-unit id="s621eff46971c8d99">
+  <source>Used to reference this result elsewhere in the flow.</source>
+  <target>Usado para referenciar este resultado em outras partes do fluxo.</target>
+</trans-unit>
+<trans-unit id="s87df8113e738c467">
+  <source>Result Name</source>
+  <target>Nome do resultado</target>
+</trans-unit>
+<trans-unit id="sef4fbc2988835ec1">
+  <source>Save Result</source>
+  <target>Salvar resultado</target>
+</trans-unit>
+<trans-unit id="sebe1e01d3ce62fcd">
+  <source>Translations</source>
+  <target>Traduções</target>
+</trans-unit>
+<trans-unit id="sd9945e5f9b01d71e">
+  <source>Send Airtime</source>
+  <target>Enviar créditos</target>
+</trans-unit>
+<trans-unit id="s253a92c65ad2278a">
+  <source>Top up the contact's phone. The transfer completes in the background.</source>
+  <target>Recarrega o telefone do contato. A transferência é concluída em segundo plano.</target>
+</trans-unit>
+<trans-unit id="s4dce693da0c0c7f7">
+  <source>Airtime Amounts</source>
+  <target>Valores de créditos</target>
+</trans-unit>
+<trans-unit id="s5d4793045396a507">
+  <source>The contact receives the amount in their mobile network's currency.</source>
+  <target>O contato recebe o valor na moeda da sua rede móvel.</target>
+</trans-unit>
+<trans-unit id="sba98a7152d80b949">
+  <source>Amount</source>
+  <target>Valor</target>
+</trans-unit>
+<trans-unit id="s490471551adfa5fd">
+  <source>Select a currency</source>
+  <target>Selecione uma moeda</target>
+</trans-unit>
+<trans-unit id="s68470da3151c3d90">
+  <source>Split by Contact Field</source>
+  <target>Dividir por campo de contato</target>
+</trans-unit>
+<trans-unit id="s31a620e814bf239a">
+  <source>Branch on what you already know about the contact.</source>
+  <target>Ramifica com base no que você já sabe sobre o contato.</target>
+</trans-unit>
+<trans-unit id="s26a26d51868e1b30">
+  <source>Select a field...</source>
+  <target>Selecione um campo...</target>
+</trans-unit>
+<trans-unit id="sd2ce5322097b8d3a">
+  <source>Split by Expression</source>
+  <target>Dividir por expressão</target>
+</trans-unit>
+<trans-unit id="s42f36c39d11de3d3">
+  <source>Branch on any value you can build, like a date or a calculation.</source>
+  <target>Ramifica com base em qualquer valor que você possa construir, como uma data ou um cálculo.</target>
+</trans-unit>
+<trans-unit id="s6ab73c998850c5ab">
+  <source>Expression</source>
+  <target>Expressão</target>
+</trans-unit>
+<trans-unit id="s98865bf3776e1c1f">
+  <source>e.g. @fields.age</source>
+  <target>ex.: @fields.age</target>
+</trans-unit>
+<trans-unit id="sb46e1aecb860c49b">
+  <source>Split by Group</source>
+  <target>Dividir por grupo</target>
+</trans-unit>
+<trans-unit id="sc3df4f81fa1af7d1">
+  <source>Send members of different groups down different paths.</source>
+  <target>Envia os membros de grupos diferentes por caminhos diferentes.</target>
+</trans-unit>
+<trans-unit id="s7345bbed9468c52a">
+  <source>Routes contacts to the first of these groups they belong to.</source>
+  <target>Encaminha os contatos para o primeiro destes grupos a que pertencem.</target>
+</trans-unit>
+<trans-unit id="s5f99482451ec0936">
+  <source>Call classifier</source>
+  <target>Chamar classificador</target>
+</trans-unit>
+<trans-unit id="sbc528a1b48cdd25c">
+  <source>Work out what the last message means and branch on its intent.</source>
+  <target>Determina o que a última mensagem significa e ramifica com base na intenção.</target>
+</trans-unit>
+<trans-unit id="sd95dcfeddbdfc866">
+  <source>Always pick a category</source>
+  <target>Sempre escolher uma categoria</target>
+</trans-unit>
+<trans-unit id="sbcfc2c66895adf36">
+  <source>Split by AI</source>
+  <target>Dividir com IA</target>
+</trans-unit>
+<trans-unit id="s1473ba12b6c93f0a">
+  <source>Let AI read a value and pick the category it fits best.</source>
+  <target>Deixa a IA ler um valor e escolher a categoria que melhor se encaixa.</target>
+</trans-unit>
+<trans-unit id="s5da52af9b083c29a">
+  <source>Model</source>
+  <target>Modelo</target>
+</trans-unit>
+<trans-unit id="s9f7ca4bedafa966a">
+  <source>Descriptions help the model decide when each category fits.</source>
+  <target>As descrições ajudam o modelo a decidir quando cada categoria se aplica.</target>
+</trans-unit>
+<trans-unit id="se8b92ef3f8e57128">
+  <source>Category name</source>
+  <target>Nome da categoria</target>
+</trans-unit>
+<trans-unit id="s4751dfb9fb0442c4">
+  <source>Description (optional)</source>
+  <target>Descrição (opcional)</target>
+</trans-unit>
+<trans-unit id="sc1fbf74a2011b2ac">
+  <source>Require Confidence</source>
+  <target>Exigir confiança</target>
+</trans-unit>
+<trans-unit id="sd4025255bba16ed5">
+  <source>Call AI</source>
+  <target>Chamar IA</target>
+</trans-unit>
+<trans-unit id="s657e0ef5134d6b13">
+  <source>Give AI instructions, and use its answer later in the flow.</source>
+  <target>Dá instruções à IA e usa a resposta mais adiante no fluxo.</target>
+</trans-unit>
+<trans-unit id="s256a6919b8ea1698">
+  <source>LLM</source>
+  <target>LLM</target>
+</trans-unit>
+<trans-unit id="sdb1595f5c742dfbb">
+  <source>Input</source>
+  <target>Entrada</target>
+</trans-unit>
+<trans-unit id="s06b193b37b7dd2d1">
+  <source>e.g. @input</source>
+  <target>ex.: @input</target>
+</trans-unit>
+<trans-unit id="s34bc4cc9fb5b7aa4">
+  <source>Instructions</source>
+  <target>Instruções</target>
+</trans-unit>
+<trans-unit id="s86c2aee597f3b794">
+  <source>The output is available as **`@locals._llm_output`**.</source>
+  <target>O resultado fica disponível como **`@locals._llm_output`**.</target>
+</trans-unit>
+<trans-unit id="s41db25c77e9a22ce">
+  <source>Random Split</source>
+  <target>Divisão aleatória</target>
+</trans-unit>
+<trans-unit id="s6acb1170a99a5389">
+  <source>Useful for A/B tests and spreading contacts across paths.</source>
+  <target>Útil para testes A/B e para distribuir contatos entre caminhos.</target>
+</trans-unit>
+<trans-unit id="s6f8b83a0f895b075">
+  <source>Contacts are divided evenly and at random between the buckets.</source>
+  <target>Os contatos são divididos de forma igual e aleatória entre os grupos.</target>
+</trans-unit>
+<trans-unit id="sbd4dacec9908f677">
+  <source>Bucket</source>
+  <target>Grupo</target>
+</trans-unit>
+<trans-unit id="s7501f55600044336">
+  <source>Bucket name</source>
+  <target>Nome do grupo</target>
+</trans-unit>
+<trans-unit id="sa3a31c7fdc85d2f2">
+  <source>Call Resthook</source>
+  <target>Chamar resthook</target>
+</trans-unit>
+<trans-unit id="s95d0db1fae416724">
+  <source>Hand data to an integration like Zapier, then branch on the response.</source>
+  <target>Entrega dados a uma integração como o Zapier e ramifica com base na resposta.</target>
+</trans-unit>
+<trans-unit id="s0140e03b8295ede0">
+  <source>Resthook</source>
+  <target>Resthook</target>
+</trans-unit>
+<trans-unit id="s68dbc44be3539efa">
+  <source>first result</source>
+  <target>primeiro resultado</target>
+</trans-unit>
+<trans-unit id="sbdd01d23560db9be">
+  <source>second result</source>
+  <target>segundo resultado</target>
+</trans-unit>
+<trans-unit id="s13a62eb5e3e8f3a3">
+  <source>third result</source>
+  <target>terceiro resultado</target>
+</trans-unit>
+<trans-unit id="se0b8217c8ddd978a">
+  <source>fourth result</source>
+  <target>quarto resultado</target>
+</trans-unit>
+<trans-unit id="sf2414bff60f4f823">
+  <source>fifth result</source>
+  <target>quinto resultado</target>
+</trans-unit>
+<trans-unit id="s661f5cdbfdb1963c">
+  <source>sixth result</source>
+  <target>sexto resultado</target>
+</trans-unit>
+<trans-unit id="sb7537694fa522dcf">
+  <source>seventh result</source>
+  <target>sétimo resultado</target>
+</trans-unit>
+<trans-unit id="sf454d2e6894db3a1">
+  <source>eighth result</source>
+  <target>oitavo resultado</target>
+</trans-unit>
+<trans-unit id="s1cdf046b408dc273">
+  <source>ninth result</source>
+  <target>nono resultado</target>
+</trans-unit>
+<trans-unit id="s2fd0b050eba4ad91">
+  <source>tenth result</source>
+  <target>décimo resultado</target>
+</trans-unit>
+<trans-unit id="s810373c0f0e31bd8">
+  <source>11th result</source>
+  <target>11º resultado</target>
+</trans-unit>
+<trans-unit id="sd0296e1a808e721b">
+  <source>12th result</source>
+  <target>12º resultado</target>
+</trans-unit>
+<trans-unit id="s761a50024434d692">
+  <source>13th result</source>
+  <target>13º resultado</target>
+</trans-unit>
+<trans-unit id="s945a9c00a992acd5">
+  <source>14th result</source>
+  <target>14º resultado</target>
+</trans-unit>
+<trans-unit id="se36c94e458da19fc">
+  <source>15th result</source>
+  <target>15º resultado</target>
+</trans-unit>
+<trans-unit id="s557c3a282780996f">
+  <source>16th result</source>
+  <target>16º resultado</target>
+</trans-unit>
+<trans-unit id="s5484d8551da57416">
+  <source>17th result</source>
+  <target>17º resultado</target>
+</trans-unit>
+<trans-unit id="sfb1c870ed9c7be79">
+  <source>18th result</source>
+  <target>18º resultado</target>
+</trans-unit>
+<trans-unit id="s12d547bd72eb9f10">
+  <source>19th result</source>
+  <target>19º resultado</target>
+</trans-unit>
+<trans-unit id="sb5b70e252ade8530">
+  <source>20th result</source>
+  <target>20º resultado</target>
+</trans-unit>
+<trans-unit id="s286548b880f43114">
+  <source>Don't delimit result</source>
+  <target>Não delimitar o resultado</target>
+</trans-unit>
+<trans-unit id="sbee30e0be08e40e8">
+  <source>Delimited by spaces</source>
+  <target>Delimitado por espaços</target>
+</trans-unit>
+<trans-unit id="s11e4f61ccb94ed27">
+  <source>Delimited by periods</source>
+  <target>Delimitado por pontos</target>
+</trans-unit>
+<trans-unit id="s73bc7fb6ac5fd214">
+  <source>Delimited by plusses</source>
+  <target>Delimitado por sinais de mais</target>
+</trans-unit>
+<trans-unit id="s69ab7ab9bc4794a1">
+  <source>Split by Result</source>
+  <target>Dividir por resultado</target>
+</trans-unit>
+<trans-unit id="s65fa1c72d2fa0f09">
+  <source>Branch on an answer collected earlier in this flow.</source>
+  <target>Ramifica com base em uma resposta coletada antes neste fluxo.</target>
+</trans-unit>
+<trans-unit id="se3b6cc91ca5d7a4b">
+  <source>Select a result...</source>
+  <target>Selecione um resultado...</target>
+</trans-unit>
+<trans-unit id="s222df9cb6e3d5816">
+  <source>Flow Result</source>
+  <target>Resultado do fluxo</target>
+</trans-unit>
+<trans-unit id="s554fb4251c55c945">
+  <source>Delimiting splits on one part of the result, e.g. its first word.</source>
+  <target>Delimitar divide com base em uma parte do resultado, ex.: a primeira palavra.</target>
+</trans-unit>
+<trans-unit id="sf78838d8cf6a6291">
+  <source>Split by URN Type</source>
+  <target>Dividir por tipo de URN</target>
+</trans-unit>
+<trans-unit id="sf2c440ea77dcb87a">
+  <source>Branch on how the contact reaches you, like SMS, WhatsApp or email.</source>
+  <target>Ramifica com base em como o contato se comunica, como SMS, WhatsApp ou e-mail.</target>
+</trans-unit>
+<trans-unit id="sa2964ef162cc0af5">
+  <source>Channel Types</source>
+  <target>Tipos de canal</target>
+</trans-unit>
+<trans-unit id="s621ab8e10070e9b0">
+  <source>Routes contacts by the type of address they used, e.g. a phone number or Facebook ID.</source>
+  <target>Encaminha os contatos pelo tipo de endereço que usaram, ex.: um número de telefone ou um ID do Facebook.</target>
+</trans-unit>
+<trans-unit id="s693f9c1c3c6fa7b7">
+  <source>Run another flow, then come back here when it completes or expires.</source>
+  <target>Executa outro fluxo e volta aqui quando ele é concluído ou expira.</target>
+</trans-unit>
+<trans-unit id="s4c0f11bcc718b0b0">
+  <source>The contact returns here once the subflow completes or expires.</source>
+  <target>O contato volta aqui quando o subfluxo é concluído ou expira.</target>
+</trans-unit>
+<trans-unit id="s1c0f7e3a9a6bce79">
+  <source>Parameters</source>
+  <target>Parâmetros</target>
+</trans-unit>
+<trans-unit id="sa6ea4d401084d793">
+  <source>Parameter name</source>
+  <target>Nome do parâmetro</target>
+</trans-unit>
+<trans-unit id="sd7e39dc441e29163">
+  <source>Open Ticket</source>
+  <target>Abrir ticket</target>
+</trans-unit>
+<trans-unit id="s842042a61ad059d2">
+  <source>A person on your team will be able to follow up.</source>
+  <target>Uma pessoa da sua equipe poderá dar seguimento.</target>
+</trans-unit>
+<trans-unit id="s11cc72e3db49fec4">
+  <source>Topic</source>
+  <target>Tópico</target>
+</trans-unit>
+<trans-unit id="s0e7535ff12ae7a8a">
+  <source>Assignee</source>
+  <target>Responsável</target>
+</trans-unit>
+<trans-unit id="s6686fcc6d2c8f0bd">
+  <source>Note</source>
+  <target>Nota</target>
+</trans-unit>
+<trans-unit id="se4d58afccbb329dc">
+  <source>Call Webhook</source>
+  <target>Chamar webhook</target>
+</trans-unit>
+<trans-unit id="se50a515b340e64e3">
+  <source>Send or fetch data from your own systems, then branch on the response.</source>
+  <target>Envia ou busca dados dos seus próprios sistemas e ramifica com base na resposta.</target>
+</trans-unit>
+<trans-unit id="sd2cd7ff1d59abcb1">
+  <source>e.g. https://example.com/webhook</source>
+  <target>ex.: https://example.com/webhook</target>
+</trans-unit>
+<trans-unit id="s2057828139371c63">
+  <source>Header name</source>
+  <target>Nome do cabeçalho</target>
+</trans-unit>
+<trans-unit id="s1368f7d24e6c0e91">
+  <source>Header value</source>
+  <target>Valor do cabeçalho</target>
+</trans-unit>
+<trans-unit id="se23d323f7d2f9a35">
+  <source>Request body content (JSON, XML, etc.)</source>
+  <target>Conteúdo do corpo da requisição (JSON, XML etc.)</target>
+</trans-unit>
+<trans-unit id="s0e1f8cf230dfe7a9">
+  <source>Headers</source>
+  <target>Cabeçalhos</target>
+</trans-unit>
+<trans-unit id="sf7dbe8a7c839a675">
+  <source>Body</source>
+  <target>Corpo</target>
+</trans-unit>
+<trans-unit id="s821f966ca0c43ce4">
+  <source>Make Recording</source>
+  <target>Gravar áudio</target>
+</trans-unit>
+<trans-unit id="s00a40016bdd4cff8">
+  <source>Capture the caller's voice, like a voicemail or a spoken answer.</source>
+  <target>Grava a voz de quem liga, como um correio de voz ou uma resposta falada.</target>
+</trans-unit>
+<trans-unit id="se8f67fe5e6611b13">
+  <source>Redirect Call</source>
+  <target>Redirecionar chamada</target>
+</trans-unit>
+<trans-unit id="s60328e2af6d8440f">
+  <source>Connect the caller to another number, then branch on how it went.</source>
+  <target>Conecta quem liga a outro número e ramifica com base no resultado.</target>
+</trans-unit>
+<trans-unit id="s871b1fe6d1846958">
+  <source>Phone Number</source>
+  <target>Número de telefone</target>
+</trans-unit>
+<trans-unit id="s6f81f9bebbc095b9">
+  <source>Can include expressions, e.g. `@fields.phone`.</source>
+  <target>Pode incluir expressões, ex.: `@fields.phone`.</target>
+</trans-unit>
+<trans-unit id="s162e917345aae7ac">
+  <source>Dial Limit (seconds)</source>
+  <target>Limite de discagem (segundos)</target>
+</trans-unit>
+<trans-unit id="s3458d58fad2e9def">
+  <source>Defaults to 60 seconds.</source>
+  <target>O padrão é 60 segundos.</target>
+</trans-unit>
+<trans-unit id="s8b4697d46ee6ded6">
+  <source>Call Limit (seconds)</source>
+  <target>Limite de chamada (segundos)</target>
+</trans-unit>
+<trans-unit id="se2520e81067a5ab5">
+  <source>Defaults to two hours.</source>
+  <target>O padrão é duas horas.</target>
+</trans-unit>
+<trans-unit id="s67a449e564ea89f7">
+  <source>Wait for Digits</source>
+  <target>Aguardar dígitos</target>
+</trans-unit>
+<trans-unit id="s67f7c8fbc42c6d18">
+  <source>Collect a number from the keypad, like a PIN or account number.</source>
+  <target>Coleta um número do teclado, como um PIN ou número de conta.</target>
+</trans-unit>
+<trans-unit id="s3cae02540567d214">
+  <source>Rules match against all digits pressed by the caller followed by the # sign.</source>
+  <target>As regras são comparadas com todos os dígitos pressionados por quem liga, seguidos do sinal #.</target>
+</trans-unit>
+<trans-unit id="sc7b33524a2ba6ed9">
+  <source>Offer keypad options, like "press 1 for sales", and branch on the choice.</source>
+  <target>Oferece opções de teclado, como "pressione 1 para vendas", e ramifica com base na escolha.</target>
+</trans-unit>
+<trans-unit id="s8734d3112c508504">
+  <source>1 minute</source>
+  <target>1 minuto</target>
+</trans-unit>
+<trans-unit id="se022bfbf21a62ea4">
+  <source>2 minutes</source>
+  <target>2 minutos</target>
+</trans-unit>
+<trans-unit id="s4fe4be083a6a7b13">
+  <source>3 minutes</source>
+  <target>3 minutos</target>
+</trans-unit>
+<trans-unit id="s2abc882faee7cc32">
+  <source>4 minutes</source>
+  <target>4 minutos</target>
+</trans-unit>
+<trans-unit id="sf40cb1ac8887e1a1">
+  <source>5 minutes</source>
+  <target>5 minutos</target>
+</trans-unit>
+<trans-unit id="s36f5d5123da1d24d">
+  <source>10 minutes</source>
+  <target>10 minutos</target>
+</trans-unit>
+<trans-unit id="s2a46c7c5730014aa">
+  <source>15 minutes</source>
+  <target>15 minutos</target>
+</trans-unit>
+<trans-unit id="s801744c4d83f671f">
+  <source>30 minutes</source>
+  <target>30 minutos</target>
+</trans-unit>
+<trans-unit id="s9899f07ee811b5ca">
+  <source>1 hour</source>
+  <target>1 hora</target>
+</trans-unit>
+<trans-unit id="s543610c88aecac7e">
+  <source>2 hours</source>
+  <target>2 horas</target>
+</trans-unit>
+<trans-unit id="sb9088c37d74185b5">
+  <source>3 hours</source>
+  <target>3 horas</target>
+</trans-unit>
+<trans-unit id="s1741ba7f5b595722">
+  <source>6 hours</source>
+  <target>6 horas</target>
+</trans-unit>
+<trans-unit id="sa6ab28c69299397d">
+  <source>12 hours</source>
+  <target>12 horas</target>
+</trans-unit>
+<trans-unit id="s00eb83e9b1bd2c4b">
+  <source>18 hours</source>
+  <target>18 horas</target>
+</trans-unit>
+<trans-unit id="sd73e89fb5ca7534e">
+  <source>1 day</source>
+  <target>1 dia</target>
+</trans-unit>
+<trans-unit id="sbef3027f2aba42c8">
+  <source>2 days</source>
+  <target>2 dias</target>
+</trans-unit>
+<trans-unit id="sf33721989eec7cc5">
+  <source>3 days</source>
+  <target>3 dias</target>
+</trans-unit>
+<trans-unit id="sd8bbc6ae6b1e90b8">
+  <source>1 week</source>
+  <target>1 semana</target>
+</trans-unit>
+<trans-unit id="s03fef1953299d3d5">
+  <source>Sort the contact's reply into categories, with a timeout if they go quiet.</source>
+  <target>Classifica a resposta do contato em categorias, com um tempo limite se ele não responder.</target>
+</trans-unit>
+<trans-unit id="sf68cf6caa11e257d">
+  <source>If the message from the contact...</source>
+  <target>Se a mensagem do contato...</target>
+</trans-unit>
+<trans-unit id="s2eda8ec3492b2e2f">
+  <source>Time Limit</source>
+  <target>Tempo limite</target>
+</trans-unit>
+<trans-unit id="sae7c643f5f2e8c24">
+  <source>has any of the words</source>
+  <target>tem alguma das palavras</target>
+</trans-unit>
+<trans-unit id="s00c611654a8bd41f">
+  <source>has all of the words</source>
+  <target>tem todas as palavras</target>
+</trans-unit>
+<trans-unit id="sec7f53ac6d9501f5">
+  <source>has the phrase</source>
+  <target>tem a frase</target>
+</trans-unit>
+<trans-unit id="s071468637290d625">
+  <source>has only the phrase</source>
+  <target>tem apenas a frase</target>
+</trans-unit>
+<trans-unit id="se7ddfefc8458f740">
+  <source>has some text</source>
+  <target>tem algum texto</target>
+</trans-unit>
+<trans-unit id="s19a55b0b2aff8cc9">
+  <source>has a number</source>
+  <target>tem um número</target>
+</trans-unit>
+<trans-unit id="s478113abed321145">
+  <source>has a number between</source>
+  <target>tem um número entre</target>
+</trans-unit>
+<trans-unit id="sa3188e126228c690">
+  <source>has a number below</source>
+  <target>tem um número menor que</target>
+</trans-unit>
+<trans-unit id="s6552b3de6fbc8e32">
+  <source>has a number at or below</source>
+  <target>tem um número menor ou igual a</target>
+</trans-unit>
+<trans-unit id="s7f70f008b771c50e">
+  <source>has a number equal to</source>
+  <target>tem um número igual a</target>
+</trans-unit>
+<trans-unit id="se4444d571c85e18a">
+  <source>has a number at or above</source>
+  <target>tem um número maior ou igual a</target>
+</trans-unit>
+<trans-unit id="s1d902fff153e7070">
+  <source>has a number above</source>
+  <target>tem um número maior que</target>
+</trans-unit>
+<trans-unit id="sf483a37658ab192c">
+  <source>has a date</source>
+  <target>tem uma data</target>
+</trans-unit>
+<trans-unit id="s28dc80ba7d5e2e1f">
+  <source>has a date before</source>
+  <target>tem uma data anterior a</target>
+</trans-unit>
+<trans-unit id="s292c47fdb690f13d">
+  <source>has a date equal to</source>
+  <target>tem uma data igual a</target>
+</trans-unit>
+<trans-unit id="sbcda596fd6df180e">
+  <source>has a date after</source>
+  <target>tem uma data posterior a</target>
+</trans-unit>
+<trans-unit id="sbc9cdeed6fe7d311">
+  <source>has a time</source>
+  <target>tem um horário</target>
+</trans-unit>
+<trans-unit id="sce2f1991208e574d">
+  <source>has a phone number</source>
+  <target>tem um número de telefone</target>
+</trans-unit>
+<trans-unit id="s093abc680508fb02">
+  <source>has an email</source>
+  <target>tem um e-mail</target>
+</trans-unit>
+<trans-unit id="sdcb8af1440d568fa">
+  <source>has state</source>
+  <target>tem um estado</target>
+</trans-unit>
+<trans-unit id="s770302ae21782bbb">
+  <source>has district</source>
+  <target>tem um distrito</target>
+</trans-unit>
+<trans-unit id="s675fea661bd94c47">
+  <source>has ward</source>
+  <target>tem um bairro</target>
+</trans-unit>
+<trans-unit id="s621e0559b97b24a4">
+  <source>is in the group</source>
+  <target>está no grupo</target>
+</trans-unit>
+<trans-unit id="saaeea0fe85e41080">
+  <source>has the category</source>
+  <target>tem a categoria</target>
+</trans-unit>
+<trans-unit id="s786ed22bc2fc12c0">
+  <source>has an error</source>
+  <target>tem um erro</target>
+</trans-unit>
+<trans-unit id="s9be5daa6ec483891">
+  <source>is not empty</source>
+  <target>não está vazio</target>
+</trans-unit>
+<trans-unit id="s579643ebbd9d5655">
+  <source>matches regex</source>
+  <target>corresponde à expressão regular</target>
+</trans-unit>
+<trans-unit id="s3885447847c7efbc">
+  <source>Send Message</source>
+  <target>Enviar mensagem</target>
+</trans-unit>
+<trans-unit id="sc79f4cf72b8847d6">
+  <source>Wait for Response</source>
+  <target>Aguardar resposta</target>
+</trans-unit>
+<trans-unit id="sb5383491a5412157">
+  <source>Say Message</source>
+  <target>Falar mensagem</target>
+</trans-unit>
+<trans-unit id="s5059f0db260f9ab2">
+  <source>Wait for Menu</source>
+  <target>Aguardar menu</target>
+</trans-unit>
+<trans-unit id="s9c3b8b74ed22b9e0">
+  <source>Update Contact</source>
+  <target>Atualizar contato</target>
+</trans-unit>
+<trans-unit id="sf849832948714cc7">
+  <source>Actions that send messages or content to contacts</source>
+  <target>Ações que enviam mensagens ou conteúdo aos contatos</target>
+</trans-unit>
+<trans-unit id="s13399c8d6d9d1628">
+  <source>Actions that update contact information</source>
+  <target>Ações que atualizam as informações do contato</target>
+</trans-unit>
+<trans-unit id="s281d3f2e6e5d7f76">
+  <source>Actions that save or store data</source>
+  <target>Ações que salvam ou armazenam dados</target>
+</trans-unit>
+<trans-unit id="sf55d634dcc743595">
+  <source>Services</source>
+  <target>Serviços</target>
+</trans-unit>
+<trans-unit id="s08efc85083790516">
+  <source>Call external services and APIs</source>
+  <target>Chama serviços e APIs externos</target>
+</trans-unit>
+<trans-unit id="sdb884f38f61d6ce4">
+  <source>Other People</source>
+  <target>Outras pessoas</target>
+</trans-unit>
+<trans-unit id="s94596910f27f54d3">
+  <source>Actions that apply to others instead of the contact</source>
+  <target>Ações que se aplicam a outras pessoas em vez do contato</target>
+</trans-unit>
+<trans-unit id="sfa8636a926e6a68f">
+  <source>Actions that trigger other behavior</source>
+  <target>Ações que acionam outros comportamentos</target>
+</trans-unit>
+<trans-unit id="s890ea6022d96ab80">
+  <source>Wait</source>
+  <target>Aguardar</target>
+</trans-unit>
+<trans-unit id="sb06111de0c09fcaf">
+  <source>Wait for user and split on their response</source>
+  <target>Aguarda o contato e divide com base na resposta</target>
+</trans-unit>
+<trans-unit id="s1c3461f13244ede3">
+  <source>Split</source>
+  <target>Dividir</target>
+</trans-unit>
+<trans-unit id="s98cd4f1546a12ebe">
+  <source>Split the flow based on conditions</source>
+  <target>Divide o fluxo com base em condições</target>
+</trans-unit>
+<trans-unit id="s125083191daf6f61">
+  <source>low</source>
+  <target>baixa</target>
+  <note from="lit-localize">A confidence level in "Require {confidence} confidence or higher"</note>
+</trans-unit>
+<trans-unit id="sc76a095e1ffa22b6">
+  <source>medium</source>
+  <target>média</target>
+  <note from="lit-localize">A confidence level in "Require {confidence} confidence or higher"</note>
+</trans-unit>
+<trans-unit id="s7360eecc9b38343d">
+  <source>high</source>
+  <target>alta</target>
+  <note from="lit-localize">A confidence level in "Require {confidence} confidence or higher"</note>
+</trans-unit>
+<trans-unit id="h7a01d878f9dce65b">
+  <source>Set <x id="0" equiv-text="&lt;strong&gt;${action.field.name}&lt;/strong&gt;"/> to <x id="1" equiv-text="${value}"/></source>
+  <target>Definir <x id="0" equiv-text="&lt;strong&gt;${action.field.name}&lt;/strong&gt;"/> como <x id="1" equiv-text="${value}"/></target>
 </trans-unit>
 </body>
 </file>

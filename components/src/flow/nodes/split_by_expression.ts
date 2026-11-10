@@ -22,19 +22,29 @@ import { validateWith } from '../utils';
 
 export const split_by_expression: NodeConfig = {
   type: 'split_by_expression',
-  name: 'Split by Expression',
-  subtitle: 'Branch on any value you can build, like a date or a calculation.',
+  get name() {
+    return msg('Split by Expression');
+  },
+  get subtitle() {
+    return msg(
+      'Branch on any value you can build, like a date or a calculation.'
+    );
+  },
   group: SPLIT_GROUPS.split,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   dialogSize: 'large',
   form: {
     operand: {
       type: 'text',
-      label: 'Expression',
+      get label() {
+        return msg('Expression');
+      },
       required: true,
       evaluated: true,
       maxLength: 10000,
-      placeholder: 'e.g. @fields.age'
+      get placeholder() {
+        return msg('e.g. @fields.age');
+      }
     },
     rules: createRulesArrayConfig(
       operatorsToSelectOptions(getWaitForResponseOperators()),

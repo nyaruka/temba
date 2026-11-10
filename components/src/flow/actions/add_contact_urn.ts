@@ -1,3 +1,4 @@
+import { msg, str } from '@lit/localize';
 import { html } from 'lit-html';
 import {
   ActionConfig,
@@ -10,16 +11,22 @@ import { Node, AddContactUrn } from '../../store/flow-definition';
 import { SCHEMES, renderClamped, renderHighlightedText } from '../utils';
 
 export const add_contact_urn: ActionConfig = {
-  name: 'Add URN',
-  subtitle: 'Save another phone number, handle or address for the contact.',
+  get name() {
+    return msg('Add URN');
+  },
+  get subtitle() {
+    return msg('Save another phone number, handle or address for the contact.');
+  },
   group: ACTION_GROUPS.contacts,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: AddContactUrn) => {
     const schemeObj = SCHEMES.find((s) => s.scheme === action.scheme);
     const friendlyScheme = schemeObj?.path || action.scheme;
     return renderClamped(
-      html`Add ${friendlyScheme} ${renderHighlightedText(action.path, true)}`,
-      `Add ${friendlyScheme} ${action.path}`
+      msg(
+        html`Add ${friendlyScheme} ${renderHighlightedText(action.path, true)}`
+      ),
+      msg(str`Add ${friendlyScheme} ${action.path}`)
     );
   },
 
@@ -52,7 +59,9 @@ export const add_contact_urn: ActionConfig = {
   form: {
     scheme: {
       type: 'select',
-      label: 'URN Type',
+      get label() {
+        return msg('URN Type');
+      },
       required: true,
       searchable: false,
       multi: false,
@@ -63,8 +72,12 @@ export const add_contact_urn: ActionConfig = {
     },
     path: {
       type: 'text',
-      label: 'URN Value',
-      helpText: 'e.g. a phone number or Facebook ID',
+      get label() {
+        return msg('URN Value');
+      },
+      get helpText() {
+        return msg('e.g. a phone number or Facebook ID');
+      },
       required: true,
       maxLength: 1000,
       evaluated: true
@@ -75,11 +88,11 @@ export const add_contact_urn: ActionConfig = {
     const errors: { [key: string]: string } = {};
 
     if (!formData.scheme || formData.scheme.length === 0) {
-      errors.scheme = 'URN type is required';
+      errors.scheme = msg('URN type is required');
     }
 
     if (!formData.path || formData.path.trim() === '') {
-      errors.path = 'URN value is required';
+      errors.path = msg('URN value is required');
     }
 
     return {

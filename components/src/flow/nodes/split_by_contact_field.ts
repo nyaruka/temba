@@ -59,8 +59,12 @@ const getOperandForField = (field: any): string => {
 
 export const split_by_contact_field: NodeConfig = {
   type: 'split_by_contact_field',
-  name: 'Split by Contact Field',
-  subtitle: 'Branch on what you already know about the contact.',
+  get name() {
+    return msg('Split by Contact Field');
+  },
+  get subtitle() {
+    return msg('Branch on what you already know about the contact.');
+  },
   group: SPLIT_GROUPS.split,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   dialogSize: 'large',
@@ -73,7 +77,9 @@ export const split_by_contact_field: NodeConfig = {
       endpoint: '/api/v2/fields.json',
       valueKey: 'key',
       nameKey: 'name',
-      placeholder: 'Select a field...',
+      get placeholder() {
+        return msg('Select a field...');
+      },
       // Provide system properties as fixed options at the top
       options: [
         ...Object.values(CONTACT_PROPERTIES).map((prop) => ({
