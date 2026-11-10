@@ -50,7 +50,10 @@ export const CONTEXT_MENU_SHORTCUTS: Record<FlowType, ContextMenuShortcut[]> = {
 export const Features = {
   AI: 'ai',
   AIRTIME: 'airtime',
-  LOCATIONS: 'locations'
+  LOCATIONS: 'locations',
+  MESSAGING: 'messaging',
+  IVR: 'ivr',
+  EMAIL: 'email'
 } as const;
 
 export type Feature = (typeof Features)[keyof typeof Features];
@@ -519,6 +522,7 @@ export interface ActionConfig extends FormConfig {
   hideFromActions?: boolean; // if true, don't show in action dialog (default: false - actions show in actions)
   flowTypes?: FlowType[]; // which flow types this action is available for (defaults to all if not specified)
   features?: Feature[]; // which features are required for this action (all must be present)
+  needs?: { feature: Feature; warning: string }; // a feature this action can't work without, and the warning its editor shows when that's missing
   render?: (node: any, action: any) => TemplateResult;
 
   form?: Record<string, FieldConfig>;

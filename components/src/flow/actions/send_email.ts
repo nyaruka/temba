@@ -1,5 +1,11 @@
 import { html } from 'lit-html';
-import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
+import {
+  ActionConfig,
+  ACTION_GROUPS,
+  FormData,
+  FlowTypes,
+  Features
+} from '../types';
 import { Node, SendEmail } from '../../store/flow-definition';
 import {
   renderStringList,
@@ -14,6 +20,10 @@ export const send_email: ActionConfig = {
   subtitle: 'Notify your team or anyone else, with details from the flow.',
   group: ACTION_GROUPS.broadcast,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
+  needs: {
+    feature: Features.EMAIL,
+    warning: "This workspace isn't configured to send emails."
+  },
   render: (_node: Node, action: SendEmail) => {
     return html`<div>
       <div>${renderStringList(action.addresses, Icon.email, true)}</div>

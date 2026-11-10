@@ -99,6 +99,19 @@ export class NodeEditor extends RapidElement {
         cursor: pointer;
       }
 
+      .feature-warning {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border-radius: var(--curvature);
+        font-size: 13px;
+        color: #8a5a00;
+        background: #fff4d6;
+        border: 1px solid #f3dfa6;
+        --icon-color: #c98a00;
+      }
+
       .issue-warning:hover .issue-text {
         text-decoration: underline;
       }
@@ -712,6 +725,9 @@ export class NodeEditor extends RapidElement {
 
   @fromStore(zustand, (state: AppState) => state.flowInfo)
   private flowInfo!: FlowInfo;
+
+  @fromStore(zustand, (state: AppState) => state.features)
+  private features!: string[];
 
   @fromStore(zustand, (state: AppState) => state.issuesByNode)
   private issuesByNode!: Map<string, FlowIssue[]>;
@@ -3398,6 +3414,22 @@ export class NodeEditor extends RapidElement {
     `;
   }
 
+  private renderFeatureWarning(): TemplateResult | string {
+    const needs = this.action && ACTION_CONFIG[this.action.type]?.needs;
+    if (
+      !needs ||
+      this.isTranslating ||
+      this.features?.includes(needs.feature)
+    ) {
+      return '';
+    }
+
+    return html`<div class="feature-warning">
+      <temba-icon name="alert_warning" size="1.2"></temba-icon>
+      <span>${needs.warning}</span>
+    </div>`;
+  }
+
   render(): TemplateResult {
     if (!this.isOpen) {
       return html``;
@@ -3432,7 +3464,7 @@ export class NodeEditor extends RapidElement {
         size="${dialogSize}"
       >
         <div class="node-editor-form">
-          ${this.renderFields()}
+          ${this.renderFeatureWarning()} ${this.renderFields()}
           ${this.getNodeConfig()?.router?.configurable
             ? this.renderRouterSection()
             : null}

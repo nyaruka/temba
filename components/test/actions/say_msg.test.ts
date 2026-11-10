@@ -26,6 +26,16 @@ describe('say_msg action config', () => {
   });
 
   describe('action scenarios', () => {
+    helper.testEditor(
+      {
+        uuid: 'test-say-1',
+        type: 'say_msg',
+        text: 'Hello, welcome to our service.'
+      } as SayMsg,
+      'missing-feature',
+      []
+    );
+
     helper.testAction(
       {
         uuid: 'test-say-1',

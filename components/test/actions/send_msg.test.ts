@@ -18,6 +18,17 @@ describe('send_msg action config', () => {
   });
 
   describe('action scenarios', () => {
+    helper.testEditor(
+      {
+        uuid: 'test-action-1',
+        type: 'send_msg',
+        text: 'Hello world!',
+        quick_replies: []
+      } as SendMsg,
+      'missing-feature',
+      []
+    );
+
     helper.testAction(
       {
         uuid: 'test-action-1',

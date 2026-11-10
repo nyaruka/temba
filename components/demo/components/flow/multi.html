@@ -138,7 +138,7 @@
         const body = document.createElement('div');
         body.className = 'flow-panel-body';
         const editor = document.createElement('temba-flow-editor');
-        editor.setAttribute('features', '["ai", "locations"]');
+        editor.setAttribute('features', '["ai", "locations", "messaging", "ivr", "email"]');
         editor.setAttribute('flow', flow.uuid);
         body.appendChild(editor);
         panel.appendChild(body);
