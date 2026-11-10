@@ -1,3 +1,6 @@
+## v26.3.183 (2026-11-10)
+ * Add shared_email workspace feature for using the shared flow email service
+
 ## v26.3.182 (2026-11-09)
  * Don't send notification emails to released users
 
