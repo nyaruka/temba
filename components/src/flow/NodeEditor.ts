@@ -99,14 +99,14 @@ export class NodeEditor extends RapidElement {
         cursor: pointer;
       }
 
-      /* matches the warning banners shown across the top of workspace pages */
+      /* full bleed like the warning banners across the top of workspace pages,
+         so it doesn't read as a validation error on the form */
       .feature-warning {
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 12px;
-        border: 1px solid #f3dcae;
-        border-radius: var(--curvature);
+        padding: 12px 20px;
+        border-bottom: 1px solid #f3dcae;
         background: #fffaf0;
         color: #3f3f46;
         font-size: 14px;
@@ -3478,8 +3478,9 @@ export class NodeEditor extends RapidElement {
         style="--header-bg: ${headerColor}; --header-text: ${headerTextColor};"
         size="${dialogSize}"
       >
+        ${this.renderFeatureWarning()}
         <div class="node-editor-form">
-          ${this.renderFeatureWarning()} ${this.renderFields()}
+          ${this.renderFields()}
           ${this.getNodeConfig()?.router?.configurable
             ? this.renderRouterSection()
             : null}
