@@ -1,3 +1,7 @@
+## v26.3.186 (2026-11-10)
+ * Allow OrgTally daily totals for past days to be read from another database
+ * Roll the flow responses chart up into weekly buckets, leaving out the partial first week
+
 ## v26.3.185 (2026-11-10)
  * Read flow segment and msgsin counts from flow tallies
  * Clamp the flow engagement timeline to the last year of daily tallies
