@@ -3,7 +3,8 @@ from unittest.mock import patch
 
 from django_valkey import get_valkey_connection
 
-from django.db import connection
+from django.db import connection, connections
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
 from temba.flows.models import FlowTally
@@ -147,6 +148,35 @@ class TallyTest(TembaTest):
                 ),
             )
             self.assertEqual({}, OrgTally.get_daily_totals_by_org([], ["foo/1"], date(2026, 11, 1), date(2026, 11, 6)))
+
+            # earlier days can be read from another database, but today's always come from the default one
+            with (
+                CaptureQueriesContext(connections["default"]) as default_queries,
+                CaptureQueriesContext(connections["readonly"]) as readonly_queries,
+            ):
+                totals = OrgTally.get_daily_totals(
+                    self.org, ["foo/1"], date(2026, 11, 1), date(2026, 11, 6), using="readonly"
+                )
+
+            # the readonly connection is outside the test's transaction so can't see earlier days' rows
+            self.assertEqual({(date(2026, 11, 5), "foo/1"): 14}, totals)
+            self.assertEqual(1, len(readonly_queries))
+            self.assertNotIn("orgs_tallyflush", readonly_queries[0]["sql"])
+            self.assertEqual(1, len(default_queries))
+            self.assertIn("orgs_tallyflush", default_queries[0]["sql"])
+
+            # and earlier days' rows read from it are included, given a connection which can see them
+            with patch("temba.orgs.models.connections", {"readonly": connection}):
+                self.assertEqual(
+                    {
+                        (date(2026, 11, 1), "foo/1"): 2,
+                        (date(2026, 11, 4), "foo/1"): 3,
+                        (date(2026, 11, 5), "foo/1"): 14,
+                    },
+                    OrgTally.get_daily_totals(
+                        self.org, ["foo/1"], date(2026, 11, 1), date(2026, 11, 6), using="readonly"
+                    ),
+                )
 
     @cleanup(valkey=True)
     def test_get_totals_retries(self):
