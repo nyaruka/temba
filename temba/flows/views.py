@@ -22,7 +22,6 @@ from django.db.models.functions import Lower
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.utils import timezone
 from django.utils.encoding import force_str
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -967,19 +966,13 @@ class FlowCRUDL(SmartCRUDL):
 
     class EngagementTimeline(BaseResultsView):
         def render_to_response(self, context, **response_kwargs):
-            start_date = self.object.get_engagement_start()
-            end_date = timezone.now().date()
-
-            if not start_date:
-                start_date = end_date - timedelta(days=29)
-
-            timeline_data = self.object.get_engagement_timeline(start_date, end_date)
+            timeline_data = self.object.get_engagement_timeline()
             chart_data = {
                 "labels": timeline_data["dates"],
                 "datasets": [{"label": _("Messages"), "data": timeline_data["counts"]}],
             }
 
-            return JsonResponse({"data": chart_data, "rollup_by": timeline_data["rollup_by"]})
+            return JsonResponse({"data": chart_data})
 
     class EngagementProgress(BaseResultsView):
         def render_to_response(self, context, **response_kwargs):

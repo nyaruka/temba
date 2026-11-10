@@ -1,6 +1,8 @@
 from datetime import timedelta
 from unittest.mock import call, patch
 
+from django_valkey import get_valkey_connection
+
 from django.urls import reverse
 from django.utils import timezone
 
@@ -20,7 +22,7 @@ from temba.notifications.types import ExportFinishedNotificationType
 from temba.orgs.models import Org, OrgRole
 from temba.schedules.models import Schedule
 from temba.templates.models import Template, TemplateTranslation
-from temba.tests import TembaTest, matchers, mock_mailroom
+from temba.tests import TembaTest, cleanup, matchers, mock_mailroom
 from temba.tickets.models import Shortcut, TicketExport, Topic
 from temba.triggers.models import Trigger
 from temba.utils.uuid import uuid4, uuid7
@@ -617,6 +619,7 @@ class EndpointsTest(APITestMixin, TembaTest):
         response = self.client.get(endpoint_url + "?search=" + ("x" * 1001))
         self.assertEqual(413, response.status_code)
 
+    @cleanup(valkey=True)
     def test_flows(self):
         endpoint_url = reverse("api.internal.flows") + ".json"
 
@@ -639,10 +642,11 @@ class EndpointsTest(APITestMixin, TembaTest):
 
         # and some recent engagement for the sparkline
         today = timezone.now().date()
-        flow1.counts.create(scope=f"msgsin:date:{today - timedelta(days=1)}", count=3)
-        flow1.counts.create(scope=f"msgsin:date:{today}", count=5)
+        flow1.tallies.create(scope=f"msgsin:date:{today - timedelta(days=1)}", count=3)
+        flow1.tallies.create(scope=f"msgsin:date:{today}", count=4)
+        get_valkey_connection().hset("{tallies}:live", f"F{flow1.id}|msgsin:date:{today}", 1)
 
-        # without the endpoint's bulk prefetch, the series reads the counts directly
+        # without the endpoint's bulk prefetch, the series reads the tallies directly
         self.assertEqual([3, 5], flow1.get_activity_series()[-2:])
 
         # default folder is `active`, most recently saved first
