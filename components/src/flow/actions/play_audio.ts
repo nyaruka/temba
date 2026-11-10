@@ -16,7 +16,7 @@ export const play_audio: ActionConfig = {
   flowTypes: [FlowTypes.VOICE],
   needs: {
     feature: Features.IVR,
-    warning: 'This workspace has no channel that can make or receive calls.'
+    warning: 'This workspace has no voice channel.'
   },
   render: (_node: Node, action: PlayAudio) => {
     return html`

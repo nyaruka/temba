@@ -99,17 +99,15 @@ export class NodeEditor extends RapidElement {
         cursor: pointer;
       }
 
-      /* full bleed like the warning banners across the top of workspace pages,
-         so it doesn't read as a validation error on the form */
+      /* sits in the footer, which takes on the colours of the warning banners
+         across the top of workspace pages, so it doesn't read as a validation
+         error on the form */
       .feature-warning {
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 12px 20px;
-        border-bottom: 1px solid #f3dcae;
-        /* follows the rounded top of the dialog sheet it sits at the top of */
-        border-radius: 16px 16px 0 0;
-        background: #fffaf0;
+        /* pulls it in to the same inset as the buttons on the right */
+        margin-left: -8px;
         color: #3f3f46;
         font-size: 14px;
         line-height: 20px;
@@ -3466,6 +3464,8 @@ export class NodeEditor extends RapidElement {
       header = languageName ? msg(str`${languageName} - ${header}`) : header;
     }
 
+    const warning = this.renderFeatureWarning();
+
     return html`
       <temba-dialog
         header="${header}"
@@ -3477,10 +3477,11 @@ export class NodeEditor extends RapidElement {
         @temba-button-clicked=${this.handleDialogButtonClick}
         primaryButtonName="${msg('Save')}"
         cancelButtonName="${msg('Cancel')}"
-        style="--header-bg: ${headerColor}; --header-text: ${headerTextColor};"
+        style="--header-bg: ${headerColor}; --header-text: ${headerTextColor}; ${warning
+          ? '--dialog-footer-background: #fffaf0;'
+          : ''}"
         size="${dialogSize}"
       >
-        ${this.renderFeatureWarning()}
         <div class="node-editor-form">
           ${this.renderFields()}
           ${this.getNodeConfig()?.router?.configurable
@@ -3489,7 +3490,7 @@ export class NodeEditor extends RapidElement {
           ${this.renderIssueWarnings()}
         </div>
 
-        <div slot="gutter">${this.renderGutter()}</div>
+        <div slot="gutter">${warning} ${this.renderGutter()}</div>
       </temba-dialog>
     `;
   }
