@@ -340,6 +340,13 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertContains(response, "If you no longer want to use these SMTP settings")
         self.assertEqual("bob@acme.com", response.context["from_email_default"])
         self.assertEqual("foo@bar.com", response.context["from_email_custom"])
+        self.assertNotContains(response, "Child workspaces without their own SMTP settings will also be affected.")
+
+        # workspaces with children are warned that removing their settings affects them too
+        Org.objects.create(name="Child", timezone="UTC", parent=self.org, created_by=self.admin, modified_by=self.admin)
+
+        response = self.client.get(config_url)
+        self.assertContains(response, "Child workspaces without their own SMTP settings will also be affected.")
 
         # submit with disconnect flag
         self.client.post(config_url, {"disconnect": "true"})

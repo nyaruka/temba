@@ -5757,6 +5757,9 @@ msgstr "Eliminar esta configuración significará que los correos electrónicos 
 msgid "Removing these settings will mean that emails can't be sent from flows. Are you sure you want to continue?"
 msgstr "Eliminar estas configuraciones significará que no se podrán enviar correos electrónicos desde los flujos. ¿Está seguro de que desea continuar?"
 
+msgid "Child workspaces without their own SMTP settings will also be affected."
+msgstr "Los espacios de trabajo secundarios sin sus propias configuraciones de SMTP también se verán afectados."
+
 #, python-format
 msgid "Sign in to join the <b>%(org)s</b> workspace."
 msgstr "Inicie sesión para unirse al workspace <b>%(org)s</b>."

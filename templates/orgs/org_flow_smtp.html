@@ -40,6 +40,11 @@
           Removing these settings will mean that emails can't be sent from flows. Are you sure you want to continue?
         {% endblocktrans %}
       {% endif %}
+      {% if has_children %}
+        {% blocktrans trimmed %}
+          Child workspaces without their own SMTP settings will also be affected.
+        {% endblocktrans %}
+      {% endif %}
     </div>
     <div href='{% url "orgs.org_flow_smtp" %}?disconnect=true' id="remove-smtp-form"></div>
   </div>

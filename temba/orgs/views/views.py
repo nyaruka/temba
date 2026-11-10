@@ -911,6 +911,7 @@ class OrgCRUDL(SmartCRUDL):
 
             context["from_email_default"] = from_email_default
             context["from_email_custom"] = from_email_custom
+            context["has_children"] = bool(from_email_custom) and org.children.filter(is_active=True).exists()
             return context
 
     class Update(ModalFormMixin, OrgObjPermsMixin, SmartUpdateView):

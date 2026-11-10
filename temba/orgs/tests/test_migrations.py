@@ -27,6 +27,11 @@ class GrantSharedEmailTest(MigrationTest):
             modified_by=self.admin,
         )
 
+        # child of an org without SMTP settings
+        self.child3 = Org.objects.create(
+            name="Child 3", timezone="UTC", parent=self.org2, created_by=self.admin, modified_by=self.admin
+        )
+
         # inactive org
         self.inactive = Org.objects.create(
             name="Inactive", timezone="UTC", is_active=False, created_by=self.admin, modified_by=self.admin
@@ -41,4 +46,5 @@ class GrantSharedEmailTest(MigrationTest):
         assert_features(self.child1, [])
         assert_features(self.org2, ["shared_email"])
         assert_features(self.child2, ["shared_email"])
+        assert_features(self.child3, ["shared_email"])
         assert_features(self.inactive, [])
