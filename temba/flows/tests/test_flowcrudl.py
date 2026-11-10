@@ -26,7 +26,7 @@ from temba.mailroom.client.types import Exclusions
 from temba.orgs.integrations.dtone.type import DTOneType
 from temba.orgs.models import Export
 from temba.templates.models import TemplateTranslation
-from temba.tests import CRUDLTestMixin, MockResponse, TembaTest, matchers, mock_mailroom
+from temba.tests import CRUDLTestMixin, MockResponse, TembaTest, cleanup, matchers, mock_mailroom
 from temba.tests.base import get_contact_search, override_brand
 from temba.tests.requests import MockJsonResponse
 from temba.triggers.models import Trigger
@@ -1899,21 +1899,21 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(response["data"]["datasets"][0]["data"], [])
 
         # test week rollup mode (1-3 years ago)
-        flow1.counts.create(scope="msgsin:date:2022-11-25", count=5)
-        flow1.counts.create(scope="msgsin:date:2022-11-29", count=50)
-        flow1.counts.create(scope="msgsin:date:2022-12-1", count=8)
+        flow1.tallies.create(scope="msgsin:date:2022-11-25", count=5)
+        flow1.tallies.create(scope="msgsin:date:2022-11-29", count=50)
+        flow1.tallies.create(scope="msgsin:date:2022-12-01", count=8)
         response = self.requestView(timeline_url, self.admin).json()
 
         self.assertEqual("week", response["rollup_by"])
         self.assertEqual(["2022-11-21", "2022-11-28"], response["data"]["labels"][0:2])
         self.assertEqual(5, response["data"]["datasets"][0]["data"][0])
         self.assertEqual(58, response["data"]["datasets"][0]["data"][1])
-        flow1.counts.all().delete()
+        flow1.tallies.all().delete()
 
         # test month rollup mode (>3 years ago)
-        flow1.counts.create(scope="msgsin:date:2020-11-25", count=10)
-        flow1.counts.create(scope="msgsin:date:2020-12-26", count=5)
-        flow1.counts.create(scope="msgsin:date:2020-12-27", count=6)
+        flow1.tallies.create(scope="msgsin:date:2020-11-25", count=10)
+        flow1.tallies.create(scope="msgsin:date:2020-12-26", count=5)
+        flow1.tallies.create(scope="msgsin:date:2020-12-27", count=6)
         response = self.requestView(timeline_url, self.admin).json()
         self.assertEqual("month", response["rollup_by"])
         self.assertEqual(["2020-11-01", "2020-12-01"], response["data"]["labels"][0:2])
@@ -1980,10 +1980,10 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual([0, 0, 0, 0, 0, 0, 0], resp_data["datasets"][0]["data"])
 
         # with daily counts, summed by weekday
-        flow1.counts.create(scope="msgsin:date:2026-10-18", count=4)  # Sunday
-        flow1.counts.create(scope="msgsin:date:2026-10-25", count=3)  # Sunday
-        flow1.counts.create(scope="msgsin:date:2026-10-19", count=2)  # Monday
-        flow1.counts.create(scope="msgsin:date:2026-10-24", count=1)  # Saturday
+        flow1.tallies.create(scope="msgsin:date:2026-10-18", count=4)  # Sunday
+        flow1.tallies.create(scope="msgsin:date:2026-10-25", count=3)  # Sunday
+        flow1.tallies.create(scope="msgsin:date:2026-10-19", count=2)  # Monday
+        flow1.tallies.create(scope="msgsin:date:2026-10-24", count=1)  # Saturday
 
         response = self.requestView(dow_url, self.admin)
         resp_data = response.json()["data"]
@@ -2025,8 +2025,8 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # hod data is stored in UTC, so we need to adjust for the timezone
         kigali_offset = 2
-        flow1.counts.create(scope=f"msgsin:hour:{9 - kigali_offset}", count=5)  # 9a in Kigali
-        flow1.counts.create(scope=f"msgsin:hour:{12 - kigali_offset}", count=3)  # 12p in Kigali
+        flow1.tallies.create(scope=f"msgsin:hour:{9 - kigali_offset}", count=5)  # 9a in Kigali
+        flow1.tallies.create(scope=f"msgsin:hour:{12 - kigali_offset}", count=3)  # 12p in Kigali
 
         response = self.requestView(hod_url, self.admin)
         resp_data = response.json()["data"]
@@ -2050,6 +2050,7 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("12:00", labels[12])
         self.assertEqual("23:00", labels[23])
 
+    @cleanup(valkey=True)
     def test_activity(self):
         flow1 = self.create_flow("Test 1")
         flow2 = self.create_flow("Test 2")
@@ -2057,16 +2058,18 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         flow1.counts.create(scope="node:01c175da-d23d-40a4-a845-c4a9bb4b481a", count=4)
         flow1.counts.create(scope="node:400d6b5e-c963-42a1-a06c-50bb9b1e38b1", count=5)
 
-        flow1.counts.create(
+        flow1.tallies.create(
             scope="segment:1fff74f4-c81f-4f4c-a03d-58d113c17da1:01c175da-d23d-40a4-a845-c4a9bb4b481a", count=3
         )
-        flow1.counts.create(
-            scope="segment:1fff74f4-c81f-4f4c-a03d-58d113c17da1:01c175da-d23d-40a4-a845-c4a9bb4b481a", count=4
+        get_valkey_connection().hset(
+            "{tallies}:live",
+            f"F{flow1.id}|segment:1fff74f4-c81f-4f4c-a03d-58d113c17da1:01c175da-d23d-40a4-a845-c4a9bb4b481a",
+            4,
         )
-        flow1.counts.create(
+        flow1.tallies.create(
             scope="segment:6f607948-f3f0-4a6a-94b8-7fdd877895ca:400d6b5e-c963-42a1-a06c-50bb9b1e38b1", count=5
         )
-        flow2.counts.create(
+        flow2.tallies.create(
             scope="segment:a4fe3ada-b062-47e4-be58-bcbe1bca31b4:74a53ff4-fe63-4d89-875e-cae3caca177c", count=6
         )
 

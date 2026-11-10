@@ -1,5 +1,7 @@
 from unittest.mock import call, patch
 
+from django_valkey import get_valkey_connection
+
 from django.urls import reverse
 
 from temba.campaigns.models import Campaign, CampaignEvent
@@ -15,7 +17,7 @@ from temba.flows.models import (
 )
 from temba.flows.tasks import squash_flow_counts
 from temba.globals.models import Global
-from temba.tests import CRUDLTestMixin, TembaTest, matchers, mock_mailroom
+from temba.tests import CRUDLTestMixin, TembaTest, cleanup, matchers, mock_mailroom
 from temba.tests.engine import MockSessionWriter
 from temba.triggers.models import Trigger
 
@@ -466,6 +468,7 @@ class FlowTest(TembaTest, CRUDLTestMixin):
         copy2 = flow2.clone(self.admin)
         self.assertEqual("Copy of abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabc", copy2.name)
 
+    @cleanup(valkey=True)
     def test_get_activity(self):
         flow1 = self.create_flow("Test 1")
         flow2 = self.create_flow("Test 2")
@@ -474,16 +477,18 @@ class FlowTest(TembaTest, CRUDLTestMixin):
         flow1.counts.create(scope="node:01c175da-d23d-40a4-a845-c4a9bb4b481a", count=1)
         flow1.counts.create(scope="node:400d6b5e-c963-42a1-a06c-50bb9b1e38b1", count=5)
 
-        flow1.counts.create(
+        flow1.tallies.create(
             scope="segment:1fff74f4-c81f-4f4c-a03d-58d113c17da1:01c175da-d23d-40a4-a845-c4a9bb4b481a", count=3
         )
-        flow1.counts.create(
-            scope="segment:1fff74f4-c81f-4f4c-a03d-58d113c17da1:01c175da-d23d-40a4-a845-c4a9bb4b481a", count=4
+        get_valkey_connection().hset(
+            "{tallies}:live",
+            f"F{flow1.id}|segment:1fff74f4-c81f-4f4c-a03d-58d113c17da1:01c175da-d23d-40a4-a845-c4a9bb4b481a",
+            4,
         )
-        flow1.counts.create(
+        flow1.tallies.create(
             scope="segment:6f607948-f3f0-4a6a-94b8-7fdd877895ca:400d6b5e-c963-42a1-a06c-50bb9b1e38b1", count=5
         )
-        flow2.counts.create(
+        flow2.tallies.create(
             scope="segment:a4fe3ada-b062-47e4-be58-bcbe1bca31b4:74a53ff4-fe63-4d89-875e-cae3caca177c", count=6
         )
 

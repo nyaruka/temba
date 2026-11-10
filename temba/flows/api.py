@@ -86,7 +86,7 @@ class FlowsEndpoint(SearchLengthMixin, ListAPIMixin, BaseEndpoint):
     def prepare_for_serialization(self, page, using: str):
         # bulk-load the per-status run counts and sparkline counts for the page so as_json doesn't N+1
         Flow.prefetch_run_counts(page, using=using)
-        Flow.prefetch_activity_series(page, using=using)
+        Flow.prefetch_activity_series(page)
 
 
 class FlowLabelsEndpoint(ListAPIMixin, BaseEndpoint):

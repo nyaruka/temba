@@ -436,8 +436,8 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         counts = self.counts.prefix("node:").scope_totals()
         by_node = {scope[5:]: count for scope, count in counts.items() if count}
 
-        counts = self.counts.prefix("segment:").scope_totals()
-        by_segment = {scope[8:]: count for scope, count in counts.items() if count}
+        counts = FlowTally.get_prefix_totals(self, "segment:")
+        by_segment = {scope[8:]: count for scope, count in counts.items()}
 
         return by_node, by_segment
 
@@ -566,15 +566,23 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         return defaultdict(int, {scope[7:]: count for scope, count in counts.items()})
 
     @classmethod
-    def prefetch_activity_series(cls, flows, *, using="default"):
+    def _activity_series_scopes(cls) -> list[str]:
+        today = timezone.now().date()
+        return [f"msgsin:date:{today - timedelta(days=d)}" for d in range(cls.ACTIVITY_SERIES_DAYS - 1, -1, -1)]
+
+    @classmethod
+    def prefetch_activity_series(cls, flows):
         """
         Prefetches the counts required by get_activity_series
         """
 
-        since = timezone.now().date() - timedelta(days=cls.ACTIVITY_SERIES_DAYS - 1)
-        FlowActivityCount.prefetch_by_scope(
-            flows, prefix="msgsin:date:", to_attr="_msgsin_by_date", using=using, scope_gte=f"msgsin:date:{since}"
-        )
+        totals = FlowTally.get_totals_by_flow(flows, cls._activity_series_scopes())
+        by_flow = defaultdict(dict)
+        for (flow_id, scope), count in totals.items():
+            by_flow[flow_id][scope] = count
+
+        for flow in flows:
+            flow._msgsin_by_date = by_flow[flow.id]
 
     def get_activity_series(self) -> list[int]:
         """
@@ -582,18 +590,14 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         view sparkline. Empty if there's been no engagement in the window.
         """
 
-        today = timezone.now().date()
+        scopes = self._activity_series_scopes()
 
         if hasattr(self, "_msgsin_by_date"):
             counts = self._msgsin_by_date
         else:
-            since = today - timedelta(days=self.ACTIVITY_SERIES_DAYS - 1)
-            counts = self.counts.prefix("msgsin:date:").filter(scope__gte=f"msgsin:date:{since}").scope_totals()
+            counts = FlowTally.get_totals(self, scopes)
 
-        series = [
-            counts.get(f"msgsin:date:{today - timedelta(days=offset)}", 0)
-            for offset in range(self.ACTIVITY_SERIES_DAYS - 1, -1, -1)
-        ]
+        series = [counts.get(scope, 0) for scope in scopes]
         return series if any(series) else []
 
     def as_json(self, context=None) -> dict:
@@ -922,7 +926,7 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         """
         Gets earliest date of recorded engagement (i.e. messages in) for this flow.
         """
-        first = self.counts.prefix("msgsin:date:").order_by("scope").first()
+        first = self.tallies.filter(scope__startswith="msgsin:date:").order_by("scope").first()
 
         utc_timezone = tzone.utc
 
@@ -938,7 +942,7 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
             rollup_by = "week"
 
         dates = (
-            self.counts.prefix("msgsin:date:")
+            self.tallies.filter(scope__startswith="msgsin:date:")
             .extra({"date": f"date_trunc('{rollup_by}', split_part(scope, ':', 3)::date)"})
             .values("date")
             .annotate(count=Sum("count"))
@@ -962,7 +966,7 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         """
 
         counts = (
-            self.counts.prefix("msgsin:date:")
+            self.tallies.filter(scope__startswith="msgsin:date:")
             .extra({"dow": "extract(dow FROM split_part(scope, ':', 3)::date)::int"})
             .values("dow")
             .annotate(count=Sum("count"))
@@ -982,7 +986,7 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
             """
             return (int(scope[12:]) + offset) % 24
 
-        counts = self.counts.prefix("msgsin:hour:").scope_totals()
+        counts = FlowTally.get_totals(self, [f"msgsin:hour:{h}" for h in range(24)])
         return {parse(scope): count for scope, count in counts.items()}
 
     def release(self, user, *, interrupt_sessions: bool = True):
@@ -1367,11 +1371,14 @@ class FlowActivityCount(BaseScopedCount):
     flow = models.ForeignKey(Flow, on_delete=models.PROTECT, related_name="counts", db_index=False)  # indexed below
 
     @classmethod
-    def prefetch_by_scope(cls, flows, *, prefix: str, to_attr: str, using: str, scope_gte: str = None):
-        counts = cls.objects.using(using).filter(flow__in=flows).prefix(prefix)
-        if scope_gte:
-            counts = counts.filter(scope__gte=scope_gte)
-        counts = counts.values_list("flow_id", "scope").annotate(total=Sum("count"))
+    def prefetch_by_scope(cls, flows, *, prefix: str, to_attr: str, using: str):
+        counts = (
+            cls.objects.using(using)
+            .filter(flow__in=flows)
+            .prefix(prefix)
+            .values_list("flow_id", "scope")
+            .annotate(total=Sum("count"))
+        )
         by_flow = defaultdict(dict)
         for count in counts:
             by_flow[count[0]][count[1]] = count[2]
