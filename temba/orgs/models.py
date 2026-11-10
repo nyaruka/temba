@@ -442,6 +442,13 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         )
 
     @property
+    def has_flow_email(self) -> bool:
+        """
+        Whether flows can send email at all: with SMTP settings of our own or our parent's, or the shared email service
+        """
+        return bool(self.flow_smtp or (self.is_child and self.parent.flow_smtp) or self.has_shared_email)
+
+    @property
     def is_verified(self):
         """
         A verified org is not subject to automatic flagging for suspicious activity

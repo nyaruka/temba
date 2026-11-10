@@ -790,7 +790,7 @@ class FlowCRUDL(SmartCRUDL):
                 features.append("messaging")
             if org.supports_ivr():
                 features.append("ivr")
-            if org.flow_smtp or (org.is_child and org.parent.flow_smtp) or org.has_shared_email:
+            if org.has_flow_email:
                 features.append("email")
 
             return features
