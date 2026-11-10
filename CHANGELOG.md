@@ -1,3 +1,6 @@
+## v26.3.184 (2026-11-10)
+ * Add data migration to backfill flow segment and msgsin tallies from activity counts
+
 ## v26.3.183 (2026-11-10)
  * Add shared_email workspace feature for using the shared flow email service
 
