@@ -110,9 +110,9 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
         with patch.object(ExternalType, "is_available_to", lambda self, org, user: (False, True)):
             self.assertEqual(200, self.client.get(claim_url).status_code)
 
-        # e.g. SMSCentral is only available to orgs in Nepal but this org is in Rwanda
+        # e.g. M3 Tech is only available to orgs in Pakistan but this org is in Rwanda
         self.assertEqual("Africa/Kigali", str(self.org.timezone))
-        self.assertEqual(200, self.client.get(reverse("channels.types.smscentral.claim")).status_code)
+        self.assertEqual(200, self.client.get(reverse("channels.types.m3tech.claim")).status_code)
 
     def test_configuration(self):
         config_url = reverse("channels.channel_configuration", args=[self.ex_channel.uuid])

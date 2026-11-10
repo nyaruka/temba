@@ -684,22 +684,6 @@ msgstr ""
 msgid "Please enter a valid phone number"
 msgstr ""
 
-#, python-format
-msgid "If you are based in Uganda or DRC you can purchase a short code from %(link)s and connect it in a few simple steps."
-msgstr ""
-
-msgid "To finish configuring this channel, you need to set DMark to send MO messages to the URL below."
-msgstr ""
-
-msgid "Uganda"
-msgstr ""
-
-msgid "DRC"
-msgstr ""
-
-msgid "Unable to retrieve token, please check username and password"
-msgstr ""
-
 msgid "Use our pluggable API to connect an external service you already have."
 msgstr ""
 
@@ -859,15 +843,6 @@ msgid "If you are based in Somalia, you can get a number from %(link)s and conne
 msgstr ""
 
 msgid "To finish configuring this channel, you'll need to notify Hormuud of the following URL for incoming (MO) messages."
-msgstr ""
-
-msgid "Easily add a two way number you have configured with Hub9 in Indonesia."
-msgstr ""
-
-msgid "This endpoint should be called by Hub9 when new messages are received to your number. You can set the receive URL on your Hub9 account by contacting your sales agent."
-msgstr ""
-
-msgid "This endpoint should be called by Hub9 when a message has been to the final recipient. (delivery reports) You can set the delivery callback URL on your Hub9 account by contacting your sales agent."
 msgstr ""
 
 #, python-format
@@ -1053,28 +1028,6 @@ msgid "Messagebird API Auth Token"
 msgstr ""
 
 #, python-format
-msgid "If you are based in Jamaica, you can purchase a short code from %(link)s and connect it in a few simple steps."
-msgstr ""
-
-msgid "To finish configuring this channel, you'll need to set the following callback URLs on your Messangi account."
-msgstr ""
-
-msgid "To receive incoming messages, you need to set the receive URL for your Messangi account."
-msgstr ""
-
-msgid "Carrier Id"
-msgstr ""
-
-msgid "Public Key"
-msgstr ""
-
-msgid "Private Key"
-msgstr ""
-
-msgid "Instance Id"
-msgstr ""
-
-#, python-format
 msgid "If you have an %(link)s account, you can quickly connect it using their APIs."
 msgstr ""
 
@@ -1094,22 +1047,6 @@ msgid "Unable to add subscription callbacks: %s"
 msgstr ""
 
 msgid "Only needed if MTN provided one."
-msgstr ""
-
-#, python-format
-msgid "If you are based in Trinidad & Tobago, you can purchase a short code from %(link)s and connect it in a few simple steps."
-msgstr ""
-
-msgid "To receive incoming messages, you need to set the receive URL for your Novo account."
-msgstr ""
-
-msgid "Merchant ID"
-msgstr ""
-
-msgid "Provided by Novo and used to build your merchant URL."
-msgstr ""
-
-msgid "Merchant Secret"
 msgstr ""
 
 #, python-format
@@ -1260,12 +1197,6 @@ msgstr ""
 msgid "Your bot user token is invalid, please check and try again"
 msgstr ""
 
-msgid "To finish configuring this channel, you'll need to notify SMSCentral of the following URL."
-msgstr ""
-
-msgid "This endpoint should be called by SMSCentral when new messages are received to your number."
-msgstr ""
-
 msgid "Connect to a Somleng instance."
 msgstr ""
 
@@ -1337,6 +1268,9 @@ msgid "TTo finish configuring this channel, you'll need to provide Telesom with 
 msgstr ""
 
 msgid "Used to send messages."
+msgstr ""
+
+msgid "Private Key"
 msgstr ""
 
 #, python-format
@@ -4250,10 +4184,6 @@ msgid "Your 360Dialog WhatsApp channel is now connected, you should be able to s
 msgstr ""
 
 #, python-format
-msgid "You can connect your <a href=\"https://dmarkmobile.com/\">DMark Mobile</a> number to %(name)s using the fields below. You will first need to create a DMark Mobile account and receive a username and password from them to use below."
-msgstr ""
-
-#, python-format
 msgid "You can connect an external aggregator or messaging service to %(brand)s using our external API. You can specify parameters to substitute in the URL or body by using these variables:"
 msgstr ""
 
@@ -4566,18 +4496,6 @@ msgstr ""
 
 #, python-format
 msgid "Once you press Submit below with all the information configured, the confirmation page will give you the URL to use for the Messagebird Message Webhooks. You'll also receive a url for message status updates. You can configure this url in the Dashboard under Developers, API Settings. You'll need to provide this URL to the %(name)s team. You can also create a %(name)s flow to forward SMS messages to this URL."
-msgstr ""
-
-msgid "To finish configuring your Novo connection you'll need to set the following callback URLs on your Novo account."
-msgstr ""
-
-msgid "When a new message is received by your service, it should notify us with a POST to the following URL, passing the following parameters: 'from' and 'text'."
-msgstr ""
-
-msgid "Token"
-msgstr ""
-
-msgid "Use this Token as Authorization when sending incoming messages"
 msgstr ""
 
 msgid "Using account"

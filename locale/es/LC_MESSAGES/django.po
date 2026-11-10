@@ -698,22 +698,6 @@ msgstr "Se genera al registrar su cuenta de 360dialog."
 msgid "Please enter a valid phone number"
 msgstr "Por favor ingrese un número de teléfono válido"
 
-#, python-format
-msgid "If you are based in Uganda or DRC you can purchase a short code from %(link)s and connect it in a few simple steps."
-msgstr "Si tiene su sede en Uganda o la República Democrática del Congo, puede comprar un código corto de %(link)s y conectarlo en unos sencillos pasos."
-
-msgid "To finish configuring this channel, you need to set DMark to send MO messages to the URL below."
-msgstr "Para terminar de configurar este canal, debe configurar DMark para enviar mensajes MO a la URL de abajo."
-
-msgid "Uganda"
-msgstr "Uganda"
-
-msgid "DRC"
-msgstr "DRC"
-
-msgid "Unable to retrieve token, please check username and password"
-msgstr "No se puede recuperar el token, verifique el nombre de usuario y la contraseña"
-
 msgid "Use our pluggable API to connect an external service you already have."
 msgstr "Use nuestro API insertable para conectar un servicio externo que ya tenga."
 
@@ -874,15 +858,6 @@ msgstr "Si reside en Somalia, puede obtener un número de %(link)s y conectarlo 
 
 msgid "To finish configuring this channel, you'll need to notify Hormuud of the following URL for incoming (MO) messages."
 msgstr "Para terminar de configurar este canal, deberá notificar a Hormuud la siguiente URL para los mensajes entrantes (MO)."
-
-msgid "Easily add a two way number you have configured with Hub9 in Indonesia."
-msgstr "Agregue fácilmente un número bidireccional que haya configurado con Hub9 en Indonesia."
-
-msgid "This endpoint should be called by Hub9 when new messages are received to your number. You can set the receive URL on your Hub9 account by contacting your sales agent."
-msgstr "Hub9 debería llamar a este punto final cuando se reciban nuevos mensajes en su número. Puede configurar la URL de recepción en su cuenta de Hub9 comunicándose con su agente de ventas."
-
-msgid "This endpoint should be called by Hub9 when a message has been to the final recipient. (delivery reports) You can set the delivery callback URL on your Hub9 account by contacting your sales agent."
-msgstr "Hub9 debería llamar a este punto final cuando un mensaje haya llegado al destinatario final. (informes de entrega) Puede configurar la URL de Callback de entrega en su cuenta de Hub9 comunicándose con su agente de ventas."
 
 #, python-format
 msgid "If you have a long number or short code with %(link)s you can connect it in a few easy steps."
@@ -1067,28 +1042,6 @@ msgid "Messagebird API Auth Token"
 msgstr "Token de autenticación de la API de Messagebird"
 
 #, python-format
-msgid "If you are based in Jamaica, you can purchase a short code from %(link)s and connect it in a few simple steps."
-msgstr "Si reside en Jamaica, puede comprar un código corto de %(link)s y conectarlo en unos sencillos pasos."
-
-msgid "To finish configuring this channel, you'll need to set the following callback URLs on your Messangi account."
-msgstr "Para terminar de configurar este canal, deberá establecer las siguientes URL de callback en su cuenta de Messangi."
-
-msgid "To receive incoming messages, you need to set the receive URL for your Messangi account."
-msgstr "Para recibir mensajes entrantes, debe configurar la URL de recepción para su cuenta Messangi."
-
-msgid "Carrier Id"
-msgstr "Identificador de operador"
-
-msgid "Public Key"
-msgstr "Llave pública"
-
-msgid "Private Key"
-msgstr "Llave privada"
-
-msgid "Instance Id"
-msgstr "ID de instancia"
-
-#, python-format
 msgid "If you have an %(link)s account, you can quickly connect it using their APIs."
 msgstr "Si tiene una cuenta %(link)s, puede conectarla rápidamente usando sus API."
 
@@ -1109,22 +1062,6 @@ msgstr "No se pudieron añadir los callbacks de suscripción: %s"
 
 msgid "Only needed if MTN provided one."
 msgstr "Solo es necesario si MTN le proporcionó una."
-
-#, python-format
-msgid "If you are based in Trinidad & Tobago, you can purchase a short code from %(link)s and connect it in a few simple steps."
-msgstr "Si reside en Trinidad y Tobago, puede comprar un código corto de %(link)s y conectarlo en unos sencillos pasos."
-
-msgid "To receive incoming messages, you need to set the receive URL for your Novo account."
-msgstr "Para recibir mensajes entrantes, debe configurar la URL de recepción para su cuenta Novo."
-
-msgid "Merchant ID"
-msgstr "Identificación del comerciante"
-
-msgid "Provided by Novo and used to build your merchant URL."
-msgstr "Proporcionado por Novo y utilizado para construir su URL de comerciante."
-
-msgid "Merchant Secret"
-msgstr "Secreto del comerciante"
 
 #, python-format
 msgid "If you are based in Uzbekistan, you can purchase a short code from %(link)s and connect it in a few simple steps."
@@ -1274,12 +1211,6 @@ msgstr "Su token de usuario no es válido, verifíquelo y vuelva a intentarlo"
 msgid "Your bot user token is invalid, please check and try again"
 msgstr "Su token de usuario del bot no es válido, verifíquelo y vuelva a intentarlo"
 
-msgid "To finish configuring this channel, you'll need to notify SMSCentral of the following URL."
-msgstr "Para terminar de configurar este canal, deberá notificar a SMSCentral la siguiente URL."
-
-msgid "This endpoint should be called by SMSCentral when new messages are received to your number."
-msgstr "SMSCentral debe llamar a este punto final cuando se reciban nuevos mensajes en su número."
-
 msgid "Connect to a Somleng instance."
 msgstr "Conéctese a una instancia de Somleng."
 
@@ -1352,6 +1283,9 @@ msgstr "Para terminar de configurar este canal, deberá proporcionar a Telesom l
 
 msgid "Used to send messages."
 msgstr "Se usa para enviar mensajes."
+
+msgid "Private Key"
+msgstr "Llave privada"
 
 #, python-format
 msgid "If you have a number with %(link)s you can connect it in a few easy steps to automate your SMS numbers."
@@ -4265,10 +4199,6 @@ msgid "Your 360Dialog WhatsApp channel is now connected, you should be able to s
 msgstr "Su canal 360Dialog WhatsApp ahora está conectado, debería poder enviar y recibir mensajes como de costumbre."
 
 #, python-format
-msgid "You can connect your <a href=\"https://dmarkmobile.com/\">DMark Mobile</a> number to %(name)s using the fields below. You will first need to create a DMark Mobile account and receive a username and password from them to use below."
-msgstr "Puede conectar su número de <a href=\"https://dmarkmobile.com/\">DMark Mobile</a> a %(name)s utilizando los campos de abajo. Primero deberá crear una cuenta de DMark Mobile y obtener de ellos un nombre de usuario y una contraseña para utilizarlos a continuación."
-
-#, python-format
 msgid "You can connect an external aggregator or messaging service to %(brand)s using our external API. You can specify parameters to substitute in the URL or body by using these variables:"
 msgstr "Puede conectar un agregador externo o un servicio de mensajería a %(brand)s usando nuestra API externa. Puede especificar parámetros para sustituir en la URL o el cuerpo mediante estas variables:"
 
@@ -4582,18 +4512,6 @@ msgstr "Por último, necesitará el número de teléfono o código corto que %(n
 #, python-format
 msgid "Once you press Submit below with all the information configured, the confirmation page will give you the URL to use for the Messagebird Message Webhooks. You'll also receive a url for message status updates. You can configure this url in the Dashboard under Developers, API Settings. You'll need to provide this URL to the %(name)s team. You can also create a %(name)s flow to forward SMS messages to this URL."
 msgstr "Una vez que pulse Enviar abajo con toda la información configurada, la página de confirmación le dará la URL que debe utilizar para los webhooks de mensajes de Messagebird. También recibirá una URL para las actualizaciones de estado de los mensajes. Puede configurar esta URL en el panel, en Developers, API Settings. Deberá proporcionar esta URL al equipo de %(name)s. También puede crear un flujo de %(name)s para reenviar los mensajes SMS a esta URL."
-
-msgid "To finish configuring your Novo connection you'll need to set the following callback URLs on your Novo account."
-msgstr "Para terminar de configurar su conexión de Novo, deberá establecer las siguientes URL de Callback en su cuenta de Novo."
-
-msgid "When a new message is received by your service, it should notify us with a POST to the following URL, passing the following parameters: 'from' and 'text'."
-msgstr "Cuando su servicio recibe un nuevo mensaje, debe notificarnos con un POST a la siguiente URL, pasando los siguientes parámetros: 'de' y 'texto'."
-
-msgid "Token"
-msgstr "Simbólico"
-
-msgid "Use this Token as Authorization when sending incoming messages"
-msgstr "Utilice este token como autorización al enviar mensajes entrantes"
 
 msgid "Using account"
 msgstr "Usando la cuenta"
