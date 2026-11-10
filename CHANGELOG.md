@@ -1,3 +1,9 @@
+## v26.3.185 (2026-11-10)
+ * Read flow segment and msgsin counts from flow tallies
+ * Clamp the flow engagement timeline to the last year of daily tallies
+ * Remove SMSCentral, Novo, Messangi, DMark and Hub9 channel types
+ * Warn in the flow editor when an action needs an email or channel the workspace lacks
+
 ## v26.3.184 (2026-11-10)
  * Add data migration to backfill flow segment and msgsin tallies from activity counts
 
