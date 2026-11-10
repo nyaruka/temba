@@ -10,8 +10,9 @@ def deactivate_removed_type_channels(apps, schema_editor):
 
     channels = list(Channel.objects.filter(channel_type__in=REMOVED_TYPES, is_active=True).only("id"))
 
-    # active triggers on an inactive channel would have to resolve the channel's type, which no longer exists
-    num_triggers = Trigger.objects.filter(channel__in=channels, is_active=True).update(
+    # active triggers on a channel of a removed type, even an already inactive one, would have to resolve the
+    # channel's type, which no longer exists
+    num_triggers = Trigger.objects.filter(channel__channel_type__in=REMOVED_TYPES, is_active=True).update(
         is_active=False, is_archived=True, modified_on=timezone.now()
     )
 
