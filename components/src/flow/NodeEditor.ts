@@ -107,6 +107,8 @@ export class NodeEditor extends RapidElement {
         gap: 12px;
         padding: 12px 20px;
         border-bottom: 1px solid #f3dcae;
+        /* follows the rounded top of the dialog sheet it sits at the top of */
+        border-radius: 16px 16px 0 0;
         background: #fffaf0;
         color: #3f3f46;
         font-size: 14px;
