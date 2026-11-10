@@ -24,7 +24,7 @@ from django.contrib.staticfiles import finders
 from django.core.files import File
 from django.core.files.storage import default_storage
 from django.core.validators import MaxValueValidator
-from django.db import connection, models, transaction
+from django.db import DEFAULT_DB_ALIAS, connection, connections, models, transaction
 from django.db.models import Count, Exists, Prefetch, Q
 from django.utils import timezone
 from django.utils.encoding import force_str
@@ -1917,22 +1917,28 @@ class OrgTally(BaseTally):
         return cls._get_totals([o.id for o in orgs], scopes)
 
     @classmethod
-    def get_daily_totals(cls, org, scopes: list[str], since: date, until: date) -> dict[tuple[date, str], int]:
+    def get_daily_totals(
+        cls, org, scopes: list[str], since: date, until: date, using: str = DEFAULT_DB_ALIAS
+    ) -> dict[tuple[date, str], int]:
         """
         Gets totals by day and scope for the given undated scopes over days from since up to until, omitting those with
-        no total.
+        no total. See get_daily_totals_by_org for using.
         """
-        totals = cls.get_daily_totals_by_org([org], scopes, since, until)
+        totals = cls.get_daily_totals_by_org([org], scopes, since, until, using=using)
         return {(day, scope): count for (_, day, scope), count in totals.items()}
 
     @classmethod
     def get_daily_totals_by_org(
-        cls, orgs, scopes: list[str], since: date, until: date
+        cls, orgs, scopes: list[str], since: date, until: date, using: str = DEFAULT_DB_ALIAS
     ) -> dict[tuple[int, date, str], int]:
         """
         Gets totals by org id, day and scope for the given undated scopes in each of the given orgs over days from since
         up to until, omitting those with no total. Only today's are read from Valkey too, as earlier days have been
         flushed.
+
+        Earlier days are read from the database named by using, e.g. a read replica. Today's always come from the
+        default database, as they must be read at the same moment as Valkey, which a lagging replica isn't, so it could
+        be missing a batch which has just been flushed out of Valkey.
         """
         org_ids = list(dict.fromkeys(o.id for o in orgs))
         scopes = list(dict.fromkeys(scopes))
@@ -1947,7 +1953,7 @@ class OrgTally(BaseTally):
             conds = " OR ".join(["(scope >= %s AND scope < %s)"] * len(scopes))
             bounds = [f"{s}@{d.isoformat()}" for s in scopes for d in (since, before)]
 
-            with connection.cursor() as cursor:
+            with connections[using].cursor() as cursor:
                 cursor.execute(
                     f"SELECT org_id, scope, count FROM orgs_orgtally WHERE org_id = ANY(%s) AND ({conds})",
                     [org_ids, *bounds],
