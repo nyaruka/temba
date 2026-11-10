@@ -1929,15 +1929,19 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         response = self.requestView(timeline_url, self.admin).json()
         self.assertEqual({"labels": [], "datasets": [{"label": "Messages", "data": []}]}, response["data"])
 
-        # only the last year of days is included, even if older ones haven't been trimmed yet
+        # days are rolled up into weeks starting on Mondays, and only the last year of days is included, even if older
+        # ones haven't been trimmed yet
         flow1.tallies.create(scope="msgsin:date:2023-11-26", count=5)  # 1 day too old
-        flow1.tallies.create(scope="msgsin:date:2023-11-27", count=50)
+        flow1.tallies.create(scope="msgsin:date:2023-11-27", count=50)  # Monday
+        flow1.tallies.create(scope="msgsin:date:2023-11-29", count=4)
+        flow1.tallies.create(scope="msgsin:date:2024-11-20", count=2)
+        flow1.tallies.create(scope="msgsin:date:2024-11-24", count=1)  # Sunday
         flow1.tallies.create(scope="msgsin:date:2024-11-25", count=8)
         flow1.tallies.create(scope="msgsin:hour:9", count=3)
 
         response = self.requestView(timeline_url, self.admin).json()
-        self.assertEqual(["2023-11-27", "2024-11-25"], response["data"]["labels"])
-        self.assertEqual([50, 8], response["data"]["datasets"][0]["data"])
+        self.assertEqual(["2023-11-27", "2024-11-18", "2024-11-25"], response["data"]["labels"])
+        self.assertEqual([54, 3, 8], response["data"]["datasets"][0]["data"])
 
     @patch("django.utils.timezone.now")
     def test_engagement_progress(self, mock_now):

@@ -927,17 +927,23 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
 
     def get_engagement_timeline(self) -> dict:
         """
-        Gets daily engagement counts (i.e. messages in) for the last ENGAGEMENT_TIMELINE_DAYS days.
+        Gets engagement counts (i.e. messages in) for the last ENGAGEMENT_TIMELINE_DAYS days, rolled up into weeks
+        starting on Mondays so that a year of them is still readable as a bar chart.
         """
         since = timezone.now().date() - timedelta(days=self.ENGAGEMENT_TIMELINE_DAYS - 1)
 
-        counts = (
+        daily = (
             self.tallies.filter(scope__startswith="msgsin:date:", scope__gte=f"msgsin:date:{since}")
             .order_by("scope")
             .values_list("scope", "count")
         )
 
-        return {"dates": [date.fromisoformat(scope[12:]) for scope, _ in counts], "counts": [c for _, c in counts]}
+        weekly = defaultdict(int)
+        for scope, count in daily:
+            day = date.fromisoformat(scope[12:])
+            weekly[day - timedelta(days=day.weekday())] += count
+
+        return {"dates": list(weekly.keys()), "counts": list(weekly.values())}
 
     def get_engagement_by_weekday(self) -> dict[int, int]:
         """
