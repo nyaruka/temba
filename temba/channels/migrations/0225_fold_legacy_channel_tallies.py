@@ -4,24 +4,27 @@ BATCH_SIZE = 5_000
 
 # each batch deletes legacy rows and adds them onto channel tallies in one statement, so a re-run only moves rows that
 # have been flushed since. Rows for channels that don't exist in that org are deleted without being moved because
-# nothing can read them. Expiry dates are kept unless either row has none, as that means kept forever.
+# nothing can read them, and channels are locked so that one deleted mid-batch is skipped rather than failing the
+# insert. Expiry dates are kept unless either row has none, as that means kept forever.
 FOLD_SQL = r"""
 WITH legacy AS (
     DELETE FROM orgs_orgtally
      WHERE (org_id, scope) IN (
              SELECT org_id, scope
                FROM orgs_orgtally
-              WHERE org_id = %(org_id)s AND scope >= 'channels/' AND scope < 'channels0' AND scope ~ '^channels/[0-9]+/.'
+              WHERE org_id = %(org_id)s AND scope >= 'channels/' AND scope < 'channels0' AND scope ~ '^channels/[1-9][0-9]{0,17}/.'
            ORDER BY scope
               LIMIT %(batch_size)s
            )
  RETURNING org_id, substring(scope FROM '^channels/([0-9]+)/')::bigint AS channel_id,
            substring(scope FROM '^channels/[0-9]+/(.+)$') AS scope, count, expires_on
+), channels AS (
+    SELECT id, org_id FROM channels_channel WHERE id IN (SELECT channel_id FROM legacy) FOR KEY SHARE
 ), moved AS (
     INSERT INTO channels_channeltally AS t (channel_id, scope, count, expires_on)
          SELECT l.channel_id, l.scope, l.count, l.expires_on
            FROM legacy l
-           JOIN channels_channel c ON c.id = l.channel_id AND c.org_id = l.org_id
+           JOIN channels c ON c.id = l.channel_id AND c.org_id = l.org_id
     ON CONFLICT (channel_id, scope) DO UPDATE
             SET count = t.count + excluded.count,
                 expires_on = CASE

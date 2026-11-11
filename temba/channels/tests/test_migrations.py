@@ -122,6 +122,7 @@ class FoldLegacyChannelTalliesTest(MigrationTest):
         self.org.org_tallies.create(scope="msgs/text:in@2026-11-01", count=15)
         self.org.org_tallies.create(scope="channels/abc/text:in@2026-11-01", count=16)
         self.org.org_tallies.create(scope="channelsx/1/text:in@2026-11-01", count=17)
+        self.org.org_tallies.create(scope=f"channels/0{self.channel.id}/text:in@2026-11-01", count=18)
 
     def assertTallies(self, channel, expected: dict):
         self.assertEqual(
@@ -150,6 +151,7 @@ class FoldLegacyChannelTalliesTest(MigrationTest):
                 (self.org.id, "msgs/text:in@2026-11-01"): 15,
                 (self.org.id, "channels/abc/text:in@2026-11-01"): 16,
                 (self.org.id, "channelsx/1/text:in@2026-11-01"): 17,
+                (self.org.id, f"channels/0{self.channel.id}/text:in@2026-11-01"): 18,
             },
             {(t.org_id, t.scope): t.count for t in OrgTally.objects.all()},
         )
@@ -169,7 +171,9 @@ class FoldLegacyChannelTalliesTest(MigrationTest):
         fold(self.apps, None)
 
         self.assertEqual(23, self.channel.tallies.get(scope="text:in@2026-11-01").count)
-        self.assertFalse(OrgTally.objects.filter(scope__startswith="channels/").exclude(scope__contains="abc").exists())
+        self.assertFalse(
+            OrgTally.objects.filter(scope__startswith="channels/").exclude(scope__regex=r"^channels/(abc|0)").exists()
+        )
 
         # batches are bounded
         for d in range(1, 6):
