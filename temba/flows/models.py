@@ -1,3 +1,4 @@
+import base64
 import itertools
 import logging
 from array import array
@@ -439,10 +440,11 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         counts = self.counts.prefix("node:").scope_totals()
         by_node = {scope[5:]: count for scope, count in counts.items() if count}
 
-        counts = FlowTally.get_prefix_totals(self, "segment:")
-        by_segment = {scope[8:]: count for scope, count in counts.items()}
+        by_segment = defaultdict(int)
+        for scope, count in FlowTally.get_prefix_totals(self, "segment:").items():
+            by_segment[FlowTally.parse_segment_scope(scope)] += count
 
-        return by_node, by_segment
+        return by_node, dict(by_segment)
 
     def get_active_start(self):
         """
@@ -1449,6 +1451,21 @@ class FlowTally(BaseTally):
         flushed = cls.objects.filter(flow=flow, scope__startswith=prefix).values_list("scope", flat=True)
 
         return cls.get_totals(flow, [*scopes, *flushed])
+
+    @staticmethod
+    def parse_segment_scope(scope: str) -> str:
+        """
+        Parses a segment scope into the "<exit_uuid>:<node_uuid>" key the editor uses. The compact scope format is
+        base64url (no padding) of the two UUIDs' raw bytes concatenated.
+        """
+        key = scope.removeprefix("segment:")
+
+        # TODO remove once old format scopes have been squashed into the compact format
+        if ":" in key:
+            return key
+
+        raw = base64.urlsafe_b64decode(key + "=")
+        return f"{UUID(bytes=raw[:16])}:{UUID(bytes=raw[16:])}"
 
     class Meta:
         indexes = [

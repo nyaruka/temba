@@ -87,6 +87,36 @@ class FlowTallyTest(TembaTest):
         with self.assertRaises(AssertionError):
             FlowTally.get_prefix_totals(flow1, "segment:", ["result:color:red"])
 
+    def test_parse_segment_scope(self):
+        # vectors generated with Go's base64.RawURLEncoding so they match mailroom's encoding
+        vectors = [
+            (
+                "42af6e19-53ef-4fd9-8232-f202a3ea022b",
+                "1d4f25b2-c648-46cc-8116-be0ec6b6d34a",
+                "segment:Qq9uGVPvT9mCMvICo-oCKx1PJbLGSEbMgRa-Dsa200o",
+            ),
+            (
+                "2d7177e0-6bae-427f-9630-3823e2b8f1b2",
+                "46681864-8389-4875-8b88-2f9fe241ea3f",
+                "segment:LXF34GuuQn-WMDgj4rjxskZoGGSDiUh1i4gvn-JB6j8",
+            ),
+            (
+                "00000000-0000-0000-0000-000000000000",
+                "ffffffff-ffff-ffff-ffff-ffffffffffff",
+                "segment:AAAAAAAAAAAAAAAAAAAAAP____________________8",
+            ),
+            (
+                "fbfffbff-fbff-fbff-fbff-fbfffbfffbff",
+                "3e3f3e3f-3e3f-3e3f-3e3f-3e3f3e3f3e3f",
+                "segment:-__7__v_-__7__v_-__7_z4_Pj8-Pz4_Pj8-Pz4_Pj8",
+            ),
+        ]
+        for exit_uuid, node_uuid, scope in vectors:
+            self.assertEqual(f"{exit_uuid}:{node_uuid}", FlowTally.parse_segment_scope(scope))
+            self.assertEqual(
+                f"{exit_uuid}:{node_uuid}", FlowTally.parse_segment_scope(f"segment:{exit_uuid}:{node_uuid}")
+            )
+
     def test_upsert(self):
         # check the primary key can be the target of the upserts used for flushing
         flow = self.create_flow("Test")
