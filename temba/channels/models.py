@@ -1,5 +1,6 @@
 import logging
 from abc import ABCMeta
+from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from enum import Enum
@@ -23,7 +24,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 from temba import mailroom
-from temba.orgs.models import DependencyMixin, Org, OrgTally
+from temba.orgs.models import BaseTally, DependencyMixin, Org, OrgTally
 from temba.utils import dynamo, on_transaction_commit, redact
 from temba.utils.models import (
     JSONAsTextField,
@@ -287,7 +288,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         (ENCODING_UNICODE, _("Unicode Encoding")),
     )
 
-    # suffixes of the per-channel message tally scopes
+    # undated scopes of the channel message tallies
     TALLY_TEXT_IN = "text:in"
     TALLY_TEXT_OUT = "text:out"
     TALLY_VOICE_IN = "voice:in"
@@ -680,6 +681,8 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         delete_in_batches(self.sync_events.all())
         delete_in_batches(self.http_logs.all())
         delete_in_batches(self.template_translations.all())
+        delete_in_batches(self.tallies.all(), pk="pk")
+        # TODO remove once channel tallies are no longer written as org tallies
         delete_in_batches(self.org.org_tallies.filter(scope__startswith=f"channels/{self.id}/"), pk="pk")
 
         super().delete()
@@ -688,9 +691,8 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         """
         Gets message counts by day and scope, e.g. text:in, over days from since up to until.
         """
-        prefix = f"channels/{self.id}/"
-        totals = OrgTally.get_daily_totals(self.org, [prefix + s for s in self.TALLY_SCOPES], since, until)
-        return {(day, scope.removeprefix(prefix)): count for (day, scope), count in totals.items()}
+        totals = ChannelTally.get_daily_totals_by_channel([self], list(self.TALLY_SCOPES), since, until)
+        return {(day, scope): count for (_, day, scope), count in totals.items()}
 
     class Meta:
         ordering = ("-last_seen", "-pk")
@@ -701,6 +703,43 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
                 fields=("last_seen",),
                 condition=Q(channel_type="A", is_active=True, last_seen__isnull=False),
             ),
+        ]
+
+
+class ChannelTally(BaseTally):
+    """
+    Channel-level totals of things which only go up, e.g. daily message counts.
+    """
+
+    owner_field = "channel"
+    field_prefixes = ("C",)
+
+    pk = models.CompositePrimaryKey("channel", "scope")
+    channel = models.ForeignKey(Channel, on_delete=models.PROTECT, related_name="tallies", db_index=False)  # leads key
+
+    @classmethod
+    def get_daily_totals_by_channel(
+        cls, channels, scopes: list[str], since: date, until: date
+    ) -> dict[tuple[int, date, str], int]:
+        """
+        Gets totals by channel id, day and scope for the given undated scopes of each of the given channels over days
+        from since up to until, omitting those with no total.
+        """
+        totals = defaultdict(int, cls._get_daily_totals([c.id for c in channels], scopes, since, until))
+
+        # TODO remove once channel tallies are no longer written as org tallies and those have been moved here
+        legacy = {f"channels/{c.id}/{s}": (c.id, s) for c in channels for s in scopes}
+        org_ids = [c.org_id for c in channels]
+        for (_org_id, day, scope), count in OrgTally._get_daily_totals(org_ids, list(legacy), since, until).items():
+            channel_id, undated = legacy[scope]
+            totals[(channel_id, day, undated)] += count
+
+        return dict(totals)
+
+    class Meta:
+        indexes = [
+            # for trimming
+            models.Index(name="channeltally_expires_on", fields=("expires_on",), condition=Q(expires_on__isnull=False))
         ]
 
 

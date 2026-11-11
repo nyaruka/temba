@@ -679,16 +679,22 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         """
         Estimates the time it will take to send the given number of messages
         """
+        from temba.channels.models import Channel, ChannelTally
+
         channels = list(self.channels.filter(is_active=True))
         channel_counts = {}
         today = timezone.now().date()
         total_count = 0
 
-        scopes = [f"channels/{c.id}/{s}" for c in channels for s in ("text:in", "text:out")]
-        daily_totals = OrgTally.get_daily_totals(self, scopes, today - timedelta(days=30), today + timedelta(days=1))
+        daily_totals = ChannelTally.get_daily_totals_by_channel(
+            channels,
+            [Channel.TALLY_TEXT_IN, Channel.TALLY_TEXT_OUT],
+            today - timedelta(days=30),
+            today + timedelta(days=1),
+        )
         counts_by_channel = defaultdict(int)
-        for (_day, scope), count in daily_totals.items():
-            counts_by_channel[int(scope.split("/")[1])] += count
+        for (channel_id, _day, _scope), count in daily_totals.items():
+            counts_by_channel[channel_id] += count
 
         for channel in channels:
             channel_count = counts_by_channel[channel.id]
@@ -1887,6 +1893,50 @@ class BaseTally(models.Model):
         # totals which can go down may be buffered back to zero
         return {k: v for k, v in totals.items() if v != 0}, consistent
 
+    @classmethod
+    def _get_daily_totals(
+        cls, owner_ids: list[int], scopes: list[str], since: date, until: date, using: str = DEFAULT_DB_ALIAS
+    ) -> dict[tuple[int, date, str], int]:
+        """
+        Gets totals by owner id, day and scope for the given undated scopes of each of the given owners over days from
+        since up to until, omitting those with no total. Only today's are read from Valkey too, as earlier days have
+        been flushed.
+
+        Earlier days are read from the database named by using, e.g. a read replica. Today's always come from the
+        default database, as they must be read at the same moment as Valkey, which a lagging replica isn't, so it could
+        be missing a batch which has just been flushed out of Valkey.
+        """
+        owner_ids = list(dict.fromkeys(owner_ids))
+        scopes = list(dict.fromkeys(scopes))
+        if not owner_ids or not scopes:
+            return {}
+
+        today = timezone.now().date()
+        totals = {}
+
+        # each scope's dated rows are a range of the primary key, as dates are fixed width
+        if since < (before := min(until, today)):
+            conds = " OR ".join(["(scope >= %s AND scope < %s)"] * len(scopes))
+            bounds = [f"{s}@{d.isoformat()}" for s in scopes for d in (since, before)]
+
+            with connections[using].cursor() as cursor:
+                cursor.execute(
+                    f"SELECT {cls.owner_field}_id, scope, count FROM {cls._meta.db_table} "
+                    f"WHERE {cls.owner_field}_id = ANY(%s) AND ({conds})",
+                    [owner_ids, *bounds],
+                )
+
+                for owner_id, scope, count in cursor.fetchall():
+                    undated, day = scope.rsplit("@", 1)
+                    totals[(owner_id, date.fromisoformat(day), undated)] = count
+
+        if since <= today < until:
+            suffix = f"@{today.isoformat()}"
+            for (owner_id, scope), count in cls._get_totals(owner_ids, [s + suffix for s in scopes]).items():
+                totals[(owner_id, today, scope.removesuffix(suffix))] = count
+
+        return totals
+
     class Meta:
         abstract = True
 
@@ -1922,7 +1972,7 @@ class OrgTally(BaseTally):
     ) -> dict[tuple[date, str], int]:
         """
         Gets totals by day and scope for the given undated scopes over days from since up to until, omitting those with
-        no total. See get_daily_totals_by_org for using.
+        no total. See BaseTally._get_daily_totals for using.
         """
         totals = cls.get_daily_totals_by_org([org], scopes, since, until, using=using)
         return {(day, scope): count for (_, day, scope), count in totals.items()}
@@ -1933,42 +1983,9 @@ class OrgTally(BaseTally):
     ) -> dict[tuple[int, date, str], int]:
         """
         Gets totals by org id, day and scope for the given undated scopes in each of the given orgs over days from since
-        up to until, omitting those with no total. Only today's are read from Valkey too, as earlier days have been
-        flushed.
-
-        Earlier days are read from the database named by using, e.g. a read replica. Today's always come from the
-        default database, as they must be read at the same moment as Valkey, which a lagging replica isn't, so it could
-        be missing a batch which has just been flushed out of Valkey.
+        up to until, omitting those with no total.
         """
-        org_ids = list(dict.fromkeys(o.id for o in orgs))
-        scopes = list(dict.fromkeys(scopes))
-        if not org_ids or not scopes:
-            return {}
-
-        today = timezone.now().date()
-        totals = {}
-
-        # each scope's dated rows are a range of the primary key, as dates are fixed width
-        if since < (before := min(until, today)):
-            conds = " OR ".join(["(scope >= %s AND scope < %s)"] * len(scopes))
-            bounds = [f"{s}@{d.isoformat()}" for s in scopes for d in (since, before)]
-
-            with connections[using].cursor() as cursor:
-                cursor.execute(
-                    f"SELECT org_id, scope, count FROM orgs_orgtally WHERE org_id = ANY(%s) AND ({conds})",
-                    [org_ids, *bounds],
-                )
-
-                for org_id, scope, count in cursor.fetchall():
-                    undated, day = scope.rsplit("@", 1)
-                    totals[(org_id, date.fromisoformat(day), undated)] = count
-
-        if since <= today < until:
-            suffix = f"@{today.isoformat()}"
-            for (org_id, scope), count in cls.get_totals_by_org(orgs, [s + suffix for s in scopes]).items():
-                totals[(org_id, today, scope.removesuffix(suffix))] = count
-
-        return totals
+        return cls._get_daily_totals([o.id for o in orgs], scopes, since, until, using=using)
 
     class Meta:
         indexes = [

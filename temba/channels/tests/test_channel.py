@@ -14,7 +14,7 @@ from temba.triggers.models import Trigger
 from temba.utils import json
 from temba.utils.views.mixins import TEMBA_MENU_SELECTION
 
-from ..models import COURIER_QUEUE_STATE_KEY, Channel, SyncEvent
+from ..models import COURIER_QUEUE_STATE_KEY, Channel, ChannelTally, SyncEvent
 
 
 class ChannelTest(TembaTest, CRUDLTestMixin):
@@ -195,6 +195,8 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.org.org_tallies.create(scope=f"channels/{channel2.id}/text:in@2026-11-03", count=4)
         self.org.org_tallies.create(scope=f"channels/{channel1_id}0/text:in@2026-11-03", count=5)
         self.org.org_tallies.create(scope="msgs/text:in@2026-11-03", count=7)
+        channel1.tallies.create(scope="text:in@2026-11-04", count=1)
+        channel2.tallies.create(scope="text:in@2026-11-04", count=2)
 
         # add channel to a flow as a dependency
         flow.channel_dependencies.add(channel1)
@@ -231,6 +233,9 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
                 "msgs/text:in@2026-11-03",
             },
             set(self.org.org_tallies.values_list("scope", flat=True)),
+        )
+        self.assertEqual(
+            {(channel2.id, "text:in@2026-11-04")}, set(ChannelTally.objects.values_list("channel", "scope"))
         )
 
     def test_release_facebook(self):
@@ -307,7 +312,7 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.create_channel_tally(self.tel_channel, "text:in", date(2020, 1, 20), 1)
         self.create_channel_tally(self.tel_channel, "text:out", date(2020, 1, 20), 2)
         self.create_channel_tally(self.tel_channel, "text:out", date(2019, 12, 1), 5)  # outside of period
-        self.create_channel_tally(self.channel, "text:out", date(2020, 1, 20), 4)  # other channel
+        self.create_channel_tally(self.facebook_channel, "text:out", date(2020, 1, 20), 4)  # other channel
 
         with patch("django.utils.timezone.now", return_value=datetime(2020, 1, 20, 0, 0, 0, 0, tzone.utc)):
             response = self.requestView(chart_url, self.admin)

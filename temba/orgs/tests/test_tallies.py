@@ -7,6 +7,7 @@ from django.db import connection, connections
 from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
+from temba.channels.models import ChannelTally
 from temba.flows.models import FlowTally
 from temba.orgs.models import OrgTally, TallyFlush
 from temba.orgs.tasks import trim_tallies
@@ -220,10 +221,13 @@ class TallyTest(TembaTest):
         tally3 = self.org.org_tallies.create(scope="foo/2@2025-11-02", count=1, expires_on=today)
         flow_tally1 = flow.tallies.create(scope="foo/1", count=1)
         flow.tallies.create(scope="foo/2@2025-11-01", count=1, expires_on=today - timedelta(days=1))
+        channel_tally1 = self.channel.tallies.create(scope="text:in@2025-11-02", count=1, expires_on=today)
+        self.channel.tallies.create(scope="text:in@2025-11-01", count=1, expires_on=today - timedelta(days=1))
 
-        self.assertEqual({"deleted": 2}, trim_tallies())
+        self.assertEqual({"deleted": 3}, trim_tallies())
         self.assertEqual({tally1, tally3}, set(OrgTally.objects.all()))
         self.assertEqual({flow_tally1}, set(FlowTally.objects.all()))
+        self.assertEqual({channel_tally1}, set(ChannelTally.objects.all()))
 
     def test_upsert(self):
         # check the primary key can be the target of the upserts used for flushing
