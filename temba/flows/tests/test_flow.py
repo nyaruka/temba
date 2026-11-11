@@ -534,6 +534,10 @@ class FlowTest(TembaTest, CRUDLTestMixin):
         # flow 2 has no segments in its definition
         self.assertEqual(({}, {}), flow2.get_activity())
 
+        # nor does a flow with no revisions
+        flow3 = Flow.create(self.org, self.admin, "No Revisions")
+        self.assertEqual(({}, {}), flow3.get_activity())
+
     def test_get_category_counts(self):
         flow = self.create_flow("Favorites")
         flow.info = {

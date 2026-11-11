@@ -442,7 +442,8 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
 
         # segments are looked up from the definition, rather than found among flushed tallies, so that ones still only
         # buffered in Valkey are counted, and the number looked up is bounded by the flow's size, not its history
-        nodes = self.get_definition().get(Flow.DEFINITION_NODES, [])
+        rev = self.get_current_revision()
+        nodes = rev.definition.get(Flow.DEFINITION_NODES, []) if rev else []
         keys_by_scope = {
             FlowTally.segment_scope(e["uuid"], e["destination_uuid"]): f"{e['uuid']}:{e['destination_uuid']}"
             for n in nodes
