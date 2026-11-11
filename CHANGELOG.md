@@ -1,3 +1,6 @@
+## v26.3.189 (2026-11-11)
+ * Fold old format segment tallies into compact scopes
+
 ## v26.3.188 (2026-11-11)
  * Read flow segment tallies in both old and compact scope formats
 
