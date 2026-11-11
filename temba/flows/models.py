@@ -440,11 +440,19 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         counts = self.counts.prefix("node:").scope_totals()
         by_node = {scope[5:]: count for scope, count in counts.items() if count}
 
-        by_segment = defaultdict(int)
-        for scope, count in FlowTally.get_prefix_totals(self, "segment:").items():
-            by_segment[FlowTally.parse_segment_scope(scope)] += count
+        # segments are looked up from the definition, rather than found among flushed tallies, so that ones still only
+        # buffered in Valkey are counted, and the number looked up is bounded by the flow's size, not its history
+        nodes = self.get_definition().get(Flow.DEFINITION_NODES, [])
+        keys_by_scope = {
+            FlowTally.segment_scope(e["uuid"], e["destination_uuid"]): f"{e['uuid']}:{e['destination_uuid']}"
+            for n in nodes
+            for e in n.get("exits", [])
+            if e.get("destination_uuid")
+        }
+        totals = FlowTally.get_totals(self, list(keys_by_scope))
+        by_segment = {keys_by_scope[scope]: count for scope, count in totals.items()}
 
-        return by_node, {key: count for key, count in by_segment.items() if count}
+        return by_node, by_segment
 
     def get_active_start(self):
         """
@@ -1439,32 +1447,21 @@ class FlowTally(BaseTally):
         """
         return cls._get_totals([f.id for f in flows], scopes)
 
-    @classmethod
-    def get_prefix_totals(cls, flow, prefix: str, scopes: list[str] = ()) -> dict[str, int]:
+    @staticmethod
+    def segment_scope(exit_uuid: str, node_uuid: str) -> str:
         """
-        Gets totals by scope for all scopes with the given prefix, omitting those with no total. Valkey's hash can't be
-        searched by prefix so scopes are found in the database, plus any given ones the caller knows of, e.g. from the
-        flow definition. A scope that is neither given nor flushed yet is missed until it is.
+        Gets the scope of the segment from the given exit to the given node, which is base64url (no padding) of the two
+        UUIDs' raw bytes concatenated.
         """
-        assert all(s.startswith(prefix) for s in scopes), "given scopes must have the prefix"
-
-        flushed = cls.objects.filter(flow=flow, scope__startswith=prefix).values_list("scope", flat=True)
-
-        return cls.get_totals(flow, [*scopes, *flushed])
+        raw = UUID(exit_uuid).bytes + UUID(node_uuid).bytes
+        return "segment:" + base64.urlsafe_b64encode(raw).decode().rstrip("=")
 
     @staticmethod
     def parse_segment_scope(scope: str) -> str:
         """
-        Parses a segment scope into the "<exit_uuid>:<node_uuid>" key the editor uses. The compact scope format is
-        base64url (no padding) of the two UUIDs' raw bytes concatenated.
+        Parses a segment scope into the "<exit_uuid>:<node_uuid>" key the editor uses.
         """
-        key = scope.removeprefix("segment:")
-
-        # TODO remove once old format scopes have been squashed into the compact format
-        if ":" in key:
-            return key
-
-        raw = base64.urlsafe_b64decode(key + "=")
+        raw = base64.urlsafe_b64decode(scope.removeprefix("segment:") + "=")
         return f"{UUID(bytes=raw[:16])}:{UUID(bytes=raw[16:])}"
 
     class Meta:

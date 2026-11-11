@@ -12,6 +12,7 @@ from temba.flows.models import (
     FlowRun,
     FlowStart,
     FlowStartCount,
+    FlowTally,
     FlowUserConflictException,
     FlowVersionConflictException,
 )
@@ -470,59 +471,68 @@ class FlowTest(TembaTest, CRUDLTestMixin):
 
     @cleanup(valkey=True)
     def test_get_activity(self):
-        flow1 = self.create_flow("Test 1")
+        # node 1 exits to node 2 and nowhere, node 2 exits back to node 1
+        nodes = [
+            {
+                "uuid": "01c175da-d23d-40a4-a845-c4a9bb4b481a",
+                "actions": [],
+                "exits": [
+                    {
+                        "uuid": "1fff74f4-c81f-4f4c-a03d-58d113c17da1",
+                        "destination_uuid": "400d6b5e-c963-42a1-a06c-50bb9b1e38b1",
+                    },
+                    {"uuid": "6f607948-f3f0-4a6a-94b8-7fdd877895ca"},
+                ],
+            },
+            {
+                "uuid": "400d6b5e-c963-42a1-a06c-50bb9b1e38b1",
+                "actions": [],
+                "exits": [
+                    {
+                        "uuid": "a4fe3ada-b062-47e4-be58-bcbe1bca31b4",
+                        "destination_uuid": "01c175da-d23d-40a4-a845-c4a9bb4b481a",
+                    }
+                ],
+            },
+        ]
+        flow1 = self.create_flow("Test 1", nodes=nodes)
         flow2 = self.create_flow("Test 2")
+
+        seg1 = FlowTally.segment_scope("1fff74f4-c81f-4f4c-a03d-58d113c17da1", "01c175da-d23d-40a4-a845-c4a9bb4b481a")
+        seg2 = FlowTally.segment_scope("1fff74f4-c81f-4f4c-a03d-58d113c17da1", "400d6b5e-c963-42a1-a06c-50bb9b1e38b1")
+        seg3 = FlowTally.segment_scope("a4fe3ada-b062-47e4-be58-bcbe1bca31b4", "01c175da-d23d-40a4-a845-c4a9bb4b481a")
 
         flow1.counts.create(scope="node:01c175da-d23d-40a4-a845-c4a9bb4b481a", count=3)
         flow1.counts.create(scope="node:01c175da-d23d-40a4-a845-c4a9bb4b481a", count=1)
         flow1.counts.create(scope="node:400d6b5e-c963-42a1-a06c-50bb9b1e38b1", count=5)
 
-        flow1.tallies.create(
-            scope="segment:1fff74f4-c81f-4f4c-a03d-58d113c17da1:01c175da-d23d-40a4-a845-c4a9bb4b481a", count=3
-        )
-        get_valkey_connection().hset(
-            "{tallies}:live",
-            f"F{flow1.id}|segment:1fff74f4-c81f-4f4c-a03d-58d113c17da1:01c175da-d23d-40a4-a845-c4a9bb4b481a",
-            4,
-        )
-        flow1.tallies.create(
-            scope="segment:6f607948-f3f0-4a6a-94b8-7fdd877895ca:400d6b5e-c963-42a1-a06c-50bb9b1e38b1", count=5
-        )
-        flow2.tallies.create(
-            scope="segment:a4fe3ada-b062-47e4-be58-bcbe1bca31b4:74a53ff4-fe63-4d89-875e-cae3caca177c", count=6
-        )
-
-        # compact format scopes, one for a segment that also has an old format scope
-        flow1.tallies.create(scope="segment:Qq9uGVPvT9mCMvICo-oCKx1PJbLGSEbMgRa-Dsa200o", count=2)
-        flow1.tallies.create(
-            scope="segment:42af6e19-53ef-4fd9-8232-f202a3ea022b:1d4f25b2-c648-46cc-8116-be0ec6b6d34a", count=8
-        )
-        flow1.tallies.create(scope="segment:LXF34GuuQn-WMDgj4rjxskZoGGSDiUh1i4gvn-JB6j8", count=1)
-        get_valkey_connection().hset(
-            "{tallies}:live", f"F{flow1.id}|segment:LXF34GuuQn-WMDgj4rjxskZoGGSDiUh1i4gvn-JB6j8", 2
-        )
-
-        # a segment whose totals in the two formats cancel out is omitted
-        flow1.tallies.create(
-            scope="segment:00000000-0000-0000-0000-000000000000:ffffffff-ffff-ffff-ffff-ffffffffffff", count=3
-        )
-        flow1.tallies.create(scope="segment:AAAAAAAAAAAAAAAAAAAAAP____________________8", count=-3)
+        # a segment no longer in the definition is ignored, a flushed one has its buffered amount added, and one only
+        # buffered in Valkey is still counted
+        flow1.tallies.create(scope=seg1, count=9)
+        flow1.tallies.create(scope=seg2, count=3)
+        r = get_valkey_connection()
+        r.hset("{tallies}:live", mapping={f"F{flow1.id}|{seg2}": 4, f"F{flow1.id}|{seg3}": 2})
+        flow2.tallies.create(scope=seg3, count=6)
 
         self.assertEqual(
             (
                 {"01c175da-d23d-40a4-a845-c4a9bb4b481a": 4, "400d6b5e-c963-42a1-a06c-50bb9b1e38b1": 5},
                 {
-                    "1fff74f4-c81f-4f4c-a03d-58d113c17da1:01c175da-d23d-40a4-a845-c4a9bb4b481a": 7,
-                    "6f607948-f3f0-4a6a-94b8-7fdd877895ca:400d6b5e-c963-42a1-a06c-50bb9b1e38b1": 5,
-                    "42af6e19-53ef-4fd9-8232-f202a3ea022b:1d4f25b2-c648-46cc-8116-be0ec6b6d34a": 10,
-                    "2d7177e0-6bae-427f-9630-3823e2b8f1b2:46681864-8389-4875-8b88-2f9fe241ea3f": 3,
+                    "1fff74f4-c81f-4f4c-a03d-58d113c17da1:400d6b5e-c963-42a1-a06c-50bb9b1e38b1": 7,
+                    "a4fe3ada-b062-47e4-be58-bcbe1bca31b4:01c175da-d23d-40a4-a845-c4a9bb4b481a": 2,
                 },
             ),
             flow1.get_activity(),
         )
+
+        # a segment whose total is buffered back to zero is omitted
+        r.hset("{tallies}:live", f"F{flow1.id}|{seg3}", 0)
         self.assertEqual(
-            ({}, {"a4fe3ada-b062-47e4-be58-bcbe1bca31b4:74a53ff4-fe63-4d89-875e-cae3caca177c": 6}), flow2.get_activity()
+            {"1fff74f4-c81f-4f4c-a03d-58d113c17da1:400d6b5e-c963-42a1-a06c-50bb9b1e38b1": 7}, flow1.get_activity()[1]
         )
+
+        # flow 2 has no segments in its definition
+        self.assertEqual(({}, {}), flow2.get_activity())
 
     def test_get_category_counts(self):
         flow = self.create_flow("Favorites")
