@@ -1,3 +1,7 @@
+## v26.3.187 (2026-11-11)
+ * Remove the Mblox channel type
+ * Stop writing msgsin counts to flow activity counts
+
 ## v26.3.186 (2026-11-10)
  * Allow OrgTally daily totals for past days to be read from another database
  * Roll the flow responses chart up into weekly buckets, leaving out the partial first week
