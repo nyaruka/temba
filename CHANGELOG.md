@@ -1,3 +1,7 @@
+## v26.3.190 (2026-11-11)
+ * Add ChannelTally for channel-level tallies, reading legacy channel org tallies too
+ * Look up flow segment tallies from the definition and drop old format scope reading
+
 ## v26.3.189 (2026-11-11)
  * Fold old format segment tallies into compact scopes
 
