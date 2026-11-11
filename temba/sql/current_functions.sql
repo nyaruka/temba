@@ -411,18 +411,6 @@ BEGIN
     WHERE temba_msg_countscope(o) IS DISTINCT FROM temba_msg_countscope(n) AND temba_msg_countscope(n) IS NOT NULL
     GROUP BY 1, 2;
 
-    -- add new flow activity counts for incoming messages now marked as handled by a flow
-    INSERT INTO flows_flowactivitycount("flow_id", "scope", "count", "is_squashed")
-    SELECT s.flow_id, unnest(ARRAY[
-            format('msgsin:hour:%s', extract(hour FROM NOW())),
-            format('msgsin:date:%s', NOW()::date)
-        ]), s.msgs, FALSE
-    FROM (
-        SELECT n.flow_id, count(*) AS msgs FROM newtab n INNER JOIN oldtab o ON o.id = n.id
-        WHERE n.direction = 'I' AND o.flow_id IS NULL AND n.flow_id IS NOT NULL
-        GROUP BY 1
-    ) s;
-
     RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;

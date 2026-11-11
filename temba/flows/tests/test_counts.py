@@ -1,4 +1,3 @@
-from datetime import date, timezone as tzone
 from unittest.mock import ANY, patch
 
 from django.db import IntegrityError, connection, transaction
@@ -6,7 +5,6 @@ from django.utils import timezone
 
 from temba.flows.models import FlowActivityCount, FlowRun, FlowSession
 from temba.flows.tasks import squash_flow_counts
-from temba.msgs.models import Msg
 from temba.tests import TembaTest
 from temba.utils.models.counts import get_merge_squashed_sql
 from temba.utils.uuid import uuid4
@@ -160,49 +158,6 @@ class FlowActivityCountTest(TembaTest):
 
         self.assertEqual({"status:A": 0, "status:I": 4}, flow1.counts.scope_totals())
         self.assertEqual({"status:X": 1, "status:I": 2}, flow2.counts.scope_totals())
-
-    def test_msgsin_counts(self):
-        flow1 = self.create_flow("Test 1")
-        flow2 = self.create_flow("Test 2")
-
-        def handle(msg, flow):
-            msg.status = "H"
-            msg.flow = flow
-            msg.save(update_fields=("status", "flow"))
-
-        contact = self.create_contact("Bob", phone="+1234567890")
-        self.create_outgoing_msg(contact, "Out")  # should be ignored
-        in1 = self.create_incoming_msg(contact, "In 1", status="P")
-        in2 = self.create_incoming_msg(contact, "In 2", status="P")
-        in3 = self.create_incoming_msg(contact, "In 3", status="P")
-
-        self.assertEqual(0, flow1.counts.count())
-        self.assertEqual(0, flow2.counts.count())
-
-        handle(in1, flow1)
-        handle(in2, flow1)
-        handle(in3, flow2)
-
-        self.assertEqual(4, flow1.counts.count())
-        self.assertEqual(2, flow2.counts.count())
-
-        today = date.today().isoformat()  # date as YYYY-MM-DD
-        hour = timezone.now().astimezone(tzone.utc).hour
-
-        self.assertEqual(
-            {f"msgsin:date:{today}": 2, f"msgsin:hour:{hour}": 2},
-            flow1.counts.filter(scope__startswith="msgsin:").scope_totals(),
-        )
-        self.assertEqual(
-            {f"msgsin:date:{today}": 1, f"msgsin:hour:{hour}": 1},
-            flow2.counts.filter(scope__startswith="msgsin:").scope_totals(),
-        )
-
-        # other changes to msgs shouldn't create new counts
-        Msg.bulk_archive(self.org, [in1, in2])
-
-        self.assertEqual(4, flow1.counts.count())
-        self.assertEqual(2, flow2.counts.count())
 
     def test_squashing(self):
         def squashed(flow) -> dict:
