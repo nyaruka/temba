@@ -741,7 +741,7 @@ class TembaTest(SmartminTest):
         """
         Creates a flushed daily tally for the given channel, e.g. of text:in.
         """
-        channel.org.org_tallies.create(scope=f"channels/{channel.id}/{scope}@{day.isoformat()}", count=count)
+        channel.tallies.create(scope=f"{scope}@{day.isoformat()}", count=count)
 
     def create_channel_log(self, channel, log_type: str, *, http_logs=(), errors=()) -> dict:
         def is_error():
