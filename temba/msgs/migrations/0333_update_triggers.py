@@ -29,6 +29,7 @@ $$ LANGUAGE plpgsql;
 
 class Migration(migrations.Migration):
     dependencies = [
+        ("flows", "0418_backfill_flow_tallies"),  # which takes the counts this stops writing as its source
         ("msgs", "0332_update_triggers"),
     ]
 
