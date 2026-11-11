@@ -18,6 +18,7 @@ from temba.flows.models import (
     FlowRevision,
     FlowRun,
     FlowStart,
+    FlowTally,
     FlowUserConflictException,
     FlowVersionConflictException,
     ResultsExport,
@@ -2082,26 +2083,44 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
 
     @cleanup(valkey=True)
     def test_activity(self):
-        flow1 = self.create_flow("Test 1")
+        # node 1 exits to node 2 and nowhere, node 2 exits back to node 1
+        nodes = [
+            {
+                "uuid": "01c175da-d23d-40a4-a845-c4a9bb4b481a",
+                "actions": [],
+                "exits": [
+                    {
+                        "uuid": "1fff74f4-c81f-4f4c-a03d-58d113c17da1",
+                        "destination_uuid": "400d6b5e-c963-42a1-a06c-50bb9b1e38b1",
+                    },
+                    {"uuid": "6f607948-f3f0-4a6a-94b8-7fdd877895ca"},
+                ],
+            },
+            {
+                "uuid": "400d6b5e-c963-42a1-a06c-50bb9b1e38b1",
+                "actions": [],
+                "exits": [
+                    {
+                        "uuid": "a4fe3ada-b062-47e4-be58-bcbe1bca31b4",
+                        "destination_uuid": "01c175da-d23d-40a4-a845-c4a9bb4b481a",
+                    }
+                ],
+            },
+        ]
+        flow1 = self.create_flow("Test 1", nodes=nodes)
         flow2 = self.create_flow("Test 2")
+
+        seg1 = FlowTally.segment_scope("1fff74f4-c81f-4f4c-a03d-58d113c17da1", "01c175da-d23d-40a4-a845-c4a9bb4b481a")
+        seg2 = FlowTally.segment_scope("1fff74f4-c81f-4f4c-a03d-58d113c17da1", "400d6b5e-c963-42a1-a06c-50bb9b1e38b1")
+        seg3 = FlowTally.segment_scope("a4fe3ada-b062-47e4-be58-bcbe1bca31b4", "01c175da-d23d-40a4-a845-c4a9bb4b481a")
 
         flow1.counts.create(scope="node:01c175da-d23d-40a4-a845-c4a9bb4b481a", count=4)
         flow1.counts.create(scope="node:400d6b5e-c963-42a1-a06c-50bb9b1e38b1", count=5)
 
-        flow1.tallies.create(
-            scope="segment:1fff74f4-c81f-4f4c-a03d-58d113c17da1:01c175da-d23d-40a4-a845-c4a9bb4b481a", count=3
-        )
-        get_valkey_connection().hset(
-            "{tallies}:live",
-            f"F{flow1.id}|segment:1fff74f4-c81f-4f4c-a03d-58d113c17da1:01c175da-d23d-40a4-a845-c4a9bb4b481a",
-            4,
-        )
-        flow1.tallies.create(
-            scope="segment:6f607948-f3f0-4a6a-94b8-7fdd877895ca:400d6b5e-c963-42a1-a06c-50bb9b1e38b1", count=5
-        )
-        flow2.tallies.create(
-            scope="segment:a4fe3ada-b062-47e4-be58-bcbe1bca31b4:74a53ff4-fe63-4d89-875e-cae3caca177c", count=6
-        )
+        flow1.tallies.create(scope=seg1, count=9)
+        flow1.tallies.create(scope=seg2, count=3)
+        get_valkey_connection().hset("{tallies}:live", mapping={f"F{flow1.id}|{seg2}": 4, f"F{flow1.id}|{seg3}": 2})
+        flow2.tallies.create(scope=seg2, count=6)
 
         activity_url = reverse("flows.flow_activity", args=[flow1.uuid])
 
@@ -2112,8 +2131,8 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
             {
                 "nodes": {"01c175da-d23d-40a4-a845-c4a9bb4b481a": 4, "400d6b5e-c963-42a1-a06c-50bb9b1e38b1": 5},
                 "segments": {
-                    "1fff74f4-c81f-4f4c-a03d-58d113c17da1:01c175da-d23d-40a4-a845-c4a9bb4b481a": 7,
-                    "6f607948-f3f0-4a6a-94b8-7fdd877895ca:400d6b5e-c963-42a1-a06c-50bb9b1e38b1": 5,
+                    "1fff74f4-c81f-4f4c-a03d-58d113c17da1:400d6b5e-c963-42a1-a06c-50bb9b1e38b1": 7,
+                    "a4fe3ada-b062-47e4-be58-bcbe1bca31b4:01c175da-d23d-40a4-a845-c4a9bb4b481a": 2,
                 },
             },
             response.json(),
