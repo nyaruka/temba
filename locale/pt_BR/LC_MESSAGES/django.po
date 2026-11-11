@@ -1021,12 +1021,6 @@ msgstr "Este terminar deverá ser chamado pela MACROKIOSK quando o status de men
 msgid "Sender ID"
 msgstr "ID do Remetente"
 
-msgid "To finish configuring this channel, you'll need to set the following callback URL on your Mblox account."
-msgstr "Para concluir a configuração deste canal, você precisará definir a seguinte URL de retorno de chamada na sua conta da Mblox."
-
-msgid "This endpoint will be called by Mblox when new messages are received to your number and for delivery reports."
-msgstr "Este terminal será chamado pelo Mblox quando novas mensagens forem recebidas pelo seu número e para relatórios de entrega."
-
 msgid "To finish configuring this channel, you'll have to configure the Messagebird to send raw received SMS messages to the URL below either with a flow or by registering the webhook with them. Configure the status URL under Developer Settings to receive status updates for your messages."
 msgstr "Para concluir a configuração deste canal, você terá que configurar o Messagebird para enviar as mensagens SMS recebidas brutas para a URL abaixo, seja com um fluxo ou registrando o webhook com eles. Configure a URL de estado em Developer Settings para receber atualizações de estado das suas mensagens."
 
