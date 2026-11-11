@@ -8,11 +8,11 @@ from ...models import ChannelType, ConfigUI
 
 class MbloxType(ChannelType):
     """
-    A Mblox channel, which uses the Sinch SMS API (https://developers.sinch.com/docs/sms/api-reference)
+    A Sinch SMS channel, formerly Mblox (https://developers.sinch.com/docs/sms/api-reference)
     """
 
     code = "MB"
-    name = "Mblox"
+    name = "Sinch SMS"
     category = ChannelType.Category.PHONE
 
     schemes = [URN.TEL_SCHEME]
