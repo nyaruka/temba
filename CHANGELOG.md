@@ -1,3 +1,6 @@
+## v26.3.188 (2026-11-11)
+ * Read flow segment tallies in both old and compact scope formats
+
 ## v26.3.187 (2026-11-11)
  * Remove the Mblox channel type
  * Stop writing msgsin counts to flow activity counts
