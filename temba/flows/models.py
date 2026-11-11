@@ -444,7 +444,7 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         for scope, count in FlowTally.get_prefix_totals(self, "segment:").items():
             by_segment[FlowTally.parse_segment_scope(scope)] += count
 
-        return by_node, dict(by_segment)
+        return by_node, {key: count for key, count in by_segment.items() if count}
 
     def get_active_start(self):
         """

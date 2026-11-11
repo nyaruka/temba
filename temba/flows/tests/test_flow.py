@@ -502,6 +502,12 @@ class FlowTest(TembaTest, CRUDLTestMixin):
             "{tallies}:live", f"F{flow1.id}|segment:LXF34GuuQn-WMDgj4rjxskZoGGSDiUh1i4gvn-JB6j8", 2
         )
 
+        # a segment whose totals in the two formats cancel out is omitted
+        flow1.tallies.create(
+            scope="segment:00000000-0000-0000-0000-000000000000:ffffffff-ffff-ffff-ffff-ffffffffffff", count=3
+        )
+        flow1.tallies.create(scope="segment:AAAAAAAAAAAAAAAAAAAAAP____________________8", count=-3)
+
         self.assertEqual(
             (
                 {"01c175da-d23d-40a4-a845-c4a9bb4b481a": 4, "400d6b5e-c963-42a1-a06c-50bb9b1e38b1": 5},
