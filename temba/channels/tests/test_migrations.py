@@ -1,5 +1,10 @@
-from temba.channels.models import Channel
+from datetime import date
+from importlib import import_module
+from unittest.mock import patch
+
+from temba.channels.models import Channel, ChannelTally
 from temba.contacts.models import URN
+from temba.orgs.models import OrgTally
 from temba.tests import MigrationTest
 from temba.triggers.models import Trigger
 
@@ -63,3 +68,116 @@ class DeactivateRemovedTypeChannelsTest(MigrationTest):
         self.assertTrue(self.removed3_trigger.is_archived)
         self.assertTrue(self.other_trigger.is_active)
         self.assertFalse(self.other_trigger.is_archived)
+
+
+class FoldLegacyChannelTalliesTest(MigrationTest):
+    app = "channels"
+    migrate_from = "0224_channeltally"
+    migrate_to = "0225_fold_legacy_channel_tallies"
+
+    def setUpBeforeMigration(self, apps):
+        self.channel2 = self.create_channel("TG", "Telegram", "1234")
+        self.inactive = self.create_channel("TG", "Old", "2345")
+        self.inactive.is_active = False
+        self.inactive.save(update_fields=("is_active",))
+
+        # a channel whose id starts with another's
+        self.channel10 = Channel.objects.create(
+            id=self.channel.id * 10,
+            org=self.org,
+            channel_type="TG",
+            name="Ten",
+            address="3456",
+            config={},
+            role=Channel.DEFAULT_ROLE,
+            schemes=[URN.TELEGRAM_SCHEME],
+            created_by=self.admin,
+            modified_by=self.admin,
+        )
+        self.deleted_id = self.channel.id * 100
+
+        def legacy(org, channel_id, scope, count, expires_on=None):
+            org.org_tallies.create(scope=f"channels/{channel_id}/{scope}", count=count, expires_on=expires_on)
+
+        # no channel tally yet, with and without expiry
+        legacy(self.org, self.channel.id, "text:in@2026-11-01", 3, date(2027, 2, 1))
+        legacy(self.org, self.channel.id, "voice:out@2026-11-01", 4)
+
+        # added onto existing channel tallies for the same day
+        legacy(self.org, self.channel.id, "text:out@2026-11-01", 5, date(2027, 2, 1))
+        self.channel.tallies.create(scope="text:out@2026-11-01", count=6, expires_on=date(2027, 3, 1))
+        legacy(self.org, self.channel2.id, "text:in@2026-11-01", 7, date(2027, 4, 1))
+        self.channel2.tallies.create(scope="text:in@2026-11-01", count=8, expires_on=date(2027, 3, 1))
+        legacy(self.org, self.channel2.id, "text:out@2026-11-01", 9)
+        self.channel2.tallies.create(scope="text:out@2026-11-01", count=10, expires_on=date(2027, 3, 1))
+
+        legacy(self.org, self.inactive.id, "text:in@2026-11-01", 11)
+        legacy(self.org, self.channel10.id, "text:in@2026-11-01", 12)
+
+        # channels that don't exist, in this org or at all
+        legacy(self.org2, self.channel.id, "text:in@2026-11-01", 13)
+        legacy(self.org, self.deleted_id, "text:in@2026-11-01", 14)
+
+        # unrelated org tallies
+        self.org.org_tallies.create(scope="msgs/text:in@2026-11-01", count=15)
+        self.org.org_tallies.create(scope="channels/abc/text:in@2026-11-01", count=16)
+        self.org.org_tallies.create(scope="channelsx/1/text:in@2026-11-01", count=17)
+
+    def assertTallies(self, channel, expected: dict):
+        self.assertEqual(
+            expected, {t.scope: (t.count, t.expires_on) for t in ChannelTally.objects.filter(channel=channel)}
+        )
+
+    def assertState(self):
+        self.assertTallies(
+            self.channel,
+            {
+                "text:in@2026-11-01": (3, date(2027, 2, 1)),
+                "voice:out@2026-11-01": (4, None),
+                "text:out@2026-11-01": (11, date(2027, 3, 1)),
+            },
+        )
+        self.assertTallies(
+            self.channel2,
+            {"text:in@2026-11-01": (15, date(2027, 4, 1)), "text:out@2026-11-01": (19, None)},
+        )
+        self.assertTallies(self.inactive, {"text:in@2026-11-01": (11, None)})
+        self.assertTallies(self.channel10, {"text:in@2026-11-01": (12, None)})
+        self.assertEqual(7, ChannelTally.objects.count())  # nothing else created
+
+        self.assertEqual(
+            {
+                (self.org.id, "msgs/text:in@2026-11-01"): 15,
+                (self.org.id, "channels/abc/text:in@2026-11-01"): 16,
+                (self.org.id, "channelsx/1/text:in@2026-11-01"): 17,
+            },
+            {(t.org_id, t.scope): t.count for t in OrgTally.objects.all()},
+        )
+
+    def test_migration(self):
+        migration = import_module("temba.channels.migrations.0225_fold_legacy_channel_tallies")
+        fold = migration.fold_legacy_channel_tallies
+
+        self.assertState()
+
+        # running again is a noop
+        fold(self.apps, None)
+        self.assertState()
+
+        # but moves legacy tallies flushed since
+        self.org.org_tallies.create(scope=f"channels/{self.channel.id}/text:in@2026-11-01", count=20)
+        fold(self.apps, None)
+
+        self.assertEqual(23, self.channel.tallies.get(scope="text:in@2026-11-01").count)
+        self.assertFalse(OrgTally.objects.filter(scope__startswith="channels/").exclude(scope__contains="abc").exists())
+
+        # batches are bounded
+        for d in range(1, 6):
+            self.org.org_tallies.create(scope=f"channels/{self.channel2.id}/voice:in@2026-11-0{d}", count=d)
+        with patch.object(migration, "BATCH_SIZE", 2):
+            fold(self.apps, None)
+
+        self.assertEqual(
+            {f"voice:in@2026-11-0{d}": d for d in range(1, 6)},
+            {t.scope: t.count for t in self.channel2.tallies.filter(scope__startswith="voice:in")},
+        )
