@@ -278,8 +278,12 @@ describe('temba-ticket-list', () => {
     return { list, scroll };
   };
 
-  // polls, then waits out the deferred scroll to the selection
+  // polls, then waits out the deferred scroll to the selection, which the
+  // newer ticket lands above
   const pollScrollingList = async (list: TicketList) => {
+    const selected = list.selected.ticket.uuid;
+    const cursorIndex = list.cursorIndex;
+
     const refreshed = new Promise<void>((resolve) => {
       list.addEventListener(CustomEventType.Refreshed, () => resolve(), {
         once: true
@@ -290,10 +294,17 @@ describe('temba-ticket-list', () => {
     await list.updateComplete;
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    // the newer ticket landed above our selection, which stays selected
+    // our selection moved down a row but is still selected
     assert.equal(list.items.length, 61);
-    assert.equal(list.cursorIndex, 1);
-    assert.equal(list.selected.ticket.uuid, 't0');
+    assert.equal(list.cursorIndex, cursorIndex + 1);
+    assert.equal(list.selected.ticket.uuid, selected);
+  };
+
+  const getSelectedBounds = (list: TicketList) => {
+    return list.shadowRoot
+      .querySelector('temba-options')
+      .shadowRoot.querySelector('.option.focused')
+      .getBoundingClientRect();
   };
 
   it('keeps its scroll position when a refresh moves an out of view selection', async () => {
@@ -304,17 +315,30 @@ describe('temba-ticket-list', () => {
     assert.equal(scroll.scrollTop, 1500);
   });
 
-  it('keeps an in view selection in view when a refresh moves it', async () => {
+  it('follows an in view selection that a refresh moves out of view', async () => {
     const { list, scroll } = await getScrollingList();
 
+    // select a ticket further down and sit it on the bottom edge of the
+    // list, so the row the poll adds above pushes it out of view
+    list.setSelection('t20');
+    await list.updateComplete;
+    await (list.shadowRoot.querySelector('temba-options') as any)
+      .updateComplete;
+    scroll.scrollTop = 0;
+    scroll.scrollTop =
+      getSelectedBounds(list).bottom - scroll.getBoundingClientRect().bottom;
+    const scrolledTo = scroll.scrollTop;
+    assert.isAbove(scrolledTo, 0);
+
     await pollScrollingList(list);
-    const selected = list.shadowRoot
-      .querySelector('temba-options')
-      .shadowRoot.querySelector('.option.focused')
-      .getBoundingClientRect();
+
+    // scrolled just far enough to bring it back
+    const selected = getSelectedBounds(list);
     const bounds = scroll.getBoundingClientRect();
-    assert.isAtLeast(selected.top, bounds.top);
-    assert.isAtMost(selected.bottom, bounds.bottom);
+    assert.isAtLeast(Math.round(selected.top), Math.round(bounds.top));
+    assert.isAtMost(Math.round(selected.bottom), Math.round(bounds.bottom));
+    assert.isAbove(scroll.scrollTop, scrolledTo);
+    assert.isBelow(scroll.scrollTop, scrolledTo + 200);
   });
 
   it('keeps the selection pinned when an appended page sorts above it', async () => {
