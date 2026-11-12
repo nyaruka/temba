@@ -1,3 +1,10 @@
+## v26.3.195 (2026-11-12)
+ * Backfill daily tallies of new contacts and failed messages
+ * Make Channel.tps a non-null positive integer with a default of 10
+ * Show workspace limit defaults as placeholders on the staff form
+ * Have sheets only take posting forms, hand them the next step rather than a redirect, and post the current CSRF token
+ * Open a channel type's own actions, e.g. reconnecting, in a sheet over the read page
+
 ## v26.3.194 (2026-11-12)
  * Post the current CSRF cookie's token from the channel picker, as a sign-in popup may have replaced it
  * Clear the test cookie after each test
