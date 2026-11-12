@@ -5599,17 +5599,6 @@ msgid "There is no way to undo this. Are you sure?"
 msgstr "Não é possível reverter isso. Você tem certeza?"
 
 #, python-format
-msgid "Please verify your email for %(brand)s <br> To verify the login account email, <a href=\"https://%(domain)s/user/verify_email/%(secret)s/\">click here</a>."
-msgstr "Por favor verifique o seu e-mail para o %(brand)s <br> Para verificar o e-mail da conta de acesso, <a href=\"https://%(domain)s/user/verify_email/%(secret)s/\">clique aqui</a>."
-
-#, python-format
-msgid "Please verify your email for %(brand)s"
-msgstr "Por favor verifique o seu e-mail para o %(brand)s"
-
-msgid "Click this link to verify the login account email"
-msgstr "Clique neste link para verificar o e-mail da conta de acesso"
-
-#, python-format
 msgid "You've been invited to join the <b>%(org)s</b> workspace."
 msgstr "Você foi convidado a entrar na área de trabalho <b>%(org)s</b>."
 
@@ -5623,25 +5612,6 @@ msgstr "Acesse https://%(domain)s/org/join/%(secret)s/ para aceitar o convite."
 
 msgid "This email is a test to confirm the custom SMTP server configuration added to your account."
 msgstr "Este e-mail é um teste para confirmar a configuração personalizada do servidor SMTP adicionada à sua conta."
-
-msgid "Hi there"
-msgstr "Olá"
-
-msgid "Someone has requested that the password for this email address be reset."
-msgstr "Alguém solicitou a redefinição da senha deste endereço de e-mail."
-
-#, python-format
-msgid "Clicking on the following link will allow you to reset the password for the account %(email)s:"
-msgstr "Clicar no link a seguir permitirá que você redefina a senha da conta %(email)s:"
-
-msgid "Reset password"
-msgstr "Redefinir senha"
-
-msgid "If you did not request this, don't worry, this email has only been sent to you and your account remains secure."
-msgstr "Se você não solicitou isso, não se preocupe, este e-mail foi enviado apenas para você e a sua conta continua segura."
-
-msgid "Thank you. Please do not reply to this email."
-msgstr "Obrigado. Por favor não responda a este e-mail."
 
 msgid "Created On"
 msgstr "Criado em"

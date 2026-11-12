@@ -5554,17 +5554,6 @@ msgid "There is no way to undo this. Are you sure?"
 msgstr ""
 
 #, python-format
-msgid "Please verify your email for %(brand)s <br> To verify the login account email, <a href=\"https://%(domain)s/user/verify_email/%(secret)s/\">click here</a>."
-msgstr ""
-
-#, python-format
-msgid "Please verify your email for %(brand)s"
-msgstr ""
-
-msgid "Click this link to verify the login account email"
-msgstr ""
-
-#, python-format
 msgid "You've been invited to join the <b>%(org)s</b> workspace."
 msgstr ""
 
@@ -5577,25 +5566,6 @@ msgid "Go to https://%(domain)s/org/join/%(secret)s/ to accept the invitation."
 msgstr ""
 
 msgid "This email is a test to confirm the custom SMTP server configuration added to your account."
-msgstr ""
-
-msgid "Hi there"
-msgstr ""
-
-msgid "Someone has requested that the password for this email address be reset."
-msgstr ""
-
-#, python-format
-msgid "Clicking on the following link will allow you to reset the password for the account %(email)s:"
-msgstr ""
-
-msgid "Reset password"
-msgstr ""
-
-msgid "If you did not request this, don't worry, this email has only been sent to you and your account remains secure."
-msgstr ""
-
-msgid "Thank you. Please do not reply to this email."
 msgstr ""
 
 msgid "Created On"
