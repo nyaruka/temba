@@ -1747,6 +1747,36 @@ msgid_plural "%(count)d days"
 msgstr[0] ""
 msgstr[1] ""
 
+#, python-format
+msgid "%(count)d pending"
+msgid_plural "%(count)d pending"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-format
+msgid "%(count)d rejected"
+msgid_plural "%(count)d rejected"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-format
+msgid "%(count)d paused"
+msgid_plural "%(count)d paused"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-format
+msgid "%(count)d disabled"
+msgid_plural "%(count)d disabled"
+msgstr[0] ""
+msgstr[1] ""
+
+#, python-format
+msgid "%(count)d in appeal"
+msgid_plural "%(count)d in appeal"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "View setup"
 msgstr ""
 

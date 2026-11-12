@@ -1764,6 +1764,41 @@ msgstr[0] "%(count)d jour"
 msgstr[1] "%(count)d jours"
 msgstr[2] "%(count)d jours"
 
+#, python-format
+msgid "%(count)d pending"
+msgid_plural "%(count)d pending"
+msgstr[0] "%(count)d en attente"
+msgstr[1] "%(count)d en attente"
+msgstr[2] "%(count)d en attente"
+
+#, python-format
+msgid "%(count)d rejected"
+msgid_plural "%(count)d rejected"
+msgstr[0] "%(count)d rejeté"
+msgstr[1] "%(count)d rejetés"
+msgstr[2] "%(count)d rejetés"
+
+#, python-format
+msgid "%(count)d paused"
+msgid_plural "%(count)d paused"
+msgstr[0] "%(count)d en pause"
+msgstr[1] "%(count)d en pause"
+msgstr[2] "%(count)d en pause"
+
+#, python-format
+msgid "%(count)d disabled"
+msgid_plural "%(count)d disabled"
+msgstr[0] "%(count)d désactivé"
+msgstr[1] "%(count)d désactivés"
+msgstr[2] "%(count)d désactivés"
+
+#, python-format
+msgid "%(count)d in appeal"
+msgid_plural "%(count)d in appeal"
+msgstr[0] "%(count)d en appel"
+msgstr[1] "%(count)d en appel"
+msgstr[2] "%(count)d en appel"
+
 msgid "View setup"
 msgstr "Voir la configuration"
 

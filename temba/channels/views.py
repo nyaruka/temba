@@ -171,7 +171,9 @@ class ClaimModalMixin:
             success["X-Temba-Success"] = response.url
 
             if last_id is not None:
-                channel = org.channels.filter(id__gt=last_id, is_active=True).order_by("-id").first()
+                channel = (
+                    org.channels.filter(id__gt=last_id, created_by=request.user, is_active=True).order_by("-id").first()
+                )
                 if channel:
                     success["X-Temba-Channel"] = str(channel.uuid)
                     success["X-Temba-Channel-Name"] = quote(channel.name or "")
@@ -807,6 +809,22 @@ class ChannelCRUDL(SmartCRUDL):
             logs, _prev, _next = ChannelLog.get_by_channel(channel, limit=self.RECENT_LOGS)
             return [ChannelLogsEndpoint.serialize(channel, log) for log in logs]
 
+        @staticmethod
+        def describe_template_count(status: str, count: int) -> str:
+            """
+            Describes a count of templates which aren't approved, e.g. "2 rejected"
+            """
+            from temba.templates.models import TemplateTranslation as T
+
+            text = {
+                T.STATUS_PENDING: ngettext("%(count)d pending", "%(count)d pending", count),
+                T.STATUS_REJECTED: ngettext("%(count)d rejected", "%(count)d rejected", count),
+                T.STATUS_PAUSED: ngettext("%(count)d paused", "%(count)d paused", count),
+                T.STATUS_DISABLED: ngettext("%(count)d disabled", "%(count)d disabled", count),
+                T.STATUS_IN_APPEAL: ngettext("%(count)d in appeal", "%(count)d in appeal", count),
+            }[status]
+            return text % {"count": count}
+
         def get_template_summary(self, channel) -> dict:
             from temba.request_logs.models import HTTPLog
             from temba.templates.models import TemplateTranslation
@@ -823,9 +841,9 @@ class ChannelCRUDL(SmartCRUDL):
                 .first()
             )
             others = []
-            for status, label in TemplateTranslation.STATUS_CHOICES:
-                if status != TemplateTranslation.STATUS_APPROVED and counts.get(status):
-                    others.append(f"{counts[status]} {str(label).lower()}")
+            for status, _label in TemplateTranslation.STATUS_CHOICES:
+                if status != TemplateTranslation.STATUS_APPROVED and (count := counts.get(status)):
+                    others.append(self.describe_template_count(status, count))
 
             return {
                 "approved": counts.get(TemplateTranslation.STATUS_APPROVED, 0),
@@ -892,7 +910,7 @@ class ChannelCRUDL(SmartCRUDL):
                 )
             if delayed_sync:
                 return status("warn", _("Not syncing"), _("The phone hasn't synced for over an hour."), "syncs")
-            if "setup" in sheets and not channel.has_received():
+            if "setup" in sheets and Channel.ROLE_RECEIVE in channel.role and not channel.has_received():
                 return status("warn", _("Waiting"), _("Nothing has been received from the provider yet."))
             return status("good", _("Ready"), _("Sending and receiving messages."))
 

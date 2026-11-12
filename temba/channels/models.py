@@ -324,6 +324,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
     TALLY_VOICE_IN = "voice:in"
     TALLY_VOICE_OUT = "voice:out"
     TALLY_SCOPES = (TALLY_TEXT_IN, TALLY_TEXT_OUT, TALLY_VOICE_IN, TALLY_VOICE_OUT)
+    TALLY_RETENTION_DAYS = 365  # daily tallies are trimmed after a while, so how far back they can be relied on
 
     # the role types for our channels
     ROLE_SEND = "S"
@@ -727,12 +728,16 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
     def has_received(self) -> bool:
         """
         Whether this channel has received any messages since it was added, i.e. whether its setup on the provider's side
-        is working
+        is working. Daily counts are only kept for so long, so a channel older than that is taken to have.
         """
         # from the day before it was added, as counts and the workspace's timezone needn't agree on what day that was
         # (and there can't be counts from before then anyway)
+        today = timezone.now().date()
         since = self.created_on.date() - timedelta(days=1)
-        until = timezone.now().date() + timedelta(days=1)
+        if since < today - timedelta(days=self.TALLY_RETENTION_DAYS):
+            return True
+
+        until = today + timedelta(days=1)
         counts = self.get_daily_counts(since, until)
         return any(count > 0 for (_, scope), count in counts.items() if scope.endswith(":in"))
 

@@ -519,6 +519,18 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
             ("good", "Ready", "setup"), tuple(str(response.context["status"][k]) for k in ("tone", "value", "sheet"))
         )
 
+        # a channel which only sends never waits to receive
+        send_only = self.create_channel("NX", "Send Only", "+12065551213", country="US", role=Channel.ROLE_SEND)
+        response = self.requestView(reverse("channels.channel_read", args=[send_only.uuid]), self.admin)
+        self.assertEqual("Ready", str(response.context["status"]["value"]))
+
+        # nor does one older than its counts go back
+        old = self.create_channel("NX", "Old", "+12065551214", country="US")
+        old.created_on = timezone.now() - timedelta(days=500)
+        old.save(update_fields=("created_on",))
+        response = self.requestView(reverse("channels.channel_read", args=[old.uuid]), self.admin)
+        self.assertEqual("Ready", str(response.context["status"]["value"]))
+
         # a very slow channel's speed is a problem, a slow one worth a look
         vonage.tps = 1
         vonage.save(update_fields=("tps",))
