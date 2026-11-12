@@ -243,22 +243,26 @@ describe('temba-ticket-list', () => {
   });
 
   // a list of open tickets tall enough to scroll, with the first one selected,
-  // whose next poll returns one ticket with newer activity
-  const getScrollingList = async () => {
+  // whose next poll returns the given tickets (one with newer activity than
+  // any of them unless told otherwise)
+  const getScrollingList = async (
+    name: string,
+    refreshed = [openTicket('newer', '2024-05-01T00:00:00.000Z')]
+  ) => {
     const results = [];
     for (let i = 0; i < 60; i++) {
       const activity = new Date(Date.UTC(2024, 3, 30) - i * 3600000);
       results.push(openTicket(`t${i}`, activity.toISOString()));
     }
-    mockGET(/tickets-scrolling\.json$/, { results });
-    mockGET(/tickets-scrolling\.json\?after=/, {
-      results: [openTicket('newer', '2024-05-01T00:00:00.000Z')]
+    mockGET(new RegExp(`tickets-${name}\\.json$`), { results });
+    mockGET(new RegExp(`tickets-${name}\\.json\\?after=`), {
+      results: refreshed
     });
 
     await loadStore();
     const list = (await getComponent(
       'temba-ticket-list',
-      { endpoint: '/tickets-scrolling.json' },
+      { endpoint: `/tickets-${name}.json` },
       '',
       300,
       400
@@ -278,12 +282,15 @@ describe('temba-ticket-list', () => {
     return { list, scroll };
   };
 
-  // polls, then waits out the deferred scroll to the selection, which the
-  // newer ticket lands above
-  const pollScrollingList = async (list: TicketList) => {
-    const selected = list.selected.ticket.uuid;
-    const cursorIndex = list.cursorIndex;
+  const selectTicket = async (list: TicketList, uuid: string) => {
+    list.setSelection(uuid);
+    await list.updateComplete;
+    await (list.shadowRoot.querySelector('temba-options') as any)
+      .updateComplete;
+  };
 
+  // polls and waits for the list to settle on the refreshed tickets
+  const pollScrollingList = async (list: TicketList) => {
     const refreshed = new Promise<void>((resolve) => {
       list.addEventListener(CustomEventType.Refreshed, () => resolve(), {
         once: true
@@ -293,11 +300,6 @@ describe('temba-ticket-list', () => {
     await refreshed;
     await list.updateComplete;
     await new Promise((resolve) => setTimeout(resolve, 100));
-
-    // our selection moved down a row but is still selected
-    assert.equal(list.items.length, 61);
-    assert.equal(list.cursorIndex, cursorIndex + 1);
-    assert.equal(list.selected.ticket.uuid, selected);
   };
 
   const getSelectedBounds = (list: TicketList) => {
@@ -307,38 +309,105 @@ describe('temba-ticket-list', () => {
       .getBoundingClientRect();
   };
 
-  it('keeps its scroll position when a refresh moves an out of view selection', async () => {
-    const { list, scroll } = await getScrollingList();
+  // the ticket at the top of the visible part of the list, and how far its
+  // row is from the top
+  const getTopTicket = (list: TicketList, scroll: Element) => {
+    const top = scroll.getBoundingClientRect().top;
+    const row = [...scroll.querySelectorAll('.option')].find(
+      (option) => option.getBoundingClientRect().bottom > top
+    );
+    const index = parseInt(row.getAttribute('data-option-index'));
+    return {
+      uuid: list.items[index].ticket.uuid,
+      offset: Math.round(row.getBoundingClientRect().top - top)
+    };
+  };
+
+  it('stays on the same tickets when a refresh adds one above a scrolled list', async () => {
+    const { list, scroll } = await getScrollingList('scrolled');
 
     scroll.scrollTop = 1500;
+    const showing = getTopTicket(list, scroll);
+    assert.notEqual(showing.uuid, 't0');
+
     await pollScrollingList(list);
-    assert.equal(scroll.scrollTop, 1500);
+
+    // the selection, which is out of view, moved down a row
+    assert.equal(list.items[0].ticket.uuid, 'newer');
+    assert.equal(list.cursorIndex, 1);
+    assert.equal(list.selected.ticket.uuid, 't0');
+
+    // and the list scrolled by that row rather than back to the selection
+    assert.deepEqual(getTopTicket(list, scroll), showing);
+    assert.isAbove(scroll.scrollTop, 1500);
+    assert.isBelow(scroll.scrollTop, 1700);
+  });
+
+  it('shows new tickets when a refresh adds them to a list scrolled to the top', async () => {
+    const { list, scroll } = await getScrollingList('top');
+
+    await pollScrollingList(list);
+
+    assert.equal(scroll.scrollTop, 0);
+    assert.equal(getTopTicket(list, scroll).uuid, 'newer');
+    assert.equal(list.selected.ticket.uuid, 't0');
+  });
+
+  it('leaves an in view selection where it is when a refresh adds a ticket above it', async () => {
+    const { list, scroll } = await getScrollingList('in-view');
+
+    // select a ticket further down and sit it in the middle of the list
+    await selectTicket(list, 't20');
+    const bounds = scroll.getBoundingClientRect();
+    scroll.scrollTop += getSelectedBounds(list).top - bounds.top - 150;
+    assert.isAbove(scroll.scrollTop, 0);
+    const top = Math.round(getSelectedBounds(list).top);
+
+    await pollScrollingList(list);
+
+    assert.equal(list.cursorIndex, 21);
+    assert.equal(list.selected.ticket.uuid, 't20');
+    assert.equal(Math.round(getSelectedBounds(list).top), top);
   });
 
   it('follows an in view selection that a refresh moves out of view', async () => {
-    const { list, scroll } = await getScrollingList();
+    // the poll returns the selected ticket with new activity, which sorts it
+    // to the top of the list
+    const { list, scroll } = await getScrollingList('follow', [
+      openTicket('t20', '2024-05-01T00:00:00.000Z')
+    ]);
 
-    // select a ticket further down and sit it on the bottom edge of the
-    // list, so the row the poll adds above pushes it out of view
-    list.setSelection('t20');
-    await list.updateComplete;
-    await (list.shadowRoot.querySelector('temba-options') as any)
-      .updateComplete;
-    scroll.scrollTop = 0;
-    scroll.scrollTop =
-      getSelectedBounds(list).bottom - scroll.getBoundingClientRect().bottom;
-    const scrolledTo = scroll.scrollTop;
-    assert.isAbove(scrolledTo, 0);
+    await selectTicket(list, 't20');
+    const bounds = scroll.getBoundingClientRect();
+    scroll.scrollTop += getSelectedBounds(list).top - bounds.top - 150;
+    assert.isAbove(scroll.scrollTop, 500);
 
     await pollScrollingList(list);
 
-    // scrolled just far enough to bring it back
+    assert.equal(list.items.length, 60);
+    assert.equal(list.cursorIndex, 0);
+    assert.equal(list.selected.ticket.uuid, 't20');
+
     const selected = getSelectedBounds(list);
-    const bounds = scroll.getBoundingClientRect();
     assert.isAtLeast(Math.round(selected.top), Math.round(bounds.top));
     assert.isAtMost(Math.round(selected.bottom), Math.round(bounds.bottom));
-    assert.isAbove(scroll.scrollTop, scrolledTo);
-    assert.isBelow(scroll.scrollTop, scrolledTo + 200);
+  });
+
+  it('keeps a selection made while a refresh is in flight', async () => {
+    const { list } = await getScrollingList('in-flight');
+
+    // a different ticket gets selected while the poll is being fetched
+    const sanitizeResults = (list as any).sanitizeResults.bind(list);
+    (list as any).sanitizeResults = async (results: any[]) => {
+      await selectTicket(list, 't5');
+      return sanitizeResults(results);
+    };
+
+    await pollScrollingList(list);
+
+    assert.equal(list.items[0].ticket.uuid, 'newer');
+    assert.equal(list.cursorIndex, 6);
+    assert.equal(list.selected.ticket.uuid, 't5');
   });
 
   it('keeps the selection pinned when an appended page sorts above it', async () => {

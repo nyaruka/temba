@@ -288,24 +288,78 @@ export class TembaList extends RapidElement {
     return newItems.findIndex((option) => this.getValue(option) === prevValue);
   }
 
+  private getScrollBox(): HTMLElement {
+    const options = this.shadowRoot.querySelector('temba-options');
+    return options?.shadowRoot?.querySelector('.options-scroll');
+  }
+
+  private getFocusedOption(): HTMLElement {
+    return this.getScrollBox()?.querySelector('.option.focused');
+  }
+
   /**
    * Whether any part of the focused option is inside the visible part of the
    * list
    */
   private isFocusedOptionVisible(): boolean {
-    const options = this.shadowRoot.querySelector('temba-options');
-    const option = options?.shadowRoot?.querySelector('.option.focused');
-    const scrollBox = options?.shadowRoot?.querySelector('.options-scroll');
-    if (!option || !scrollBox) {
+    const option = this.getFocusedOption();
+    if (!option) {
       return false;
     }
 
     const optionBounds = option.getBoundingClientRect();
-    const scrollBounds = scrollBox.getBoundingClientRect();
+    const scrollBounds = this.getScrollBox().getBoundingClientRect();
     return (
       optionBounds.bottom > scrollBounds.top &&
       optionBounds.top < scrollBounds.bottom
     );
+  }
+
+  /**
+   * The item at the top of the visible part of a scrolled list and how far
+   * its row is from the top, or null for a list that is scrolled to its top
+   */
+  private getScrollAnchor(): { value: any; offset: number } {
+    const scrollBox = this.getScrollBox();
+    if (!scrollBox || scrollBox.scrollTop === 0) {
+      return null;
+    }
+
+    const top = scrollBox.getBoundingClientRect().top;
+    const rows = scrollBox.querySelectorAll('.option[data-option-index]');
+    for (const row of rows) {
+      const bounds = row.getBoundingClientRect();
+      if (bounds.bottom > top) {
+        const item =
+          this.items[parseInt(row.getAttribute('data-option-index'))];
+        return item
+          ? { value: this.getValue(item), offset: bounds.top - top }
+          : null;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Scrolls so that the anchor's item is back where it was, undoing the
+   * shift from any rows that were added or removed above it
+   */
+  private restoreScrollAnchor(anchor: { value: any; offset: number }) {
+    const scrollBox = this.getScrollBox();
+    if (!anchor || !scrollBox) {
+      return;
+    }
+
+    const index = this.items.findIndex(
+      (item) => this.getValue(item) === anchor.value
+    );
+    const row = scrollBox.querySelector(`[data-option-index="${index}"]`);
+    if (row) {
+      scrollBox.scrollTop +=
+        row.getBoundingClientRect().top -
+        scrollBox.getBoundingClientRect().top -
+        anchor.offset;
+    }
   }
 
   /**
@@ -326,7 +380,10 @@ export class TembaList extends RapidElement {
     const controller = new AbortController();
     this.pending.push(controller);
 
-    const prevItem = this.items[this.cursorIndex];
+    // what to do about our scroll position once the refreshed list has
+    // rendered
+    let anchor: { value: any; offset: number } = null;
+    let follow = false;
 
     try {
       const page = await fetchResultsPage(
@@ -335,6 +392,10 @@ export class TembaList extends RapidElement {
       );
 
       const sanitizedResults = await this.sanitizeResults(page.results);
+
+      // read our list and selection only now - either can change while we
+      // wait on the fetch, say if a different item gets selected
+      const prevItem = this.items[this.cursorIndex];
       const items = [...this.items];
 
       // remove any dupes already in our list
@@ -376,35 +437,38 @@ export class TembaList extends RapidElement {
           this.mostRecentItem = topItem;
         }
 
+        // a list that has been scrolled stays on the items it is showing
+        anchor = this.getScrollAnchor();
+
         const newIndex = this.findRepinnedCursorIndex(prevItem, newItems);
         if (newIndex !== null && newIndex > -1) {
           // follow our focused item to its new position, but only if it was
           // in view - otherwise we'd drag a list that has been scrolled away
           // from it back on every refresh
-          const follow = this.isFocusedOptionVisible();
+          follow = this.isFocusedOptionVisible();
           this.cursorIndex = newIndex;
-
-          if (follow) {
-            window.setTimeout(() => {
-              const options = this.shadowRoot.querySelector('temba-options');
-              if (options) {
-                const option =
-                  options.shadowRoot.querySelector('.option.focused');
-                if (option) {
-                  option.scrollIntoView({
-                    block: 'nearest',
-                    inline: 'nearest'
-                  });
-                }
-              }
-            }, 0);
-          }
         }
 
         this.items = newItems;
       }
     } catch (error) {
       this.paused = true;
+      return;
+    }
+
+    if (anchor || follow) {
+      // wait for the new rows, then settle our scroll before they are painted
+      await this.updateComplete;
+      const options = this.shadowRoot.querySelector('temba-options') as any;
+      await options?.updateComplete;
+
+      this.restoreScrollAnchor(anchor);
+      if (follow) {
+        this.getFocusedOption()?.scrollIntoView({
+          block: 'nearest',
+          inline: 'nearest'
+        });
+      }
     }
   }
 
