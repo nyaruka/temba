@@ -7,7 +7,13 @@ import {
   renderChannelLogo
 } from '../src/channels/ChannelLogo';
 import { render } from 'lit';
-import { clearMockGets, clearMockPosts, mockGET, mockPOST } from './utils.test';
+import {
+  clearMockGets,
+  clearMockPosts,
+  mockGET,
+  mockPOST,
+  waitForCondition
+} from './utils.test';
 
 const type = (over: Partial<ClaimableType>): ClaimableType => ({
   code: 'TG',
@@ -190,7 +196,7 @@ describe('temba-channel-picker', () => {
     await picker.updateComplete;
 
     // wait for the form to load
-    await new Promise((r) => setTimeout(r, 50));
+    await waitForCondition(() => !!picker.querySelector('.channel-claim-form'));
     await picker.updateComplete;
 
     const container = picker.querySelector('.channel-claim-form');
@@ -233,14 +239,16 @@ describe('temba-channel-picker', () => {
     );
     const picker = await getPicker();
     picker.pick(TYPES[3]);
-    await new Promise((r) => setTimeout(r, 50));
+    await waitForCondition(() => !!picker.querySelector('.channel-claim-form'));
     await picker.updateComplete;
 
     // a type without its own guide has no help link, as a general one wouldn't help with the form at hand
     expect(picker.shadowRoot.querySelector('.form-header .help')).to.be.null;
 
     picker.submit();
-    await new Promise((r) => setTimeout(r, 50));
+    await waitForCondition(
+      () => !!picker.querySelector('.channel-claim-form .errorlist')
+    );
     await picker.updateComplete;
 
     expect(picker.open).to.be.true;
@@ -256,7 +264,7 @@ describe('temba-channel-picker', () => {
     );
     const picker = await getPicker();
     picker.pick(TYPES[2]);
-    await new Promise((r) => setTimeout(r, 50));
+    await waitForCondition(() => !!picker.querySelector('.channel-claim-form'));
     await picker.updateComplete;
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
