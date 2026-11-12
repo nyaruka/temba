@@ -363,7 +363,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
     config = models.JSONField(default=dict)
     schemes = ArrayField(models.CharField(max_length=16), default=_get_default_channel_scheme)
     role = models.CharField(max_length=4, default=DEFAULT_ROLE)
-    tps = models.IntegerField(default=DEFAULT_TPS)
+    tps = models.PositiveIntegerField(default=DEFAULT_TPS)
     is_enabled = models.BooleanField(default=True)
 
     # Android relayer specific fields
@@ -421,6 +421,8 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
 
         if create_args.get("tps") is None:
             create_args["tps"] = channel_type.tps or cls.DEFAULT_TPS
+
+        assert create_args["tps"] > 0, "channel TPS must be positive"
 
         if "uuid" not in create_args:
             create_args["uuid"] = generate_uuid()
@@ -854,7 +856,6 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
                 condition=Q(channel_type="A", is_active=True, last_seen__isnull=False),
             ),
         ]
-        constraints = [models.CheckConstraint(condition=Q(tps__gt=0), name="channel_tps_positive")]
 
 
 class ChannelTally(BaseTally):

@@ -103,6 +103,10 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         channel = Channel.create(self.org, self.admin, None, "KWA", None, "2345", tps=20)
         self.assertEqual(20, channel.tps)
 
+        # which must be positive
+        with self.assertRaises(AssertionError):
+            Channel.create(self.org, self.admin, None, "KWA", None, "3456", tps=0)
+
         # can't use an invalid scheme for a fixed-scheme channel type
         with self.assertRaises(ValueError):
             Channel.create(
