@@ -1,3 +1,7 @@
+## v26.3.192 (2026-11-12)
+ * Rework the channel read page as a dashboard
+ * New channel claim modal pipeline
+
 ## v26.3.191 (2026-11-11)
  * Fold legacy channel tallies out of org tallies into channel tallies
 
