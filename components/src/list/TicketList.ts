@@ -14,8 +14,8 @@ export class TicketList extends TembaList {
       ${super.styles}
       :host {
         --options-empty-message-align: center;
-        /* a closed ticket's name doesn't wrap, so as a flex item don't
-           let it hold the list wider than its column */
+        /* a closed ticket's name doesn't wrap - as a flex item, don't let
+           that name's full width hold the list wider than its column */
         min-width: 0;
       }
       temba-options {
