@@ -249,6 +249,19 @@ export class Modax extends RapidElement {
       }
     }
 
+    // the body can put something in the footer beside the buttons, e.g. a
+    // delete link in an edit form, by marking it data-modax-gutter
+    if (changes.has('body')) {
+      const bodyGutter = this.shadowRoot.querySelector('.body-gutter');
+      if (bodyGutter) {
+        bodyGutter.replaceChildren(
+          ...Array.from(
+            this.shadowRoot.querySelectorAll('.modax-body [data-modax-gutter]')
+          )
+        );
+      }
+    }
+
     if (
       changes.has('body') &&
       this.open &&
@@ -561,6 +574,7 @@ export class Modax extends RapidElement {
         <div class="scripts"></div>
         <div slot="gutter" class="gutter">
           <div class="wizard-steps">${wizardStepBalls}</div>
+          <div class="body-gutter"></div>
           <slot name="gutter"></slot>
         </div>
       </temba-dialog>

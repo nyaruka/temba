@@ -1,6 +1,5 @@
 from unittest.mock import patch
 
-from django.forms import ValidationError
 from django.urls import reverse
 
 from temba.tests import MockResponse, TembaTest
@@ -16,9 +15,8 @@ class JustCallTypeTest(TembaTest):
 
         url = reverse("channels.types.justcall.claim")
 
-        # should see the general channel claim page
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, url)
+        # should be offered by the new channel picker
+        self.assertChannelTypeOffered(url)
 
         # try to claim a channel
         response = self.client.get(url)
@@ -32,18 +30,18 @@ class JustCallTypeTest(TembaTest):
         # try once with an error
         with patch("requests.post") as mock_post:
             mock_post.return_value = MockResponse(400, '{ "message": "Failed try again later." }')
-            with self.assertRaisesRegex(ValidationError, "Unable to add webhook to JustCall: Failed try again later."):
-                response = self.client.post(url, post_data)
-            self.assertFalse(Channel.objects.all())
+            response = self.client.post(url, post_data)
+            self.assertContains(response, "Unable to add webhook to JustCall: Failed try again later.")
+            self.assertFalse(Channel.objects.filter(is_active=True))
 
         with patch("requests.post") as mock_post:
             mock_post.side_effect = [
                 MockResponse(200, '{""}'),
                 MockResponse(400, '{ "message": "Failed try again later." }'),
             ]
-            with self.assertRaisesRegex(ValidationError, "Unable to add webhook to JustCall: Failed try again later."):
-                response = self.client.post(url, post_data)
-            self.assertFalse(Channel.objects.all())
+            response = self.client.post(url, post_data)
+            self.assertContains(response, "Unable to add webhook to JustCall: Failed try again later.")
+            self.assertFalse(Channel.objects.filter(is_active=True))
 
         # success this time
         with patch("requests.post") as mock_post:
@@ -51,7 +49,7 @@ class JustCallTypeTest(TembaTest):
             response = self.client.post(url, post_data)
             self.assertEqual(302, response.status_code)
 
-        channel = Channel.objects.get()
+        channel = Channel.objects.get(is_active=True)
 
         self.assertEqual("RW", channel.country)
         self.assertTrue(channel.uuid)

@@ -21,6 +21,13 @@ class ClaimView(AuthenticatedExternalClaimView):
         )
         api_key = forms.CharField(label=_("API Key"))
 
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+            # most numbers are in the workspace's own country
+            if country := self.request.org.default_country_code:
+                self.fields["country"].initial = country
+
         def clean_number(self):
             # if this is a long number, try to normalize it
             number = self.data["number"]

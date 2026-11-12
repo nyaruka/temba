@@ -18,9 +18,10 @@ class StartType(ChannelType):
     schemes = [URN.TEL_SCHEME]
     available_timezones = ["Europe/Kiev"]
 
-    claim_blurb = _("Easily add a two way number you have configured with %(link)s using their APIs.") % {
-        "link": '<a target="_blank" href="https://bulk.startmobile.ua/">Start Mobile</a>'
-    }
+    claim_blurb = _(
+        "%(link)s has provided bulk SMS in Ukraine since 2007, along with voice broadcasts. Connect a number you have "
+        "with Start Mobile to send and receive SMS with contacts in Ukraine."
+    ) % {"link": '<a target="_blank" href="https://startmobile.ua/">Start Mobile</a>'}
     claim_view = AuthenticatedExternalClaimView
 
     config_ui = ConfigUI(
@@ -29,7 +30,7 @@ class StartType(ChannelType):
             ConfigUI.Endpoint(
                 courier="receive",
                 label=_("Inbound URL"),
-                help=_("This endpoint should be called by when new messages are received to your number."),
+                help=_("This endpoint should be called by Start Mobile when new messages are received to your number."),
             ),
         ],
     )

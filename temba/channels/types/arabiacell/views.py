@@ -16,9 +16,20 @@ class ClaimView(ClaimViewMixin, SmartFormView):
         )
         shortcode = forms.CharField(label=_("Short Code"))
         service_id = forms.CharField(label=_("Service ID"))
-        charging_level = forms.ChoiceField(choices=(("0", _("Free")), ("1", _("Billed"))))
+        charging_level = forms.ChoiceField(
+            choices=(("0", _("Free")), ("1", _("Billed"))),
+            label=_("Charging Level"),
+            help_text=_("Whether contacts are charged for the messages they're sent."),
+        )
         username = forms.CharField(label=_("Username"))
         password = forms.CharField(label=_("Password"))
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+            # most numbers are in the workspace's own country
+            if country := self.request.org.default_country_code:
+                self.fields["country"].initial = country
 
     form_class = Form
 

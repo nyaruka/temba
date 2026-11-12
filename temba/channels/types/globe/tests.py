@@ -13,16 +13,13 @@ class GlobeTypeTest(TembaTest):
         self.login(self.admin)
         claim_url = reverse("channels.types.globe.claim")
 
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertNotContains(response, claim_url)
+        self.assertChannelTypeNotOffered(claim_url)
 
         self.org.timezone = "Asia/Manila"
         self.org.save()
 
-        # check that claim page URL appears on claim list page
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, claim_url)
-        self.assertContains(response, "you can integrate RapidPro with Globe Labs")
+        # the new channel picker offers it
+        self.assertChannelTypeOffered(claim_url)
 
         response = self.client.get(claim_url)
         self.assertEqual(200, response.status_code)

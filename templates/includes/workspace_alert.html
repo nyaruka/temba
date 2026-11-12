@@ -1,6 +1,6 @@
 {% comment %}
   A banner across the top of every workspace page. Takes level (error or warning), icon, title and message, and
-  optionally action_url and action_label for a button.
+  optionally action_url and action_label for a button, and dismissable to let users close it.
 {% endcomment %}
 <div class="workspace-alert workspace-alert-{{ level }}">
   <div class="workspace-alert-icon">
@@ -12,5 +12,8 @@
   </div>
   {% if action_url %}
     <a href="{{ action_url }}" class="button-light workspace-alert-action">{{ action_label }}</a>
+  {% endif %}
+  {% if dismissable %}
+    <temba-icon name="close" class="workspace-alert-dismiss" clickable onclick="this.closest('.workspace-alert').remove()"> </temba-icon>
   {% endif %}
 </div>

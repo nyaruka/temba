@@ -22,7 +22,7 @@ class SomlengTypeTest(TembaTest):
     def test_channel_claim_page(self):
         claim_url = reverse("channels.types.somleng.claim")
 
-        response = self.client.get(reverse("channels.channel_claim"))
+        response = self.client.get(reverse("channels.channel_list"))
         self.assertContains(response, "Somleng")
         self.assertContains(response, claim_url)
 

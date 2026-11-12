@@ -1,0 +1,10 @@
+{% extends "channels/channel_claim_form.html" %}
+{% load i18n %}
+
+{% block form-lead %}
+  <div class="mt-4">
+    {% blocktrans trimmed %}
+      To get started, you'll need your number along with the username and password for Hormuud's SMS API, which you can get from its business portal.
+    {% endblocktrans %}
+  </div>
+{% endblock form-lead %}

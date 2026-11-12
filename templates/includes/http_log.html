@@ -1,40 +1,46 @@
-{% load i18n temba %}
+{% load i18n temba humanize %}
 
-<div class="bg-white rounded-lg shadow flex flex-col">
-  <div class="px-6 py-3">
-    <div class="flex flex-wrap items-center">
-      <div class="fetch flex-nowrap flex truncate items-center">
-        <div class="status text-xl font-normal">
-          {% if log.status_code > 0 and log.status_code < 200 %}
-            <div class="log-error mr-4">{% trans "Error" %}</div>
-          {% else %}
-            {% if log.status_code >= 400 %}
-              <div class="log-error mr-4">{% trans "Error" %}</div>
-            {% else %}
-              {% if log.status_code %}<div class="mr-4">{{ log.status_code|default:"" }}</div>{% endif %}
-            {% endif %}
-          {% endif %}
-        </div>
-        <div class="{% if log.elapsed_ms > 3000 %}log-error{% endif %} time text-xl elapsed">{{ log.elapsed_ms|intcomma }} ms</div>
-      </div>
-      <div class="flex-grow"></div>
-      <div class="flex">
-        <div class="time whitespace-nowrap text-right flex-grow">
-          {% if log.retries %}
-            <div class="mr-4">
-              {% blocktrans trimmed count counter=log.retries %}
-                ({{ counter }} retry)
-              {% plural %}
-                ({{ counter }} retries)
-              {% endblocktrans %}
-            </div>
-          {% endif %}
-        </div>
-        <div class="text-right whitespace-nowrap">{{ log.created_on|datetime }}</div>
-      </div>
+{# one HTTP request and its response, each in its own card #}
+<div class="hlog">
+  <div class="hlog-card">
+    <div class="hlog-bar">
+      <span>{% trans "Request" %}</span>
+      <span class="hlog-url" title="{{ log.url }}">
+        {% with method=log.request|http_method %}
+          {% if method %}{{ method }}{% endif %}
+        {% endwith %}
+        {{ log.url }}
+      </span>
     </div>
+    <pre>{{ log.request|http_highlight }}</pre>
   </div>
-  <div class="border-b"></div>
-  <pre class="prettyprint request">{{ log.request }}</pre>
-  <pre class="prettyprint response">{% if log.response%}{{ log.response }}{% else %}{% trans "Connection Error" %}{% endif %}</pre>
+  <div class="hlog-card">
+    <div class="hlog-bar">
+      <span>{% trans "Response" %}</span>
+      <span class="hlog-meta">
+        {% if log.retries %}
+          <span>
+            {% blocktrans trimmed count counter=log.retries %}
+              {{ counter }} retry
+            {% plural %}
+              {{ counter }} retries
+            {% endblocktrans %}
+          </span>
+        {% endif %}
+        <span>{{ log.elapsed_ms|intcomma }} ms</span>
+        <span class="hlog-status{% if not log.status_code or log.status_code >= 400 %} bad{% endif %}">
+          {% if log.status_code %}
+            {{ log.status_code }}
+          {% else %}
+            {% trans "No response" %}
+          {% endif %}
+        </span>
+      </span>
+    </div>
+    {% if log.response %}
+      <pre>{{ log.response|http_highlight }}</pre>
+    {% else %}
+      <div class="hlog-none">{% trans "The connection failed before a response was received." %}</div>
+    {% endif %}
+  </div>
 </div>

@@ -4,6 +4,7 @@ from unittest.mock import call, patch
 from django_valkey import get_valkey_connection
 
 from django.urls import reverse
+from django.utils import timezone
 
 from temba import mailroom
 from temba.notifications.incidents.builtin import ChannelDisconnectedIncidentType
@@ -15,6 +16,7 @@ from temba.utils import json
 from temba.utils.views.mixins import TEMBA_MENU_SELECTION
 
 from ..models import COURIER_QUEUE_STATE_KEY, Channel, ChannelTally, SyncEvent
+from ..views import ChannelCRUDL
 
 
 class ChannelTest(TembaTest, CRUDLTestMixin):
@@ -51,7 +53,7 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         response = self.client.post(
             reverse("channels.types.android.claim"), {"claim_code": android.claim_code, "phone_number": number}
         )
-        self.assertRedirect(response, "/welcome/")
+        self.assertRedirect(response, "/channels/channel/")
 
         android.refresh_from_db()
         return android
@@ -62,6 +64,19 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.tel_channel.save()
         response = self.client.get(reverse("channels.channel_read", args=[self.tel_channel.uuid]))
         self.assertEqual(404, response.status_code)
+
+    def test_get_speed(self):
+        def speed(tps, is_enabled=True):
+            self.channel.tps = tps
+            self.channel.is_enabled = is_enabled
+            return self.channel.get_speed()
+
+        self.assertIsNone(speed(None))  # no limit
+        self.assertIsNone(speed(10))
+        self.assertEqual("slow", speed(9))
+        self.assertEqual("slow", speed(2))
+        self.assertEqual("very_slow", speed(1))
+        self.assertIsNone(speed(1, is_enabled=False))
 
     def test_get_address_display(self):
         self.assertEqual("+250 785 551 212", self.tel_channel.get_address_display())
@@ -302,75 +317,65 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.assertFalse(android3.is_active)
         self.assertEqual([], mr_mocks.calls["android_sync"])
 
-    def test_chart(self):
-        chart_url = reverse("channels.channel_chart", args=[self.tel_channel.uuid])
+    def test_activity(self):
+        activity_url = reverse("channels.channel_activity", args=[self.tel_channel.uuid])
 
-        self.assertRequestDisallowed(chart_url, [None, self.agent, self.admin2])
-        self.assertReadFetch(chart_url, [self.editor, self.admin])
+        self.assertRequestDisallowed(activity_url, [None, self.agent, self.admin2])
+        self.assertReadFetch(activity_url, [self.editor, self.admin])
+
+        self.tel_channel.created_on = datetime(2019, 6, 1, 0, 0, 0, 0, tzone.utc)
+        self.tel_channel.save(update_fields=("created_on",))
 
         self.create_channel_tally(self.tel_channel, "text:out", date(2020, 1, 18), 3)
         self.create_channel_tally(self.tel_channel, "text:in", date(2020, 1, 20), 1)
         self.create_channel_tally(self.tel_channel, "text:out", date(2020, 1, 20), 2)
-        self.create_channel_tally(self.tel_channel, "text:out", date(2019, 12, 1), 5)  # outside of period
+        self.create_channel_tally(self.tel_channel, "text:out", date(2019, 12, 1), 5)
         self.create_channel_tally(self.facebook_channel, "text:out", date(2020, 1, 20), 4)  # other channel
 
         with patch("django.utils.timezone.now", return_value=datetime(2020, 1, 20, 0, 0, 0, 0, tzone.utc)):
-            response = self.requestView(chart_url, self.admin)
+            response = self.requestView(activity_url, self.admin)
 
-            self.assertEqual(
-                {
-                    "labels": ["2020-01-18", "2020-01-20"],
-                    "datasets": [{"label": "Incoming", "data": [0, 1]}, {"label": "Outgoing", "data": [3, 2]}],
-                },
-                response.json()["data"],
-            )
+            # the chart has every day of the year that can be browsed and the year before it, oldest first
+            chart = json.loads(response.context["chart"])
+            self.assertEqual(731, len(chart["days"]))
+            self.assertEqual("2020-01-20", chart["days"][-1])
+            self.assertEqual(["Outgoing", "Incoming"], [s["label"] for s in chart["series"]])
+            self.assertEqual([3, 0, 2], chart["series"][0]["values"][-3:])
+            self.assertEqual([0, 0, 1], chart["series"][1]["values"][-3:])
+            self.assertEqual(10, sum(chart["series"][0]["values"]))
 
-            # voice datasets are included if there are voice counts in the period
+            # monthly counts, most recent first, with each month's share of the busiest
+            self.assertFalse(response.context["has_voice"])
+            months = response.context["monthly_counts"]
+            self.assertEqual(date(2020, 1, 1), months[0]["month_start"])
+            self.assertEqual((1, 5, 6, 100), tuple(months[0][k] for k in ("text_in", "text_out", "total", "share")))
+            self.assertEqual(date(2019, 12, 1), months[1]["month_start"])
+            self.assertEqual(83, months[1]["share"])
+
+            # voice counts get columns of their own
             self.create_channel_tally(self.tel_channel, "voice:in", date(2020, 1, 20), 6)
 
-            response = self.requestView(chart_url, self.admin)
+            response = self.requestView(activity_url, self.admin)
+            self.assertTrue(response.context["has_voice"])
+            self.assertEqual(6, response.context["monthly_counts"][0]["voice_in"])
 
-            self.assertEqual(
-                {
-                    "labels": ["2020-01-18", "2020-01-20"],
-                    "datasets": [
-                        {"label": "Incoming Text", "data": [0, 1]},
-                        {"label": "Outgoing Text", "data": [3, 2]},
-                        {"label": "Incoming Voice", "data": [0, 6]},
-                        {"label": "Outgoing Voice", "data": [0, 0]},
-                    ],
-                },
-                response.json()["data"],
-            )
-
-            # the until day is included
-            response = self.requestView(chart_url + "?since=2020-01-18&until=2020-01-20", self.admin)
-            self.assertEqual(["2020-01-18", "2020-01-20"], response.json()["data"]["labels"])
-
-    def test_read_history_limits(self):
-        read_url = reverse("channels.channel_read", args=[self.tel_channel.uuid])
-        chart_url = reverse("channels.channel_chart", args=[self.tel_channel.uuid])
+    def test_activity_history_limits(self):
+        activity_url = reverse("channels.channel_activity", args=[self.tel_channel.uuid])
 
         self.tel_channel.created_on = datetime(2024, 3, 15, 0, 0, 0, 0, tzone.utc)
         self.tel_channel.save(update_fields=("created_on",))
 
         with patch("django.utils.timezone.now", return_value=datetime(2026, 1, 20, 0, 0, 0, 0, tzone.utc)):
-            response = self.requestView(read_url, self.admin)
+            response = self.requestView(activity_url, self.admin)
 
-            # chart can't go back more than a year, and monthly counts are only for the last 13 months
+            # the period can't go back more than a year, and monthly counts are only for the last 13 months
             self.assertEqual(date(2025, 1, 20), response.context["chart_min"])
             self.assertEqual(13, len(response.context["monthly_counts"]))
             self.assertEqual(date(2026, 1, 1), response.context["monthly_counts"][0]["month_start"])
             self.assertEqual(date(2025, 1, 1), response.context["monthly_counts"][-1]["month_start"])
 
-            response = self.requestView(chart_url + "?since=2024-01-01&until=2026-01-21", self.admin)
-            self.assertEqual(["2025-01-20", "2026-01-21"], response.json()["period"])
-
-            response = self.requestView(chart_url + "?since=2020-01-01&until=2020-06-01", self.admin)
-            self.assertEqual(["2025-01-20", "2025-01-20"], response.json()["period"])
-
         with patch("django.utils.timezone.now", return_value=datetime(2024, 5, 20, 0, 0, 0, 0, tzone.utc)):
-            response = self.requestView(read_url, self.admin)
+            response = self.requestView(activity_url, self.admin)
 
             # but are limited by the age of the channel
             self.assertEqual(date(2024, 3, 15), response.context["chart_min"])
@@ -385,8 +390,8 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         # no queue state for this channel
         response = self.requestView(read_url, self.admin)
         self.assertFalse(response.context["send_paused"])
-        self.assertContains(response, ">Ready</temba-label>")
-        self.assertNotContains(response, "Paused")
+        self.assertEqual("Ready", response.context["status"]["value"])
+        self.assertNotContains(response, "Sending is paused")
 
         # throttled by its TPS but not paused
         r.hset(state_key, mapping={"tps": 10, "sec": 1579478400, "used": 10})
@@ -399,16 +404,20 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
 
             response = self.requestView(read_url, self.admin)
             self.assertTrue(response.context["send_paused"])
-            self.assertContains(response, "Paused")
-            self.assertNotContains(response, ">Ready</temba-label>")
+            self.assertEqual(
+                {"tone": "bad", "value": "Paused", "sheet": "logs", "more": "View logs"},
+                {k: str(v) for k, v in response.context["status"].items() if k != "note"},
+            )
+            self.assertContains(response, "Sending is paused")
 
             # a disabled channel shows as that whether or not it's paused
             self.tel_channel.is_enabled = False
             self.tel_channel.save(update_fields=("is_enabled",))
 
             response = self.requestView(read_url, self.admin)
-            self.assertContains(response, "Disabled")
-            self.assertNotContains(response, "Paused")
+            self.assertFalse(response.context["send_paused"])
+            self.assertEqual("Disabled", response.context["status"]["value"])
+            self.assertNotContains(response, "Sending is paused")
 
             # pause ended recently so still counts
             r.hset(state_key, "paused_until", "1579478370")
@@ -441,15 +450,21 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.login(self.editor)
 
         response = self.client.get(tel_channel_read_url)
-        self.assertEqual(f"/settings/channels/{self.tel_channel.uuid}", response.headers[TEMBA_MENU_SELECTION])
+        self.assertEqual("/settings/channels", response.headers[TEMBA_MENU_SELECTION])
 
         # org users can
         response = self.requestView(tel_channel_read_url, self.editor)
-
-        self.assertTrue(len(response.context["latest_sync_events"]) <= 5)
-
-        response = self.requestView(tel_channel_read_url, self.admin)
         self.assertContains(response, self.tel_channel.name)
+
+        # an Android channel shows its phone and can open its syncs, but has no logs, setup or templates
+        self.assertEqual(100, response.context["last_sync"].power_level)
+        self.assertEqual({"activity", "syncs"}, set(response.context["sheets"]))
+
+        # with the default limit, it sends at 10 a second, so a broadcast to 100k takes about 3 hours
+        self.assertEqual(
+            {"tps": 10, "duration": "3 hours", "tone": ""},
+            {k: response.context["speed"][k] for k in ("tps", "duration", "tone")},
+        )
 
         test_date = datetime(2020, 1, 20, 0, 0, 0, 0, tzone.utc)
         two_hours_ago = test_date - timedelta(hours=2)
@@ -462,59 +477,135 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
             sync.created_on = two_hours_ago
             sync.save()
 
-        # an outgoing message from a couple of hours ago, which counts in this month's chart below
         self.create_channel_tally(self.tel_channel, "text:out", date(2020, 1, 19), 1)
+        self.create_channel_tally(self.tel_channel, "text:in", date(2020, 1, 20), 2)
 
         with patch("django.utils.timezone.now", return_value=test_date):
             response = self.requestView(tel_channel_read_url, self.admin)
-            self.assertIn("delayed_sync_event", response.context_data.keys())
-            self.assertFalse(response.context["has_voice"])
+            self.assertTrue(response.context["delayed_sync"])
+            self.assertEqual("Not syncing", response.context["status"]["value"])
+            self.assertEqual("syncs", response.context["status"]["sheet"])
 
-            # we have one row for the message stats table
-            self.assertEqual(1, len(response.context["monthly_counts"]))
-            # only one outgoing message
-            self.assertEqual(0, response.context["monthly_counts"][0]["text_in"])
-            self.assertEqual(1, response.context["monthly_counts"][0]["text_out"])
-            self.assertEqual(0, response.context["monthly_counts"][0]["voice_in"])
-            self.assertEqual(0, response.context["monthly_counts"][0]["voice_out"])
-
-            # send messages
-            self.create_channel_tally(self.tel_channel, "text:in", date(2020, 1, 20), 1)
-            self.create_channel_tally(self.tel_channel, "text:out", date(2020, 1, 20), 1)
-
-            # now we have an inbound message and two outbounds
-            response = self.requestView(tel_channel_read_url, self.admin)
-            self.assertEqual(200, response.status_code)
-
-            # message stats table have an inbound and two outbounds in the last month
-            self.assertEqual(1, len(response.context["monthly_counts"]))
-            self.assertEqual(1, response.context["monthly_counts"][0]["text_in"])
-            self.assertEqual(2, response.context["monthly_counts"][0]["text_out"])
-            self.assertEqual(0, response.context["monthly_counts"][0]["voice_in"])
-            self.assertEqual(0, response.context["monthly_counts"][0]["voice_out"])
-
-            # test cases for IVR messaging, make our relayer accept calls
-            self.tel_channel.role = "SCAR"
-            self.tel_channel.save()
-
-            # now let's create an ivr interaction
-            self.create_channel_tally(self.tel_channel, "voice:in", date(2020, 1, 20), 1)
-            self.create_channel_tally(self.tel_channel, "voice:out", date(2020, 1, 20), 1)
-            response = self.requestView(tel_channel_read_url, self.admin)
-            self.assertTrue(response.context["has_voice"])
-
-            self.assertEqual(1, len(response.context["monthly_counts"]))
-            self.assertEqual(1, response.context["monthly_counts"][0]["text_in"])
-            self.assertEqual(2, response.context["monthly_counts"][0]["text_out"])
-            self.assertEqual(1, response.context["monthly_counts"][0]["voice_in"])
-            self.assertEqual(1, response.context["monthly_counts"][0]["voice_out"])
-
-            # look at the chart for our messages
-            chart_url = reverse("channels.channel_chart", args=[self.tel_channel.uuid])
-            response = self.requestView(chart_url, self.admin)
-
-            # incoming, outgoing for both text and our ivr messages
-            self.assertEqual(4, len(response.json()["data"]["datasets"]))
+            # messages over the last 30 days
+            activity = response.context["activity"]
+            self.assertEqual((2, 1, 3), (activity["received"], activity["sent"], activity["total"]))
+            self.assertEqual([1, 2], activity["series"][-2:])
 
         # as staff
         self.requestView(tel_channel_read_url, self.customer_support, checks=[StaffRedirect()])
+
+    def test_read_statuses(self):
+        read_url = reverse("channels.channel_read", args=[self.facebook_channel.uuid])
+
+        # a Facebook channel has no setup to send people to, so its status leads to its logs
+        response = self.requestView(read_url, self.admin)
+        self.assertEqual(
+            ("good", "Ready", "logs"), tuple(str(response.context["status"][k]) for k in ("tone", "value", "sheet"))
+        )
+
+        # a channel with setup is waiting until it's received something, and leads to its setup either way
+        vonage = self.create_channel("NX", "Vonage", "+12065551212", country="US")
+        read_url = reverse("channels.channel_read", args=[vonage.uuid])
+
+        response = self.requestView(read_url, self.admin)
+        self.assertEqual(
+            ("warn", "Waiting", "setup"), tuple(str(response.context["status"][k]) for k in ("tone", "value", "sheet"))
+        )
+
+        self.create_channel_tally(vonage, "text:in", timezone.now().date(), 1)
+
+        response = self.requestView(read_url, self.admin)
+        self.assertEqual(
+            ("good", "Ready", "setup"), tuple(str(response.context["status"][k]) for k in ("tone", "value", "sheet"))
+        )
+
+        # a channel which only sends never waits to receive
+        send_only = self.create_channel("NX", "Send Only", "+12065551213", country="US", role=Channel.ROLE_SEND)
+        response = self.requestView(reverse("channels.channel_read", args=[send_only.uuid]), self.admin)
+        self.assertEqual("Ready", str(response.context["status"]["value"]))
+
+        # nor does one older than its counts go back
+        old = self.create_channel("NX", "Old", "+12065551214", country="US")
+        old.created_on = timezone.now() - timedelta(days=500)
+        old.save(update_fields=("created_on",))
+        response = self.requestView(reverse("channels.channel_read", args=[old.uuid]), self.admin)
+        self.assertEqual("Ready", str(response.context["status"]["value"]))
+
+        # a very slow channel's speed is a problem, a slow one worth a look
+        vonage.tps = 1
+        vonage.save(update_fields=("tps",))
+        response = self.requestView(read_url, self.admin)
+        self.assertEqual(("bad", "a day"), (response.context["speed"]["tone"], response.context["speed"]["duration"]))
+
+        vonage.tps = 5
+        vonage.save(update_fields=("tps",))
+        response = self.requestView(read_url, self.admin)
+        self.assertEqual(
+            ("warn", "6 hours"), (response.context["speed"]["tone"], response.context["speed"]["duration"])
+        )
+
+    def test_rough_duration(self):
+        duration = ChannelCRUDL.Read.get_rough_duration
+
+        self.assertEqual("a minute", duration(30))
+        self.assertEqual("8 minutes", duration(500))
+        self.assertEqual("20 minutes", duration(1250))
+        self.assertEqual("an hour", duration(3600))
+        self.assertEqual("3 hours", duration(10_000))
+        self.assertEqual("a day", duration(100_000))
+        self.assertEqual("2 days", duration(200_000))
+
+    def test_syncs(self):
+        syncs_url = reverse("channels.channel_syncs", args=[self.tel_channel.uuid])
+
+        self.assertRequestDisallowed(syncs_url, [None, self.agent, self.admin2])
+
+        SyncEvent.create(
+            self.tel_channel, dict(p_sts="CHA", p_src="BAT", p_lvl="60", net="UMTS", pending=[], retry=[]), []
+        )
+        response = self.assertReadFetch(syncs_url, [self.editor, self.admin])
+        self.assertEqual(1, len(response.context["sync_events"]))
+
+        # only Android channels sync with a phone
+        self.assertRequestDisallowed(reverse("channels.channel_syncs", args=[self.facebook_channel.uuid]), [self.admin])
+
+    def test_templates(self):
+        wac = self.create_channel("WAC", "WhatsApp", "1234", config={"wa_waba_id": "1234"})
+        templates_url = reverse("channels.channel_templates", args=[wac.uuid])
+
+        self.assertRequestDisallowed(templates_url, [None, self.agent, self.admin2])
+
+        self.create_template(
+            "hello",
+            [
+                TemplateTranslation(
+                    channel=wac,
+                    locale="eng-US",
+                    status=TemplateTranslation.STATUS_APPROVED,
+                    external_id="1234",
+                    external_locale="en_US",
+                ),
+                TemplateTranslation(
+                    channel=wac,
+                    locale="spa",
+                    status=TemplateTranslation.STATUS_REJECTED,
+                    external_id="1235",
+                    external_locale="es",
+                ),
+            ],
+        )
+        response = self.assertReadFetch(templates_url, [self.editor, self.admin])
+        self.assertEqual(2, len(response.context["translations"]))
+        self.assertIsNone(response.context["last_sync"])
+
+        # its page summarizes them, noting the ones which aren't approved
+        response = self.requestView(reverse("channels.channel_read", args=[wac.uuid]), self.admin)
+        self.assertEqual(1, response.context["templates"]["approved"])
+        self.assertEqual(2, response.context["templates"]["total"])
+        self.assertEqual(["1 rejected"], response.context["templates"]["others"])
+        self.assertIn("templates", response.context["sheets"])
+
+        # only types with templates have them
+        self.assertRequestDisallowed(
+            reverse("channels.channel_templates", args=[self.facebook_channel.uuid]), [self.admin]
+        )

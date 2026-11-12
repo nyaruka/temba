@@ -21,9 +21,8 @@ class BandwidthTypeTest(TembaTest):
 
         self.login(self.admin)
 
-        # check that claim page URL appears on claim list page
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, url)
+        # the new channel picker offers it
+        self.assertChannelTypeOffered(url)
 
         response = self.client.get(url)
         self.assertEqual(200, response.status_code)
@@ -49,11 +48,7 @@ class BandwidthTypeTest(TembaTest):
         self.assertEqual("BW", channel.channel_type)
         self.assertEqual("CA", channel.role)
 
-        read_url = reverse("channels.channel_read", args=[channel.uuid])
-
-        self.assertRedirect(response, read_url)
-
-        self.assertRedirect(response, read_url)
+        self.assertRedirect(response, reverse("channels.channel_list"))
 
         self.assertEqual(
             mock_post.call_args_list[0][0][0], "https://dashboard.bandwidth.com/api/accounts/account-id/applications"
@@ -88,9 +83,8 @@ class BandwidthTypeTest(TembaTest):
 
         self.login(self.admin)
 
-        # check that claim page URL appears on claim list page
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, url)
+        # the new channel picker offers it
+        self.assertChannelTypeOffered(url)
 
         response = self.client.get(url)
         self.assertEqual(200, response.status_code)
@@ -118,9 +112,7 @@ class BandwidthTypeTest(TembaTest):
         self.assertEqual("BW", channel.channel_type)
         self.assertEqual("SR", channel.role)
 
-        read_url = reverse("channels.channel_read", args=[channel.uuid])
-
-        self.assertRedirect(response, read_url)
+        self.assertRedirect(response, reverse("channels.channel_list"))
 
         self.assertEqual(
             mock_post.call_args_list[0][0][0], "https://dashboard.bandwidth.com/api/accounts/account-id/applications"

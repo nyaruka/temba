@@ -20,6 +20,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.test import override_settings
+from django.urls import reverse
 from django.utils import timezone
 
 from temba.archives.models import Archive, jsonlgz_encode
@@ -851,6 +852,30 @@ class TembaTest(SmartminTest):
                 "Data": data,
             }
         )
+
+    def assertChannelTypeOffered(self, claim_url: str, *, in_region: bool = True):
+        """
+        Asserts the new channel picker on the channel list page offers the channel type with the given claim URL - by
+        default as one in the workspace's region rather than only when asked for all regions
+        """
+        offered = self._get_offered_channel_types()
+        self.assertIn(claim_url, offered, f"{claim_url} not offered by the new channel picker")
+        if in_region:
+            self.assertTrue(offered[claim_url]["in_region"], f"{claim_url} offered but not in region")
+
+    def assertChannelTypeNotOffered(self, claim_url: str):
+        """
+        Asserts the new channel picker on the channel list page doesn't offer the channel type with the given claim
+        URL in the workspace's region
+        """
+        offered = self._get_offered_channel_types()
+        if claim_url in offered:
+            self.assertFalse(offered[claim_url]["in_region"], f"{claim_url} offered by the new channel picker")
+
+    def _get_offered_channel_types(self) -> dict:
+        response = self.client.get(reverse("channels.channel_list"))
+        self.assertEqual(200, response.status_code)
+        return {t["claim_url"]: t for t in response.context["claimable_types"]}
 
     def assertToast(self, response, level, text):
         toasts = json.loads(response.get("X-Temba-Toasts", []))

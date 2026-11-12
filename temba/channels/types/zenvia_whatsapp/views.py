@@ -24,6 +24,13 @@ class ClaimView(ClaimViewMixin, SmartFormView):
         )
         token = forms.CharField(label=_("API Token"))
 
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+            # most numbers are in the workspace's own country
+            if country := self.request.org.default_country_code:
+                self.fields["country"].initial = country
+
         def clean_number(self):
             # if this is a long number, try to normalize it
             number = self.data["number"]
@@ -66,14 +73,19 @@ class ClaimView(ClaimViewMixin, SmartFormView):
         if self.channel_type.code == "ZVS":
             channel_type_name = "SMS"
 
-        self.object = Channel.create(
-            self.request.org,
-            self.request.user,
-            data["country"],
-            self.channel_type,
-            name=f"Zenvia {channel_type_name}: {data['number']}",
-            address=data["number"],
-            config=config,
-        )
+        # activating subscribes us to Zenvia's webhooks, and the channel is removed again if that fails
+        try:
+            self.object = Channel.create(
+                self.request.org,
+                self.request.user,
+                data["country"],
+                self.channel_type,
+                name=f"Zenvia {channel_type_name}: {data['number']}",
+                address=data["number"],
+                config=config,
+            )
+        except forms.ValidationError as e:
+            form.add_error(None, e)
+            return self.form_invalid(form)
 
         return super().form_valid(form)

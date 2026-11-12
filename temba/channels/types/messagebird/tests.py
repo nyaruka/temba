@@ -33,9 +33,8 @@ class MessagebirdTypeTest(TembaTest):
         self.org.timezone = "America/New_York"
         self.org.save()
 
-        # check that claim page URL appears on claim list page
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, url)
+        # the new channel picker offers it
+        self.assertChannelTypeOffered(url)
         # can fetch the claim page
         response = self.client.get(url)
         self.assertContains(response, "Connect Messagebird")

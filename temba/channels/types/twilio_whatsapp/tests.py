@@ -36,7 +36,7 @@ class TwilioWhatsappTypeTest(TembaTest):
         self.org.channels.update(is_active=False)
 
         # make sure twilio is on the claim page
-        response = self.client.get(reverse("channels.channel_claim"))
+        response = self.client.get(reverse("channels.channel_list"))
         self.assertContains(response, "Twilio")
 
         response = self.client.get(claim_twilio)
@@ -48,8 +48,7 @@ class TwilioWhatsappTypeTest(TembaTest):
         self.add_twilio_session()
 
         # hit the claim page, should now have a claim twilio link
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, claim_twilio)
+        self.assertChannelTypeOffered(claim_twilio)
 
         response = self.client.get(claim_twilio)
         self.assertIn("account_trial", response.context)
@@ -66,7 +65,18 @@ class TwilioWhatsappTypeTest(TembaTest):
             )
 
             response = self.client.get(claim_twilio)
-            self.assertRedirects(response, f"{reverse('channels.types.twilio.connect')}?claim_type=twilio_whatsapp")
+            self.assertRedirects(
+                response,
+                f"{reverse('channels.types.twilio.connect')}?claim_type=twilio_whatsapp&reset_creds=reset&invalid_creds=1",
+            )
+
+            # which no longer has the credentials that failed
+            self.assertNotIn(TwilioWhatsappType.SESSION_ACCOUNT_SID, self.client.session)
+
+            session = self.client.session
+            session[TwilioWhatsappType.SESSION_ACCOUNT_SID] = "account-sid"
+            session[TwilioWhatsappType.SESSION_AUTH_TOKEN] = "account-token"
+            session.save()
 
         with patch("temba.tests.twilio.MockTwilioClient.MockAccounts.get") as mock_get:
             mock_get.return_value = MockTwilioClient.MockAccount("Trial")
@@ -132,7 +142,7 @@ class TwilioWhatsappTypeTest(TembaTest):
                 # claim it
                 mock_numbers.return_value = iter([MockTwilioClient.MockPhoneNumber("+12062345678")])
                 response = self.client.post(claim_twilio, dict(country="US", phone_number="+12062345678"))
-                self.assertRedirects(response, reverse("public.public_welcome") + "?success")
+                self.assertRedirects(response, reverse("channels.channel_list"))
 
                 # make sure it is actually connected
                 channel = Channel.objects.get(channel_type="TWA", org=self.org)
@@ -158,7 +168,7 @@ class TwilioWhatsappTypeTest(TembaTest):
 
             mock_numbers.return_value = iter([])
             response = self.client.post(claim_twilio, dict(country="US", phone_number="+14155550199"))
-            self.assertRedirects(response, reverse("public.public_welcome") + "?success")
+            self.assertRedirects(response, reverse("channels.channel_list"))
 
             # the sender's SID is stored in the number_sid config
             channel = Channel.objects.get(channel_type="TWA", org=self.org, address="+14155550199")

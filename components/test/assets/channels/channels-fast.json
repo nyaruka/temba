@@ -1,0 +1,53 @@
+{
+  "count": 1,
+  "next": null,
+  "previous": null,
+  "paged_by": "page",
+  "results": [
+    {
+      "uuid": "c-005",
+      "name": "Bot",
+      "type": "TG",
+      "address": "rapidbot",
+      "is_enabled": true,
+      "speed": null,
+      "received": 0,
+      "sent": 0,
+      "activity": {
+        "in": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "created_on": "2026-10-01T09:00:00Z"
+    }
+  ]
+}

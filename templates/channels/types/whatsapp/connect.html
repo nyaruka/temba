@@ -2,9 +2,12 @@
 {% load i18n temba %}
 
 {% block pre-form %}
-  {% blocktrans trimmed with name=branding.name %}
-    You can connect your Facebook Business account to {{ name }} in just a few simple steps.
-  {% endblocktrans %}
+  {% if claim_blurb %}<div class="claim-blurb">{{ claim_blurb }}</div>{% endif %}
+  <div class="mt-4">
+    {% blocktrans trimmed %}
+      To get started, all you need is the Facebook account you manage your business with on Meta. You'll sign in with it to choose your WhatsApp number, or to set one up.
+    {% endblocktrans %}
+  </div>
   {% if claim_error %}
     <temba-alert level="error" class="my-4">
       {{ claim_error }}
@@ -13,43 +16,38 @@
   <temba-alert level="error" class="my-4 hidden" id="connect-error"> </temba-alert>
 {% endblock pre-form %}
 {% block form %}
-  <div class="mt-4 card">
-    <div id="fb-guide">
-      <ol class="steps">
-        <li>{% trans "Click on the button below to get started." %}</li>
-        <li>{% trans "Select the user you want to log in as." %}</li>
-        <li>{% trans "Select all the Facebook Business accounts you want to grant us permissions for." %}</li>
-        <li>{% trans "Approve the permissions, these are required for us to access the API on your behalf." %}</li>
-      </ol>
-    </div>
-    <div class="flex mt-4" id="fb-app-connect">
-      <div onclick="launchWhatsAppSignup()" class="button-primary">{% trans "Add Facebook Business" %}</div>
-    </div>
-    <form style="display: none" method="post" action="{{ connect_url }}" id="claim-form">
-      {% csrf_token %}
-      <input type="text" name="user_access_token" id="user-access-token">
-    </form>
+  {# in the new channel picker's modal, signing in is its footer's button #}
+  <div class="mt-4 flex" id="fb-app-connect">
+    <temba-button primary id="whatsapp-signup" data-claim-action name='{% trans "Sign in with Facebook" %}'> </temba-button>
   </div>
+  <form style="display: none" method="post" action="{{ connect_url }}" id="claim-form" data-claim-form>
+    {% csrf_token %}
+    <input type="text" name="user_access_token" id="user-access-token">
+  </form>
 {% endblock form %}
 {% block extra-script %}
   {{ block.super }}
+  {% include "channels/types/facebook/login_popup.html" %}
   <script>
     onSpload(function() {
-      var hash = window.location.hash.substring(1)
-      var result = hash.split('&').reduce(function(res, item) {
-        var parts = item.split('=');
+      var hash = window.location.hash.substring(1);
+      var result = hash.split("&").reduce(function(res, item) {
+        var parts = item.split("=");
         res[parts[0]] = parts[1];
         return res;
       }, {});
 
-      const urlParams = new URLSearchParams(window.location.search)
-
+      var urlParams = new URLSearchParams(window.location.search);
       var accessToken = urlParams.get("code") || result.long_lived_token || result.access_token;
-
       var oauthError = urlParams.get("error") || result.error;
       var errorDescription = urlParams.get("error_description");
       if (!errorDescription && result.error_description) {
         errorDescription = decodeURIComponent(result.error_description.replace(/\+/g, " "));
+      }
+
+      // a popup opened by the picker's modal hands the login back to it and closes
+      if ((accessToken || oauthError) && finishFacebookLoginPopup(result, accessToken)) {
+        return;
       }
 
       // don't leave the code/token or error details in the address bar and browser history
@@ -57,31 +55,37 @@
         history.replaceState(null, "", window.location.pathname);
       }
 
-      if (accessToken) {
-        var userAccessToken = document.getElementById("user-access-token");
-        var claimForm = document.getElementById("claim-form");
-
-        if (userAccessToken) {
-          userAccessToken.value = accessToken;
-        }
-        if (claimForm) {
-          claimForm.submit();
-        }
-      } else if (oauthError) {
+      var showError = function(message) {
         var errorAlert = document.getElementById("connect-error");
-        errorAlert.textContent = errorDescription || "{% trans 'Login was cancelled or failed, please try again.' %}";
+        errorAlert.textContent = message || "{% trans 'Login was cancelled or failed, please try again.' %}";
         errorAlert.classList.remove("hidden");
-      }
-    });
+      };
 
-    // Launch the embedded signup via the full-page OAuth dialog which redirects back
-    // here with the code/token that the handler above picks up and submits.
-    function launchWhatsAppSignup() {
-      {% if facebook_login_whatsapp_config_id %}
-      location.replace("https://www.facebook.com/v25.0/dialog/oauth?client_id={{ facebook_app_id }}&redirect_uri=" + window.location.origin + "{{connect_url}}" + "&config_id={{ facebook_login_whatsapp_config_id }}&response_type=code&override_default_response_type=true");
-      {% else %}
-      location.replace("https://www.facebook.com/v25.0/dialog/oauth?client_id={{ facebook_app_id }}&redirect_uri=" + window.location.origin + "{{connect_url}}" + "&scope=business_management,whatsapp_business_management,whatsapp_business_messaging&response_type=token");
-      {% endif %}
-    }
+      var connect = function(token) {
+        if (!token) {
+          showError();
+          return;
+        }
+        document.getElementById("user-access-token").value = token;
+        document.getElementById("claim-form").submit();
+      };
+
+      if (accessToken) {
+        connect(accessToken);
+      } else if (oauthError) {
+        showError(errorDescription);
+      }
+
+      // Meta's embedded signup comes back here with a code (or a token without a login configuration)
+      var signup = document.getElementById("whatsapp-signup");
+      signup.addEventListener("click", function() {
+        {% if facebook_login_whatsapp_config_id %}
+        var url = "https://www.facebook.com/v25.0/dialog/oauth?client_id={{ facebook_app_id }}&redirect_uri=" + window.location.origin + "{{ connect_url }}" + "&config_id={{ facebook_login_whatsapp_config_id }}&response_type=code&override_default_response_type=true";
+        {% else %}
+        var url = "https://www.facebook.com/v25.0/dialog/oauth?client_id={{ facebook_app_id }}&redirect_uri=" + window.location.origin + "{{ connect_url }}" + "&scope=business_management,whatsapp_business_management,whatsapp_business_messaging&response_type=token";
+        {% endif %}
+        startFacebookLogin(signup, url, connect);
+      });
+    });
   </script>
 {% endblock extra-script %}

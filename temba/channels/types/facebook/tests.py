@@ -48,9 +48,8 @@ class FacebookTypeTest(TembaTest):
 
         self.login(self.admin)
 
-        # check that claim page URL appears on claim list page
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, url)
+        # the new channel picker offers it
+        self.assertChannelTypeOffered(url)
 
         # can fetch the claim page
         response = self.client.get(url)
@@ -71,7 +70,7 @@ class FacebookTypeTest(TembaTest):
         self.assertEqual(channel.config[Channel.CONFIG_PAGE_NAME], "Temba")
         self.assertEqual(channel.address, "123456")
 
-        self.assertEqual(response.request["PATH_INFO"], reverse("channels.channel_read", args=[channel.uuid]))
+        self.assertEqual(response.request["PATH_INFO"], reverse("channels.channel_list"))
 
         mock_get.assert_any_call(
             "https://graph.facebook.com/v22.0/debug_token",
@@ -145,9 +144,8 @@ class FacebookTypeTest(TembaTest):
 
         self.login(self.admin)
 
-        # check that claim page URL appears on claim list page
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, url)
+        # the new channel picker offers it
+        self.assertChannelTypeOffered(url)
 
         # can fetch the claim page
         response = self.client.get(url)
@@ -190,9 +188,8 @@ class FacebookTypeTest(TembaTest):
 
         self.login(self.admin)
 
-        # check that claim page URL appears on claim list page
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, url)
+        # the new channel picker offers it
+        self.assertChannelTypeOffered(url)
 
         # can fetch the claim page
         response = self.client.get(url)
@@ -219,9 +216,8 @@ class FacebookTypeTest(TembaTest):
 
         self.login(self.admin2)
 
-        # check that claim page URL appears on claim list page
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, url)
+        # the new channel picker offers it
+        self.assertChannelTypeOffered(url)
 
         # can fetch the claim page
         response = self.client.get(url)

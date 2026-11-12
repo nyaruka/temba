@@ -30,7 +30,11 @@ class SomlengType(ChannelType):
     schemes = [URN.TEL_SCHEME]
 
     claim_view = ClaimView
-    claim_blurb = _("Connect to a Somleng instance.")
+    claim_blurb = _(
+        "%(link)s is an open source telco and communications platform, supported by UNICEF, with an API compatible "
+        "with Twilio's. Connect a number on a Somleng instance to send and receive SMS, make and answer voice calls, or "
+        "both."
+    ) % {"link": '<a target="_blank" href="https://www.somleng.org/">Somleng</a>'}
 
     config_ui = ConfigUI(
         blurb=_(

@@ -1,6 +1,6 @@
 from django.utils.translation import gettext_lazy as _
 
-from temba.channels.views import AuthenticatedExternalCallbackClaimView
+from temba.channels.types.hormuud.views import ClaimView
 from temba.contacts.models import URN
 
 from ...models import ChannelType, ConfigUI
@@ -19,9 +19,10 @@ class HormuudType(ChannelType):
     available_timezones = ["Africa/Mogadishu"]
 
     claim_blurb = _(
-        "If you are based in Somalia, you can get a number from %(link)s and connect it in a few simple steps."
-    ) % {"link": '<a target="_blank" href="http://www.hormuud.com/">Hormuud</a>'}
-    claim_view = AuthenticatedExternalCallbackClaimView
+        "%(link)s offers businesses an SMS API on its network in Somalia, sold in prepaid packages of local messages. "
+        "Connect a number you have with Hormuud to send and receive SMS with your contacts."
+    ) % {"link": '<a target="_blank" href="https://www.hormuud.com/SmsApi">Hormuud</a>'}
+    claim_view = ClaimView
 
     config_ui = ConfigUI(
         blurb=_(

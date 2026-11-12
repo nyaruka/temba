@@ -16,15 +16,13 @@ class SignalWireTest(TembaTest):
         url = reverse("channels.types.signalwire.claim")
         self.login(self.admin)
 
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertNotContains(response, url)
+        self.assertChannelTypeNotOffered(url)
 
         # change to LA timezone
         self.org.timezone = "America/Los_Angeles"
         self.org.save(update_fields=["timezone"])
 
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, url)
+        self.assertChannelTypeOffered(url)
 
         response = self.client.get(url)
         self.assertEqual(200, response.status_code)
@@ -59,6 +57,17 @@ class SignalWireTest(TembaTest):
             self.assertFalse(Channel.objects.all())
             self.assertContains(response, "Unable to find phone")
 
+        # then with a number whose URLs can't be set
+        with patch("requests.get") as mock_get, patch("requests.post") as mock_post:
+            mock_get.return_value = MockResponse(
+                200, '{"incoming_phone_numbers": [{"sid": "abc123", "phone_number": "+12065551212"}]}'
+            )
+            mock_post.return_value = MockResponse(400, '{ "error": "true" }')
+            response = self.client.post(url, post_data)
+            self.assertEqual(200, response.status_code)
+            self.assertTrue(response.context["form"].non_field_errors())
+            self.assertFalse(Channel.objects.filter(is_active=True))
+
         # success this time
         with patch("requests.get") as mock_get, patch("requests.post") as mock_post:
             mock_get.return_value = MockResponse(
@@ -71,7 +80,7 @@ class SignalWireTest(TembaTest):
                 auth=("key123", "token123"),
             )
 
-        channel = Channel.objects.get()
+        channel = Channel.objects.get(is_active=True)
 
         self.assertEqual("https://temba.signalwire.com/api/laml", channel.config["base_url"])
         self.assertEqual("key123", channel.config["account_sid"])

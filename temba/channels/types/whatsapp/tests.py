@@ -37,8 +37,7 @@ class WhatsAppTypeTest(TembaTest, CRUDLTestMixin):
         claim_whatsapp_cloud_url = reverse("channels.types.whatsapp.claim")
         select_whatsapp_cloud_url = reverse("channels.types.whatsapp.select_waba")
 
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, claim_whatsapp_cloud_url)
+        self.assertChannelTypeOffered(claim_whatsapp_cloud_url)
         self.assertRedirect(self.client.get(claim_whatsapp_cloud_url), connect_whatsapp_cloud_url)
 
         with patch("requests.get") as wa_cloud_get, patch("requests.post") as wa_cloud_post:
@@ -130,6 +129,11 @@ class WhatsAppTypeTest(TembaTest, CRUDLTestMixin):
                 wa_cloud_get.call_args_list[0][1],
                 {"params": {"access_token": "FB_APP_ID|FB_APP_SECRET", "input_token": "Z" * 48}},
             )
+
+        # signing in again forgets the last sign in
+        response = self.client.get(connect_whatsapp_cloud_url + "?again=1")
+        self.assertEqual(200, response.status_code)
+        self.assertNotIn(WhatsAppType.SESSION_USER_TOKEN, self.client.session)
 
         # make sure the token is set on the session
         session = self.client.session
@@ -297,10 +301,7 @@ class WhatsAppTypeTest(TembaTest, CRUDLTestMixin):
 
             channel = Channel.objects.get()
 
-            self.assertEqual(
-                response.request["PATH_INFO"],
-                reverse("channels.channel_read", args=(channel.uuid,)),
-            )
+            self.assertEqual(response.request["PATH_INFO"], reverse("channels.channel_list"))
 
             self.assertEqual("1234 - Long WABA name foobar foobar foobar foobar foobar foob...", channel.name)
             self.assertEqual("123123123", channel.address)
@@ -324,7 +325,7 @@ class WhatsAppTypeTest(TembaTest, CRUDLTestMixin):
 
             response = self.client.get(reverse("channels.types.whatsapp.request_code", args=(channel.uuid,)))
             self.assertEqual(200, response.status_code)
-            self.assertEqual(f"/settings/channels/{channel.uuid}", response.context[TEMBA_MENU_SELECTION])
+            self.assertEqual("/settings/channels", response.context[TEMBA_MENU_SELECTION])
 
             # request verification code
             response = self.client.post(
@@ -346,7 +347,7 @@ class WhatsAppTypeTest(TembaTest, CRUDLTestMixin):
             self.assertEqual({"messaging_product": "whatsapp", "pin": "111111"}, wa_cloud_post.call_args[1]["data"])
 
             response = self.client.get(reverse("channels.types.whatsapp.verify_code", args=(channel.uuid,)))
-            self.assertEqual(f"/settings/channels/{channel.uuid}", response.context[TEMBA_MENU_SELECTION])
+            self.assertEqual("/settings/channels", response.context[TEMBA_MENU_SELECTION])
 
         # make sure the token is set on the session
         session = self.client.session
@@ -619,27 +620,6 @@ class WhatsAppTypeTest(TembaTest, CRUDLTestMixin):
 
             self.assertEqual(len(response.context["waba_ids"]), 2)
             self.assertEqual(response.context["waba_ids"], ["111111111111111", "333333333333333"])
-
-    def test_clear_session_token(self):
-        Channel.objects.all().delete()
-        self.login(self.admin)
-
-        clear_session_token_url = reverse("channels.types.whatsapp.clear_session_token")
-        response = self.client.get(clear_session_token_url)
-        self.assertEqual(200, response.status_code)
-
-        self.assertNotIn(WhatsAppType.SESSION_USER_TOKEN, self.client.session)
-
-        session = self.client.session
-        session[WhatsAppType.SESSION_USER_TOKEN] = "user-token"
-        session.save()
-
-        self.assertIn(WhatsAppType.SESSION_USER_TOKEN, self.client.session)
-
-        response = self.client.get(clear_session_token_url)
-        self.assertEqual(200, response.status_code)
-
-        self.assertNotIn(WhatsAppType.SESSION_USER_TOKEN, self.client.session)
 
     @override_settings(WHATSAPP_ADMIN_SYSTEM_USER_TOKEN="WA_ADMIN_TOKEN")
     @patch("requests.get")

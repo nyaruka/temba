@@ -13,7 +13,7 @@
     </temba-alert>
   {% endif %}
   {% if current_creds_account %}
-    <div class="card mt-6">
+    <div class="card mt-6 claim-account">
       {% trans "Using account" %}
       <div class="text-lg font-bold inline-block ml-2">{{ current_creds_account }}</div>
       <a href='{% url "channels.types.twilio.connect" %}?reset_creds=reset&claim_type=twilio_whatsapp' class="inline-block ml-4">{% trans "Change" %}</a>
@@ -23,9 +23,12 @@
 {% block numbers-search-form %}
 {% endblock numbers-search-form %}
 {% block claim-numbers-description %}
-  {% blocktrans trimmed %}
-    Once you connect a number you will immediately be able to send and receive WhatsApp messages.
-  {% endblocktrans %}
+  {{ claim_blurb }}
+  <div class="mt-4">
+    {% blocktrans trimmed %}
+      To get started, pick the number on your Twilio account that's registered as a WhatsApp sender.
+    {% endblocktrans %}
+  </div>
   {% if not account_numbers %}
     <temba-alert level="warning" class="my-4">
       {% blocktrans trimmed %}

@@ -1,0 +1,10 @@
+{% extends "channels/channel_claim_form.html" %}
+{% load i18n %}
+
+{% block form-lead %}
+  <div class="mt-4">
+    {% blocktrans trimmed %}
+      To get started, you'll need your JustCall number along with your account's API key and API secret, which account owners and admins can find under APIs and Webhooks in the JustCall user menu.
+    {% endblocktrans %}
+  </div>
+{% endblock form-lead %}

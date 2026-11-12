@@ -368,6 +368,12 @@ temba-menu.servicing {
   flex-shrink: 0;
 }
 
+.workspace-alert-dismiss {
+  flex-shrink: 0;
+  margin-right: 4px;
+  color: #71717a;
+}
+
 .workspace-alert-warning {
   border-color: #f3dcae;
   background: #fffaf0;

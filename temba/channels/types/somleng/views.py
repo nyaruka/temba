@@ -34,18 +34,30 @@ class ClaimView(ClaimViewMixin, SmartFormView):
         )
         role = forms.ChoiceField(choices=ROLES, label=_("Role"))
         account_sid = forms.CharField(
+            label=_("Account SID"),
             max_length=64,
             required=False,
             widget=forms.TextInput(attrs={"autocomplete": "off"}),
         )
         account_token = forms.CharField(
+            label=_("Auth Token"),
             max_length=64,
             required=False,
             widget=forms.TextInput(attrs={"autocomplete": "off"}),
         )
         max_concurrent_calls = forms.IntegerField(
-            min_value=1, required=False, help_text=_("The maximum number of calls that can be active at the same time.")
+            min_value=1,
+            required=False,
+            label=_("Max Concurrent Calls"),
+            help_text=_("The maximum number of calls that can be active at the same time."),
         )
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+            # most numbers are in the workspace's own country
+            if country := self.request.org.default_country_code:
+                self.fields["country"].initial = country
 
     form_class = SomlengClaimForm
 

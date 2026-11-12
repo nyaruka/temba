@@ -1,12 +1,10 @@
 {% extends "channels/channel_claim_form.html" %}
 {% load i18n %}
 
-{% block pre-form %}
-  {% blocktrans trimmed with brand_name=branding.name %}
-    In order to connect your public Viber page to {{ brand_name }} you will need to create a public channel and follow the steps necessary to get an authentication token. Please consult the
-    <a href="https://developers.viber.com/?b_id=15145">Viber developers documentation</a> on how to create your own public account.
-  {% endblocktrans %}
-  {% blocktrans trimmed with brand_name=branding.name %}
-    Once you have your authentication token, enter it below to connect your public channel to {{ brand_name }}
-  {% endblocktrans %}
-{% endblock pre-form %}
+{% block form-lead %}
+  <div class="mt-4">
+    {% blocktrans trimmed %}
+      To get started, all you need is your bot's authentication token, which you'll find in its info in the Viber Admin Panel.
+    {% endblocktrans %}
+  </div>
+{% endblock form-lead %}

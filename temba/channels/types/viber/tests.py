@@ -38,9 +38,8 @@ class ViberTypeTest(TembaTest, CRUDLTestMixin):
 
         self.login(self.admin)
 
-        # check that claim page URL appears on claim list page
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, url)
+        # the new channel picker offers it
+        self.assertChannelTypeOffered(url)
 
         # try submitting with invalid token
         mock_post.return_value = MockResponse(400, json.dumps({"status": 3, "status_message": "Invalid token"}))
@@ -104,8 +103,8 @@ class ViberTypeTest(TembaTest, CRUDLTestMixin):
             },
         )
 
-        # read page has link to update page
-        self.assertContentMenu(read_url, self.admin, ["Configuration", "Logs", "Edit", "Delete"])
+        # read page has a button to edit it
+        self.assertContentMenu(read_url, self.admin, ["Edit"])
 
         # staff users see extra fields
         self.assertUpdateFetch(

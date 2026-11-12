@@ -22,14 +22,18 @@ class Dialog360Type(ChannelType):
     category = ChannelType.Category.SOCIAL_MEDIA
 
     unique_addresses = True
+    async_activation = False
     tps = 45
 
     schemes = [URN.WHATSAPP_SCHEME]
     template_type = "whatsapp"
 
     claim_blurb = _(
-        "Activate your own enterprise WhatsApp account in %(link)s (Cloud) to communicate with your contacts. "
-    ) % {"link": '<a target="_blank" href="https://www.360dialog.com/">360Dialog</a>'}
+        "%(link)s is an official WhatsApp Business Solution Provider that charges a flat monthly fee per number, and "
+        "passes on Meta's messaging fees without a markup. Contacts can message your number and reply with photos, "
+        "videos, documents and locations or by tapping buttons, and you can reach them at any time with templates "
+        "approved by Meta."
+    ) % {"link": '<a target="_blank" href="https://www.360dialog.com/">360dialog</a>'}
     claim_view = ClaimView
     update_form = UpdateForm
 

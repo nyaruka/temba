@@ -1,0 +1,10 @@
+{% extends "channels/channel_claim_form.html" %}
+{% load i18n %}
+
+{% block form-lead %}
+  <div class="mt-4">
+    {% blocktrans trimmed %}
+      To get started, you'll need your WhatsApp number on Kaleyra.io, along with your account's SID and an API key, both of which are under Developers in Kaleyra.io.
+    {% endblocktrans %}
+  </div>
+{% endblock form-lead %}

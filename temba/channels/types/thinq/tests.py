@@ -15,9 +15,8 @@ class ThinQTest(TembaTest):
         url = reverse("channels.types.thinq.claim")
         self.login(self.admin)
 
-        # check that claim page URL appears on claim list page
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, url)
+        # the new channel picker offers it
+        self.assertChannelTypeOffered(url)
 
         response = self.client.get(url)
         self.assertEqual(200, response.status_code)

@@ -27,8 +27,7 @@ class TurnTypeTest(CRUDLTestMixin, TembaTest):
         url = reverse("channels.types.turn.claim")
         self.login(self.admin)
 
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, url)
+        self.assertChannelTypeOffered(url)
 
         response = self.client.get(url)
         self.assertEqual(200, response.status_code)
@@ -42,9 +41,13 @@ class TurnTypeTest(CRUDLTestMixin, TembaTest):
         post_data["namespace"] = "my-custom-app"
         post_data["access_token"] = "token123"
 
+        # missing fields only get their own errors
+        response = self.client.post(url, {**post_data, "access_token": ""})
+        self.assertFormError(response.context["form"], "access_token", ["This field is required."])
+
         # will fail with invalid phone number
         response = self.client.post(url, post_data)
-        self.assertFormError(response.context["form"], None, ["Please enter a valid phone number"])
+        self.assertFormError(response.context["form"], "address", ["Please enter a valid phone number"])
 
         # valid number
         post_data["address"] = "0788123123"
@@ -114,7 +117,7 @@ class TurnTypeTest(CRUDLTestMixin, TembaTest):
             self.assertEqual(302, response.status_code)
 
         channel = Channel.objects.get(is_active=True)
-        self.assertRedirects(response, reverse("channels.channel_read", args=[channel.uuid]))
+        self.assertRedirects(response, reverse("channels.channel_list"))
         self.assertEqual(channel.channel_type, "TRN")
 
         # check the webhooks were registered with the courier receive URL for this channel

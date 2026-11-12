@@ -22,9 +22,10 @@ class MtargetType(ChannelType):
     recommended_timezones = ["Africa/Kigali", "Africa/Yaoundé", "Africa/Porto-Novo", "Africa/Kinshasa", "Europe/Paris"]
 
     claim_view = ClaimView
-    claim_blurb = _("If you have an %(link)s account, you can quickly connect it using their APIs.") % {
-        "link": '<a target="_blank" href="https://www.mtarget.fr/">Mtarget</a>'
-    }
+    claim_blurb = _(
+        "%(link)s is a French messaging platform with direct connections to mobile operators, used by more than 3,000 "
+        "clients. Connect a service you have with MTarget to send and receive SMS in France and internationally."
+    ) % {"link": '<a target="_blank" href="https://m-target.com/">MTarget</a>'}
 
     config_ui = ConfigUI(
         blurb=_(

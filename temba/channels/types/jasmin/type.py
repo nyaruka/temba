@@ -17,9 +17,10 @@ class JasminType(ChannelType):
 
     schemes = [URN.TEL_SCHEME]
 
-    claim_blurb = _("Connect your %(link)s instance that you have already connected to an SMSC.") % {
-        "link": '<a target="_blank" href="http://www.jasminsms.com/">Jasmin</a>'
-    }
+    claim_blurb = _(
+        "%(link)s is an open source SMS gateway you host yourself, routing messages to mobile operators over SMPP. "
+        "If you run Jasmin with your own SMSC connections, connect it to send and receive SMS through them."
+    ) % {"link": '<a target="_blank" href="https://docs.jasminsms.com/">Jasmin</a>'}
     claim_view = ClaimView
 
     config_ui = ConfigUI(

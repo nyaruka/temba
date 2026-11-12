@@ -19,7 +19,7 @@ class PlivoTypeTest(TembaTest):
         claim_plivo_url = reverse("channels.types.plivo.claim")
 
         # make sure plivo is on the claim page
-        response = self.client.get(reverse("channels.channel_claim"))
+        response = self.client.get(reverse("channels.channel_list"))
         self.assertContains(response, "Plivo")
         self.assertContains(response, claim_plivo_url)
 
@@ -41,7 +41,27 @@ class PlivoTypeTest(TembaTest):
             self.assertNotIn("account_trial", response.context)
             self.assertEqual(response.request["PATH_INFO"], connect_plivo_url)
 
-        # let's add a number already connected to the account
+        # credentials which have stopped working are forgotten and asked for again
+        session = self.client.session
+        session[PlivoType.CONFIG_AUTH_ID] = "auth-id"
+        session[PlivoType.CONFIG_AUTH_TOKEN] = "auth-token"
+        session.save()
+
+        with patch("requests.get") as plivo_get:
+            plivo_get.return_value = MockJsonResponse(401, {})
+
+            response = self.client.get(claim_plivo_url)
+            self.assertRedirect(response, connect_plivo_url)
+            self.assertIn("invalid_creds=1", response.url)
+            self.assertNotIn(PlivoType.CONFIG_AUTH_ID, self.client.session)
+            self.assertNotIn(PlivoType.CONFIG_AUTH_TOKEN, self.client.session)
+
+        # with credentials, let's add a number already connected to the account
+        session = self.client.session
+        session[PlivoType.CONFIG_AUTH_ID] = "auth-id"
+        session[PlivoType.CONFIG_AUTH_TOKEN] = "auth-token"
+        session.save()
+
         with patch("requests.get") as plivo_get:
             with patch("requests.post") as plivo_post:
                 plivo_get.return_value = MockJsonResponse(
@@ -82,7 +102,7 @@ class PlivoTypeTest(TembaTest):
                 self.assertTrue(PlivoType.CONFIG_AUTH_TOKEN in self.client.session)
 
                 response = self.client.post(claim_plivo_url, dict(phone_number="+1 606-268-1435", country="US"))
-                self.assertRedirects(response, reverse("public.public_welcome") + "?success")
+                self.assertRedirects(response, reverse("channels.channel_list"))
 
                 # make sure it is actually connected
                 channel = Channel.objects.get(channel_type="PL", org=self.org)
@@ -141,7 +161,7 @@ class PlivoTypeTest(TembaTest):
                 self.assertTrue(PlivoType.CONFIG_AUTH_TOKEN in self.client.session)
 
                 response = self.client.post(claim_plivo_url, dict(phone_number="+1 606-268-1440", country="US"))
-                self.assertRedirects(response, reverse("public.public_welcome") + "?success")
+                self.assertRedirects(response, reverse("channels.channel_list"))
 
                 # make sure it is actually connected
                 channel = Channel.objects.get(channel_type="PL", org=self.org)
@@ -270,6 +290,10 @@ class PlivoTypeTest(TembaTest):
 
         # connect plivo
         connect_url = reverse("channels.types.plivo.connect")
+
+        # missing credentials only get their own errors
+        response = self.client.post(connect_url, dict(auth_id="auth-id"))
+        self.assertFormError(response.context["form"], "auth_token", ["This field is required."])
 
         # simulate invalid credentials
         with patch("requests.get") as mock_get:

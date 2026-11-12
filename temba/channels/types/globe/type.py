@@ -19,9 +19,9 @@ class GlobeType(ChannelType):
     available_timezones = ["Asia/Manila"]
 
     claim_blurb = _(
-        "If you are based in the Phillipines, you can integrate {{ branding.name }} with Globe Labs to send and "
-        "receive messages on your short code."
-    )
+        "%(link)s is Globe Telecom's developer platform. Connect a short code you have with a Globe Labs app to send "
+        "and receive SMS with subscribers on Globe, one of the largest mobile networks in the Philippines."
+    ) % {"link": '<a target="_blank" href="https://www.globelabs.com.ph/">Globe Labs</a>'}
     claim_view = ClaimView
 
     config_ui = ConfigUI(

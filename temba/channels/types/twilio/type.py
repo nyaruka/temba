@@ -39,9 +39,11 @@ class TwilioType(ChannelType):
         "CalledZip",
     )
 
-    claim_blurb = _("Easily add a two way number you have configured with %(link)s using their APIs.") % {
-        "link": '<a target="_blank" href="https://www.twilio.com/">Twilio</a>'
-    }
+    claim_blurb = _(
+        "%(link)s offers phone numbers in many countries, and a number from your Twilio account can handle both SMS "
+        "and voice calls, so contacts can text it or call it and be answered by your flows. Where the number "
+        "supports it, messages can include photos and other media."
+    ) % {"link": '<a target="_blank" href="https://www.twilio.com/">Twilio</a>'}
     claim_view = ClaimView
     update_form = UpdateForm
 

@@ -7,7 +7,8 @@ from smartmin.views import SmartFormView, SmartModelActionView, SmartTemplateVie
 
 from django import forms
 from django.conf import settings
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect
+from django.template import RequestContext
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
@@ -17,7 +18,7 @@ from temba.utils.fields import InputWidget
 from temba.utils.text import truncate
 
 from ...models import Channel
-from ...views import ClaimViewMixin
+from ...views import ClaimModalMixin, ClaimViewMixin
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +104,7 @@ class ClaimView(ClaimViewMixin, SmartFormView):
         return super().pre_process(request, *args, **kwargs)
 
     def get_success_url(self):
-        return reverse("channels.channel_read", args=[self.object.uuid])
+        return reverse("channels.channel_list")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -148,8 +149,6 @@ class ClaimView(ClaimViewMixin, SmartFormView):
         context["phone_numbers"] = phone_numbers
 
         context["claim_url"] = f"{reverse('channels.types.whatsapp.claim')}?waba_id={target_waba}"
-        context["clear_session_token_url"] = reverse("channels.types.whatsapp.clear_session_token")
-        context["connect_whatsapp_url"] = reverse("channels.types.whatsapp.connect")
         context["facebook_app_id"] = settings.FACEBOOK_APPLICATION_ID
 
         context["facebook_login_whatsapp_config_id"] = settings.FACEBOOK_LOGIN_WHATSAPP_CONFIG_ID
@@ -225,11 +224,11 @@ class ClaimView(ClaimViewMixin, SmartFormView):
             del self.request.session[self.channel_type.SESSION_USER_TOKEN]
 
 
-class SelectWABA(ChannelTypeMixin, OrgPermsMixin, SmartTemplateView):
+class SelectWABA(ClaimModalMixin, ChannelTypeMixin, OrgPermsMixin, SmartTemplateView):
     permission = "channels.channel_claim"
     template_name = "channels/types/whatsapp/select_waba.html"
     title = _("Select the WABA to connect")
-    menu_path = "/settings/workspace"
+    menu_path = "/settings/channels"
 
     def pre_process(self, request, *args, **kwargs):
         oauth_user_token = self.request.session.get(self.channel_type.SESSION_USER_TOKEN, None)
@@ -268,7 +267,6 @@ class SelectWABA(ChannelTypeMixin, OrgPermsMixin, SmartTemplateView):
 
         context["waba_ids"] = list(dict.fromkeys(waba_targets))
         context["claim_url"] = reverse("channels.types.whatsapp.claim")
-        context["clear_session_token_url"] = reverse("channels.types.whatsapp.clear_session_token")
         return context
 
     def retrieve_access_token_info(self, oauth_user_token):
@@ -284,19 +282,6 @@ class SelectWABA(ChannelTypeMixin, OrgPermsMixin, SmartTemplateView):
     def remove_token_credentials_from_session(self):
         if self.channel_type.SESSION_USER_TOKEN in self.request.session:
             del self.request.session[self.channel_type.SESSION_USER_TOKEN]
-
-
-class ClearSessionToken(ChannelTypeMixin, OrgPermsMixin, SmartTemplateView):
-    permission = "channels.channel_claim"
-
-    def pre_process(self, request, *args, **kwargs):
-        if self.channel_type.SESSION_USER_TOKEN in self.request.session:
-            del self.request.session[self.channel_type.SESSION_USER_TOKEN]
-
-        return super().pre_process(request, *args, **kwargs)
-
-    def render_to_response(self, context, **response_kwargs):
-        return JsonResponse({})
 
 
 class RequestCode(ChannelTypeMixin, OrgObjPermsMixin, SmartModelActionView, SmartFormView):
@@ -318,7 +303,7 @@ class RequestCode(ChannelTypeMixin, OrgObjPermsMixin, SmartModelActionView, Smar
         return reverse("channels.types.whatsapp.verify_code", args=[self.object.uuid])
 
     def derive_menu_path(self):
-        return f"/settings/channels/{self.get_object().uuid}"
+        return "/settings/channels"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -377,7 +362,7 @@ class VerifyCode(ChannelTypeMixin, OrgObjPermsMixin, SmartModelActionView, Smart
         return Channel.objects.filter(is_active=True, org=self.request.org, channel_type=self.channel_type.code)
 
     def derive_menu_path(self):
-        return f"/settings/channels/{self.get_object().uuid}"
+        return "/settings/channels"
 
     def execute_action(self):
         form = self.form
@@ -411,7 +396,7 @@ class VerifyCode(ChannelTypeMixin, OrgObjPermsMixin, SmartModelActionView, Smart
             )
 
 
-class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
+class Connect(ClaimModalMixin, ChannelTypeMixin, OrgPermsMixin, SmartFormView):
     class WhatsappCloudConnectForm(forms.Form):
         user_access_token = forms.CharField(min_length=32, required=True)
 
@@ -478,10 +463,14 @@ class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
     submit_button_name = _("Save")
     success_message = _("WhatsApp Account successfully connected.")
     template_name = "channels/types/whatsapp/connect.html"
-    menu_path = "/settings/workspace"
+    menu_path = "/settings/channels"
     title = _("Connect WhatsApp")
 
     def pre_process(self, request, *args, **kwargs):
+        # signing in again, e.g. to connect numbers from another Facebook account, forgets the last sign in
+        if "again" in request.GET:
+            request.session.pop(self.channel_type.SESSION_USER_TOKEN, None)
+
         session_token = self.request.session.get(self.channel_type.SESSION_USER_TOKEN, None)
         if session_token:
             return HttpResponseRedirect(self.get_success_url())
@@ -504,6 +493,7 @@ class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
         context = super().get_context_data(**kwargs)
         context["connect_url"] = reverse("channels.types.whatsapp.connect")
         context["facebook_app_id"] = settings.FACEBOOK_APPLICATION_ID
+        context["claim_blurb"] = self.channel_type.get_claim_blurb().render(RequestContext(self.request))
 
         context["facebook_login_whatsapp_config_id"] = settings.FACEBOOK_LOGIN_WHATSAPP_CONFIG_ID
 

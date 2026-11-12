@@ -37,15 +37,15 @@ class BurstSMSType(ChannelType):
     claim_view = AuthenticatedExternalClaimView
     claim_view_kwargs = {
         "username_label": _("API Key"),
-        "username_help": _("Found on your BurstSMS settings page."),
+        "username_help": _("Found on your Kudosity settings page."),
         "password_label": _("API Secret"),
-        "password_help": _("Found on your BurstSMS settings page."),
-        "form_blurb": _("You can connect your BurstSMS number by entering the settings below."),
+        "password_help": _("Found on your Kudosity settings page."),
     }
 
-    claim_blurb = _("If you have a %(link)s number, you can quickly connect it using their APIs.") % {
-        "link": '<a target="_blank" href="https://www.burstsms.com.au/">BurstSMS</a>'
-    }
+    claim_blurb = _(
+        "BurstSMS, now %(link)s, offers SMS on Australian and New Zealand numbers. Connect a number you have with "
+        "them to send and receive messages with contacts in either country."
+    ) % {"link": '<a target="_blank" href="https://kudosity.com/">Kudosity</a>'}
 
     config_ui = ConfigUI(
         blurb=_("To finish configuring this channel, you need to set your callback URLs below for your number."),

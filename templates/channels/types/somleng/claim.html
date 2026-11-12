@@ -1,8 +1,10 @@
 {% extends "channels/channel_claim_form.html" %}
 {% load i18n %}
 
-{% block pre-form %}
-  {% blocktrans trimmed %}
-    You can add Somleng as a channel using your Somleng instance.
-  {% endblocktrans %}
-{% endblock pre-form %}
+{% block form-lead %}
+  <div class="mt-4">
+    {% blocktrans trimmed %}
+      To get started, you'll need your number along with your Somleng instance's host and your account's SID and auth token, which are in the Somleng dashboard.
+    {% endblocktrans %}
+  </div>
+{% endblock form-lead %}

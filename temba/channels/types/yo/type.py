@@ -20,8 +20,9 @@ class YoType(ChannelType):
 
     claim_view = ClaimView
     claim_blurb = _(
-        "If you are based in Uganda, you can integrate with %(link)s to send and receive messages on your short code."
-    ) % {"link": '<a target="_blank" href="http://www.yo.co.ug/">Yo!</a>'}
+        "%(link)s has provided SMS, USSD and IVR aggregation for more than 18 years, for organizations in Uganda and "
+        "beyond. Connect a short code or number you have with Yo! to send and receive SMS."
+    ) % {"link": '<a target="_blank" href="https://www.yo.co.ug/">Yo!</a>'}
 
     config_ui = ConfigUI(
         blurb=_("To finish configuring this channel, you'll need to notify Yo! of the following inbound SMS URL."),

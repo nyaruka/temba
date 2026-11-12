@@ -1,0 +1,78 @@
+{% extends "smartmin/read.html" %}
+{% load i18n %}
+
+{% block title-text %}
+  {% blocktrans trimmed with channel=object.name %}
+    {{ channel }} Templates
+  {% endblocktrans %}
+{% endblock title-text %}
+{% block content %}
+  <div class="channel-templates">
+    {% if last_sync %}
+      <div class="dash-banner {% if not last_sync.is_error %}info{% endif %}">
+        <temba-icon name="{% if last_sync.is_error %}alert_warning{% else %}check{% endif %}" size="1.1"></temba-icon>
+        <div class="dash-banner-text">
+          {% if last_sync.is_error %}
+            <div class="dash-banner-title">
+              {% blocktrans trimmed with since=last_sync.created_on|timesince %}
+                The last sync failed {{ since }} ago
+              {% endblocktrans %}
+            </div>
+            {% trans "These may be out of date until a sync succeeds." %}
+          {% else %}
+            {% blocktrans trimmed with since=last_sync.created_on|timesince %}
+              Synced from the provider {{ since }} ago.
+            {% endblocktrans %}
+          {% endif %}
+        </div>
+        {% if can_view_syncs %}
+          <div class="dash-banner-actions">
+            <a class="dash-link" href="{% url 'request_logs.httplog_channel' object.uuid %}" data-sheet-push="{% trans "Sync Logs" %}">{% trans "View sync logs" %}</a>
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+    <div class="dash-section">
+      {% if translations %}
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>{% trans "Name" %}</th>
+              <th>{% trans "Language" %}</th>
+              <th>{% trans "Status" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for translation in translations %}
+              <tr>
+                <td>
+                  <a href="{% url 'templates.template_read' translation.template.uuid %}">{{ translation.template.name }}</a>
+                </td>
+                <td>{{ translation.locale }}</td>
+                <td>
+                  <span
+                    class="dash-pill {% if translation.status == 'A' %}good{% elif translation.status == 'R' or translation.status == 'D' %}bad{% elif translation.status == 'P' or translation.status == 'I' %}warn{% endif %}"
+                  >
+                    {{ translation.get_status_display }}
+                  </span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="dash-empty">{% trans "No templates have been synced for this channel." %}</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock content %}
+{% block extra-style %}
+  {{ block.super }}
+  <style>
+    .channel-templates {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+  </style>
+{% endblock extra-style %}

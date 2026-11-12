@@ -1,0 +1,121 @@
+{% comment %}
+  The sheet a dashboard opens what it summarizes in. Give the page a `sheets` dict of name -> url, header, subtitle, a
+  width in pixels if it's better narrower than the default, and for one listing items (e.g. logs), item_header. Then any element with data-sheet="<name>" opens that sheet, and with
+  data-sheet-item="<url>" too, opens it with that item selected (the sheet's view is given it as `selected`).
+
+  The page can give every sheet an icon (e.g. its channel's logo) with a <template data-sheet-icon> holding it.
+
+  The open sheet and its selected item are kept in the page's URL (?sheet=<name>&item=<url>), so they can be shared.
+  Following such a link opens just the item, without the list it was in.
+{% endcomment %}
+<temba-sheet id="dashboard-sheet"></temba-sheet>
+{{ sheets|json_script:"dashboard-sheets" }}
+<script>
+  onSpload(function() {
+    var sheet = document.querySelector("#dashboard-sheet");
+    var sheets = JSON.parse(document.querySelector("#dashboard-sheets").textContent);
+    var openName = null;
+    var opener = null;
+
+    var icon = document.querySelector("template[data-sheet-icon]");
+    if (icon && icon.content.firstElementChild) {
+      var iconEl = icon.content.firstElementChild.cloneNode(true);
+      iconEl.setAttribute("slot", "icon");
+      sheet.appendChild(iconEl);
+    }
+
+    var setLocation = function(name, item) {
+      var url = new URL(window.location.href);
+      url.searchParams.delete("sheet");
+      url.searchParams.delete("item");
+      if (name) {
+        url.searchParams.set("sheet", name);
+      }
+      if (item) {
+        url.searchParams.set("item", item);
+      }
+      history.replaceState(history.state, "", url.pathname + url.search + url.hash);
+    };
+
+    // an item has to be one of the sheet's own, since it can come from the URL
+    var isItemOf = function(config, item) {
+      return !!item && item.indexOf(config.url) === 0;
+    };
+
+    var open = function(name, item) {
+      var config = sheets[name];
+      if (!config) {
+        return;
+      }
+      openName = name;
+      item = isItemOf(config, item) ? item : null;
+
+      var url = config.url;
+      if (item) {
+        url += (url.indexOf("?") === -1 ? "?" : "&") + "selected=" + encodeURIComponent(item);
+      }
+      sheet.show(url, config.header, config.subtitle || "", config.width);
+      setLocation(name, item);
+    };
+
+    // a shared link to an item shows just that item
+    var openItem = function(name, item) {
+      var config = sheets[name];
+      if (!config || !isItemOf(config, item)) {
+        return open(name);
+      }
+      openName = name;
+      sheet.show(item, config.item_header || config.header, config.subtitle || "", config.width);
+      setLocation(name, item);
+    };
+
+    document.querySelectorAll("[data-sheet]").forEach(function(el) {
+      el.addEventListener("click", function(event) {
+        event.preventDefault();
+        open(el.dataset.sheet, el.dataset.sheetItem);
+
+        // the pointer is still over what opened the sheet when it closes, so hold off its hover look until it leaves
+        opener = el;
+        el.classList.add("dash-opened");
+      });
+    });
+
+    // selecting an item in the sheet's list keeps the URL in step
+    sheet.addEventListener("temba-selection", function(event) {
+      if (openName && event.target !== sheet && event.detail && "url" in event.detail) {
+        setLocation(openName, event.detail.url);
+      }
+    });
+
+    // as does going a level deeper within the sheet, e.g. into one of a list of syncs
+    sheet.addEventListener("temba-loaded", function(event) {
+      if (event.target === sheet && openName && sheet.depth > 1) {
+        setLocation(openName, sheet.current.endpoint);
+      }
+    });
+
+    sheet.addEventListener("temba-dialog-hidden", function(event) {
+      if (event.target === sheet) {
+        openName = null;
+        setLocation(null, null);
+
+        if (opener) {
+          var closed = opener;
+          opener = null;
+          var release = function(e) {
+            if (!closed.contains(e.target)) {
+              closed.classList.remove("dash-opened");
+              document.removeEventListener("pointermove", release);
+            }
+          };
+          document.addEventListener("pointermove", release);
+        }
+      }
+    });
+
+    var params = new URLSearchParams(window.location.search);
+    if (params.get("sheet")) {
+      openItem(params.get("sheet"), params.get("item"));
+    }
+  });
+</script>

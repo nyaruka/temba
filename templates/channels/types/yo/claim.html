@@ -1,1 +1,10 @@
 {% extends "channels/channel_claim_authenticated.html" %}
+{% load i18n %}
+
+{% block form-lead %}
+  <div class="mt-4">
+    {% blocktrans trimmed %}
+      To get started, you'll need your short code or number along with your Yo! account number and gateway password.
+    {% endblocktrans %}
+  </div>
+{% endblock form-lead %}

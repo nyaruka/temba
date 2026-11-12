@@ -67,9 +67,10 @@ class VonageType(ChannelType):
 
     schemes = [URN.TEL_SCHEME]
 
-    claim_blurb = _("Easily add a two way number you have configured with %(link)s using their APIs.") % {
-        "link": '<a target="_blank" href="https://www.vonage.com/">Vonage</a>'
-    }
+    claim_blurb = _(
+        "%(link)s, formerly Nexmo, offers phone numbers in many countries for SMS and voice. A number from your "
+        "Vonage account can handle both, so contacts can text it or call it and be answered by your flows."
+    ) % {"link": '<a target="_blank" href="https://www.vonage.com/communications-apis/">Vonage</a>'}
     claim_view = ClaimView
 
     async_activation = False
