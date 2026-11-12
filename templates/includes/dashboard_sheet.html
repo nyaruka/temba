@@ -1,7 +1,8 @@
 {% comment %}
   The sheet a dashboard opens what it summarizes in. Give the page a `sheets` dict of name -> url, header, subtitle, a
   width in pixels if it's better narrower than the default, and for one listing items (e.g. logs), item_header. Then any element with data-sheet="<name>" opens that sheet, and with
-  data-sheet-item="<url>" too, opens it with that item selected (the sheet's view is given it as `selected`).
+  data-sheet-item="<url>" too, opens it with that item selected (the sheet's view is given it as `selected`). A header
+  button opens one as a JS menu item with the id openSheet_<name>.
 
   The page can give every sheet an icon (e.g. its channel's logo) with a <template data-sheet-icon> holding it.
 
@@ -68,6 +69,12 @@
       sheet.show(item, config.item_header || config.header, config.subtitle || "", config.width);
       setLocation(name, item);
     };
+
+    Object.keys(sheets).forEach(function(name) {
+      window["openSheet_" + name] = function() {
+        open(name);
+      };
+    });
 
     document.querySelectorAll("[data-sheet]").forEach(function(el) {
       el.addEventListener("click", function(event) {

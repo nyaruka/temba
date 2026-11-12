@@ -391,6 +391,21 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertContentMenu(fb_read_url, self.admin, ["Reconnect Facebook Page", "Edit"])
         self.assertContentMenu(fb_read_url, self.editor, [])
 
+        # which open their views in a sheet over the page
+        response = self.requestView(fb_read_url, self.admin)
+        self.assertEqual(
+            {
+                "url": reverse("channels.types.facebook.refresh_token", args=[fb_channel.uuid]),
+                "header": "Reconnect Facebook Page",
+                "width": 960,
+            },
+            response.context["sheets"]["refresh_token"],
+        )
+        self.assertContains(response, "openSheet_")
+
+        response = self.requestView(fb_read_url, self.editor)
+        self.assertNotIn("refresh_token", response.context["sheets"])
+
     def test_logs_list(self):
         channel = self.create_channel("T", "My Channel", "+250785551212")
         log = self.create_channel_log(

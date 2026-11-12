@@ -60,6 +60,17 @@ class ChannelTypeMixin(SpaMixin):
 
         super().__init__()
 
+    def dispatch(self, request, *args, **kwargs):
+        response = super().dispatch(request, *args, **kwargs)
+
+        # a sheet can't follow a redirect without rendering where it goes, so hand it the destination instead
+        if self.is_sheet() and isinstance(response, HttpResponseRedirectBase):
+            success = HttpResponse()
+            success["X-Temba-Success"] = response.url
+            return success
+
+        return response
+
 
 def get_claimable_types(org, user) -> list[dict]:
     """
@@ -682,10 +693,9 @@ class ChannelCRUDL(SmartCRUDL):
         def build_context_menu(self, menu):
             obj = self.get_object()
 
-            # type specific actions like reconnecting are all claim views
-            if self.has_org_perm("channels.channel_claim"):
-                for item in obj.type.menu_items:
-                    menu.add_link(item["label"], reverse(item["view_name"], args=[obj.uuid]), as_button=True)
+            # type specific actions like reconnecting open in a sheet
+            for name, sheet in self.get_action_sheets(obj).items():
+                menu.add_js(f"openSheet_{name}", sheet["header"], as_button=True)
 
             if obj.channel_type == "FB" and self.has_org_perm("channels.channel_facebook_whitelist"):
                 menu.add_modax(
@@ -704,6 +714,22 @@ class ChannelCRUDL(SmartCRUDL):
                     title=_("Edit Channel"),
                     as_button=True,
                 )
+
+        def get_action_sheets(self, channel) -> dict:
+            """
+            The sheets of the channel type's own actions, e.g. reconnecting its account, which are all claim views
+            """
+            if not self.has_org_perm("channels.channel_claim"):
+                return {}
+
+            return {
+                item["view_name"].split(".")[-1]: {
+                    "url": reverse(item["view_name"], args=[channel.uuid]),
+                    "header": item["label"],
+                    "width": self.NARROW_SHEET_WIDTH,
+                }
+                for item in channel.type.menu_items
+            }
 
         def get_sheets(self, channel) -> dict:
             """
@@ -743,6 +769,7 @@ class ChannelCRUDL(SmartCRUDL):
                     "url": reverse("channels.channel_syncs", args=[channel.uuid]),
                     "header": _("%(channel)s Phone Syncs") % {"channel": name},
                 }
+            sheets.update(self.get_action_sheets(channel))
             return sheets
 
         def get_activity(self, channel) -> dict:

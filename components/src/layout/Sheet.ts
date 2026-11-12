@@ -8,10 +8,21 @@ import { Modal } from './Modal';
 import {
   clearLightContent,
   getClasses,
+  getHTTPCookie,
   getUrl,
+  postUrl,
+  serialize,
+  serializeFiles,
   setLightContent,
   WebResponse
 } from '../utils';
+
+/** whether a form posts - read from its attribute, as a field named method would shadow the property */
+const isPosting = (form: HTMLFormElement): boolean =>
+  (form.getAttribute('method') || '').toLowerCase() === 'post';
+
+/** the headers which have a view render just its content, for a sheet */
+const SHEET_HEADERS = { 'X-Temba-Spa': '1', 'X-Temba-Sheet': '1' };
 
 /** One view the sheet has loaded, the last being the one showing */
 interface SheetView {
@@ -152,6 +163,23 @@ export class Sheet extends RapidElement {
   // bumped on every load so a slow response can't land over a newer one
   private loadId = 0;
 
+  // where the content showing came from, which a form in it without an action of its own posts back to
+  private contentUrl: string = null;
+
+  // a form in the content which posts, e.g. reconnecting an account, is submitted here rather than leaving the page -
+  // other forms, e.g. a search, are left to submit as they would
+  private handleSubmit = (event: SubmitEvent) => {
+    const form = event.target as HTMLFormElement;
+    if (
+      form instanceof HTMLFormElement &&
+      this.contains(form) &&
+      isPosting(form)
+    ) {
+      event.preventDefault();
+      this.submitForm(form, event.submitter);
+    }
+  };
+
   // a link in the content marked with data-sheet-push="<title>" goes a level deeper in the sheet rather than leaving it
   private handleClick = (event: MouseEvent) => {
     if (
@@ -231,11 +259,13 @@ export class Sheet extends RapidElement {
   public connectedCallback(): void {
     super.connectedCallback();
     this.addEventListener('click', this.handleClick);
+    this.addEventListener('submit', this.handleSubmit);
   }
 
   public disconnectedCallback(): void {
     super.disconnectedCallback();
     this.removeEventListener('click', this.handleClick);
+    this.removeEventListener('submit', this.handleSubmit);
   }
 
   protected updated(changes: PropertyValues): void {
@@ -262,20 +292,20 @@ export class Sheet extends RapidElement {
     this.loading = true;
     clearLightContent(this);
 
-    getUrl(view.endpoint, null, { 'X-Temba-Spa': '1', 'X-Temba-Sheet': '1' })
+    getUrl(view.endpoint, null, SHEET_HEADERS)
       .then((response: WebResponse) => {
-        if (id !== this.loadId) {
+        if (id !== this.loadId || this.leaveFor(response)) {
           return;
         }
 
-        // a full page means we were sent somewhere that can't be shown here
-        if (response.body.indexOf('<!DOCTYPE HTML>') === 0) {
-          document.location = response.url;
+        // a view which sends us elsewhere on loading, e.g. as a step is already done, goes there
+        const success = response.headers.get('X-Temba-Success');
+        if (success) {
+          document.location = success;
           return;
         }
 
-        setLightContent(this, response.body);
-        this.loading = false;
+        this.setContent(response);
         this.fireCustomEvent(CustomEventType.Loaded, {
           endpoint: view.endpoint
         });
@@ -289,6 +319,115 @@ export class Sheet extends RapidElement {
           );
         }
       });
+  }
+
+  /** Posts a form in the content, then shows what comes back, or reloads the page if it sends us back to it */
+  private submitForm(
+    form: HTMLFormElement,
+    submitter: HTMLElement = null
+  ): void {
+    // a sign-in popup can come back to the site from another one, which leaves out a strict CSRF cookie so the page it
+    // loads sets a new one - post the current cookie's token, not the one the form was rendered with
+    const csrf = getHTTPCookie('csrftoken');
+    const csrfInput = form.querySelector(
+      '[name=csrfmiddlewaretoken]'
+    ) as HTMLInputElement;
+    if (csrf && csrfInput) {
+      csrfInput.value = csrf;
+    }
+
+    let payload: any = serialize(form);
+
+    // which button submitted it, as a native submit would say
+    const button = submitter as HTMLButtonElement;
+    if (button && button.name) {
+      payload +=
+        (payload ? '&' : '') +
+        new URLSearchParams({ [button.name]: button.value }).toString();
+    }
+
+    let contentType = 'application/x-www-form-urlencoded';
+    const files = serializeFiles(form);
+    if (files) {
+      new URLSearchParams(payload).forEach((value, key) =>
+        files.append(key, value)
+      );
+      payload = files;
+      contentType = null;
+    }
+
+    const id = ++this.loadId;
+    this.loading = true;
+    postUrl(
+      form.getAttribute('action') || this.contentUrl,
+      payload,
+      SHEET_HEADERS,
+      contentType
+    )
+      .then((response: WebResponse) => {
+        if (id !== this.loadId) {
+          return;
+        }
+
+        // a form done with sends us back to the page under the sheet, which it has changed (e.g. by reconnecting), so
+        // reload it - views give that as X-Temba-Success, the URL of a redirect followed would be rendered for nothing
+        const next = response.headers.get('X-Temba-Success') || response.url;
+        if (next) {
+          const path = new URL(next, window.location.href).pathname;
+          if (path === window.location.pathname) {
+            document.location = path;
+            return;
+          }
+        }
+
+        // anywhere else, e.g. the next step of verifying a number, shows in the sheet in its place
+        const success = response.headers.get('X-Temba-Success');
+        if (success) {
+          this.views = [
+            ...this.views.slice(0, -1),
+            { ...this.current, endpoint: success }
+          ];
+          this.load();
+          return;
+        }
+
+        if (!this.leaveFor(response)) {
+          this.setContent(response);
+        }
+      })
+      .catch(() => {
+        if (id === this.loadId) {
+          this.loading = false;
+          setLightContent(
+            this,
+            `<div class="dash-empty">${msg('Something went wrong submitting this.')}</div>`
+          );
+        }
+      });
+  }
+
+  /** Leaves the page for wherever a response came from if it's a full page, which can't be shown here */
+  private leaveFor(response: WebResponse): boolean {
+    if (response.body.indexOf('<!DOCTYPE HTML>') === 0) {
+      document.location = response.url;
+      return true;
+    }
+    return false;
+  }
+
+  private setContent(response: WebResponse): void {
+    setLightContent(this, response.body);
+    this.contentUrl = response.url;
+    this.loading = false;
+
+    // a script of the content's submitting one of its forms directly, as on signing in with Facebook, goes through
+    // us too, without the validation a submit button would bring - a script building a form later has to submit it
+    // with requestSubmit()
+    for (const form of Array.from(this.querySelectorAll('form'))) {
+      if (isPosting(form)) {
+        (form as any).submit = () => this.submitForm(form);
+      }
+    }
   }
 
   public render(): TemplateResult {
