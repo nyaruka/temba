@@ -3042,6 +3042,9 @@ msgstr ""
 msgid "Whether this organization is currently suspended."
 msgstr ""
 
+msgid "Whether this is an internal or testing workspace rather than one in real use."
+msgstr ""
+
 #, python-format
 msgid "[%(name)s] Invitation to join workspace"
 msgstr ""
@@ -3453,6 +3456,9 @@ msgid "Service"
 msgstr ""
 
 msgid "Anonymous"
+msgstr ""
+
+msgid "Internal"
 msgstr ""
 
 msgid "Flagged"

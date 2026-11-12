@@ -58,6 +58,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         assertOrgFilter("?filter=xxxx", [self.org2, self.org])
         assertOrgFilter("?filter=flagged", [])
         assertOrgFilter("?filter=anon", [])
+        assertOrgFilter("?filter=internal", [])
         assertOrgFilter("?filter=suspended", [])
         assertOrgFilter("?filter=verified", [])
 
@@ -77,6 +78,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
                 "name",
                 "features",
                 "is_anon",
+                "is_internal",
                 "admin_groups",
                 "channels_limit",
                 "contacts_limit",
@@ -108,6 +110,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
                 "name": "Temba II",
                 "features": ["new_orgs"],
                 "is_anon": False,
+                "is_internal": True,
                 "channels_limit": 20,
                 "contacts_limit": 100_000,
                 "fields_limit": 300,
@@ -126,6 +129,12 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         self.org.refresh_from_db()
         self.assertEqual("Temba II", self.org.name)
         self.assertEqual(["new_orgs"], self.org.features)
+        self.assertTrue(self.org.is_internal)
+
+        assertOrgFilter("?filter=internal", [self.org])
+
+        response = self.client.get(reverse("staff.org_read", args=[self.org.id]))
+        self.assertContains(response, "Internal")
         self.assertEqual(self.org.get_limit(Org.LIMIT_FIELDS), 300)
         self.assertEqual(self.org.get_limit(Org.LIMIT_GLOBALS), 250)  # uses default
         self.assertEqual(self.org.get_limit(Org.LIMIT_GROUPS), 400)

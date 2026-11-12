@@ -84,6 +84,7 @@ class OrgCRUDL(SmartCRUDL):
         filters = (
             ("all", _("All"), dict(), ("-created_on",)),
             ("anon", _("Anonymous"), dict(is_anon=True, is_suspended=False), None),
+            ("internal", _("Internal"), dict(is_internal=True), None),
             ("flagged", _("Flagged"), dict(is_flagged=True, is_suspended=False), None),
             ("suspended", _("Suspended"), dict(is_suspended=True), None),
             ("verified", _("Verified"), dict(config__verified=True, is_suspended=False), None),
@@ -200,7 +201,7 @@ class OrgCRUDL(SmartCRUDL):
 
             class Meta:
                 model = Org
-                fields = ("name", "features", "is_anon", "admin_groups")
+                fields = ("name", "features", "is_anon", "is_internal", "admin_groups")
 
         form_class = Form
         success_url = "id@staff.org_read"
@@ -253,6 +254,7 @@ class OrgCRUDL(SmartCRUDL):
                 "workspace.staff_updated",
                 org=obj,
                 is_anon=obj.is_anon,
+                is_internal=obj.is_internal,
                 features=obj.features,
                 admin_groups=sorted(g.name for g in obj.admin_groups.all()),
             )

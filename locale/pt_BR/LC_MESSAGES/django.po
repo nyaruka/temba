@@ -3068,6 +3068,9 @@ msgstr "Se esta organização está sinalizada atualmente."
 msgid "Whether this organization is currently suspended."
 msgstr "Se esta organização está suspensa atualmente."
 
+msgid "Whether this is an internal or testing workspace rather than one in real use."
+msgstr "Se esta é uma área de trabalho interna ou de teste em vez de uma em uso real."
+
 #, python-format
 msgid "[%(name)s] Invitation to join workspace"
 msgstr "[%(name)s] Convite para entrar na área de trabalho"
@@ -3480,6 +3483,9 @@ msgstr "Serviço"
 
 msgid "Anonymous"
 msgstr "Anônima"
+
+msgid "Internal"
+msgstr "Interna"
 
 msgid "Flagged"
 msgstr "Sinalizada"
