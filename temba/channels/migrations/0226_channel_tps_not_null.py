@@ -13,4 +13,8 @@ class Migration(migrations.Migration):
             name="tps",
             field=models.PositiveIntegerField(default=10),
         ),
+        migrations.AddConstraint(
+            model_name="channel",
+            constraint=models.CheckConstraint(condition=models.Q(("tps__gt", 0)), name="channel_tps_positive"),
+        ),
     ]

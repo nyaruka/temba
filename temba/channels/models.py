@@ -856,6 +856,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
                 condition=Q(channel_type="A", is_active=True, last_seen__isnull=False),
             ),
         ]
+        constraints = [models.CheckConstraint(condition=Q(tps__gt=0), name="channel_tps_positive")]
 
 
 class ChannelTally(BaseTally):

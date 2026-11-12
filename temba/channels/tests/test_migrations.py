@@ -1,4 +1,4 @@
-from django.db import connection
+from django.db import IntegrityError, connection, transaction
 
 from temba.tests import MigrationTest
 
@@ -25,3 +25,7 @@ class ChannelTpsNotNullTest(MigrationTest):
         self.assertEqual(10, self.no_tps.tps)
         self.assertEqual(10, self.zero_tps.tps)
         self.assertEqual(45, self.own_tps.tps)
+
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            self.own_tps.tps = 0
+            self.own_tps.save(update_fields=("tps",))
