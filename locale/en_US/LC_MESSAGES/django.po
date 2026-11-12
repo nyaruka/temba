@@ -3473,10 +3473,6 @@ msgstr ""
 msgid "Members of these groups administer this workspace."
 msgstr ""
 
-#, python-format
-msgid "Defaults to %(limit)s."
-msgstr ""
-
 msgid "Edit User"
 msgstr ""
 
