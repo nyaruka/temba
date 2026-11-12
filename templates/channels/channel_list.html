@@ -1,0 +1,149 @@
+{% extends "smartmin/list.html" %}
+{% load i18n %}
+
+{% block alert-messages %}
+  {{ block.super }}
+  {% if limit_reached or released_twilio %}
+    <div class="workspace-alerts">
+      {% if limit_reached %}
+        {% trans "Channel limit reached" as title %}
+        {% trans "Remove a channel before adding another one." as message %}
+        {% include "includes/workspace_alert.html" with level="warning" icon="channel" %}
+      {% endif %}
+      {% if released_twilio %}
+        {% trans "Twilio number disconnected" as title %}
+        {% trans "The number is still in your Twilio account, where you can release it if you no longer need it." as message %}
+        {% include "includes/workspace_alert.html" with level="warning" icon="channel_t" dismissable=True %}
+      {% endif %}
+    </div>
+  {% endif %}
+{% endblock alert-messages %}
+{% block page-header %}
+  {# the temba-channel-list renders its own header (title + content menu); #}
+  {# keep the csrf token and a hidden title for the SPA document.title hook #}
+  {% csrf_token %}
+  <div id="title-text" class="hide">{{ title }}</div>
+{% endblock page-header %}
+{% block extra-style %}
+  {{ block.super }}
+  <style>
+    /* The list component fills its container edge to edge and brings
+       its own surface, so drop the SPA content padding (and the grey
+       page background it would otherwise reveal around the list). */
+    .spa-content {
+      padding: 0 !important;
+    }
+  </style>
+{% endblock extra-style %}
+{% block content %}
+  <temba-channel-list
+    id="channel-list"
+    fill-window
+    history-state-key="channels"
+    list-title="{{ title }}"
+    {% if list_searchable %}searchable{% endif %}
+    endpoint="{{ list_url }}"
+    action-endpoint="{{ request.path }}"
+    content-menu-endpoint="{{ request.path }}?{{ request.GET.urlencode }}"
+    empty-message='{% trans "No channels" %}'
+  >
+  </temba-channel-list>
+  {{ help_links|json_script:"channel-help-links" }}
+  {% if can_claim %}
+    <temba-channel-picker id="channel-picker" {% if open_picker %}open{% endif %}> </temba-channel-picker>
+    {{ claimable_types|json_script:"claimable-channel-types" }}
+  {% endif %}
+{% endblock content %}
+{% block extra-script %}
+  {{ block.super }}
+  <script>
+    onSpload(function() {
+      var list = document.querySelector("#channel-list");
+      var picker = document.querySelector("#channel-picker");
+      var helpLinks = JSON.parse(document.getElementById("channel-help-links").textContent);
+      list.helpLinks = helpLinks;
+
+      if (picker) {
+        picker.helpLinks = helpLinks;
+        picker.types = JSON.parse(document.getElementById("claimable-channel-types").textContent);
+
+        // a claimed channel, or a type whose claim page has to be opened in full, navigates the page
+        picker.addEventListener("temba-redirected", function(event) {
+          spaGet(event.detail.url);
+          refreshMenu();
+        });
+      }
+
+      // the content menu's New Channel button
+      window.openChannelPicker = function() {
+        if (picker) {
+          picker.show();
+        }
+      };
+
+      // clicking a row opens the channel
+      list.addEventListener("temba-row-click", function(event) {
+        var channel = event.detail.item;
+        if (channel && channel.uuid) {
+          spaGet("/channels/channel/read/" + channel.uuid + "/");
+        }
+      });
+
+      // the embedded content menu fires temba-selection - dispatch it the
+      // same way the page chrome's content menu (spa_page_menu.html) does
+      list.addEventListener("temba-selection", function(event) {
+        var item = event.detail.item;
+        var click = event.detail.event;
+        if (item.type === "link") {
+          // help links go to another site, so open them in a tab of their own
+          if (/^https?:\/\//.test(item.url)) {
+            if (click) {
+              click.preventDefault();
+            }
+            window.open(item.url, "_blank");
+            return;
+          }
+          if (click) {
+            click.preventDefault();
+            click.stopPropagation();
+            if (click.metaKey && item.url) {
+              window.open(item.url, "_blank");
+              return;
+            }
+          }
+          spaGet(item.url);
+        } else if (item.type === "modax") {
+          showModax(item.title, item.url, {
+            disabled: item.disabled,
+            onSubmit: item.on_submit,
+            onRedirect: item.on_redirect,
+            id: item.modal_id,
+            originX: event.detail.originX,
+            originY: event.detail.originY
+          });
+        } else if (item.type === "js") {
+          if (window[item.id]) {
+            window[item.id]();
+          }
+        }
+      });
+
+      // See msgs/msg_list.html for the full rationale: stash the list's
+      // restorable state (page, sort, search, cursor url) on the current
+      // history entry so a navigation away and back lands on the same page.
+      list.addEventListener("temba-history-change", function(event) {
+        var current = history.state || {};
+        var next = Object.assign({}, current);
+        next[event.detail.key] = event.detail.state;
+        if (!next.url) {
+          next.url = location.href;
+        }
+        if (event.detail.replace) {
+          history.replaceState(next, "", event.detail.url || null);
+        } else {
+          history.pushState(next, "", event.detail.url || null);
+        }
+      });
+    });
+  </script>
+{% endblock extra-script %}

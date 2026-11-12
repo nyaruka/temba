@@ -2,6 +2,7 @@ import logging
 from collections import defaultdict
 from datetime import timedelta
 from typing import Any
+from urllib.parse import quote
 from uuid import UUID
 
 import phonenumbers
@@ -14,31 +15,35 @@ from vonage_http_client.errors import HttpRequestError
 from django import forms
 from django.conf import settings
 from django.contrib import messages
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.http import Http404, HttpResponse, HttpResponseRedirect
+from django.db.models import Count
+from django.http import Http404, HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http.response import HttpResponseRedirectBase
 from django.shortcuts import get_object_or_404
 from django.template import Engine, RequestContext, TemplateDoesNotExist
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.functional import cached_property
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _, ngettext
 
 from temba.contacts.models import URN
 from temba.ivr.models import Call
 from temba.msgs.models import Msg
 from temba.orgs.models import Org
-from temba.orgs.views.base import BaseDependencyDeleteModal, BaseReadView
+from temba.orgs.views.base import BaseDependencyDeleteModal, BaseListComponentView, BaseReadView
 from temba.orgs.views.mixins import OrgObjPermsMixin, OrgPermsMixin
 from temba.utils import audit, countries
 from temba.utils.fields import SelectWidget
-from temba.utils.views.mixins import ChartViewMixin, ComponentFormMixin, ContextMenuMixin, ModalFormMixin, SpaMixin
+from temba.utils.views.mixins import ComponentFormMixin, ContextMenuMixin, ModalFormMixin, SpaMixin
 
 from .models import Channel, ChannelLog
 
 logger = logging.getLogger(__name__)
 
-# how far back the read page charts and summarizes counts
-COUNTS_HISTORY = timedelta(days=365)
+# the cache of how many channels of each type there are, which orders the new channel picker
+CHANNEL_TYPE_POPULARITY_CACHE_KEY = "channel_type_popularity"
+CHANNEL_TYPE_POPULARITY_CACHE_TTL = 60 * 60 * 24
 
 ALL_COUNTRIES = countries.choices()
 
@@ -60,9 +65,135 @@ class ChannelTypeMixin(SpaMixin):
         super().__init__()
 
 
-class ClaimViewMixin(ChannelTypeMixin, OrgPermsMixin, ComponentFormMixin):
+def get_claimable_types(org, user) -> list[dict]:
+    """
+    Gets the channel types offered by the new channel picker, most used first (see the ordering below). Each says whether it's in the
+    workspace's region (types that aren't are only shown when the picker is asked for all regions) and whether it's
+    recommended for the workspace.
+    """
+    types = []
+    for ch_type in Channel.get_types():
+        if ch_type.claim_view is None or not ch_type.category:
+            continue
+
+        in_region, available = ch_type.is_available_to(org, user)
+        if not available:
+            continue
+
+        types.append(
+            {
+                "code": ch_type.code,
+                "slug": ch_type.slug,
+                "name": str(ch_type.name),
+                "category": ch_type.picker_category,
+                "claim_url": reverse(f"channels.types.{ch_type.slug}.claim"),
+                "in_modal": ch_type.claim_in_modal,
+                "in_region": bool(in_region),
+                "recommended": bool(ch_type.is_recommended_to(org, user)),
+            }
+        )
+
+    popularity = get_channel_type_popularity()
+
+    # the most used types come first, except that the WhatsApp ones come last (WhatsApp itself first, then its
+    # providers) so that they stay together, and Android comes last of its group
+    whatsapp = {t.code for t in Channel.get_types() if t.schemes and URN.WHATSAPP_SCHEME in t.schemes}
+
+    def order(t):
+        is_whatsapp = t["code"] in whatsapp
+        return (
+            is_whatsapp,
+            is_whatsapp and t["slug"] != "whatsapp",
+            t["slug"] == "android",
+            -popularity.get(t["code"], 0),
+            t["name"].lower(),
+        )
+
+    return sorted(types, key=order)
+
+
+def get_channel_type_popularity() -> dict[str, int]:
+    """
+    Gets the number of active channels of each type across all workspaces, which orders the new channel picker. It
+    changes slowly and counting means scanning every channel, so it's cached for a day.
+    """
+
+    def count():
+        counts = Channel.objects.filter(is_active=True).values_list("channel_type").annotate(count=Count("id"))
+        return {code: num for code, num in counts}
+
+    return cache.get_or_set(CHANNEL_TYPE_POPULARITY_CACHE_KEY, count, timeout=CHANNEL_TYPE_POPULARITY_CACHE_TTL)
+
+
+def get_channel_help_links(branding: dict) -> dict:
+    """
+    Gets the help center articles the channel pages link to, keyed by topic (see HELP_LINKS) - none at all for a brand
+    without the "support" feature, as its users aren't supported by that help center
+    """
+    if "support" not in branding.get("features", []):
+        return {}
+
+    return {k: v for k, v in settings.HELP_LINKS.items() if k == "channels" or k.startswith("channels.")}
+
+
+class ChannelMenuMixin:
+    """
+    For the pages of a single channel, e.g. its read page, logs and configuration, which show under Channels in the menu
+    """
+
+    menu_path = "/settings/channels"
+
+
+class ClaimModalMixin:
+    """
+    Mixin for the views of a channel type's claim flow - its claim view and any steps before it, like connecting an
+    account - which the new channel picker can load into its modal. There only the form and its scripts are rendered,
+    and a redirect becomes a response telling the picker where to go next.
+    """
+
+    # the header the new channel picker sets when it loads a view into its modal
+    MODAL_HEADER = "HTTP_X_TEMBA_CLAIM_MODAL"
+
+    menu_path = "/settings/channels"
+
+    def is_claim_modal(self) -> bool:
+        return self.MODAL_HEADER in self.request.META
+
+    def dispatch(self, request, *args, **kwargs):
+        # note the newest channel before this request, so we can tell the picker about one it creates - claim flows
+        # create channels in different ways, so this is simpler than having each one report what it made
+        org = getattr(request, "org", None)
+        last_id = None
+        if self.is_claim_modal() and request.method == "POST" and org:
+            last_id = org.channels.order_by("-id").values_list("id", flat=True).first() or 0
+
+        response = super().dispatch(request, *args, **kwargs)
+
+        # the picker can't follow a redirect itself, so hand it the destination to load or navigate to
+        if self.is_claim_modal() and isinstance(response, HttpResponseRedirectBase):
+            success = HttpResponse()
+            success["X-Temba-Success"] = response.url
+
+            if last_id is not None:
+                channel = org.channels.filter(id__gt=last_id, is_active=True).order_by("-id").first()
+                if channel:
+                    success["X-Temba-Channel"] = str(channel.uuid)
+                    success["X-Temba-Channel-Name"] = quote(channel.name or "")
+            return success
+
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        if self.is_claim_modal():
+            context["base_template"] = "channels/claim_modal.html"
+
+        return context
+
+
+class ClaimViewMixin(ClaimModalMixin, ChannelTypeMixin, OrgPermsMixin, ComponentFormMixin):
     permission = "channels.channel_claim"
-    menu_path = "/settings/channels/new-channel"
     submit_button_name = _("Submit")
 
     class Form(forms.Form):
@@ -98,7 +229,7 @@ class ClaimViewMixin(ChannelTypeMixin, OrgPermsMixin, ComponentFormMixin):
                 raise Http404()
 
             if Channel.is_limit_reached(request.org):
-                return HttpResponseRedirect(reverse("orgs.org_workspace"))
+                return HttpResponseRedirect(reverse("channels.channel_list"))
 
         return super().pre_process(request, *args, **kwargs)
 
@@ -112,6 +243,14 @@ class ClaimViewMixin(ChannelTypeMixin, OrgPermsMixin, ComponentFormMixin):
     def derive_title(self):
         return _("Connect %(channel_type)s") % {"channel_type": self.channel_type.name}
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # what the type is about, shown above its form unless its page says something of its own
+        if self.channel_type.claim_blurb:
+            context["claim_blurb"] = self.channel_type.get_claim_blurb().render(RequestContext(self.request))
+        return context
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["request"] = self.request
@@ -119,21 +258,20 @@ class ClaimViewMixin(ChannelTypeMixin, OrgPermsMixin, ComponentFormMixin):
         return kwargs
 
     def get_success_url(self):
+        # types which need setting up on their side first show how, otherwise there's nothing more to do
         if self.channel_type.config_ui:
             return reverse("channels.channel_configuration", args=[self.object.uuid])
         else:
-            return reverse("channels.channel_read", args=[self.object.uuid])
+            return reverse("channels.channel_list")
 
 
 class AuthenticatedExternalClaimView(ClaimViewMixin, SmartFormView):
-    form_blurb = _("You can connect your number by entering your credentials here.")
     username_label = _("Username")
     username_help = None
     password_label = _("Password")
     password_help = None
 
     def __init__(self, **kwargs):
-        self.form_blurb = kwargs.pop("form_blurb", self.form_blurb)
         self.username_label = kwargs.pop("username_label", self.username_label)
         self.username_help = kwargs.pop("username_help", self.username_help)
         self.password_label = kwargs.pop("password_label", self.password_label)
@@ -153,6 +291,13 @@ class AuthenticatedExternalClaimView(ClaimViewMixin, SmartFormView):
         )
         username = forms.CharField(label=_("Username"))
         password = forms.CharField(label=_("Password"))
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+            # most numbers are in the workspace's own country
+            if "country" in self.fields and (country := self.request.org.default_country_code):
+                self.fields["country"].initial = country
 
         def clean_number(self):
             number = self.data["number"]
@@ -201,11 +346,6 @@ class AuthenticatedExternalClaimView(ClaimViewMixin, SmartFormView):
         Subclasses can override this method to add in other channel config variables
         """
         return {}
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["form_blurb"] = self.form_blurb
-        return context
 
     def form_valid(self, form):
         org = self.request.org
@@ -360,7 +500,7 @@ class BaseClaimNumberMixin(ClaimViewMixin):
             self.claim_number(self.request.user, data["phone_number"], data["country"], role)
             self.remove_api_credentials_from_session()
 
-            return HttpResponseRedirect("%s?success" % reverse("public.public_welcome"))
+            return HttpResponseRedirect(reverse("channels.channel_list"))
 
         except (
             HttpRequestError,
@@ -466,7 +606,7 @@ class UpdateChannelForm(forms.ModelForm):
 class ChannelCRUDL(SmartCRUDL):
     model = Channel
     actions = (
-        "chart",
+        "activity",
         "claim",
         "claim_all",
         "update",
@@ -476,13 +616,71 @@ class ChannelCRUDL(SmartCRUDL):
         "logs_list",
         "logs_read",
         "facebook_whitelist",
+        "list",
+        "syncs",
+        "templates",
     )
 
-    class Read(SpaMixin, ContextMenuMixin, BaseReadView):
-        exclude = ("id", "is_active", "created_by", "modified_by", "modified_on")
+    class List(BaseListComponentView):
+        """
+        The workspace's channels, rendered by the temba-channel-list component, with the new channel picker. A
+        workspace with no channels opens the picker straight away, as does a request with `new` in its query.
+        """
 
-        def derive_menu_path(self):
-            return f"/settings/channels/{self.object.uuid}"
+        permission = "channels.channel_list"
+        title = _("Channels")
+        default_template = "channels/channel_list.html"
+        list_endpoint = "api.internal.channels"
+        bulk_actions = ()
+
+        menu_path = "/settings/channels"
+
+        def derive_list_query(self) -> str:
+            return ""
+
+        @cached_property
+        def can_claim(self) -> bool:
+            return self.has_org_perm("channels.channel_claim") and not Channel.is_limit_reached(self.request.org)
+
+        def build_context_menu(self, menu):
+            if self.can_claim:
+                menu.add_js("openChannelPicker", _("New Channel"), primary=True, as_button=True)
+
+        RELEASED_TWILIO_KEY = "released_twilio_channel"
+
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            org = self.request.org
+
+            context["can_claim"] = self.can_claim
+            context["limit_reached"] = Channel.is_limit_reached(org)
+            context["help_links"] = get_channel_help_links(self.request.branding)
+
+            # shown once, after a Twilio channel is deleted, as its number lives on in the Twilio account
+            context["released_twilio"] = self.request.session.pop(self.RELEASED_TWILIO_KEY, False)
+
+            if self.can_claim:
+                has_channels = org.channels.filter(is_active=True).exists()
+                context["claimable_types"] = get_claimable_types(org, self.request.user)
+                context["open_picker"] = (
+                    not has_channels and not context["released_twilio"]
+                ) or "new" in self.request.GET
+
+            return context
+
+    class Read(ChannelMenuMixin, SpaMixin, ContextMenuMixin, BaseReadView):
+        """
+        A channel's dashboard: its status, problems that need attention, summaries of its activity, setup, templates and
+        phone, and recent logs. Each summary opens the detail behind it in a sheet over the page.
+        """
+
+        RECENT_LOGS = 6
+
+        # sheets of a summary and a table read better narrower than the full width of the window
+        NARROW_SHEET_WIDTH = 960
+        ACTIVITY_DAYS = 30
+        CHART_DAYS = 90
+        SPEED_EXAMPLE_CONTACTS = 100_000
 
         def build_context_menu(self, menu):
             obj = self.get_object()
@@ -490,54 +688,249 @@ class ChannelCRUDL(SmartCRUDL):
             # type specific actions like reconnecting are all claim views
             if self.has_org_perm("channels.channel_claim"):
                 for item in obj.type.menu_items:
-                    menu.add_link(item["label"], reverse(item["view_name"], args=[obj.uuid]))
-
-            if obj.type.config_ui and self.has_org_perm("channels.channel_configuration"):
-                menu.add_link(_("Configuration"), reverse("channels.channel_configuration", args=[obj.uuid]))
-
-            if obj.type.has_logs and self.has_org_perm("channels.channel_logs"):
-                menu.add_link(_("Logs"), reverse("channels.channel_logs_list", args=[obj.uuid]))
-
-            if obj.type.template_type and self.has_org_perm("request_logs.httplog_list"):
-                menu.add_link(_("Template Logs"), reverse("request_logs.httplog_channel", args=[obj.uuid]))
-
-            if self.has_org_perm("channels.channel_update"):
-                menu.add_modax(
-                    _("Edit"),
-                    "update-channel",
-                    reverse("channels.channel_update", args=[obj.id]),
-                    title=_("Edit Channel"),
-                )
-            if self.has_org_perm("channels.channel_delete"):
-                menu.add_modax(_("Delete"), "delete-channel", reverse("channels.channel_delete", args=[obj.uuid]))
+                    menu.add_link(item["label"], reverse(item["view_name"], args=[obj.uuid]), as_button=True)
 
             if obj.channel_type == "FB" and self.has_org_perm("channels.channel_facebook_whitelist"):
                 menu.add_modax(
                     _("Whitelist Domain"),
                     "fb-whitelist",
                     reverse("channels.channel_facebook_whitelist", args=[obj.uuid]),
+                    as_button=True,
                 )
+
+            # deleting is done from the edit dialog
+            if self.has_org_perm("channels.channel_update"):
+                menu.add_modax(
+                    _("Edit"),
+                    "update-channel",
+                    reverse("channels.channel_update", args=[obj.id]),
+                    title=_("Edit Channel"),
+                    as_button=True,
+                )
+
+        def get_sheets(self, channel) -> dict:
+            """
+            The sheets the page can open, by name, each with the view it loads and its title - the channel's name and
+            what it shows, under the channel's logo
+            """
+            name = channel.name
+            sheets = {
+                "activity": {
+                    "url": reverse("channels.channel_activity", args=[channel.uuid]),
+                    "header": _("%(channel)s Messages") % {"channel": name},
+                    "width": self.NARROW_SHEET_WIDTH,
+                }
+            }
+
+            if channel.type.has_logs and self.has_org_perm("channels.channel_logs"):
+                sheets["logs"] = {
+                    "url": reverse("channels.channel_logs_list", args=[channel.uuid]),
+                    "header": _("%(channel)s Logs") % {"channel": name},
+                    "subtitle": _("Logs are kept for 7 days."),
+                    "item_header": _("%(channel)s Log") % {"channel": name},
+                }
+            if channel.type.config_ui and self.has_org_perm("channels.channel_configuration"):
+                sheets["setup"] = {
+                    "url": reverse("channels.channel_configuration", args=[channel.uuid]),
+                    "header": _("%(channel)s Setup") % {"channel": name},
+                    "width": self.NARROW_SHEET_WIDTH,
+                }
+            if channel.type.template_type:
+                sheets["templates"] = {
+                    "url": reverse("channels.channel_templates", args=[channel.uuid]),
+                    "header": _("%(channel)s Templates") % {"channel": name},
+                    "width": self.NARROW_SHEET_WIDTH,
+                }
+            if channel.is_android:
+                sheets["syncs"] = {
+                    "url": reverse("channels.channel_syncs", args=[channel.uuid]),
+                    "header": _("%(channel)s Phone Syncs") % {"channel": name},
+                }
+            return sheets
+
+        def get_activity(self, channel) -> dict:
+            """
+            Messages over the last CHART_DAYS for the activity chart, and their totals over the last ACTIVITY_DAYS for
+            the messages card
+            """
+            series = channel.get_daily_series(self.CHART_DAYS)
+            received, sent = series["in"][-self.ACTIVITY_DAYS :], series["out"][-self.ACTIVITY_DAYS :]
+
+            return {
+                "days": self.ACTIVITY_DAYS,
+                "received": sum(received),
+                "sent": sum(sent),
+                "total": sum(received) + sum(sent),
+                "series": [r + s for r, s in zip(received, sent)],
+                "chart": Channel.get_activity_chart_json(series),
+            }
+
+        def get_speed(self, channel) -> dict:
+            """
+            How fast the channel sends, as how long a broadcast to SPEED_EXAMPLE_CONTACTS contacts would take
+            """
+            return {
+                "tps": channel.effective_tps,
+                "duration": self.get_rough_duration(self.SPEED_EXAMPLE_CONTACTS / channel.effective_tps),
+                # very slow channels hold everything up, slow ones just some
+                "tone": {"very_slow": "bad", "slow": "warn"}.get(channel.get_speed(), ""),
+                "help_url": get_channel_help_links(self.request.branding).get("channels.throughput"),
+            }
+
+        @staticmethod
+        def get_rough_duration(seconds: float) -> str:
+            """
+            A duration rounded to read easily, e.g. "a minute", "15 minutes", "3 hours" or "2 days"
+            """
+            minutes = seconds / 60
+            if minutes < 1.5:
+                return gettext("a minute")
+            if minutes < 10:
+                count = round(minutes)
+                return ngettext("%(count)d minute", "%(count)d minutes", count) % {"count": count}
+            if minutes < 55:
+                count = round(minutes / 5) * 5
+                return ngettext("%(count)d minute", "%(count)d minutes", count) % {"count": count}
+
+            hours = minutes / 60
+            if hours < 1.5:
+                return gettext("an hour")
+            if hours < 22:
+                count = round(hours)
+                return ngettext("%(count)d hour", "%(count)d hours", count) % {"count": count}
+
+            days = hours / 24
+            if days < 1.5:
+                return gettext("a day")
+            count = round(days)
+            return ngettext("%(count)d day", "%(count)d days", count) % {"count": count}
+
+        def get_recent_logs(self, channel) -> list:
+            from .api import ChannelLogsEndpoint
+
+            logs, _prev, _next = ChannelLog.get_by_channel(channel, limit=self.RECENT_LOGS)
+            return [ChannelLogsEndpoint.serialize(channel, log) for log in logs]
+
+        def get_template_summary(self, channel) -> dict:
+            from temba.request_logs.models import HTTPLog
+            from temba.templates.models import TemplateTranslation
+
+            counts = dict(
+                channel.template_translations.filter(template__is_active=True)
+                .values_list("status")
+                .annotate(count=Count("id"))
+            )
+            last_sync = (
+                HTTPLog.objects.filter(channel=channel, log_type=HTTPLog.WHATSAPP_TEMPLATES_SYNCED)
+                .order_by("-created_on")
+                .only("created_on", "is_error")
+                .first()
+            )
+            others = []
+            for status, label in TemplateTranslation.STATUS_CHOICES:
+                if status != TemplateTranslation.STATUS_APPROVED and counts.get(status):
+                    others.append(f"{counts[status]} {str(label).lower()}")
+
+            return {
+                "approved": counts.get(TemplateTranslation.STATUS_APPROVED, 0),
+                "total": sum(counts.values()),
+                "others": others,
+                "last_sync": last_sync,
+            }
 
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
             channel = self.object
 
-            context["last_sync"] = channel.last_sync
-            context["send_paused"] = channel.is_send_paused()
+            # paused only matters while the channel is enabled
+            context["send_paused"] = channel.is_enabled and channel.is_send_paused()
+
+            context["activity"] = self.get_activity(channel)
+            context["speed"] = self.get_speed(channel)
+
+            sheets = self.get_sheets(channel)
+            context["sheets"] = sheets
+
+            if "logs" in sheets:
+                context["recent_logs"] = self.get_recent_logs(channel)
+            if "templates" in sheets:
+                context["templates"] = self.get_template_summary(channel)
 
             if channel.is_android:
-                context["latest_sync_events"] = channel.sync_events.order_by("-created_on")[:10]
+                last_sync = channel.last_sync
+                context["last_sync"] = last_sync
 
-            if not channel.is_new():
-                # if the last sync event was more than an hour ago, we have a problem
-                if channel.last_sync and (timezone.now() - channel.last_sync.created_on).total_seconds() > 3600:
-                    context["delayed_sync_event"] = True
+                # if the phone hasn't synced for an hour, it's not getting messages to send or reporting ones it got
+                if last_sync and not channel.is_new():
+                    context["delayed_sync"] = (timezone.now() - last_sync.created_on).total_seconds() > 3600
 
+            context["status"] = self.get_status(channel, sheets, context["send_paused"], context.get("delayed_sync"))
+            return context
+
+        def get_status(self, channel, sheets: dict, send_paused: bool, delayed_sync: bool) -> dict:
+            """
+            Whether the channel is working, as the status card shows it: a value and note in a tone, and the sheet that
+            explains it - the setup if there is one, unless something else is wrong
+            """
+
+            def status(tone, value, note, sheet=None):
+                # with nothing in particular to explain it, the card leads to the setup, or else what it's been doing
+                sheet = sheet or next(s for s in ("setup", "logs", "activity") if s in sheets)
+                more = {
+                    "setup": _("View setup"),
+                    "logs": _("View logs"),
+                    "syncs": _("View syncs"),
+                    "activity": _("See activity"),
+                }[sheet]
+                return {"tone": tone, "value": value, "note": note, "sheet": sheet, "more": more}
+
+            # a disabled channel isn't sending anyway, so whether it's paused doesn't matter
+            if not channel.is_enabled:
+                return status("", _("Disabled"), _("Won't send or receive messages until it's enabled."))
+            if send_paused:
+                return status(
+                    "bad",
+                    _("Paused"),
+                    _("The provider isn't accepting messages."),
+                    "logs" if "logs" in sheets else None,
+                )
+            if delayed_sync:
+                return status("warn", _("Not syncing"), _("The phone hasn't synced for over an hour."), "syncs")
+            if "setup" in sheets and not channel.has_received():
+                return status("warn", _("Waiting"), _("Nothing has been received from the provider yet."))
+            return status("good", _("Ready"), _("Sending and receiving messages."))
+
+    class Activity(SpaMixin, BaseReadView):
+        """
+        A channel's messages by day and month, shown in a sheet from its dashboard
+        """
+
+        permission = "channels.channel_read"
+
+        # how far back the period can be browsed, and the days before that a period can be compared with
+        BROWSE_DAYS = 365
+        COMPARE_DAYS = 365
+
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            channel = self.object
+
+            # up to a year back can be browsed, with the year before that to compare its first days with
+            series = channel.get_daily_series(self.BROWSE_DAYS + self.COMPARE_DAYS + 1)
+            context["chart"] = Channel.get_activity_chart_json(series)
             context["chart_min"] = max(
-                timezone.localdate(self.object.created_on), timezone.now().date() - COUNTS_HISTORY
+                timezone.localdate(channel.created_on), timezone.now().date() - timedelta(days=self.BROWSE_DAYS)
             )
+
             context["monthly_counts"] = monthly_counts = self.get_monthly_counts()
             context["has_voice"] = any(m["voice_in"] or m["voice_out"] for m in monthly_counts)
+
+            # each month's share of the busiest, for the bar beside it
+            for month in monthly_counts:
+                month["total"] = month["text_in"] + month["text_out"] + month["voice_in"] + month["voice_out"]
+            top = max((m["total"] for m in monthly_counts), default=0)
+            for month in monthly_counts:
+                month["share"] = round(100 * month["total"] / top) if top else 0
             return context
 
         def get_monthly_counts(self) -> list:
@@ -573,64 +966,53 @@ class ChannelCRUDL(SmartCRUDL):
             by_month.reverse()
             return by_month
 
-    class Chart(ChartViewMixin, BaseReadView):
+    class Templates(SpaMixin, BaseReadView):
+        """
+        The templates synced for a channel and whether each has been approved, shown in a sheet from its dashboard
+        """
+
         permission = "channels.channel_read"
-        default_chart_period = (-timedelta(days=30), timedelta(days=1))
 
-        def get_chart_period(self):
-            since, until = super().get_chart_period()
-            since = max(since, timezone.now().date() - COUNTS_HISTORY)
-            return since, max(until, since)
+        def get_object(self, *args, **kwargs):
+            channel = super().get_object(*args, **kwargs)
+            if not channel.type.template_type:
+                raise Http404()
+            return channel
 
-        def get_chart_data(self, since, until) -> tuple[list, list]:
-            # the picker's until is the last day shown
-            counts = self.object.get_daily_counts(since, until + timedelta(days=1))
+        def get_context_data(self, **kwargs):
+            from temba.request_logs.models import HTTPLog
 
-            # collect all dates and values by scope
-            dates_set = set()
-            values_by_scope = {
-                Channel.TALLY_TEXT_IN: {},
-                Channel.TALLY_TEXT_OUT: {},
-                Channel.TALLY_VOICE_IN: {},
-                Channel.TALLY_VOICE_OUT: {},
-            }
+            context = super().get_context_data(**kwargs)
+            context["translations"] = (
+                self.object.template_translations.filter(template__is_active=True)
+                .select_related("template")
+                .order_by("template__name", "locale")
+            )
+            context["last_sync"] = (
+                HTTPLog.objects.filter(channel=self.object, log_type=HTTPLog.WHATSAPP_TEMPLATES_SYNCED)
+                .order_by("-created_on")
+                .first()
+            )
+            context["can_view_syncs"] = self.has_org_perm("request_logs.httplog_list")
+            return context
 
-            for (day, scope), count in counts.items():
-                dates_set.add(day)
-                values_by_scope[scope][day] = count
+    class Syncs(SpaMixin, BaseReadView):
+        """
+        An Android channel's latest syncs with its phone, shown in a sheet from its dashboard
+        """
 
-            # create sorted list of dates
-            labels = sorted(list(dates_set))
+        permission = "channels.channel_read"
 
-            has_voice = any(values_by_scope[Channel.TALLY_VOICE_IN]) or any(values_by_scope[Channel.TALLY_VOICE_OUT])
+        def get_object(self, *args, **kwargs):
+            channel = super().get_object(*args, **kwargs)
+            if not channel.is_android:
+                raise Http404()
+            return channel
 
-            # create datasets with fixed splits for Msg In, Msg Out, Voice In, Voice Out
-            datasets = [
-                {
-                    "label": _("Incoming") if not has_voice else _("Incoming Text"),
-                    "data": [values_by_scope[Channel.TALLY_TEXT_IN].get(date, 0) for date in labels],
-                },
-                {
-                    "label": _("Outgoing") if not has_voice else _("Outgoing Text"),
-                    "data": [values_by_scope[Channel.TALLY_TEXT_OUT].get(date, 0) for date in labels],
-                },
-            ]
-
-            if has_voice:
-                datasets.extend(
-                    [
-                        {
-                            "label": _("Incoming Voice"),
-                            "data": [values_by_scope[Channel.TALLY_VOICE_IN].get(date, 0) for date in labels],
-                        },
-                        {
-                            "label": _("Outgoing Voice"),
-                            "data": [values_by_scope[Channel.TALLY_VOICE_OUT].get(date, 0) for date in labels],
-                        },
-                    ]
-                )
-
-            return [d.strftime("%Y-%m-%d") for d in labels], datasets
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            context["sync_events"] = self.object.sync_events.order_by("-created_on")[:20]
+            return context
 
     class FacebookWhitelist(ComponentFormMixin, ModalFormMixin, OrgObjPermsMixin, SmartModelActionView):
         class DomainForm(forms.Form):
@@ -670,12 +1052,7 @@ class ChannelCRUDL(SmartCRUDL):
 
     class Delete(BaseDependencyDeleteModal):
         cancel_url = "uuid@channels.channel_read"
-        success_url = "@orgs.org_workspace"
-        success_message = _("Your channel has been removed.")
-        success_message_twilio = _(
-            "We have disconnected your Twilio number. "
-            "If you do not need this number you can delete it from the Twilio website."
-        )
+        success_url = "@channels.channel_list"
 
         def post(self, request, *args, **kwargs):
             channel = self.get_object()
@@ -693,11 +1070,9 @@ class ChannelCRUDL(SmartCRUDL):
                 response["X-Temba-Success"] = self.cancel_url
                 return response
 
-            # override success message for Twilio channels
+            # the Twilio number itself still exists, which the channel list points out
             if channel.channel_type == "T":
-                messages.info(request, self.success_message_twilio)
-            else:
-                messages.info(request, self.success_message)
+                request.session[ChannelCRUDL.List.RELEASED_TWILIO_KEY] = True
 
             response = HttpResponse()
             response["X-Temba-Success"] = self.get_success_url()
@@ -719,6 +1094,14 @@ class ChannelCRUDL(SmartCRUDL):
 
         def get_success_url(self):
             return reverse("channels.channel_read", args=[self.object.uuid])
+
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+
+            # the channel is deleted from here rather than from its page
+            if self.has_org_perm("channels.channel_delete"):
+                context["delete_url"] = reverse("channels.channel_delete", args=[self.object.uuid])
+            return context
 
         def get_form_class(self):
             return self.object.type.get_update_form()
@@ -757,63 +1140,18 @@ class ChannelCRUDL(SmartCRUDL):
 
             return obj
 
-    class Claim(SpaMixin, OrgPermsMixin, SmartTemplateView):
-        title = _("New Channel")
-        menu_path = "/settings/channels/new-channel"
+    class Claim(OrgPermsMixin, SmartTemplateView):
+        """
+        Channels are added from the new channel picker on the list page, so this opens that
+        """
 
-        def channel_types_groups(self):
-            org = self.request.org
-            user = self.request.user
-
-            # fetch channel types, sorted by category and name
-            types_by_category = defaultdict(list)
-            recommended_channels = []
-            for ch_type in list(Channel.get_types()):
-                if ch_type.claim_view is None:
-                    continue
-                region_aware_visible, region_ignore_visible = ch_type.is_available_to(org, user)
-
-                if ch_type.is_recommended_to(org, user):
-                    recommended_channels.append(ch_type)
-                elif region_ignore_visible and region_aware_visible and ch_type.category:
-                    types_by_category[ch_type.category.name].append(ch_type)
-
-            return recommended_channels, types_by_category, True
-
-        def get_context_data(self, **kwargs):
-            context = super().get_context_data(**kwargs)
-            org = self.request.org
-
-            context["org_timezone"] = str(org.timezone)
-            context["limit_reached"] = Channel.is_limit_reached(org)
-
-            # fetch channel types, sorted by category and name
-            recommended_channels, types_by_category, only_regional_channels = self.channel_types_groups()
-
-            context["recommended_channels"] = recommended_channels
-            context["channel_types"] = types_by_category
-            context["only_regional_channels"] = only_regional_channels
-            return context
+        def get(self, request, *args, **kwargs):
+            return HttpResponseRedirect(reverse("channels.channel_list") + "?new=1")
 
     class ClaimAll(Claim):
-        def channel_types_groups(self):
-            org = self.request.org
-            user = self.request.user
+        pass
 
-            types_by_category = defaultdict(list)
-            recommended_channels = []
-            for ch_type in list(Channel.get_types()):
-                if ch_type.claim_view is None:
-                    continue
-                _, region_ignore_visible = ch_type.is_available_to(org, user)
-                if ch_type.is_recommended_to(org, user):
-                    recommended_channels.append(ch_type)
-                elif region_ignore_visible and ch_type.category:
-                    types_by_category[ch_type.category.name].append(ch_type)
-
-            return recommended_channels, types_by_category, False
-
-    class Configuration(SpaMixin, BaseReadView):
+    class Configuration(ChannelMenuMixin, SpaMixin, BaseReadView):
         def pre_process(self, request, *args, **kwargs):
             channel = self.get_object()
             if not channel.type.config_ui:
@@ -821,42 +1159,57 @@ class ChannelCRUDL(SmartCRUDL):
 
             return super().pre_process(request, *args, **kwargs)
 
-        def derive_menu_path(self):
-            return f"/settings/channels/{self.object.uuid}"
-
-        def get_blurb_from_template(self, channel) -> str:
+        def render_type_template(self, channel, name: str) -> str:
             try:
                 return (
                     Engine.get_default()
-                    .get_template("channels/types/%s/config.html" % channel.type.slug)
+                    .get_template(f"channels/types/{channel.type.slug}/{name}")
                     .render(context=RequestContext(self.request, channel.type.get_config_ui_context(channel)))
                 )
             except TemplateDoesNotExist:
                 return None
 
+        def get(self, request, *args, **kwargs):
+            # the page polls this while it waits for the channel's first message, so it can say when setup is working
+            if "status" in request.GET:
+                return JsonResponse({"receiving": self.get_object().has_received()})
+
+            return super().get(request, *args, **kwargs)
+
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
+            channel = self.object
+            config_ui = channel.type.config_ui
 
             endpoints = []
-            for endpoint in self.object.type.config_ui.get_used_endpoints(self.object):
-                endpoints.append(dict(url=endpoint.get_url(self.object), label=endpoint.label, help=endpoint.help))
+            for endpoint in config_ui.get_used_endpoints(channel):
+                endpoints.append(dict(url=endpoint.get_url(channel), label=endpoint.label, help=endpoint.help))
 
-            if self.object.type.config_ui.show_secret:
-                secret = self.object.secret or self.object.config.get("secret")
+            if config_ui.show_secret:
+                secret = channel.secret or channel.config.get("secret")
             else:
                 secret = None
 
-            context["blurb"] = self.get_blurb_from_template(self.object) or self.object.type.config_ui.blurb
+            # a type's own template replaces the generic intro, and holds whatever else it needs to explain
+            context["custom"] = self.render_type_template(channel, "config.html")
+            # or it can add its own steps, for types with more to set up than a list of URLs
+            context["custom_steps"] = self.render_type_template(channel, "config_steps.html")
+            context["blurb"] = config_ui.blurb
             context["endpoints"] = endpoints
             context["secret"] = secret
-            context["ip_addresses"] = settings.IP_ADDRESSES if self.object.type.config_ui.show_public_ips else None
-
+            context["ip_addresses"] = settings.IP_ADDRESSES if config_ui.show_public_ips else None
+            context["receiving"] = channel.has_received()
+            context["guide_url"] = get_channel_help_links(self.request.branding).get(
+                f"channels.types.{channel.type.slug}"
+            )
             return context
 
-    class LogsList(SpaMixin, BaseReadView):
+    class LogsList(ChannelMenuMixin, SpaMixin, BaseReadView):
+        """
+        A channel's logs - the page is a shell for the log list component, which fetches and pages them itself
+        """
+
         permission = "channels.channel_logs"
-        paginate_by = 50
-        title = _("Channel Logs")
 
         @classmethod
         def derive_url_pattern(cls, path, action):
@@ -868,29 +1221,20 @@ class ChannelCRUDL(SmartCRUDL):
                 raise Http404()
             return channel
 
-        def derive_menu_path(self):
-            return f"/settings/channels/{self.kwargs['uuid']}"
+        def derive_title(self):
+            return _("%(channel)s Logs") % {"channel": self.object.name}
 
         def get_context_data(self, **kwargs):
-            this_after = self.request.GET.get("after")
-            if this_after:
-                this_after = UUID(this_after)
-
-            logs, prev_after, next_after = ChannelLog.get_by_channel(
-                self.object, limit=self.paginate_by, after_uuid=this_after
-            )
-
             context = super().get_context_data(**kwargs)
-            context["logs"] = logs
-            context["page_obj"] = {
-                "previous_page_after": prev_after,
-                "next_page_after": next_after,
-                "has_previous": bool(this_after),
-                "has_next": bool(next_after),
-            }
+            context["list_url"] = f"{reverse('api.internal.channel_logs')}.json?channel={self.object.uuid}"
+
+            # a log to show beside the list, which has to be one of this channel's
+            selected = self.request.GET.get("selected", "")
+            if selected.startswith(self.request.path):
+                context["selected"] = selected
             return context
 
-    class LogsRead(SpaMixin, BaseReadView):
+    class LogsRead(ChannelMenuMixin, SpaMixin, BaseReadView):
         permission = "channels.channel_logs"
         title = _("Channel Log")
 
@@ -903,9 +1247,6 @@ class ChannelCRUDL(SmartCRUDL):
             if not channel.type.has_logs:
                 raise Http404()
             return channel
-
-        def derive_menu_path(self):
-            return f"/settings/channels/{self.kwargs['uuid']}"
 
         @cached_property
         def owner(self) -> Msg | Call | None:
@@ -927,7 +1268,9 @@ class ChannelCRUDL(SmartCRUDL):
 
             logs = []
             for log in raw_logs:
-                logs.append(log.get_display(anonymize=anonymize, urn=owner_urn))
+                display = log.get_display(anonymize=anonymize, urn=owner_urn)
+                display["type_display"] = log.get_log_type_display()
+                logs.append(display)
 
             context = super().get_context_data(**kwargs)
             context["msg"] = self.owner if isinstance(self.owner, Msg) else None

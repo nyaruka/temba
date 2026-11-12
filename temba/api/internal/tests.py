@@ -12,6 +12,7 @@ from temba.ai.types.openai.type import OpenAIType
 from temba.ai.types.openai_azure.type import OpenAIAzureType
 from temba.api.tests.mixins import APITestMixin
 from temba.campaigns.models import Campaign, CampaignEvent
+from temba.channels.models import Channel, ChannelLog
 from temba.contacts.models import Contact, ContactExport, ContactField, ContactGroup, ContactURN
 from temba.flows.models import Flow, FlowLabel
 from temba.globals.models import Global
@@ -20,6 +21,7 @@ from temba.knowledge.models import Article, KnowledgeSource
 from temba.msgs.models import Broadcast, Msg
 from temba.notifications.types import ExportFinishedNotificationType
 from temba.orgs.models import Org, OrgRole
+from temba.request_logs.models import HTTPLog
 from temba.schedules.models import Schedule
 from temba.templates.models import Template, TemplateTranslation
 from temba.tests import TembaTest, cleanup, matchers, mock_mailroom
@@ -618,6 +620,178 @@ class EndpointsTest(APITestMixin, TembaTest):
         self.login(self.admin)
         response = self.client.get(endpoint_url + "?search=" + ("x" * 1001))
         self.assertEqual(413, response.status_code)
+
+    def test_channels(self):
+        endpoint_url = reverse("api.internal.channels") + ".json"
+
+        self.assertGetNotPermitted(endpoint_url, [None, self.agent])
+        self.assertPostNotAllowed(endpoint_url)
+        self.assertDeleteNotAllowed(endpoint_url)
+
+        android = self.channel
+        android.tps = None
+        android.save(update_fields=("tps",))
+        telegram = self.create_channel("TG", "Bot", "rapidbot")
+        twilio = self.create_channel("T", "Reminders", "+12065551212", country="US")
+        twilio.tps = 1
+        twilio.save(update_fields=("tps",))
+        vonage = self.create_channel("NX", "Alerts", "+12065551313", country="US")
+        vonage.tps = 5
+        vonage.save(update_fields=("tps",))
+        old = self.create_channel("EX", "Archived Shortcode", "8255", schemes=["tel"])
+        old.tps = 1
+        old.is_enabled = False
+        old.save(update_fields=("tps", "is_enabled"))
+
+        # and a channel in another org that should never appear
+        self.create_channel("TG", "Other Bot", "otherbot", org=self.org2)
+
+        # some recent activity for the sparkline and its totals, and some older activity outside its window
+        today = timezone.now().date()
+        yesterday = today - timedelta(days=1)
+        self.create_channel_tally(twilio, "text:out", yesterday, 10)
+        self.create_channel_tally(twilio, "text:in", yesterday, 2)
+        self.create_channel_tally(twilio, "voice:in", yesterday, 1)
+        self.create_channel_tally(twilio, "text:out", today - timedelta(days=30), 100)
+
+        # without the endpoint's bulk prefetch, the series reads the tallies directly
+        self.assertEqual({"in": [0] * 12 + [3, 0], "out": [0] * 12 + [10, 0]}, twilio.get_activity_series())
+
+        # enabled channels first, then by name
+        self.assertGet(endpoint_url, [self.editor, self.admin], results=[vonage, telegram, twilio, android, old])
+
+        # search filters by name or address
+        self.assertGet(endpoint_url + "?search=remind", [self.admin], results=[twilio])
+        self.assertGet(endpoint_url + "?search=rapidbot", [self.admin], results=[telegram])
+
+        # each row carries the columns the component renders
+        def check_shape(data):
+            rows = {r["uuid"]: r for r in data["results"]}
+
+            self.assertEqual(
+                {
+                    "uuid": str(twilio.uuid),
+                    "name": "Reminders",
+                    "type": "T",
+                    "address": "+1 206-555-1212",
+                    "is_enabled": True,
+                    "speed": "very_slow",
+                    "received": 3,
+                    "sent": 10,
+                    "activity": {"in": [0] * 12 + [3, 0], "out": [0] * 12 + [10, 0]},
+                    "created_on": matchers.ISODatetime(),
+                },
+                rows[str(twilio.uuid)],
+            )
+            self.assertEqual("slow", rows[str(vonage.uuid)]["speed"])
+            self.assertIsNone(rows[str(android.uuid)]["speed"])  # no limit of its own, so the default
+            self.assertIsNone(rows[str(old.uuid)]["speed"])  # disabled
+            self.assertFalse(rows[str(old.uuid)]["is_enabled"])
+            self.assertEqual({"in": [0] * 14, "out": [0] * 14}, rows[str(telegram.uuid)]["activity"])
+            return True
+
+        # slow channels are only pointed out to workspaces big enough for it to matter
+        with patch.object(Channel, "SPEED_MIN_CONTACTS", -1):
+            self.assertGet(endpoint_url, [self.admin], raw=check_shape)
+
+        def check_no_speeds(data):
+            self.assertEqual({None}, {r["speed"] for r in data["results"]})
+            return True
+
+        self.assertGet(endpoint_url, [self.admin], raw=check_no_speeds)
+
+        # an over-long search query is rejected
+        self.login(self.admin)
+        response = self.client.get(endpoint_url + "?search=" + ("x" * 1001))
+        self.assertEqual(413, response.status_code)
+
+    def test_channel_logs(self):
+        channel = self.create_channel("T", "Twilio", "+12065551212")
+        logs = [
+            self.create_channel_log(channel, ChannelLog.LOG_TYPE_MSG_SEND, http_logs=[], errors=[]) for i in range(55)
+        ]
+        self.create_channel_log(self.channel, ChannelLog.LOG_TYPE_MSG_SEND, http_logs=[], errors=[])  # other channel
+
+        endpoint_url = reverse("api.internal.channel_logs") + f".json?channel={channel.uuid}"
+
+        self.assertGetNotPermitted(endpoint_url, [None, self.agent, self.editor])
+
+        # newest first, a page at a time, each linking to its page
+        self.login(self.admin)
+        page1 = self.client.get(endpoint_url).json()
+        self.assertEqual(50, len(page1["results"]))
+        self.assertEqual(str(logs[54].uuid), page1["results"][0]["uuid"])
+        self.assertEqual("Message Send", page1["results"][0]["type_display"])
+        self.assertEqual(
+            reverse("channels.channel_logs_read", args=[channel.uuid, "log", logs[54].uuid]),
+            page1["results"][0]["url"],
+        )
+        self.assertIsNone(page1["previous"])
+        self.assertIn(f"after={logs[5].uuid}", page1["next"])
+
+        page2 = self.client.get(page1["next"]).json()
+        self.assertEqual([str(log.uuid) for log in reversed(logs[:5])], [r["uuid"] for r in page2["results"]])
+        self.assertIsNone(page2["next"])
+        self.assertIsNotNone(page2["previous"])
+
+        # a channel in another workspace, of a type without logs, or that isn't a channel at all, isn't found
+        other = self.create_channel("T", "Other", "+12065551313", org=self.org2)
+        webchat = self.create_channel("CHP", "WebChat", "123")
+        for uuid in (other.uuid, webchat.uuid, "nope"):
+            response = self.client.get(reverse("api.internal.channel_logs") + f".json?channel={uuid}")
+            self.assertEqual(404, response.status_code)
+        self.assertEqual(404, self.client.get(endpoint_url + "&after=nope").status_code)
+
+    def test_channel_http_logs(self):
+        channel = self.create_channel("WAC", "WhatsApp", "1234")
+
+        def create_log(log_type, channel=channel, is_error=False):
+            return HTTPLog.objects.create(
+                org=channel.org,
+                channel=channel,
+                log_type=log_type,
+                url="https://graph.facebook.com/",
+                request="GET / HTTP/1.1",
+                response="HTTP/1.1 200 OK",
+                is_error=is_error,
+                request_time=10,
+            )
+
+        logs = [create_log(HTTPLog.WHATSAPP_TEMPLATES_SYNCED) for i in range(50)]
+        logs.append(create_log(HTTPLog.WHATSAPP_TOKENS_SYNCED, is_error=True))
+        create_log(HTTPLog.WHATSAPP_TEMPLATES_SYNCED, channel=self.create_channel("WAC", "Other", "5678"))
+
+        endpoint_url = reverse("api.internal.channel_http_logs") + f".json?channel={channel.uuid}"
+
+        self.assertGetNotPermitted(endpoint_url, [None, self.agent, self.editor])
+
+        # all of its syncs, newest first, a page at a time
+        self.login(self.admin)
+        page1 = self.client.get(endpoint_url).json()
+        self.assertEqual(50, len(page1["results"]))
+        self.assertEqual(
+            {
+                "uuid": str(logs[50].id),
+                "type_display": "WhatsApp Tokens Synced",
+                "is_error": True,
+                "elapsed_ms": 10,
+                "created_on": matchers.ISODatetime(),
+                "url": reverse("request_logs.httplog_read", args=[logs[50].id]),
+            },
+            page1["results"][0],
+        )
+
+        page2 = self.client.get(page1["next"]).json()
+        self.assertEqual([str(logs[0].id)], [r["uuid"] for r in page2["results"]])
+        self.assertIsNone(page2["next"])
+
+        # only for channels of types with templates
+        response = self.client.get(reverse("api.internal.channel_http_logs") + f".json?channel={self.channel.uuid}")
+        self.assertEqual(404, response.status_code)
+        self.assertEqual(404, self.client.get(endpoint_url + "&before=nope").status_code)
+        self.assertEqual(
+            404, self.client.get(reverse("api.internal.channel_http_logs") + ".json?channel=x").status_code
+        )
 
     @cleanup(valkey=True)
     def test_flows(self):

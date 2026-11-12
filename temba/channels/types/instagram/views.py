@@ -184,7 +184,7 @@ class RefreshToken(ChannelTypeMixin, OrgObjPermsMixin, SmartModelActionView, Sma
     title = _("Reconnect Instagram Business Account")
 
     def derive_menu_path(self):
-        return f"/settings/channels/{self.get_object().uuid}"
+        return "/settings/channels"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

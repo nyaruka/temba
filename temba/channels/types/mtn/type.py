@@ -24,9 +24,10 @@ class MtnType(ChannelType):
     schemes = [URN.TEL_SCHEME]
     async_activation = False
 
-    claim_blurb = _("Easily add a two way number you have configured with %(link)s using their APIs.") % {
-        "link": '<a href="https://developers.mtn.com/">MTN Developer Portal</a>'
-    }
+    claim_blurb = _(
+        "The %(link)s gives you API access to SMS on MTN's networks in countries across Africa. Connect a number or "
+        "short code you have with MTN to send and receive SMS with your contacts."
+    ) % {"link": '<a target="_blank" href="https://developers.mtn.com/">MTN Developer Portal</a>'}
     claim_view = ClaimView
 
     def get_token(self, channel):

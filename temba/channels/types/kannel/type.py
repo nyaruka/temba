@@ -18,9 +18,9 @@ class KannelType(ChannelType):
     schemes = [URN.TEL_SCHEME]
 
     claim_blurb = _(
-        "Connect your %(link)s instance, we'll walk you through the steps necessary to get your SMSC connection "
-        "working in a few minutes."
-    ) % {"link": '<a target="_blank" href="http://www.kannel.org/">Kannel</a>'}
+        "%(link)s is an open source SMS gateway you host yourself, connecting directly to mobile operators' SMS "
+        "centers. If you run Kannel with your own SMSC connections, connect it to send and receive SMS through them."
+    ) % {"link": '<a target="_blank" href="https://www.kannel.org/">Kannel</a>'}
     claim_view = ClaimView
 
     config_ui = ConfigUI()  # has own template

@@ -30,15 +30,13 @@ class MtnTypeTest(TembaTest):
             self.login(self.admin)
             url = reverse("channels.types.mtn.claim")
 
-            response = self.client.get(reverse("channels.channel_claim"))
-            self.assertNotContains(response, url)
+            self.assertChannelTypeNotOffered(url)
 
             self.org.timezone = "Africa/Brazzaville"
             self.org.save()
 
-            # should see the general channel claim page
-            response = self.client.get(reverse("channels.channel_claim"))
-            self.assertContains(response, url)
+            # should be offered by the new channel picker
+            self.assertChannelTypeOffered(url)
 
             # try to claim a channel
             response = self.client.get(url)
@@ -95,7 +93,7 @@ class MtnTypeTest(TembaTest):
 
             with override_settings(ORG_LIMIT_DEFAULTS={"channels": 1}):
                 response = self.client.get(url)
-                self.assertRedirect(response, "/org/workspace/")
+                self.assertRedirect(response, "/channels/channel/")
 
             # release channel and deactivate the subscription
             channel.release(self.admin, interrupt=False)

@@ -21,8 +21,12 @@ class KaleyraType(ChannelType):
     schemes = [URN.WHATSAPP_SCHEME]
 
     claim_blurb = _(
-        """Activate your own enterprise WhatsApp account in Kaleyra to communicate with your contacts. <a target="_blank" href="https://www.kaleyra.com/whatsapp/">Learn more about Kaleyra WhatsApp</a>"""
-    )
+        "%(link)s, part of Tata Communications and a Meta Premier Partner, offers WhatsApp alongside SMS, voice and "
+        "other channels from one platform. Contacts can message your number and send photos, videos, voice notes and "
+        "documents."
+    ) % {
+        "link": '<a target="_blank" href="https://www.tatacommunications.com/kaleyra/cpaas/whatsapp-business-api">Kaleyra</a>'
+    }
     claim_view = ClaimView
 
     config_ui = ConfigUI(

@@ -23,9 +23,11 @@ class SlackType(ChannelType):
 
     schemes = [URN.SLACK_SCHEME]
 
-    claim_blurb = _("Add a %(link)s bot to send and receive messages to Slack users, on your slack workspace.") % {
-        "link": '<a target="_blank" href="https://slack.com">Slack</a>'
-    }
+    claim_blurb = _(
+        "A %(link)s app lets people in your Slack workspace message your bot directly, so you can run flows for your "
+        "own team where they already work, e.g. check-ins, surveys or a help desk. People can send your bot files as "
+        "well as messages."
+    ) % {"link": '<a target="_blank" href="https://slack.com">Slack</a>'}
     claim_view = ClaimView
 
     config_ui = ConfigUI()  # has own template

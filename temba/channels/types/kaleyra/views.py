@@ -4,6 +4,7 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from temba.contacts.models import URN
+from temba.utils.fields import SelectWidget
 
 from ...models import Channel
 from ...views import ALL_COUNTRIES, ClaimViewMixin
@@ -11,10 +12,19 @@ from ...views import ALL_COUNTRIES, ClaimViewMixin
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
-        number = forms.CharField()
-        country = forms.ChoiceField(choices=ALL_COUNTRIES)
-        account_sid = forms.CharField(label=_("Account SID"))
+        number = forms.CharField(label=_("Number"))
+        country = forms.ChoiceField(
+            choices=ALL_COUNTRIES, widget=SelectWidget(attrs={"searchable": True}), label=_("Country")
+        )
+        account_sid = forms.CharField(label=_("SID"))
         api_key = forms.CharField(label=_("API Key"))
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+            # most numbers are in the workspace's own country
+            if country := self.request.org.default_country_code:
+                self.fields["country"].initial = country
 
         def clean_number(self):
             # check that our phone number looks sane

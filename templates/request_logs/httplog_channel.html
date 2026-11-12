@@ -1,0 +1,7 @@
+{% extends "smartmin/list.html" %}
+{% load i18n %}
+
+{% block content %}
+  {% trans "No sync logs yet." as empty_message %}
+  {% include "includes/log_list.html" with empty_message=empty_message %}
+{% endblock content %}

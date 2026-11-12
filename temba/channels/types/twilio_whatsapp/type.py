@@ -42,9 +42,11 @@ class TwilioWhatsappType(ChannelType):
         "CalledZip",
     )
 
-    claim_blurb = _("If you have a %(link)s number, you can connect it to communicate with your WhatsApp contacts.") % {
-        "link": '<a target="_blank" href="https://www.twilio.com/whatsapp/">Twilio WhatsApp</a>'
-    }
+    claim_blurb = _(
+        "%(link)s lets you message contacts on WhatsApp through the same Twilio account you may already use for SMS "
+        "and voice. Contacts can message your number and reply with photos, videos and documents or by tapping "
+        "template buttons, and you can reach them at any time with templates you create in Twilio and Meta approves."
+    ) % {"link": '<a target="_blank" href="https://www.twilio.com/whatsapp/">Twilio WhatsApp</a>'}
 
     claim_view = ClaimView
     update_form = UpdateForm

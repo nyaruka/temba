@@ -1,36 +1,61 @@
-{% extends "orgs/base/list.html" %}
-{% load smartmin temba i18n %}
+{% extends "smartmin/form.html" %}
+{% load i18n %}
 
 {% block title-text %}
   {% trans "Select the WABA to connect" %}
 {% endblock title-text %}
-{% block content %}
-  <div class="mb-4">
-    <div class="grid grid-cols-4 gap-4">
-      {% for waba_id in waba_ids %}
-        <div href="{% url 'channels.types.whatsapp.claim' %}?waba_id={{ waba_id }}" onclick="goto(event, this)" class="card link">
-          <div class="flex flex-col mx-4 relative">
-            <div class="title">{{ waba_id }}</div>
-          </div>
-        </div>
-      {% endfor %}
-    </div>
+{% block pre-form %}
+  <div>
+    {% blocktrans trimmed %}
+      Your Facebook account can manage these WhatsApp Business Accounts. Choose the one with the number you want to connect.
+    {% endblocktrans %}
   </div>
-  <div class="flex mt-4" id="fb-app-connect">
-    <div class="button-primary connect-facebook">{% trans "Connect other Facebook Business numbers" %}</div>
+{% endblock pre-form %}
+{% block form %}
+  {# links between the steps, so in the new channel picker's modal they stay in it #}
+  <div class="waba-options mt-4">
+    {% for waba_id in waba_ids %}
+      <a class="waba-option" href="{% url 'channels.types.whatsapp.claim' %}?waba_id={{ waba_id }}">{{ waba_id }}</a>
+    {% empty %}
+      <div class="waba-none">{% trans "No WhatsApp Business Accounts were shared when you signed in." %}</div>
+    {% endfor %}
   </div>
-{% endblock content %}
-{% block form-buttons %}
-{% endblock form-buttons %}
-{% block extra-script %}
+  <div class="mt-4">
+    <a class="waba-switch" href="{% url 'channels.types.whatsapp.connect' %}?again=1">{% trans "Sign in with a different Facebook account" %}</a>
+  </div>
+{% endblock form %}
+{% block extra-style %}
   {{ block.super }}
-  <script>
-    onSpload(function() {
-      const connectFB = document.querySelector(".connect-facebook");
-      connectFB.addEventListener('click', function(evt) {
-        fetchAjax("{{clear_session_token_url}}");
-        location.replace("{{claim_url}}");
-      });
-    });
-  </script>
-{% endblock extra-script %}
+  <style>
+    .waba-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 8px;
+    }
+
+    .waba-option {
+      display: block;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      background: var(--surface);
+      color: var(--text-1);
+      font-size: 13px;
+      font-family: var(--font-mono);
+    }
+
+    .waba-option:hover {
+      border-color: var(--accent);
+      background: var(--accent-50);
+    }
+
+    .waba-none {
+      color: var(--text-3);
+    }
+
+    .waba-switch {
+      color: var(--accent);
+      font-size: 13px;
+    }
+  </style>
+{% endblock extra-style %}

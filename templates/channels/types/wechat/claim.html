@@ -1,0 +1,10 @@
+{% extends "channels/channel_claim_form.html" %}
+{% load i18n %}
+
+{% block form-lead %}
+  <div class="mt-4">
+    {% blocktrans trimmed %}
+      To get started, all you need is your Official Account's AppID and AppSecret, which are under My Business, Official Account on the WeChat Developer Platform.
+    {% endblocktrans %}
+  </div>
+{% endblock form-lead %}

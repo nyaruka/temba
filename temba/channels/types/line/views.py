@@ -11,8 +11,8 @@ class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
         address = forms.CharField(label=_("Channel ID"), required=True)
         name = forms.CharField(label=_("Name"), max_length=64, required=True)
-        access_token = forms.CharField(label=_("Access Token"), required=True)
-        secret = forms.CharField(label=_("Secret"), required=True)
+        access_token = forms.CharField(label=_("Channel Access Token"), required=True)
+        secret = forms.CharField(label=_("Channel Secret"), required=True)
 
     form_class = Form
 

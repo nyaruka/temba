@@ -16,8 +16,10 @@ from ...views import ClaimViewMixin
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
-        claim_code = forms.CharField(max_length=12, help_text=_("Shown in the Android app on your phone."))
-        phone_number = forms.CharField(max_length=15)
+        claim_code = forms.CharField(
+            max_length=12, label=_("Claim Code"), help_text=_("Shown in the app on your phone.")
+        )
+        phone_number = forms.CharField(max_length=15, label=_("Phone Number"))
 
         def __init__(self, org, *args, **kwargs):
             super().__init__(*args, **kwargs)
@@ -83,7 +85,7 @@ class ClaimView(ClaimViewMixin, SmartFormView):
         return context
 
     def get_success_url(self):
-        return "%s?success" % reverse("public.public_welcome")
+        return reverse("channels.channel_list")
 
     def form_valid(self, form):
         org = self.request.org

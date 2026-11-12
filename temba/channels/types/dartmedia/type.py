@@ -18,9 +18,11 @@ class DartMediaType(ChannelType):
     schemes = [URN.TEL_SCHEME, URN.EXTERNAL_SCHEME]
     available_timezones = ["Asia/Jakarta"]
 
-    claim_blurb = _("Easily add a two way number you have configured with %(link)s in Indonesia.") % {
-        "link": '<a target="_blank" href="http://dartmedia.biz/">Dart Media</a>'
-    }
+    claim_blurb = _(
+        "%(link)s is an Indonesian messaging provider that has handled business SMS since 2007, including two way "
+        "numbers that contacts can reply to. Connect a number you have with Dartmedia to send and receive SMS with "
+        "your contacts in Indonesia."
+    ) % {"link": '<a target="_blank" href="https://dartmedia.co.id/">Dartmedia</a>'}
     claim_view = ClaimView
 
     config_ui = ConfigUI(

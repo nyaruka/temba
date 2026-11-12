@@ -67,9 +67,10 @@ class SignalWireType(ChannelType):
     ]
     recommended_timezones = available_timezones
 
-    claim_blurb = _("Easily add a two way number you have with %(link)s using their APIs.") % {
-        "link": '<a target="_blank" href="http://www.signalwire.com/">SignalWire</a>'
-    }
+    claim_blurb = _(
+        "%(link)s offers phone numbers for SMS and voice, through an API that's compatible with Twilio's. A number "
+        "in your SignalWire space can handle both, so contacts can text it or call it and be answered by your flows."
+    ) % {"link": '<a target="_blank" href="https://signalwire.com/">SignalWire</a>'}
     claim_view = SignalWireClaimView
 
     config_ui = ConfigUI(

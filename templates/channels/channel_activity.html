@@ -1,0 +1,113 @@
+{% extends "smartmin/read.html" %}
+{% load i18n humanize %}
+
+{% block title-text %}
+  {% blocktrans trimmed with channel=object.name %}
+    {{ channel }} Messages
+  {% endblocktrans %}
+{% endblock title-text %}
+{% block content %}
+  <div class="activity">
+    {# browse the days of a week, month or year at a time #}
+    <temba-activity-chart chart-title="{% trans "Daily" %}" data="{{ chart }}">
+      <temba-range-picker slot="actions" min='{{ chart_min|date:"Y-m-d" }}' hideall> </temba-range-picker>
+    </temba-activity-chart>
+    <div class="dash-section">
+      <div class="dash-section-head">
+        <div class="dash-section-title">{% trans "Monthly" %}</div>
+      </div>
+      <table class="dash-table activity-months">
+        <thead>
+          <tr>
+            <th>{% trans "Month" %}</th>
+            <th class="num">
+              {% if has_voice %}
+                {% trans "Incoming Text" %}
+              {% else %}
+                {% trans "Incoming" %}
+              {% endif %}
+            </th>
+            <th class="num">
+              {% if has_voice %}
+                {% trans "Outgoing Text" %}
+              {% else %}
+                {% trans "Outgoing" %}
+              {% endif %}
+            </th>
+            {% if has_voice %}
+              <th class="num">{% trans "Incoming Voice" %}</th>
+              <th class="num">{% trans "Outgoing Voice" %}</th>
+            {% endif %}
+            <th class="activity-share-col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for month in monthly_counts %}
+            <tr>
+              <td>{{ month.month_start|date:"F Y" }}</td>
+              <td class="num">{{ month.text_in|intcomma }}</td>
+              <td class="num">{{ month.text_out|intcomma }}</td>
+              {% if has_voice %}
+                <td class="num">{{ month.voice_in|intcomma }}</td>
+                <td class="num">{{ month.voice_out|intcomma }}</td>
+              {% endif %}
+              <td class="activity-share-col">
+                <span class="activity-share" style="--share: {{ month.share }}%"></span>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock content %}
+{% block extra-script %}
+  {{ block.super }}
+  <script>
+    onSpload(function() {
+      var chart = document.querySelector(".activity temba-activity-chart");
+      var picker = chart.querySelector("temba-range-picker");
+      var show = function(start, end) {
+        chart.start = start;
+        chart.end = end;
+      };
+
+      picker.updateComplete.then(function() {
+        show(picker.startDate, picker.endDate);
+      });
+      picker.addEventListener("temba-date-range-changed", function(e) {
+        show(e.detail.start, e.detail.end);
+      });
+    });
+  </script>
+{% endblock extra-script %}
+{% block extra-style %}
+  {{ block.super }}
+  <style>
+    .activity {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .activity-share-col {
+      width: 28%;
+    }
+
+    .activity-share {
+      display: block;
+      width: var(--share);
+      min-width: 2px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--accent);
+      opacity: 0.55;
+    }
+
+    @media (max-width: 600px) {
+      .activity-share-col {
+        display: none;
+      }
+    }
+  </style>
+{% endblock extra-style %}

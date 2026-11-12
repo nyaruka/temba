@@ -19,9 +19,8 @@ class KannelTypeTest(TembaTest):
         with override_brand(name="Temba", domain="temba.io"):
             self.login(self.admin)
 
-            # should see the general channel claim page
-            response = self.client.get(reverse("channels.channel_claim"))
-            self.assertContains(response, claim_url)
+            # should be offered by the new channel picker
+            self.assertChannelTypeOffered(claim_url)
 
             # try to claim a channel
             response = self.client.get(claim_url)
@@ -63,4 +62,4 @@ class KannelTypeTest(TembaTest):
 
         with override_settings(ORG_LIMIT_DEFAULTS={"channels": 1}):
             response = self.client.get(claim_url)
-            self.assertRedirect(response, "/org/workspace/")
+            self.assertRedirect(response, "/channels/channel/")

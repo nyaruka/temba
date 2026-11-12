@@ -1,3 +1,4 @@
+import json
 import logging
 from abc import ABCMeta
 from collections import defaultdict
@@ -107,6 +108,10 @@ class ChannelType(metaclass=ABCMeta):
     claim_view = None
     claim_view_kwargs = None
 
+    # whether the claim view can be shown in the new channel picker's modal - types whose claim pages rely on their own
+    # page scripts or take several steps (e.g. signing into a provider) are opened as full pages instead
+    claim_in_modal = True
+
     # the configuration UI - only channel types that aren't configured automatically need this
     config_ui = None
 
@@ -155,9 +160,23 @@ class ChannelType(metaclass=ABCMeta):
     def icon(self):
         return f"channel_{self.code.lower()}"
 
+    @property
+    def picker_category(self) -> str | None:
+        """
+        The group this type is listed under in the new channel picker
+        """
+        if not self.category:
+            return None
+
+        return {
+            ChannelType.Category.SOCIAL_MEDIA: "social",
+            ChannelType.Category.PHONE: "phone",
+            ChannelType.Category.API: "api",
+        }[self.category]
+
     def get_claim_blurb(self):
         """
-        Gets the blurb for use on the claim page list of channel types
+        Gets the blurb which introduces the type above its claim form
         """
         return Engine.get_default().from_string(self.claim_blurb)
 
@@ -261,6 +280,20 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
     CONFIG_API_ID = "api_id"
     CONFIG_API_KEY = "api_key"
     CONFIG_USE_NATIONAL = "use_national"
+
+    # how many days of daily counts the list view's activity sparkline shows - matches Flow.ACTIVITY_SERIES_DAYS
+    ACTIVITY_SERIES_DAYS = 14
+
+    # the messages per second a channel is sent at when it has no limit of its own (mailroom queues it at this)
+    DEFAULT_TPS = 10
+
+    # channels sending fewer messages per second than this are flagged as slow, and at or under the very slow limit as
+    # very slow
+    SLOW_TPS = 10
+    VERY_SLOW_TPS = 1
+
+    # speed only matters when sending to a lot of contacts, so it's only flagged for workspaces with more than this
+    SPEED_MIN_CONTACTS = 50_000
     CONFIG_ENCODING = "encoding"
     CONFIG_PAGE_NAME = "page_name"
 
@@ -693,6 +726,135 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         """
         totals = ChannelTally.get_daily_totals_by_channel([self], list(self.TALLY_SCOPES), since, until)
         return {(day, scope): count for (_, day, scope), count in totals.items()}
+
+    def has_received(self) -> bool:
+        """
+        Whether this channel has received any messages since it was added, i.e. whether its setup on the provider's side
+        is working
+        """
+        # from the day before it was added, as counts and the workspace's timezone needn't agree on what day that was
+        # (and there can't be counts from before then anyway)
+        since = self.created_on.date() - timedelta(days=1)
+        until = timezone.now().date() + timedelta(days=1)
+        counts = self.get_daily_counts(since, until)
+        return any(count > 0 for (_, scope), count in counts.items() if scope.endswith(":in"))
+
+    @property
+    def effective_tps(self) -> int:
+        """
+        The messages per second this channel is sent at - its own limit, or the default when it has none
+        """
+        return self.tps or self.DEFAULT_TPS
+
+    def get_speed(self) -> str | None:
+        """
+        Gets whether this channel is slow ("slow") or very slow ("very_slow") to send, judging by its messages per
+        second limit, or None if it isn't slow or has no limit
+        """
+        if not self.is_enabled:
+            return None
+        if self.effective_tps <= self.VERY_SLOW_TPS:
+            return "very_slow"
+        if self.effective_tps < self.SLOW_TPS:
+            return "slow"
+        return None
+
+    @classmethod
+    def prefetch_activity_series(cls, channels):
+        """
+        Prefetches the daily counts required by get_activity_series, in one read for channels of the same workspace
+        """
+
+        channels = list(channels)
+        if not channels:
+            return
+
+        since, until = cls._get_activity_period()
+        totals = ChannelTally.get_daily_totals_by_channel(channels, list(cls.TALLY_SCOPES), since, until)
+
+        by_channel = defaultdict(dict)
+        for (channel_id, day, scope), count in totals.items():
+            by_channel[channel_id][(day, scope)] = count
+
+        for channel in channels:
+            channel._activity_counts = by_channel.get(channel.id, {})
+
+    @classmethod
+    def _get_activity_period(cls) -> tuple[date, date]:
+        today = timezone.now().date()
+        return today - timedelta(days=cls.ACTIVITY_SERIES_DAYS - 1), today + timedelta(days=1)
+
+    def get_daily_series(self, num_days: int) -> dict:
+        """
+        Messages (text and voice) received and sent each day over the last num_days including today, oldest first, as
+        lists of days, received counts and sent counts
+        """
+        today = timezone.now().date()
+        since = today - timedelta(days=num_days - 1)
+        counts = self.get_daily_counts(since, today + timedelta(days=1))
+
+        received, sent = defaultdict(int), defaultdict(int)
+        for (day, scope), count in counts.items():
+            (received if scope.endswith(":in") else sent)[day] += count
+
+        days = [since + timedelta(days=d) for d in range(num_days)]
+        return {"days": days, "in": [received[d] for d in days], "out": [sent[d] for d in days]}
+
+    @staticmethod
+    def get_activity_chart_json(series: dict) -> str:
+        """
+        A daily series as the data of a temba-activity-chart
+        """
+        return json.dumps(
+            {
+                "days": [d.isoformat() for d in series["days"]],
+                "series": [
+                    {"label": str(_("Outgoing")), "values": series["out"]},
+                    {"label": str(_("Incoming")), "values": series["in"]},
+                ],
+            }
+        )
+
+    def get_activity_series(self) -> dict:
+        """
+        Daily counts of incoming and outgoing messages (text and voice) for the last ACTIVITY_SERIES_DAYS days (oldest
+        first) - drives the list view sparkline.
+        """
+
+        since, until = self._get_activity_period()
+        if hasattr(self, "_activity_counts"):
+            counts = self._activity_counts
+        else:
+            counts = self.get_daily_counts(since, until)
+
+        days = [since + timedelta(days=d) for d in range(self.ACTIVITY_SERIES_DAYS)]
+
+        def series(direction: str) -> list[int]:
+            scopes = [s for s in self.TALLY_SCOPES if s.endswith(f":{direction}")]
+            return [sum(counts.get((day, s), 0) for s in scopes) for day in days]
+
+        return {"in": series("in"), "out": series("out")}
+
+    def as_json(self, context=None) -> dict:
+        """
+        Internal API shape, consumed by the temba-channel-list component. The activity series and its totals come
+        from the daily counts (bulk-loaded by the list endpoint via prefetch_activity_series).
+        """
+
+        activity = self.get_activity_series()
+
+        return {
+            "uuid": str(self.uuid),
+            "name": self.name,
+            "type": self.channel_type,
+            "address": self.get_address_display(),
+            "is_enabled": self.is_enabled,
+            "speed": self.get_speed() if (context or {}).get("show_speed") else None,
+            "received": sum(activity["in"]),
+            "sent": sum(activity["out"]),
+            "activity": activity,
+            "created_on": self.created_on.isoformat(),
+        }
 
     class Meta:
         ordering = ("-last_seen", "-pk")

@@ -1,0 +1,10 @@
+{% extends "channels/channel_claim_form.html" %}
+{% load i18n %}
+
+{% block form-lead %}
+  <div class="mt-4">
+    {% blocktrans trimmed %}
+      To get started, you'll need your number and Commio account ID, along with your Commio username and an API token, which you can create under API, Tokens in the Commio customer portal.
+    {% endblocktrans %}
+  </div>
+{% endblock form-lead %}

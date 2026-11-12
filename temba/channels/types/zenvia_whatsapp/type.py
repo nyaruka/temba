@@ -22,10 +22,12 @@ class ZenviaWhatsAppType(ChannelType):
     category = ChannelType.Category.SOCIAL_MEDIA
 
     schemes = [URN.WHATSAPP_SCHEME]
+    async_activation = False
 
-    claim_blurb = _("If you have a %(link)s number, you can connect it to communicate with your WhatsApp contacts.") % {
-        "link": '<a target="_blank" href="https://www.zenvia.com/">Zenvia WhatsApp</a>'
-    }
+    claim_blurb = _(
+        "%(link)s is a Brazilian customer experience platform offering WhatsApp alongside SMS and other channels. "
+        "Contacts can message your number and send photos, videos, documents and locations."
+    ) % {"link": '<a target="_blank" href="https://www.zenvia.com/">Zenvia</a>'}
     claim_view = ClaimView
 
     def update_webhook(self, channel, url, event_type):

@@ -13,9 +13,8 @@ class ClickatellTypeTest(TembaTest):
 
         url = reverse("channels.types.clickatell.claim")
 
-        # should see the general channel claim page
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, url)
+        # should be offered by the new channel picker
+        self.assertChannelTypeOffered(url)
 
         # try to claim a channel
         response = self.client.get(url)

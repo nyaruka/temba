@@ -25,7 +25,7 @@ class TwilioMessagingServiceTypeTest(TembaTest):
         self.org.channels.all().delete()
 
         # make sure twilio is on the claim page
-        response = self.client.get(reverse("channels.channel_claim"))
+        response = self.client.get(reverse("channels.channel_list"))
         self.assertContains(response, "Twilio")
 
         response = self.client.get(claim_twilio_ms)
@@ -38,8 +38,7 @@ class TwilioMessagingServiceTypeTest(TembaTest):
         session[TwilioMessagingServiceType.SESSION_AUTH_TOKEN] = "account-token"
         session.save()
 
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, claim_twilio_ms)
+        self.assertChannelTypeOffered(claim_twilio_ms)
 
         response = self.client.get(claim_twilio_ms)
         self.assertIn("account_trial", response.context)
@@ -61,8 +60,17 @@ class TwilioMessagingServiceTypeTest(TembaTest):
 
             response = self.client.get(claim_twilio_ms)
             self.assertRedirects(
-                response, f"{reverse('channels.types.twilio.connect')}?claim_type=twilio_messaging_service"
+                response,
+                f"{reverse('channels.types.twilio.connect')}?claim_type=twilio_messaging_service&reset_creds=reset&invalid_creds=1",
             )
+
+            # which no longer has the credentials that failed
+            self.assertNotIn(TwilioMessagingServiceType.SESSION_ACCOUNT_SID, self.client.session)
+
+            session = self.client.session
+            session[TwilioMessagingServiceType.SESSION_ACCOUNT_SID] = "account-sid"
+            session[TwilioMessagingServiceType.SESSION_AUTH_TOKEN] = "account-token"
+            session.save()
 
         with patch("temba.tests.twilio.MockTwilioClient.MockAccounts.get") as mock_get:
             mock_get.return_value = MockTwilioClient.MockAccount("Trial")

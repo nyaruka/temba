@@ -7,7 +7,7 @@ from temba.tests import TembaTest
 class MtargetTypeTest(TembaTest):
     def test_claim(self):
         self.login(self.admin)
-        response = self.client.get(reverse("channels.channel_claim"))
+        response = self.client.get(reverse("channels.channel_list"))
 
         claim_url = reverse("channels.types.mtarget.claim")
         self.assertContains(response, claim_url)

@@ -305,5 +305,6 @@ Content-Type: application/json
 
             self.assertContains(response, tw_urn, count=0)
 
-            # when we can't identify the contact, request, and response body
-            self.assertContains(response, HTTPLog.REDACT_MASK, count=3)
+            # when we can't identify the contact, the URL (shown twice, as the request's and its tooltip), request and
+            # response body are masked
+            self.assertContains(response, HTTPLog.REDACT_MASK, count=5)

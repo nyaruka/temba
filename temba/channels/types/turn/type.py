@@ -41,8 +41,11 @@ class TurnType(ChannelType):
     template_type = "whatsapp"
 
     claim_blurb = _(
-        "If you have an enterprise Turn.io WhatsApp account, you can connect it to communicate with your contacts"
-    )
+        "%(link)s is a WhatsApp Business Solution Provider built for social impact organizations, used by health "
+        "services and nonprofits across the Global South. Contacts can message your number and reply with photos, "
+        "videos, documents and locations or by tapping buttons, and you can reach them at any time with templates "
+        "approved by Meta."
+    ) % {"link": '<a target="_blank" href="https://www.turn.io/">Turn.io</a>'}
     claim_view = ClaimView
 
     def get_headers(self, channel):

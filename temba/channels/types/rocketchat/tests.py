@@ -148,7 +148,7 @@ class RocketChatViewTest(RocketChatMixin):
 
             channel = Channel.objects.order_by("id").last()
 
-            self.assertRedirect(response, reverse("channels.channel_read", args=[channel.uuid]))
+            self.assertRedirect(response, reverse("channels.channel_list"))
 
             domain = data["base_url"].replace("http://", "").replace("https://", "").split("/")[0]
             expected = f"{RocketChatType.name}: {domain}"

@@ -22,7 +22,15 @@ class ExternalType(ChannelType):
     claim_blurb = _("Use our pluggable API to connect an external service you already have.")
     claim_view = ClaimView
 
-    config_ui = ConfigUI()  # has own template
+    # it's for integrating any service over HTTP, so the picker lists it for developers rather than as SMS
+    picker_category = "api"
+
+    config_ui = ConfigUI(
+        blurb=_(
+            "Your service connects to this channel over HTTP. It's sent each outgoing message, and reports back the "
+            "messages it receives."
+        )
+    )  # its steps are in its own template
 
     update_form = UpdateForm
 

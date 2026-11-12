@@ -1,0 +1,47 @@
+{% comment %}
+  Facebook's login sends the window to Facebook and back to the claim page with a token (or code) in its fragment or
+  query. From the new channel picker's modal it runs in a popup instead - the login comes back to the same page, so it's
+  still a redirect Facebook allows - and that popup hands the token back to the modal over a broadcast channel and
+  closes. Used by the Facebook, Instagram and WhatsApp claim flows.
+{% endcomment %}
+<script>
+  var FACEBOOK_LOGIN_CHANNEL = "temba-facebook-login";
+
+  // starts a login at url, then calls onToken with the token it got (or null if it failed or was cancelled) - by default
+  // listing the Facebook pages it can connect
+  function startFacebookLogin(element, url, onToken) {
+    onToken = onToken || function(token) {
+      if (token) {
+        getFBPages(token);
+      }
+    };
+
+    if (element.closest(".channel-claim-form") && window.BroadcastChannel) {
+      var channel = new BroadcastChannel(FACEBOOK_LOGIN_CHANNEL);
+      channel.onmessage = function(event) {
+        channel.close();
+        // the modal may have moved on while the popup was open
+        if (document.body.contains(element)) {
+          onToken(event.data.token);
+        }
+      };
+      window.open(url + "&state=popup", "facebook-login", "width=640,height=720");
+    } else {
+      location.replace(url);
+    }
+  }
+
+  // if this page is the popup coming back from a login, hands its token (if any) back to the modal and closes - state
+  // comes back in the fragment of a token login and the query of a code one
+  function finishFacebookLoginPopup(result, accessToken) {
+    var state = result.state || new URLSearchParams(window.location.search).get("state");
+    if (state !== "popup" || !window.BroadcastChannel) {
+      return false;
+    }
+    var channel = new BroadcastChannel(FACEBOOK_LOGIN_CHANNEL);
+    channel.postMessage({ token: accessToken || null });
+    channel.close();
+    window.close();
+    return true;
+  }
+</script>

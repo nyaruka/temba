@@ -1,0 +1,10 @@
+{% extends "channels/channel_claim_authenticated.html" %}
+{% load i18n %}
+
+{% block form-lead %}
+  <div class="mt-4">
+    {% blocktrans trimmed %}
+      To get started, you'll need your ClickSend number along with your username and API key, which you'll find by clicking the key icon on your ClickSend dashboard.
+    {% endblocktrans %}
+  </div>
+{% endblock form-lead %}

@@ -16,15 +16,13 @@ class SignalWireTest(TembaTest):
         url = reverse("channels.types.signalwire.claim")
         self.login(self.admin)
 
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertNotContains(response, url)
+        self.assertChannelTypeNotOffered(url)
 
         # change to LA timezone
         self.org.timezone = "America/Los_Angeles"
         self.org.save(update_fields=["timezone"])
 
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, url)
+        self.assertChannelTypeOffered(url)
 
         response = self.client.get(url)
         self.assertEqual(200, response.status_code)

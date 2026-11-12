@@ -30,11 +30,9 @@ class FirebaseCloudMessagingTypeTest(TembaTest):
         # not available to regular users
         self.login(self.admin)
 
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertNotContains(response, url)
+        self.assertChannelTypeNotOffered(url)
 
-        response = self.client.get(reverse("channels.channel_claim_all"))
-        self.assertNotContains(response, url)
+        self.assertChannelTypeNotOffered(url)
 
         response = self.client.get(url)
         self.assertEqual(404, response.status_code)
@@ -42,8 +40,7 @@ class FirebaseCloudMessagingTypeTest(TembaTest):
         # but is available to staff
         self.login(self.customer_support, choose_org=self.org)
 
-        response = self.client.get(reverse("channels.channel_claim_all"))
-        self.assertContains(response, url)
+        self.assertChannelTypeOffered(url)
 
         response = self.client.post(
             url,

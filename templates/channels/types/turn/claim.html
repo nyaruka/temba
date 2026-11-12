@@ -1,10 +1,10 @@
 {% extends "channels/channel_claim_form.html" %}
 {% load i18n %}
 
-{% block pre-form %}
-  <div class="mb-6">
+{% block form-lead %}
+  <div class="mt-4">
     {% blocktrans trimmed %}
-      You can quickly connect Turn.io WhatsApp numbers by entering the credentials below.
+      To get started, you'll need your WhatsApp number along with its username, password, access token and namespace, all of which are under Settings &gt; API &amp; Webhooks in Turn.
     {% endblocktrans %}
   </div>
-{% endblock pre-form %}
+{% endblock form-lead %}

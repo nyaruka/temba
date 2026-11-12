@@ -26,9 +26,8 @@ class TelegramTypeTest(TembaTest):
 
         self.login(self.admin)
 
-        # check that claim page URL appears on claim list page
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, url)
+        # the new channel picker offers it
+        self.assertChannelTypeOffered(url)
 
         # can fetch the claim page
         response = self.client.get(url)
@@ -66,7 +65,7 @@ class TelegramTypeTest(TembaTest):
             },
         )
 
-        self.assertRedirect(response, reverse("channels.channel_read", args=[channel.uuid]))
+        self.assertRedirect(response, reverse("channels.channel_list"))
         self.assertEqual(302, response.status_code)
 
         response = self.client.post(url, {"auth_token": "184875172:BAEKbsOKAL23CXufXG4ksNV7Dq7e_1qi3j8"})

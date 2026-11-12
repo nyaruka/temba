@@ -5,12 +5,22 @@
   {% trans "Connect Plivo" %}
 {% endblock title-text %}
 {% block pre-form %}
-  {% trans "To connect your Plivo Account you will need to provide us your Plivo AUTH ID and AUTH TOKEN." %}
-  <div class="mt-1 mb-4">
-    {% trans "Both values can be found on your" %}
-    <a target="plivo" href="https://manage.plivo.com/dashboard/">{% trans "Plivo Dashboard" %}</a>
+  <div class="claim-blurb">{{ claim_blurb }}</div>
+  <div class="mt-4">
+    {% blocktrans trimmed with link='<a target="_blank" href="https://console.plivo.com/">Plivo Console</a>' %}
+      To get started, you'll need your Plivo account's Auth ID and Auth Token, which are at the top of the {{ link }} overview page.
+    {% endblocktrans %}
   </div>
 {% endblock pre-form %}
+{% block pre-form-errors %}
+  {% if invalid_creds %}
+    <temba-alert level="error" class="mb-4">
+      {% blocktrans trimmed %}
+        Your Plivo auth ID and auth token are no longer working. Enter them again or use another account.
+      {% endblocktrans %}
+    </temba-alert>
+  {% endif %}
+{% endblock pre-form-errors %}
 {% block extra-script %}
   {{ block.super }}
   <script>

@@ -28,7 +28,7 @@ class KaleyraViewTest(TembaTest):
     def test_claim_page_is_available(self):
         self.login(self.admin)
 
-        response = self.client.get(reverse("channels.channel_claim"), follow=True)
+        response = self.client.get(reverse("channels.channel_list"), follow=True)
         self.assertContains(response, self.url)
 
         response = self.client.get(self.url)

@@ -15,15 +15,13 @@ class AfricastalkingTypeTest(TembaTest):
         self.org.timezone = "Africa/Cairo"  # not supported
         self.org.save()
 
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertNotContains(response, url)
+        self.assertChannelTypeNotOffered(url)
 
         self.org.timezone = "Africa/Nairobi"
         self.org.save()
 
-        # check that claim page URL appears on claim list page
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, url)
+        # the new channel picker offers it
+        self.assertChannelTypeOffered(url)
         # visit the africa's talking page
         response = self.client.get(url)
         self.assertEqual(200, response.status_code)

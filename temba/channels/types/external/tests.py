@@ -16,9 +16,8 @@ class ExternalTypeTest(TembaTest):
 
         self.login(self.admin)
 
-        # check that claim page URL appears on claim list page
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, url)
+        # the new channel picker offers it
+        self.assertChannelTypeOffered(url)
 
         # try to claim a channel
         Channel.objects.all().delete()

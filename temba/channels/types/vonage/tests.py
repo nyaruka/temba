@@ -33,7 +33,7 @@ class VonageTypeTest(TembaTest):
         self.org.channels.update(is_active=False)
 
         # make sure Vonage is on the claim page
-        response = self.client.get(reverse("channels.channel_claim"))
+        response = self.client.get(reverse("channels.channel_list"))
         self.assertContains(response, "Vonage")
 
         response = self.client.get(claim_url)
@@ -54,8 +54,7 @@ class VonageTypeTest(TembaTest):
         session.save()
 
         # hit the claim page, should now have a claim link
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, claim_url)
+        self.assertChannelTypeOffered(claim_url)
 
         # try adding a shortcode
         mock_get_numbers.side_effect = [
@@ -65,7 +64,7 @@ class VonageTypeTest(TembaTest):
         ]
 
         response = self.client.post(claim_url, {"country": "US", "phone_number": "8080"})
-        self.assertRedirects(response, reverse("public.public_welcome") + "?success")
+        self.assertRedirects(response, reverse("channels.channel_list"))
         channel = Channel.objects.filter(address="8080").first()
         self.assertIn(Channel.ROLE_SEND, channel.role)
         self.assertIn(Channel.ROLE_RECEIVE, channel.role)
@@ -81,7 +80,7 @@ class VonageTypeTest(TembaTest):
         ]
 
         response = self.client.post(claim_url, {"country": "US", "phone_number": "+12065551212"})
-        self.assertRedirects(response, reverse("public.public_welcome") + "?success")
+        self.assertRedirects(response, reverse("channels.channel_list"))
 
         channel = Channel.objects.filter(address="+12065551212").first()
         self.assertIn(Channel.ROLE_SEND, channel.role)
@@ -117,7 +116,7 @@ class VonageTypeTest(TembaTest):
 
         # claim it
         response = self.client.post(claim_url, {"country": "US", "phone_number": "13607884540"})
-        self.assertRedirects(response, reverse("public.public_welcome") + "?success")
+        self.assertRedirects(response, reverse("channels.channel_list"))
 
         # make sure it is actually connected
         channel = Channel.objects.get(channel_type="NX", org=self.org)
@@ -165,7 +164,7 @@ class VonageTypeTest(TembaTest):
 
         # claim it
         response = self.client.post(claim_url, {"country": "CA", "phone_number": "15797884540"})
-        self.assertRedirects(response, reverse("public.public_welcome") + "?success")
+        self.assertRedirects(response, reverse("channels.channel_list"))
 
         # make sure it is actually connected
         self.assertTrue(Channel.objects.filter(channel_type="NX", org=self.org, address="+15797884540").first())

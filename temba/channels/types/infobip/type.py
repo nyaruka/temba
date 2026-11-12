@@ -17,9 +17,10 @@ class InfobipType(ChannelType):
 
     schemes = [URN.TEL_SCHEME]
 
-    claim_blurb = _("Easily add a two way number you have configured with %(link)s using their APIs.") % {
-        "link": '<a target="_blank" href="http://infobip.com">Infobip</a>'
-    }
+    claim_blurb = _(
+        "%(link)s is a global communications platform with direct connections to mobile networks around the world. "
+        "Connect a number you have with Infobip to send and receive SMS, and MMS where your number supports it."
+    ) % {"link": '<a target="_blank" href="https://www.infobip.com/">Infobip</a>'}
     claim_view = ClaimView
 
     config_ui = ConfigUI(

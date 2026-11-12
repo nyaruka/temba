@@ -21,12 +21,11 @@ class Dialog360TypeTest(CRUDLTestMixin, TembaTest):
         self.login(self.admin)
 
         # make sure 360dialog Cloud is on the claim page
-        response = self.client.get(reverse("channels.channel_claim"), follow=True)
+        response = self.client.get(reverse("channels.channel_list"), follow=True)
         self.assertContains(response, url)
 
-        # should see the general channel claim page
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, url)
+        # should be offered by the new channel picker
+        self.assertChannelTypeOffered(url)
 
         response = self.client.get(url)
         self.assertEqual(200, response.status_code)
@@ -38,14 +37,29 @@ class Dialog360TypeTest(CRUDLTestMixin, TembaTest):
 
         # will fail with invalid phone number
         response = self.client.post(url, post_data)
-        self.assertFormError(response.context["form"], None, ["Please enter a valid phone number"])
+        self.assertFormError(response.context["form"], "address", ["Please enter a valid phone number"])
 
         # valid number
         post_data["address"] = "0788123123"
 
+        # but a key which doesn't work isn't connected
+        with patch("requests.get") as mock_get:
+            mock_get.return_value = MockResponse(401, '{"error": "unauthorized"}')
+            response = self.client.post(url, post_data)
+            self.assertFormError(
+                response.context["form"],
+                "api_key",
+                ["This API key isn't working. Check it's the latest one for your number."],
+            )
+
         # then success
-        with patch("socket.gethostbyname", return_value="123.123.123.123"), patch("requests.post") as mock_post:
+        with (
+            patch("socket.gethostbyname", return_value="123.123.123.123"),
+            patch("requests.post") as mock_post,
+            patch("requests.get") as mock_get,
+        ):
             mock_post.side_effect = [MockResponse(200, '{ "url": "https://waba-v2.360dialog.io" }')]
+            mock_get.return_value = MockResponse(200, '{"waba_templates": []}')  # the key is checked first
 
             response = self.client.post(url, post_data)
             self.assertEqual(302, response.status_code)

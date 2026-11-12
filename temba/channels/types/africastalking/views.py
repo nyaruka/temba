@@ -11,7 +11,7 @@ from ...views import ClaimViewMixin
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
-        shortcode = forms.CharField(max_length=6, min_length=1)
+        shortcode = forms.CharField(max_length=6, min_length=1, label=_("Short Code"))
         country = forms.ChoiceField(
             choices=(
                 ("BJ", ("Benin")),
@@ -37,14 +37,24 @@ class ClaimView(ClaimViewMixin, SmartFormView):
                 ("BF", ("Burkina Faso")),
             ),
             widget=SelectWidget(attrs={"searchable": True}),
+            label=_("Country"),
         )
         is_shared = forms.BooleanField(
             initial=False,
             required=False,
+            label=_("Shared"),
             help_text=_("Marks the short code as shared with other Africa's Talking accounts."),
         )
-        username = forms.CharField(max_length=32)
-        api_key = forms.CharField(max_length=128)
+        username = forms.CharField(max_length=32, label=_("Username"))
+        api_key = forms.CharField(max_length=128, label=_("API Key"))
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+            # most short codes are in the workspace's own country
+            country = self.request.org.default_country_code
+            if country and country in dict(self.fields["country"].choices):
+                self.fields["country"].initial = country
 
     form_class = Form
 

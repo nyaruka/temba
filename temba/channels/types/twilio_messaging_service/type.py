@@ -29,8 +29,11 @@ class TwilioMessagingServiceType(ChannelType):
     claim_view = ClaimView
 
     claim_blurb = _(
-        "You can connect a messaging service from your Twilio account to benefit from %(link)s features."
-    ) % {"link": '<a target="_blank" href="https://www.twilio.com/copilot">Twilio Copilot</a>'}
+        "A %(link)s sends your messages from a pool of numbers on your Twilio account instead of just one, so you can "
+        "send at higher volumes and keep each contact on the same number. It can also shorten links in your messages."
+    ) % {
+        "link": '<a target="_blank" href="https://www.twilio.com/docs/messaging/services">Twilio Messaging Service</a>'
+    }
 
     config_ui = ConfigUI(
         blurb=_(

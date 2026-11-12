@@ -23,10 +23,12 @@ class ZenviaSMSType(ChannelType):
 
     schemes = [URN.TEL_SCHEME]
 
-    claim_blurb = _("If you have a %(link)s number, you can connect it to communicate with your contacts.") % {
-        "link": '<a target="_blank" href="https://www.zenvia.com/">Zenvia SMS</a>'
-    }
+    claim_blurb = _(
+        "%(link)s is a Brazilian customer experience platform offering SMS alongside WhatsApp and other channels. "
+        "Connect a number you have with Zenvia to send and receive SMS."
+    ) % {"link": '<a target="_blank" href="https://www.zenvia.com/">Zenvia</a>'}
     claim_view = ClaimView
+    async_activation = False
 
     def update_webhook(self, channel, url, event_type):
         headers = {

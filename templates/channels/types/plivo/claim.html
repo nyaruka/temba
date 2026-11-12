@@ -1,16 +1,17 @@
 {% extends "channels/channel_claim_number.html" %}
 {% load i18n %}
 
-{% block country-select %}
-  <temba-select name="country" label='{{ _("Country")|escapejs }}' id="country">
-    {% for country in search_countries %}
-      <temba-option name="{{ country.label }}" value="{{ country.key }}"> </temba-option>
-    {% endfor %}
-  </temba-select>
-{% endblock country-select %}
+{% block numbers-lead %}
+  <div class="mt-4">
+    {% blocktrans trimmed %}
+      To get started, pick a number that's already on your Plivo account, or search for a new one to buy. Buying a number charges your Plivo account.
+    {% endblocktrans %}
+  </div>
+{% endblock numbers-lead %}
+
 {% block account-warning %}
   {% if current_creds_account %}
-    <div class="card mt-6">
+    <div class="card mt-6 claim-account">
       {% trans "Using account" %}
       <div class="text-lg font-bold inline-block ml-2">{{ current_creds_account }}</div>
       <a href='{% url "channels.types.plivo.connect" %}?reset_creds=reset' class="inline-block ml-4">{% trans "Change" %}</a>

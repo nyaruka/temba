@@ -19,13 +19,14 @@ class TelesomType(ChannelType):
     available_timezones = ["Africa/Mogadishu"]
 
     claim_blurb = _(
-        "If you are based in Somalia, you can integrate with Telesom to send and receive messages on your short code."
-    )
+        "%(link)s is the largest mobile operator in Somaliland. Connect a short code you have with Telesom to send and "
+        "receive SMS with contacts on its network."
+    ) % {"link": '<a target="_blank" href="https://telesom.com">Telesom</a>'}
     claim_view = ClaimView
 
     config_ui = ConfigUI(
         blurb=_(
-            "TTo finish configuring this channel, you'll need to provide Telesom with the following delivery URL "
+            "To finish configuring this channel, you'll need to provide Telesom with the following delivery URL "
             "for incoming messages."
         ),
         endpoints=[

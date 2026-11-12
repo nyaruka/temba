@@ -1675,3 +1675,45 @@ export const createRulesRouter = (
 export const titleCase = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 };
+
+/**
+ * Puts server-rendered markup into an element's light DOM, so the page's own
+ * styles apply to it, running the scripts it brings (which don't run when
+ * added through innerHTML). Used by components that show a view's content,
+ * e.g. a sheet or the detail pane of a split list.
+ */
+export const setLightContent = (host: Element, body: string): void => {
+  const content = document.createElement('div');
+  content.className = 'light-content';
+  content.innerHTML = body;
+
+  // content that fills what it's shown in, edge to edge, says so on its root
+  if (content.querySelector(':scope > [data-fill]')) {
+    content.classList.add('fill');
+  }
+
+  for (const old of Array.from(content.querySelectorAll('script'))) {
+    const script = document.createElement('script');
+    if (old.src) {
+      script.src = old.src;
+    } else {
+      script.textContent = old.textContent;
+    }
+    old.replaceWith(script);
+  }
+
+  clearLightContent(host);
+  host.appendChild(content);
+};
+
+/**
+ * Removes what {@link setLightContent} put in an element, leaving anything
+ * else in its light DOM, e.g. an element slotted into its header.
+ */
+export const clearLightContent = (host: Element): void => {
+  for (const child of Array.from(host.children)) {
+    if (child.classList.contains('light-content')) {
+      child.remove();
+    }
+  }
+};

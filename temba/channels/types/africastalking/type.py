@@ -17,9 +17,11 @@ class AfricasTalkingType(ChannelType):
 
     schemes = [URN.TEL_SCHEME]
 
-    claim_blurb = _("You can purchase a short code from %(link)s and connect it in a few simple steps.") % {
-        "link": """<a target="_blank" href="http://africastalking.com">Africa's Talking</a>"""
-    }
+    claim_blurb = _(
+        "%(link)s offers SMS short codes in over 20 countries across Africa through a single account, connected "
+        "directly to each country's mobile networks. Connect a short code you have with them to message contacts "
+        "throughout the region."
+    ) % {"link": """<a target="_blank" href="https://africastalking.com">Africa's Talking</a>"""}
     claim_view = ClaimView
 
     config_ui = ConfigUI(

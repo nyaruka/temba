@@ -29,9 +29,10 @@ class PlivoType(ChannelType):
 
     schemes = [URN.TEL_SCHEME]
 
-    claim_blurb = _("Easily add a two way number you have configured with %(link)s using their APIs.") % {
-        "link": '<a href="https://www.plivo.com/">Plivo</a>'
-    }
+    claim_blurb = _(
+        "%(link)s offers phone numbers in many countries for SMS. Connect a number from your Plivo account, or buy a "
+        "new one, and contacts can text it to start your flows."
+    ) % {"link": '<a target="_blank" href="https://www.plivo.com/">Plivo</a>'}
     claim_view = ClaimView
 
     async_activation = False

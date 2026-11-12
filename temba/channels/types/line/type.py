@@ -20,12 +20,27 @@ class LineType(ChannelType):
     schemes = [URN.LINE_SCHEME]
 
     claim_blurb = _(
-        "Add a %(link)s bot to send and receive messages to LINE users for free. Your users will need an Android, "
-        "Windows or iOS device and a LINE account to send and receive messages."
+        "%(link)s is the leading messaging app in Japan, Thailand and Taiwan. Contacts add your LINE Official Account "
+        "as a friend to message it, and can reply with photos, videos, audio, files and locations or by tapping "
+        "buttons. Replies to contacts are free, while messages your account starts count toward your LINE plan's "
+        "monthly allowance."
     ) % {"link": '<a target="_blank" href="https://line.me">LINE</a>'}
     claim_view = ClaimView
 
-    config_ui = ConfigUI(show_public_ips=True)
+    config_ui = ConfigUI(
+        blurb=_(
+            "To finish configuring this channel, you'll need to add the following to your channel in the LINE Developers "
+            "Console."
+        ),
+        endpoints=[
+            ConfigUI.Endpoint(
+                courier="receive",
+                label=_("Webhook URL"),
+                help=_("Set this as your channel's webhook URL on its Messaging API tab, then turn on Use webhook."),
+            ),
+        ],
+        show_public_ips=True,
+    )
 
     def get_error_ref_url(self, channel, code: str) -> str:
         return "https://developers.line.biz/en/reference/messaging-api/#error-responses"

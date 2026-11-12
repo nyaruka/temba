@@ -387,12 +387,80 @@ BRAND = {
     "landing": {
         "hero": "brands/rapidpro/splash.jpg",
     },
-    "features": ["sso"],
+    # "support" points users at the shared help center (see HELP_LINKS) - a brand that supports its users itself can
+    # leave it out, and then nothing links to it
+    "features": ["sso", "support"],
     # brands that offer self-serve signup can set "signup_url" to where users without a workspace should be
     # sent to create one - account creation itself is invite-only unless the adapters say otherwise
 }
 
 FEATURES = {"locations"}
+
+# -----------------------------------------------------------------------------------
+# Help
+# -----------------------------------------------------------------------------------
+
+# the help center's articles that pages link to, by topic - "channels" (an introduction to channels), "channels.adding",
+# "channels.disabling", "channels.throughput" and "channels.types.<slug>" for a channel type's own setup guide. They're
+# only linked to for brands with the "support" feature, which the default brand has, so the help center is shared with
+# everyone running the platform unless a brand opts out.
+HELP_CENTER = "https://help.textit.com"
+HELP_LINKS = {
+    "channels": f"{HELP_CENTER}/channels/introduction-to-channels/",
+    "channels.adding": f"{HELP_CENTER}/channels/adding-channels/",
+    "channels.disabling": f"{HELP_CENTER}/channels/disabling-a-channel/",
+    "channels.throughput": f"{HELP_CENTER}/channels/channel-throughput/",
+    "channels.types.africastalking": f"{HELP_CENTER}/channels/connecting-an-africas-talking-channel/",
+    "channels.types.android": f"{HELP_CENTER}/channels/connecting-an-android-channel/",
+    "channels.types.arabiacell": f"{HELP_CENTER}/channels/connecting-an-arabiacell-channel/",
+    "channels.types.burstsms": f"{HELP_CENTER}/channels/connecting-a-burstsms-channel/",
+    "channels.types.clickatell": f"{HELP_CENTER}/channels/connecting-a-clickatell-channel/",
+    "channels.types.clickmobile": f"{HELP_CENTER}/channels/connecting-a-click-mobile-channel/",
+    "channels.types.clicksend": f"{HELP_CENTER}/channels/connecting-a-clicksend-channel/",
+    "channels.types.dartmedia": f"{HELP_CENTER}/channels/connecting-a-dartmedia-channel/",
+    "channels.types.dialog360": f"{HELP_CENTER}/channels/connecting-a-360dialog-whatsapp-channel/",
+    "channels.types.external": f"{HELP_CENTER}/channels/integrating-using-the-external-channel-api/",
+    "channels.types.facebook": f"{HELP_CENTER}/channels/connecting-a-facebook-channel/",
+    "channels.types.globe": f"{HELP_CENTER}/channels/connecting-a-globe-labs-channel/",
+    "channels.types.high_connection": f"{HELP_CENTER}/channels/connecting-a-highconnexion-channel/",
+    "channels.types.hormuud": f"{HELP_CENTER}/channels/connecting-a-hormuud-channel/",
+    "channels.types.i2sms": f"{HELP_CENTER}/channels/connecting-an-i2sms-channel/",
+    "channels.types.infobip": f"{HELP_CENTER}/channels/connecting-an-infobip-channel/",
+    "channels.types.instagram": f"{HELP_CENTER}/channels/connecting-an-instagram-channel/",
+    "channels.types.jasmin": f"{HELP_CENTER}/channels/connecting-a-jasmin-channel/",
+    "channels.types.justcall": f"{HELP_CENTER}/channels/connecting-a-justcall-channel/",
+    "channels.types.kaleyra": f"{HELP_CENTER}/channels/connecting-a-kaleyra-whatsapp-channel/",
+    "channels.types.kannel": f"{HELP_CENTER}/channels/connecting-a-kannel-channel/",
+    "channels.types.line": f"{HELP_CENTER}/channels/connecting-a-line-channel/",
+    "channels.types.m3tech": f"{HELP_CENTER}/channels/connecting-an-m3-tech-channel/",
+    "channels.types.macrokiosk": f"{HELP_CENTER}/channels/connecting-a-macrokiosk-channel/",
+    "channels.types.messagebird": f"{HELP_CENTER}/channels/connecting-a-messagebird-channel/",
+    "channels.types.mtarget": f"{HELP_CENTER}/channels/connecting-an-mtarget-channel/",
+    "channels.types.mtn": f"{HELP_CENTER}/channels/connecting-an-mtn-channel/",
+    "channels.types.playmobile": f"{HELP_CENTER}/channels/connecting-a-play-mobile-channel/",
+    "channels.types.plivo": f"{HELP_CENTER}/channels/connecting-a-plivo-channel/",
+    "channels.types.rocketchat": f"{HELP_CENTER}/channels/connecting-a-rocketchat-channel/",
+    "channels.types.signalwire": f"{HELP_CENTER}/channels/connecting-a-signalwire-channel/",
+    "channels.types.slack": f"{HELP_CENTER}/channels/connecting-a-slack-channel/",
+    "channels.types.somleng": f"{HELP_CENTER}/channels/connecting-a-somleng-channel/",
+    "channels.types.start": f"{HELP_CENTER}/channels/connecting-a-start-mobile-channel/",
+    "channels.types.telegram": f"{HELP_CENTER}/channels/connecting-a-telegram-channel/",
+    "channels.types.telesom": f"{HELP_CENTER}/channels/connecting-a-telesom-channel/",
+    "channels.types.thinq": f"{HELP_CENTER}/channels/connecting-a-thinq-channel/",
+    "channels.types.turn": f"{HELP_CENTER}/channels/connecting-a-turnio-whatsapp-channel/",
+    "channels.types.twilio": f"{HELP_CENTER}/channels/connecting-a-twilio-channel/",
+    "channels.types.twilio_messaging_service": f"{HELP_CENTER}/channels/connecting-a-twilio-messaging-service-channel/",
+    "channels.types.twilio_whatsapp": f"{HELP_CENTER}/channels/connecting-a-twilio-whatsapp-channel/",
+    "channels.types.viber": f"{HELP_CENTER}/channels/connecting-a-viber-channel/",
+    "channels.types.vk": f"{HELP_CENTER}/channels/connecting-a-vk-channel/",
+    "channels.types.vonage": f"{HELP_CENTER}/channels/connecting-a-vonage-channel/",
+    "channels.types.wechat": f"{HELP_CENTER}/channels/connecting-a-wechat-channel/",
+    "channels.types.whatsapp": f"{HELP_CENTER}/channels/connecting-a-whatsapp-channel/",
+    "channels.types.yo": f"{HELP_CENTER}/channels/connecting-a-yo-channel/",
+    "channels.types.zenvia_sms": f"{HELP_CENTER}/channels/connecting-a-zenvia-sms-channel/",
+    "channels.types.zenvia_whatsapp": f"{HELP_CENTER}/channels/connecting-a-zenvia-whatsapp-channel/",
+}
+
 
 # The default checked options for flow starts and broadcasts
 DEFAULT_EXCLUSIONS = {"in_a_flow": True}
