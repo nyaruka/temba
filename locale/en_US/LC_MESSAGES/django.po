@@ -3455,6 +3455,9 @@ msgstr ""
 msgid "Anonymous"
 msgstr ""
 
+msgid "Internal"
+msgstr ""
+
 msgid "Flagged"
 msgstr ""
 
@@ -3462,6 +3465,9 @@ msgid "Suspended"
 msgstr ""
 
 msgid "Verified"
+msgstr ""
+
+msgid "An internal or testing workspace rather than one in real use."
 msgstr ""
 
 msgid "Members of these groups administer this workspace."

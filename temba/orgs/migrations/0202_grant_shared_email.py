@@ -2,7 +2,7 @@ from django.db import migrations
 from django.db.models import F, Func, Value
 
 
-def grant_shared_email(apps, schema_editor):
+def grant_shared_email(apps, schema_editor):  # pragma: no cover
     Org = apps.get_model("orgs", "Org")
 
     # existing workspaces which rely on the shared email service, i.e. have no SMTP settings of their own or from their

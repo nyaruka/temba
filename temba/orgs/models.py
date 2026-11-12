@@ -347,6 +347,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     )
     is_flagged = models.BooleanField(default=False, help_text=_("Whether this organization is currently flagged."))
     is_suspended = models.BooleanField(default=False, help_text=_("Whether this organization is currently suspended."))
+    is_internal = models.BooleanField(default=False)
 
     suspended_on = models.DateTimeField(null=True)
     released_on = models.DateTimeField(null=True)

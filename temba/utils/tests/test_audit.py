@@ -246,7 +246,12 @@ class AuditTest(TembaTest):
         self.assertEqual(400, response.status_code)
 
         self.assertAudited(
-            [("workspace.staff_updated", {"data": {"is_anon": True, "features": ["new_orgs"], "admin_groups": []}})],
+            [
+                (
+                    "workspace.staff_updated",
+                    {"data": {"is_anon": True, "is_internal": False, "features": ["new_orgs"], "admin_groups": []}},
+                )
+            ],
             lambda: self.client.post(org_update_url, {"name": "Nyaruka", "features": ["new_orgs"], "is_anon": True}),
         )
 

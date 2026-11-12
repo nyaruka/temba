@@ -3481,6 +3481,9 @@ msgstr "Serviço"
 msgid "Anonymous"
 msgstr "Anônima"
 
+msgid "Internal"
+msgstr "Interna"
+
 msgid "Flagged"
 msgstr "Sinalizada"
 
@@ -3489,6 +3492,9 @@ msgstr "Suspensa"
 
 msgid "Verified"
 msgstr "Verificada"
+
+msgid "An internal or testing workspace rather than one in real use."
+msgstr "Uma área de trabalho interna ou de teste em vez de uma em uso real."
 
 msgid "Members of these groups administer this workspace."
 msgstr "Os membros destes grupos administram este espaço de trabalho."
