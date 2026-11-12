@@ -105,6 +105,7 @@ describe('temba-channel-picker', () => {
   afterEach(() => {
     clearMockGets();
     clearMockPosts();
+    document.cookie = 'csrftoken=; path=/; max-age=0';
   });
 
   it('lists the types in the region by category', async () => {
@@ -221,9 +222,17 @@ describe('temba-channel-picker', () => {
     });
     (container.querySelector('#id_auth_token') as HTMLInputElement).value =
       '123:abc';
+
+    // a sign-in popup may have replaced the CSRF cookie since the form was rendered, so it posts the current one
+    document.cookie = 'csrftoken=fresh; path=/';
+
     setTimeout(() => picker.submit());
     const event = await oneEvent(picker, CustomEventType.Redirected, false);
     expect(event.detail.url).to.equal('/channels/channel/read/c-1/');
+    const posted = (window.fetch as any)
+      .getCalls()
+      .find((c) => c.args[1]?.method === 'POST');
+    expect(posted.args[1].body).to.contain('csrfmiddlewaretoken=fresh');
     expect(picker.open).to.be.false;
     expect(picker.querySelector('.channel-claim-form')).to.be.null;
   });

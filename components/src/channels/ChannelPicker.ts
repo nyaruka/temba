@@ -6,6 +6,7 @@ import { Modal } from '../layout/Modal';
 import { CustomEventType } from '../interfaces';
 import { Icon } from '../Icons';
 import {
+  getHTTPCookie,
   getUrl,
   postUrl,
   serialize,
@@ -1044,6 +1045,16 @@ export class ChannelPicker extends RapidElement {
     const form = this.claimForm;
     if (!this.selected || !form || this.submitting) {
       return;
+    }
+
+    // a sign-in popup (e.g. Facebook's) comes back to the site from another one, so a strict CSRF cookie isn't sent
+    // and the page it loads sets a new one - post the current cookie's token, not the one the form was rendered with
+    const csrf = getHTTPCookie('csrftoken');
+    const csrfInput = form.querySelector(
+      '[name=csrfmiddlewaretoken]'
+    ) as HTMLInputElement;
+    if (csrf && csrfInput) {
+      csrfInput.value = csrf;
     }
 
     let payload: any = serialize(form);
