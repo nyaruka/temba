@@ -104,6 +104,57 @@ describe('temba-ticket-list', () => {
     );
   });
 
+  it('stays within a flex column when a closed ticket has a long name', async () => {
+    await loadStore();
+    const column: HTMLElement = await fixture(
+      `<div style="display:flex; width:300px">
+        <temba-ticket-list style="flex-grow:1"></temba-ticket-list>
+      </div>`
+    );
+    const list = column.querySelector('temba-ticket-list') as TicketList;
+
+    // a closed ticket's name doesn't wrap, so it is as wide as the whole name
+    list.items = [
+      {
+        name: 'Contact',
+        ticket: {
+          uuid: 'o1',
+          last_activity_on: '2024-01-02T00:00:00.000Z',
+          closed_on: null,
+          assignee: {
+            name: 'Agnes McAgent',
+            email: 'agent1@nyaruka.com',
+            avatar: null
+          }
+        },
+        last_msg: { direction: 'I', text: 'Hello' }
+      },
+      {
+        ...closedTicket('c1', '2024-01-01T00:00:00.000Z'),
+        name: 'Long Name '.repeat(50)
+      }
+    ];
+    await list.updateComplete;
+    const options = list.shadowRoot.querySelector('temba-options');
+    await (options as any).updateComplete;
+
+    assert.equal(options.shadowRoot.querySelectorAll('.option').length, 2);
+    assert.equal(list.getBoundingClientRect().width, 300);
+
+    // and the rows fit inside it, keeping the assignee and dates in view
+    const scroll = options.shadowRoot.querySelector('.options-scroll');
+    assert.isAtMost(scroll.scrollWidth, scroll.clientWidth);
+
+    const trailing = options.shadowRoot.querySelectorAll(
+      'temba-user, temba-date'
+    );
+    assert.equal(trailing.length, 3);
+    const listRight = list.getBoundingClientRect().right;
+    trailing.forEach((el) => {
+      assert.isAtMost(el.getBoundingClientRect().right, listRight);
+    });
+  });
+
   it('shows an empty message when there are no tickets', async () => {
     await loadStore();
     const list = await getList('/test/assets/list/tickets-empty.json');
