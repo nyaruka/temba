@@ -21,8 +21,6 @@ export interface ClaimableType {
   name: string;
   category: 'social' | 'phone' | 'api';
   claim_url: string;
-  /** whether the claim form can be shown in the picker, else its page is opened */
-  in_modal: boolean;
   /** whether the type is available in the workspace's region */
   in_region: boolean;
   recommended: boolean;
@@ -246,14 +244,12 @@ const ensureFormStyles = () => {
  * The new channel picker - a modal of the channel types the workspace can
  * add, filtered by a category rail and a search box. Picking a type shows
  * its claim form in the same modal, loaded from the type's claim view, with
- * buttons to add the channel, cancel or go back. A type whose claim page
- * can't be shown in a modal (see ChannelType.claim_in_modal) is opened as
- * its full page instead.
+ * buttons to add the channel, cancel or go back.
  *
  * The claim form is rendered into the light DOM, slotted into the dialog,
  * so it's styled by the page like any other form. Fires `temba-redirected`
- * with a url to navigate to, once a channel is added or a type's page needs
- * opening, and `temba-canceled` when closed without either.
+ * with a url to navigate to once a channel is added, and `temba-canceled`
+ * when closed without adding one.
  */
 export class ChannelPicker extends RapidElement {
   static get styles() {
@@ -859,16 +855,8 @@ export class ChannelPicker extends RapidElement {
     this.focusSearch();
   }
 
-  /** Shows a type's form, or opens its claim page if it can't be shown here */
+  /** Shows a type's claim form */
   public pick(type: ClaimableType): void {
-    if (!type.in_modal) {
-      this.close(false);
-      this.fireCustomEvent(CustomEventType.Redirected, {
-        url: type.claim_url
-      });
-      return;
-    }
-
     this.selected = type;
     this.visited = [];
     this.load(type.claim_url);

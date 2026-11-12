@@ -83,7 +83,6 @@ def get_claimable_types(org, user) -> list[dict]:
                 "name": str(ch_type.name),
                 "category": ch_type.picker_category,
                 "claim_url": reverse(f"channels.types.{ch_type.slug}.claim"),
-                "in_modal": ch_type.claim_in_modal,
                 "in_region": bool(in_region),
                 "recommended": bool(ch_type.is_recommended_to(org, user)),
             }

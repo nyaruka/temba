@@ -87,7 +87,6 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
                 "name": "Telegram",
                 "category": "social",
                 "claim_url": "/channels/types/telegram/claim/",
-                "in_modal": True,
                 "in_region": True,
                 "recommended": True,
             },
@@ -95,8 +94,6 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
         )
         self.assertEqual("social", by_code["D3C"]["category"])
         self.assertEqual("api", by_code["EX"]["category"])
-        self.assertTrue(by_code["EX"]["in_modal"])
-        self.assertTrue(by_code["WAC"]["in_modal"])  # signing into Facebook happens in a popup
         self.assertEqual("api", by_code["FC"]["category"])
         self.assertNotIn("FCM", by_code)  # only available to staff
 

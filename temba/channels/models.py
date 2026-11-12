@@ -108,10 +108,6 @@ class ChannelType(metaclass=ABCMeta):
     claim_view = None
     claim_view_kwargs = None
 
-    # whether the claim view can be shown in the new channel picker's modal - types whose claim pages rely on their own
-    # page scripts or take several steps (e.g. signing into a provider) are opened as full pages instead
-    claim_in_modal = True
-
     # the configuration UI - only channel types that aren't configured automatically need this
     config_ui = None
 

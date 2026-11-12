@@ -15,7 +15,6 @@ const type = (over: Partial<ClaimableType>): ClaimableType => ({
   name: 'Telegram',
   category: 'social',
   claim_url: '/channels/types/telegram/claim',
-  in_modal: true,
   in_region: true,
   recommended: false,
   ...over
@@ -34,8 +33,7 @@ const TYPES: ClaimableType[] = [
     slug: 'whatsapp',
     name: 'WhatsApp',
     category: 'social',
-    claim_url: '/channels/types/whatsapp/claim',
-    in_modal: false
+    claim_url: '/channels/types/whatsapp/claim'
   }),
   type({ recommended: true }),
   type({
@@ -58,8 +56,7 @@ const TYPES: ClaimableType[] = [
     slug: 'external',
     name: 'External API',
     category: 'api',
-    claim_url: '/channels/types/external/claim',
-    in_modal: false
+    claim_url: '/channels/types/external/claim'
   })
 ];
 
@@ -181,21 +178,6 @@ describe('temba-channel-picker', () => {
     // searching by category name works too
     await search(picker, 'developer');
     expect(tileLabels(picker)).to.deep.equal(['External API']);
-  });
-
-  it('opens the page of a type which can not be shown in the modal', async () => {
-    const picker = await getPicker();
-    await search(picker, 'external');
-
-    const input = picker.shadowRoot.querySelector(
-      '.search'
-    ) as HTMLInputElement;
-    setTimeout(() =>
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
-    );
-    const event = await oneEvent(picker, CustomEventType.Redirected, false);
-    expect(event.detail.url).to.equal('/channels/types/external/claim');
-    expect(picker.open).to.be.false;
   });
 
   it('shows a type form and adds the channel', async () => {
