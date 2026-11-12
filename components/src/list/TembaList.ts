@@ -289,6 +289,26 @@ export class TembaList extends RapidElement {
   }
 
   /**
+   * Whether any part of the focused option is inside the visible part of the
+   * list
+   */
+  private isFocusedOptionVisible(): boolean {
+    const options = this.shadowRoot.querySelector('temba-options');
+    const option = options?.shadowRoot?.querySelector('.option.focused');
+    const scrollBox = options?.shadowRoot?.querySelector('.options-scroll');
+    if (!option || !scrollBox) {
+      return false;
+    }
+
+    const optionBounds = option.getBoundingClientRect();
+    const scrollBounds = scrollBox.getBoundingClientRect();
+    return (
+      optionBounds.bottom > scrollBounds.top &&
+      optionBounds.top < scrollBounds.bottom
+    );
+  }
+
+  /**
    * Refreshes the first page, updating any found items in our list
    */
   private async refreshTop(): Promise<void> {
@@ -358,19 +378,24 @@ export class TembaList extends RapidElement {
 
         const newIndex = this.findRepinnedCursorIndex(prevItem, newItems);
         if (newIndex !== null && newIndex > -1) {
+          // follow our focused item to its new position, but only if it was
+          // in view - otherwise we'd drag a list that has been scrolled away
+          // from it back on every refresh
+          const follow = this.isFocusedOptionVisible();
           this.cursorIndex = newIndex;
 
-          // make sure our focused item is visible
-          window.setTimeout(() => {
-            const options = this.shadowRoot.querySelector('temba-options');
-            if (options) {
-              const option =
-                options.shadowRoot.querySelector('.option.focused');
-              if (option) {
-                option.scrollIntoView({ block: 'end', inline: 'nearest' });
+          if (follow) {
+            window.setTimeout(() => {
+              const options = this.shadowRoot.querySelector('temba-options');
+              if (options) {
+                const option =
+                  options.shadowRoot.querySelector('.option.focused');
+                if (option) {
+                  option.scrollIntoView({ block: 'end', inline: 'nearest' });
+                }
               }
-            }
-          }, 0);
+            }, 0);
+          }
         }
 
         this.items = newItems;
