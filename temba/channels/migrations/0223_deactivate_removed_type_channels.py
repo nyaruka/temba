@@ -4,7 +4,7 @@ from django.utils import timezone
 REMOVED_TYPES = ("SC", "NV", "MG", "DK", "H9")
 
 
-def deactivate_removed_type_channels(apps, schema_editor):
+def deactivate_removed_type_channels(apps, schema_editor):  # pragma: no cover
     Channel = apps.get_model("channels", "Channel")
     Trigger = apps.get_model("triggers", "Trigger")
 

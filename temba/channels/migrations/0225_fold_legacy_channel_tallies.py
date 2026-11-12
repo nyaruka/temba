@@ -36,7 +36,7 @@ WITH legacy AS (
 SELECT (SELECT count(*) FROM legacy), (SELECT count(*) FROM moved)"""
 
 
-def fold_legacy_channel_tallies(apps, schema_editor):
+def fold_legacy_channel_tallies(apps, schema_editor):  # pragma: no cover
     Org = apps.get_model("orgs", "Org")
 
     num_moved, num_dropped = 0, 0
