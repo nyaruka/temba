@@ -157,6 +157,11 @@ class OrgCRUDL(SmartCRUDL):
                 widget=SelectMultipleWidget(),
                 required=False,
             )
+            is_internal = forms.BooleanField(
+                label=_("Internal"),
+                help_text=_("An internal or testing workspace rather than one in real use."),
+                required=False,
+            )
             admin_groups = forms.ModelMultipleChoiceField(
                 queryset=Group.objects.none(),
                 help_text=_("Members of these groups administer this workspace."),
@@ -173,6 +178,8 @@ class OrgCRUDL(SmartCRUDL):
 
                 self.limits_rows = []
                 self.add_limits_fields(org)
+
+                self.fields["is_internal"] = self.fields.pop("is_internal")  # after the limits
 
             def clean(self):
                 super().clean()
