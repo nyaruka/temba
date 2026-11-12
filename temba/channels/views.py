@@ -48,10 +48,6 @@ CHANNEL_TYPE_POPULARITY_CACHE_TTL = 60 * 60 * 24
 ALL_COUNTRIES = countries.choices()
 
 
-def get_channel_read_url(channel):
-    return reverse("channels.channel_read", args=[channel.uuid])
-
-
 class ChannelTypeMixin(SpaMixin):
     """
     Mixin for views owned by a specific channel type

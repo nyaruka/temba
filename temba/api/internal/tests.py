@@ -657,6 +657,10 @@ class EndpointsTest(APITestMixin, TembaTest):
         # without the endpoint's bulk prefetch, the series reads the tallies directly
         self.assertEqual({"in": [0] * 12 + [3, 0], "out": [0] * 12 + [10, 0]}, twilio.get_activity_series())
 
+        # an empty page has nothing to prefetch
+        with self.assertNumQueries(0):
+            Channel.prefetch_activity_series([])
+
         # enabled channels first, then by name
         self.assertGet(endpoint_url, [self.editor, self.admin], results=[vonage, telegram, twilio, android, old])
 

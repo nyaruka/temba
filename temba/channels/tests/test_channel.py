@@ -573,15 +573,24 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
                     external_id="1234",
                     external_locale="en_US",
                 ),
+                TemplateTranslation(
+                    channel=wac,
+                    locale="spa",
+                    status=TemplateTranslation.STATUS_REJECTED,
+                    external_id="1235",
+                    external_locale="es",
+                ),
             ],
         )
         response = self.assertReadFetch(templates_url, [self.editor, self.admin])
-        self.assertEqual(1, len(response.context["translations"]))
+        self.assertEqual(2, len(response.context["translations"]))
         self.assertIsNone(response.context["last_sync"])
 
-        # its page summarizes them
+        # its page summarizes them, noting the ones which aren't approved
         response = self.requestView(reverse("channels.channel_read", args=[wac.uuid]), self.admin)
         self.assertEqual(1, response.context["templates"]["approved"])
+        self.assertEqual(2, response.context["templates"]["total"])
+        self.assertEqual(["1 rejected"], response.context["templates"]["others"])
         self.assertIn("templates", response.context["sheets"])
 
         # only types with templates have them

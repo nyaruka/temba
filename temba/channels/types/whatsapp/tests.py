@@ -130,6 +130,11 @@ class WhatsAppTypeTest(TembaTest, CRUDLTestMixin):
                 {"params": {"access_token": "FB_APP_ID|FB_APP_SECRET", "input_token": "Z" * 48}},
             )
 
+        # signing in again forgets the last sign in
+        response = self.client.get(connect_whatsapp_cloud_url + "?again=1")
+        self.assertEqual(200, response.status_code)
+        self.assertNotIn(WhatsAppType.SESSION_USER_TOKEN, self.client.session)
+
         # make sure the token is set on the session
         session = self.client.session
         session[WhatsAppType.SESSION_USER_TOKEN] = "user-token"

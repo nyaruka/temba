@@ -48,9 +48,18 @@ class MtnTypeTest(TembaTest):
             post_data["consumer_secret"] = "barbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbar"
             post_data["cp_address"] = "FOO"
 
+            # credentials which MTN won't take aren't connected
+            with patch("requests.post") as mock_bad_post:
+                mock_bad_post.return_value = MockResponse(400, '{"error": "Error"}')
+
+                response = self.client.post(url, post_data)
+                self.assertEqual(200, response.status_code)
+                self.assertTrue(response.context["form"].non_field_errors())
+                self.assertFalse(Channel.objects.filter(is_active=True).exists())
+
             response = self.client.post(url, post_data)
 
-            channel = Channel.objects.get()
+            channel = Channel.objects.get(is_active=True)
 
             self.assertEqual("RW", channel.country)
             self.assertTrue(channel.uuid)

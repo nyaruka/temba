@@ -41,6 +41,10 @@ class TurnTypeTest(CRUDLTestMixin, TembaTest):
         post_data["namespace"] = "my-custom-app"
         post_data["access_token"] = "token123"
 
+        # missing fields only get their own errors
+        response = self.client.post(url, {**post_data, "access_token": ""})
+        self.assertFormError(response.context["form"], "access_token", ["This field is required."])
+
         # will fail with invalid phone number
         response = self.client.post(url, post_data)
         self.assertFormError(response.context["form"], "address", ["Please enter a valid phone number"])

@@ -44,6 +44,13 @@ class TwilioMessagingServiceTypeTest(TembaTest):
         self.assertIn("account_trial", response.context)
         self.assertFalse(response.context["account_trial"])
 
+        # the country starts as the workspace's own when Twilio supports it
+        self.org.timezone = "America/New_York"
+        self.org.save(update_fields=("timezone",))
+
+        response = self.client.get(claim_twilio_ms)
+        self.assertEqual("US", response.context["form"].fields["country"].initial)
+
         with patch(
             "temba.channels.types.twilio_messaging_service.views.ClaimView.get_twilio_client"
         ) as mock_get_twilio_client:

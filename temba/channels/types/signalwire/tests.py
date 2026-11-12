@@ -57,6 +57,17 @@ class SignalWireTest(TembaTest):
             self.assertFalse(Channel.objects.all())
             self.assertContains(response, "Unable to find phone")
 
+        # then with a number whose URLs can't be set
+        with patch("requests.get") as mock_get, patch("requests.post") as mock_post:
+            mock_get.return_value = MockResponse(
+                200, '{"incoming_phone_numbers": [{"sid": "abc123", "phone_number": "+12065551212"}]}'
+            )
+            mock_post.return_value = MockResponse(400, '{ "error": "true" }')
+            response = self.client.post(url, post_data)
+            self.assertEqual(200, response.status_code)
+            self.assertTrue(response.context["form"].non_field_errors())
+            self.assertFalse(Channel.objects.filter(is_active=True))
+
         # success this time
         with patch("requests.get") as mock_get, patch("requests.post") as mock_post:
             mock_get.return_value = MockResponse(
@@ -69,7 +80,7 @@ class SignalWireTest(TembaTest):
                 auth=("key123", "token123"),
             )
 
-        channel = Channel.objects.get()
+        channel = Channel.objects.get(is_active=True)
 
         self.assertEqual("https://temba.signalwire.com/api/laml", channel.config["base_url"])
         self.assertEqual("key123", channel.config["account_sid"])

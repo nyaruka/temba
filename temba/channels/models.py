@@ -165,14 +165,11 @@ class ChannelType(metaclass=ABCMeta):
         """
         The group this type is listed under in the new channel picker
         """
-        if not self.category:
-            return None
-
         return {
             ChannelType.Category.SOCIAL_MEDIA: "social",
             ChannelType.Category.PHONE: "phone",
             ChannelType.Category.API: "api",
-        }[self.category]
+        }.get(self.category)
 
     def get_claim_blurb(self):
         """

@@ -35,12 +35,30 @@ class Dialog360TypeTest(CRUDLTestMixin, TembaTest):
         post_data["country"] = "RW"
         post_data["api_key"] = "123456789"
 
+        # missing fields only get their own errors
+        response = self.client.post(url, {**post_data, "address": ""})
+        self.assertFormError(response.context["form"], "address", ["This field is required."])
+
         # will fail with invalid phone number
         response = self.client.post(url, post_data)
         self.assertFormError(response.context["form"], "address", ["Please enter a valid phone number"])
 
         # valid number
         post_data["address"] = "0788123123"
+
+        # a webhook which can't be registered isn't connected
+        with (
+            patch("socket.gethostbyname", return_value="123.123.123.123"),
+            patch("requests.post") as mock_post,
+            patch("requests.get") as mock_get,
+        ):
+            mock_post.return_value = MockResponse(400, '{ "meta": { "success": false } }')
+            mock_get.return_value = MockResponse(200, '{"waba_templates": []}')
+
+            response = self.client.post(url, post_data)
+            self.assertEqual(200, response.status_code)
+            self.assertTrue(response.context["form"].non_field_errors())
+            self.assertFalse(Channel.objects.filter(is_active=True).exists())
 
         # but a key which doesn't work isn't connected
         with patch("requests.get") as mock_get:
@@ -64,7 +82,7 @@ class Dialog360TypeTest(CRUDLTestMixin, TembaTest):
             response = self.client.post(url, post_data)
             self.assertEqual(302, response.status_code)
 
-        channel = Channel.objects.get()
+        channel = Channel.objects.get(is_active=True)
 
         self.assertEqual("123456789", channel.config[Channel.CONFIG_AUTH_TOKEN])
         self.assertEqual("https://waba-v2.360dialog.io", channel.config[Channel.CONFIG_BASE_URL])

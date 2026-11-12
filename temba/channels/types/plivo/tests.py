@@ -41,6 +41,21 @@ class PlivoTypeTest(TembaTest):
             self.assertNotIn("account_trial", response.context)
             self.assertEqual(response.request["PATH_INFO"], connect_plivo_url)
 
+        # credentials which have stopped working are forgotten and asked for again
+        session = self.client.session
+        session[PlivoType.CONFIG_AUTH_ID] = "auth-id"
+        session[PlivoType.CONFIG_AUTH_TOKEN] = "auth-token"
+        session.save()
+
+        with patch("requests.get") as plivo_get:
+            plivo_get.return_value = MockJsonResponse(401, {})
+
+            response = self.client.get(claim_plivo_url)
+            self.assertRedirect(response, connect_plivo_url)
+            self.assertIn("invalid_creds=1", response.url)
+            self.assertNotIn(PlivoType.CONFIG_AUTH_ID, self.client.session)
+            self.assertNotIn(PlivoType.CONFIG_AUTH_TOKEN, self.client.session)
+
         # with credentials, let's add a number already connected to the account
         session = self.client.session
         session[PlivoType.CONFIG_AUTH_ID] = "auth-id"
@@ -275,6 +290,10 @@ class PlivoTypeTest(TembaTest):
 
         # connect plivo
         connect_url = reverse("channels.types.plivo.connect")
+
+        # missing credentials only get their own errors
+        response = self.client.post(connect_url, dict(auth_id="auth-id"))
+        self.assertFormError(response.context["form"], "auth_token", ["This field is required."])
 
         # simulate invalid credentials
         with patch("requests.get") as mock_get:
