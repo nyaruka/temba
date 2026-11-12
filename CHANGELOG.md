@@ -1,3 +1,7 @@
+## v26.3.194 (2026-11-12)
+ * Post the current CSRF cookie's token from the channel picker, as a sign-in popup may have replaced it
+ * Clear the test cookie after each test
+
 ## v26.3.193 (2026-11-12)
  * Add Org.is_internal for staff to mark internal or testing workspaces
  * Stop reading channel tallies from legacy org tallies
