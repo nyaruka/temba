@@ -221,9 +221,18 @@ describe('temba-channel-picker', () => {
     });
     (container.querySelector('#id_auth_token') as HTMLInputElement).value =
       '123:abc';
+
+    // a sign-in popup may have replaced the CSRF cookie since the form was rendered, so it posts the current one
+    document.cookie = 'csrftoken=fresh; path=/';
+    const csrfInput = container.querySelector(
+      '[name=csrfmiddlewaretoken]'
+    ) as HTMLInputElement;
+
     setTimeout(() => picker.submit());
     const event = await oneEvent(picker, CustomEventType.Redirected, false);
     expect(event.detail.url).to.equal('/channels/channel/read/c-1/');
+    expect(csrfInput.value).to.equal('fresh');
+    document.cookie = 'csrftoken=; path=/; max-age=0';
     expect(picker.open).to.be.false;
     expect(picker.querySelector('.channel-claim-form')).to.be.null;
   });
