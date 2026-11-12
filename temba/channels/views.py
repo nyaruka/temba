@@ -60,6 +60,17 @@ class ChannelTypeMixin(SpaMixin):
 
         super().__init__()
 
+    def dispatch(self, request, *args, **kwargs):
+        response = super().dispatch(request, *args, **kwargs)
+
+        # a sheet can't follow a redirect without rendering where it goes, so hand it the destination instead
+        if self.is_sheet() and isinstance(response, HttpResponseRedirectBase):
+            success = HttpResponse()
+            success["X-Temba-Success"] = response.url
+            return success
+
+        return response
+
 
 def get_claimable_types(org, user) -> list[dict]:
     """

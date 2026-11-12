@@ -349,6 +349,27 @@ class WhatsAppTypeTest(TembaTest, CRUDLTestMixin):
             response = self.client.get(reverse("channels.types.whatsapp.verify_code", args=(channel.uuid,)))
             self.assertEqual("/settings/channels", response.context[TEMBA_MENU_SELECTION])
 
+            # in a sheet over the read page, each step hands the sheet where to go next rather than redirecting
+            response = self.client.post(
+                reverse("channels.types.whatsapp.request_code", args=(channel.uuid,)), {}, HTTP_X_TEMBA_SHEET="1"
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(
+                reverse("channels.types.whatsapp.verify_code", args=(channel.uuid,)), response["X-Temba-Success"]
+            )
+
+            response = self.client.get(
+                reverse("channels.types.whatsapp.verify_code", args=(channel.uuid,)), HTTP_X_TEMBA_SHEET="1"
+            )
+            self.assertEqual("sheet.html", response.context["base_template"])
+
+            response = self.client.post(
+                reverse("channels.types.whatsapp.verify_code", args=(channel.uuid,)),
+                {"code": "000000"},
+                HTTP_X_TEMBA_SHEET="1",
+            )
+            self.assertEqual(reverse("channels.channel_read", args=(channel.uuid,)), response["X-Temba-Success"])
+
         # make sure the token is set on the session
         session = self.client.session
         session[WhatsAppType.SESSION_USER_TOKEN] = "user-token"

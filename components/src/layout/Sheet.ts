@@ -8,6 +8,7 @@ import { Modal } from './Modal';
 import {
   clearLightContent,
   getClasses,
+  getHTTPCookie,
   getUrl,
   postUrl,
   serialize,
@@ -15,6 +16,10 @@ import {
   setLightContent,
   WebResponse
 } from '../utils';
+
+/** whether a form posts - read from its attribute, as a field named method would shadow the property */
+const isPosting = (form: HTMLFormElement): boolean =>
+  (form.getAttribute('method') || '').toLowerCase() === 'post';
 
 /** the headers which have a view render just its content, for a sheet */
 const SHEET_HEADERS = { 'X-Temba-Spa': '1', 'X-Temba-Sheet': '1' };
@@ -161,13 +166,17 @@ export class Sheet extends RapidElement {
   // where the content showing came from, which a form in it without an action of its own posts back to
   private contentUrl: string = null;
 
-  // a form in the content, e.g. reconnecting an account, is submitted here rather than leaving the page, including
-  // when a script of the content's submits it
+  // a form in the content which posts, e.g. reconnecting an account, is submitted here rather than leaving the page -
+  // other forms, e.g. a search, are left to submit as they would
   private handleSubmit = (event: SubmitEvent) => {
     const form = event.target as HTMLFormElement;
-    if (form instanceof HTMLFormElement && this.contains(form)) {
+    if (
+      form instanceof HTMLFormElement &&
+      this.contains(form) &&
+      isPosting(form)
+    ) {
       event.preventDefault();
-      this.submitForm(form);
+      this.submitForm(form, event.submitter);
     }
   };
 
@@ -289,6 +298,13 @@ export class Sheet extends RapidElement {
           return;
         }
 
+        // a view which sends us elsewhere on loading, e.g. as a step is already done, goes there
+        const success = response.headers.get('X-Temba-Success');
+        if (success) {
+          document.location = success;
+          return;
+        }
+
         this.setContent(response);
         this.fireCustomEvent(CustomEventType.Loaded, {
           endpoint: view.endpoint
@@ -306,8 +322,30 @@ export class Sheet extends RapidElement {
   }
 
   /** Posts a form in the content, then shows what comes back, or reloads the page if it sends us back to it */
-  private submitForm(form: HTMLFormElement): void {
+  private submitForm(
+    form: HTMLFormElement,
+    submitter: HTMLElement = null
+  ): void {
+    // a sign-in popup can come back to the site from another one, which leaves out a strict CSRF cookie so the page it
+    // loads sets a new one - post the current cookie's token, not the one the form was rendered with
+    const csrf = getHTTPCookie('csrftoken');
+    const csrfInput = form.querySelector(
+      '[name=csrfmiddlewaretoken]'
+    ) as HTMLInputElement;
+    if (csrf && csrfInput) {
+      csrfInput.value = csrf;
+    }
+
     let payload: any = serialize(form);
+
+    // which button submitted it, as a native submit would say
+    const button = submitter as HTMLButtonElement;
+    if (button && button.name) {
+      payload +=
+        (payload ? '&' : '') +
+        new URLSearchParams({ [button.name]: button.value }).toString();
+    }
+
     let contentType = 'application/x-www-form-urlencoded';
     const files = serializeFiles(form);
     if (files) {
@@ -331,7 +369,8 @@ export class Sheet extends RapidElement {
           return;
         }
 
-        // a form done with redirects back to the page under the sheet, which it has changed, e.g. by reconnecting
+        // a form done with sends us back to the page under the sheet, which it has changed (e.g. by reconnecting), so
+        // reload it - views give that as X-Temba-Success, the URL of a redirect followed would be rendered for nothing
         const next = response.headers.get('X-Temba-Success') || response.url;
         if (next) {
           const path = new URL(next, window.location.href).pathname;
@@ -339,6 +378,17 @@ export class Sheet extends RapidElement {
             document.location = path;
             return;
           }
+        }
+
+        // anywhere else, e.g. the next step of verifying a number, shows in the sheet in its place
+        const success = response.headers.get('X-Temba-Success');
+        if (success) {
+          this.views = [
+            ...this.views.slice(0, -1),
+            { ...this.current, endpoint: success }
+          ];
+          this.load();
+          return;
         }
 
         if (!this.leaveFor(response)) {
@@ -370,9 +420,13 @@ export class Sheet extends RapidElement {
     this.contentUrl = response.url;
     this.loading = false;
 
-    // a script of the content's submitting a form directly goes through our handling of it too
+    // a script of the content's submitting one of its forms directly, as on signing in with Facebook, goes through
+    // us too, without the validation a submit button would bring - a script building a form later has to submit it
+    // with requestSubmit()
     for (const form of Array.from(this.querySelectorAll('form'))) {
-      (form as any).submit = () => form.requestSubmit();
+      if (isPosting(form)) {
+        (form as any).submit = () => this.submitForm(form);
+      }
     }
   }
 
