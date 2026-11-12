@@ -65,7 +65,7 @@ class Migration(migrations.Migration):
     atomic = False
 
     dependencies = [
-        ("channels", "0225_fold_legacy_channel_tallies"),
+        ("channels", "0226_channel_tps_not_null"),
         ("msgs", "0333_update_triggers"),
     ]
 

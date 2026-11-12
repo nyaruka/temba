@@ -327,7 +327,7 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
                 "is_enabled": True,
                 "allow_international": True,
                 "machine_detection": True,
-                "tps": None,
+                "tps": 10,
             },
             choose_org=self.org,
         )

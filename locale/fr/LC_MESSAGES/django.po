@@ -3495,10 +3495,6 @@ msgstr "Un espace de travail interne ou de test plutôt qu'utilisé réellement.
 msgid "Members of these groups administer this workspace."
 msgstr "Les membres de ces groupes administrent cet espace de travail."
 
-#, python-format
-msgid "Defaults to %(limit)s."
-msgstr "Par défaut %(limit)s."
-
 msgid "Edit User"
 msgstr "Modifier l'utilisateur"
 

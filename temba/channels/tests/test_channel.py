@@ -71,7 +71,6 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
             self.channel.is_enabled = is_enabled
             return self.channel.get_speed()
 
-        self.assertIsNone(speed(None))  # no limit
         self.assertIsNone(speed(10))
         self.assertEqual("slow", speed(9))
         self.assertEqual("slow", speed(2))
@@ -93,9 +92,9 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("", self.tel_channel.get_address_display())
 
     def test_channel_create(self):
-        # TPS defaults to the value for the channel type
+        # TPS defaults to the value for the channel type, or the default if it has none
         channel = Channel.create(self.org, self.admin, "KE", "AT", None, "+254788123123")
-        self.assertIsNone(channel.tps)
+        self.assertEqual(10, channel.tps)
 
         channel = Channel.create(self.org, self.admin, None, "KWA", None, "1234")
         self.assertEqual(45, channel.tps)
@@ -103,6 +102,10 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         # unless one is given
         channel = Channel.create(self.org, self.admin, None, "KWA", None, "2345", tps=20)
         self.assertEqual(20, channel.tps)
+
+        # which must be positive
+        with self.assertRaises(AssertionError):
+            Channel.create(self.org, self.admin, None, "KWA", None, "3456", tps=0)
 
         # can't use an invalid scheme for a fixed-scheme channel type
         with self.assertRaises(ValueError):
