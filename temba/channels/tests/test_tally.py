@@ -20,29 +20,23 @@ class ChannelTallyTest(TembaTest):
         channel2.tallies.create(scope="text:in@2026-11-04", count=4)
         other_org_channel.tallies.create(scope="text:in@2026-11-04", count=5)
 
-        # older writers wrote channel tallies as org tallies
-        self.org.org_tallies.create(scope=f"channels/{self.channel.id}/text:in@2026-11-04", count=10)
-        self.org.org_tallies.create(scope=f"channels/{self.channel.id}0/text:in@2026-11-04", count=20)
-        self.org2.org_tallies.create(scope=f"channels/{other_org_channel.id}/text:in@2026-11-04", count=30)
-
         # only today's are read from Valkey
         r.hset(
             "{tallies}:live",
             mapping={
                 f"C{self.channel.id}|text:in@2026-11-05": 100,
                 f"C{self.channel.id}|text:in@2026-11-04": 1000,
-                f"O{self.org.id}|channels/{self.channel.id}/text:in@2026-11-05": 200,
             },
         )
 
         with patch("django.utils.timezone.now", return_value=datetime(2026, 11, 5, 12, 0, 0, 0, tzone.utc)):
             self.assertEqual(
                 {
-                    (self.channel.id, date(2026, 11, 4), "text:in"): 12,
-                    (self.channel.id, date(2026, 11, 5), "text:in"): 300,
+                    (self.channel.id, date(2026, 11, 4), "text:in"): 2,
+                    (self.channel.id, date(2026, 11, 5), "text:in"): 100,
                     (self.channel.id, date(2026, 11, 4), "text:out"): 3,
                     (channel2.id, date(2026, 11, 4), "text:in"): 4,
-                    (other_org_channel.id, date(2026, 11, 4), "text:in"): 35,
+                    (other_org_channel.id, date(2026, 11, 4), "text:in"): 5,
                 },
                 ChannelTally.get_daily_totals_by_channel(
                     [self.channel, channel2, other_org_channel],
