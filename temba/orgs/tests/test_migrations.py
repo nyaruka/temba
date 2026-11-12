@@ -48,11 +48,15 @@ class BackfillNewContactTalliesTest(MigrationTest):
         contact(self.org, 2)
         tally(self.org, "inbound", 2, 2)
 
-        # oldest day still retained, one too old, and ones too recent as their tallies may still be in Valkey
+        # oldest day still retained and one too old
         contact(self.org, 400)
         contact(self.org, 401)
+
+        # days the writer started partway through
         contact(self.org, 1)
         contact(self.org, 0)
+        contact(self.org, 0)
+        tally(self.org, "inbound", 0, 1)
 
         # inactive org
         contact(self.org2, 4)
@@ -74,6 +78,8 @@ class BackfillNewContactTalliesTest(MigrationTest):
                     expected(4, 2),
                     expected(3, 5, expires=False),
                     expected(400, 1),
+                    expected(1, 1),
+                    expected(0, 1),
                 ]
             ),
             {
@@ -81,7 +87,7 @@ class BackfillNewContactTalliesTest(MigrationTest):
                 for t in self.org.org_tallies.filter(scope__startswith="contacts/new:other@")
             },
         )
-        self.assertEqual(4, self.org.org_tallies.exclude(scope__startswith="contacts/new:other@").count())
+        self.assertEqual(5, self.org.org_tallies.exclude(scope__startswith="contacts/new:other@").count())
         self.assertFalse(self.org2.org_tallies.exists())
 
     def test_migration(self):

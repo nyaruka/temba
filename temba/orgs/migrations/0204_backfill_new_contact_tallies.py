@@ -8,13 +8,15 @@ RETENTION_DAYS = 400
 # Contacts created on each day which aren't counted by another contacts/new scope are counted as other, as that's all
 # we can tell about how a contact came to exist before mailroom tallied them. Each day's tally is only ever raised, so
 # re-runs are noops and tallies of contacts which have since been deleted are kept.
+# Today is included as the writers started partway through a day. An increment still buffered in Valkey when its day
+# is raised gets added again when flushed, but that's only the few seconds before each flush.
 BACKFILL_SQL = r"""
 WITH org AS (
     SELECT id FROM orgs_org WHERE id = %(org_id)s AND is_active FOR KEY SHARE
 ), created AS (
     SELECT (created_on AT TIME ZONE 'UTC')::date AS day, count(*) AS total
       FROM contacts_contact
-     WHERE org_id = %(org_id)s AND created_on >= %(since)s AND created_on < %(until)s
+     WHERE org_id = %(org_id)s AND created_on >= %(since)s
   GROUP BY 1
 ), tallied AS (
     SELECT substring(scope FROM '@(.+)$')::date AS day, sum(count) AS total
@@ -41,10 +43,8 @@ def backfill_new_contact_tallies(apps, schema_editor):
         cursor.execute("SELECT (NOW() AT TIME ZONE 'UTC')::date")
         today = cursor.fetchone()[0]
 
-    # recent days' tallies may still be buffered in Valkey, e.g. yesterday's just after midnight, so stop before them
     params = {
         "since": datetime.combine(today - timedelta(days=RETENTION_DAYS), time(0), tzinfo=tz.utc),
-        "until": datetime.combine(today - timedelta(days=1), time(0), tzinfo=tz.utc),
         "retention_days": RETENTION_DAYS,
     }
 

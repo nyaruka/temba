@@ -224,7 +224,7 @@ class BackfillFailedTalliesTest(MigrationTest):
         failed(contact, self.channel, 5)
         failed(contact, self.channel, 400)
         failed(contact, self.channel, 401)  # too old
-        failed(contact, self.channel, 1)  # too recent as its tally may still be in Valkey
+        failed(contact, self.channel, 1)
         failed(contact, self.channel, 0)
         deleted = failed(contact, self.channel, 5)
         Msg.objects.filter(id=deleted.id).update(folder=Msg.FOLDER_DELETED)
@@ -251,7 +251,10 @@ class BackfillFailedTalliesTest(MigrationTest):
         def tallies(channel):
             return {t.scope: (t.count, t.expires_on) for t in ChannelTally.objects.filter(channel=channel)}
 
-        self.assertEqual(dict([expected(4, 2), expected(5, 1), expected(400, 1)]), tallies(self.channel))
+        self.assertEqual(
+            dict([expected(4, 2), expected(5, 1), expected(400, 1), expected(1, 1), expected(0, 1)]),
+            tallies(self.channel),
+        )
         self.assertEqual(dict([expected(2, 3, expires=False)]), tallies(self.channel2))
         self.assertEqual({}, tallies(self.inactive))
         self.assertEqual(dict([expected(4, 1)]), tallies(self.other_org))

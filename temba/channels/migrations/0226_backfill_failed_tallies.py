@@ -8,13 +8,15 @@ RETENTION_DAYS = 400
 # Counts the messages in each channel's failed folder by the day they were created, as courier does when it fails them.
 # Failures which mailroom decides, e.g. looping, aren't tallied so are excluded by their reasons. Each day's tally is
 # only ever raised, so re-runs are noops and tallies of messages which have since been deleted or archived are kept.
+# Today is included as the writers started partway through a day. An increment still buffered in Valkey when its day
+# is raised gets added again when flushed, but that's only the few seconds before each flush.
 BACKFILL_SQL = r"""
 WITH channels AS (
     SELECT id FROM channels_channel WHERE org_id = %(org_id)s AND is_active FOR KEY SHARE
 ), failed AS (
     SELECT channel_id, (created_on AT TIME ZONE 'UTC')::date AS day, count(*) AS total
       FROM msgs_msg
-     WHERE org_id = %(org_id)s AND folder = 'X' AND created_on >= %(since)s AND created_on < %(until)s
+     WHERE org_id = %(org_id)s AND folder = 'X' AND created_on >= %(since)s
        AND channel_id IS NOT NULL AND msg_type != 'V' AND (failed_reason IS NULL OR failed_reason = 'E')
   GROUP BY 1, 2
 )
@@ -33,10 +35,8 @@ def backfill_failed_tallies(apps, schema_editor):
         cursor.execute("SELECT (NOW() AT TIME ZONE 'UTC')::date")
         today = cursor.fetchone()[0]
 
-    # recent days' tallies may still be buffered in Valkey, e.g. yesterday's just after midnight, so stop before them
     params = {
         "since": datetime.combine(today - timedelta(days=RETENTION_DAYS), time(0), tzinfo=tz.utc),
-        "until": datetime.combine(today - timedelta(days=1), time(0), tzinfo=tz.utc),
         "retention_days": RETENTION_DAYS,
     }
 
