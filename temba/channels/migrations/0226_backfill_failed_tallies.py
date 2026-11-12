@@ -33,10 +33,10 @@ def backfill_failed_tallies(apps, schema_editor):
         cursor.execute("SELECT (NOW() AT TIME ZONE 'UTC')::date")
         today = cursor.fetchone()[0]
 
-    # today's tallies may still be buffered in Valkey so can't be compared with
+    # recent days' tallies may still be buffered in Valkey, e.g. yesterday's just after midnight, so stop before them
     params = {
         "since": datetime.combine(today - timedelta(days=RETENTION_DAYS), time(0), tzinfo=tz.utc),
-        "until": datetime.combine(today, time(0), tzinfo=tz.utc),
+        "until": datetime.combine(today - timedelta(days=1), time(0), tzinfo=tz.utc),
         "retention_days": RETENTION_DAYS,
     }
 

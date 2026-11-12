@@ -35,9 +35,9 @@ class BackfillNewContactTalliesTest(MigrationTest):
 
         # partly tallied by other scopes
         for _ in range(4):
-            contact(self.org, 1)
-        tally(self.org, "inbound", 1, 1)
-        tally(self.org, "ui", 1, 1)
+            contact(self.org, 4)
+        tally(self.org, "inbound", 4, 1)
+        tally(self.org, "ui", 4, 1)
 
         # already tallied as other with more than remain
         contact(self.org, 3)
@@ -48,18 +48,19 @@ class BackfillNewContactTalliesTest(MigrationTest):
         contact(self.org, 2)
         tally(self.org, "inbound", 2, 2)
 
-        # oldest day still retained, one too old and one today
+        # oldest day still retained, one too old, and ones too recent as their tallies may still be in Valkey
         contact(self.org, 400)
         contact(self.org, 401)
+        contact(self.org, 1)
         contact(self.org, 0)
 
         # inactive org
-        contact(self.org2, 1)
+        contact(self.org2, 4)
         self.org2.is_active = False
         self.org2.save(update_fields=("is_active",))
 
         # unrelated tally
-        self.org.org_tallies.create(scope=f"msgs/text:in@{day(1)}", count=7)
+        self.org.org_tallies.create(scope=f"msgs/text:in@{day(4)}", count=7)
 
     def assertState(self):
         def expected(days_ago: int, count: int, expires=True):
@@ -70,7 +71,7 @@ class BackfillNewContactTalliesTest(MigrationTest):
             dict(
                 [
                     expected(10, 2),
-                    expected(1, 2),
+                    expected(4, 2),
                     expected(3, 5, expires=False),
                     expected(400, 1),
                 ]
@@ -92,4 +93,10 @@ class BackfillNewContactTalliesTest(MigrationTest):
             migration.backfill_new_contact_tallies(self.apps, None)
 
         mock_print.assert_not_called()
+        self.assertState()
+
+        # but raises tallies which are behind
+        self.org.org_tallies.filter(scope=f"contacts/new:other@{self.day(4)}").update(count=1)
+        migration.backfill_new_contact_tallies(self.apps, None)
+
         self.assertState()

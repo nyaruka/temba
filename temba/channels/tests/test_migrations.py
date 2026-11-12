@@ -217,14 +217,15 @@ class BackfillFailedTalliesTest(MigrationTest):
                 voice=voice,
             )
 
-        failed(contact, self.channel, 1)
-        failed(contact, self.channel, 1, reason=Msg.FAILED_ERROR_LIMIT)
-        failed(contact, self.channel, 1, reason=Msg.FAILED_LOOPING)  # failed by mailroom
-        failed(contact, self.channel, 1, voice=True)
+        failed(contact, self.channel, 4)
+        failed(contact, self.channel, 4, reason=Msg.FAILED_ERROR_LIMIT)
+        failed(contact, self.channel, 4, reason=Msg.FAILED_LOOPING)  # failed by mailroom
+        failed(contact, self.channel, 4, voice=True)
         failed(contact, self.channel, 5)
         failed(contact, self.channel, 400)
         failed(contact, self.channel, 401)  # too old
-        failed(contact, self.channel, 0)  # today
+        failed(contact, self.channel, 1)  # too recent as its tally may still be in Valkey
+        failed(contact, self.channel, 0)
         deleted = failed(contact, self.channel, 5)
         Msg.objects.filter(id=deleted.id).update(folder=Msg.FOLDER_DELETED)
         self.create_outgoing_msg(contact, "Hi", channel=self.channel, created_on=timezone.now() - timedelta(days=1))
@@ -233,11 +234,11 @@ class BackfillFailedTalliesTest(MigrationTest):
         failed(tg_contact, self.channel2, 2)
         self.create_channel_tally(self.channel2, "text:failed", self.day(2), 3)
 
-        failed(tg_contact, self.inactive, 1)
+        failed(tg_contact, self.inactive, 4)
         self.inactive.is_active = False
         self.inactive.save(update_fields=("is_active",))
 
-        failed(other_contact, self.other_org, 1)
+        failed(other_contact, self.other_org, 4)
 
     def day(self, days_ago: int) -> date:
         return self.today - timedelta(days=days_ago)
@@ -250,10 +251,10 @@ class BackfillFailedTalliesTest(MigrationTest):
         def tallies(channel):
             return {t.scope: (t.count, t.expires_on) for t in ChannelTally.objects.filter(channel=channel)}
 
-        self.assertEqual(dict([expected(1, 2), expected(5, 1), expected(400, 1)]), tallies(self.channel))
+        self.assertEqual(dict([expected(4, 2), expected(5, 1), expected(400, 1)]), tallies(self.channel))
         self.assertEqual(dict([expected(2, 3, expires=False)]), tallies(self.channel2))
         self.assertEqual({}, tallies(self.inactive))
-        self.assertEqual(dict([expected(1, 1)]), tallies(self.other_org))
+        self.assertEqual(dict([expected(4, 1)]), tallies(self.other_org))
 
     def test_migration(self):
         self.assertState()
@@ -267,7 +268,7 @@ class BackfillFailedTalliesTest(MigrationTest):
         self.assertState()
 
         # but raises tallies which are behind
-        self.channel.tallies.filter(scope=f"text:failed@{self.day(1)}").update(count=1)
+        self.channel.tallies.filter(scope=f"text:failed@{self.day(4)}").update(count=1)
         migration.backfill_failed_tallies(self.apps, None)
 
         self.assertState()
