@@ -130,11 +130,6 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("Temba II", self.org.name)
         self.assertEqual(["new_orgs"], self.org.features)
         self.assertTrue(self.org.is_internal)
-
-        assertOrgFilter("?filter=internal", [self.org])
-
-        response = self.client.get(reverse("staff.org_read", args=[self.org.id]))
-        self.assertContains(response, "Internal")
         self.assertEqual(self.org.get_limit(Org.LIMIT_FIELDS), 300)
         self.assertEqual(self.org.get_limit(Org.LIMIT_GLOBALS), 250)  # uses default
         self.assertEqual(self.org.get_limit(Org.LIMIT_GROUPS), 400)
@@ -143,6 +138,12 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # limits left blank aren't recorded on the org
         self.assertEqual({"channels": 20, "contacts": 100_000, "fields": 300, "groups": 400}, self.org.limits)
+
+        # internal workspaces can be filtered on and are labelled as such
+        assertOrgFilter("?filter=internal", [self.org])
+        internal_label = '<temba-label icon="workspace"'
+        self.assertContains(self.client.get(reverse("staff.org_read", args=[self.org.id])), internal_label)
+        self.assertNotContains(self.client.get(reverse("staff.org_read", args=[self.org2.id])), internal_label)
 
         # admin groups are limited to those configured for the deployment
         global_admins = self.create_admin_group("Global Admins")
