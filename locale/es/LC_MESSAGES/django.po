@@ -5669,39 +5669,6 @@ msgstr "Enviado el"
 msgid "No invitations"
 msgstr "Sin invitaciones"
 
-msgid "To access this page please confirm your current password."
-msgstr "Para acceder a esta página, confirme su contraseña actual."
-
-msgid "Confirm"
-msgstr "Confirmar"
-
-msgid "Please sign in with your email address and password."
-msgstr "Inicie sesión con su dirección de correo electrónico y contraseña."
-
-msgid "Forgot your password?"
-msgstr "¿Olvidó su contraseña?"
-
-msgid "Two-factor Authentication"
-msgstr "Autenticación de dos factores"
-
-msgid "If you no longer have access to the device with which you setup two-factor authentication on your login, you can enter one of your backup tokens below."
-msgstr "Si ya no tiene acceso al dispositivo con el que configuró la autenticación de dos factores en su inicio de sesión, puede ingresar uno de sus tokens de respaldo a continuación."
-
-msgid "8-character token"
-msgstr "Token de 8 carácteres"
-
-msgid "Use Device"
-msgstr "Usar dispositivo"
-
-msgid "Open the one-time password application with which you setup two-factor authentication on your account and enter the code below to verify your identity."
-msgstr "Abra la aplicación de contraseña de un solo uso con la que configuró la autenticación de dos factores en su cuenta e ingrese el código a continuación para verificar su identidad."
-
-msgid "6-digit code"
-msgstr "Código de 6 dígitos"
-
-msgid "Use Backup Token"
-msgstr "Usar token de respaldo"
-
 #, python-format
 msgid "You are about to delete the workspace <b>%(org)s</b>. There is no going back, so please make sure you have exported everything you want to keep before continuing!"
 msgstr "Está a punto de eliminar el workspace <b>%(org)s</b>. No hay vuelta atrás, así que asegúrese de haber exportado todo lo que desea conservar antes de continuar."
@@ -5861,25 +5828,6 @@ msgstr "Ver flujos"
 msgid "You are about to remove the user <b>%(object)s</b> from your workspace. Are you sure?"
 msgstr "Está a punto de eliminar al usuario <b>%(object)s</b> de su workspace. ¿Está seguro?"
 
-msgid "Login Failure"
-msgstr "Fallo de login"
-
-#, python-format
-msgid "You cannot log in at this time because we received too many incorrect login attempts. Please wait %(lockout_timeout)s minutes before trying again."
-msgstr "No puede iniciar sesión en este momento porque recibimos demasiados intentos de inicio de sesión incorrectos. Espere %(lockout_timeout)s minutos antes de volver a intentarlo."
-
-msgid "Alternatively, you can fill out the form below to have your password reset via e-mail."
-msgstr "Alternativamente, puede completar el formulario a continuación para restablecer su contraseña por correo electrónico."
-
-msgid "Reset"
-msgstr "Reiniciar"
-
-msgid "Reset Password"
-msgstr "Restablecer la contraseña"
-
-msgid "Enter the email address you used to sign up. We will send you an email with details on how to reset your password."
-msgstr "Introduzca la dirección de correo electrónico que utilizó para registrarse. Le enviaremos un correo electrónico con los detalles sobre cómo restablecer su contraseña."
-
 msgid "Remove User"
 msgstr "Eliminar usuario"
 
@@ -5888,25 +5836,6 @@ msgstr "2FA"
 
 msgid "No users"
 msgstr "Sin usuarios"
-
-msgid "Choose a new password and enter it below."
-msgstr "Elija una nueva contraseña e introdúzcala a continuación."
-
-msgid "This email verification link is invalid."
-msgstr "Este enlace de verificación de correo electrónico no es válido."
-
-msgid "This email verification link is for a different user. Please login as that user."
-msgstr "Este enlace de verificación de correo electrónico es para otro usuario. Inicie sesión como ese usuario."
-
-msgid "Login"
-msgstr "Login"
-
-#, python-format
-msgid "Your email address <b>%(email)s</b> has been verified successfully!"
-msgstr "¡Su dirección de correo electrónico <b>%(email)s</b> se ha verificado correctamente!"
-
-msgid "Continue"
-msgstr "Continuar"
 
 #, python-format
 msgid "To use an Android phone with your %(brand)s workspace to send messages you need to download the %(brand)s relayer app"

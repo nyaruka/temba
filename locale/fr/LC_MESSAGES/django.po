@@ -5669,39 +5669,6 @@ msgstr "Envoyé le"
 msgid "No invitations"
 msgstr "Aucune invitation"
 
-msgid "To access this page please confirm your current password."
-msgstr "Pour accéder à cette page, veuillez confirmer votre mot de passe actuel."
-
-msgid "Confirm"
-msgstr "Confirmer"
-
-msgid "Please sign in with your email address and password."
-msgstr "Veuillez vous connecter avec votre adresse électronique et votre mot de passe."
-
-msgid "Forgot your password?"
-msgstr "Mot de passe oublié ?"
-
-msgid "Two-factor Authentication"
-msgstr "Authentification à deux facteurs"
-
-msgid "If you no longer have access to the device with which you setup two-factor authentication on your login, you can enter one of your backup tokens below."
-msgstr "Si vous n'avez plus accès à l'appareil avec lequel vous avez configuré l'authentification à deux facteurs sur votre connexion, vous pouvez entrer l'un de vos jetons de sauvegarde ci-dessous."
-
-msgid "8-character token"
-msgstr "Jeton de 8 caractères"
-
-msgid "Use Device"
-msgstr "Utiliser le dispositif"
-
-msgid "Open the one-time password application with which you setup two-factor authentication on your account and enter the code below to verify your identity."
-msgstr "Ouvrez l'application de mot de passe à usage unique avec laquelle vous avez configuré l'authentification à deux facteurs sur votre compte et saisissez le code ci-dessous pour vérifier votre identité."
-
-msgid "6-digit code"
-msgstr "Code à 6 chiffres"
-
-msgid "Use Backup Token"
-msgstr "Utiliser un jeton de sauvegarde"
-
 #, python-format
 msgid "You are about to delete the workspace <b>%(org)s</b>. There is no going back, so please make sure you have exported everything you want to keep before continuing!"
 msgstr "Vous êtes sur le point de supprimer l'espace de travail <b>%(org)s</b>. Cette action est irréversible : assurez-vous d'avoir exporté tout ce que vous souhaitez conserver avant de continuer !"
@@ -5861,25 +5828,6 @@ msgstr "Voir les flux"
 msgid "You are about to remove the user <b>%(object)s</b> from your workspace. Are you sure?"
 msgstr "Vous êtes sur le point de retirer l'utilisateur <b>%(object)s</b> de votre espace de travail. Voulez-vous continuer ?"
 
-msgid "Login Failure"
-msgstr "Erreur d'authentification"
-
-#, python-format
-msgid "You cannot log in at this time because we received too many incorrect login attempts. Please wait %(lockout_timeout)s minutes before trying again."
-msgstr "Vous ne pouvez pas vous connecter pour le moment car nous avons reçu trop de tentatives de connexion incorrectes. Veuillez patienter %(lockout_timeout)s minutes avant de réessayer."
-
-msgid "Alternatively, you can fill out the form below to have your password reset via e-mail."
-msgstr "Vous pouvez également remplir le formulaire ci-dessous pour réinitialiser votre mot de passe par e-mail."
-
-msgid "Reset"
-msgstr "Réinitialiser"
-
-msgid "Reset Password"
-msgstr "Réinitialiser le mot de passe"
-
-msgid "Enter the email address you used to sign up. We will send you an email with details on how to reset your password."
-msgstr "Saisissez l'adresse e-mail que vous avez utilisée lors de votre inscription. Nous vous enverrons un e-mail expliquant comment réinitialiser votre mot de passe."
-
 msgid "Remove User"
 msgstr "Retirer l'utilisateur"
 
@@ -5888,25 +5836,6 @@ msgstr "2FA"
 
 msgid "No users"
 msgstr "Aucun utilisateur"
-
-msgid "Choose a new password and enter it below."
-msgstr "Choisissez un nouveau mot de passe et saisissez-le ci-dessous."
-
-msgid "This email verification link is invalid."
-msgstr "Ce lien de vérification d'adresse e-mail n'est pas valide."
-
-msgid "This email verification link is for a different user. Please login as that user."
-msgstr "Ce lien de vérification d'adresse e-mail concerne un autre utilisateur. Veuillez vous connecter avec ce compte."
-
-msgid "Login"
-msgstr "S'identifier"
-
-#, python-format
-msgid "Your email address <b>%(email)s</b> has been verified successfully!"
-msgstr "Votre adresse e-mail <b>%(email)s</b> a été vérifiée avec succès !"
-
-msgid "Continue"
-msgstr "Continuer"
 
 #, python-format
 msgid "To use an Android phone with your %(brand)s workspace to send messages you need to download the %(brand)s relayer app"

@@ -5628,39 +5628,6 @@ msgstr ""
 msgid "No invitations"
 msgstr ""
 
-msgid "To access this page please confirm your current password."
-msgstr ""
-
-msgid "Confirm"
-msgstr ""
-
-msgid "Please sign in with your email address and password."
-msgstr ""
-
-msgid "Forgot your password?"
-msgstr ""
-
-msgid "Two-factor Authentication"
-msgstr ""
-
-msgid "If you no longer have access to the device with which you setup two-factor authentication on your login, you can enter one of your backup tokens below."
-msgstr ""
-
-msgid "8-character token"
-msgstr ""
-
-msgid "Use Device"
-msgstr ""
-
-msgid "Open the one-time password application with which you setup two-factor authentication on your account and enter the code below to verify your identity."
-msgstr ""
-
-msgid "6-digit code"
-msgstr ""
-
-msgid "Use Backup Token"
-msgstr ""
-
 #, python-format
 msgid "You are about to delete the workspace <b>%(org)s</b>. There is no going back, so please make sure you have exported everything you want to keep before continuing!"
 msgstr ""
@@ -5820,25 +5787,6 @@ msgstr ""
 msgid "You are about to remove the user <b>%(object)s</b> from your workspace. Are you sure?"
 msgstr ""
 
-msgid "Login Failure"
-msgstr ""
-
-#, python-format
-msgid "You cannot log in at this time because we received too many incorrect login attempts. Please wait %(lockout_timeout)s minutes before trying again."
-msgstr ""
-
-msgid "Alternatively, you can fill out the form below to have your password reset via e-mail."
-msgstr ""
-
-msgid "Reset"
-msgstr ""
-
-msgid "Reset Password"
-msgstr ""
-
-msgid "Enter the email address you used to sign up. We will send you an email with details on how to reset your password."
-msgstr ""
-
 msgid "Remove User"
 msgstr ""
 
@@ -5846,25 +5794,6 @@ msgid "2FA"
 msgstr ""
 
 msgid "No users"
-msgstr ""
-
-msgid "Choose a new password and enter it below."
-msgstr ""
-
-msgid "This email verification link is invalid."
-msgstr ""
-
-msgid "This email verification link is for a different user. Please login as that user."
-msgstr ""
-
-msgid "Login"
-msgstr ""
-
-#, python-format
-msgid "Your email address <b>%(email)s</b> has been verified successfully!"
-msgstr ""
-
-msgid "Continue"
 msgstr ""
 
 #, python-format
