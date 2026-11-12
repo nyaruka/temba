@@ -25,7 +25,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 from temba import mailroom
-from temba.orgs.models import BaseTally, DependencyMixin, Org, OrgTally
+from temba.orgs.models import BaseTally, DependencyMixin, Org
 from temba.utils import dynamo, on_transaction_commit, redact
 from temba.utils.models import (
     JSONAsTextField,
@@ -709,8 +709,6 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         delete_in_batches(self.http_logs.all())
         delete_in_batches(self.template_translations.all())
         delete_in_batches(self.tallies.all(), pk="pk")
-        # TODO remove once channel tallies are no longer written as org tallies
-        delete_in_batches(self.org.org_tallies.filter(scope__startswith=f"channels/{self.id}/"), pk="pk")
 
         super().delete()
 
@@ -885,16 +883,7 @@ class ChannelTally(BaseTally):
         Gets totals by channel id, day and scope for the given undated scopes of each of the given channels over days
         from since up to until, omitting those with no total.
         """
-        totals = defaultdict(int, cls._get_daily_totals([c.id for c in channels], scopes, since, until))
-
-        # TODO remove once channel tallies are no longer written as org tallies and those have been moved here
-        legacy = {f"channels/{c.id}/{s}": (c.id, s) for c in channels for s in scopes}
-        org_ids = [c.org_id for c in channels]
-        for (_org_id, day, scope), count in OrgTally._get_daily_totals(org_ids, list(legacy), since, until).items():
-            channel_id, undated = legacy[scope]
-            totals[(channel_id, day, undated)] += count
-
-        return dict(totals)
+        return cls._get_daily_totals([c.id for c in channels], scopes, since, until)
 
     class Meta:
         indexes = [

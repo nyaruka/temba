@@ -205,10 +205,6 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         )
         Trigger.create(self.org, self.admin, Trigger.TYPE_CATCH_ALL, flow, channel=channel2)
 
-        channel1_id = channel1.id
-        self.org.org_tallies.create(scope=f"channels/{channel1_id}/text:in@2026-11-03", count=3)
-        self.org.org_tallies.create(scope=f"channels/{channel2.id}/text:in@2026-11-03", count=4)
-        self.org.org_tallies.create(scope=f"channels/{channel1_id}0/text:in@2026-11-03", count=5)
         self.org.org_tallies.create(scope="msgs/text:in@2026-11-03", count=7)
         channel1.tallies.create(scope="text:in@2026-11-04", count=1)
         channel2.tallies.create(scope="text:in@2026-11-04", count=2)
@@ -241,14 +237,7 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         channel1.delete()
 
         self.assertFalse(Channel.objects.filter(id=channel1.id).exists())
-        self.assertEqual(
-            {
-                f"channels/{channel2.id}/text:in@2026-11-03",
-                f"channels/{channel1_id}0/text:in@2026-11-03",
-                "msgs/text:in@2026-11-03",
-            },
-            set(self.org.org_tallies.values_list("scope", flat=True)),
-        )
+        self.assertEqual({"msgs/text:in@2026-11-03"}, set(self.org.org_tallies.values_list("scope", flat=True)))
         self.assertEqual(
             {(channel2.id, "text:in@2026-11-04")}, set(ChannelTally.objects.values_list("channel", "scope"))
         )
