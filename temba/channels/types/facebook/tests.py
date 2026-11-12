@@ -264,6 +264,13 @@ class FacebookTypeTest(TembaTest):
         self.assertEqual(response.context["refresh_url"], url)
         self.assertTrue(response.context["error_connect"])
 
+        # the read page shows it in a sheet, without the page around it
+        mock_get.side_effect = [MockResponse(400, json.dumps({"error": "token invalid"}))]
+        response = self.client.get(url, HTTP_X_TEMBA_SPA="1", HTTP_X_TEMBA_SHEET="1")
+        self.assertEqual("sheet.html", response.context["base_template"])
+        self.assertContains(response, 'id="refresh-token-form"')
+        self.assertNotContains(response, "<!DOCTYPE HTML>")
+
         mock_get.side_effect = [MockResponse(200, json.dumps({"data": {"is_valid": False}}))]
         response = self.client.get(url)
         self.assertContains(response, "Reconnect Facebook Page")

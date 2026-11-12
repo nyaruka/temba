@@ -9,9 +9,15 @@ import {
   clearLightContent,
   getClasses,
   getUrl,
+  postUrl,
+  serialize,
+  serializeFiles,
   setLightContent,
   WebResponse
 } from '../utils';
+
+/** the headers which have a view render just its content, for a sheet */
+const SHEET_HEADERS = { 'X-Temba-Spa': '1', 'X-Temba-Sheet': '1' };
 
 /** One view the sheet has loaded, the last being the one showing */
 interface SheetView {
@@ -152,6 +158,19 @@ export class Sheet extends RapidElement {
   // bumped on every load so a slow response can't land over a newer one
   private loadId = 0;
 
+  // where the content showing came from, which a form in it without an action of its own posts back to
+  private contentUrl: string = null;
+
+  // a form in the content, e.g. reconnecting an account, is submitted here rather than leaving the page, including
+  // when a script of the content's submits it
+  private handleSubmit = (event: SubmitEvent) => {
+    const form = event.target as HTMLFormElement;
+    if (form instanceof HTMLFormElement && this.contains(form)) {
+      event.preventDefault();
+      this.submitForm(form);
+    }
+  };
+
   // a link in the content marked with data-sheet-push="<title>" goes a level deeper in the sheet rather than leaving it
   private handleClick = (event: MouseEvent) => {
     if (
@@ -231,11 +250,13 @@ export class Sheet extends RapidElement {
   public connectedCallback(): void {
     super.connectedCallback();
     this.addEventListener('click', this.handleClick);
+    this.addEventListener('submit', this.handleSubmit);
   }
 
   public disconnectedCallback(): void {
     super.disconnectedCallback();
     this.removeEventListener('click', this.handleClick);
+    this.removeEventListener('submit', this.handleSubmit);
   }
 
   protected updated(changes: PropertyValues): void {
@@ -262,20 +283,13 @@ export class Sheet extends RapidElement {
     this.loading = true;
     clearLightContent(this);
 
-    getUrl(view.endpoint, null, { 'X-Temba-Spa': '1', 'X-Temba-Sheet': '1' })
+    getUrl(view.endpoint, null, SHEET_HEADERS)
       .then((response: WebResponse) => {
-        if (id !== this.loadId) {
+        if (id !== this.loadId || this.leaveFor(response)) {
           return;
         }
 
-        // a full page means we were sent somewhere that can't be shown here
-        if (response.body.indexOf('<!DOCTYPE HTML>') === 0) {
-          document.location = response.url;
-          return;
-        }
-
-        setLightContent(this, response.body);
-        this.loading = false;
+        this.setContent(response);
         this.fireCustomEvent(CustomEventType.Loaded, {
           endpoint: view.endpoint
         });
@@ -289,6 +303,77 @@ export class Sheet extends RapidElement {
           );
         }
       });
+  }
+
+  /** Posts a form in the content, then shows what comes back, or reloads the page if it sends us back to it */
+  private submitForm(form: HTMLFormElement): void {
+    let payload: any = serialize(form);
+    let contentType = 'application/x-www-form-urlencoded';
+    const files = serializeFiles(form);
+    if (files) {
+      new URLSearchParams(payload).forEach((value, key) =>
+        files.append(key, value)
+      );
+      payload = files;
+      contentType = null;
+    }
+
+    const id = ++this.loadId;
+    this.loading = true;
+    postUrl(
+      form.getAttribute('action') || this.contentUrl,
+      payload,
+      SHEET_HEADERS,
+      contentType
+    )
+      .then((response: WebResponse) => {
+        if (id !== this.loadId) {
+          return;
+        }
+
+        // a form done with redirects back to the page under the sheet, which it has changed, e.g. by reconnecting
+        const next = response.headers.get('X-Temba-Success') || response.url;
+        if (next) {
+          const path = new URL(next, window.location.href).pathname;
+          if (path === window.location.pathname) {
+            document.location = path;
+            return;
+          }
+        }
+
+        if (!this.leaveFor(response)) {
+          this.setContent(response);
+        }
+      })
+      .catch(() => {
+        if (id === this.loadId) {
+          this.loading = false;
+          setLightContent(
+            this,
+            `<div class="dash-empty">${msg('Something went wrong submitting this.')}</div>`
+          );
+        }
+      });
+  }
+
+  /** Leaves the page for wherever a response came from if it's a full page, which can't be shown here */
+  private leaveFor(response: WebResponse): boolean {
+    if (response.body.indexOf('<!DOCTYPE HTML>') === 0) {
+      document.location = response.url;
+      return true;
+    }
+    return false;
+  }
+
+  private setContent(response: WebResponse): void {
+    setLightContent(this, response.body);
+    this.contentUrl = response.url;
+    this.loading = false;
+
+    // a script of the content's submitting a form directly goes through our handling of it too
+    for (const form of Array.from(this.querySelectorAll('form'))) {
+      (form as any).submit = () => form.requestSubmit();
+    }
   }
 
   public render(): TemplateResult {
