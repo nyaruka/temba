@@ -629,8 +629,6 @@ class EndpointsTest(APITestMixin, TembaTest):
         self.assertDeleteNotAllowed(endpoint_url)
 
         android = self.channel
-        android.tps = None
-        android.save(update_fields=("tps",))
         telegram = self.create_channel("TG", "Bot", "rapidbot")
         twilio = self.create_channel("T", "Reminders", "+12065551212", country="US")
         twilio.tps = 1

@@ -97,7 +97,7 @@ class ChannelType(metaclass=ABCMeta):
 
     unique_addresses = False
 
-    # max messages per second set on new channels of this type which aren't given their own value
+    # max messages per second set on new channels of this type which aren't given their own value, if not the default
     tps = None
 
     schemes = None
@@ -277,7 +277,6 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
     # how many days of daily counts the list view's activity sparkline shows - matches Flow.ACTIVITY_SERIES_DAYS
     ACTIVITY_SERIES_DAYS = 14
 
-    # the messages per second a channel is sent at when it has no limit of its own (mailroom queues it at this)
     DEFAULT_TPS = 10
 
     # channels sending fewer messages per second than this are flagged as slow, and at or under the very slow limit as
@@ -364,7 +363,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
     config = models.JSONField(default=dict)
     schemes = ArrayField(models.CharField(max_length=16), default=_get_default_channel_scheme)
     role = models.CharField(max_length=4, default=DEFAULT_ROLE)
-    tps = models.IntegerField(null=True)
+    tps = models.IntegerField(default=DEFAULT_TPS)
     is_enabled = models.BooleanField(default=True)
 
     # Android relayer specific fields
@@ -421,7 +420,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         create_args.update(kwargs)
 
         if create_args.get("tps") is None:
-            create_args["tps"] = channel_type.tps
+            create_args["tps"] = channel_type.tps or cls.DEFAULT_TPS
 
         if "uuid" not in create_args:
             create_args["uuid"] = generate_uuid()
@@ -735,23 +734,16 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         counts = self.get_daily_counts(since, until)
         return any(count > 0 for (_, scope), count in counts.items() if scope.endswith(":in"))
 
-    @property
-    def effective_tps(self) -> int:
-        """
-        The messages per second this channel is sent at - its own limit, or the default when it has none
-        """
-        return self.tps or self.DEFAULT_TPS
-
     def get_speed(self) -> str | None:
         """
         Gets whether this channel is slow ("slow") or very slow ("very_slow") to send, judging by its messages per
-        second limit, or None if it isn't slow or has no limit
+        second limit, or None if it isn't slow
         """
         if not self.is_enabled:
             return None
-        if self.effective_tps <= self.VERY_SLOW_TPS:
+        if self.tps <= self.VERY_SLOW_TPS:
             return "very_slow"
-        if self.effective_tps < self.SLOW_TPS:
+        if self.tps < self.SLOW_TPS:
             return "slow"
         return None
 
@@ -862,6 +854,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
                 condition=Q(channel_type="A", is_active=True, last_seen__isnull=False),
             ),
         ]
+        constraints = [models.CheckConstraint(condition=Q(tps__gt=0), name="channel_tps_positive")]
 
 
 class ChannelTally(BaseTally):

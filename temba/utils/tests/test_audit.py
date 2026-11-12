@@ -306,7 +306,7 @@ class AuditTest(TembaTest):
                     "channel.tps_changed",
                     {
                         "workspace": {"uuid": str(self.org.uuid), "name": "Nyaruka"},
-                        "data": {"channel": str(self.channel.uuid), "tps": 25, "previous_tps": None},
+                        "data": {"channel": str(self.channel.uuid), "tps": 25, "previous_tps": 10},
                     },
                 )
             ],

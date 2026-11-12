@@ -700,7 +700,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         for channel in channels:
             channel_count = counts_by_channel[channel.id]
             total_count += channel_count
-            channel_counts[channel.uuid] = {"count": channel_count, "tps": channel.tps or 10}
+            channel_counts[channel.uuid] = {"count": channel_count, "tps": channel.tps}
 
         # balance all channels equally if we have nothing to go on
         if not total_count:

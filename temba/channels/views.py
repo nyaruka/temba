@@ -767,8 +767,8 @@ class ChannelCRUDL(SmartCRUDL):
             How fast the channel sends, as how long a broadcast to SPEED_EXAMPLE_CONTACTS contacts would take
             """
             return {
-                "tps": channel.effective_tps,
-                "duration": self.get_rough_duration(self.SPEED_EXAMPLE_CONTACTS / channel.effective_tps),
+                "tps": channel.tps,
+                "duration": self.get_rough_duration(self.SPEED_EXAMPLE_CONTACTS / channel.tps),
                 # very slow channels hold everything up, slow ones just some
                 "tone": {"very_slow": "bad", "slow": "warn"}.get(channel.get_speed(), ""),
                 "help_url": get_channel_help_links(self.request.branding).get("channels.throughput"),
