@@ -137,15 +137,20 @@ class InvitationAcceptedNotificationType(NotificationType):
             cls.slug,
             scope=str(invitation.id),
             users=invitation.org.get_admins().exclude(id=new_user.id),
-            medium=Notification.MEDIUM_EMAIL,
+            medium=Notification.MEDIUM_UI + Notification.MEDIUM_EMAIL,
             data={"email": invitation.email},
         )
 
     def get_target_url(self, notification) -> str:
-        pass
+        return reverse("orgs.user_list")
 
     def get_email_subject(self, notification) -> str:
         return _("New user joined your workspace")
 
     def get_email_template(self, notification) -> str:
         return "notifications/email/invitation_accepted"
+
+    def as_json(self, notification) -> dict:
+        json = super().as_json(notification)
+        json["user"] = {"email": notification.data["email"]}
+        return json
