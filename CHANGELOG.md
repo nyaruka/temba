@@ -1,3 +1,8 @@
+## v26.3.193 (2026-11-12)
+ * Add Org.is_internal for staff to mark internal or testing workspaces
+ * Stop reading channel tallies from legacy org tallies
+ * Wait for the channel picker's form to load rather than a fixed time
+
 ## v26.3.192 (2026-11-12)
  * Rework the channel read page as a dashboard
  * New channel claim modal pipeline
