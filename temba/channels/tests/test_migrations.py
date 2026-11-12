@@ -1,9 +1,12 @@
-from datetime import date
+from datetime import date, datetime, time, timedelta, timezone as tz
 from importlib import import_module
 from unittest.mock import patch
 
+from django.utils import timezone
+
 from temba.channels.models import Channel, ChannelTally
 from temba.contacts.models import URN
+from temba.msgs.models import Msg
 from temba.orgs.models import OrgTally
 from temba.tests import MigrationTest
 from temba.triggers.models import Trigger
@@ -185,3 +188,86 @@ class FoldLegacyChannelTalliesTest(MigrationTest):
             {f"voice:in@2026-11-0{d}": d for d in range(1, 6)},
             {t.scope: t.count for t in self.channel2.tallies.filter(scope__startswith="voice:in")},
         )
+
+
+class BackfillFailedTalliesTest(MigrationTest):
+    app = "channels"
+    migrate_from = "0225_fold_legacy_channel_tallies"
+    migrate_to = "0226_backfill_failed_tallies"
+
+    def setUpBeforeMigration(self, apps):
+        self.today = timezone.now().date()
+        self.channel2 = self.create_channel("TG", "Telegram", "1234")
+        self.inactive = self.create_channel("TG", "Old", "2345")
+        self.other_org = self.create_channel("TG", "Other", "3456", org=self.org2)
+
+        contact = self.create_contact("Bob", phone="+593979000001")
+        tg_contact = self.create_contact("Jim", urns=["telegram:1234"])
+        other_contact = self.create_contact("Ann", urns=["telegram:3456"], org=self.org2)
+
+        def failed(contact, channel, days_ago: int, *, reason=None, voice=False):
+            created_on = datetime.combine(self.day(days_ago), time(12), tzinfo=tz.utc)
+            return self.create_outgoing_msg(
+                contact,
+                "Hi",
+                channel=channel,
+                status=Msg.STATUS_FAILED,
+                failed_reason=reason,
+                created_on=created_on,
+                voice=voice,
+            )
+
+        failed(contact, self.channel, 1)
+        failed(contact, self.channel, 1, reason=Msg.FAILED_ERROR_LIMIT)
+        failed(contact, self.channel, 1, reason=Msg.FAILED_LOOPING)  # failed by mailroom
+        failed(contact, self.channel, 1, voice=True)
+        failed(contact, self.channel, 5)
+        failed(contact, self.channel, 400)
+        failed(contact, self.channel, 401)  # too old
+        failed(contact, self.channel, 0)  # today
+        deleted = failed(contact, self.channel, 5)
+        Msg.objects.filter(id=deleted.id).update(folder=Msg.FOLDER_DELETED)
+        self.create_outgoing_msg(contact, "Hi", channel=self.channel, created_on=timezone.now() - timedelta(days=1))
+
+        # already tallied with more than remain
+        failed(tg_contact, self.channel2, 2)
+        self.create_channel_tally(self.channel2, "text:failed", self.day(2), 3)
+
+        failed(tg_contact, self.inactive, 1)
+        self.inactive.is_active = False
+        self.inactive.save(update_fields=("is_active",))
+
+        failed(other_contact, self.other_org, 1)
+
+    def day(self, days_ago: int) -> date:
+        return self.today - timedelta(days=days_ago)
+
+    def assertState(self):
+        def expected(days_ago: int, count: int, expires=True):
+            d = self.day(days_ago)
+            return f"text:failed@{d}", (count, d + timedelta(days=400) if expires else None)
+
+        def tallies(channel):
+            return {t.scope: (t.count, t.expires_on) for t in ChannelTally.objects.filter(channel=channel)}
+
+        self.assertEqual(dict([expected(1, 2), expected(5, 1), expected(400, 1)]), tallies(self.channel))
+        self.assertEqual(dict([expected(2, 3, expires=False)]), tallies(self.channel2))
+        self.assertEqual({}, tallies(self.inactive))
+        self.assertEqual(dict([expected(1, 1)]), tallies(self.other_org))
+
+    def test_migration(self):
+        self.assertState()
+
+        # running again is a noop
+        migration = import_module("temba.channels.migrations.0226_backfill_failed_tallies")
+        with patch("builtins.print") as mock_print:
+            migration.backfill_failed_tallies(self.apps, None)
+
+        mock_print.assert_not_called()
+        self.assertState()
+
+        # but raises tallies which are behind
+        self.channel.tallies.filter(scope=f"text:failed@{self.day(1)}").update(count=1)
+        migration.backfill_failed_tallies(self.apps, None)
+
+        self.assertState()
