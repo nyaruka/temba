@@ -964,6 +964,7 @@ class ChannelCRUDL(SmartCRUDL):
 
             context["monthly_counts"] = monthly_counts = self.get_monthly_counts()
             context["has_voice"] = any(m["voice_in"] or m["voice_out"] for m in monthly_counts)
+            context["has_calls"] = channel.supports_ivr()
 
             # each month's share of the busiest, for the bar beside it
             for month in monthly_counts:
@@ -984,7 +985,8 @@ class ChannelCRUDL(SmartCRUDL):
 
             # get our totals grouped by month+scope
             counts = defaultdict(int)
-            for (day, scope), count in self.object.get_daily_counts(since, until).items():
+            scopes = Channel.TALLY_MSG_SCOPES + (Channel.TALLY_CALLS_IN, Channel.TALLY_CALLS_OUT)
+            for (day, scope), count in self.object.get_daily_counts(since, until, scopes).items():
                 counts[(day.replace(day=1), scope)] += count
 
             # covert into a table of totals by month
@@ -998,6 +1000,8 @@ class ChannelCRUDL(SmartCRUDL):
                         text_out=counts.get((month, Channel.TALLY_TEXT_OUT), 0),
                         voice_in=counts.get((month, Channel.TALLY_VOICE_IN), 0),
                         voice_out=counts.get((month, Channel.TALLY_VOICE_OUT), 0),
+                        calls_in=counts.get((month, Channel.TALLY_CALLS_IN), 0),
+                        calls_out=counts.get((month, Channel.TALLY_CALLS_OUT), 0),
                     )
                 )
                 month = (month + timedelta(days=32)).replace(day=1)

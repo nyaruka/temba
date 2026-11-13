@@ -21,14 +21,14 @@
           <tr>
             <th>{% trans "Month" %}</th>
             <th class="num">
-              {% if has_voice %}
+              {% if has_voice or has_calls %}
                 {% trans "Incoming Text" %}
               {% else %}
                 {% trans "Incoming" %}
               {% endif %}
             </th>
             <th class="num">
-              {% if has_voice %}
+              {% if has_voice or has_calls %}
                 {% trans "Outgoing Text" %}
               {% else %}
                 {% trans "Outgoing" %}
@@ -37,6 +37,10 @@
             {% if has_voice %}
               <th class="num">{% trans "Incoming Voice" %}</th>
               <th class="num">{% trans "Outgoing Voice" %}</th>
+            {% endif %}
+            {% if has_calls %}
+              <th class="num">{% trans "Incoming Calls" %}</th>
+              <th class="num">{% trans "Outgoing Calls" %}</th>
             {% endif %}
             <th class="activity-share-col"></th>
           </tr>
@@ -51,8 +55,12 @@
                 <td class="num">{{ month.voice_in|intcomma }}</td>
                 <td class="num">{{ month.voice_out|intcomma }}</td>
               {% endif %}
+              {% if has_calls %}
+                <td class="num">{{ month.calls_in|intcomma }}</td>
+                <td class="num">{{ month.calls_out|intcomma }}</td>
+              {% endif %}
               <td class="activity-share-col">
-                <span class="activity-share" style="--share: {{ month.share }}%"></span>
+                {% if month.total %}<span class="activity-share" style="--share: {{ month.share }}%"></span>{% endif %}
               </td>
             </tr>
           {% endfor %}
