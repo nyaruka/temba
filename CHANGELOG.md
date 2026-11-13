@@ -1,3 +1,6 @@
+## v26.3.196 (2026-11-13)
+ * Backfill call tallies and show them on channel activity
+
 ## v26.3.195 (2026-11-12)
  * Backfill daily tallies of new contacts and failed messages
  * Make Channel.tps a non-null positive integer with a default of 10
