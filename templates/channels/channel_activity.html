@@ -37,8 +37,6 @@
             {% if has_voice %}
               <th class="num">{% trans "Incoming Voice" %}</th>
               <th class="num">{% trans "Outgoing Voice" %}</th>
-              <th class="num">{% trans "Incoming Calls" %}</th>
-              <th class="num">{% trans "Outgoing Calls" %}</th>
             {% endif %}
             <th class="activity-share-col"></th>
           </tr>
@@ -52,8 +50,6 @@
               {% if has_voice %}
                 <td class="num">{{ month.voice_in|intcomma }}</td>
                 <td class="num">{{ month.voice_out|intcomma }}</td>
-                <td class="num">{{ month.calls_in|intcomma }}</td>
-                <td class="num">{{ month.calls_out|intcomma }}</td>
               {% endif %}
               <td class="activity-share-col">
                 <span class="activity-share" style="--share: {{ month.share }}%"></span>

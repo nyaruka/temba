@@ -4139,9 +4139,6 @@ msgstr ""
 msgid "Outgoing Voice"
 msgstr ""
 
-msgid "Outgoing Calls"
-msgstr ""
-
 msgid "Connect a Phone Number"
 msgstr ""
 
