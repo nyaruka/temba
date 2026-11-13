@@ -318,10 +318,10 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
     TALLY_TEXT_OUT = "text:out"
     TALLY_VOICE_IN = "voice:in"
     TALLY_VOICE_OUT = "voice:out"
-    TALLY_SCOPES = (TALLY_TEXT_IN, TALLY_TEXT_OUT, TALLY_VOICE_IN, TALLY_VOICE_OUT)
+    TALLY_SCOPES = (TALLY_TEXT_IN, TALLY_TEXT_OUT, TALLY_VOICE_IN, TALLY_VOICE_OUT)  # what counts as messages
     TALLY_RETENTION_DAYS = 365  # daily tallies are trimmed after a while, so how far back they can be relied on
 
-    # same for the call tallies, kept apart from the message ones as those are summed by direction
+    # scopes of the daily channel call tallies, which aren't messages so aren't in TALLY_SCOPES
     TALLY_CALLS_IN = "calls:in"
     TALLY_CALLS_OUT = "calls:out"
 
