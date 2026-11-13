@@ -12,15 +12,25 @@ import {
 
 export const split_by_groups: NodeConfig = {
   type: 'split_by_groups',
-  name: 'Split by Group',
-  subtitle: 'Send members of different groups down different paths.',
+  get name() {
+    return msg('Split by Group');
+  },
+  get subtitle() {
+    return msg('Send members of different groups down different paths.');
+  },
   group: SPLIT_GROUPS.split,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   form: {
     groups: {
       type: 'select',
-      label: 'Groups',
-      helpText: 'Routes contacts to the first of these groups they belong to.',
+      get label() {
+        return msg('Groups');
+      },
+      get helpText() {
+        return msg(
+          'Routes contacts to the first of these groups they belong to.'
+        );
+      },
       required: true,
       options: [],
       multi: true,

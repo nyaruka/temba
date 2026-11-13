@@ -1,29 +1,42 @@
+import { msg, str } from '@lit/localize';
+import { localizedOption, renderClamped } from '../utils';
 import { html } from 'lit-html';
 import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, SetContactStatus } from '../../store/flow-definition';
 import { titleCase } from '../../utils';
-import { renderClamped } from '../utils';
+
+const STATUS_OPTIONS = [
+  localizedOption('active', () => msg('Active')),
+  localizedOption('archived', () => msg('Archived')),
+  localizedOption('stopped', () => msg('Stopped')),
+  localizedOption('blocked', () => msg('Blocked'))
+];
+
+// a status this editor doesn't offer is kept as it is rather than replaced
+const getStatusOption = (status: string) =>
+  STATUS_OPTIONS.find((option) => option.value === status) ||
+  (status ? { value: status, name: titleCase(status) } : STATUS_OPTIONS[0]);
 
 export const set_contact_status: ActionConfig = {
-  name: 'Update Status',
-  subtitle: "Stopped and blocked contacts won't get any more messages.",
+  get name() {
+    return msg('Update Status');
+  },
+  get subtitle() {
+    return msg("Stopped and blocked contacts won't get any more messages.");
+  },
   group: ACTION_GROUPS.contacts,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SetContactStatus) => {
+    const name = getStatusOption(action.status).name;
     return renderClamped(
-      html`Set to <strong>${titleCase(action.status)}</strong>`,
-      `Set to ${titleCase(action.status)}`
+      msg(html`Set to <strong>${name}</strong>`),
+      msg(str`Set to ${name}`)
     );
   },
   toFormData: (action: SetContactStatus) => {
     return {
       uuid: action.uuid,
-      status: [
-        {
-          name: titleCase(action.status || 'active'),
-          value: action.status || 'active'
-        }
-      ]
+      status: [getStatusOption(action.status)]
     };
   },
   fromFormData: (formData: FormData): SetContactStatus => {
@@ -36,16 +49,13 @@ export const set_contact_status: ActionConfig = {
   form: {
     status: {
       type: 'select',
-      label: 'Status',
+      get label() {
+        return msg('Status');
+      },
       required: true,
       searchable: false,
       clearable: false,
-      options: [
-        { value: 'active', name: 'Active' },
-        { value: 'archived', name: 'Archived' },
-        { value: 'stopped', name: 'Stopped' },
-        { value: 'blocked', name: 'Blocked' }
-      ]
+      options: STATUS_OPTIONS
     }
   }
 };

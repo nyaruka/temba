@@ -1,3 +1,4 @@
+import { msg } from '@lit/localize';
 import { SPLIT_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { Node } from '../../store/flow-definition';
 import { createRulesRouter } from '../../utils';
@@ -20,8 +21,14 @@ import {
 
 export const wait_for_digits: NodeConfig = {
   type: 'wait_for_digits',
-  name: 'Wait for Digits',
-  subtitle: 'Collect a number from the keypad, like a PIN or account number.',
+  get name() {
+    return msg('Wait for Digits');
+  },
+  get subtitle() {
+    return msg(
+      'Collect a number from the keypad, like a PIN or account number.'
+    );
+  },
   group: SPLIT_GROUPS.wait,
   flowTypes: [FlowTypes.VOICE],
   dialogSize: 'large',
@@ -37,7 +44,11 @@ export const wait_for_digits: NodeConfig = {
   layout: [
     {
       type: 'text',
-      text: 'Rules match against all digits pressed by the caller followed by the # sign.'
+      get text() {
+        return msg(
+          'Rules match against all digits pressed by the caller followed by the # sign.'
+        );
+      }
     },
     'rules',
     nodeOptions

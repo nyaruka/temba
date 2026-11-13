@@ -2829,7 +2829,7 @@ export class NodeEditor extends RapidElement {
             <temba-accordion-section
               label=${label}
               summary=${summary}
-              emptySummary=${section.emptySummary || 'None'}
+              emptySummary=${section.emptySummary || msg('None')}
               icon=${section.icon || ''}
               .count=${valueCount}
               ?checked=${isChecked}

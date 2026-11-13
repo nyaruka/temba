@@ -1,5 +1,6 @@
 // Flow router operator configurations
 // These define the available operators for rule-based routing in flow nodes
+import { msg } from '@lit/localize';
 
 export interface OperatorConfig {
   type: string;
@@ -15,32 +16,44 @@ export const OPERATORS: OperatorConfig[] = [
   // Text operators
   {
     type: 'has_any_word',
-    name: 'has any of the words',
+    get name() {
+      return msg('has any of the words');
+    },
     operands: 1
   },
   {
     type: 'has_all_words',
-    name: 'has all of the words',
+    get name() {
+      return msg('has all of the words');
+    },
     operands: 1
   },
   {
     type: 'has_phrase',
-    name: 'has the phrase',
+    get name() {
+      return msg('has the phrase');
+    },
     operands: 1
   },
   {
     type: 'has_only_phrase',
-    name: 'has only the phrase',
+    get name() {
+      return msg('has only the phrase');
+    },
     operands: 1
   },
   {
     type: 'has_beginning',
-    name: 'starts with',
+    get name() {
+      return msg('starts with');
+    },
     operands: 1
   },
   {
     type: 'has_text',
-    name: 'has some text',
+    get name() {
+      return msg('has some text');
+    },
     operands: 0,
     categoryName: 'Has Text'
   },
@@ -48,66 +61,90 @@ export const OPERATORS: OperatorConfig[] = [
   // Number operators
   {
     type: 'has_number',
-    name: 'has a number',
+    get name() {
+      return msg('has a number');
+    },
     operands: 0,
     categoryName: 'Has Number'
   },
   {
     type: 'has_number_between',
-    name: 'has a number between',
+    get name() {
+      return msg('has a number between');
+    },
     operands: 2
   },
   {
     type: 'has_number_lt',
-    name: 'has a number below',
+    get name() {
+      return msg('has a number below');
+    },
     operands: 1
   },
   {
     type: 'has_number_lte',
-    name: 'has a number at or below',
+    get name() {
+      return msg('has a number at or below');
+    },
     operands: 1
   },
   {
     type: 'has_number_eq',
-    name: 'has a number equal to',
+    get name() {
+      return msg('has a number equal to');
+    },
     operands: 1
   },
   {
     type: 'has_number_gte',
-    name: 'has a number at or above',
+    get name() {
+      return msg('has a number at or above');
+    },
     operands: 1
   },
   {
     type: 'has_number_gt',
-    name: 'has a number above',
+    get name() {
+      return msg('has a number above');
+    },
     operands: 1
   },
 
   // Date operators
   {
     type: 'has_date',
-    name: 'has a date',
+    get name() {
+      return msg('has a date');
+    },
     operands: 0,
     categoryName: 'Has Date'
   },
   {
     type: 'has_date_lt',
-    name: 'has a date before',
+    get name() {
+      return msg('has a date before');
+    },
     operands: 1
   },
   {
     type: 'has_date_eq',
-    name: 'has a date equal to',
+    get name() {
+      return msg('has a date equal to');
+    },
     operands: 1
   },
   {
     type: 'has_date_gt',
-    name: 'has a date after',
+    get name() {
+      return msg('has a date after');
+    },
     operands: 1
   },
   {
     type: 'has_time',
-    name: 'has a time',
+    get name() {
+      return msg('has a time');
+    },
     operands: 0,
     categoryName: 'Has Time'
   },
@@ -115,13 +152,17 @@ export const OPERATORS: OperatorConfig[] = [
   // Contact data operators
   {
     type: 'has_phone',
-    name: 'has a phone number',
+    get name() {
+      return msg('has a phone number');
+    },
     operands: 0,
     categoryName: 'Has Phone'
   },
   {
     type: 'has_email',
-    name: 'has an email',
+    get name() {
+      return msg('has an email');
+    },
     operands: 0,
     categoryName: 'Has Email'
   },
@@ -129,21 +170,27 @@ export const OPERATORS: OperatorConfig[] = [
   // Location operators (require location feature)
   {
     type: 'has_state',
-    name: 'has state',
+    get name() {
+      return msg('has state');
+    },
     operands: 0,
     categoryName: 'Has State',
     filter: 'locations'
   },
   {
     type: 'has_district',
-    name: 'has district',
+    get name() {
+      return msg('has district');
+    },
     operands: 1,
     categoryName: 'Has District',
     filter: 'locations'
   },
   {
     type: 'has_ward',
-    name: 'has ward',
+    get name() {
+      return msg('has ward');
+    },
     operands: 2,
     categoryName: 'Has Ward',
     filter: 'locations'
@@ -152,33 +199,43 @@ export const OPERATORS: OperatorConfig[] = [
   // Hidden/system operators
   {
     type: 'has_group',
-    name: 'is in the group',
+    get name() {
+      return msg('is in the group');
+    },
     operands: 1,
     visibility: 'hidden'
   },
   {
     type: 'has_category',
-    name: 'has the category',
+    get name() {
+      return msg('has the category');
+    },
     operands: 0,
     visibility: 'hidden'
   },
   {
     type: 'has_error',
-    name: 'has an error',
+    get name() {
+      return msg('has an error');
+    },
     operands: 0,
     categoryName: 'Has Error',
     visibility: 'hidden'
   },
   {
     type: 'has_value',
-    name: 'is not empty',
+    get name() {
+      return msg('is not empty');
+    },
     operands: 0,
     categoryName: 'Not Empty',
     visibility: 'hidden'
   },
   {
     type: 'has_pattern',
-    name: 'matches regex',
+    get name() {
+      return msg('matches regex');
+    },
     operands: 1
   }
 ];
@@ -224,7 +281,9 @@ export const getOperatorConfig = (type: string): OperatorConfig | undefined => {
 export const operatorsToSelectOptions = (operators: OperatorConfig[]) => {
   return operators.map((op) => ({
     value: op.type,
-    name: op.name
+    get name() {
+      return op.name;
+    }
   }));
 };
 
@@ -235,6 +294,8 @@ export const createOperatorOption = (
   const config = getOperatorConfig(type);
   return {
     value: type,
-    name: config ? config.name : type
+    get name() {
+      return config ? config.name : type;
+    }
   };
 };

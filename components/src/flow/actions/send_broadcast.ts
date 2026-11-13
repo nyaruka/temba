@@ -1,3 +1,4 @@
+import { msg } from '@lit/localize';
 import { html } from 'lit-html';
 import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, SendBroadcast } from '../../store/flow-definition';
@@ -14,8 +15,14 @@ import { Icon } from '../../Icons';
 import { CustomEventType } from '../../interfaces';
 
 export const send_broadcast: ActionConfig = {
-  name: 'Send Broadcast',
-  subtitle: 'Reach other contacts or groups, not just the one in this flow.',
+  get name() {
+    return msg('Send Broadcast');
+  },
+  get subtitle() {
+    return msg(
+      'Reach other contacts or groups, not just the one in this flow.'
+    );
+  },
   group: ACTION_GROUPS.broadcast,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SendBroadcast) => {
@@ -62,7 +69,9 @@ export const send_broadcast: ActionConfig = {
   form: {
     recipients: {
       type: 'select',
-      label: 'Recipients',
+      get label() {
+        return msg('Recipients');
+      },
       multi: true,
       searchable: true,
       endpoint: '/contact/omnibox/?types=gc',
@@ -74,9 +83,14 @@ export const send_broadcast: ActionConfig = {
     },
     text: {
       type: 'message-editor',
-      label: 'Message',
-      helpText:
-        'Can include attachments and expressions, e.g. `@contact.name`.',
+      get label() {
+        return msg('Message');
+      },
+      get helpText() {
+        return msg(
+          'Can include attachments and expressions, e.g. `@contact.name`.'
+        );
+      },
       required: true,
       evaluated: true,
       maxLength: 640,
@@ -100,7 +114,9 @@ export const send_broadcast: ActionConfig = {
       type: 'extras',
       sections: [
         {
-          label: 'WhatsApp Template',
+          get label() {
+            return msg('WhatsApp Template');
+          },
           localizable: false,
           items: ['template'],
           onRemove: () => ({ template: null, template_variables: [] })

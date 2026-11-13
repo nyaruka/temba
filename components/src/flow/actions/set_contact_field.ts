@@ -1,39 +1,49 @@
+import { msg, str } from '@lit/localize';
 import { html } from 'lit-html';
 import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, SetContactField } from '../../store/flow-definition';
 import { renderClamped, renderHighlightedText } from '../utils';
 
 export const set_contact_field: ActionConfig = {
-  name: 'Update Field',
-  subtitle:
-    'Store what you learn about the contact for later flows and reports.',
+  get name() {
+    return msg('Update Field');
+  },
+  get subtitle() {
+    return msg(
+      'Store what you learn about the contact for later flows and reports.'
+    );
+  },
   group: ACTION_GROUPS.contacts,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SetContactField) => {
     if (action.value) {
+      const value = renderHighlightedText(action.value, true);
       return renderClamped(
-        html`Set <strong>${action.field.name}</strong> to
-          ${renderHighlightedText(action.value, true)}`,
-        `Set ${action.field.name} to ${action.value}`
+        msg(html`Set <strong>${action.field.name}</strong> to ${value}`),
+        msg(str`Set ${action.field.name} to ${action.value}`)
       );
     } else {
       return renderClamped(
-        html`Clear <strong>${action.field.name}</strong>`,
-        `Clear ${action.field.name}`
+        msg(html`Clear <strong>${action.field.name}</strong>`),
+        msg(str`Clear ${action.field.name}`)
       );
     }
   },
   form: {
     field: {
       type: 'select',
-      label: 'Field',
+      get label() {
+        return msg('Field');
+      },
       required: true,
       searchable: true,
       clearable: false,
       nameKey: 'name',
       valueKey: 'key',
       endpoint: '/api/v2/fields.json',
-      helpText: 'Typing a new name creates a new field.',
+      get helpText() {
+        return msg('Typing a new name creates a new field.');
+      },
       allowCreate: true,
       createArbitraryOption: (input: string) => ({
         key: input,
@@ -43,12 +53,17 @@ export const set_contact_field: ActionConfig = {
     },
     value: {
       type: 'textarea',
-      label: 'Value',
+      get label() {
+        return msg('Value');
+      },
       required: false,
       evaluated: true,
       maxLength: 10000,
-      helpText:
-        'Clears it when empty, and can include expressions, e.g. `@input.text`.'
+      get helpText() {
+        return msg(
+          'Clears it when empty, and can include expressions, e.g. `@input.text`.'
+        );
+      }
     }
   },
   toFormData: (action: SetContactField) => {

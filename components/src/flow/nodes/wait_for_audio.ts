@@ -1,20 +1,31 @@
+import { msg } from '@lit/localize';
 import { SPLIT_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { Node, Category, Exit } from '../../store/flow-definition';
 import { generateUUID } from '../../utils';
 
 export const wait_for_audio: NodeConfig = {
   type: 'wait_for_audio',
-  name: 'Make Recording',
-  subtitle: "Capture the caller's voice, like a voicemail or a spoken answer.",
+  get name() {
+    return msg('Make Recording');
+  },
+  get subtitle() {
+    return msg(
+      "Capture the caller's voice, like a voicemail or a spoken answer."
+    );
+  },
   group: SPLIT_GROUPS.wait,
   flowTypes: [FlowTypes.VOICE],
   form: {
     result_name: {
       type: 'text',
-      label: 'Result Name',
+      get label() {
+        return msg('Result Name');
+      },
       required: false,
       maxLength: 64,
-      helpText: 'Used to reference this result elsewhere in the flow.'
+      get helpText() {
+        return msg('Used to reference this result elsewhere in the flow.');
+      }
     }
   },
   layout: ['result_name'],

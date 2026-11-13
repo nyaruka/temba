@@ -1,4 +1,5 @@
 import { msg } from '@lit/localize';
+import { localizedOption, validateWith } from '../utils';
 import { SPLIT_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { Node, Category, Exit, Case } from '../../store/flow-definition';
 import { generateUUID, createRulesRouter } from '../../utils';
@@ -18,27 +19,26 @@ import {
   extractUserRules,
   casesToFormRules
 } from './shared-rules';
-import { validateWith } from '../utils';
 
 const TIMEOUT_OPTIONS = [
-  { value: '60', name: '1 minute' },
-  { value: '120', name: '2 minutes' },
-  { value: '180', name: '3 minutes' },
-  { value: '240', name: '4 minutes' },
-  { value: '300', name: '5 minutes' },
-  { value: '600', name: '10 minutes' },
-  { value: '900', name: '15 minutes' },
-  { value: '1800', name: '30 minutes' },
-  { value: '3600', name: '1 hour' },
-  { value: '7200', name: '2 hours' },
-  { value: '10800', name: '3 hours' },
-  { value: '21600', name: '6 hours' },
-  { value: '43200', name: '12 hours' },
-  { value: '64800', name: '18 hours' },
-  { value: '86400', name: '1 day' },
-  { value: '172800', name: '2 days' },
-  { value: '259200', name: '3 days' },
-  { value: '604800', name: '1 week' }
+  localizedOption('60', () => msg('1 minute')),
+  localizedOption('120', () => msg('2 minutes')),
+  localizedOption('180', () => msg('3 minutes')),
+  localizedOption('240', () => msg('4 minutes')),
+  localizedOption('300', () => msg('5 minutes')),
+  localizedOption('600', () => msg('10 minutes')),
+  localizedOption('900', () => msg('15 minutes')),
+  localizedOption('1800', () => msg('30 minutes')),
+  localizedOption('3600', () => msg('1 hour')),
+  localizedOption('7200', () => msg('2 hours')),
+  localizedOption('10800', () => msg('3 hours')),
+  localizedOption('21600', () => msg('6 hours')),
+  localizedOption('43200', () => msg('12 hours')),
+  localizedOption('64800', () => msg('18 hours')),
+  localizedOption('86400', () => msg('1 day')),
+  localizedOption('172800', () => msg('2 days')),
+  localizedOption('259200', () => msg('3 days')),
+  localizedOption('604800', () => msg('1 week'))
 ];
 
 // Helper function to create a wait_for_response router with user rules
@@ -99,9 +99,14 @@ const createWaitForResponseRouter = (
 
 export const wait_for_response: NodeConfig = {
   type: 'wait_for_response',
-  name: 'Wait for Response',
-  subtitle:
-    "Sort the contact's reply into categories, with a timeout if they go quiet.",
+  get name() {
+    return msg('Wait for Response');
+  },
+  get subtitle() {
+    return msg(
+      "Sort the contact's reply into categories, with a timeout if they go quiet."
+    );
+  },
   group: SPLIT_GROUPS.wait,
   flowTypes: [FlowTypes.MESSAGE],
   hideFromSplits: true,
@@ -109,11 +114,13 @@ export const wait_for_response: NodeConfig = {
   form: {
     rules: createRulesArrayConfig(
       operatorsToSelectOptions(getWaitForResponseOperators()),
-      'If the message from the contact...'
+      () => msg('If the message from the contact...')
     ),
     timeout_duration: {
       type: 'select',
-      placeholder: '5 minutes',
+      get placeholder() {
+        return msg('5 minutes');
+      },
       multi: false,
       options: TIMEOUT_OPTIONS
     },
@@ -129,7 +136,9 @@ export const wait_for_response: NodeConfig = {
         ...nodeOptions.sections,
         {
           // timeout_enabled isn't a field, adding or removing this section toggles it
-          label: 'Time Limit',
+          get label() {
+            return msg('Time Limit');
+          },
           sentence: () =>
             msg("If there's no reply after {duration} go to **No Response**", {
               desc: '{duration} is a dropdown of times, e.g. "5 minutes". Keep {duration} and the ** markers as they are.'
@@ -159,7 +168,7 @@ export const wait_for_response: NodeConfig = {
     );
 
     if (!timeoutOption) {
-      timeoutOption = { value: '300', name: '5 minutes' };
+      timeoutOption = TIMEOUT_OPTIONS.find((opt) => opt.value === '300');
     }
 
     return {
