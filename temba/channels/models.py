@@ -313,7 +313,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         (ENCODING_UNICODE, _("Unicode Encoding")),
     )
 
-    # undated scopes of the channel message tallies
+    # scopes of the daily channel message tallies, without their @<day> suffix
     TALLY_TEXT_IN = "text:in"
     TALLY_TEXT_OUT = "text:out"
     TALLY_VOICE_IN = "voice:in"
@@ -321,7 +321,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
     TALLY_SCOPES = (TALLY_TEXT_IN, TALLY_TEXT_OUT, TALLY_VOICE_IN, TALLY_VOICE_OUT)
     TALLY_RETENTION_DAYS = 365  # daily tallies are trimmed after a while, so how far back they can be relied on
 
-    # undated scopes of the channel call tallies, kept apart from the message ones which are summed by direction
+    # same for the call tallies, kept apart from the message ones as those are summed by direction
     TALLY_CALLS_IN = "calls:in"
     TALLY_CALLS_OUT = "calls:out"
 
