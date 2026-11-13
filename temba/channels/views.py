@@ -985,7 +985,7 @@ class ChannelCRUDL(SmartCRUDL):
 
             # get our totals grouped by month+scope
             counts = defaultdict(int)
-            scopes = Channel.TALLY_SCOPES + (Channel.TALLY_CALLS_IN, Channel.TALLY_CALLS_OUT)
+            scopes = Channel.TALLY_MSG_SCOPES + (Channel.TALLY_CALLS_IN, Channel.TALLY_CALLS_OUT)
             for (day, scope), count in self.object.get_daily_counts(since, until, scopes).items():
                 counts[(day.replace(day=1), scope)] += count
 

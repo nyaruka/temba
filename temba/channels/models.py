@@ -318,10 +318,10 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
     TALLY_TEXT_OUT = "text:out"
     TALLY_VOICE_IN = "voice:in"
     TALLY_VOICE_OUT = "voice:out"
-    TALLY_SCOPES = (TALLY_TEXT_IN, TALLY_TEXT_OUT, TALLY_VOICE_IN, TALLY_VOICE_OUT)  # what counts as messages
+    TALLY_MSG_SCOPES = (TALLY_TEXT_IN, TALLY_TEXT_OUT, TALLY_VOICE_IN, TALLY_VOICE_OUT)
     TALLY_RETENTION_DAYS = 365  # daily tallies are trimmed after a while, so how far back they can be relied on
 
-    # scopes of the daily channel call tallies, which aren't messages so aren't in TALLY_SCOPES
+    # scopes of the daily channel call tallies, which aren't messages so aren't in TALLY_MSG_SCOPES
     TALLY_CALLS_IN = "calls:in"
     TALLY_CALLS_OUT = "calls:out"
 
@@ -717,7 +717,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
 
         super().delete()
 
-    def get_daily_counts(self, since: date, until: date, scopes=TALLY_SCOPES) -> dict[tuple[date, str], int]:
+    def get_daily_counts(self, since: date, until: date, scopes=TALLY_MSG_SCOPES) -> dict[tuple[date, str], int]:
         """
         Gets counts by day and scope, e.g. text:in, over days from since up to until, of messages unless other scopes
         are given.
@@ -765,7 +765,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
             return
 
         since, until = cls._get_activity_period()
-        totals = ChannelTally.get_daily_totals_by_channel(channels, list(cls.TALLY_SCOPES), since, until)
+        totals = ChannelTally.get_daily_totals_by_channel(channels, list(cls.TALLY_MSG_SCOPES), since, until)
 
         by_channel = defaultdict(dict)
         for (channel_id, day, scope), count in totals.items():
@@ -825,7 +825,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         days = [since + timedelta(days=d) for d in range(self.ACTIVITY_SERIES_DAYS)]
 
         def series(direction: str) -> list[int]:
-            scopes = [s for s in self.TALLY_SCOPES if s.endswith(f":{direction}")]
+            scopes = [s for s in self.TALLY_MSG_SCOPES if s.endswith(f":{direction}")]
             return [sum(counts.get((day, s), 0) for s in scopes) for day in days]
 
         return {"in": series("in"), "out": series("out")}
