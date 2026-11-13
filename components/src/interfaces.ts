@@ -36,6 +36,9 @@ export interface Notification {
     started_on: string;
     ended_on?: string;
   };
+  user?: {
+    email: string;
+  };
 }
 
 export interface Attachment {

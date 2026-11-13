@@ -370,9 +370,10 @@ class NotificationTest(TembaTest):
             expected_json={
                 "type": "invitation:accepted",
                 "created_on": matchers.ISODatetime(),
-                "is_seen": True,
+                "is_seen": False,
+                "user": {"email": "bob@textit.com"},
             },
-            expected_target=None,
+            expected_target="/user/",
             expected_users={self.admin},
             email=True,
         )
@@ -404,11 +405,10 @@ class NotificationTest(TembaTest):
         )
 
         # email-only notifications are never published (no UI medium, nothing to deliver live)
-        invitation = Invitation.create(self.org, self.admin, "bob@textit.com", OrgRole.ADMINISTRATOR)
-        user = self.create_user("bob@textit.com")
-
         with self.captureOnCommitCallbacks(execute=True):
-            InvitationAcceptedNotificationType.create(invitation, user)
+            Notification.create_all(
+                self.org, "export:finished", scope="email-only", users=[self.admin], medium=Notification.MEDIUM_EMAIL
+            )
 
         self.assertEqual(1, len(mr_mocks.calls["notification_publish"]))
 
