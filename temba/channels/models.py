@@ -321,6 +321,10 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
     TALLY_SCOPES = (TALLY_TEXT_IN, TALLY_TEXT_OUT, TALLY_VOICE_IN, TALLY_VOICE_OUT)
     TALLY_RETENTION_DAYS = 365  # daily tallies are trimmed after a while, so how far back they can be relied on
 
+    # undated scopes of the channel call tallies, kept apart from the message ones which are summed by direction
+    TALLY_CALLS_IN = "calls:in"
+    TALLY_CALLS_OUT = "calls:out"
+
     # the role types for our channels
     ROLE_SEND = "S"
     ROLE_RECEIVE = "R"
@@ -713,11 +717,12 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
 
         super().delete()
 
-    def get_daily_counts(self, since: date, until: date) -> dict[tuple[date, str], int]:
+    def get_daily_counts(self, since: date, until: date, scopes=TALLY_SCOPES) -> dict[tuple[date, str], int]:
         """
-        Gets message counts by day and scope, e.g. text:in, over days from since up to until.
+        Gets counts by day and scope, e.g. text:in, over days from since up to until, of messages unless other scopes
+        are given.
         """
-        totals = ChannelTally.get_daily_totals_by_channel([self], list(self.TALLY_SCOPES), since, until)
+        totals = ChannelTally.get_daily_totals_by_channel([self], list(scopes), since, until)
         return {(day, scope): count for (_, day, scope), count in totals.items()}
 
     def has_received(self) -> bool:

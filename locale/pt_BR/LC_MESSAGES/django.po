@@ -4166,6 +4166,9 @@ msgstr "Voz de entrada"
 msgid "Outgoing Voice"
 msgstr "Voz de saida"
 
+msgid "Outgoing Calls"
+msgstr "Ligações realizadas"
+
 msgid "Connect a Phone Number"
 msgstr "Conecte um Número de Telefone."
 

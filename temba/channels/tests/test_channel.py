@@ -351,6 +351,16 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
             self.assertTrue(response.context["has_voice"])
             self.assertEqual(6, response.context["monthly_counts"][0]["voice_in"])
 
+            # as do calls, which aren't messages so aren't charted or in the totals
+            self.create_channel_tally(self.tel_channel, "calls:in", date(2020, 1, 20), 2)
+            self.create_channel_tally(self.tel_channel, "calls:out", date(2020, 1, 20), 3)
+
+            response = self.requestView(activity_url, self.admin)
+            month = response.context["monthly_counts"][0]
+            self.assertEqual((6, 2, 3, 12), tuple(month[k] for k in ("voice_in", "calls_in", "calls_out", "total")))
+            self.assertEqual([0, 0, 7], json.loads(response.context["chart"])["series"][1]["values"][-3:])
+            self.assertContains(response, "Incoming Calls")
+
     def test_activity_history_limits(self):
         activity_url = reverse("channels.channel_activity", args=[self.tel_channel.uuid])
 
