@@ -343,6 +343,7 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
             self.assertEqual((1, 5, 6, 100), tuple(months[0][k] for k in ("text_in", "text_out", "total", "share")))
             self.assertEqual(date(2019, 12, 1), months[1]["month_start"])
             self.assertEqual(83, months[1]["share"])
+            self.assertContains(response, 'class="activity-share"', count=2)  # empty months get no bar
 
             # voice counts get columns of their own
             self.create_channel_tally(self.tel_channel, "voice:in", date(2020, 1, 20), 6)
@@ -350,6 +351,25 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
             response = self.requestView(activity_url, self.admin)
             self.assertTrue(response.context["has_voice"])
             self.assertEqual(6, response.context["monthly_counts"][0]["voice_in"])
+
+            # calls only get columns on channels which can make or answer them
+            self.create_channel_tally(self.tel_channel, "calls:in", date(2020, 1, 20), 2)
+            self.create_channel_tally(self.tel_channel, "calls:out", date(2020, 1, 20), 3)
+
+            response = self.requestView(activity_url, self.admin)
+            self.assertFalse(response.context["has_calls"])
+            self.assertNotContains(response, "Incoming Calls")
+
+            self.tel_channel.role = Channel.DEFAULT_ROLE + Channel.ROLE_CALL + Channel.ROLE_ANSWER
+            self.tel_channel.save(update_fields=("role",))
+
+            # and as they aren't messages, they aren't charted or in the totals
+            response = self.requestView(activity_url, self.admin)
+            self.assertTrue(response.context["has_calls"])
+            self.assertContains(response, "Incoming Calls")
+            month = response.context["monthly_counts"][0]
+            self.assertEqual((6, 2, 3, 12), tuple(month[k] for k in ("voice_in", "calls_in", "calls_out", "total")))
+            self.assertEqual([0, 0, 7], json.loads(response.context["chart"])["series"][1]["values"][-3:])
 
     def test_activity_history_limits(self):
         activity_url = reverse("channels.channel_activity", args=[self.tel_channel.uuid])
