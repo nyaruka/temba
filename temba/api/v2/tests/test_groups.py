@@ -201,8 +201,8 @@ class GroupsEndpointTest(APITest):
             status=400,
         )
 
-        # or a campaign dependency
-        trigger.groups.clear()
+        # a deleted trigger doesn't block deletion, but a campaign dependency does
+        trigger.release(self.admin)
         campaign = Campaign.create(self.org, self.admin, "Reminders", customers)
 
         self.assertDelete(
@@ -222,6 +222,15 @@ class GroupsEndpointTest(APITest):
             errors={None: "Group is being used by campaigns which must be deleted first."},
             status=400,
         )
+
+        # but a deleted campaign doesn't
+        campaign.is_active = False
+        campaign.save(update_fields=("is_active",))
+
+        self.assertDelete(endpoint_url + f"?uuid={customers.uuid}", self.admin, status=204)
+
+        customers.refresh_from_db()
+        self.assertFalse(customers.is_active)
 
         # can't delete a group in another org
         self.assertDelete(endpoint_url + f"?uuid={spammers.uuid}", self.admin, status=404)
