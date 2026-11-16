@@ -82,6 +82,17 @@ class FlowTallyTest(TembaTest):
             self.assertEqual(scope, FlowTally.segment_scope(exit_uuid, node_uuid))
             self.assertEqual(f"{exit_uuid}:{node_uuid}", FlowTally.parse_segment_scope(scope))
 
+    def test_node_scopes(self):
+        # vectors generated with Go's base64.RawURLEncoding so they match mailroom's encoding
+        vectors = [
+            ("1d4f25b2-c648-46cc-8116-be0ec6b6d34a", "node:HU8lssZIRsyBFr4OxrbTSg"),
+            ("00000000-0000-0000-0000-000000000000", "node:AAAAAAAAAAAAAAAAAAAAAA"),
+            ("ffffffff-ffff-ffff-ffff-ffffffffffff", "node:_____________________w"),
+            ("fbfffbff-fbff-fbff-fbff-fbfffbfffbff", "node:-__7__v_-__7__v_-__7_w"),
+        ]
+        for node_uuid, scope in vectors:
+            self.assertEqual(scope, FlowTally.node_scope(node_uuid))
+
     def test_upsert(self):
         # check the primary key can be the target of the upserts used for flushing
         flow = self.create_flow("Test")

@@ -502,16 +502,27 @@ class FlowTest(TembaTest, CRUDLTestMixin):
         seg2 = FlowTally.segment_scope("1fff74f4-c81f-4f4c-a03d-58d113c17da1", "400d6b5e-c963-42a1-a06c-50bb9b1e38b1")
         seg3 = FlowTally.segment_scope("a4fe3ada-b062-47e4-be58-bcbe1bca31b4", "01c175da-d23d-40a4-a845-c4a9bb4b481a")
 
-        flow1.counts.create(scope="node:01c175da-d23d-40a4-a845-c4a9bb4b481a", count=3)
-        flow1.counts.create(scope="node:01c175da-d23d-40a4-a845-c4a9bb4b481a", count=1)
-        flow1.counts.create(scope="node:400d6b5e-c963-42a1-a06c-50bb9b1e38b1", count=5)
+        node1 = FlowTally.node_scope("01c175da-d23d-40a4-a845-c4a9bb4b481a")
+        node2 = FlowTally.node_scope("400d6b5e-c963-42a1-a06c-50bb9b1e38b1")
+        node3 = FlowTally.node_scope("8f6f5a26-1b6e-4d63-b7a1-8a3e2c1f0c11")
 
-        # a segment no longer in the definition is ignored, a flushed one has its buffered amount added, and one only
-        # buffered in Valkey is still counted
+        # a node or segment no longer in the definition is ignored, a flushed one has its buffered amount added, and
+        # one only buffered in Valkey is still counted
+        flow1.tallies.create(scope=node1, count=3)
+        flow1.tallies.create(scope=node3, count=2)
         flow1.tallies.create(scope=seg1, count=9)
         flow1.tallies.create(scope=seg2, count=3)
         r = get_valkey_connection()
-        r.hset("{tallies}:live", mapping={f"F{flow1.id}|{seg2}": 4, f"F{flow1.id}|{seg3}": 2})
+        r.hset(
+            "{tallies}:live",
+            mapping={
+                f"F{flow1.id}|{node1}": 1,
+                f"F{flow1.id}|{node2}": 5,
+                f"F{flow1.id}|{seg2}": 4,
+                f"F{flow1.id}|{seg3}": 2,
+            },
+        )
+        flow2.tallies.create(scope=node1, count=6)
         flow2.tallies.create(scope=seg3, count=6)
 
         self.assertEqual(

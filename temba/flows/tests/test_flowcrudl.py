@@ -2114,8 +2114,8 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         seg2 = FlowTally.segment_scope("1fff74f4-c81f-4f4c-a03d-58d113c17da1", "400d6b5e-c963-42a1-a06c-50bb9b1e38b1")
         seg3 = FlowTally.segment_scope("a4fe3ada-b062-47e4-be58-bcbe1bca31b4", "01c175da-d23d-40a4-a845-c4a9bb4b481a")
 
-        flow1.counts.create(scope="node:01c175da-d23d-40a4-a845-c4a9bb4b481a", count=4)
-        flow1.counts.create(scope="node:400d6b5e-c963-42a1-a06c-50bb9b1e38b1", count=5)
+        flow1.tallies.create(scope=FlowTally.node_scope("01c175da-d23d-40a4-a845-c4a9bb4b481a"), count=4)
+        flow1.tallies.create(scope=FlowTally.node_scope("400d6b5e-c963-42a1-a06c-50bb9b1e38b1"), count=5)
 
         flow1.tallies.create(scope=seg1, count=9)
         flow1.tallies.create(scope=seg2, count=3)
