@@ -192,3 +192,114 @@ class BackfillCallTalliesTest(MigrationTest):
         migration.backfill_call_tallies(self.apps, None)
 
         self.assertState()
+
+
+class BackfillCallMinuteTalliesTest(MigrationTest):
+    app = "ivr"
+    migrate_from = "0044_backfill_call_tallies"
+    migrate_to = "0045_backfill_call_minute_tallies"
+
+    def setUpBeforeMigration(self, apps):
+        self.today = timezone.now().date()
+        self.channel2 = self.create_channel("T", "Twilio", "1234")
+        self.inactive = self.create_channel("T", "Old", "2345")
+        self.other_org = self.create_channel("T", "Other", "3456", org=self.org2)
+
+        contact = self.create_contact("Bob", phone="+593979000001")
+        other_contact = self.create_contact("Ann", phone="+593979000002", org=self.org2)
+
+        def call(channel, days_ago: int, duration, direction=Call.DIRECTION_OUT, *, contact=contact):
+            Call.objects.create(
+                uuid=uuid7(),
+                org=channel.org,
+                channel=channel,
+                direction=direction,
+                contact=contact,
+                contact_urn=contact.get_urn(),
+                status=Call.STATUS_COMPLETED,
+                duration=duration,
+                created_on=datetime.combine(self.day(days_ago), time(12), tzinfo=tzone.utc),
+            )
+
+        call(self.channel, 4, 50)
+        call(self.channel, 4, 61)
+        call(self.channel, 4, 0)
+        call(self.channel, 4, None)
+        call(self.channel, 4, 120, Call.DIRECTION_IN)
+        call(self.channel, 400, 30)
+        call(self.channel, 401, 90)  # too old for the channel but not the org
+        call(self.channel, 0, 1, Call.DIRECTION_IN)
+        call(self.channel2, 4, 60)
+        call(self.channel2, 3, 0, Call.DIRECTION_IN)
+
+        # already tallied with more than remain
+        call(self.channel2, 2, 60, Call.DIRECTION_IN)
+        self.create_channel_tally(self.channel2, "callmins:in", self.day(2), 3)
+        self.org.org_tallies.create(scope=f"calls/mins:in@{self.day(2)}", count=3)
+
+        call(self.inactive, 4, 180)
+        self.inactive.is_active = False
+        self.inactive.save(update_fields=("is_active",))
+
+        call(self.other_org, 4, 61, contact=other_contact)
+
+    def day(self, days_ago: int) -> date:
+        return self.today - timedelta(days=days_ago)
+
+    def assertState(self):
+        def ch(scope: str, days_ago: int, count: int, expires=True):
+            d = self.day(days_ago)
+            return f"{scope}@{d}", (count, d + timedelta(days=400) if expires else None)
+
+        def channel_tallies(channel):
+            return {
+                t.scope: (t.count, t.expires_on)
+                for t in ChannelTally.objects.filter(channel=channel, scope__startswith="callmins:")
+            }
+
+        def org_tallies(org):
+            return {t.scope: t.count for t in OrgTally.objects.filter(org=org, scope__startswith="calls/mins:")}
+
+        self.assertEqual(
+            dict(
+                [ch("callmins:out", 4, 3), ch("callmins:in", 4, 2), ch("callmins:out", 400, 1), ch("callmins:in", 0, 1)]
+            ),
+            channel_tallies(self.channel),
+        )
+        self.assertEqual(
+            dict([ch("callmins:out", 4, 1), ch("callmins:in", 2, 3, expires=False)]), channel_tallies(self.channel2)
+        )
+        self.assertEqual({}, channel_tallies(self.inactive))
+        self.assertEqual(dict([ch("callmins:out", 4, 2)]), channel_tallies(self.other_org))
+
+        self.assertEqual(
+            {
+                f"calls/mins:out@{self.day(4)}": 7,  # includes the inactive channel's
+                f"calls/mins:in@{self.day(4)}": 2,
+                f"calls/mins:in@{self.day(2)}": 3,
+                f"calls/mins:out@{self.day(400)}": 1,
+                f"calls/mins:out@{self.day(401)}": 2,
+                f"calls/mins:in@{self.day(0)}": 1,
+            },
+            org_tallies(self.org),
+        )
+        self.assertEqual({f"calls/mins:out@{self.day(4)}": 2}, org_tallies(self.org2))
+        self.assertFalse(OrgTally.objects.filter(scope__startswith="calls/mins:").exclude(expires_on=None).exists())
+
+    def test_migration(self):
+        self.assertState()
+
+        # running again is a noop
+        migration = import_module("temba.ivr.migrations.0045_backfill_call_minute_tallies")
+        with patch("builtins.print") as mock_print:
+            migration.backfill_call_minute_tallies(self.apps, None)
+
+        mock_print.assert_not_called()
+        self.assertState()
+
+        # but raises tallies which are behind
+        self.channel.tallies.filter(scope=f"callmins:out@{self.day(4)}").update(count=1)
+        self.org.org_tallies.filter(scope=f"calls/mins:out@{self.day(4)}").update(count=1)
+        migration.backfill_call_minute_tallies(self.apps, None)
+
+        self.assertState()
