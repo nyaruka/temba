@@ -79,6 +79,7 @@ class IncidentStartedNotificationType(NotificationType):
             scope=incident.type.get_notification_scope(incident),
             users=incident.org.get_admins(),
             medium=Notification.MEDIUM_UI + Notification.MEDIUM_EMAIL,
+            email_required=incident.type.email_required,
             incident=incident,
         )
 

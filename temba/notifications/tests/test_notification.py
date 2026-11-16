@@ -359,6 +359,66 @@ class NotificationTest(TembaTest):
         recipients = set(mail.outbox[0].recipients()).union(mail.outbox[1].recipients())
         self.assertEqual({self.admin.email, self.editor.email}, recipients)
 
+    def test_email_notifications_disabled(self):
+        self.org.add_user(self.editor, OrgRole.ADMINISTRATOR)  # upgrade editor to administrator
+        self.admin.email_notifications = False
+        self.admin.save(update_fields=("email_notifications",))
+
+        # an opted out user still gets the notification in the UI, just not the email
+        export = ContactExport.create(self.org, self.admin)
+        ExportFinishedNotificationType.create(export)
+
+        notification = self.admin.notifications.get(export=export)
+        self.assertFalse(notification.is_seen)
+        self.assertEqual(Notification.EMAIL_STATUS_NONE, notification.email_status)
+
+        # and doesn't get emailed about most incidents...
+        ChannelDisconnectedIncidentType.get_or_create(self.channel)
+
+        send_notification_emails()
+
+        self.assertEqual(1, len(mail.outbox))
+        self.assertEqual(["editor@textit.com"], mail.outbox[0].recipients())
+
+        # but does about their workspace being flagged
+        mail.outbox.clear()
+        OrgFlaggedIncidentType.get_or_create(self.org)
+
+        send_notification_emails()
+
+        self.assertEqual({"admin@textit.com", "editor@textit.com"}, {r for m in mail.outbox for r in m.recipients()})
+
+    def test_email_notifications_changed(self):
+        def create():
+            Notification.create_all(
+                self.org,
+                "export:finished",
+                scope="123",
+                users=[self.admin],
+                medium=Notification.MEDIUM_UI + Notification.MEDIUM_EMAIL,
+            )
+
+        create()
+
+        notification = self.admin.notifications.get()
+        self.assertEqual(Notification.EMAIL_STATUS_PENDING, notification.email_status)
+
+        # turning emails off while that notification is unseen reuses it rather than creating another
+        self.admin.email_notifications = False
+        self.admin.save(update_fields=("email_notifications",))
+        create()
+
+        self.assertEqual([notification], list(self.admin.notifications.all()))
+
+        # and likewise turning them back on
+        notification.email_status = Notification.EMAIL_STATUS_NONE
+        notification.save(update_fields=("email_status",))
+        self.admin.email_notifications = True
+        self.admin.save(update_fields=("email_notifications",))
+        create()
+
+        self.assertEqual([notification], list(self.admin.notifications.all()))
+
     def test_invitation_accepted(self):
         invitation = Invitation.create(self.org, self.admin, "bob@textit.com", OrgRole.ADMINISTRATOR)
         user = self.create_user("bob@textit.com")
