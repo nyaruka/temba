@@ -357,7 +357,7 @@
 's747f2353f55641aa': str`Noms de catégorie en double trouvés : ${0}`,
 's74b6c3618d370674': `Exiger une confiance {confidence} ou supérieure, sinon aller à **Other**`,
 's7501f55600044336': `Nom du groupe`,
-'s752f8d9ba5e51d72': `Reçus`,
+'s752f8d9ba5e51d72': `Reçu`,
 's753cd71abb8d9bd9': `Configurer le ticket`,
 's761a50024434d692': `13e résultat`,
 's76993e441effaf64': str`${0} messages exportés`,

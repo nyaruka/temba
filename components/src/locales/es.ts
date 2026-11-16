@@ -357,7 +357,7 @@
 's747f2353f55641aa': str`Se encontraron nombres de categoría duplicados: ${0}`,
 's74b6c3618d370674': `Exigir una confianza {confidence} o superior, o ir a **Other**`,
 's7501f55600044336': `Nombre del grupo`,
-'s752f8d9ba5e51d72': `Recibidos`,
+'s752f8d9ba5e51d72': `Recibido`,
 's753cd71abb8d9bd9': `Configurar ticket`,
 's761a50024434d692': `13.º resultado`,
 's76993e441effaf64': str`Se exportaron ${0} mensajes`,
