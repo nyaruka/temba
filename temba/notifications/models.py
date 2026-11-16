@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from temba.channels.models import Channel
 from temba.contacts.models import ContactImport
-from temba.orgs.models import Export, Org
+from temba.orgs.models import Export, Org, OrgMembership
 from temba.users.models import User
 from temba.utils.email import EmailSender
 
@@ -202,11 +202,19 @@ class Notification(models.Model):
         email_required: bool = False,
         **kwargs,
     ):
+        # users who've turned off emails for this workspace - users without a membership, e.g. staff, have nowhere to
+        # turn them off so always get them
+        opted_out = set()
+        if cls.MEDIUM_EMAIL in medium and not email_required:
+            opted_out = set(
+                OrgMembership.objects.filter(org=org, email_notifications=False).values_list("user_id", flat=True)
+            )
+
         created = []
         for user in users:
             # send email if notification type supports it, the user wants it, and their email is verified
             email_status = cls.EMAIL_STATUS_NONE
-            if cls.MEDIUM_EMAIL in medium and (user.email_notifications or email_required):
+            if cls.MEDIUM_EMAIL in medium and user.id not in opted_out:
                 email_status = cls.EMAIL_STATUS_PENDING if user.is_verified() else cls.EMAIL_STATUS_UNVERIFIED
 
             lookup = dict(

@@ -124,7 +124,7 @@ class MessageExportTest(TembaTest):
         ]
 
         # export all visible messages (i.e. not msg3) using export_all param
-        with self.assertNumQueries(17):
+        with self.assertNumQueries(18):
             self.assertExcelSheet(
                 self._export(None, None, date(2000, 9, 1), date(2022, 9, 28)).worksheets[0],
                 [

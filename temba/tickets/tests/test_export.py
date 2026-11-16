@@ -123,7 +123,7 @@ class TicketExportTest(TembaTest):
 
         # check requesting export for last 90 days
         with self.mockReadOnly(assert_models={Ticket, ContactURN}):
-            with self.assertNumQueries(18):
+            with self.assertNumQueries(19):
                 sheets, export = self._export(start_date=today - timedelta(days=90), end_date=today)
 
         expected_headers = [
