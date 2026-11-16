@@ -403,6 +403,51 @@ class NotificationTest(TembaTest):
             Notification.EMAIL_STATUS_PENDING, self.customer_support.notifications.get(export=export3).email_status
         )
 
+    def test_unsubscribe_link(self):
+        self.org.add_user(self.editor, OrgRole.ADMINISTRATOR)  # upgrade editor to administrator
+
+        export = ContactExport.create(self.org, self.admin)
+        ExportFinishedNotificationType.create(export)
+
+        send_notification_emails()
+
+        self.assertEqual(1, len(mail.outbox))
+        email = mail.outbox[0]
+        unsubscribe_url = self.admin.notifications.get(export=export).get_unsubscribe_url()
+
+        self.assertTrue(unsubscribe_url.startswith("https://app.rapidpro.io/notification/unsubscribe/"))
+        self.assertEqual(f"<{unsubscribe_url}>", email.extra_headers["List-Unsubscribe"])
+        self.assertEqual("List-Unsubscribe=One-Click", email.extra_headers["List-Unsubscribe-Post"])
+        self.assertIn(unsubscribe_url, email.body)
+        self.assertIn(unsubscribe_url, email.alternatives[0][0])
+        self.assertNotIn("This email was generated", email.alternatives[0][0])
+
+        # and the token in it identifies the membership
+        token = unsubscribe_url.rstrip("/").split("/")[-1]
+        self.assertEqual(
+            OrgMembership.objects.get(org=self.org, user=self.admin), Notification.from_unsubscribe_token(token)
+        )
+        self.assertIsNone(Notification.from_unsubscribe_token(token + "x"))
+        self.assertIsNone(Notification.from_unsubscribe_token("xyz"))
+
+        # emails they'd get anyway don't offer it
+        mail.outbox.clear()
+        OrgFlaggedIncidentType.get_or_create(self.org)
+
+        send_notification_emails()
+
+        self.assertEqual(2, len(mail.outbox))
+        for email in mail.outbox:
+            self.assertNotIn("List-Unsubscribe", email.extra_headers)
+            self.assertNotIn("/notification/unsubscribe/", email.body)
+            self.assertIn("This email was generated", email.alternatives[0][0])
+
+        # nor do emails to users without a membership
+        export2 = ContactExport.create(self.org, self.customer_support)
+        ExportFinishedNotificationType.create(export2)
+
+        self.assertIsNone(self.customer_support.notifications.get(export=export2).get_unsubscribe_url())
+
     def test_email_notifications_changed(self):
         def create():
             Notification.create_all(

@@ -5503,6 +5503,17 @@ msgid "The %(brand)s Team"
 msgstr "O time %(brand)s"
 
 #, python-format
+msgid "You received this because you're a member of the %(org)s workspace."
+msgstr "Você recebeu este e-mail porque é membro da área de trabalho %(org)s."
+
+msgid "Unsubscribe"
+msgstr "Cancelar inscrição"
+
+#, python-format
+msgid "You received this because you're a member of the %(org)s workspace. To unsubscribe: %(unsubscribe_url)s"
+msgstr "Você recebeu este e-mail porque é membro da área de trabalho %(org)s. Para cancelar a inscrição: %(unsubscribe_url)s"
+
+#, python-format
 msgid "Your export is ready! Click <a href=\"%(url)s\">here</a> to download it."
 msgstr "Sua exportação está pronta! Clique <a href=\"%(url)s\">aqui</a> para baixá-la."
 
@@ -5582,6 +5593,29 @@ msgstr "Seu <a href=\"%(read_url)s\">canal do WhatsApp</a> parece não estar sin
 #, python-format
 msgid "Some webhook calls from your flows are taking too long to respond or failing too frequently. If the problem persists these calls will be temporarily disabled. You can check the <a href=\"%(logs_url)s\">webhook call log</a> to see which calls are the problem."
 msgstr "Algumas chamadas de webhook dos seus fluxos estão demorando demais para responder ou falhando com muita frequência. Se o problema persistir, essas chamadas serão temporariamente desabilitadas. Você pode consultar o <a href=\"%(logs_url)s\">log de chamadas de webhook</a> para ver quais chamadas são o problema."
+
+msgid "Notification emails"
+msgstr "E-mails de notificação"
+
+msgid "Link not valid"
+msgstr "Link inválido"
+
+msgid "This unsubscribe link is no longer valid."
+msgstr "Este link de cancelamento de inscrição não é mais válido."
+
+msgid "Unsubscribed"
+msgstr "Inscrição cancelada"
+
+#, python-format
+msgid "You won't receive notification emails from the %(org)s workspace. Notifications still appear when you log in."
+msgstr "Você não receberá e-mails de notificação da área de trabalho %(org)s. As notificações continuam aparecendo quando você entra."
+
+msgid "Unsubscribe from notification emails"
+msgstr "Cancelar inscrição nos e-mails de notificação"
+
+#, python-format
+msgid "Stop emailing you notifications from the %(org)s workspace? Notifications still appear when you log in."
+msgstr "Parar de receber por e-mail as notificações da área de trabalho %(org)s? As notificações continuam aparecendo quando você entra."
 
 msgid "Workspace flagged"
 msgstr "Área de trabalho sinalizada"

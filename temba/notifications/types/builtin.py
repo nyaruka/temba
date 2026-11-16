@@ -92,6 +92,9 @@ class IncidentStartedNotificationType(NotificationType):
     def get_email_template(self, notification) -> str:
         return notification.incident.email_template
 
+    def is_email_required(self, notification) -> bool:
+        return notification.incident.type.email_required
+
     def as_json(self, notification) -> dict:
         json = super().as_json(notification)
         json["incident"] = notification.incident.as_json()
