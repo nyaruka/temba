@@ -1,3 +1,11 @@
+## v26.3.198 (2026-11-16)
+ * Let users turn off notification emails, with the setting per workspace
+ * Stop writing node counts to flow activity counts
+ * Localize the flow editor's action and node configs
+ * Translate untranslated component strings
+ * Check component strings are extracted and translated
+ * Keep unknown contact statuses and check option names in the localization test
+
 ## v26.3.197 (2026-11-16)
  * Show invitation accepted notifications in the UI as well as by email
  * Return 400 instead of 500 when deleting a group used by an archived campaign via the API
