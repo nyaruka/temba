@@ -444,5 +444,6 @@
 's2f1345908b7598ed': `Each language must translate its {categories}`,
 's74b6c3618d370674': `Require {confidence} confidence or higher, or go to **Other**`,
 's1c0a25d505a394f0': `If there's no reply after {duration} go to **No Response**`,
+'s5898d8dbeded12e8': str`${0} a rejoint votre espace de travail`,
     };
   

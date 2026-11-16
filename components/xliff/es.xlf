@@ -1718,6 +1718,10 @@
   <source>Optional</source>
   <target>Opcional</target>
 </trans-unit>
+<trans-unit id="s5898d8dbeded12e8">
+  <source><x id="0" equiv-text="${notification.user.email}"/> joined your workspace</source>
+  <target><x id="0" equiv-text="${notification.user.email}"/> se unió a tu espacio de trabajo</target>
+</trans-unit>
 </body>
 </file>
 </xliff>
