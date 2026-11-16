@@ -1,3 +1,11 @@
+import { msg } from '@lit/localize';
+import {
+  localizedOption,
+  renderAttachments,
+  renderClamped,
+  renderHighlightedText,
+  validateTemplateVariables
+} from '../utils';
 import { html } from 'lit-html';
 import {
   ActionConfig,
@@ -9,30 +17,35 @@ import {
 } from '../types';
 import { Node, SendMsg } from '../../store/flow-definition';
 import { titleCase } from '../../utils';
-import {
-  renderAttachments,
-  renderClamped,
-  renderHighlightedText,
-  validateTemplateVariables
-} from '../utils';
 import { splitSMS } from '../../display/sms';
 
-const ATTACHMENT_TYPE_NAMES: Record<string, string> = {
-  image: 'Image',
-  audio: 'Audio',
-  video: 'Video',
-  application: 'Document'
-};
+const ATTACHMENT_TYPE_OPTIONS = [
+  localizedOption('image', () => msg('Image')),
+  localizedOption('audio', () => msg('Audio')),
+  localizedOption('video', () => msg('Video')),
+  localizedOption('application', () => msg('Document'))
+];
+
+const getAttachmentTypeName = (contentType: string): string =>
+  ATTACHMENT_TYPE_OPTIONS.find((option) => option.value === contentType)
+    ?.name || titleCase(contentType);
 
 export const send_msg: ActionConfig = {
-  name: 'Send Message',
-  subtitle:
-    "Reply on the channel they're using, with quick replies or attachments.",
+  get name() {
+    return msg('Send Message');
+  },
+  get subtitle() {
+    return msg(
+      "Reply on the channel they're using, with quick replies or attachments."
+    );
+  },
   group: ACTION_GROUPS.send,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   needs: {
     feature: Features.MESSAGING,
-    warning: 'This workspace has no messaging channel.'
+    get warning() {
+      return msg('This workspace has no messaging channel.');
+    }
   },
   hideFromActions: true,
   render: (_node: Node, action: SendMsg) => {
@@ -74,9 +87,14 @@ export const send_msg: ActionConfig = {
   form: {
     text: {
       type: 'message-editor',
-      label: 'Message',
-      helpText:
-        'Can include attachments and expressions, e.g. `@contact.name`.',
+      get label() {
+        return msg('Message');
+      },
+      get helpText() {
+        return msg(
+          'Can include attachments and expressions, e.g. `@contact.name`.'
+        );
+      },
       required: true,
       evaluated: true,
       maxLength: 10000,
@@ -93,7 +111,9 @@ export const send_msg: ActionConfig = {
       multi: true,
       tags: true,
       searchable: true,
-      placeholder: 'Add quick replies...',
+      get placeholder() {
+        return msg('Add quick replies...');
+      },
       maxItems: 10,
       maxLength: 1000,
       evaluated: true
@@ -104,7 +124,9 @@ export const send_msg: ActionConfig = {
     },
     runtime_attachments: {
       type: 'array',
-      itemLabel: 'Attachment',
+      get itemLabel() {
+        return msg('Attachment');
+      },
       sortable: true,
       maxItems: 10,
       isEmptyItem: (item: any) => {
@@ -114,18 +136,15 @@ export const send_msg: ActionConfig = {
         type: {
           type: 'select',
           width: '140px',
-          options: [
-            { value: 'image', name: 'Image' },
-            { value: 'audio', name: 'Audio' },
-            { value: 'video', name: 'Video' },
-            { value: 'application', name: 'Document' }
-          ],
+          options: ATTACHMENT_TYPE_OPTIONS,
           required: true,
           searchable: false
         },
         expression: {
           type: 'text',
-          placeholder: 'Expression (e.g. @contact.photo)',
+          get placeholder() {
+            return msg('Expression (e.g. @contact.photo)');
+          },
           required: true,
           evaluated: true,
           maxLength: 8192
@@ -139,17 +158,23 @@ export const send_msg: ActionConfig = {
       type: 'extras',
       sections: [
         {
-          label: 'Quick Replies',
+          get label() {
+            return msg('Quick Replies');
+          },
           items: ['quick_replies']
         },
         {
-          label: 'WhatsApp Template',
+          get label() {
+            return msg('WhatsApp Template');
+          },
           localizable: false,
           items: ['template'],
           onRemove: () => ({ template: null, template_variables: [] })
         },
         {
-          label: 'Runtime Attachments',
+          get label() {
+            return msg('Runtime Attachments');
+          },
           hasValue: (formData: FormData) =>
             (formData.runtime_attachments || []).some(
               (item: any) =>
@@ -178,8 +203,7 @@ export const send_msg: ActionConfig = {
           if (!contentType.includes('/')) {
             runtimeAttachments.push({
               type: {
-                name:
-                  ATTACHMENT_TYPE_NAMES[contentType] || titleCase(contentType),
+                name: getAttachmentTypeName(contentType),
                 value: contentType
               },
               expression: value
@@ -263,11 +287,14 @@ export const send_msg: ActionConfig = {
       staticAttachments.length + runtimeAttachments.length;
     if (totalAttachments > 10) {
       if (runtimeAttachments.length > 0) {
-        errors.runtime_attachments =
-          'Each message can only have up to 10 attachments';
+        errors.runtime_attachments = msg(
+          'Each message can only have up to 10 attachments'
+        );
       }
       if (staticAttachments.length > 0) {
-        errors.text = 'Each message can only have up to 10 total attachments';
+        errors.text = msg(
+          'Each message can only have up to 10 total attachments'
+        );
       }
     }
 
@@ -335,8 +362,7 @@ export const send_msg: ActionConfig = {
           if (!contentType.includes('/')) {
             runtimeAttachments.push({
               type: {
-                name:
-                  ATTACHMENT_TYPE_NAMES[contentType] || titleCase(contentType),
+                name: getAttachmentTypeName(contentType),
                 value: contentType
               },
               expression: value

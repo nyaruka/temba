@@ -1,11 +1,16 @@
+import { msg } from '@lit/localize';
 import { html } from 'lit-html';
 import { ActionConfig, ACTION_GROUPS, FormData, FlowTypes } from '../types';
 import { Node, AddToGroup } from '../../store/flow-definition';
 import { renderGroupLinks } from '../utils';
 
 export const add_contact_groups: ActionConfig = {
-  name: 'Add to Group',
-  subtitle: 'Good for triggering campaigns or targeting later broadcasts.',
+  get name() {
+    return msg('Add to Group');
+  },
+  get subtitle() {
+    return msg('Good for triggering campaigns or targeting later broadcasts.');
+  },
   group: ACTION_GROUPS.contacts,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: AddToGroup) => {
@@ -22,7 +27,9 @@ export const add_contact_groups: ActionConfig = {
   form: {
     groups: {
       type: 'select',
-      label: 'Groups',
+      get label() {
+        return msg('Groups');
+      },
       required: true,
       options: [],
       multi: true,

@@ -1,4 +1,5 @@
 import { msg } from '@lit/localize';
+import { localizedOption, validateWith } from '../utils';
 import { SPLIT_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { Node } from '../../store/flow-definition';
 import { createRulesRouter } from '../../utils';
@@ -19,44 +20,47 @@ import {
   casesToFormRules
 } from './shared-rules';
 import { getStore } from '../../store/Store';
-import { validateWith } from '../utils';
 
 // delimit index options (first through 20th)
 const DELIMIT_INDEX_OPTIONS = [
-  { value: '0', name: 'first result' },
-  { value: '1', name: 'second result' },
-  { value: '2', name: 'third result' },
-  { value: '3', name: 'fourth result' },
-  { value: '4', name: 'fifth result' },
-  { value: '5', name: 'sixth result' },
-  { value: '6', name: 'seventh result' },
-  { value: '7', name: 'eighth result' },
-  { value: '8', name: 'ninth result' },
-  { value: '9', name: 'tenth result' },
-  { value: '10', name: '11th result' },
-  { value: '11', name: '12th result' },
-  { value: '12', name: '13th result' },
-  { value: '13', name: '14th result' },
-  { value: '14', name: '15th result' },
-  { value: '15', name: '16th result' },
-  { value: '16', name: '17th result' },
-  { value: '17', name: '18th result' },
-  { value: '18', name: '19th result' },
-  { value: '19', name: '20th result' }
+  localizedOption('0', () => msg('first result')),
+  localizedOption('1', () => msg('second result')),
+  localizedOption('2', () => msg('third result')),
+  localizedOption('3', () => msg('fourth result')),
+  localizedOption('4', () => msg('fifth result')),
+  localizedOption('5', () => msg('sixth result')),
+  localizedOption('6', () => msg('seventh result')),
+  localizedOption('7', () => msg('eighth result')),
+  localizedOption('8', () => msg('ninth result')),
+  localizedOption('9', () => msg('tenth result')),
+  localizedOption('10', () => msg('11th result')),
+  localizedOption('11', () => msg('12th result')),
+  localizedOption('12', () => msg('13th result')),
+  localizedOption('13', () => msg('14th result')),
+  localizedOption('14', () => msg('15th result')),
+  localizedOption('15', () => msg('16th result')),
+  localizedOption('16', () => msg('17th result')),
+  localizedOption('17', () => msg('18th result')),
+  localizedOption('18', () => msg('19th result')),
+  localizedOption('19', () => msg('20th result'))
 ];
 
 // delimit by options - includes "don't delimit" and delimiter characters
 const DELIMIT_BY_OPTIONS = [
-  { value: '', name: "Don't delimit result" },
-  { value: ' ', name: 'Delimited by spaces' },
-  { value: '.', name: 'Delimited by periods' },
-  { value: '+', name: 'Delimited by plusses' }
+  localizedOption('', () => msg("Don't delimit result")),
+  localizedOption(' ', () => msg('Delimited by spaces')),
+  localizedOption('.', () => msg('Delimited by periods')),
+  localizedOption('+', () => msg('Delimited by plusses'))
 ];
 
 export const split_by_run_result: NodeConfig = {
   type: 'split_by_run_result',
-  name: 'Split by Result',
-  subtitle: 'Branch on an answer collected earlier in this flow.',
+  get name() {
+    return msg('Split by Result');
+  },
+  get subtitle() {
+    return msg('Branch on an answer collected earlier in this flow.');
+  },
   aliases: ['split_by_run_result_delimited'], // backwards compatibility with old flow editor
   group: SPLIT_GROUPS.split,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
@@ -68,7 +72,9 @@ export const split_by_run_result: NodeConfig = {
       required: true,
       searchable: false,
       clearable: false,
-      placeholder: 'Select a result...',
+      get placeholder() {
+        return msg('Select a result...');
+      },
       getDynamicOptions: () => {
         const store = getStore();
         return store
@@ -118,9 +124,14 @@ export const split_by_run_result: NodeConfig = {
   layout: [
     {
       type: 'row',
-      label: 'Flow Result',
-      helpText:
-        'Delimiting splits on one part of the result, e.g. its first word.',
+      get label() {
+        return msg('Flow Result');
+      },
+      get helpText() {
+        return msg(
+          'Delimiting splits on one part of the result, e.g. its first word.'
+        );
+      },
       items: ['result', 'delimit_by', 'delimit_index']
     },
     'rules',

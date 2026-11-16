@@ -1,4 +1,5 @@
 import { FormData, NodeConfig, ACTION_GROUPS, FlowTypes } from '../types';
+import { localizedOption, validateWith } from '../utils';
 import {
   CallClassifier,
   ClassifierConfidence,
@@ -8,7 +9,6 @@ import { generateUUID, createMultiCategoryRouter } from '../../utils';
 import { html } from 'lit';
 import { until } from 'lit/directives/until.js';
 import { msg, str } from '@lit/localize';
-import { validateWith } from '../utils';
 import { getStore } from '../../store/Store';
 import { LLMModel, hasLLMRole } from '../flow-utils';
 import {
@@ -49,10 +49,22 @@ const loadModelTypes = (): Promise<Map<string, string>> => {
 
 // the confidence levels the model's choice can be required to meet, below which it routes to Other
 const CONFIDENCE_LEVELS: { value: ClassifierConfidence; name: string }[] = [
-  { value: 'none', name: 'Always pick a category' },
-  { value: 'low', name: 'low' },
-  { value: 'medium', name: 'medium' },
-  { value: 'high', name: 'high' }
+  localizedOption('none', () => msg('Always pick a category')),
+  localizedOption('low', () =>
+    msg('low', {
+      desc: 'A confidence level in "Require {confidence} confidence or higher"'
+    })
+  ),
+  localizedOption('medium', () =>
+    msg('medium', {
+      desc: 'A confidence level in "Require {confidence} confidence or higher"'
+    })
+  ),
+  localizedOption('high', () =>
+    msg('high', {
+      desc: 'A confidence level in "Require {confidence} confidence or higher"'
+    })
+  )
 ];
 
 // requiring no confidence is the section being removed, so it isn't an option in the sentence
@@ -77,14 +89,20 @@ const fromConfidenceLevel = (selection: any): ClassifierConfidence => {
 
 export const split_by_llm_categorize: NodeConfig = {
   type: 'split_by_llm_categorize',
-  name: 'Split by AI',
-  subtitle: 'Let AI read a value and pick the category it fits best.',
+  get name() {
+    return msg('Split by AI');
+  },
+  get subtitle() {
+    return msg('Let AI read a value and pick the category it fits best.');
+  },
   group: ACTION_GROUPS.services,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   form: {
     model: {
       type: 'select',
-      label: 'Model',
+      get label() {
+        return msg('Model');
+      },
       required: true,
       endpoint: LLMS_ENDPOINT,
       valueKey: 'uuid',
@@ -93,18 +111,28 @@ export const split_by_llm_categorize: NodeConfig = {
     },
     input: {
       type: 'text',
-      label: 'Input',
+      get label() {
+        return msg('Input');
+      },
       required: true,
       evaluated: true,
       maxLength: 10000,
-      placeholder: 'e.g. @input'
+      get placeholder() {
+        return msg('e.g. @input');
+      }
     },
     options: {
       type: 'array',
-      helpText: 'Descriptions help the model decide when each category fits.',
+      get helpText() {
+        return msg(
+          'Descriptions help the model decide when each category fits.'
+        );
+      },
       required: true,
       sortable: true,
-      itemLabel: 'Category',
+      get itemLabel() {
+        return msg('Category');
+      },
       minItems: 1,
       maxItems: 10,
       isEmptyItem: (item: any) => {
@@ -116,14 +144,18 @@ export const split_by_llm_categorize: NodeConfig = {
       itemConfig: {
         name: {
           type: 'text',
-          placeholder: 'Category name',
+          get placeholder() {
+            return msg('Category name');
+          },
           required: true,
           maxLength: 36,
           width: '160px'
         },
         description: {
           type: 'text',
-          placeholder: 'Description (optional)',
+          get placeholder() {
+            return msg('Description (optional)');
+          },
           maxLength: 1000
         }
       }
@@ -146,7 +178,9 @@ export const split_by_llm_categorize: NodeConfig = {
       ...nodeOptionsCategoriesOnly,
       sections: [
         {
-          label: 'Require Confidence',
+          get label() {
+            return msg('Require Confidence');
+          },
           localizable: false,
           items: ['required_confidence'],
           sentence: () =>

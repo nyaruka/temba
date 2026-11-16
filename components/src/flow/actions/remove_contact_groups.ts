@@ -1,3 +1,4 @@
+import { msg } from '@lit/localize';
 import { html } from 'lit-html';
 import {
   ActionConfig,
@@ -10,14 +11,19 @@ import { Node, RemoveFromGroup } from '../../store/flow-definition';
 import { renderGroupLinks } from '../utils';
 
 export const remove_contact_groups: ActionConfig = {
-  name: 'Remove from Group',
-  subtitle:
-    'Takes effect right away, including for campaigns based on the group.',
+  get name() {
+    return msg('Remove from Group');
+  },
+  get subtitle() {
+    return msg(
+      'Takes effect right away, including for campaigns based on the group.'
+    );
+  },
   group: ACTION_GROUPS.contacts,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: RemoveFromGroup) => {
     if (action.all_groups) {
-      return html`<div>Remove from all groups</div>`;
+      return html`<div>${msg('Remove from all groups')}</div>`;
     }
     return html`<div>${renderGroupLinks(action.groups, 'group')}</div>`;
   },
@@ -31,7 +37,9 @@ export const remove_contact_groups: ActionConfig = {
   form: {
     groups: {
       type: 'select',
-      label: 'Groups',
+      get label() {
+        return msg('Groups');
+      },
       options: [],
       multi: true,
       searchable: true,
@@ -45,7 +53,9 @@ export const remove_contact_groups: ActionConfig = {
     },
     all_groups: {
       type: 'checkbox',
-      label: 'Remove from all groups'
+      get label() {
+        return msg('Remove from all groups');
+      }
     }
   },
   validate: (formData: FormData): ValidationResult => {
@@ -55,8 +65,9 @@ export const remove_contact_groups: ActionConfig = {
       !formData.all_groups &&
       (!formData.groups || formData.groups.length === 0)
     ) {
-      errors.groups =
-        'At least one group must be selected or check "Remove from all groups"';
+      errors.groups = msg(
+        'At least one group must be selected or check "Remove from all groups"'
+      );
     }
 
     return {

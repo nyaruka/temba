@@ -1,3 +1,4 @@
+import { msg } from '@lit/localize';
 import { SPLIT_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { Node, Category, Exit } from '../../store/flow-definition';
 import { generateUUID } from '../../utils';
@@ -17,9 +18,14 @@ function digitFieldKey(digit: string): string {
 
 export const wait_for_menu: NodeConfig = {
   type: 'wait_for_menu',
-  name: 'Wait for Menu',
-  subtitle:
-    'Offer keypad options, like "press 1 for sales", and branch on the choice.',
+  get name() {
+    return msg('Wait for Menu');
+  },
+  get subtitle() {
+    return msg(
+      'Offer keypad options, like "press 1 for sales", and branch on the choice.'
+    );
+  },
   group: SPLIT_GROUPS.wait,
   flowTypes: [FlowTypes.VOICE],
   form: {

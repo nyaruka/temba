@@ -1,3 +1,4 @@
+import { msg } from '@lit/localize';
 import { TemplateResult } from 'lit-html';
 import type { Action, Node, NodeUI } from '../store/flow-definition';
 
@@ -32,15 +33,45 @@ export interface ContextMenuShortcut {
  */
 export const CONTEXT_MENU_SHORTCUTS: Record<FlowType, ContextMenuShortcut[]> = {
   [FlowTypes.MESSAGE]: [
-    { type: 'send_msg', name: 'Send Message', icon: 'send' },
-    { type: 'wait_for_response', name: 'Wait for Response', icon: 'message' }
+    {
+      type: 'send_msg',
+      get name() {
+        return msg('Send Message');
+      },
+      icon: 'send'
+    },
+    {
+      type: 'wait_for_response',
+      get name() {
+        return msg('Wait for Response');
+      },
+      icon: 'message'
+    }
   ],
   [FlowTypes.VOICE]: [
-    { type: 'say_msg', name: 'Say Message', icon: 'recording' },
-    { type: 'wait_for_menu', name: 'Wait for Menu', icon: 'dots-grid' }
+    {
+      type: 'say_msg',
+      get name() {
+        return msg('Say Message');
+      },
+      icon: 'recording'
+    },
+    {
+      type: 'wait_for_menu',
+      get name() {
+        return msg('Wait for Menu');
+      },
+      icon: 'dots-grid'
+    }
   ],
   [FlowTypes.BACKGROUND]: [
-    { type: 'set_contact_field', name: 'Update Contact', icon: 'contact' }
+    {
+      type: 'set_contact_field',
+      get name() {
+        return msg('Update Contact');
+      },
+      icon: 'contact'
+    }
   ]
 };
 
@@ -465,33 +496,57 @@ export interface GroupMetadata {
 export const ACTION_GROUP_METADATA: Record<ActionGroup, GroupMetadata> = {
   [ACTION_GROUPS.send]: {
     color: '#3498db',
-    title: 'Send',
-    description: 'Actions that send messages or content to contacts'
+    get title() {
+      return msg('Send');
+    },
+    get description() {
+      return msg('Actions that send messages or content to contacts');
+    }
   },
   [ACTION_GROUPS.contacts]: {
     color: '#01c1af',
-    title: 'Contact',
-    description: 'Actions that update contact information'
+    get title() {
+      return msg('Contact');
+    },
+    get description() {
+      return msg('Actions that update contact information');
+    }
   },
   [ACTION_GROUPS.save]: {
     color: '#1a777c',
-    title: 'Save',
-    description: 'Actions that save or store data'
+    get title() {
+      return msg('Save');
+    },
+    get description() {
+      return msg('Actions that save or store data');
+    }
   },
   [ACTION_GROUPS.services]: {
     color: '#f79035ff',
-    title: 'Services',
-    description: 'Call external services and APIs'
+    get title() {
+      return msg('Services');
+    },
+    get description() {
+      return msg('Call external services and APIs');
+    }
   },
   [ACTION_GROUPS.broadcast]: {
     color: '#8e5ea7',
-    title: 'Other People',
-    description: 'Actions that apply to others instead of the contact'
+    get title() {
+      return msg('Other People');
+    },
+    get description() {
+      return msg('Actions that apply to others instead of the contact');
+    }
   },
   [ACTION_GROUPS.trigger]: {
     color: '#df419f',
-    title: 'Trigger',
-    description: 'Actions that trigger other behavior'
+    get title() {
+      return msg('Trigger');
+    },
+    get description() {
+      return msg('Actions that trigger other behavior');
+    }
   }
 };
 
@@ -502,13 +557,21 @@ export const ACTION_GROUP_METADATA: Record<ActionGroup, GroupMetadata> = {
 export const SPLIT_GROUP_METADATA: Record<SplitGroup, GroupMetadata> = {
   [SPLIT_GROUPS.wait]: {
     color: '#4d7dad',
-    title: 'Wait',
-    description: 'Wait for user and split on their response'
+    get title() {
+      return msg('Wait');
+    },
+    get description() {
+      return msg('Wait for user and split on their response');
+    }
   },
   [SPLIT_GROUPS.split]: {
     color: '#aaaaaa',
-    title: 'Split',
-    description: 'Split the flow based on conditions'
+    get title() {
+      return msg('Split');
+    },
+    get description() {
+      return msg('Split the flow based on conditions');
+    }
   }
 };
 

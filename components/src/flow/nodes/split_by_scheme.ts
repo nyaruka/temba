@@ -21,17 +21,27 @@ const getSchemeName = (scheme: string) =>
 
 export const split_by_scheme: NodeConfig = {
   type: 'split_by_scheme',
-  name: 'Split by URN Type',
-  subtitle:
-    'Branch on how the contact reaches you, like SMS, WhatsApp or email.',
+  get name() {
+    return msg('Split by URN Type');
+  },
+  get subtitle() {
+    return msg(
+      'Branch on how the contact reaches you, like SMS, WhatsApp or email.'
+    );
+  },
   group: SPLIT_GROUPS.split,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   form: {
     schemes: {
       type: 'select',
-      label: 'Channel Types',
-      helpText:
-        'Routes contacts by the type of address they used, e.g. a phone number or Facebook ID.',
+      get label() {
+        return msg('Channel Types');
+      },
+      get helpText() {
+        return msg(
+          'Routes contacts by the type of address they used, e.g. a phone number or Facebook ID.'
+        );
+      },
       required: true,
       options: getSchemeOptions(),
       multi: true,

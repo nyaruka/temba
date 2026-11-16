@@ -1,7 +1,8 @@
+import { msg } from '@lit/localize';
 import { SPLIT_GROUPS, FormData, NodeConfig, FlowTypes } from '../types';
 import { Node, Category, Exit } from '../../store/flow-definition';
 import { generateUUID } from '../../utils';
-import { resultNameField } from './shared';
+import { labeledResultNameField } from './shared';
 
 const DIAL_CATEGORIES = ['Answered', 'No Answer', 'Busy', 'Failed'];
 const DIAL_CASES = [
@@ -16,8 +17,14 @@ const DIAL_CASES = [
 
 export const wait_for_dial: NodeConfig = {
   type: 'wait_for_dial',
-  name: 'Redirect Call',
-  subtitle: 'Connect the caller to another number, then branch on how it went.',
+  get name() {
+    return msg('Redirect Call');
+  },
+  get subtitle() {
+    return msg(
+      'Connect the caller to another number, then branch on how it went.'
+    );
+  },
   group: SPLIT_GROUPS.wait,
   flowTypes: [FlowTypes.VOICE],
   router: {
@@ -32,25 +39,37 @@ export const wait_for_dial: NodeConfig = {
   form: {
     phone: {
       type: 'text',
-      label: 'Phone Number',
+      get label() {
+        return msg('Phone Number');
+      },
       required: true,
       evaluated: true,
       maxLength: 1000,
-      helpText: 'Can include expressions, e.g. `@fields.phone`.'
+      get helpText() {
+        return msg('Can include expressions, e.g. `@fields.phone`.');
+      }
     },
     dial_limit_seconds: {
       type: 'text',
-      label: 'Dial Limit (seconds)',
+      get label() {
+        return msg('Dial Limit (seconds)');
+      },
       required: false,
-      helpText: 'Defaults to 60 seconds.'
+      get helpText() {
+        return msg('Defaults to 60 seconds.');
+      }
     },
     call_limit_seconds: {
       type: 'text',
-      label: 'Call Limit (seconds)',
+      get label() {
+        return msg('Call Limit (seconds)');
+      },
       required: false,
-      helpText: 'Defaults to two hours.'
+      get helpText() {
+        return msg('Defaults to two hours.');
+      }
     },
-    result_name: { ...resultNameField, label: 'Result Name' }
+    result_name: labeledResultNameField
   },
   layout: [
     'phone',

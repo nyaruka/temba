@@ -10,17 +10,26 @@ import {
 
 export const split_by_random: NodeConfig = {
   type: 'split_by_random',
-  name: 'Random Split',
-  subtitle: 'Useful for A/B tests and spreading contacts across paths.',
+  get name() {
+    return msg('Random Split');
+  },
+  get subtitle() {
+    return msg('Useful for A/B tests and spreading contacts across paths.');
+  },
   group: SPLIT_GROUPS.split,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   form: {
     categories: {
       type: 'array',
-      helpText:
-        'Contacts are divided evenly and at random between the buckets.',
+      get helpText() {
+        return msg(
+          'Contacts are divided evenly and at random between the buckets.'
+        );
+      },
       required: true,
-      itemLabel: 'Bucket',
+      get itemLabel() {
+        return msg('Bucket');
+      },
       sortable: true,
       minItems: 2,
       maxItems: 10,
@@ -30,7 +39,9 @@ export const split_by_random: NodeConfig = {
       itemConfig: {
         name: {
           type: 'text',
-          placeholder: 'Bucket name',
+          get placeholder() {
+            return msg('Bucket name');
+          },
           required: true,
           maxLength: 36
         }

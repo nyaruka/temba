@@ -6,15 +6,21 @@ import { html } from 'lit';
 
 export const split_by_ticket: NodeConfig = {
   type: 'split_by_ticket',
-  name: 'Open Ticket',
-  subtitle: 'A person on your team will be able to follow up.',
+  get name() {
+    return msg('Open Ticket');
+  },
+  get subtitle() {
+    return msg('A person on your team will be able to follow up.');
+  },
   group: ACTION_GROUPS.trigger,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   showAsAction: true,
   form: {
     topic: {
       type: 'select',
-      label: 'Topic',
+      get label() {
+        return msg('Topic');
+      },
       required: true,
       options: [],
       endpoint: '/api/v2/topics.json',
@@ -24,7 +30,9 @@ export const split_by_ticket: NodeConfig = {
     },
     assignee: {
       type: 'select',
-      label: 'Assignee',
+      get label() {
+        return msg('Assignee');
+      },
       required: false,
       endpoint: '/api/v2/users.json',
       valueKey: 'uuid',
@@ -39,7 +47,9 @@ export const split_by_ticket: NodeConfig = {
     },
     note: {
       type: 'textarea',
-      label: 'Note',
+      get label() {
+        return msg('Note');
+      },
       required: false,
       evaluated: true,
       maxLength: 10000,

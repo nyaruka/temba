@@ -47,6 +47,22 @@ describe('set_contact_status action config', () => {
   });
 
   describe('round-trip', () => {
+    it('keeps a status it has no option for', () => {
+      const action = {
+        uuid: 'test-uuid',
+        type: 'set_contact_status',
+        status: 'paused'
+      } as any;
+
+      const formData = set_contact_status.toFormData(action);
+      expect(formData.status).to.deep.equal([
+        { value: 'paused', name: 'Paused' }
+      ]);
+      expect(
+        (set_contact_status.fromFormData(formData) as SetContactStatus).status
+      ).to.equal('paused');
+    });
+
     it('should extract status value from select option', () => {
       const formData = {
         uuid: 'test-uuid',

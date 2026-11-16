@@ -1,3 +1,4 @@
+import { msg, str } from '@lit/localize';
 import { html } from 'lit-html';
 import {
   ActionConfig,
@@ -12,21 +13,29 @@ import { renderClamped } from '../utils';
 import { getLanguageLabel, getLanguageName } from '../../languages';
 
 export const set_contact_language: ActionConfig = {
-  name: 'Update Language',
-  subtitle: 'Later messages and flows will use translations in this language.',
+  get name() {
+    return msg('Update Language');
+  },
+  get subtitle() {
+    return msg(
+      'Later messages and flows will use translations in this language.'
+    );
+  },
   group: ACTION_GROUPS.contacts,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   render: (_node: Node, action: SetContactLanguage) => {
     const name = getLanguageName(action.language);
     return renderClamped(
-      html`Set to <strong>${name}</strong>`,
-      `Set to ${name}`
+      msg(html`Set to <strong>${name}</strong>`),
+      msg(str`Set to ${name}`)
     );
   },
   form: {
     language: {
       type: 'select',
-      label: 'Language',
+      get label() {
+        return msg('Language');
+      },
       required: true,
       searchable: true,
       clearable: false,
@@ -75,7 +84,7 @@ export const set_contact_language: ActionConfig = {
     const errors: { [key: string]: string } = {};
 
     if (!formData.language) {
-      errors.language = 'Language is required';
+      errors.language = msg('Language is required');
     }
 
     return {

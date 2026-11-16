@@ -13,8 +13,12 @@ import { LLMModel, hasLLMRole } from '../flow-utils';
 
 export const split_by_llm: NodeConfig = {
   type: 'split_by_llm',
-  name: 'Call AI',
-  subtitle: 'Give AI instructions, and use its answer later in the flow.',
+  get name() {
+    return msg('Call AI');
+  },
+  get subtitle() {
+    return msg('Give AI instructions, and use its answer later in the flow.');
+  },
   group: ACTION_GROUPS.services,
   flowTypes: [FlowTypes.VOICE, FlowTypes.MESSAGE, FlowTypes.BACKGROUND],
   showAsAction: true,
@@ -43,7 +47,9 @@ export const split_by_llm: NodeConfig = {
   form: {
     llm: {
       type: 'select',
-      label: 'LLM',
+      get label() {
+        return msg('LLM');
+      },
       required: true,
       options: [],
       endpoint: '/api/internal/llms.json',
@@ -54,16 +60,24 @@ export const split_by_llm: NodeConfig = {
     },
     input: {
       type: 'text',
-      label: 'Input',
+      get label() {
+        return msg('Input');
+      },
       required: true,
       evaluated: true,
       maxLength: 10000,
-      placeholder: 'e.g. @input'
+      get placeholder() {
+        return msg('e.g. @input');
+      }
     },
     instructions: {
       type: 'textarea',
-      label: 'Instructions',
-      helpText: 'The output is available as **`@locals._llm_output`**.',
+      get label() {
+        return msg('Instructions');
+      },
+      get helpText() {
+        return msg('The output is available as **`@locals._llm_output`**.');
+      },
       required: true,
       evaluated: true,
       maxLength: 10000,

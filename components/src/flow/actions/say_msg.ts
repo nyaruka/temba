@@ -1,3 +1,4 @@
+import { msg } from '@lit/localize';
 import { html } from 'lit-html';
 import {
   ActionConfig,
@@ -11,14 +12,21 @@ import { renderAudioPlayer } from './audio-player';
 import { renderClamped, renderHighlightedText } from '../utils';
 
 export const say_msg: ActionConfig = {
-  name: 'Say Message',
-  subtitle:
-    'Spoken to the caller with text-to-speech, or played from a recording.',
+  get name() {
+    return msg('Say Message');
+  },
+  get subtitle() {
+    return msg(
+      'Spoken to the caller with text-to-speech, or played from a recording.'
+    );
+  },
   group: ACTION_GROUPS.send,
   flowTypes: [FlowTypes.VOICE],
   needs: {
     feature: Features.IVR,
-    warning: 'This workspace has no voice channel.'
+    get warning() {
+      return msg('This workspace has no voice channel.');
+    }
   },
   render: (_node: Node, action: SayMsg) => {
     return html`
@@ -36,7 +44,9 @@ export const say_msg: ActionConfig = {
   form: {
     text: {
       type: 'textarea',
-      label: 'Message',
+      get label() {
+        return msg('Message');
+      },
       required: true,
       evaluated: true,
       maxLength: 10000,
@@ -44,10 +54,14 @@ export const say_msg: ActionConfig = {
     },
     audio_url: {
       type: 'media',
-      label: 'Recording',
+      get label() {
+        return msg('Recording');
+      },
       required: false,
       accept: 'audio/*',
-      optionalLink: 'Add a recording'
+      get optionalLink() {
+        return msg('Add a recording');
+      }
     }
   },
   layout: ['text', 'audio_url'],

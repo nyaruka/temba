@@ -188,7 +188,9 @@ export const createRulesItemConfig = () => ({
   },
   category: {
     type: 'text' as const,
-    placeholder: 'Category',
+    get placeholder() {
+      return msg('Category');
+    },
     required: true,
     maxLength: 36,
     maxWidth: '120px'
@@ -317,11 +319,16 @@ export const casesToFormRules = (node: any) => {
  */
 export const createRulesArrayConfig = (
   operatorOptions: any[],
-  helpText: string = 'Responses are categorized by the first rule they match.'
+  helpText: string | (() => string) = () =>
+    msg('Responses are categorized by the first rule they match.')
 ) => ({
   type: 'array' as const,
-  helpText,
-  itemLabel: 'Rule',
+  get helpText() {
+    return typeof helpText === 'function' ? helpText() : helpText;
+  },
+  get itemLabel() {
+    return msg('Rule');
+  },
   minItems: 0,
   maxItems: 100,
   sortable: true,
