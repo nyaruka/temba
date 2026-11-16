@@ -437,21 +437,22 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         at each step and a map of the previous visits
         """
 
-        counts = self.counts.prefix("node:").scope_totals()
-        by_node = {scope[5:]: count for scope, count in counts.items() if count}
-
-        # segments are looked up from the definition, rather than found among flushed tallies, so that ones still only
-        # buffered in Valkey are counted, and the number looked up is bounded by the flow's size, not its history
+        # nodes and segments are looked up from the definition, rather than found among flushed tallies, so that ones
+        # still only buffered in Valkey are counted, and the number looked up is bounded by the flow's size, not its
+        # history
         rev = self.get_current_revision()
         nodes = rev.definition.get(Flow.DEFINITION_NODES, []) if rev else []
-        keys_by_scope = {
+        nodes_by_scope = {FlowTally.node_scope(n["uuid"]): n["uuid"] for n in nodes}
+        segments_by_scope = {
             FlowTally.segment_scope(e["uuid"], e["destination_uuid"]): f"{e['uuid']}:{e['destination_uuid']}"
             for n in nodes
             for e in n.get("exits", [])
             if e.get("destination_uuid")
         }
-        totals = FlowTally.get_totals(self, list(keys_by_scope))
-        by_segment = {keys_by_scope[scope]: count for scope, count in totals.items()}
+        totals = FlowTally.get_totals(self, list(nodes_by_scope) + list(segments_by_scope))
+
+        by_node = {nodes_by_scope[s]: c for s, c in totals.items() if s in nodes_by_scope and c > 0}
+        by_segment = {segments_by_scope[s]: c for s, c in totals.items() if s in segments_by_scope}
 
         return by_node, by_segment
 
@@ -1425,7 +1426,7 @@ class FlowResultCount(BaseSquashableCount):
 
 class FlowTally(BaseTally):
     """
-    Flow-level totals, e.g. of segment or result category counts, which unlike org tallies can go down.
+    Flow-level totals, e.g. of segments taken or of runs currently at each node, which unlike org tallies can go down.
     """
 
     owner_field = "flow"
@@ -1447,6 +1448,13 @@ class FlowTally(BaseTally):
         Gets totals by flow id and scope for the given scopes in each of the given flows, omitting those with no total.
         """
         return cls._get_totals([f.id for f in flows], scopes)
+
+    @staticmethod
+    def node_scope(node_uuid: str) -> str:
+        """
+        Gets the scope of the runs at the given node, which is base64url (no padding) of the UUID's raw bytes.
+        """
+        return "node:" + base64.urlsafe_b64encode(UUID(node_uuid).bytes).decode().rstrip("=")
 
     @staticmethod
     def segment_scope(exit_uuid: str, node_uuid: str) -> str:

@@ -6,7 +6,7 @@ from django_valkey import get_valkey_connection
 from django.apps import apps
 from django.utils import timezone
 
-from temba.flows.models import Flow, FlowActivityCount
+from temba.flows.models import Flow, FlowActivityCount, FlowTally
 from temba.tests import MigrationTest, cleanup
 
 
@@ -144,4 +144,67 @@ class CompactSegmentTalliesTest(MigrationTest):
         migration.compact_segment_tallies(apps, None)
 
         expected1 = {(self.compact1, 7), (self.compact2, 7), ("msgsin:hour:7", 6), ("node:abc", 7)}
+        assert_tallies()
+
+
+class BackfillNodeTalliesTest(MigrationTest):
+    app = "flows"
+    migrate_from = "0419_compact_segment_tallies"
+    migrate_to = "0420_backfill_node_tallies"
+
+    NODE1 = "1d4f25b2-c648-46cc-8116-be0ec6b6d34a"
+    NODE2 = "46681864-8389-4875-8b88-2f9fe241ea3f"
+    NODE3 = "ffffffff-ffff-ffff-ffff-ffffffffffff"
+    NODE4 = "00000000-0000-0000-0000-000000000000"
+
+    def setUpBeforeMigration(self, apps):
+        self.flow1 = self.create_flow("Flow 1")
+        self.flow2 = self.create_flow("Flow 2")
+
+        def count(flow, node, count, is_squashed=False):
+            FlowActivityCount.objects.create(flow=flow, scope=f"node:{node}", count=count, is_squashed=is_squashed)
+
+        count(self.flow1, self.NODE1, 3, is_squashed=True)
+        count(self.flow1, self.NODE1, 1)
+        count(self.flow1, self.NODE2, 2)
+        count(self.flow1, self.NODE3, 1)
+        count(self.flow1, self.NODE3, -1)
+        count(self.flow2, self.NODE1, 5)
+
+        # tallies written since mailroom started writing them, which can be behind (some still buffered in Valkey), or
+        # below zero, or left on a node which the counts say is now empty
+        self.flow1.tallies.create(scope=FlowTally.node_scope(self.NODE1), count=1)
+        self.flow1.tallies.create(scope=FlowTally.node_scope(self.NODE2), count=-1)
+        self.flow1.tallies.create(scope=FlowTally.node_scope(self.NODE3), count=-2)
+        self.flow1.tallies.create(scope=FlowTally.node_scope(self.NODE4), count=5)
+        self.flow1.tallies.create(scope="segment:abc", count=7)
+        get_valkey_connection().hset(
+            "{tallies}:live", mapping={f"F{self.flow1.id}|{FlowTally.node_scope(self.NODE1)}": 1}
+        )
+
+        Flow.objects.filter(id=self.flow2.id).update(is_active=False)
+
+    @cleanup(valkey=True)
+    def test_migration(self):
+        def assert_tallies():
+            self.assertEqual(
+                {
+                    (FlowTally.node_scope(self.NODE1), 3),  # 4 counted, of which 1 is still in Valkey
+                    (FlowTally.node_scope(self.NODE2), 2),
+                    ("segment:abc", 7),
+                },
+                set(self.flow1.tallies.values_list("scope", "count")),
+            )
+            self.assertFalse(self.flow2.tallies.exists())
+
+        assert_tallies()
+
+        # running again is a no-op
+        migration = import_module("temba.flows.migrations.0420_backfill_node_tallies")
+        migration.backfill_node_tallies(apps, None)
+        assert_tallies()
+
+        # unless a tally has drifted from its count since
+        self.flow1.tallies.filter(scope=FlowTally.node_scope(self.NODE2)).update(count=1)
+        migration.backfill_node_tallies(apps, None)
         assert_tallies()
