@@ -16,7 +16,7 @@ from temba.notifications.incidents.builtin import (
 from temba.notifications.models import Notification
 from temba.notifications.tasks import send_notification_emails, trim_notifications
 from temba.notifications.types.builtin import ExportFinishedNotificationType, InvitationAcceptedNotificationType
-from temba.orgs.models import Invitation, ItemCount, OrgRole
+from temba.orgs.models import Invitation, ItemCount, OrgMembership, OrgRole
 from temba.tests import TembaTest, matchers
 from temba.tests.mailroom import mock_mailroom
 from temba.tickets.models import TicketExport
@@ -361,8 +361,7 @@ class NotificationTest(TembaTest):
 
     def test_email_notifications_disabled(self):
         self.org.add_user(self.editor, OrgRole.ADMINISTRATOR)  # upgrade editor to administrator
-        self.admin.email_notifications = False
-        self.admin.save(update_fields=("email_notifications",))
+        OrgMembership.objects.filter(org=self.org, user=self.admin).update(email_notifications=False)
 
         # an opted out user still gets the notification in the UI, just not the email
         export = ContactExport.create(self.org, self.admin)
@@ -388,6 +387,13 @@ class NotificationTest(TembaTest):
 
         self.assertEqual({"admin@textit.com", "editor@textit.com"}, {r for m in mail.outbox for r in m.recipients()})
 
+        # the setting is per workspace, so they're still emailed about other workspaces
+        self.org2.add_user(self.admin, OrgRole.ADMINISTRATOR)
+        export2 = ContactExport.create(self.org2, self.admin)
+        ExportFinishedNotificationType.create(export2)
+
+        self.assertEqual(Notification.EMAIL_STATUS_PENDING, self.admin.notifications.get(export=export2).email_status)
+
     def test_email_notifications_changed(self):
         def create():
             Notification.create_all(
@@ -404,8 +410,7 @@ class NotificationTest(TembaTest):
         self.assertEqual(Notification.EMAIL_STATUS_PENDING, notification.email_status)
 
         # turning emails off while that notification is unseen reuses it rather than creating another
-        self.admin.email_notifications = False
-        self.admin.save(update_fields=("email_notifications",))
+        OrgMembership.objects.filter(org=self.org, user=self.admin).update(email_notifications=False)
         create()
 
         self.assertEqual([notification], list(self.admin.notifications.all()))
@@ -413,8 +418,7 @@ class NotificationTest(TembaTest):
         # and likewise turning them back on
         notification.email_status = Notification.EMAIL_STATUS_NONE
         notification.save(update_fields=("email_status",))
-        self.admin.email_notifications = True
-        self.admin.save(update_fields=("email_notifications",))
+        OrgMembership.objects.filter(org=self.org, user=self.admin).update(email_notifications=True)
         create()
 
         self.assertEqual([notification], list(self.admin.notifications.all()))

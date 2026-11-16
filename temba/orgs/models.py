@@ -1328,6 +1328,7 @@ class OrgMembership(models.Model):
     team = models.ForeignKey("tickets.Team", on_delete=models.PROTECT, null=True)
     can_assign = models.BooleanField(default=True)
     can_reply_non_own = models.BooleanField(default=True)
+    email_notifications = models.BooleanField(default=True)  # whether notifications in this workspace are also emailed
     last_seen_on = models.DateTimeField(null=True)
 
     @property
