@@ -104,6 +104,35 @@ describe('temba-ticket-list', () => {
     );
   });
 
+  it('stays within a flex column when a closed ticket has a long name', async () => {
+    const column: HTMLElement = await fixture(
+      `<div style="display:flex; width:300px">
+        <temba-ticket-list style="flex-grow:1"></temba-ticket-list>
+      </div>`
+    );
+    const list = column.querySelector('temba-ticket-list') as TicketList;
+
+    // a closed ticket's name doesn't wrap, so its row can't be narrower than
+    // the whole name
+    list.items = [
+      openTicket('o1', '2024-01-02T00:00:00.000Z'),
+      {
+        ...closedTicket('c1', '2024-01-01T00:00:00.000Z'),
+        name: 'Long Name '.repeat(50)
+      }
+    ];
+    await list.updateComplete;
+    const options = list.shadowRoot.querySelector('temba-options');
+    await (options as any).updateComplete;
+
+    assert.equal(options.shadowRoot.querySelectorAll('.option').length, 2);
+    assert.equal(list.getBoundingClientRect().width, 300);
+
+    // and the rows don't overflow the list either
+    const scroll = options.shadowRoot.querySelector('.options-scroll');
+    assert.isAtMost(scroll.scrollWidth, scroll.clientWidth);
+  });
+
   it('shows an empty message when there are no tickets', async () => {
     await loadStore();
     const list = await getList('/test/assets/list/tickets-empty.json');
