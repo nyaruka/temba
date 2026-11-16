@@ -11,7 +11,7 @@ from temba.utils.uuid import uuid4
 
 
 class FlowActivityCountTest(TembaTest):
-    def test_node_counts(self):
+    def test_no_node_counts(self):
         flow = self.create_flow("Test 1")
         contact = self.create_contact("Bob", phone="+1234567890")
 
@@ -34,11 +34,6 @@ class FlowActivityCountTest(TembaTest):
         run3 = create_run(FlowRun.STATUS_WAITING, "bbb71aab-e026-442e-9971-6bc4f48941fb")
         create_run(FlowRun.STATUS_INTERRUPTED, "bbb71aab-e026-442e-9971-6bc4f48941fb")
 
-        self.assertEqual(
-            {"node:ebb534e1-e2e0-40e9-8652-d195e87d832b": 2, "node:bbb71aab-e026-442e-9971-6bc4f48941fb": 1},
-            flow.counts.prefix("node:").scope_totals(),
-        )
-
         run1.status = FlowRun.STATUS_EXPIRED
         run1.exited_on = timezone.now()
         run1.save(update_fields=("status", "exited_on"))
@@ -46,26 +41,10 @@ class FlowActivityCountTest(TembaTest):
         run3.current_node_uuid = "85b0c928-4bd9-4a2e-84b2-164802c32486"
         run3.save(update_fields=("current_node_uuid",))
 
-        self.assertEqual(
-            {
-                "node:ebb534e1-e2e0-40e9-8652-d195e87d832b": 1,
-                "node:bbb71aab-e026-442e-9971-6bc4f48941fb": 0,
-                "node:85b0c928-4bd9-4a2e-84b2-164802c32486": 1,
-            },
-            flow.counts.prefix("node:").scope_totals(),
-        )
-
-        # deleting runs decrements the node counts of any still active or waiting
         FlowRun.objects.all().delete()
 
-        self.assertEqual(
-            {
-                "node:ebb534e1-e2e0-40e9-8652-d195e87d832b": 0,
-                "node:bbb71aab-e026-442e-9971-6bc4f48941fb": 0,
-                "node:85b0c928-4bd9-4a2e-84b2-164802c32486": 0,
-            },
-            flow.counts.prefix("node:").scope_totals(),
-        )
+        # runs at each node are counted by flow tallies which mailroom writes
+        self.assertFalse(flow.counts.prefix("node:").exists())
 
     def test_status_counts(self):
         contact = self.create_contact("Bob", phone="+1234567890")

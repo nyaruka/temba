@@ -160,11 +160,6 @@ BEGIN
     SELECT flow_id, format('status:%s', status), -count(*), FALSE FROM oldtab
     WHERE status IN ('A', 'W') GROUP BY 1, 2;
 
-    -- add negative node counts for any deleted runs sitting at a node
-    INSERT INTO flows_flowactivitycount("flow_id", "scope", "count", "is_squashed")
-    SELECT flow_id, format('node:%s', current_node_uuid), -count(*), FALSE FROM oldtab
-    WHERE status IN ('A', 'W') AND current_node_uuid IS NOT NULL GROUP BY 1, 2;
-
     RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
@@ -181,11 +176,6 @@ BEGIN
     -- add start counts for all new start values
     INSERT INTO flows_flowstartcount("start_id", "count", "is_squashed")
     SELECT start_id, count(*), FALSE FROM newtab WHERE start_id IS NOT NULL GROUP BY start_id;
-
-    -- add node counts for all new current node values
-    INSERT INTO flows_flowactivitycount("flow_id", "scope", "count", "is_squashed")
-    SELECT flow_id, format('node:%s', current_node_uuid), count(*), FALSE FROM newtab
-    WHERE status IN ('A', 'W') AND current_node_uuid IS NOT NULL GROUP BY 1, 2;
 
     RETURN NULL;
 END;
@@ -208,20 +198,6 @@ BEGIN
     SELECT n.flow_id, format('status:%s', n.status), count(*), FALSE FROM newtab n
     INNER JOIN oldtab o ON o.id = n.id
     WHERE o.status != n.status
-    GROUP BY 1, 2;
-
-    -- add negative node counts for all old current node values that don't match the new ones
-    INSERT INTO flows_flowactivitycount("flow_id", "scope", "count", "is_squashed")
-    SELECT o.flow_id, format('node:%s', o.current_node_uuid), -count(*), FALSE FROM oldtab o
-    INNER JOIN newtab n ON n.id = o.id
-    WHERE o.current_node_uuid IS NOT NULL AND o.status IN ('A', 'W') AND (o.current_node_uuid != n.current_node_uuid OR n.status NOT IN ('A', 'W'))
-    GROUP BY 1, 2;
-
-    -- add node counts for all new current node values that don't match the old ones
-    INSERT INTO flows_flowactivitycount("flow_id", "scope", "count", "is_squashed")
-    SELECT n.flow_id, format('node:%s', n.current_node_uuid), count(*), FALSE FROM newtab n
-    INNER JOIN oldtab o ON o.id = n.id
-    WHERE n.current_node_uuid IS NOT NULL AND o.current_node_uuid != n.current_node_uuid AND n.status IN ('A', 'W')
     GROUP BY 1, 2;
 
     RETURN NULL;
