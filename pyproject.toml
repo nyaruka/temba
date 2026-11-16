@@ -1,6 +1,6 @@
 [project]
 name = "temba"
-version = "26.3.196"
+version = "26.3.197"
 description = "Hosted service for visually building interactive messaging applications"
 authors = [
     {"name" = "Nyaruka", "email" = "code@nyaruka.com"}

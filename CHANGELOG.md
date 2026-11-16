@@ -1,3 +1,11 @@
+## v26.3.197 (2026-11-16)
+ * Show invitation accepted notifications in the UI as well as by email
+ * Return 400 instead of 500 when deleting a group used by an archived campaign via the API
+ * Ignore deleted triggers when deleting a group via the API
+ * Backfill node tallies and read node counts from them
+ * Remove unused login, password recovery, two-factor and email templates
+ * Bump dnspython from 2.9.0 to 2.9.2
+
 ## v26.3.196 (2026-11-13)
  * Backfill call tallies and show them on channel activity
 
