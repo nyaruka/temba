@@ -208,7 +208,18 @@ class GroupsEndpointTest(APITest):
         self.assertDelete(
             endpoint_url + f"?uuid={customers.uuid}",
             self.admin,
-            errors={None: "Group is being used by campaigns which must be archived first."},
+            errors={None: "Group is being used by campaigns which must be deleted first."},
+            status=400,
+        )
+
+        # even if that campaign is archived
+        campaign.is_archived = True
+        campaign.save(update_fields=("is_archived",))
+
+        self.assertDelete(
+            endpoint_url + f"?uuid={customers.uuid}",
+            self.admin,
+            errors={None: "Group is being used by campaigns which must be deleted first."},
             status=400,
         )
 
