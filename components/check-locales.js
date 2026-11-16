@@ -26,10 +26,19 @@ function snapshot() {
 const before = snapshot();
 // locale:build logs into dist/
 fs.mkdirSync(path.join(__dirname, 'dist'), { recursive: true });
-execSync('bun run locale:extract && bun run locale:build', {
-  cwd: __dirname,
-  stdio: 'ignore'
-});
+try {
+  execSync('bun run locale:extract && bun run locale:build', {
+    cwd: __dirname,
+    stdio: 'pipe'
+  });
+} catch (error) {
+  console.error(error.stdout.toString(), error.stderr.toString());
+  const buildLog = path.join(__dirname, 'dist', 'locale.out');
+  if (fs.existsSync(buildLog)) {
+    console.error(fs.readFileSync(buildLog, 'utf8'));
+  }
+  process.exit(1);
+}
 const after = snapshot();
 
 const changed = Object.keys({ ...before, ...after })
@@ -40,7 +49,7 @@ const untranslated = [];
 for (const locale of config.targetLocales) {
   const xliff = after[path.join(XLIFF_DIR, `${locale}.xlf`)];
   for (const unit of xliff.match(/<trans-unit[\s\S]*?<\/trans-unit>/g) || []) {
-    if (!unit.includes('<target>')) {
+    if (!/<target(\s[^>]*)?>\s*\S[\s\S]*?<\/target>/.test(unit)) {
       const source = unit.match(/<source>([\s\S]*?)<\/source>/)[1];
       untranslated.push(`${locale}: ${source}`);
     }
