@@ -6,15 +6,16 @@ from smartmin.views import SmartFormView
 from django import forms
 from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect, JsonResponse
+from django.template import RequestContext
 from django.urls import reverse
 from django.utils.http import urlencode
 from django.utils.translation import gettext_lazy as _
 
 from temba.channels.models import Channel
-from temba.channels.views import BaseClaimNumberMixin, ChannelTypeMixin, ClaimViewMixin
+from temba.channels.views import BaseClaimNumberMixin, ChannelTypeMixin, ClaimModalMixin, ClaimViewMixin
 from temba.orgs.views.mixins import OrgPermsMixin
 from temba.utils import countries
-from temba.utils.fields import SelectWidget
+from temba.utils.fields import InputWidget, SelectWidget
 from temba.utils.http import http_headers
 
 SUPPORTED_COUNTRIES = {
@@ -68,6 +69,10 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         auth_id = self.request.session.get(self.channel_type.CONFIG_AUTH_ID, None)
         auth_token = self.request.session.get(self.channel_type.CONFIG_AUTH_TOKEN, None)
 
+        # without credentials there's nothing to check, they just need to be entered
+        if not auth_id or not auth_token:
+            return HttpResponseRedirect(reverse("channels.types.plivo.connect"))
+
         # check we have valid credentials
         headers = http_headers(extra={"Content-Type": "application/json"})
         response = requests.get(
@@ -75,7 +80,10 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         )
 
         if response.status_code != 200:
-            return HttpResponseRedirect(reverse("channels.types.plivo.connect"))
+            # the credentials we have aren't working, so ask for them again rather than reusing them
+            self.request.session.pop(self.channel_type.CONFIG_AUTH_ID, None)
+            self.request.session.pop(self.channel_type.CONFIG_AUTH_TOKEN, None)
+            return HttpResponseRedirect(reverse("channels.types.plivo.connect") + "?reset_creds=reset&invalid_creds=1")
 
         return super().pre_process(request, *args, **kwargs)
 
@@ -219,16 +227,20 @@ class SearchView(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
             return JsonResponse({"error": str(e)})
 
 
-class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
+class Connect(ClaimModalMixin, ChannelTypeMixin, OrgPermsMixin, SmartFormView):
     class PlivoConnectForm(forms.Form):
-        auth_id = forms.CharField(label=_("Auth ID"))
-        auth_token = forms.CharField(label=_("Auth Token"))
+        auth_id = forms.CharField(label=_("Auth ID"), widget=InputWidget())
+        auth_token = forms.CharField(label=_("Auth Token"), widget=InputWidget())
 
         def clean(self):
             super().clean()
 
             auth_id = self.cleaned_data.get("auth_id", None)
             auth_token = self.cleaned_data.get("auth_token", None)
+
+            # the field level errors already say what's missing
+            if not auth_id or not auth_token:
+                return self.cleaned_data
 
             headers = http_headers(extra={"Content-Type": "application/json"})
 
@@ -248,10 +260,18 @@ class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
     submit_button_name = _("Save")
     template_name = "channels/types/plivo/connect.html"
     success_message = _("Plivo credentials verified. You can now add a Plivo channel.")
-    menu_path = "/settings/workspace"
+    menu_path = "/settings/channels"
 
     def get_success_url(self):
         return reverse("channels.types.plivo.claim")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # we were sent here because the credentials we had stopped working
+        context["invalid_creds"] = "invalid_creds" in self.request.GET
+        context["claim_blurb"] = self.channel_type.get_claim_blurb().render(RequestContext(self.request))
+        return context
 
     def pre_process(self, request, *args, **kwargs):
         reset_creds = self.request.GET.get("reset_creds", "")
@@ -261,13 +281,13 @@ class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
             org.channels.filter(is_active=True, channel_type=self.channel_type.code).order_by("-created_on").first()
         )
 
-        if last_plivo_channel and not reset_creds:
-            self.request.session[self.channel_type.CONFIG_AUTH_ID] = last_plivo_channel.config.get(
-                self.channel_type.CONFIG_AUTH_ID, ""
-            )
-            self.request.session[self.channel_type.CONFIG_AUTH_TOKEN] = last_plivo_channel.config.get(
-                self.channel_type.CONFIG_AUTH_TOKEN, ""
-            )
+        last_id = last_plivo_channel.config.get(self.channel_type.CONFIG_AUTH_ID) if last_plivo_channel else None
+        last_token = last_plivo_channel.config.get(self.channel_type.CONFIG_AUTH_TOKEN) if last_plivo_channel else None
+
+        # reuse the credentials of the last Plivo channel, if it has some - without, we'd only be sent back here
+        if last_id and last_token and not reset_creds:
+            self.request.session[self.channel_type.CONFIG_AUTH_ID] = last_id
+            self.request.session[self.channel_type.CONFIG_AUTH_TOKEN] = last_token
             return HttpResponseRedirect(self.get_success_url())
 
         return super().pre_process(request, *args, **kwargs)

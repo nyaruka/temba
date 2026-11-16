@@ -32,12 +32,13 @@ class SignalWireClaimView(ClaimViewMixin, SmartFormView):
         )
         project_key = forms.CharField(
             max_length=64,
-            label=_("Project Key"),
+            label=_("Project ID"),
             widget=forms.TextInput(attrs={"placeholder": _("e.g. 990c5c10-bf8f-4156-b014-44282e60b3a1")}),
         )
         api_token = forms.CharField(
             max_length=64,
             required=False,
+            label=_("API Token"),
             widget=InputWidget(
                 attrs={"placeholder": _("e.g. FPd199eb93e878f8a3tw9ttna313914tnauwy"), "optional": False}
             ),
@@ -105,6 +106,7 @@ class SignalWireClaimView(ClaimViewMixin, SmartFormView):
 
         role = Channel.ROLE_SEND + Channel.ROLE_RECEIVE
         address = number
+        name = number
 
         # parse our long code to figure out our name
         if len(number) > 6:
@@ -120,7 +122,14 @@ class SignalWireClaimView(ClaimViewMixin, SmartFormView):
             Channel.CONFIG_CALLBACK_DOMAIN: org.get_brand_domain(),
         }
 
-        self.object = Channel.create(
-            org, user, country, self.channel_type, name=name, address=address, config=config, role=role
-        )
+        # activating finds the number on the account and registers our URLs with it, and the channel is removed again
+        # if that fails, e.g. because the credentials are wrong
+        try:
+            self.object = Channel.create(
+                org, user, country, self.channel_type, name=name, address=address, config=config, role=role
+            )
+        except ValidationError as e:
+            form.add_error(None, e)
+            return self.form_invalid(form)
+
         return super().form_valid(form)

@@ -8,6 +8,7 @@ from twilio.base.exceptions import TwilioException, TwilioRestException
 from django import forms
 from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect, JsonResponse
+from django.template import RequestContext
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
@@ -17,7 +18,14 @@ from temba.utils.fields import InputWidget, SelectWidget
 from temba.utils.timezones import timezone_to_country_code
 
 from ...models import Channel
-from ...views import ALL_COUNTRIES, BaseClaimNumberMixin, ChannelTypeMixin, ClaimViewMixin, UpdateChannelForm
+from ...views import (
+    ALL_COUNTRIES,
+    BaseClaimNumberMixin,
+    ChannelTypeMixin,
+    ClaimModalMixin,
+    ClaimViewMixin,
+    UpdateChannelForm,
+)
 from .client import TwilioClient
 
 SUPPORTED_COUNTRIES = {
@@ -110,8 +118,12 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
                 )
             self.account = self.client.api.account.fetch()
         except TwilioRestException:
+            # the credentials we have aren't working, so ask for them again rather than reusing them
+            self.request.session.pop(self.channel_type.SESSION_ACCOUNT_SID, None)
+            self.request.session.pop(self.channel_type.SESSION_AUTH_TOKEN, None)
             return HttpResponseRedirect(
                 f"{reverse('channels.types.twilio.connect')}?claim_type={self.channel_type.slug}"
+                "&reset_creds=reset&invalid_creds=1"
             )
 
         return super().pre_process(request, *args, **kwargs)
@@ -363,7 +375,7 @@ class UpdateForm(UpdateChannelForm):
         fields = ("name", "is_enabled")
 
 
-class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
+class Connect(ClaimModalMixin, ChannelTypeMixin, OrgPermsMixin, SmartFormView):
     class TwilioConnectForm(forms.Form):
         account_sid = forms.CharField(label=_("Account SID"), widget=InputWidget(), required=True)
         account_token = forms.CharField(label=_("Auth Token"), widget=InputWidget(), required=True)
@@ -391,7 +403,7 @@ class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
     submit_button_name = _("Save")
     success_message = _("Twilio Account successfully connected.")
     template_name = "channels/types/twilio/connect.html"
-    menu_path = "/settings/channels/new-channel"
+    menu_path = "/settings/channels"
     title = _("Connect Twilio")
 
     def pre_process(self, request, *args, **kwargs):
@@ -402,18 +414,32 @@ class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
             org.channels.filter(is_active=True, channel_type__in=["T", "TMS", "TWA"]).order_by("-created_on").first()
         )
 
-        if last_twilio_channel and not reset_creds:
-            # add the credentials to the session
-            self.request.session[self.channel_type.SESSION_ACCOUNT_SID] = last_twilio_channel.config.get(
-                Channel.CONFIG_ACCOUNT_SID, ""
-            )
-            self.request.session[self.channel_type.SESSION_AUTH_TOKEN] = last_twilio_channel.config.get(
-                Channel.CONFIG_AUTH_TOKEN, ""
-            )
+        last_sid = last_twilio_channel.config.get(Channel.CONFIG_ACCOUNT_SID) if last_twilio_channel else None
+        last_token = last_twilio_channel.config.get(Channel.CONFIG_AUTH_TOKEN) if last_twilio_channel else None
+
+        # reuse the credentials of the last Twilio channel, if it has some - without, we'd only be sent back here
+        if last_sid and last_token and not reset_creds:
+            self.request.session[self.channel_type.SESSION_ACCOUNT_SID] = last_sid
+            self.request.session[self.channel_type.SESSION_AUTH_TOKEN] = last_token
 
             return HttpResponseRedirect(self.get_success_url())
 
         return super().pre_process(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # we were sent here because the credentials we had stopped working
+        context["invalid_creds"] = "invalid_creds" in self.request.GET
+
+        # the story of the type being connected, as on its own claim page
+        claim_type = {"twilio_messaging_service": "TMS", "twilio_whatsapp": "TWA"}.get(
+            self.request.GET.get("claim_type"), "T"
+        )
+        context["claim_blurb"] = (
+            Channel.get_type_from_code(claim_type).get_claim_blurb().render(RequestContext(self.request))
+        )
+        return context
 
     def get_success_url(self):
         claim_type = self.request.GET.get("claim_type", "twilio")
@@ -427,7 +453,7 @@ class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
         if claim_type == "twilio":
             return reverse("channels.types.twilio.claim")
 
-        return reverse("channels.channel_claim")
+        return reverse("channels.channel_list")
 
     def form_valid(self, form):
         account_sid = form.cleaned_data["account_sid"]

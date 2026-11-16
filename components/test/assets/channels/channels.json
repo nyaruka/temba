@@ -1,0 +1,188 @@
+{
+  "count": 4,
+  "next": null,
+  "previous": null,
+  "paged_by": "page",
+  "results": [
+    {
+      "uuid": "c-001",
+      "name": "Registration Line",
+      "type": "WAC",
+      "address": "+1 206-555-0142",
+      "is_enabled": true,
+      "speed": null,
+      "received": 94,
+      "sent": 162,
+      "activity": {
+        "in": [
+          3,
+          5,
+          2,
+          8,
+          6,
+          4,
+          9,
+          7,
+          5,
+          8,
+          6,
+          9,
+          10,
+          12
+        ],
+        "out": [
+          8,
+          9,
+          7,
+          12,
+          10,
+          8,
+          14,
+          13,
+          9,
+          12,
+          11,
+          15,
+          16,
+          18
+        ]
+      },
+      "created_on": "2026-10-01T09:00:00Z"
+    },
+    {
+      "uuid": "c-002",
+      "name": "US Reminders",
+      "type": "T",
+      "address": "+1 415-555-0110",
+      "is_enabled": true,
+      "speed": "very_slow",
+      "received": 0,
+      "sent": 40,
+      "activity": {
+        "in": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          40
+        ]
+      },
+      "created_on": "2026-10-01T09:00:00Z"
+    },
+    {
+      "uuid": "c-003",
+      "name": "Field Phone",
+      "type": "A",
+      "address": "+250 788 123 123",
+      "is_enabled": true,
+      "speed": "slow",
+      "received": 0,
+      "sent": 0,
+      "activity": {
+        "in": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "created_on": "2026-10-01T09:00:00Z"
+    },
+    {
+      "uuid": "c-004",
+      "name": "Old Shortcode",
+      "type": "NX",
+      "address": "8255",
+      "is_enabled": false,
+      "speed": null,
+      "received": 0,
+      "sent": 0,
+      "activity": {
+        "in": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "created_on": "2026-10-01T09:00:00Z"
+    }
+  ]
+}

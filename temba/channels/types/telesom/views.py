@@ -2,17 +2,14 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from temba.channels.models import Channel
-from temba.channels.views import ALL_COUNTRIES, AuthenticatedExternalClaimView, ClaimViewMixin
-from temba.utils.fields import ExternalURLField, SelectWidget
+from temba.channels.views import AuthenticatedExternalClaimView, ClaimViewMixin
+from temba.utils.fields import ExternalURLField
 
 
 class ClaimView(AuthenticatedExternalClaimView):
     class TelesomForm(ClaimViewMixin.Form):
-        country = forms.ChoiceField(
-            choices=ALL_COUNTRIES, widget=SelectWidget(attrs={"searchable": True}), label=_("Country")
-        )
-        number = forms.CharField(max_length=14, min_length=1, label=_("Number"))
-        url = ExternalURLField(label=_("URL"), help_text=_("Used to send messages."))
+        number = forms.CharField(max_length=14, min_length=1, label=_("Short Code"))
+        url = ExternalURLField(label=_("Send URL"))
         username = forms.CharField(label=_("Username"))
         password = forms.CharField(label=_("Password"))
         secret = forms.CharField(label=_("Private Key"))

@@ -1,5 +1,7 @@
+import json
 import logging
 from abc import ABCMeta
+from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from enum import Enum
@@ -23,7 +25,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 from temba import mailroom
-from temba.orgs.models import DependencyMixin, Org, OrgTally
+from temba.orgs.models import BaseTally, DependencyMixin, Org
 from temba.utils import dynamo, on_transaction_commit, redact
 from temba.utils.models import (
     JSONAsTextField,
@@ -95,7 +97,7 @@ class ChannelType(metaclass=ABCMeta):
 
     unique_addresses = False
 
-    # max messages per second set on new channels of this type which aren't given their own value
+    # max messages per second set on new channels of this type which aren't given their own value, if not the default
     tps = None
 
     schemes = None
@@ -154,9 +156,20 @@ class ChannelType(metaclass=ABCMeta):
     def icon(self):
         return f"channel_{self.code.lower()}"
 
+    @property
+    def picker_category(self) -> str | None:
+        """
+        The group this type is listed under in the new channel picker
+        """
+        return {
+            ChannelType.Category.SOCIAL_MEDIA: "social",
+            ChannelType.Category.PHONE: "phone",
+            ChannelType.Category.API: "api",
+        }.get(self.category)
+
     def get_claim_blurb(self):
         """
-        Gets the blurb for use on the claim page list of channel types
+        Gets the blurb which introduces the type above its claim form
         """
         return Engine.get_default().from_string(self.claim_blurb)
 
@@ -260,6 +273,19 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
     CONFIG_API_ID = "api_id"
     CONFIG_API_KEY = "api_key"
     CONFIG_USE_NATIONAL = "use_national"
+
+    # how many days of daily counts the list view's activity sparkline shows - matches Flow.ACTIVITY_SERIES_DAYS
+    ACTIVITY_SERIES_DAYS = 14
+
+    DEFAULT_TPS = 10
+
+    # channels sending fewer messages per second than this are flagged as slow, and at or under the very slow limit as
+    # very slow
+    SLOW_TPS = 10
+    VERY_SLOW_TPS = 1
+
+    # speed only matters when sending to a lot of contacts, so it's only flagged for workspaces with more than this
+    SPEED_MIN_CONTACTS = 50_000
     CONFIG_ENCODING = "encoding"
     CONFIG_PAGE_NAME = "page_name"
 
@@ -287,12 +313,17 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         (ENCODING_UNICODE, _("Unicode Encoding")),
     )
 
-    # suffixes of the per-channel message tally scopes
+    # scopes of the daily channel message tallies, without their @<day> suffix
     TALLY_TEXT_IN = "text:in"
     TALLY_TEXT_OUT = "text:out"
     TALLY_VOICE_IN = "voice:in"
     TALLY_VOICE_OUT = "voice:out"
-    TALLY_SCOPES = (TALLY_TEXT_IN, TALLY_TEXT_OUT, TALLY_VOICE_IN, TALLY_VOICE_OUT)
+    TALLY_MSG_SCOPES = (TALLY_TEXT_IN, TALLY_TEXT_OUT, TALLY_VOICE_IN, TALLY_VOICE_OUT)
+    TALLY_RETENTION_DAYS = 365  # daily tallies are trimmed after a while, so how far back they can be relied on
+
+    # scopes of the daily channel call tallies, which aren't messages so aren't in TALLY_MSG_SCOPES
+    TALLY_CALLS_IN = "calls:in"
+    TALLY_CALLS_OUT = "calls:out"
 
     # the role types for our channels
     ROLE_SEND = "S"
@@ -336,7 +367,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
     config = models.JSONField(default=dict)
     schemes = ArrayField(models.CharField(max_length=16), default=_get_default_channel_scheme)
     role = models.CharField(max_length=4, default=DEFAULT_ROLE)
-    tps = models.IntegerField(null=True)
+    tps = models.PositiveIntegerField(default=DEFAULT_TPS)
     is_enabled = models.BooleanField(default=True)
 
     # Android relayer specific fields
@@ -393,7 +424,9 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         create_args.update(kwargs)
 
         if create_args.get("tps") is None:
-            create_args["tps"] = channel_type.tps
+            create_args["tps"] = channel_type.tps or cls.DEFAULT_TPS
+
+        assert create_args["tps"] > 0, "channel TPS must be positive"
 
         if "uuid" not in create_args:
             create_args["uuid"] = generate_uuid()
@@ -680,17 +713,143 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         delete_in_batches(self.sync_events.all())
         delete_in_batches(self.http_logs.all())
         delete_in_batches(self.template_translations.all())
-        delete_in_batches(self.org.org_tallies.filter(scope__startswith=f"channels/{self.id}/"), pk="pk")
+        delete_in_batches(self.tallies.all(), pk="pk")
 
         super().delete()
 
-    def get_daily_counts(self, since: date, until: date) -> dict[tuple[date, str], int]:
+    def get_daily_counts(self, since: date, until: date, scopes=TALLY_MSG_SCOPES) -> dict[tuple[date, str], int]:
         """
-        Gets message counts by day and scope, e.g. text:in, over days from since up to until.
+        Gets counts by day and scope, e.g. text:in, over days from since up to until, of messages unless other scopes
+        are given.
         """
-        prefix = f"channels/{self.id}/"
-        totals = OrgTally.get_daily_totals(self.org, [prefix + s for s in self.TALLY_SCOPES], since, until)
-        return {(day, scope.removeprefix(prefix)): count for (day, scope), count in totals.items()}
+        totals = ChannelTally.get_daily_totals_by_channel([self], list(scopes), since, until)
+        return {(day, scope): count for (_, day, scope), count in totals.items()}
+
+    def has_received(self) -> bool:
+        """
+        Whether this channel has received any messages since it was added, i.e. whether its setup on the provider's side
+        is working. Daily counts are only kept for so long, so a channel older than that is taken to have.
+        """
+        # from the day before it was added, as counts and the workspace's timezone needn't agree on what day that was
+        # (and there can't be counts from before then anyway)
+        today = timezone.now().date()
+        since = self.created_on.date() - timedelta(days=1)
+        if since < today - timedelta(days=self.TALLY_RETENTION_DAYS):
+            return True
+
+        until = today + timedelta(days=1)
+        counts = self.get_daily_counts(since, until)
+        return any(count > 0 for (_, scope), count in counts.items() if scope.endswith(":in"))
+
+    def get_speed(self) -> str | None:
+        """
+        Gets whether this channel is slow ("slow") or very slow ("very_slow") to send, judging by its messages per
+        second limit, or None if it isn't slow
+        """
+        if not self.is_enabled:
+            return None
+        if self.tps <= self.VERY_SLOW_TPS:
+            return "very_slow"
+        if self.tps < self.SLOW_TPS:
+            return "slow"
+        return None
+
+    @classmethod
+    def prefetch_activity_series(cls, channels):
+        """
+        Prefetches the daily counts required by get_activity_series, in one read for channels of the same workspace
+        """
+
+        channels = list(channels)
+        if not channels:
+            return
+
+        since, until = cls._get_activity_period()
+        totals = ChannelTally.get_daily_totals_by_channel(channels, list(cls.TALLY_MSG_SCOPES), since, until)
+
+        by_channel = defaultdict(dict)
+        for (channel_id, day, scope), count in totals.items():
+            by_channel[channel_id][(day, scope)] = count
+
+        for channel in channels:
+            channel._activity_counts = by_channel.get(channel.id, {})
+
+    @classmethod
+    def _get_activity_period(cls) -> tuple[date, date]:
+        today = timezone.now().date()
+        return today - timedelta(days=cls.ACTIVITY_SERIES_DAYS - 1), today + timedelta(days=1)
+
+    def get_daily_series(self, num_days: int) -> dict:
+        """
+        Messages (text and voice) received and sent each day over the last num_days including today, oldest first, as
+        lists of days, received counts and sent counts
+        """
+        today = timezone.now().date()
+        since = today - timedelta(days=num_days - 1)
+        counts = self.get_daily_counts(since, today + timedelta(days=1))
+
+        received, sent = defaultdict(int), defaultdict(int)
+        for (day, scope), count in counts.items():
+            (received if scope.endswith(":in") else sent)[day] += count
+
+        days = [since + timedelta(days=d) for d in range(num_days)]
+        return {"days": days, "in": [received[d] for d in days], "out": [sent[d] for d in days]}
+
+    @staticmethod
+    def get_activity_chart_json(series: dict) -> str:
+        """
+        A daily series as the data of a temba-activity-chart
+        """
+        return json.dumps(
+            {
+                "days": [d.isoformat() for d in series["days"]],
+                "series": [
+                    {"label": str(_("Outgoing")), "values": series["out"]},
+                    {"label": str(_("Incoming")), "values": series["in"]},
+                ],
+            }
+        )
+
+    def get_activity_series(self) -> dict:
+        """
+        Daily counts of incoming and outgoing messages (text and voice) for the last ACTIVITY_SERIES_DAYS days (oldest
+        first) - drives the list view sparkline.
+        """
+
+        since, until = self._get_activity_period()
+        if hasattr(self, "_activity_counts"):
+            counts = self._activity_counts
+        else:
+            counts = self.get_daily_counts(since, until)
+
+        days = [since + timedelta(days=d) for d in range(self.ACTIVITY_SERIES_DAYS)]
+
+        def series(direction: str) -> list[int]:
+            scopes = [s for s in self.TALLY_MSG_SCOPES if s.endswith(f":{direction}")]
+            return [sum(counts.get((day, s), 0) for s in scopes) for day in days]
+
+        return {"in": series("in"), "out": series("out")}
+
+    def as_json(self, context=None) -> dict:
+        """
+        Internal API shape, consumed by the temba-channel-list component. The activity series and its totals come
+        from the daily counts (bulk-loaded by the list endpoint via prefetch_activity_series).
+        """
+
+        activity = self.get_activity_series()
+
+        return {
+            "uuid": str(self.uuid),
+            "name": self.name,
+            "type": self.channel_type,
+            "address": self.get_address_display(),
+            "is_enabled": self.is_enabled,
+            "speed": self.get_speed() if (context or {}).get("show_speed") else None,
+            "received": sum(activity["in"]),
+            "sent": sum(activity["out"]),
+            "activity": activity,
+            "created_on": self.created_on.isoformat(),
+        }
 
     class Meta:
         ordering = ("-last_seen", "-pk")
@@ -701,6 +860,35 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
                 fields=("last_seen",),
                 condition=Q(channel_type="A", is_active=True, last_seen__isnull=False),
             ),
+        ]
+        constraints = [models.CheckConstraint(condition=Q(tps__gt=0), name="channel_tps_positive")]
+
+
+class ChannelTally(BaseTally):
+    """
+    Channel-level totals of things which only go up, e.g. daily message counts.
+    """
+
+    owner_field = "channel"
+    field_prefixes = ("C",)
+
+    pk = models.CompositePrimaryKey("channel", "scope")
+    channel = models.ForeignKey(Channel, on_delete=models.PROTECT, related_name="tallies", db_index=False)  # leads key
+
+    @classmethod
+    def get_daily_totals_by_channel(
+        cls, channels, scopes: list[str], since: date, until: date
+    ) -> dict[tuple[int, date, str], int]:
+        """
+        Gets totals by channel id, day and scope for the given undated scopes of each of the given channels over days
+        from since up to until, omitting those with no total.
+        """
+        return cls._get_daily_totals([c.id for c in channels], scopes, since, until)
+
+    class Meta:
+        indexes = [
+            # for trimming
+            models.Index(name="channeltally_expires_on", fields=("expires_on",), condition=Q(expires_on__isnull=False))
         ]
 
 

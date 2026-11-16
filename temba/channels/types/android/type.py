@@ -18,7 +18,9 @@ class AndroidType(ChannelType):
     schemes = [URN.TEL_SCHEME]
 
     claim_blurb = _(
-        "Works in any country and uses the cell phone plan you already have. You just need an Android phone to get started."
+        "An Android phone can send and receive messages for you using the SIM card and plan it already has, so you can "
+        "get started in any country without an account with a messaging provider. Contacts text the phone's number, "
+        "and messages are charged to its plan."
     )
     claim_view = ClaimView
 

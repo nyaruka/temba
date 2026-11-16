@@ -2825,6 +2825,10 @@
   <source>Set <x id="0" equiv-text="&lt;strong&gt;${action.field.name}&lt;/strong&gt;"/> to <x id="1" equiv-text="${value}"/></source>
   <target>Definir <x id="0" equiv-text="&lt;strong&gt;${action.field.name}&lt;/strong&gt;"/> como <x id="1" equiv-text="${value}"/></target>
 </trans-unit>
+<trans-unit id="s5898d8dbeded12e8">
+  <source><x id="0" equiv-text="${notification.user.email}"/> joined your workspace</source>
+  <target><x id="0" equiv-text="${notification.user.email}"/> entrou no seu espaço de trabalho</target>
+</trans-unit>
 </body>
 </file>
 </xliff>

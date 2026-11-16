@@ -75,6 +75,36 @@ describe('temba-notification-list', () => {
     await assertScreenshot('list/notifications', getClip(list));
   });
 
+  it('renders a user joining the workspace', async () => {
+    const list = await createList({ endpoint: ENDPOINT });
+    await new Promise<void>((resolve) => {
+      list.addEventListener(
+        CustomEventType.FetchComplete,
+        () => {
+          resolve();
+        },
+        { once: true }
+      );
+    });
+    clock.tick(0);
+
+    mockSocket.publish(CHANNEL, {
+      type: 'invitation:accepted',
+      created_on: '2021-03-31T00:00:00.000000Z',
+      url: '/notification/read/4/',
+      is_seen: false,
+      user: { email: 'bob@example.com' }
+    });
+    await list.updateComplete;
+
+    const options = list.shadowRoot.querySelector('temba-options');
+    await (options as any).updateComplete;
+    expect(options.shadowRoot.textContent).to.contain(
+      'bob@example.com joined your workspace'
+    );
+    await assertScreenshot('list/notifications-invitation', getClip(list));
+  });
+
   it('shows an empty message when there are no notifications', async () => {
     const list = await getList({
       endpoint: '/test/assets/list/notifications-empty.json'

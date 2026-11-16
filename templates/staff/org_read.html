@@ -9,6 +9,11 @@
           {% trans "Anonymous" %}
         </temba-label>
       {% endif %}
+      {% if org.is_internal %}
+        <temba-label icon="workspace" backgroundcolor="#eee" textcolor="#999" class="mr-2">
+          {% trans "Internal" %}
+        </temba-label>
+      {% endif %}
       {% if org.is_suspended %}
         <temba-label icon="slash" backgroundcolor="#eee" textcolor="#999" class="mr-2">
           {% trans "Suspended" %}

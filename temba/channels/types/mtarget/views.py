@@ -18,8 +18,14 @@ class ClaimView(ClaimViewMixin, SmartFormView):
         username = forms.CharField(label=_("Username"))
         password = forms.CharField(label=_("Password"))
 
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+            # most services are in the workspace's own country
+            if country := self.request.org.default_country_code:
+                self.fields["country"].initial = country
+
     form_class = Form
-    template_name = "channels/channel_claim_form.html"
 
     def form_valid(self, form):
         data = form.cleaned_data

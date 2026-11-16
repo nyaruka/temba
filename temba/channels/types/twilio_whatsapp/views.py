@@ -90,8 +90,12 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
                 )
             self.account = self.client.api.account.fetch()
         except TwilioRestException:
+            # the credentials we have aren't working, so ask for them again rather than reusing them
+            self.request.session.pop(self.channel_type.SESSION_ACCOUNT_SID, None)
+            self.request.session.pop(self.channel_type.SESSION_AUTH_TOKEN, None)
             return HttpResponseRedirect(
                 f"{reverse('channels.types.twilio.connect')}?claim_type={self.channel_type.slug}"
+                "&reset_creds=reset&invalid_creds=1"
             )
 
         return super().pre_process(request, *args, **kwargs)

@@ -1,8 +1,10 @@
 {% extends "channels/channel_claim_form.html" %}
 {% load i18n %}
 
-{% block pre-form %}
-  {% blocktrans trimmed %}
-    You can connect your number by entering your credentials here.
-  {% endblocktrans %}
-{% endblock pre-form %}
+{% block form-lead %}
+  <div class="mt-4">
+    {% blocktrans trimmed %}
+      To get started, you'll need your number along with the sender ID, service ID, username and password MACROKIOSK gives you.
+    {% endblocktrans %}
+  </div>
+{% endblock form-lead %}

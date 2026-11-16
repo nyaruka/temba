@@ -1,6 +1,5 @@
 {% extends "channels/channel_claim_form.html" %}
-{% load i18n %}
-
-{% block pre-form %}
-  <div class="mb-6">{% trans "Enter your credentials to add your number." %}</div>
-{% endblock pre-form %}
+{% comment %}
+  The claim form for types which connect with a username and password. It shows the type's own story above the form,
+  like any other claim form, and a type can add a lead in to its form with the form-lead block.
+{% endcomment %}

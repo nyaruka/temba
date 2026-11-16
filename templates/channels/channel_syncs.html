@@ -1,0 +1,47 @@
+{% extends "smartmin/read.html" %}
+{% load i18n humanize temba %}
+
+{% block title-text %}
+  {% blocktrans trimmed with channel=object.name %}
+    {{ channel }} Phone Syncs
+  {% endblocktrans %}
+{% endblock title-text %}
+{% block content %}
+  <div class="dash-section">
+    {% if sync_events %}
+      <table class="dash-table">
+        <thead>
+          <tr>
+            <th>{% trans "Synced" %}</th>
+            <th class="num">{% trans "Incoming" %}</th>
+            <th class="num">{% trans "Outgoing" %}</th>
+            <th class="num">{% trans "Pending" %}</th>
+            <th class="num">{% trans "Retry" %}</th>
+            <th class="num">{% trans "Battery" %}</th>
+            <th>{% trans "Network" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sync_event in sync_events %}
+            <tr>
+              <td>{{ sync_event.created_on|datetime }}</td>
+              <td class="num">{{ sync_event.incoming_command_count|intcomma }}</td>
+              <td class="num">{{ sync_event.outgoing_command_count|intcomma }}</td>
+              <td class="num">{{ sync_event.pending_message_count|intcomma }}</td>
+              <td class="num">{{ sync_event.retry_message_count|intcomma }}</td>
+              <td class="num">
+                {{ sync_event.power_level }}%
+                {% if sync_event.power_status == "CHA" %}
+                  {% trans "charging" %}
+                {% endif %}
+              </td>
+              <td>{{ sync_event.network_type }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="dash-empty">{% trans "The phone hasn't synced yet." %}</div>
+    {% endif %}
+  </div>
+{% endblock content %}

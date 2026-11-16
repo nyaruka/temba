@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 // for cache busting we dynamically generate a fingerprint, use bun run svg to update
-export const SVG_FINGERPRINT = '43754ae9b9c0725131d2db1f01084489';
+export const SVG_FINGERPRINT = '2bcaea8233c0cfd91ada240466f98f54';
 
 // only icons below are included in the sprite sheet
 export enum Icon {
@@ -51,6 +51,8 @@ export enum Icon {
   campaign_archived = 'archive',
   campaigns = 'clock-refresh',
   channel = 'zap',
+  channel_slow = 'speedometer-slow',
+  channel_very_slow = 'snail',
   children = 'git-branch-01',
   check = 'check',
   checkbox = 'square',
@@ -244,42 +246,50 @@ export enum Icon {
 
   // channel types
   channel_a = 'channel-android',
-  channel_ac = 'zap', // TODO https://www.arabiacell.com/
+  channel_ac = 'channel-arabiacell',
   channel_at = 'zap', // TODO https://africastalking.com/
-  channel_bs = 'zap', // TODO https://burstsms.com/
-  channel_bw = 'zap', // TODO https://www.bandwidth.com/
-  channel_cs = 'zap', // TODO https://www.clicksend.com/
+  channel_bs = 'channel-kudosity',
+  channel_bw = 'channel-bandwidth',
+  channel_cs = 'channel-clicksend',
   channel_ct = 'channel-clickatell',
   channel_d3 = 'channel-whatsapp',
   channel_d3c = 'channel-whatsapp',
-  channel_da = 'zap', // TODO https://dartmedia.co.id/
+  channel_da = 'channel-dartmedia',
   channel_ds = 'channel-discord',
   channel_ex = 'zap',
   channel_fb = 'channel-facebook',
   channel_fba = 'channel-facebook',
   channel_fc = 'channel-freshchat',
   channel_fcm = 'channel-firebase',
-  channel_hm = 'zap', // TODO https://hormuud.com/
-  channel_ib = 'zap', // TODO https://www.infobip.com/
+  channel_gl = 'channel-globe',
+  channel_hm = 'channel-hormuud',
+  channel_hx = 'channel-highconnexion',
+  channel_i2 = 'channel-i2sms',
+  channel_ib = 'channel-infobip',
   channel_ig = 'channel-instagram',
   channel_jc = 'channel-jiochat',
+  channel_jcl = 'channel-justcall',
   channel_kn = 'channel-kannel',
   channel_kwa = 'channel-whatsapp',
   channel_ln = 'channel-line',
+  channel_mbd = 'channel-bird',
+  channel_mk = 'channel-macrokiosk',
   channel_mt = 'channel-mtarget',
-  channel_mtn = 'zap', // TODO https://mtn.com/
+  channel_mtn = 'channel-mtn',
   channel_nx = 'channel-vonage',
   channel_pl = 'channel-plivo',
+  channel_pm = 'channel-playmobile',
   channel_rc = 'channel-rocketchat',
   channel_sl = 'channel-slack',
   channel_sq = 'zap', // TODO https://shaqodoon.org/
-  channel_st = 'zap', // TODO https://bulk.startmobile.ua
+  channel_st = 'channel-startmobile',
   channel_sw = 'channel-signalwire',
   channel_t = 'channel-twilio',
   channel_tg = 'channel-telegram',
   channel_tms = 'channel-twilio',
   channel_tq = 'channel-thinq',
-  channel_tw = 'zap', // TODO https://www.somleng.org/
+  channel_ts = 'channel-telesom',
+  channel_tw = 'channel-somleng',
   channel_twa = 'channel-whatsapp',
   channel_twc = 'zap', // TODO
   channel_twt = 'channel-twitter',
@@ -289,7 +299,8 @@ export enum Icon {
   channel_wa = 'channel-whatsapp',
   channel_wac = 'channel-whatsapp',
   channel_wc = 'channel-wechat',
-  channel_yo = 'zap', // TODO https://www.yo.co.ug/
+  channel_yo = 'channel-yo',
+  channel_zvs = 'channel-zenvia',
   channel_zvw = 'channel-whatsapp',
 
   // ai

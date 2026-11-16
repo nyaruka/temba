@@ -1,0 +1,105 @@
+{% load i18n channels %}
+{% with method=channel.config.method|default:"POST" %}
+  <li class="setup-step">
+    <span class="setup-num"></span>
+    <div class="setup-step-body">
+      <div class="setup-step-title">{% trans "Handle outgoing messages" %}</div>
+      <p>
+        {% blocktrans trimmed %}
+          Each outgoing message is sent to your service as a {{ method }} request to its send URL.
+        {% endblocktrans %}
+      </p>
+      <div class="setup-value">
+        <code>{{ channel.config.send_url }}</code>
+      </div>
+      <div class="setup-field">
+        <span class="setup-field-label">{% trans "Example request" %}</span>
+        <pre class="setup-example"><b>{{ method }}</b> {{ example_url }}{% if method == "POST" or method == "PUT" %}
+<span>{{ example_content_type }}</span>
+
+{{ example_body }}{% endif %}</pre>
+      </div>
+    </div>
+  </li>
+  {% if channel.role != "S" %}
+    <li class="setup-step">
+      <span class="setup-num"></span>
+      <div class="setup-step-body">
+        <div class="setup-step-title">{% trans "Report incoming messages" %}</div>
+        <p>
+          {% blocktrans trimmed %}
+            When your service receives a message, it should POST its <code>from</code> and <code>text</code> to this URL. It can also include a <code>date</code> in ISO-8601 format for when the
+            message was received.
+          {% endblocktrans %}
+        </p>
+        <div class="setup-value">
+          <code>{% channel_callback channel "receive" %}</code>
+          <button type="button" class="setup-copy">{% trans "Copy" %}</button>
+        </div>
+        <div class="setup-field">
+          <span class="setup-field-label">{% trans "Example body" %}</span>
+          <pre class="setup-example">from=%2B250788123123&amp;text=Love+is+patient.+Love+is+kind.&amp;date=2012-04-23T18:25:43.511Z</pre>
+        </div>
+      </div>
+    </li>
+    <li class="setup-step">
+      <span class="setup-num"></span>
+      <div class="setup-step-body">
+        <div class="setup-step-title">
+          {% trans "Report message status" %}<span class="setup-optional">{% trans "Optional" %}</span>
+        </div>
+        <p>
+          {% blocktrans trimmed %}
+            To show whether messages got through, your service can POST a message's <code>uuid</code> to these URLs as it's sent, delivered or fails.
+          {% endblocktrans %}
+        </p>
+        <div class="setup-field">
+          <span class="setup-field-label">{% trans "Sent" %}</span>
+          <div class="setup-value">
+            <code>{% channel_callback channel "sent" %}</code>
+            <button type="button" class="setup-copy">{% trans "Copy" %}</button>
+          </div>
+        </div>
+        <div class="setup-field">
+          <span class="setup-field-label">{% trans "Delivered" %}</span>
+          <div class="setup-value">
+            <code>{% channel_callback channel "delivered" %}</code>
+            <button type="button" class="setup-copy">{% trans "Copy" %}</button>
+          </div>
+        </div>
+        <div class="setup-field">
+          <span class="setup-field-label">{% trans "Failed" %}</span>
+          <div class="setup-value">
+            <code>{% channel_callback channel "failed" %}</code>
+            <button type="button" class="setup-copy">{% trans "Copy" %}</button>
+          </div>
+        </div>
+        <div class="setup-field">
+          <span class="setup-field-label">{% trans "Example body" %}</span>
+          <pre class="setup-example">uuid=019a25a3-2014-7e3b-8422-c53b747c390f</pre>
+        </div>
+      </div>
+    </li>
+    <li class="setup-step">
+      <span class="setup-num"></span>
+      <div class="setup-step-body">
+        <div class="setup-step-title">
+          {% trans "Report opt-outs" %}<span class="setup-optional">{% trans "Optional" %}</span>
+        </div>
+        <p>
+          {% blocktrans trimmed %}
+            If contacts can opt out through your service, it should POST their number as <code>from</code> to this URL so they stop getting messages.
+          {% endblocktrans %}
+        </p>
+        <div class="setup-value">
+          <code>{% channel_callback channel "stopped" %}</code>
+          <button type="button" class="setup-copy">{% trans "Copy" %}</button>
+        </div>
+        <div class="setup-field">
+          <span class="setup-field-label">{% trans "Example body" %}</span>
+          <pre class="setup-example">from=%2B250788123123</pre>
+        </div>
+      </div>
+    </li>
+  {% endif %}
+{% endwith %}

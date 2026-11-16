@@ -14,15 +14,13 @@ class StartTypeTest(TembaTest):
         self.login(self.admin)
 
         # check that claim page URL does not appears on claim list page if org timezone does not match
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertNotContains(response, url)
+        self.assertChannelTypeNotOffered(url)
 
         self.org.timezone = "Europe/Kiev"
         self.org.save()
 
-        # check that claim page URL appears on claim list page
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, url)
+        # the new channel picker offers it
+        self.assertChannelTypeOffered(url)
 
         # try to claim a channel
         response = self.client.get(url)

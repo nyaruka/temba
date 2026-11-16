@@ -1,45 +1,721 @@
 {% extends "smartmin/read.html" %}
-{% load i18n channels %}
+{% load i18n channels temba %}
 
-{% block title-text %}
-  {% blocktrans trimmed with channel=object.name %}
-    {{ channel }} Configuration
-  {% endblocktrans %}
-{% endblock title-text %}
+{% block title %}
+  <temba-channel-logo type="{{ object.channel_type }}" name="{{ object.type.name }}" size="28"> </temba-channel-logo>
+  <div id="title-text">
+    {% if receiving %}
+      {% blocktrans trimmed with channel=object.name %}
+        {{ channel }} Configuration
+      {% endblocktrans %}
+    {% else %}
+      {% blocktrans trimmed with channel=object.name %}
+        Finish setting up {{ channel }}
+      {% endblocktrans %}
+    {% endif %}
+  </div>
+{% endblock title %}
 {% block subtitle %}
-  {{ object.type.name }}:
-  {{ object.get_address_display }}
 {% endblock subtitle %}
 {% block content %}
-  {{ blurb }}
-  {% for endpoint in endpoints %}
-    <div class="card mt-3 p-4 flex-shrink-0">
-      <div class="text-xl">{{ endpoint.label }}</div>
-      {% if url.help %}<div class="mt-2">{{ endpoint.help }}</div>{% endif %}
-      <div class="code block mt-3 mx-0 whitespace-normal">{{ endpoint.url }}</div>
-    </div>
-  {% endfor %}
-  {% if secret %}
-    <div class="card mt-3 p-4 flex-shrink-0">
-      <div class="text-xl">{% trans "Webhook Secret" %}</div>
-      <div class="code block mt-3 mx-0 whitespace-normal">{{ secret }}</div>
-    </div>
-  {% endif %}
-  {% if ip_addresses %}
-    <div class="card mt-3 p-4 flex-shrink-0">
-      <div class="text-xl">{% trans "IP Addresses" %}</div>
-      <div class="mt-2">{% trans "Ensure the following IP addresses are whitelisted." %}</div>
-      <div class="mt-2">
-        {% for addr in ip_addresses %}<div class="code inline mr-1">{{ addr }}</div>{% endfor %}
+  {# in a sheet over the channel's page it's a single column, with the guide a line under the intro rather than a panel #}
+  <div class="setup{% if is_sheet %} single{% endif %}" data-status-url="{{ request.path }}?status=1" data-receiving="{{ receiving|yesno:'1,0' }}" data-copied="{% trans 'Copied' %}">
+    <div class="setup-main">
+      <div class="setup-status">
+        <span class="setup-pill waiting{% if receiving %} hide{% endif %}">
+          <span class="setup-pulse"></span>
+          {% trans "Waiting for first message" %}
+        </span>
+        <span class="setup-pill receiving{% if not receiving %} hide{% endif %}">
+          <temba-icon name="check" size="0.9"></temba-icon>
+          {% trans "Receiving messages" %}
+        </span>
       </div>
+      {% if custom %}
+        <div class="setup-custom">{{ custom }}</div>
+      {% elif blurb %}
+        <p class="setup-intro">{{ blurb }}</p>
+      {% endif %}
+      {% if is_sheet and guide_url %}
+        <p class="setup-guide">
+          {% blocktrans trimmed with type=object.type.name %}
+            The setup guide walks through each step for {{ type }}.
+          {% endblocktrans %}
+          <a class="setup-link" href="{{ guide_url }}" target="_blank" rel="noopener">{% trans "Setup guide" %}</a>
+        </p>
+      {% endif %}
+      <ol class="setup-steps">
+        <li class="setup-step done">
+          <span class="setup-num"><temba-icon name="check" size="0.9"></temba-icon></span>
+          <div class="setup-step-body">
+            <div class="setup-step-title">{% trans "Add the channel" %}</div>
+            <p>
+              {% blocktrans trimmed with type=object.type.name %}
+                Your {{ type }} channel is connected to this workspace.
+              {% endblocktrans %}
+            </p>
+          </div>
+        </li>
+        {% if custom_steps %}{{ custom_steps }}{% endif %}
+        {% for endpoint in endpoints %}
+          <li class="setup-step">
+            <span class="setup-num"></span>
+            <div class="setup-step-body">
+              <div class="setup-step-title">{{ endpoint.label }}</div>
+              {% if endpoint.help %}<p>{{ endpoint.help }}</p>{% endif %}
+              <div class="setup-value">
+                <code>{{ endpoint.url }}</code>
+                <button type="button" class="setup-copy">{% trans "Copy" %}</button>
+              </div>
+            </div>
+          </li>
+        {% endfor %}
+        {% if secret %}
+          <li class="setup-step">
+            <span class="setup-num"></span>
+            <div class="setup-step-body">
+              <div class="setup-step-title">{% trans "Webhook Secret" %}</div>
+              <p>{% trans "Used to check that requests to this channel come from your provider." %}</p>
+              <div class="setup-value">
+                <code>{{ secret }}</code>
+                <button type="button" class="setup-copy">{% trans "Copy" %}</button>
+              </div>
+            </div>
+          </li>
+        {% endif %}
+        {% if ip_addresses %}
+          <li class="setup-step">
+            <span class="setup-num"></span>
+            <div class="setup-step-body">
+              <div class="setup-step-title">{% trans "IP Addresses" %}</div>
+              <p>{% trans "Add these to your provider's list of allowed IP addresses, if it has one." %}</p>
+              <div class="setup-chips">
+                {% for addr in ip_addresses %}<code class="setup-chip">{{ addr }}</code>{% endfor %}
+              </div>
+              <button type="button" class="setup-copy setup-copy-all" data-copy="{{ ip_addresses|join:' ' }}">
+                {% trans "Copy all addresses" %}
+              </button>
+            </div>
+          </li>
+        {% endif %}
+        <li class="setup-step setup-test{% if receiving %} done{% endif %}">
+          <span class="setup-num">
+            <temba-icon name="check" size="0.9"></temba-icon>
+          </span>
+          <div class="setup-step-body">
+            <div class="setup-step-title">{% trans "Send a test message" %}</div>
+            <p class="waiting-text{% if receiving %} hide{% endif %}">
+              {% blocktrans trimmed with address=object.get_address_display %}
+                Send a message to {{ address }}. This page updates as soon as it arrives.
+              {% endblocktrans %}
+            </p>
+            <p class="receiving-text{% if not receiving %} hide{% endif %}">
+              {% trans "Messages are reaching your workspace." %}
+            </p>
+          </div>
+        </li>
+      </ol>
     </div>
-  {% endif %}
+    {% if not is_sheet %}
+      <aside class="setup-aside">
+        <div class="setup-panel">
+          <div class="setup-panel-title">{% trans "Channel" %}</div>
+          <dl class="setup-details">
+            {% if object.address %}
+              <dt>{% trans "Address" %}</dt>
+              <dd>{{ object.get_address_display }}</dd>
+            {% endif %}
+            {% if object.country %}
+              <dt>{% trans "Country" %}</dt>
+              <dd>{{ object.country.name }}</dd>
+            {% endif %}
+            <dt>{% trans "Type" %}</dt>
+            <dd>{{ object.type.name }}</dd>
+            <dt>{% trans "Added" %}</dt>
+            <dd>{{ object.created_on|day }}</dd>
+          </dl>
+        </div>
+        {% if guide_url %}
+          <div class="setup-panel">
+            <div class="setup-panel-title">{% trans "Need help?" %}</div>
+            <p>
+              {% blocktrans trimmed with type=object.type.name %}
+                The setup guide walks through each step for {{ type }}.
+              {% endblocktrans %}
+            </p>
+            <a class="setup-link" href="{{ guide_url }}" target="_blank" rel="noopener">{% trans "Setup guide" %}</a>
+          </div>
+        {% endif %}
+        <a class="button-light setup-back" href="{% url 'channels.channel_read' object.uuid %}">{% trans "Go to channel" %}</a>
+      </aside>
+    {% endif %}
+  </div>
 {% endblock content %}
+{% block extra-style %}
+  {{ block.super }}
+  <style>
+    .setup {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 260px;
+      align-items: start;
+      gap: 28px;
+    }
+
+    .setup.single {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .setup-guide {
+      margin: 0;
+      color: var(--text-2);
+    }
+
+    .setup-guide .setup-link {
+      margin-left: 4px;
+    }
+
+    .setup-main,
+    .setup-aside {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      gap: 16px;
+    }
+
+    .setup-intro {
+      max-width: 70ch;
+      margin: 0;
+      color: var(--text-2);
+      line-height: 1.6;
+    }
+
+    /* status */
+    .setup-pill {
+      display: inline-flex;
+      align-items: center;
+      height: 26px;
+      padding: 0 12px;
+      gap: 8px;
+      border: 1px solid;
+      border-radius: 999px;
+      font-weight: var(--w-semibold);
+      font-size: 12.5px;
+    }
+
+    .setup-pill.waiting {
+      border-color: var(--warning-border);
+      background: var(--warning-bg);
+      color: var(--warning);
+    }
+
+    .setup-pill.receiving {
+      border-color: var(--success-border);
+      background: var(--success-bg);
+      color: var(--success);
+      --icon-color: var(--success);
+    }
+
+    .setup-pill.hide {
+      display: none;
+    }
+
+    .setup-pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: setup-pulse 1.6s ease-in-out infinite;
+    }
+
+    @keyframes setup-pulse {
+      50% {
+        opacity: 0.3;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .setup-pulse {
+        animation: none;
+      }
+    }
+
+    /* steps, joined by a line down their numbers */
+    .setup-steps {
+      margin: 0;
+      padding: 0;
+      padding: 22px 22px 4px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      background: var(--surface);
+      list-style: none;
+      counter-reset: setup-step;
+    }
+
+    .setup-step {
+      display: grid;
+      position: relative;
+      grid-template-columns: 28px minmax(0, 1fr);
+      padding-bottom: 20px;
+      gap: 14px;
+      counter-increment: setup-step;
+    }
+
+    .setup-step:not(:last-child)::before {
+      position: absolute;
+      top: 32px;
+      bottom: 4px;
+      left: 13px;
+      width: 2px;
+      background: var(--border);
+      content: '';
+    }
+
+    .setup-num {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      background: var(--accent-50, var(--sunken));
+      color: var(--primary);
+      font-weight: var(--w-semibold);
+      font-size: 13px;
+    }
+
+    .setup-num::before {
+      content: counter(setup-step);
+    }
+
+    .setup-num temba-icon {
+      display: none;
+    }
+
+    .setup-step.done .setup-num {
+      border-color: var(--success-border);
+      background: var(--success-bg);
+      color: var(--success);
+      --icon-color: var(--success);
+    }
+
+    .setup-step.done .setup-num::before {
+      content: none;
+    }
+
+    .setup-step.done .setup-num temba-icon {
+      display: flex;
+    }
+
+    .setup-step-body {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      padding-top: 3px;
+      gap: 8px;
+    }
+
+    .setup-step-title {
+      color: var(--text-1);
+      font-weight: var(--w-semibold);
+    }
+
+    .setup-step-body p {
+      margin: 0;
+      color: var(--text-2);
+      line-height: 1.55;
+    }
+
+    .setup-step .hide {
+      display: none;
+    }
+
+    /* values to copy */
+    .setup-value {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      padding: 6px 6px 6px 12px;
+      gap: 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      background: var(--sunken);
+    }
+
+    .setup-value code {
+      flex: 1;
+      min-width: 0;
+      color: var(--text-1);
+      font-size: 12.5px;
+      line-height: 1.5;
+      font-family: var(--font-mono);
+      overflow-wrap: anywhere;
+    }
+
+    .setup-copy {
+      flex: none;
+      height: 28px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      background: var(--surface);
+      color: var(--text-2);
+      font-weight: var(--w-medium);
+      font-size: 12.5px;
+      cursor: pointer;
+    }
+
+    .setup-copy:hover {
+      border-color: var(--border-strong);
+      color: var(--text-1);
+    }
+
+    .setup-copy:focus-visible {
+      outline: 2px solid var(--color-focus, var(--primary));
+      outline-offset: 2px;
+    }
+
+    .setup-copy.copied {
+      border-color: var(--success-border);
+      color: var(--success);
+    }
+
+    .setup-copy-all {
+      align-self: flex-start;
+    }
+
+    .setup-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .setup-chip {
+      padding: 3px 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-xs);
+      background: var(--sunken);
+      font-size: 12.5px;
+      font-family: var(--font-mono);
+    }
+
+    /* side panel */
+    .setup-panel {
+      display: flex;
+      flex-direction: column;
+      padding: 14px 16px;
+      gap: 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      background: var(--surface);
+    }
+
+    .setup-panel-title {
+      color: var(--text-1);
+      font-weight: var(--w-semibold);
+      font-size: 13px;
+    }
+
+    .setup-panel p {
+      margin: 0;
+      color: var(--text-2);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .setup-details {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      margin: 0;
+      gap: 6px 12px;
+      font-size: 13px;
+    }
+
+    .setup-details dt {
+      color: var(--text-3);
+    }
+
+    .setup-details dd {
+      margin: 0;
+      color: var(--text-1);
+      font-variant-numeric: tabular-nums;
+      overflow-wrap: anywhere;
+    }
+
+    .setup-link {
+      font-weight: var(--w-medium);
+      font-size: 13px;
+    }
+
+    .setup-back {
+      text-align: center;
+    }
+
+    /* the explanation from a type template, restyled from the cards it was written with to sit in this layout */
+    .setup-custom {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      color: var(--text-2);
+      line-height: 1.6;
+    }
+
+    .setup-custom .card {
+      margin: 0;
+      padding: 16px 18px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      background: var(--surface);
+      box-shadow: none;
+    }
+
+    .setup-custom .subtitle,
+    .setup-custom .title {
+      margin-bottom: 6px;
+      color: var(--text-1);
+      font-weight: var(--w-semibold);
+      font-size: 13.5px;
+    }
+
+    .setup-custom .code {
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      background: var(--sunken);
+      color: var(--text-1);
+      font-size: 12.5px;
+      font-family: var(--font-mono);
+      overflow-wrap: anywhere;
+    }
+
+    .setup-custom .bleed-x.bleed-b {
+      margin: 12px -18px -16px;
+    }
+
+    /* dark example bands use the same palette as the code block, with their code set straight on them */
+    .setup-custom .bg-black {
+      background: #141a26 !important;
+      color: #d9e1ee !important;
+    }
+
+    .setup-custom .bg-black .code {
+      padding: 0;
+      border: 0;
+      background: transparent !important;
+      color: #d9e1ee !important;
+    }
+
+    .setup-custom .bg-black .cap-label {
+      color: #8792a8 !important;
+    }
+
+    .setup-custom .bleed-x .code,
+    .setup-custom .setup-code pre {
+      padding: 14px 18px;
+      border: 0;
+      border-radius: 0;
+    }
+
+    .setup-custom p {
+      margin: 0;
+    }
+
+    .setup-custom p mark {
+      padding: 0 3px;
+      border-radius: 3px;
+      background: var(--warning-bg);
+      color: var(--warning);
+      font-size: 0.92em;
+      font-family: var(--font-mono);
+    }
+
+    .setup-custom h4 {
+      margin: 0;
+      color: var(--text-1);
+      font-weight: var(--w-medium);
+      font-size: 14px;
+    }
+
+    /* a block of code to paste, with what it is and a copy for all of it */
+    .setup-code {
+      overflow: hidden;
+      border-radius: var(--r-lg);
+      background: #141a26;
+      color: #d9e1ee;
+    }
+
+    .setup-code-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px 8px 16px;
+      gap: 12px;
+      border-bottom: 1px solid #263045;
+      color: #9aa6bb;
+      font-size: 12px;
+      font-family: var(--font-mono);
+    }
+
+    .setup-code pre {
+      margin: 0;
+      padding: 14px 16px;
+      overflow-x: auto;
+      background: transparent;
+      color: inherit;
+      font-size: 12px;
+      line-height: 1.65;
+      font-family: var(--font-mono);
+      white-space: pre;
+    }
+
+    .setup-code .setup-copy {
+      border-color: #2c3750;
+      background: #1f2738;
+      color: #c4cede;
+    }
+
+    /* an example to read rather than paste, so it wraps instead of scrolling */
+    .setup-example {
+      margin: 0;
+      padding: 10px 12px;
+      border: 1px dashed var(--border-strong, var(--border));
+      border-radius: var(--r);
+      background: transparent;
+      color: var(--text-2);
+      font-size: 12px;
+      line-height: 1.6;
+      font-family: var(--font-mono);
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .setup-example b {
+      color: var(--primary);
+      font-weight: var(--w-semibold);
+    }
+
+    .setup-example span {
+      color: var(--text-3);
+    }
+
+    /* a value with a label of its own, when a step has more than one */
+    .setup-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .setup-field-label {
+      color: var(--text-3);
+      font-weight: var(--w-medium);
+      font-size: 12px;
+    }
+
+    .setup-optional {
+      margin-left: 6px;
+      color: var(--text-3);
+      font-weight: var(--w-normal, 400);
+      font-size: 12.5px;
+    }
+
+    .setup-step-body p code {
+      padding: 0 4px;
+      border-radius: 3px;
+      background: var(--sunken);
+      color: var(--text-1);
+      font-size: 0.92em;
+      font-family: var(--font-mono);
+    }
+
+    .setup-code mark {
+      padding: 0 2px;
+      border-radius: 3px;
+      background: rgba(255, 196, 0, 0.2);
+      color: #ffd666;
+    }
+
+    @media (max-width: 860px) {
+      .setup {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+  </style>
+{% endblock extra-style %}
 {% block extra-script %}
   {{ block.super }}
   <script>
     onSpload(function() {
-      prettyPrint();
+      var setup = document.querySelector(".setup");
+      if (!setup) {
+        return;
+      }
+
+      // copy the value next to a button, or what it says to copy, falling back to selecting it
+      setup.querySelectorAll(".setup-copy").forEach(function(button) {
+        button.addEventListener("click", function() {
+          var block = button.closest(".setup-code");
+          var source = block ? block.querySelector("pre") : button.parentElement.querySelector("code, pre");
+          var text = button.dataset.copy || (source ? source.innerText : "");
+          var copied = function() {
+            var label = button.textContent;
+            button.textContent = setup.dataset.copied;
+            button.classList.add("copied");
+            setTimeout(function() {
+              button.textContent = label;
+              button.classList.remove("copied");
+            }, 1500);
+          };
+          var select = function() {
+            if (!source) {
+              return;
+            }
+            var range = document.createRange();
+            range.selectNodeContents(source);
+            var selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+          };
+          try {
+            navigator.clipboard.writeText(text).then(copied, select);
+          } catch (e) {
+            select();
+          }
+        });
+      });
+
+      // while waiting for the channel's first message, check every so often so the page can say when it arrives
+      var showReceiving = function() {
+        setup.querySelectorAll(".setup-pill.waiting, .waiting-text").forEach(function(el) {
+          el.classList.add("hide");
+        });
+        setup.querySelectorAll(".setup-pill.receiving, .receiving-text").forEach(function(el) {
+          el.classList.remove("hide");
+        });
+        setup.querySelector(".setup-test").classList.add("done");
+      };
+      if (setup.dataset.receiving !== "1") {
+        var timer = setInterval(function() {
+          // stop once we've navigated away
+          if (!document.body.contains(setup)) {
+            clearInterval(timer);
+            return;
+          }
+          if (document.hidden) {
+            return;
+          }
+          fetch(setup.dataset.statusUrl, { credentials: "same-origin" })
+            .then(function(response) {
+              return response.json();
+            })
+            .then(function(data) {
+              if (data.receiving) {
+                clearInterval(timer);
+                showReceiving();
+              }
+            })
+            .catch(function() {});
+        }, 10000);
+      }
     });
   </script>
 {% endblock extra-script %}

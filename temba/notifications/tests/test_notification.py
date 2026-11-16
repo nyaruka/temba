@@ -370,9 +370,10 @@ class NotificationTest(TembaTest):
             expected_json={
                 "type": "invitation:accepted",
                 "created_on": matchers.ISODatetime(),
-                "is_seen": True,
+                "is_seen": False,
+                "user": {"email": "bob@textit.com"},
             },
-            expected_target=None,
+            expected_target="/user/",
             expected_users={self.admin},
             email=True,
         )
@@ -403,20 +404,33 @@ class NotificationTest(TembaTest):
             mr_mocks.calls["notification_publish"],
         )
 
-        # email-only notifications are never published (no UI medium, nothing to deliver live)
+        # a user joining is published to the workspace's other admins
         invitation = Invitation.create(self.org, self.admin, "bob@textit.com", OrgRole.ADMINISTRATOR)
         user = self.create_user("bob@textit.com")
 
         with self.captureOnCommitCallbacks(execute=True):
             InvitationAcceptedNotificationType.create(invitation, user)
 
-        self.assertEqual(1, len(mr_mocks.calls["notification_publish"]))
+        notification = self.admin.notifications.get(notification_type="invitation:accepted")
+        self.assertEqual(
+            call(self.org, [{"user_uuid": str(self.admin.uuid), "data": notification.as_json()}]),
+            mr_mocks.calls["notification_publish"][1],
+        )
+        self.assertEqual({"email": "bob@textit.com"}, notification.as_json()["user"])
+
+        # email-only notifications are never published (no UI medium, nothing to deliver live)
+        with self.captureOnCommitCallbacks(execute=True):
+            Notification.create_all(
+                self.org, "export:finished", scope="email-only", users=[self.admin], medium=Notification.MEDIUM_EMAIL
+            )
+
+        self.assertEqual(2, len(mr_mocks.calls["notification_publish"]))
 
         # a duplicate (already-unseen) notification isn't re-created, so nothing new is published
         with self.captureOnCommitCallbacks(execute=True):
             ExportFinishedNotificationType.create(export)
 
-        self.assertEqual(1, len(mr_mocks.calls["notification_publish"]))
+        self.assertEqual(2, len(mr_mocks.calls["notification_publish"]))
 
         # publishing is best-effort: a mailroom failure is logged, not raised, and the notification is still created
         export2 = ContactExport.create(self.org, self.editor)

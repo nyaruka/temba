@@ -39,6 +39,13 @@ class ClaimView(ClaimViewMixin, SmartFormView):
             help_text=_("Sends to numbers without their country code, which isn't recommended."),
         )
 
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+            # most numbers are in the workspace's own country
+            if country := self.request.org.default_country_code:
+                self.fields["country"].initial = country
+
     form_class = KannelClaimForm
 
     def form_valid(self, form):

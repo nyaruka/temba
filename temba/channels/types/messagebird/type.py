@@ -18,9 +18,10 @@ class MessageBirdType(ChannelType):
     schemes = [URN.TEL_SCHEME]
     available_timezones = SUPPORTED_TIMEZONES
 
-    claim_blurb = _("Connect your approved %(link)s channel") % {
-        "link": '<a target="_blank" href="https://www.messagebird.com/">Messagebird</a>'
-    }
+    claim_blurb = _(
+        "%(link)s, now part of Bird, offers SMS numbers and short codes in over 30 countries. Connect one you have "
+        "with them to send and receive SMS, and MMS where your number supports it."
+    ) % {"link": '<a target="_blank" href="https://bird.com/">Messagebird</a>'}
     claim_view = ClaimView
 
     config_ui = ConfigUI(

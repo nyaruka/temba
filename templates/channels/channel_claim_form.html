@@ -2,7 +2,10 @@
 {% load smartmin %}
 
 {% block pre-form %}
-  {{ form_blurb }}
+  {# the type's story, then optionally a lead in to its form, e.g. what's needed to fill it in #}
+  {% if claim_blurb %}<div class="claim-blurb">{{ claim_blurb }}</div>{% endif %}
+  {% block form-lead %}
+  {% endblock form-lead %}
 {% endblock pre-form %}
 {% block form %}
   <div class="card">{{ block.super }}</div>

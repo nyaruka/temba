@@ -1998,13 +1998,11 @@ class GroupsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseEndpoint):
 
     def perform_destroy(self, instance):
         # if there are still dependencies, give up
-        triggers = instance.triggers.filter(is_archived=False)
-        if triggers:
+        if instance.triggers.filter(is_active=True, is_archived=False).exists():
             raise InvalidQueryError("Group is being used by triggers which must be archived first.")
 
-        campaigns = instance.campaigns.filter(is_archived=False)
-        if campaigns:
-            raise InvalidQueryError("Group is being used by campaigns which must be archived first.")
+        if instance.campaigns.filter(is_active=True).exists():
+            raise InvalidQueryError("Group is being used by campaigns which must be deleted first.")
 
         instance.release(self.request.user)
 

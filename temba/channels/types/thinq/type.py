@@ -23,8 +23,10 @@ class ThinQType(ChannelType):
     schemes = [URN.TEL_SCHEME]
 
     claim_blurb = _(
-        "If you have a number with %(link)s you can connect it in a few easy steps to automate your SMS numbers."
-    ) % {"link": '<a target="_blank" href="https://thinq.com">ThinQ</a>'}
+        "%(link)s, formerly ThinQ, is a voice and messaging platform that routes messages across many US carriers. "
+        "Connect a US number from your Commio account to send and receive SMS with contacts, and messages can include "
+        "photos and other media."
+    ) % {"link": '<a target="_blank" href="https://www.commio.com/">Commio</a>'}
     claim_view = ClaimView
 
     config_ui = ConfigUI(

@@ -20,8 +20,9 @@ class HighConnectionType(ChannelType):
     available_timezones = ["Europe/Paris"]
 
     claim_blurb = _(
-        "If you are based in France, you can purchase a number from %(link)s and connect it in a few simple steps."
-    ) % {"link": '<a target="_blank" href="http://www.highconnexion.com/en/">High Connection</a>'}
+        "%(link)s is a French mobile marketing and payments company used by more than 370 companies and "
+        "associations. Connect a number you have with HighCONNEXION to send and receive SMS with contacts in France."
+    ) % {"link": '<a target="_blank" href="https://www.highconnexion.com/en_GB">HighCONNEXION</a>'}
     claim_view = AuthenticatedExternalCallbackClaimView
 
     config_ui = ConfigUI(

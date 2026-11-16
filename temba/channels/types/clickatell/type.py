@@ -18,9 +18,9 @@ class ClickatellType(ChannelType):
     schemes = [URN.TEL_SCHEME]
 
     claim_blurb = _(
-        "Connect your %(link)s number, we'll walk you through the steps necessary to get your Clickatell connection "
-        "working in a few minutes."
-    ) % {"link": '<a target="_blank" href="http://clickatell.com/">Clickatell</a>'}
+        "%(link)s offers two-way SMS on long numbers and short codes, managed from its portal. Connect a number "
+        "you've linked to a two-way SMS integration there, and contacts' replies come straight to your workspace."
+    ) % {"link": '<a target="_blank" href="https://www.clickatell.com/">Clickatell</a>'}
     claim_view = ClaimView
 
     config_ui = ConfigUI(

@@ -54,38 +54,33 @@ class FlowTallyTest(TembaTest):
 
         self.assertEqual({"segment:a:b": 23}, FlowTally.get_totals(flow1, ["segment:a:b"]))
 
-    @cleanup(valkey=True)
-    def test_get_prefix_totals(self):
-        r = get_valkey_connection()
-        flow1 = self.create_flow("Flow 1")
-        flow2 = self.create_flow("Flow 2")
-
-        flow1.tallies.create(scope="segment:a:b", count=2)
-        flow1.tallies.create(scope="segment:b:c", count=3)
-        flow1.tallies.create(scope="result:color:red", count=4)
-        flow2.tallies.create(scope="segment:a:b", count=5)
-
-        r.hset(
-            "{tallies}:live",
-            mapping={
-                field(flow1, "segment:a:b"): 1,
-                field(flow1, "segment:c:d"): 6,  # not flushed yet
-                field(flow1, "segment:d:e"): 7,  # not flushed yet
-                field(flow1, "segment:b:c"): -3,
-            },
-        )
-
-        # buffered counts are added to flushed scopes, but scopes only in Valkey are only found if given
-        self.assertEqual({"segment:a:b": 3}, FlowTally.get_prefix_totals(flow1, "segment:"))
-        self.assertEqual(
-            {"segment:a:b": 3, "segment:c:d": 6},
-            FlowTally.get_prefix_totals(flow1, "segment:", ["segment:c:d", "segment:a:b"]),
-        )
-        self.assertEqual({"result:color:red": 4}, FlowTally.get_prefix_totals(flow1, "result:"))
-        self.assertEqual({}, FlowTally.get_prefix_totals(flow1, "status:"))
-
-        with self.assertRaises(AssertionError):
-            FlowTally.get_prefix_totals(flow1, "segment:", ["result:color:red"])
+    def test_segment_scopes(self):
+        # vectors generated with Go's base64.RawURLEncoding so they match mailroom's encoding
+        vectors = [
+            (
+                "42af6e19-53ef-4fd9-8232-f202a3ea022b",
+                "1d4f25b2-c648-46cc-8116-be0ec6b6d34a",
+                "segment:Qq9uGVPvT9mCMvICo-oCKx1PJbLGSEbMgRa-Dsa200o",
+            ),
+            (
+                "2d7177e0-6bae-427f-9630-3823e2b8f1b2",
+                "46681864-8389-4875-8b88-2f9fe241ea3f",
+                "segment:LXF34GuuQn-WMDgj4rjxskZoGGSDiUh1i4gvn-JB6j8",
+            ),
+            (
+                "00000000-0000-0000-0000-000000000000",
+                "ffffffff-ffff-ffff-ffff-ffffffffffff",
+                "segment:AAAAAAAAAAAAAAAAAAAAAP____________________8",
+            ),
+            (
+                "fbfffbff-fbff-fbff-fbff-fbfffbfffbff",
+                "3e3f3e3f-3e3f-3e3f-3e3f-3e3f3e3f3e3f",
+                "segment:-__7__v_-__7__v_-__7_z4_Pj8-Pz4_Pj8-Pz4_Pj8",
+            ),
+        ]
+        for exit_uuid, node_uuid, scope in vectors:
+            self.assertEqual(scope, FlowTally.segment_scope(exit_uuid, node_uuid))
+            self.assertEqual(f"{exit_uuid}:{node_uuid}", FlowTally.parse_segment_scope(scope))
 
     def test_upsert(self):
         # check the primary key can be the target of the upserts used for flushing

@@ -4,11 +4,11 @@
 {% block title-text %}
   {% trans "Connect a Phone Number" %}
 {% endblock title-text %}
-{% block content %}
+{% block modal %}
   {% block claim-numbers-description %}
-    {% blocktrans trimmed %}
-      Once you connect a number you will immediately be able to send and receive messages. Contacts who send messages to your number will be charged according to their plan.
-    {% endblocktrans %}
+    <div class="claim-blurb">{{ claim_blurb }}</div>
+    {% block numbers-lead %}
+    {% endblock numbers-lead %}
   {% endblock claim-numbers-description %}
   {% block account-warning %}
   {% endblock account-warning %}
@@ -18,9 +18,9 @@
         <div class="flex items-end">
           <div class="country w-64 mr-3">
             {% block country-select %}
-              <temba-select name="country" label='{{ _("Country")|escapejs }}' id="country">
+              <temba-select name="country" label='{{ _("Country")|escapejs }}' id="country" searchable>
                 {% for country in search_countries %}
-                  <temba-option name="{{ country.label }}" value="{{ country.key }}"> </temba-option>
+                  <temba-option name="{{ country.label }}" value="{{ country.key }}" {% if country.key == "US" %}selected{% endif %}> </temba-option>
                 {% endfor %}
               </temba-select>
             {% endblock country-select %}
@@ -30,7 +30,7 @@
               <temba-textinput type="text" maxlength="3" name="pattern" label='{{ _("Pattern")|escapejs }}' id="pattern" optional> </temba-textinput>
             {% endblock search-pattern %}
           </div>
-          <input type="submit" value='{% trans "Search" %}' class="button-primary">
+          <temba-button name='{% trans "Search" %}' primary id="search-button"> </temba-button>
         </div>
       </form>
       <div class="twilio-numbers-title"></div>
@@ -55,7 +55,7 @@
       </temba-alert>
     {% endif %}
   {% endif %}
-  <temba-alert level="warning" class="hide" style="mt-4" id="claim-message">
+  <temba-alert level="warning" class="hide mt-4" id="claim-message">
     {% if error %}{{ error }}{% endif %}
   </temba-alert>
   {% if account_numbers %}
@@ -77,12 +77,12 @@
       {% endfor %}
     </div>
   {% endif %}
-  <form style="display: none" method="post" action="{{ claim_url }}" id="claim-form">
+  <form style="display: none" method="post" action="{{ claim_url }}" id="claim-form" data-claim-form>
     {% csrf_token %}
     <input type="text" name="country" id="claim-country">
     <input type="text" name="phone_number" id="phone-number">
   </form>
-{% endblock content %}
+{% endblock modal %}
 {% block extra-script %}
   {{ block.super }}
   <script>
@@ -161,6 +161,7 @@
 
       if (document.getElementById('search-form')) {
         document.getElementById('search-form').addEventListener('submit', searchNumbers);
+        document.getElementById('search-button').addEventListener('click', searchNumbers);
       }
     });
   </script>

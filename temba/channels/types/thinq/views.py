@@ -10,16 +10,16 @@ from ...views import ClaimViewMixin
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
-        account_id = forms.IntegerField()
-        number = forms.CharField(min_length=10)
-        country = forms.ChoiceField(choices=(("US", _("United States")),))
-        token_user = forms.CharField(help_text=_("The username for your API token."))
-        token = forms.CharField()
+        account_id = forms.IntegerField(label=_("Account ID"))
+        number = forms.CharField(min_length=10, label=_("Number"))
+        token_user = forms.CharField(label=_("Username"))
+        token = forms.CharField(label=_("API Token"))
 
         def clean_number(self):
+            # Commio numbers are all in the US
             number = self.data["number"]
             try:
-                cleaned = phonenumbers.parse(number, self.data["country"])
+                cleaned = phonenumbers.parse(number, "US")
                 return phonenumbers.format_number(cleaned, phonenumbers.PhoneNumberFormat.E164)
             except Exception:  # pragma: no cover
                 raise forms.ValidationError(
@@ -39,7 +39,7 @@ class ClaimView(ClaimViewMixin, SmartFormView):
         }
 
         self.object = Channel.create(
-            self.request.org, self.request.user, data["country"], ThinQType.code, address=data["number"], config=config
+            self.request.org, self.request.user, "US", ThinQType.code, address=data["number"], config=config
         )
 
         return super().form_valid(form)

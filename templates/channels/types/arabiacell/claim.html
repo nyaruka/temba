@@ -1,0 +1,10 @@
+{% extends "channels/channel_claim_form.html" %}
+{% load i18n %}
+
+{% block form-lead %}
+  <div class="mt-4">
+    {% blocktrans trimmed %}
+      To get started, you'll need your short code along with the service ID, username and password ArabiaCell gives you for it.
+    {% endblocktrans %}
+  </div>
+{% endblock form-lead %}

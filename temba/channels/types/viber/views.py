@@ -13,7 +13,7 @@ CONFIG_WELCOME_MESSAGE = "welcome_message"
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
-        auth_token = forms.CharField()
+        auth_token = forms.CharField(label=_("Authentication Token"))
 
         def clean_auth_token(self):
             auth_token = self.data["auth_token"]

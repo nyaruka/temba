@@ -1,6 +1,7 @@
 from smartmin.views import SmartFormView
 
 from django import forms
+from django.utils.translation import gettext_lazy as _
 
 from ...models import Channel
 from ...views import ClaimViewMixin
@@ -8,8 +9,8 @@ from ...views import ClaimViewMixin
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
-        app_id = forms.CharField(required=True)
-        app_secret = forms.CharField(required=True)
+        app_id = forms.CharField(required=True, label=_("AppID"))
+        app_secret = forms.CharField(required=True, label=_("AppSecret"))
 
     form_class = Form
 

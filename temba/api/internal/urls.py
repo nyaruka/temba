@@ -3,6 +3,7 @@ from rest_framework.urlpatterns import format_suffix_patterns
 from django.urls import re_path
 
 from temba.campaigns.api import CampaignsEndpoint
+from temba.channels.api import ChannelHTTPLogsEndpoint, ChannelLogsEndpoint, ChannelsEndpoint
 from temba.contacts.api import ContactsEndpoint
 from temba.flows.api import FlowLabelsEndpoint, FlowsEndpoint
 from temba.ivr.api import CallsEndpoint
@@ -27,6 +28,9 @@ urlpatterns = [
     re_path(r"^broadcasts$", BroadcastsEndpoint.as_view(), name="api.internal.broadcasts"),
     re_path(r"^calls$", CallsEndpoint.as_view(), name="api.internal.calls"),
     re_path(r"^campaigns$", CampaignsEndpoint.as_view(), name="api.internal.campaigns"),
+    re_path(r"^channel_logs$", ChannelLogsEndpoint.as_view(), name="api.internal.channel_logs"),
+    re_path(r"^channel_http_logs$", ChannelHTTPLogsEndpoint.as_view(), name="api.internal.channel_http_logs"),
+    re_path(r"^channels$", ChannelsEndpoint.as_view(), name="api.internal.channels"),
     re_path(r"^contacts$", ContactsEndpoint.as_view(), name="api.internal.contacts"),
     re_path(r"^flow_labels$", FlowLabelsEndpoint.as_view(), name="api.internal.flow_labels"),
     re_path(r"^flows$", FlowsEndpoint.as_view(), name="api.internal.flows"),

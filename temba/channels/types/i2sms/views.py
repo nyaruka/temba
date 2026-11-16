@@ -6,7 +6,7 @@ from ...views import AuthenticatedExternalClaimView
 
 class ClaimView(AuthenticatedExternalClaimView):
     class Form(AuthenticatedExternalClaimView.Form):
-        channel_hash = forms.CharField(max_length=42)
+        channel_hash = forms.CharField(max_length=42, label=_("Channel Hash"))
         username = forms.CharField(label=_("Username"))
         password = forms.CharField(label=_("Password"))
 

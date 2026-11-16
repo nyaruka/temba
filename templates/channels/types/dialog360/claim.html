@@ -1,0 +1,10 @@
+{% extends "channels/channel_claim_form.html" %}
+{% load i18n %}
+
+{% block form-lead %}
+  <div class="mt-4">
+    {% blocktrans trimmed %}
+      To get started, all you need is your WhatsApp number and its API key, which you can generate in the 360dialog Client Hub once the number is set up.
+    {% endblocktrans %}
+  </div>
+{% endblock form-lead %}

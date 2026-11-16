@@ -4,6 +4,7 @@ from smartmin.views import SmartFormView
 from django import forms
 from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect, JsonResponse
+from django.template import RequestContext
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
@@ -12,7 +13,7 @@ from temba.utils import countries
 from temba.utils.fields import InputWidget, SelectWidget
 
 from ...models import Channel
-from ...views import BaseClaimNumberMixin, ChannelTypeMixin, ClaimViewMixin
+from ...views import BaseClaimNumberMixin, ChannelTypeMixin, ClaimModalMixin, ClaimViewMixin
 from .client import VonageClient
 
 SUPPORTED_COUNTRIES = {
@@ -430,7 +431,7 @@ class SearchView(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
         return JsonResponse(numbers, safe=False)
 
 
-class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
+class Connect(ClaimModalMixin, ChannelTypeMixin, OrgPermsMixin, SmartFormView):
     class VonageConnectForm(forms.Form):
         api_key = forms.CharField(label=_("API Key"), widget=InputWidget(), required=True)
         api_secret = forms.CharField(label=_("API Secret"), widget=InputWidget(), required=True)
@@ -453,8 +454,13 @@ class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
     submit_button_name = _("Save")
     success_message = _("Vonage Account successfully connected.")
     template_name = "channels/types/vonage/connect.html"
-    menu_path = "/settings/channels/new-channel"
+    menu_path = "/settings/channels"
     title = _("Connect Vonage")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["claim_blurb"] = self.channel_type.get_claim_blurb().render(RequestContext(self.request))
+        return context
 
     def get_success_url(self):
         return reverse("channels.types.vonage.claim")
@@ -467,13 +473,15 @@ class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
             org.channels.filter(is_active=True, channel_type=self.channel_type.code).order_by("-created_on").first()
         )
 
-        if last_vonage_channel and not reset_creds:
-            self.request.session[self.channel_type.SESSION_API_KEY] = last_vonage_channel.config.get(
-                self.channel_type.CONFIG_API_KEY, ""
-            )
-            self.request.session[self.channel_type.SESSION_API_SECRET] = last_vonage_channel.config.get(
-                self.channel_type.CONFIG_API_SECRET, ""
-            )
+        last_key = last_vonage_channel.config.get(self.channel_type.CONFIG_API_KEY) if last_vonage_channel else None
+        last_secret = (
+            last_vonage_channel.config.get(self.channel_type.CONFIG_API_SECRET) if last_vonage_channel else None
+        )
+
+        # reuse the keys of the last Vonage channel, if it has some - without, we'd only be sent back here
+        if last_key and last_secret and not reset_creds:
+            self.request.session[self.channel_type.SESSION_API_KEY] = last_key
+            self.request.session[self.channel_type.SESSION_API_SECRET] = last_secret
             return HttpResponseRedirect(self.get_success_url())
 
         return super().pre_process(request, *args, **kwargs)

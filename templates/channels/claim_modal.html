@@ -1,0 +1,11 @@
+{% comment %}
+  The base template of a channel type's claim flow when the new channel picker loads it into its modal: just the form,
+  with the styles and scripts the page would have had so that it behaves the same.
+{% endcomment %}
+{% block modal %}
+{% endblock modal %}
+{% block extra-style %}
+{% endblock extra-style %}
+{% block extra-script %}
+{% endblock extra-script %}
+{% if form %}{{ form.media }}{% endif %}

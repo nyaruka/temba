@@ -58,6 +58,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         assertOrgFilter("?filter=xxxx", [self.org2, self.org])
         assertOrgFilter("?filter=flagged", [])
         assertOrgFilter("?filter=anon", [])
+        assertOrgFilter("?filter=internal", [])
         assertOrgFilter("?filter=suspended", [])
         assertOrgFilter("?filter=verified", [])
 
@@ -90,16 +91,17 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
                 "teams_limit",
                 "topics_limit",
                 "triggers_limit",
+                "is_internal",
                 "loc",
             ],
             list(response.context["form"].fields.keys()),
         )
 
-        # every limit type shows its default in its help text
+        # every limit type shows its default as the placeholder
         form = response.context["form"]
-        self.assertEqual("Defaults to 10.", form.fields["channels_limit"].help_text)
-        self.assertEqual("Defaults to 10000000.", form.fields["contacts_limit"].help_text)
-        self.assertEqual("Defaults to 10000.", form.fields["flows_limit"].help_text)
+        self.assertEqual("10", form.fields["channels_limit"].widget.attrs["placeholder"])
+        self.assertEqual("10000000", form.fields["contacts_limit"].widget.attrs["placeholder"])
+        self.assertEqual("10000", form.fields["flows_limit"].widget.attrs["placeholder"])
 
         # make some changes to our org
         response = self.client.post(
@@ -108,6 +110,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
                 "name": "Temba II",
                 "features": ["new_orgs"],
                 "is_anon": False,
+                "is_internal": True,
                 "channels_limit": 20,
                 "contacts_limit": 100_000,
                 "fields_limit": 300,
@@ -126,6 +129,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         self.org.refresh_from_db()
         self.assertEqual("Temba II", self.org.name)
         self.assertEqual(["new_orgs"], self.org.features)
+        self.assertTrue(self.org.is_internal)
         self.assertEqual(self.org.get_limit(Org.LIMIT_FIELDS), 300)
         self.assertEqual(self.org.get_limit(Org.LIMIT_GLOBALS), 250)  # uses default
         self.assertEqual(self.org.get_limit(Org.LIMIT_GROUPS), 400)
@@ -134,6 +138,12 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # limits left blank aren't recorded on the org
         self.assertEqual({"channels": 20, "contacts": 100_000, "fields": 300, "groups": 400}, self.org.limits)
+
+        # internal workspaces can be filtered on and are labelled as such
+        assertOrgFilter("?filter=internal", [self.org])
+        internal_label = '<temba-label icon="workspace"'
+        self.assertContains(self.client.get(reverse("staff.org_read", args=[self.org.id])), internal_label)
+        self.assertNotContains(self.client.get(reverse("staff.org_read", args=[self.org2.id])), internal_label)
 
         # admin groups are limited to those configured for the deployment
         global_admins = self.create_admin_group("Global Admins")

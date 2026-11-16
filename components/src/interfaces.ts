@@ -36,6 +36,9 @@ export interface Notification {
     started_on: string;
     ended_on?: string;
   };
+  user?: {
+    email: string;
+  };
 }
 
 export interface Attachment {
@@ -514,6 +517,8 @@ export enum CustomEventType {
   Selection = 'temba-selection',
   ButtonClicked = 'temba-button-clicked',
   DialogHidden = 'temba-dialog-hidden',
+  DismissRequested = 'temba-dismiss-requested',
+  ModalClosed = 'temba-modal-closed',
   ScrollThreshold = 'temba-scroll-threshold',
   ScrollThresholdBottom = 'temba-scroll-threshold-bottom',
   ContentChanged = 'temba-content-changed',

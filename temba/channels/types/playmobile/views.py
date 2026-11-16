@@ -12,7 +12,7 @@ from ...views import ClaimViewMixin
 class ClaimView(ClaimViewMixin, SmartFormView):
     class PMClaimForm(ClaimViewMixin.Form):
         base_url = ExternalURLField(label=_("Base URL"))
-        shortcode = forms.CharField(label=_("Shortcode"), max_length=15, min_length=1)
+        shortcode = forms.CharField(label=_("Short Code"), max_length=15, min_length=1)
         username = forms.CharField(label=_("Username"))
         password = forms.CharField(label=_("Password"))
 

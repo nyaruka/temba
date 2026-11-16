@@ -7,7 +7,7 @@ from temba.tests import TembaTest
 class ArabiaCellTest(TembaTest):
     def test_claim(self):
         self.login(self.admin)
-        response = self.client.get(reverse("channels.channel_claim"))
+        response = self.client.get(reverse("channels.channel_list"))
 
         claim_url = reverse("channels.types.arabiacell.claim")
         response = self.client.get(claim_url)

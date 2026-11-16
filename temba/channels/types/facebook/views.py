@@ -150,10 +150,10 @@ class RefreshToken(ChannelTypeMixin, OrgObjPermsMixin, SmartModelActionView, Sma
     fields = ()
     template_name = "channels/types/facebook/refresh_token.html"
     title = _("Reconnect Facebook Page")
-    menu_path = "/settings/workspace"
+    menu_path = "/settings/channels"
 
     def derive_menu_path(self):
-        return f"/settings/channels/{self.get_object().uuid}"
+        return "/settings/channels"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

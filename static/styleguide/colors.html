@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Color Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!--
+    The controls below are drawn with the product's own stylesheets and classes, so this page shows exactly what ships.
+    When a control's look changes, it changes here too - only the page's layout is its own.
+  -->
+  <link rel="stylesheet" href="../css/design-system.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
+  <link rel="stylesheet" href="styleguide.css">
+  <style>
+    .cg {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    .cg-header {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 720px;
+      padding-bottom: 12px;
+    }
+
+    .cg-header h1 {
+      font-size: 26px;
+      letter-spacing: -0.01em;
+    }
+
+    .cg-header p {
+      color: var(--text-2);
+      font-size: 14px;
+    }
+
+    .cg-crumbs {
+      color: var(--text-3);
+      font-size: 12px;
+    }
+
+    .cg-wide {
+      grid-column: 1 / -1;
+    }
+
+    .cg-swatches {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+    }
+
+    .cg-swatch {
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      background: var(--surface);
+    }
+
+    .cg-chip {
+      height: 48px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .cg-swatch-meta {
+      display: flex;
+      flex-direction: column;
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+
+    .cg-swatch-meta code {
+      font-family: var(--font-mono);
+      color: var(--text-1);
+    }
+
+    .cg-swatch-meta span {
+      color: var(--text-2);
+    }
+
+    .cg-ramp {
+      display: grid;
+      grid-template-columns: repeat(10, minmax(0, 1fr));
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+    }
+
+    .cg-ramp div {
+      display: flex;
+      align-items: flex-end;
+      height: 60px;
+      padding: 6px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+    }
+
+    .cg-tones {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+    }
+
+    .cg-tone {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 12px;
+      border: 1px solid;
+      border-radius: var(--r);
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .cg-tone b {
+      font-family: var(--font);
+      font-size: 13px;
+    }
+
+    .cg-rules {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
+    }
+
+    .cg-rule {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      background: var(--surface);
+      font-size: 13px;
+      color: var(--text-2);
+    }
+
+    .cg-rule h3 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-1);
+      font-size: 13.5px;
+    }
+
+    .cg-mark {
+      display: inline-grid;
+      flex: none;
+      place-items: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .cg-mark.do {
+      background: var(--success);
+    }
+
+    .cg-mark.dont {
+      background: var(--danger);
+    }
+
+    .cg-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .cg-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .cg-note {
+      margin-top: 10px;
+      color: var(--text-2);
+      font-size: 12.5px;
+    }
+
+    /* temba-icon isn't on this page, so banners use a plain glyph in the same chip */
+    .cg-banner-icon {
+      display: grid;
+      flex: none;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--danger);
+      font-weight: 700;
+    }
+
+    .dash-banner.warn .cg-banner-icon {
+      color: var(--warning);
+    }
+
+    .dash-banner.info .cg-banner-icon {
+      color: var(--text-3);
+    }
+
+    /* the totals of temba-activity-chart, which are drawn in its shadow DOM, mirrored here */
+    .cg-totals {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      background: var(--surface);
+    }
+
+    .cg-total {
+      padding: 10px 16px;
+    }
+
+    .cg-total + .cg-total {
+      border-left: 1px solid var(--border);
+    }
+
+    .cg-total b {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      font-size: 17px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .cg-total small {
+      color: var(--text-3);
+      font-size: 12px;
+    }
+
+    .cg-change {
+      white-space: nowrap;
+      color: var(--text-3);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .cg-change.up {
+      color: var(--success);
+    }
+
+    .cg-change.down {
+      color: var(--danger);
+    }
+
+    .cg-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 70px;
+    }
+
+    .cg-bars span {
+      display: flex;
+      flex: 1;
+      flex-direction: column-reverse;
+      overflow: hidden;
+      border-radius: 2px 2px 0 0;
+    }
+
+    .cg-bars i {
+      display: block;
+      background: var(--accent);
+    }
+
+    .cg-bars i + i {
+      background: var(--accent-200);
+    }
+
+    .cg-input {
+      height: var(--input-h);
+      width: 220px;
+      max-width: 100%;
+      padding: 0 10px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--r);
+      background: var(--surface);
+      color: var(--text-1);
+      font: 13px var(--font);
+    }
+
+    .cg-input.focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-100);
+    }
+
+    .cg-input.error {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 3px var(--danger-bg);
+    }
+
+    /* .ds resets link colors, so these need its specificity */
+    .ds .cg-link {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .ds .cg-link-danger {
+      color: var(--danger);
+      font-weight: 500;
+    }
+
+    .ds .cg-crumbs a {
+      color: var(--accent);
+    }
+
+    .sg-card-body.cg-row {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      align-content: flex-start;
+      gap: 10px;
+    }
+
+    .cg-usage {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .cg-usage th,
+    .cg-usage td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .cg-usage th {
+      color: var(--text-3);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .cg-usage td {
+      color: var(--text-2);
+    }
+
+    .cg-usage td:first-child {
+      color: var(--text-1);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 860px) {
+      .sg-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .cg-ramp {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="ds cg">
+
+  <header class="cg-header">
+    <div class="cg-crumbs"><a href="styleguide.html">Style guide</a> / Color</div>
+    <h1>Choosing color</h1>
+    <p>One accent for anything that can be acted on or is selected. Four semantic tones for state, and only for state. Everything else is neutral. Every swatch and control here is drawn with the product's own stylesheets, so it shows what ships.</p>
+  </header>
+
+  <!-- palette -->
+  <section class="sg-section">
+    <div class="sg-section-h">
+      <h2>Palette</h2>
+      <p>Neutrals carry the page, the accent carries interaction, and the semantic tones carry state. Each tone comes as a text color, a tinted background and a border, used together.</p>
+    </div>
+    <div class="sg-grid">
+      <section class="sg-card cg-wide">
+        <header class="sg-card-h"><div><h3>Neutrals and text</h3></div></header>
+        <div class="sg-card-body">
+          <div class="cg-swatches">
+            <div class="cg-swatch"><div class="cg-chip" style="background: var(--bg)"></div><div class="cg-swatch-meta"><code>--bg</code><span>Page and sheet background</span></div></div>
+            <div class="cg-swatch"><div class="cg-chip" style="background: var(--surface)"></div><div class="cg-swatch-meta"><code>--surface</code><span>Cards, sections, lists</span></div></div>
+            <div class="cg-swatch"><div class="cg-chip" style="background: var(--sunken)"></div><div class="cg-swatch-meta"><code>--sunken</code><span>Hover, wells, toggles</span></div></div>
+            <div class="cg-swatch"><div class="cg-chip" style="background: var(--border)"></div><div class="cg-swatch-meta"><code>--border</code><span>Dividers, card edges</span></div></div>
+            <div class="cg-swatch"><div class="cg-chip" style="background: var(--border-strong)"></div><div class="cg-swatch-meta"><code>--border-strong</code><span>Inputs, hovered cards</span></div></div>
+            <div class="cg-swatch"><div class="cg-chip" style="background: var(--text-1)"></div><div class="cg-swatch-meta"><code>--text-1</code><span>Titles, values, body</span></div></div>
+            <div class="cg-swatch"><div class="cg-chip" style="background: var(--text-2)"></div><div class="cg-swatch-meta"><code>--text-2</code><span>Notes, secondary copy</span></div></div>
+            <div class="cg-swatch"><div class="cg-chip" style="background: var(--text-3)"></div><div class="cg-swatch-meta"><code>--text-3</code><span>Labels, units, times</span></div></div>
+            <div class="cg-swatch"><div class="cg-chip" style="background: var(--text-4)"></div><div class="cg-swatch-meta"><code>--text-4</code><span>Disabled only</span></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="sg-card cg-wide">
+        <header class="sg-card-h"><div><h3>Accent ramp</h3><p class="sg-card-sub">Derived from <code class="sg-code">--primary</code>.</p></div></header>
+        <div class="sg-card-body">
+          <div class="cg-ramp">
+            <div style="background: var(--accent-50)">50</div>
+            <div style="background: var(--accent-100)">100</div>
+            <div style="background: var(--accent-200)">200</div>
+            <div style="background: var(--accent-300)">300</div>
+            <div style="background: var(--accent-400); color: #fff">400</div>
+            <div style="background: var(--accent-500); color: #fff">500</div>
+            <div style="background: var(--accent-600); color: #fff">600</div>
+            <div style="background: var(--accent-700); color: #fff">700</div>
+            <div style="background: var(--accent-800); color: #fff">800</div>
+            <div style="background: var(--accent-900); color: #fff">900</div>
+          </div>
+          <p class="cg-note">50 for selected rows, 100 for focus halos, 200 for a second chart series, 400 (<code class="sg-code">--accent</code>) for links and the main series, 500 for primary buttons, 700 for highlighted keys in code.</p>
+        </div>
+      </section>
+
+      <section class="sg-card cg-wide">
+        <header class="sg-card-h"><div><h3>Semantic tones</h3></div></header>
+        <div class="sg-card-body">
+          <div class="cg-tones">
+            <div class="cg-tone" style="border-color: var(--success-border); background: var(--success-bg); color: var(--success)"><b>Success</b><span>--success, -bg, -border</span></div>
+            <div class="cg-tone" style="border-color: var(--warning-border); background: var(--warning-bg); color: var(--warning)"><b>Warning</b><span>--warning, -bg, -border</span></div>
+            <div class="cg-tone" style="border-color: var(--danger-border); background: var(--danger-bg); color: var(--danger)"><b>Danger</b><span>--danger, -bg, -border</span></div>
+            <div class="cg-tone" style="border-color: var(--neutral-border); background: var(--neutral-bg); color: var(--neutral)"><b>Neutral</b><span>--neutral, -bg, -border</span></div>
+            <div class="cg-tone" style="border-color: color-mix(in srgb, #dd8a0c 35%, white); background: color-mix(in srgb, #dd8a0c 8%, white); color: #dd8a0c"><b>Status amber</b><span>#DD8A0C, card lights and values</span></div>
+          </div>
+          <p class="cg-note">The warning text color reads as brown in large type, so a summary card's amber light and value use the clearer status amber. Warning text, pills and banners keep <code class="sg-code">--warning</code>, which has the contrast small text needs.</p>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <!-- rules -->
+  <section class="sg-section">
+    <div class="sg-section-h">
+      <h2>Rules for choosing</h2>
+      <p>Pick a color by what it tells someone, never to decorate. If a color doesn't mean something here, the element is neutral.</p>
+    </div>
+    <div class="cg-rules">
+      <div class="cg-rule"><h3><span class="cg-mark do">✓</span>Accent means act or selected</h3>Links, primary buttons, focus rings, the selected row and the main chart series. Nothing else is blue.</div>
+      <div class="cg-rule"><h3><span class="cg-mark do">✓</span>Tone means state</h3>Green for working or up, amber for needs a look, red for broken or down, grey for off. Never for emphasis or variety.</div>
+      <div class="cg-rule"><h3><span class="cg-mark do">✓</span>Color one thing per element</h3>A card shows its tone as a light and its value. The label, note and border stay neutral, so the color reads as a signal.</div>
+      <div class="cg-rule"><h3><span class="cg-mark do">✓</span>Tints go together</h3>A tinted surface uses its tone's -bg and -border, with text in that tone. Pills, banners, error callouts and status codes all follow this.</div>
+      <div class="cg-rule"><h3><span class="cg-mark dont">✕</span>No blue on red</h3>A link on a tinted background takes the tint's color, underlined. The accent clashes with every tone.</div>
+      <div class="cg-rule"><h3><span class="cg-mark dont">✕</span>No tinted card borders</h3>Coloring a whole card's border along with its text turns the card muddy. Let the light carry the tone.</div>
+      <div class="cg-rule"><h3><span class="cg-mark dont">✕</span>No pills for numbers</h3>A change like ↑ 12% is plain colored text beside the value, with an arrow. Past 999% it reads &gt;999%.</div>
+      <div class="cg-rule"><h3><span class="cg-mark dont">✕</span>Don't rely on color alone</h3>Pair a tone with a word, an arrow or a label, e.g. Error, Paused, ↓ 28%, so it reads for someone who can't tell red from green.</div>
+    </div>
+  </section>
+
+  <!-- controls -->
+  <section class="sg-section">
+    <div class="sg-section-h">
+      <h2>Controls</h2>
+      <p>The common controls, drawn with the classes that build them. Use these before styling anything new.</p>
+    </div>
+    <div class="sg-grid">
+      <section class="sg-card">
+        <header class="sg-card-h"><div><h3>Buttons and links</h3><p class="sg-card-sub"><code class="sg-code">.btn</code> in design-system.css</p></div></header>
+        <div class="sg-card-body cg-stack">
+          <div class="cg-row">
+            <button class="btn btn-primary" type="button">Save</button>
+            <button class="btn btn-secondary" type="button">Edit</button>
+            <button class="btn btn-danger" type="button">Delete</button>
+          </div>
+          <div class="cg-row">
+            <a class="cg-link" href="#controls">View setup →</a>
+            <a class="cg-link-danger" href="#controls">Delete channel</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="sg-card">
+        <header class="sg-card-h"><div><h3>Inputs</h3><p class="sg-card-sub">Focus is accent, errors are danger.</p></div></header>
+        <div class="sg-card-body cg-stack">
+          <input class="cg-input" id="cg-name" value="Clinic WhatsApp" aria-label="Name">
+          <input class="cg-input focus" id="cg-focused" value="Focused" aria-label="Focused example">
+          <div class="cg-stack" style="gap: 4px">
+            <input class="cg-input error" id="cg-error" value="123:abc" aria-label="Invalid example">
+            <span style="color: var(--danger); font-size: 12px">Credentials don't appear to be valid.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="sg-card">
+        <header class="sg-card-h"><div><h3>Status pills</h3><p class="sg-card-sub"><code class="sg-code">.dash-pill</code></p></div></header>
+        <div class="sg-card-body cg-row">
+          <span class="dash-pill good">Ready</span>
+          <span class="dash-pill warn">Not syncing</span>
+          <span class="dash-pill bad">Error</span>
+          <span class="dash-pill">Disabled</span>
+        </div>
+      </section>
+
+      <section class="sg-card cg-wide">
+        <header class="sg-card-h"><div><h3>Summary cards</h3><p class="sg-card-sub"><code class="sg-code">.dash-card</code> with a tone of good, warn or bad, and the <code class="sg-code">sparkline</code> filter</p></div></header>
+        <div class="sg-card-body">
+          <div class="dash cg-cards" style="padding: 0">
+            <div class="dash-cards">
+              <div class="dash-card good"><span class="dash-card-label">Status</span><span class="dash-card-value">Ready</span><span class="dash-card-note">Sending and receiving messages.</span><span class="dash-card-more">View setup</span></div>
+              <div class="dash-card"><span class="dash-card-label">Messages · 30 days</span><span class="dash-card-value">7,469</span>
+                <svg class="dash-spark" viewBox="0 0 160 30" preserveAspectRatio="none" aria-hidden="true"><path class="area" d="M0 22 L16 18 L32 20 L48 12 L64 15 L80 9 L96 13 L112 7 L128 10 L144 6 L160 8 L160 30 L0 30 Z"></path><path class="line" d="M0 22 L16 18 L32 20 L48 12 L64 15 L80 9 L96 13 L112 7 L128 10 L144 6 L160 8"></path><circle class="end" cx="160" cy="8" r="2.4"></circle></svg>
+                <span class="dash-card-note">957 in · 6,512 out</span><span class="dash-card-more">See activity</span></div>
+              <div class="dash-card warn"><span class="dash-card-label">Speed</span><span class="dash-card-value">5 <small>msg/sec</small></span><span class="dash-card-note">A broadcast to 100k contacts takes about 6 hours</span><span class="dash-card-more">About speed</span></div>
+              <div class="dash-card bad"><span class="dash-card-label">Templates</span><span class="dash-card-value">5 <small>approved</small></span><span class="dash-card-note">Last sync failed 1 hour ago</span><span class="dash-card-more">View templates</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="sg-card cg-wide">
+        <header class="sg-card-h"><div><h3>Attention banners</h3><p class="sg-card-sub"><code class="sg-code">.dash-banner</code>, with links in the banner's own tone</p></div></header>
+        <div class="sg-card-body cg-stack">
+          <div class="dash-banner"><span class="cg-banner-icon">!</span><div class="dash-banner-text"><div class="dash-banner-title">Sending is paused</div>The provider isn't accepting messages, so they'll wait here until it does.</div><div class="dash-banner-actions"><button type="button" class="dash-link">View logs</button></div></div>
+          <div class="dash-banner warn"><span class="cg-banner-icon">!</span><div class="dash-banner-text"><div class="dash-banner-title">The phone hasn't synced for 2 hours</div>Messages won't be sent or received until it does.</div><div class="dash-banner-actions"><button type="button" class="dash-link">View syncs</button></div></div>
+          <div class="dash-banner info"><span class="cg-banner-icon">⊘</span><div class="dash-banner-text"><div class="dash-banner-title">This channel is disabled</div>It won't send or receive messages until it's enabled again.</div></div>
+        </div>
+      </section>
+
+      <section class="sg-card">
+        <header class="sg-card-h"><div><h3>Rows</h3><p class="sg-card-sub"><code class="sg-code">.dash-row</code>; a selected row is <code class="sg-code">--accent-50</code></p></div></header>
+        <div class="sg-card-body">
+          <div class="dash-section">
+            <div class="dash-rows">
+              <div class="dash-row bad"><span class="dash-dot"></span><span class="dash-row-main"><span class="dash-row-title">Message Send</span><span class="dash-row-detail">Failed after 120 ms</span></span><span class="dash-row-meta">just now</span></div>
+              <div class="dash-row" style="background: var(--sunken)"><span class="dash-dot"></span><span class="dash-row-main"><span class="dash-row-title">Message Status</span><span class="dash-row-detail">Hovered</span></span><span class="dash-row-meta">2 min ago</span></div>
+              <div class="dash-row" style="background: var(--accent-50)"><span class="dash-dot"></span><span class="dash-row-main"><span class="dash-row-title">Message Send</span><span class="dash-row-detail">Selected</span></span><span class="dash-row-meta">5 min ago</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="sg-card">
+        <header class="sg-card-h"><div><h3>Change</h3><p class="sg-card-sub">As drawn by <code class="sg-code">temba-activity-chart</code></p></div></header>
+        <div class="sg-card-body">
+          <div class="cg-totals">
+            <div class="cg-total"><b>6,512 <span class="cg-change down">↓ 28%</span></b><small>Outgoing</small></div>
+            <div class="cg-total"><b>90,000 <span class="cg-change up">↑ &gt;999%</span></b><small>Incoming</small></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="sg-card">
+        <header class="sg-card-h"><div><h3>Chart series</h3><p class="sg-card-sub">Main series accent, second series accent-200</p></div></header>
+        <div class="sg-card-body">
+          <div class="cg-bars" aria-hidden="true">
+            <span><i style="height: 30px"></i><i style="height: 6px"></i></span>
+            <span><i style="height: 44px"></i><i style="height: 9px"></i></span>
+            <span><i style="height: 20px"></i><i style="height: 4px"></i></span>
+            <span><i style="height: 52px"></i><i style="height: 8px"></i></span>
+            <span><i style="height: 38px"></i><i style="height: 12px"></i></span>
+            <span><i style="height: 24px"></i><i style="height: 5px"></i></span>
+            <span><i style="height: 48px"></i><i style="height: 10px"></i></span>
+            <span><i style="height: 56px"></i><i style="height: 6px"></i></span>
+            <span><i style="height: 34px"></i><i style="height: 9px"></i></span>
+            <span><i style="height: 41px"></i><i style="height: 7px"></i></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="sg-card cg-wide">
+        <header class="sg-card-h"><div><h3>Errors and HTTP logs</h3><p class="sg-card-sub"><code class="sg-code">.log-error</code>, <code class="sg-code">.hlog-card</code> and the <code class="sg-code">http_highlight</code> filter</p></div></header>
+        <div class="sg-card-body cg-stack">
+          <div class="log-errors">
+            <div class="log-error"><span>!</span><div>Permission Denied <a href="#controls">Learn more</a></div></div>
+          </div>
+          <div class="hlog">
+            <div class="hlog-card">
+              <div class="hlog-bar"><span>Response</span><span class="hlog-meta"><span>120 ms</span><span class="hlog-status bad">401</span></span></div>
+<pre><span class="hl-dim">HTTP/1.1</span> <span class="hl-status">401 Unauthorized</span>
+<span class="hl-key">Content-Type</span>: application/json
+
+{<span class="hl-key">"error"</span>: {<span class="hl-key">"message"</span>: <span class="hl-str">"Invalid OAuth access token."</span>, <span class="hl-key">"code"</span>: <span class="hl-num">190</span>, <span class="hl-key">"retry"</span>: <span class="hl-lit">false</span>}}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <!-- lookup -->
+  <section class="sg-section">
+    <div class="sg-section-h">
+      <h2>Which color, where</h2>
+      <p>A lookup for the cases that come up most.</p>
+    </div>
+    <section class="sg-card">
+      <div style="overflow-x: auto">
+        <table class="cg-usage">
+          <thead><tr><th>Element</th><th>Color</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Link, text button</td><td><code class="sg-code">--accent</code></td><td>On a tinted background, the tint's own color, underlined.</td></tr>
+            <tr><td>Primary button</td><td><code class="sg-code">--accent-500</code></td><td>One per view. Everything else is a secondary button.</td></tr>
+            <tr><td>Destructive action</td><td><code class="sg-code">--danger</code></td><td>Only where it can't be undone, e.g. confirming a delete. The way into it is a red link.</td></tr>
+            <tr><td>Selected row</td><td><code class="sg-code">--accent-50</code></td><td>Hover is <code class="sg-code">--sunken</code>, so the two never look alike.</td></tr>
+            <tr><td>Focus</td><td><code class="sg-code">--accent</code> ring</td><td>Inputs add an <code class="sg-code">--accent-100</code> halo. Only for keyboard focus, never left after a click.</td></tr>
+            <tr><td>Card value with a tone</td><td>Tone color</td><td>With its light. Amber cards use status amber <code class="sg-code">#DD8A0C</code>.</td></tr>
+            <tr><td>Pill, banner, callout</td><td>Tone, -bg, -border</td><td>Banner titles stay <code class="sg-code">--text-1</code>; the icon chip takes the tone.</td></tr>
+            <tr><td>Change ↑ ↓</td><td><code class="sg-code">--success</code>, <code class="sg-code">--danger</code></td><td>No change is <code class="sg-code">--text-3</code>. Capped at &gt;999%.</td></tr>
+            <tr><td>Chart series</td><td><code class="sg-code">--accent</code>, <code class="sg-code">--accent-200</code></td><td>Main series darker, second series lighter, stacked.</td></tr>
+            <tr><td>Labels and units</td><td><code class="sg-code">--text-3</code></td><td>Uppercase labels get 0.06em letter-spacing.</td></tr>
+            <tr><td>HTTP status</td><td>Success or danger tint</td><td>No response at all counts as danger.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </section>
+
+</div>
+</body>
+</html>

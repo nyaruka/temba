@@ -23,8 +23,9 @@ class TelegramType(ChannelType):
     redact_response_keys = {"first_name", "last_name", "username"}
 
     claim_blurb = _(
-        "Add a %(link)s bot to send and receive messages to Telegram users for free. Your users will need an Android, "
-        "Windows or iOS device and a Telegram account to send and receive messages."
+        "A %(link)s bot lets you message contacts for free, with no phone numbers or carrier fees involved. Contacts "
+        "find your bot by its username and start the conversation themselves, and can reply by tapping buttons as well "
+        "as by sending text, photos, voice notes and locations."
     ) % {"link": '<a target="_blank" href="https://telegram.org">Telegram</a>'}
     claim_view = ClaimView
 

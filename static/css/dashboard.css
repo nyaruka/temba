@@ -1,0 +1,762 @@
+/*
+  The parts read pages are built from, as dashboards: a status pill, attention banners, summary cards, sections (e.g.
+  recent activity) and a details footer. Each one opens what it summarizes in a sheet, see
+  templates/includes/dashboard_sheet.html. Pages combine these rather than styling their own.
+*/
+
+.dash {
+  container: dash / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 24px;
+}
+
+/* status */
+
+.dash-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--neutral-border);
+  background: var(--neutral-bg);
+  color: var(--neutral);
+  font-size: 12px;
+  font-weight: var(--w-medium);
+  white-space: nowrap;
+}
+
+.dash-pill::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.dash-pill.good {
+  border-color: var(--success-border);
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.dash-pill.bad {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.dash-pill.warn {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+
+/* attention banners, for problems along with what fixes them */
+
+.dash-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--danger-border);
+  background: var(--danger-bg);
+  --icon-color: var(--danger);
+}
+
+.dash-banner.warn {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+  --icon-color: var(--warning);
+}
+
+.dash-banner.info {
+  border-color: var(--neutral-border);
+  background: var(--neutral-bg);
+  --icon-color: var(--text-3);
+}
+
+.dash-banner > temba-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.dash-banner-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.dash-banner-title {
+  font-weight: var(--w-semibold);
+  color: var(--text-1);
+}
+
+.dash-banner-actions {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* links on a tinted background (a red error, an amber warning) take its color, underlined, rather than clashing with
+   it in the accent color */
+.log-error a,
+.dash-banner:not(.info) a,
+.dash-banner:not(.info) .dash-link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.dash-banner:not(.info) .dash-link {
+  color: var(--danger);
+  font-weight: var(--w-semibold);
+}
+
+.dash-banner.warn .dash-link {
+  color: var(--warning);
+}
+
+/* summary cards - a card is a link to what it summarizes, so it's a button as a whole, and carries a tone (good, warn
+   or bad) that colors its value */
+
+/* the cards share one row in equal widths. Where a row doesn't fit them all at a comfortable width (about 170px each),
+   they regroup into rows that are all full - four as two by two, six as three by two then two by three - which still fit
+   a phone. Never a partly filled row, a card stretched across columns or a row that scrolls sideways. Three and five
+   don't divide, so they go straight from one row to one column; two stay side by side. */
+.dash-cards {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+@container dash (max-width: 1100px) {
+  /* six: three by two */
+  .dash-cards:has(> :nth-child(6)) {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@container dash (max-width: 900px) {
+  /* five: one column */
+  .dash-cards:has(> :nth-child(5)):not(:has(> :nth-child(6))) {
+    grid-auto-flow: row;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container dash (max-width: 720px) {
+  /* four: two by two */
+  .dash-cards:has(> :nth-child(4)):not(:has(> :nth-child(5))) {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container dash (max-width: 540px) {
+  /* three: one column, six: two by three */
+  .dash-cards:has(> :nth-child(3)):not(:has(> :nth-child(4))) {
+    grid-auto-flow: row;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dash-cards:has(> :nth-child(6)) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.dash-card {
+  --tone: var(--accent);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px 16px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+  text-align: left;
+  font: inherit;
+  color: var(--text-1);
+}
+
+/* the tone shows as a light beside the value, in the same color as the value - the note and the border stay neutral.
+   Amber is a clear one of its own, as the warning text color reads as brown at this size. */
+.dash-card.good {
+  --tone: var(--success);
+}
+
+.dash-card.warn {
+  --tone: #dd8a0c;
+}
+
+.dash-card.bad {
+  --tone: var(--danger);
+}
+
+button.dash-card,
+a.dash-card {
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+button.dash-card:hover,
+a.dash-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-2);
+  transform: translateY(-1px);
+}
+
+button.dash-card:focus-visible,
+a.dash-card:focus-visible,
+.dash-link:focus-visible,
+.dash-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.dash-card-label {
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: var(--w-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dash-card-value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 6px;
+  font-size: 22px;
+  font-weight: var(--w-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.dash-card.good .dash-card-value,
+.dash-card.warn .dash-card-value,
+.dash-card.bad .dash-card-value {
+  color: var(--tone);
+}
+
+.dash-card.good .dash-card-value::before,
+.dash-card.warn .dash-card-value::before,
+.dash-card.bad .dash-card-value::before {
+  content: "";
+  flex: none;
+  align-self: center;
+  width: 9px;
+  height: 9px;
+  margin-right: 4px;
+  border-radius: 999px;
+  background: var(--tone);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tone) 20%, transparent);
+}
+
+/* a unit or qualifier beside the value, e.g. "approved" */
+.dash-card-value small {
+  color: var(--text-3);
+  font-size: 12.5px;
+  font-weight: var(--w-medium);
+}
+
+.dash-card-note {
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+
+
+.dash-card-more {
+  margin-top: auto;
+  padding-top: 4px;
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: var(--w-medium);
+}
+
+.dash-card-more::after {
+  content: " \2192";
+}
+
+/* what opened a sheet doesn't look hovered when the sheet closes over the pointer, until the pointer leaves it */
+.dash-opened.dash-opened:hover {
+  border-color: var(--border);
+  box-shadow: var(--shadow-1);
+  transform: none;
+}
+
+.dash-row.dash-opened:hover {
+  background: none;
+  box-shadow: none;
+}
+
+.dash-link.dash-opened:hover {
+  text-decoration: none;
+}
+
+/* the sparkline filter's markup */
+.dash-spark {
+  display: block;
+  width: 100%;
+  height: 30px;
+  overflow: visible;
+}
+
+.dash-spark .area {
+  fill: var(--tone, var(--accent));
+  fill-opacity: 0.1;
+}
+
+.dash-spark .line {
+  fill: none;
+  stroke: var(--tone, var(--accent));
+  stroke-width: 1.6;
+  vector-effect: non-scaling-stroke;
+}
+
+.dash-spark .end {
+  fill: var(--tone, var(--accent));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button.dash-card {
+    transition: none;
+  }
+
+  button.dash-card:hover,
+a.dash-card:hover {
+    transform: none;
+  }
+}
+
+/* two columns of sections, e.g. recent logs beside the activity chart (which gets the wider one), stacking on narrow
+   screens */
+
+/* side by side, the columns are always the same height, each section filling its column */
+.dash-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+@container dash (max-width: 760px) {
+  .dash-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* sections, e.g. recent activity */
+
+.dash-section {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+
+/* a fixed height, so the heads of sections side by side line up whatever they hold */
+.dash-section-head {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dash-section-title {
+  flex: 1;
+  color: var(--text-1);
+  font-size: 14px;
+  font-weight: var(--w-semibold);
+}
+
+.dash-section-note {
+  color: var(--text-3);
+  font-size: 12.5px;
+  font-weight: var(--w-regular);
+}
+
+.dash-link {
+  border: none;
+  padding: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: var(--w-medium);
+  cursor: pointer;
+  white-space: nowrap;
+  border-radius: var(--r-xs);
+}
+
+.dash-link:hover {
+  text-decoration: underline;
+}
+
+.dash-rows {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.dash-row {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 16px;
+  border: none;
+  border-top: 1px solid var(--border);
+  background: none;
+  font: inherit;
+  color: var(--text-1);
+  text-align: left;
+}
+
+.dash-row:first-child {
+  border-top: none;
+}
+
+button.dash-row {
+  cursor: pointer;
+}
+
+button.dash-row:hover {
+  background: var(--sunken);
+}
+
+.dash-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--success);
+}
+
+.dash-row.bad .dash-dot {
+  background: var(--danger);
+}
+
+.dash-row-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dash-row-title {
+  font-size: 13px;
+  font-weight: var(--w-medium);
+}
+
+.dash-row-detail {
+  overflow: hidden;
+  color: var(--text-3);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dash-row.bad .dash-row-detail {
+  color: var(--danger);
+}
+
+.dash-row-meta {
+  color: var(--text-3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.dash-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+  color: var(--text-3);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* details footer - plain facts about the thing, under a rule rather than in a card */
+
+.dash-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px 24px;
+  margin: 0;
+  padding: 16px 4px 0;
+  border-top: 1px solid var(--border);
+}
+
+.dash-details dt {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.dash-details dd {
+  margin: 2px 0 0;
+  color: var(--text-1);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+/* tables in sheets */
+
+.dash-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.dash-table th {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: var(--w-medium);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.dash-table td {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-1);
+}
+
+.dash-table tr:last-child td {
+  border-bottom: none;
+}
+
+.dash-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 640px) {
+  .dash-banner {
+    flex-wrap: wrap;
+  }
+
+  .dash-banner-actions {
+    width: 100%;
+    padding-left: 28px;
+  }
+}
+
+/* logs - a log's summary, its errors and the HTTP requests it made, shown on its own page or in a sheet */
+
+.log-view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.log-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.log-summary-title {
+  color: var(--text-1);
+  font-size: 17px;
+  font-weight: var(--w-semibold);
+}
+
+.log-summary .log-summary-meta {
+  flex-basis: 100%;
+}
+
+.log-summary-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  color: var(--text-3);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.log-owner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.log-errors {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.log-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--danger-border);
+  border-radius: var(--r);
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  --icon-color: var(--danger);
+}
+
+.log-error temba-icon {
+  flex: none;
+  margin-top: 1px;
+}
+
+.log-error a {
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+.hlog {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.hlog-card {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.hlog-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: var(--w-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hlog-url {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-weight: var(--w-regular);
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.hlog-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: var(--w-regular);
+  letter-spacing: 0;
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.hlog-status {
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--success-bg);
+  color: var(--success);
+  font-weight: var(--w-semibold);
+}
+
+.hlog-status.bad {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.hlog pre {
+  margin: 0;
+  padding: 12px 14px;
+  border: none;
+  background: none;
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.hlog-none {
+  padding: 12px 14px;
+  color: var(--danger);
+  font-size: 13px;
+}
+
+/* the http_highlight filter's markup */
+.hl-method,
+.hl-status {
+  color: var(--text-1);
+  font-weight: var(--w-semibold);
+}
+
+.hl-dim {
+  color: var(--text-3);
+}
+
+.hl-key {
+  color: var(--accent-700, #1d4ed8);
+}
+
+.hl-str {
+  color: #0f7b4a;
+}
+
+.hl-num {
+  color: #b45309;
+}
+
+.hl-lit {
+  color: #7c3aed;
+}

@@ -31,8 +31,7 @@ class VKTypeTest(TembaTest):
         url = reverse("channels.types.vk.claim")
         self.login(self.admin)
 
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, url)
+        self.assertChannelTypeOffered(url)
 
         token = "x" * 200
 

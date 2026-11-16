@@ -13,7 +13,6 @@ from ...models import ChannelType
 from .views import (
     WHATSAPP_GRAPH_API_BASE,
     ClaimView,
-    ClearSessionToken,
     Connect,
     RequestCode,
     SelectWABA,
@@ -40,7 +39,11 @@ class WhatsAppType(ChannelType):
     async_activation = False
     template_type = "whatsapp"
 
-    claim_blurb = _("If you have an enterprise WhatsApp account, you can connect it to communicate with your contacts")
+    claim_blurb = _(
+        "Connect your WhatsApp Business number straight to Meta's WhatsApp Cloud API, with no provider in between, by "
+        "signing in with Facebook. Contacts can reply with photos, videos, documents, voice notes and locations or by "
+        "tapping buttons, and you can reach them at any time with templates approved by Meta."
+    )
     claim_view = ClaimView
     update_form = UpdateForm
 
@@ -49,9 +52,6 @@ class WhatsAppType(ChannelType):
     def get_urls(self):
         return [
             self.get_claim_url(),
-            re_path(
-                r"^clear_session_token/$", ClearSessionToken.as_view(channel_type=self), name="clear_session_token"
-            ),
             re_path(
                 r"^(?P<uuid>[a-z0-9\-]+)/request_code/$", RequestCode.as_view(channel_type=self), name="request_code"
             ),

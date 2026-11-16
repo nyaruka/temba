@@ -23,7 +23,9 @@ class RocketChatType(ChannelType):
 
     schemes = [URN.ROCKETCHAT_SCHEME]
 
-    claim_blurb = _("Add a %(link)s bot to send and receive messages to Rocket.Chat users.") % {
-        "link": '<a target="_blank" href="https://rocket.chat/">Rocket.Chat</a>'
-    }
+    claim_blurb = _(
+        "%(link)s is an open source chat platform you can host yourself. Through its Omnichannel, contacts who reach "
+        "you on Rocket.Chat, e.g. through its live chat widget on your website, can be answered by your flows, and "
+        "messages and replies can include attachments."
+    ) % {"link": '<a target="_blank" href="https://rocket.chat/">Rocket.Chat</a>'}
     claim_view = ClaimView

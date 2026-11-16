@@ -126,6 +126,9 @@ export class NotificationList extends TembaList {
       } else if (notification.type === 'tickets:opened') {
         icon = Icon.tickets;
         body = msg('New unassigned ticket');
+      } else if (notification.type === 'invitation:accepted') {
+        icon = Icon.users;
+        body = msg(str`${notification.user.email} joined your workspace`);
       }
       return html`<div
         style="color:${color};display:flex;align-items:flex-start;flex-direction:row;font-weight:${notification.is_seen

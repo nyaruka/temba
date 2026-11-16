@@ -26,6 +26,13 @@ class ClaimView(ClaimViewMixin, SmartFormView):
         password = forms.CharField(label=_("Password"))
         service_id = forms.CharField(label=_("Service ID"))
 
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+            # most numbers are in the workspace's own country
+            if country := self.request.org.default_country_code:
+                self.fields["country"].initial = country
+
     form_class = MacrokioskClaimForm
 
     def get_submitted_country(self, data):

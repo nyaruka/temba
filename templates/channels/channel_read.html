@@ -1,8 +1,8 @@
 {% extends "smartmin/read.html" %}
-{% load smartmin temba channels i18n tz %}
+{% load smartmin temba channels i18n tz humanize %}
 
 {% block title %}
-  <temba-icon name="{{ object.type.icon }}"> </temba-icon>
+  <temba-channel-logo type="{{ object.channel_type }}" name="{{ object.type.name }}" size="28"> </temba-channel-logo>
   <div id="title-text">{{ object.name }}</div>
 {% endblock title %}
 {% block subtitle %}
@@ -16,248 +16,193 @@
 {% block fields %}
 {% endblock fields %}
 {% block content %}
-  <div class="details card mt-0 mb-6 flex flex-shrink-0 flex-wrap gap-4">
-    <div class="detail">
-      <div class="label">{% trans "Type" %}</div>
-      <div class="value">{{ object.type.name }}</div>
-    </div>
-    {% if object.address %}
-      <div class="detail">
-        <div class="label">{% trans "Address" %}</div>
-        <div class="value">
-          {{ object.get_address_display }}
-          {% if object.country %}({{ object.country.code }}){% endif %}
+  <div class="dash">
+    {% if send_paused %}
+      <div class="dash-banner">
+        <temba-icon name="alert_warning" size="1.1"></temba-icon>
+        <div class="dash-banner-text">
+          <div class="dash-banner-title">{% trans "Sending is paused" %}</div>
+          {% trans "The provider isn't accepting messages, so they'll wait here until it does." %}
+        </div>
+        {% if sheets.logs %}
+          <div class="dash-banner-actions">
+            <button type="button" class="dash-link" data-sheet="logs">{% trans "View logs" %}</button>
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+    {% if delayed_sync %}
+      <div class="dash-banner warn">
+        <temba-icon name="alert_warning" size="1.1"></temba-icon>
+        <div class="dash-banner-text">
+          <div class="dash-banner-title">
+            {% blocktrans trimmed with since=last_sync.created_on|timesince %}
+              The phone hasn't synced for {{ since }}
+            {% endblocktrans %}
+          </div>
+          {% trans "Messages won't be sent or received until it does. Check that it's on and connected to the internet." %}
+        </div>
+        <div class="dash-banner-actions">
+          <button type="button" class="dash-link" data-sheet="syncs">{% trans "View syncs" %}</button>
         </div>
       </div>
     {% endif %}
-    <div class="detail">
-      <div class="label">{% trans "Status" %}</div>
-      <div class="value">
-        {% if not object.is_enabled %}
-          <temba-label icon="org_suspended" backgroundcolor="#eee" textcolor="#999">{% trans "Disabled" %}</temba-label>
-        {% elif send_paused %}
-          <temba-label icon="alert_warning" danger title="{% trans "Sending is paused because the provider isn't accepting messages." %}">
-            {% trans "Paused" %}
-          </temba-label>
-        {% else %}
-          <temba-label icon="check" backgroundcolor="rgb(136 193 122)" textcolor="white">{% trans "Ready" %}</temba-label>
+    <div class="dash-cards">
+      {# whether it's working, with the setup or whatever explains a problem a click away #}
+      <button type="button" class="dash-card {{ status.tone }}" data-sheet="{{ status.sheet }}">
+        <span class="dash-card-label">{% trans "Status" %}</span>
+        <span class="dash-card-value">{{ status.value }}</span>
+        <span class="dash-card-note">{{ status.note }}</span>
+        <span class="dash-card-more">{{ status.more }}</span>
+      </button>
+      <button type="button" class="dash-card" data-sheet="activity">
+        <span class="dash-card-label">
+          {% blocktrans trimmed with days=activity.days %}
+            Messages · {{ days }} days
+          {% endblocktrans %}
+        </span>
+        <span class="dash-card-value">{{ activity.total|intcomma }}</span>
+        {{ activity.series|sparkline }}
+        <span class="dash-card-note">
+          {% blocktrans trimmed with received=activity.received|intcomma sent=activity.sent|intcomma %}
+            {{ received }} in · {{ sent }} out
+          {% endblocktrans %}
+        </span>
+        <span class="dash-card-more">{% trans "See activity" %}</span>
+      </button>
+      {% if sheets.templates %}
+        <button type="button" class="dash-card {% if templates.last_sync.is_error %}bad{% endif %}" data-sheet="templates">
+          <span class="dash-card-label">{% trans "Templates" %}</span>
+          {% if templates.total %}
+            <span class="dash-card-value">
+              {{ templates.approved|intcomma }}
+              <small>{% trans "approved" %}</small>
+            </span>
+          {% else %}
+            <span class="dash-card-value">{% trans "None" %}</span>
+          {% endif %}
+          {% if templates.others %}
+            <span class="dash-card-note">{{ templates.others|join:", " }}</span>
+          {% endif %}
+          {% if templates.last_sync.is_error %}
+            <span class="dash-card-note">
+              {% blocktrans trimmed with since=templates.last_sync.created_on|timesince %}
+                Last sync failed {{ since }} ago
+              {% endblocktrans %}
+            </span>
+          {% elif templates.last_sync %}
+            <span class="dash-card-note">
+              {% blocktrans trimmed with since=templates.last_sync.created_on|timesince %}
+                Synced {{ since }} ago
+              {% endblocktrans %}
+            </span>
+          {% endif %}
+          <span class="dash-card-more">{% trans "View templates" %}</span>
+        </button>
+      {% endif %}
+      {% if object.is_android %}
+        <button type="button" class="dash-card" data-sheet="syncs">
+          <span class="dash-card-label">{% trans "Phone" %}</span>
+          {% if last_sync %}
+            <span class="dash-card-value">
+              {{ last_sync.power_level }}%
+              <small>{% trans "battery" %}</small>
+            </span>
+            <span class="dash-card-note">
+              {% blocktrans trimmed with since=last_sync.created_on|timesince network=last_sync.network_type %}
+                On {{ network }}, synced {{ since }} ago
+              {% endblocktrans %}
+            </span>
+            {% if last_sync.pending_message_count %}
+              <span class="dash-card-note">
+                {% blocktrans trimmed count counter=last_sync.pending_message_count %}
+                  {{ counter }} message waiting to send
+                {% plural %}
+                  {{ counter }} messages waiting to send
+                {% endblocktrans %}
+              </span>
+            {% endif %}
+          {% else %}
+            <span class="dash-card-value">{% trans "Not synced" %}</span>
+            <span class="dash-card-note">{% trans "The phone hasn't connected yet." %}</span>
+          {% endif %}
+          <span class="dash-card-more">{% trans "View syncs" %}</span>
+        </button>
+      {% endif %}
+      <div class="dash-card {{ speed.tone }}">
+        <span class="dash-card-label">{% trans "Speed" %}</span>
+        <span class="dash-card-value">
+          {{ speed.tps|intcomma }}
+          <small>{% trans "msg/sec" %}</small>
+        </span>
+        <span class="dash-card-note">
+          {% blocktrans trimmed with duration=speed.duration %}
+            A broadcast to 100k contacts takes about {{ duration }}
+          {% endblocktrans %}
+        </span>
+        {% if speed.help_url %}
+          <a class="dash-card-more" href="{{ speed.help_url }}" target="_blank" rel="noopener">{% trans "About speed" %}</a>
         {% endif %}
       </div>
     </div>
-    {% if object.is_android %}
-      <div class="detail">
-        <div class="label">{% trans "Last Synced" %}</div>
-        <div class="value {% if delayed_sync_event %}text-error{% endif %}">
-          {% if last_sync %}
-            {% blocktrans trimmed with last_sync.created_on|timesince as last_sync %}
-              {{ last_sync }} ago
-            {% endblocktrans %}
-          {% else %}
-            {% trans "Not synced yet" %}
-          {% endif %}
-        </div>
-      </div>
-    {% endif %}
-  </div>
-  <div class="shadow flex px-4 rounded-lg mb-6 bg-white">
-    <div class="flex-grow"></div>
-    <temba-range-picker min='{{ chart_min|date:"Y-m-d" }}' hideall> </temba-range-picker>
-  </div>
-  {% block charts-zone %}
-    {% if object.is_android %}
-      {% if last_sync %}
-        <div class="sync-summary mb-4">
-          <div class="flex text-gray-600">
-            <div class="i-status w-12 py-1 px-2">
-              {% if last_sync.network_type == "WIFI" %}
-                <div style="font-size: 16px" class="icon-connection -mt-1"></div>
-              {% else %}
-                <div style="font-size: 16px" class="icon-radio"></div>
-              {% endif %}
-            </div>
-            <div class="t-status">
-              {% trans "ON" %}
-              {{ last_sync.network_type }}
-            </div>
+    <div class="dash-columns">
+      {% if sheets.logs %}
+        <div class="dash-section">
+          <div class="dash-section-head">
+            <div class="dash-section-title">{% trans "Recent logs" %}</div>
+            <button type="button" class="dash-link" data-sheet="logs">{% trans "View all" %}</button>
           </div>
-          <div class="flex text-gray-600">
-            <div class="i-status w-12 px-3">
-              {% if last_sync.power_level < 20 %}
-                <div class="mini-status icon-battery-empty"></div>
-              {% elif last_sync.power_level >= 20 and last_sync.power_level <= 80 %}
-                <div class="mini-status icon-battery-half"></div>
-              {% else %}
-                <div class="mini-status icon-battery-full rotate"></div>
-              {% endif %}
-            </div>
-            <div class="t-status">{{ last_sync.power_level }}%</div>
-            <div class="plugged px-2">
-              {% if last_sync.power_status == "UNK" %}
-                {% trans "UNKNOWN" %}
-              {% endif %}
-              {% if last_sync.power_status == "DIS" %}
-                {% trans "DISCHARGING" %}
-              {% endif %}
-              {% if last_sync.power_status == "CHA" %}
-                {% trans "CHARGING" %}
-              {% endif %}
-              {% if last_sync.power_status == "FUL" %}
-                {% trans "FULLY CHARGED" %}
-              {% endif %}
-            </div>
+          <div class="dash-rows">
+            {% for log in recent_logs %}
+              <button type="button" class="dash-row{% if log.is_error %} bad{% endif %}" data-sheet="logs" data-sheet-item="{{ log.url }}">
+                <span class="dash-dot" aria-label="{% if log.is_error %}{% trans "Error" %}{% else %}{% trans "OK" %}{% endif %}"></span>
+                <span class="dash-row-main">
+                  <span class="dash-row-title">{{ log.type_display }}</span>
+                  <span class="dash-row-detail">
+                    {% if log.is_error %}
+                      {% blocktrans trimmed with ms=log.elapsed_ms|intcomma %}Failed after {{ ms }} ms{% endblocktrans %}
+                    {% else %}
+                      {% blocktrans trimmed with ms=log.elapsed_ms|intcomma %}Took {{ ms }} ms{% endblocktrans %}
+                    {% endif %}
+                  </span>
+                </span>
+                <span class="dash-row-meta">
+                  <temba-date value="{{ log.created_on }}" display="relative"></temba-date>
+                </span>
+              </button>
+            {% empty %}
+              <div class="dash-empty">{% trans "Nothing in the last 7 days." %}</div>
+            {% endfor %}
           </div>
         </div>
       {% endif %}
-    {% endif %}
-    <temba-chart class="shadow mb-6" url="{% url 'channels.channel_chart' object.uuid %}" dataname="Messages" legend showall requireWindow xtype="time" palette="qualitative-paired" colorIndex="0">
-    </temba-chart>
-    <table class="list lined">
-      <thead>
-        <tr>
-          <th>{% trans "Month" %}</th>
-          <th class="text-right">
-            {% if has_voice %}
-              {% trans "Incoming Text" %}
-            {% else %}
-              {% trans "Incoming" %}
-            {% endif %}
-          </th>
-          <th class="text-right">
-            {% if has_voice %}
-              {% trans "Outgoing Text" %}
-            {% else %}
-              {% trans "Outgoing" %}
-            {% endif %}
-          </th>
-          {% if has_voice %}
-            <th class="text-right">{% trans "Incoming Voice" %}</th>
-            <th class="text-right">{% trans "Outgoing Voice" %}</th>
-          {% endif %}
-        </tr>
-      </thead>
-      <tbody>
-        {% for month_data in monthly_counts %}
-          <tr>
-            <td>{{ month_data.month_start|date:"F Y" }}</td>
-            <td class="text-right">{{ month_data.text_in|intcomma }}</td>
-            <td class="text-right">{{ month_data.text_out|intcomma }}</td>
-            {% if has_voice %}
-              <td class="text-right">{{ month_data.voice_in|intcomma }}</td>
-              <td class="text-right">{{ month_data.voice_out|intcomma }}</td>
-            {% endif %}
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% endblock charts-zone %}
-  {% if object.is_android %}
-    <table class="list lined mt-4">
-      <thead>
-        <tr>
-          <th>{% trans "Synced on" %}</th>
-          <th class="align-center">{% trans "Incoming" %}</th>
-          <th class="align-center">{% trans "Outgoing" %}</th>
-          <th class="align-center">{% trans "Pending" %}</th>
-          <th class="align-center">{% trans "Retry" %}</th>
-          <th class="align-center">{% trans "Battery" %}</th>
-          <th class="align-center">{% trans "Network" %}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for sync_event in latest_sync_events %}
-          <tr>
-            <td>{{ sync_event.created_on }}</td>
-            <td class="align-center">{{ sync_event.incoming_command_count|intcomma }}</td>
-            <td class="align-center">{{ sync_event.outgoing_command_count|intcomma }}</td>
-            <td class="align-center">{{ sync_event.pending_message_count|intcomma }}</td>
-            <td class="align-center">{{ sync_event.retry_message_count|intcomma }}</td>
-            <td class="align-center">
-              {% if sync_event.power_status == "CHA" %}
-                <div class="glyph icon-battery-charging"></div>
-              {% else %}
-                {% if sync_event.power_level < 20 %}
-                  <div class="glyph icon-battery-empty"></div>
-                {% elif sync_event.power_level >= 20 and sync_event.power_level <= 80 %}
-                  <div class="glyph icon-battery-half"></div>
-                {% else %}
-                  <div class="glyph icon-battery-full"></div>
-                {% endif %}
-              {% endif %}
-              &nbsp;{{ sync_event.power_level }}%
-            </td>
-            <td class="align-center">
-              {% if sync_event.network_type == "WIFI" %}
-                <div class="glyph icon-connection"></div>
-              {% else %}
-                <div class="glyph icon-radio"></div>
-              {% endif %}
-              {% if sync_event.network_type == "NONE" or sync_event.network_type == "UNKNOWN" %}
-                {% trans "&nbsp;&nbsp;OTHER" %}
-              {% else %}
-                &nbsp;&nbsp;{{ sync_event.network_type }}
-              {% endif %}
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% endif %}
+      <temba-activity-chart chart-title="{% trans "Activity" %}" data="{{ activity.chart }}" data-sheet="activity"> </temba-activity-chart>
+    </div>
+    <dl class="dash-details">
+      <div>
+        <dt>{% trans "Type" %}</dt>
+        <dd>{{ object.type.name }}</dd>
+      </div>
+      {% if object.address %}
+        <div>
+          <dt>{% trans "Address" %}</dt>
+          <dd>{{ object.get_address_display }}</dd>
+        </div>
+      {% endif %}
+      {% if object.country %}
+        <div>
+          <dt>{% trans "Country" %}</dt>
+          <dd>{{ object.country.name }}</dd>
+        </div>
+      {% endif %}
+      <div>
+        <dt>{% trans "Added" %}</dt>
+        <dd>{{ object.created_on|date:"DATE_FORMAT" }}</dd>
+      </div>
+    </dl>
+  </div>
+  <template data-sheet-icon>
+    <temba-channel-logo type="{{ object.channel_type }}" name="{{ object.type.name }}" size="28"></temba-channel-logo>
+  </template>
+  {% include "includes/dashboard_sheet.html" %}
 {% endblock content %}
-{% block extra-script %}
-  {{ block.super }}
-  <script>
-    onSpload(function() {
-      const rangePicker = document.querySelector("temba-range-picker");
-
-      document.querySelectorAll("temba-chart").forEach(function(chart) {
-        chart.setAttribute("start", rangePicker.startDate);
-        chart.setAttribute("end", rangePicker.endDate);
-      });
-
-      rangePicker.addEventListener("temba-date-range-changed", function(e) {
-        const {
-          start,
-          end
-        } = e.detail;
-        document.querySelectorAll("temba-chart").forEach(function(chart) {
-          chart.setAttribute("start", start);
-          chart.setAttribute("end", end);
-        });
-      });
-    });
-  </script>
-{% endblock extra-script %}
-{% block extra-style %}
-  {{ block.super }}
-  <style>
-    temba-range-picker {
-      padding: 0.5em;
-    }
-
-    table.list th.text-right {
-      text-align: right;
-    }
-
-    temba-chart {
-      padding: 2em;
-      border-radius: var(--curvature);
-      background: #fff;
-    }
-
-    /* same inset as the table cells below */
-    .details {
-      padding: 0.75rem 1rem;
-    }
-
-    .details .detail {
-      flex: 1 1 0;
-    }
-
-    .details .label {
-      margin-bottom: 4px;
-      color: var(--text-2);
-      font-weight: var(--w-medium);
-      font-size: 11px;
-    }
-  </style>
-{% endblock extra-style %}

@@ -1,92 +1,68 @@
 {% extends "smartmin/read.html" %}
-{% load i18n contacts %}
+{% load i18n contacts temba humanize %}
 
 {% block content %}
-  {% if msg or call %}
-    <div class="bg-white rounded-lg shadow flex mt-0 flex-shrink-0 mb-4">
-      <div class="p-4">
+  <div class="log-view">
+    {% if msg or call %}
+      {# the message or call these are the logs of #}
+      <div class="log-owner">
         {% if msg %}
-          <div class="inline-flex items-center">
-            <div style="font-size: 1.5em" class="mr-4">{{ msg|msg_status_badge }}</div>
-            <div class="summary">
-              <span>{{ msg.get_direction_display }}</span>
-              <span>{% trans "message" %}</span>
-              <span>
-                {% if msg.direction == "I" %}
-                  {% trans "from" %}
-                {% else %}
-                  {% trans "to" %}
-                {% endif %}
-              </span>
-              <span>
-                <temba-anchor href='{% url "contacts.contact_read" msg.contact.uuid %}'>
-                  {{ msg.contact_urn.get_display }}
-                </temba-anchor>
-              </span>
-              <span>{% trans "on" %}</span>
-              <span>{{ msg.created_on|datetime }}</span>
-            </div>
-          </div>
+          {{ msg|msg_status_badge }}
+          <span>
+            {% if msg.direction == "I" %}
+              {% trans "Incoming message from" %}
+            {% else %}
+              {% trans "Outgoing message to" %}
+            {% endif %}
+          </span>
+          <temba-anchor href='{% url "contacts.contact_read" msg.contact.uuid %}'>{{ msg.contact_urn.get_display }}</temba-anchor>
+          <span class="log-summary-meta">{{ msg.created_on|datetime }}</span>
         {% elif call %}
-          <div class="inline-flex mr-8">
-            <div class="font-normal mr-2">{% trans "Recipient" %}</div>
-            <temba-anchor href='{% url "contacts.contact_read" call.contact.uuid %}'>
-              {{ call.contact_urn.get_display }}
-            </temba-anchor>
-          </div>
-          <div class="inline-flex mr-8">
-            <div class="font-normal mr-2">{% trans "Duration" %}</div>
-            {{ call.get_duration }}
-          </div>
-          <div class="inline-flex mr-8">
-            <div class="font-normal mr-2">{% trans "Date" %}</div>
-            {{ call.created_on|datetime }}
-          </div>
-          <div class="inline-flex mr-8">
-            <div class="font-normal mr-2">{% trans "Status" %}</div>
-            {{ call.get_status_display }}
-          </div>
+          <span>{% trans "Call with" %}</span>
+          <temba-anchor href='{% url "contacts.contact_read" call.contact.uuid %}'>{{ call.contact_urn.get_display }}</temba-anchor>
+          <span class="log-summary-meta">
+            <span>{{ call.get_status_display }}</span>
+            <span>{{ call.get_duration }}</span>
+            <span>{{ call.created_on|datetime }}</span>
+          </span>
         {% endif %}
       </div>
-    </div>
-  {% endif %}
-  {% for log in logs %}
-    {% include "channels/includes/channellog.html" with log=log %}
-  {% endfor %}
+    {% endif %}
+    {% for log in logs %}
+      <div class="log-view">
+        <div class="log-summary">
+          <span class="log-summary-title">{{ log.type_display }}</span>
+          <span class="dash-pill {% if log.is_error %}bad{% else %}good{% endif %}">
+            {% if log.is_error %}
+              {% trans "Error" %}
+            {% else %}
+              {% trans "OK" %}
+            {% endif %}
+          </span>
+          <span class="log-summary-meta">
+            <span>{{ log.elapsed_ms|intcomma }} ms</span>
+            <temba-date value="{{ log.created_on }}" display="timedate"></temba-date>
+          </span>
+        </div>
+        {% if log.errors %}
+          <div class="log-errors">
+            {% for err in log.errors %}
+              <div class="log-error">
+                <temba-icon name="error" size="1.1"></temba-icon>
+                <div>
+                  {{ err.message }}
+                  {% if err.ref_url %}
+                    <a href="{{ err.ref_url }}" target="_blank" rel="noopener">{% trans "Learn more" %}</a>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        {% for http_log in log.http_logs %}
+          {% include "includes/http_log.html" with log=http_log %}
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
 {% endblock content %}
-{% block extra-script %}
-  {{ block.super }}
-  <script>
-    onSpload(function() {
-      prettyPrint();
-    });
-  </script>
-{% endblock extra-script %}
-{% block extra-style %}
-  {{ block.super }}
-  <link rel="stylesheet" href="{{ STATIC_URL }}rest_framework/css/prettify.css">
-  <style>
-    table.http-log tbody tr:first-child td {
-      padding: 1.5rem;
-    }
-
-    pre.prettyprint {
-      max-height: none !important;
-      margin: 0;
-      padding: 1.5rem;
-      border: 0;
-    }
-
-    pre.prettyprint.request {
-      background: #ffffff;
-    }
-
-    .page-content {
-      max-width: 100%;
-    }
-
-    .log-error {
-      color: rgb(var(--error-rgb));
-    }
-  </style>
-{% endblock extra-style %}

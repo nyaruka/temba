@@ -5,10 +5,10 @@
   {% trans "Connect Vonage" %}
 {% endblock title-text %}
 {% block pre-form %}
-  <div class="mb-4">
-    {% blocktrans trimmed with settings_url='https://dashboard.vonage.com/settings' %}
-      To connect your Vonage Account you will need to provide us your API key and secret. Both values can be found on your <a target="vonage" href="{{ settings_url }}">Vonage settings</a> page in the
-      API Settings section.
+  <div class="claim-blurb">{{ claim_blurb }}</div>
+  <div class="mt-4">
+    {% blocktrans trimmed with link='<a target="_blank" href="https://dashboard.vonage.com/settings">API Settings</a>' %}
+      To get started, you'll need your Vonage account's API key and API secret, from its {{ link }} page. Vonage no longer shows your API secret there, so use the one you saved or create a new one.
     {% endblocktrans %}
   </div>
 {% endblock pre-form %}

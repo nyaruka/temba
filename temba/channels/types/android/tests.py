@@ -122,9 +122,8 @@ class AndroidTypeTest(TembaTest, CRUDLTestMixin):
             reverse("channels.types.android.claim"), dict(claim_code=android1.claim_code, phone_number="0788123123")
         )
 
-        # redirect to welcome page
-        self.assertIn("success", response.get("Location", None))
-        self.assertRedirect(response, reverse("public.public_welcome"))
+        # redirect to the channel list
+        self.assertRedirect(response, reverse("channels.channel_list"))
 
         # channel is updated with org details and claim code is now blank
         android1.refresh_from_db()
@@ -153,7 +152,7 @@ class AndroidTypeTest(TembaTest, CRUDLTestMixin):
         response = self.client.post(
             reverse("channels.types.android.claim"), dict(claim_code=android1.claim_code, phone_number="0788123123")
         )
-        self.assertRedirect(response, reverse("public.public_welcome"))
+        self.assertRedirect(response, reverse("channels.channel_list"))
 
         # try having a device register yet again with new FCM ID
         reg_data["cmds"][0]["fcm_id"] = "FCM222"
@@ -172,7 +171,7 @@ class AndroidTypeTest(TembaTest, CRUDLTestMixin):
         response = self.client.post(
             reverse("channels.types.android.claim"), dict(claim_code=android1.claim_code, phone_number="+250788123124")
         )
-        self.assertRedirect(response, reverse("public.public_welcome"))
+        self.assertRedirect(response, reverse("channels.channel_list"))
 
         android1.refresh_from_db()
         self.assertEqual(android1.org, self.org)
@@ -191,7 +190,7 @@ class AndroidTypeTest(TembaTest, CRUDLTestMixin):
         response = self.client.post(
             reverse("channels.types.android.claim"), dict(claim_code=claim_code, phone_number="+250788123124")
         )
-        self.assertRedirect(response, reverse("public.public_welcome"))
+        self.assertRedirect(response, reverse("channels.channel_list"))
 
         android1.refresh_from_db()
 
@@ -304,7 +303,7 @@ class AndroidTypeTest(TembaTest, CRUDLTestMixin):
         response = self.client.post(
             reverse("channels.types.android.claim"), dict(claim_code=claim_code, phone_number="+250788382382")
         )
-        self.assertRedirect(response, reverse("public.public_welcome"))
+        self.assertRedirect(response, reverse("channels.channel_list"))
 
         # should be added with RW as the country
         self.assertTrue(Channel.objects.get(address="+250788382382", country="RW", org=self.org))

@@ -506,29 +506,17 @@ class OrgCRUDL(SmartCRUDL):
                 if self.has_org_perm("orgs.orgimport_create"):
                     menu.append(self.create_menu_item(name=_("Import"), icon="import", href="orgs.orgimport_create"))
 
-                if self.has_org_perm("channels.channel_read"):
-                    from temba.channels.views import get_channel_read_url
-
-                    items = []
-
-                    if self.has_org_perm("channels.channel_claim"):
-                        items.append(
-                            self.create_menu_item(name=_("New Channel"), href="channels.channel_claim", icon="add")
+                if self.has_org_perm("channels.channel_list"):
+                    menu.append(self.create_divider())
+                    menu.append(
+                        self.create_menu_item(
+                            menu_id="channels",
+                            name=_("Channels"),
+                            icon="channel",
+                            href="channels.channel_list",
+                            count=org.channels.filter(is_active=True).count(),
                         )
-
-                    channels = org.channels.filter(is_active=True).order_by("-is_enabled", Lower("name"))
-                    for channel in channels:
-                        items.append(
-                            self.create_menu_item(
-                                menu_id=str(channel.uuid),
-                                name=channel.name,
-                                href=get_channel_read_url(channel),
-                                icon=channel.type.icon if channel.is_enabled else "slash-circle-01",
-                            )
-                        )
-
-                    if len(items):
-                        menu.append(self.create_menu_item(name=_("Channels"), items=items, inline=True))
+                    )
 
                 if self.has_org_perm("archives.archive_message"):
                     items = [

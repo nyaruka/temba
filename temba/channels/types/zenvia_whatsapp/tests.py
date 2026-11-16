@@ -1,6 +1,5 @@
 from unittest.mock import patch
 
-from django.forms import ValidationError
 from django.urls import reverse
 
 from temba.tests import MockResponse, TembaTest
@@ -17,9 +16,8 @@ class ZenviaWhatsAppTypeTest(TembaTest):
 
         url = reverse("channels.types.zenvia_whatsapp.claim")
 
-        # should see the general channel claim page
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, url)
+        # should be offered by the new channel picker
+        self.assertChannelTypeOffered(url)
 
         # try to claim a channel
         response = self.client.get(url)
@@ -42,8 +40,11 @@ class ZenviaWhatsAppTypeTest(TembaTest):
             with patch("requests.post") as mock_post:
                 mock_post.side_effect = [MockResponse(400, '{ "error": true }')]
 
-                with self.assertRaises(ValidationError):
-                    self.client.post(url, post_data)
+                # failing to subscribe to its webhooks is shown on the form, and nothing is added
+                response = self.client.post(url, post_data)
+                self.assertEqual(200, response.status_code)
+                self.assertTrue(response.context["form"].non_field_errors())
+                self.assertFalse(self.org.channels.filter(channel_type__in=("ZVS", "ZVW"), is_active=True))
 
         with patch("requests.get") as mock_get:
             mock_get.return_value = MockResponse(200, "Success")
@@ -53,8 +54,11 @@ class ZenviaWhatsAppTypeTest(TembaTest):
                     MockResponse(400, '{"error": "failed"}'),
                 ]
 
-                with self.assertRaises(ValidationError):
-                    self.client.post(url, post_data)
+                # failing to subscribe to its webhooks is shown on the form, and nothing is added
+                response = self.client.post(url, post_data)
+                self.assertEqual(200, response.status_code)
+                self.assertTrue(response.context["form"].non_field_errors())
+                self.assertFalse(self.org.channels.filter(channel_type__in=("ZVS", "ZVW"), is_active=True))
 
                 self.assertEqual("12345", mock_post.call_args_list[0][1]["headers"]["X-API-TOKEN"])
 
@@ -68,7 +72,8 @@ class ZenviaWhatsAppTypeTest(TembaTest):
 
                 self.client.post(url, post_data)
 
-        channel = Channel.objects.get()
+        # the channels which failed to activate were removed again
+        channel = Channel.objects.get(is_active=True)
 
         self.assertEqual("US", channel.country)
         self.assertTrue(channel.uuid)

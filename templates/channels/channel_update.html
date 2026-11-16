@@ -6,4 +6,27 @@
     <input type="submit" value="{{ submit_button_name }}" class="btn btn-primary">
     <a onclick="javascript:history.go(-1)" class="btn">{% trans "Cancel" %}</a>
   </div>
+  {% if delete_url %}
+    {# shown in the dialog's footer, beside its buttons #}
+    <div data-modax-gutter>
+      <a
+        href="{{ delete_url }}"
+        class="channel-delete"
+        style="color: var(--danger, #c0392b); font-size: 13px; font-weight: 500; text-decoration: none; padding: 0 4px"
+        onclick="event.preventDefault(); openChannelDelete(this.getAttribute('href'))"
+      >{% trans "Delete channel" %}</a>
+    </div>
+    <script>
+      // swaps this dialog for the one that confirms deleting the channel
+      function openChannelDelete(url) {
+        var modax = document.querySelector("temba-modax#shared-modax");
+        if (modax) {
+          modax.open = false;
+        }
+        setTimeout(function() {
+          showModax("{{ _('Delete Channel')|escapejs }}", url, { id: "delete-channel" });
+        }, 250);
+      }
+    </script>
+  {% endif %}
 {% endblock form-buttons %}

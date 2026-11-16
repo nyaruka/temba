@@ -21,9 +21,10 @@ class MacrokioskType(ChannelType):
     schemes = [URN.TEL_SCHEME]
     available_timezones = ["Asia/Kuala_Lumpur"]
 
-    claim_blurb = _("Easily add a two way number you have configured with %(link)s using their APIs.") % {
-        "link": '<a target="_blank" href="http://macrokiosk.com/">Macrokiosk</a>'
-    }
+    claim_blurb = _(
+        "%(link)s offers SMS alongside WhatsApp, Viber, LINE and other channels through a single API. Connect a number "
+        "or short code you have with MACROKIOSK to send and receive SMS with your contacts."
+    ) % {"link": '<a target="_blank" href="https://www.macrokiosk.com/">MACROKIOSK</a>'}
     claim_view = ClaimView
 
     config_ui = ConfigUI(

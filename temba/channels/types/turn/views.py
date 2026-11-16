@@ -17,19 +17,37 @@ class ClaimView(ClaimViewMixin, SmartFormView):
         country = forms.ChoiceField(
             widget=SelectWidget(attrs={"searchable": True}), choices=ALL_COUNTRIES, label=_("Country")
         )
-        username = forms.CharField(max_length=32)
-        password = forms.CharField(max_length=64)
+        username = forms.CharField(max_length=32, label=_("Username"))
+        password = forms.CharField(max_length=64, label=_("Password"))
 
-        access_token = forms.CharField(max_length=256, help_text=_("Used to sync WhatsApp templates."))
+        access_token = forms.CharField(
+            max_length=256, label=_("Access Token"), help_text=_("Used to sync WhatsApp templates.")
+        )
 
-        namespace = forms.CharField(max_length=128, help_text=_("The namespace of your WhatsApp templates."))
+        namespace = forms.CharField(
+            max_length=128, label=_("Namespace"), help_text=_("The namespace of your WhatsApp templates.")
+        )
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+            # most numbers are in the workspace's own country
+            if country := self.request.org.default_country_code:
+                self.fields["country"].initial = country
 
         def clean(self):
+            # the checks below need all of these, and missing ones already have their own errors
+            if not all(
+                self.cleaned_data.get(f) for f in ("country", "address", "username", "password", "access_token")
+            ):
+                return self.cleaned_data
+
             # first check that our phone number looks sane
             country = self.cleaned_data["country"]
             normalized = URN.normalize_number(self.cleaned_data["address"], country)
             if not URN.validate(URN.from_parts(URN.TEL_SCHEME, normalized), country):
-                raise forms.ValidationError(_("Please enter a valid phone number"))
+                self.add_error("address", _("Please enter a valid phone number"))
+                return self.cleaned_data
             self.cleaned_data["address"] = normalized
 
             try:

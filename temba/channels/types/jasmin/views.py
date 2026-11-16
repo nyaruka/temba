@@ -15,11 +15,18 @@ class ClaimView(AuthenticatedExternalCallbackClaimView):
         number = forms.CharField(max_length=14, min_length=3, label=_("Number"))
         url = ExternalURLField(
             widget=forms.URLInput(attrs={"placeholder": _("e.g. https://jasmin.example.com/send")}),
-            label=_("URL"),
+            label=_("Send URL"),
             help_text=_("The send path of your Jasmin server."),
         )
         username = forms.CharField(label=_("Username"))
         password = forms.CharField(label=_("Password"))
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+            # most numbers are in the workspace's own country
+            if country := self.request.org.default_country_code:
+                self.fields["country"].initial = country
 
         def clean_number(self):
             number = self.data["number"]

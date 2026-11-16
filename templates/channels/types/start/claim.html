@@ -1,1 +1,10 @@
 {% extends "channels/channel_claim_authenticated.html" %}
+{% load i18n %}
+
+{% block form-lead %}
+  <div class="mt-4">
+    {% blocktrans trimmed %}
+      To get started, you'll need your number along with the username and password for your Start Mobile account.
+    {% endblocktrans %}
+  </div>
+{% endblock form-lead %}

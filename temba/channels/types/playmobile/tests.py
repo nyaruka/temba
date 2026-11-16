@@ -15,14 +15,13 @@ class PlayMobileTypeTest(TembaTest):
         url = reverse("channels.types.playmobile.claim")
 
         # shouldn't be able to see the claim play mobile page if we aren't part of that group
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertNotContains(response, url)
+        self.assertChannelTypeNotOffered(url)
 
         # but if we are in the proper time zone
         self.org.timezone = ZoneInfo("Asia/Tashkent")
         self.org.save()
 
-        response = self.client.get(reverse("channels.channel_claim"))
+        response = self.client.get(reverse("channels.channel_list"))
         self.assertContains(response, "Play Mobile")
         self.assertContains(response, url)
 

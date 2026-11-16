@@ -16,8 +16,18 @@ from ...views import ClaimViewMixin
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class TwilioMessagingServiceForm(ClaimViewMixin.Form):
-        country = forms.ChoiceField(choices=COUNTRY_CHOICES, widget=SelectWidget(attrs={"searchable": True}))
+        country = forms.ChoiceField(
+            choices=COUNTRY_CHOICES, widget=SelectWidget(attrs={"searchable": True}), label=_("Country")
+        )
         messaging_service_sid = forms.CharField(label=_("Messaging Service SID"))
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+            # most services send in the workspace's own country
+            country = self.request.org.default_country_code
+            if country and country in dict(COUNTRY_CHOICES):
+                self.fields["country"].initial = country
 
     form_class = TwilioMessagingServiceForm
 
@@ -44,8 +54,12 @@ class ClaimView(ClaimViewMixin, SmartFormView):
                 )
             self.account = self.client.api.account.fetch()
         except TwilioRestException:
+            # the credentials we have aren't working, so ask for them again rather than reusing them
+            self.request.session.pop(self.channel_type.SESSION_ACCOUNT_SID, None)
+            self.request.session.pop(self.channel_type.SESSION_AUTH_TOKEN, None)
             return HttpResponseRedirect(
                 f"{reverse('channels.types.twilio.connect')}?claim_type={self.channel_type.slug}"
+                "&reset_creds=reset&invalid_creds=1"
             )
 
         return super().pre_process(request, *args, **kwargs)

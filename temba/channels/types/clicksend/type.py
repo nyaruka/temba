@@ -61,13 +61,13 @@ class ClickSendType(ChannelType):
 
     claim_view = AuthenticatedExternalClaimView
     claim_view_kwargs = {
-        "username_label": _("API Username"),
-        "password_label": _("API Password"),
-        "form_blurb": _("You can connect your ClickSend number by entering the settings below."),
+        "username_label": _("Username"),
+        "password_label": _("API Key"),
     }
-    claim_blurb = _("If you have a %(link)s number, you can quickly connect it using their APIs.") % {
-        "link": '<a target="_blank" href="https://www.clicksend.com/">ClickSend</a>'
-    }
+    claim_blurb = _(
+        "%(link)s offers business SMS on dedicated numbers, used by businesses large and small through its dashboard "
+        "and API. Connect a ClickSend number, and an inbound rule on it forwards contacts' replies to your workspace."
+    ) % {"link": '<a target="_blank" href="https://www.clicksend.com/">ClickSend</a>'}
 
     config_ui = ConfigUI(
         blurb=_("To finish configuring this channel, you need to set your inbound SMS URL below for your number."),

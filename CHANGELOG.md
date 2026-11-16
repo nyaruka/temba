@@ -1,3 +1,53 @@
+## v26.3.196 (2026-11-13)
+ * Backfill call tallies and show them on channel activity
+
+## v26.3.195 (2026-11-12)
+ * Backfill daily tallies of new contacts and failed messages
+ * Make Channel.tps a non-null positive integer with a default of 10
+ * Show workspace limit defaults as placeholders on the staff form
+ * Have sheets only take posting forms, hand them the next step rather than a redirect, and post the current CSRF token
+ * Open a channel type's own actions, e.g. reconnecting, in a sheet over the read page
+
+## v26.3.194 (2026-11-12)
+ * Post the current CSRF cookie's token from the channel picker, as a sign-in popup may have replaced it
+ * Clear the test cookie after each test
+
+## v26.3.193 (2026-11-12)
+ * Add Org.is_internal for staff to mark internal or testing workspaces
+ * Stop reading channel tallies from legacy org tallies
+ * Wait for the channel picker's form to load rather than a fixed time
+
+## v26.3.192 (2026-11-12)
+ * Rework the channel read page as a dashboard
+ * New channel claim modal pipeline
+
+## v26.3.191 (2026-11-11)
+ * Fold legacy channel tallies out of org tallies into channel tallies
+
+## v26.3.190 (2026-11-11)
+ * Add ChannelTally for channel-level tallies, reading legacy channel org tallies too
+ * Look up flow segment tallies from the definition and drop old format scope reading
+
+## v26.3.189 (2026-11-11)
+ * Fold old format segment tallies into compact scopes
+
+## v26.3.188 (2026-11-11)
+ * Read flow segment tallies in both old and compact scope formats
+
+## v26.3.187 (2026-11-11)
+ * Remove the Mblox channel type
+ * Stop writing msgsin counts to flow activity counts
+
+## v26.3.186 (2026-11-10)
+ * Allow OrgTally daily totals for past days to be read from another database
+ * Roll the flow responses chart up into weekly buckets, leaving out the partial first week
+
+## v26.3.185 (2026-11-10)
+ * Read flow segment and msgsin counts from flow tallies
+ * Clamp the flow engagement timeline to the last year of daily tallies
+ * Remove SMSCentral, Novo, Messangi, DMark and Hub9 channel types
+ * Warn in the flow editor when an action needs an email or channel the workspace lacks
+
 ## v26.3.184 (2026-11-10)
  * Add data migration to backfill flow segment and msgsin tallies from activity counts
 

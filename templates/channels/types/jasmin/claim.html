@@ -1,1 +1,10 @@
 {% extends "channels/channel_claim_authenticated.html" %}
+{% load i18n %}
+
+{% block form-lead %}
+  <div class="mt-4">
+    {% blocktrans trimmed %}
+      To get started, you'll need your number along with the URL of your Jasmin server's HTTP API and the username and password of a Jasmin user that can send messages.
+    {% endblocktrans %}
+  </div>
+{% endblock form-lead %}

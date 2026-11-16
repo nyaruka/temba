@@ -20,9 +20,10 @@ class ArabiaCellType(ChannelType):
     recommended_timezones = ["Asia/Amman"]
 
     claim_view = ClaimView
-    claim_blurb = _("If you have an %(link)s number, you can quickly connect it using their APIs.") % {
-        "link": '<a target="_blank" href="https://www.arabiacell.com/">ArabiaCell</a>'
-    }
+    claim_blurb = _(
+        "%(link)s is a Jordanian provider of SMS and mobile content services. Connect a short code you have with "
+        "ArabiaCell, with messages either free or billed to contacts, to send and receive SMS with your contacts."
+    ) % {"link": '<a target="_blank" href="https://www.arabiacell.com/">ArabiaCell</a>'}
 
     config_ui = ConfigUI(
         blurb=_("To finish configuring this channel, you'll need ArabiaCell to use the following callback URL."),

@@ -1,50 +1,108 @@
-from temba.orgs.models import Org
+from datetime import datetime, time, timedelta, timezone as tz
+from importlib import import_module
+from unittest.mock import patch
+
+from django.utils import timezone
+
+from temba.contacts.models import Contact
 from temba.tests import MigrationTest
 
 
-class GrantSharedEmailTest(MigrationTest):
+class BackfillNewContactTalliesTest(MigrationTest):
     app = "orgs"
-    migrate_from = "0201_drop_tally"
-    migrate_to = "0202_grant_shared_email"
+    migrate_from = "0203_org_is_internal"
+    migrate_to = "0204_backfill_new_contact_tallies"
 
     def setUpBeforeMigration(self, apps):
-        # org with its own SMTP settings
-        self.org.flow_smtp = "smtp://bob%40acme.com:secret@example.com/?from=bob%40acme.com&tls=true"
-        self.org.save(update_fields=("flow_smtp",))
+        self.today = timezone.now().date()
 
-        # child of that org which uses its parent's SMTP settings
-        self.child1 = Org.objects.create(
-            name="Child 1", timezone="UTC", parent=self.org, created_by=self.admin, modified_by=self.admin
-        )
+        def day(days_ago: int):
+            return self.today - timedelta(days=days_ago)
 
-        # child of an org without SMTP settings, which already has the feature
-        self.child2 = Org.objects.create(
-            name="Child 2",
-            timezone="UTC",
-            parent=self.org2,
-            features=["shared_email"],
-            created_by=self.admin,
-            modified_by=self.admin,
-        )
+        def contact(org, days_ago: int, *, is_active=True):
+            c = self.create_contact("Bob", org=org)
+            created_on = datetime.combine(day(days_ago), time(12), tzinfo=tz.utc)
+            Contact.objects.filter(id=c.id).update(created_on=created_on, is_active=is_active)
 
-        # child of an org without SMTP settings
-        self.child3 = Org.objects.create(
-            name="Child 3", timezone="UTC", parent=self.org2, created_by=self.admin, modified_by=self.admin
-        )
+        def tally(org, scope: str, days_ago: int, count: int):
+            org.org_tallies.create(scope=f"contacts/new:{scope}@{day(days_ago)}", count=count)
+
+        self.day = day
+
+        # no tallies, including a deleted contact
+        contact(self.org, 10)
+        contact(self.org, 10, is_active=False)
+
+        # partly tallied by other scopes
+        for _ in range(4):
+            contact(self.org, 4)
+        tally(self.org, "inbound", 4, 1)
+        tally(self.org, "ui", 4, 1)
+
+        # already tallied as other with more than remain
+        contact(self.org, 3)
+        tally(self.org, "other", 3, 5)
+
+        # fully tallied by other scopes
+        contact(self.org, 2)
+        contact(self.org, 2)
+        tally(self.org, "inbound", 2, 2)
+
+        # oldest day still retained and one too old
+        contact(self.org, 400)
+        contact(self.org, 401)
+
+        # days the writer started partway through
+        contact(self.org, 1)
+        contact(self.org, 0)
+        contact(self.org, 0)
+        tally(self.org, "inbound", 0, 1)
 
         # inactive org
-        self.inactive = Org.objects.create(
-            name="Inactive", timezone="UTC", is_active=False, created_by=self.admin, modified_by=self.admin
+        contact(self.org2, 4)
+        self.org2.is_active = False
+        self.org2.save(update_fields=("is_active",))
+
+        # unrelated tally
+        self.org.org_tallies.create(scope=f"msgs/text:in@{day(4)}", count=7)
+
+    def assertState(self):
+        def expected(days_ago: int, count: int, expires=True):
+            d = self.day(days_ago)
+            return f"contacts/new:other@{d}", (count, d + timedelta(days=400) if expires else None)
+
+        self.assertEqual(
+            dict(
+                [
+                    expected(10, 2),
+                    expected(4, 2),
+                    expected(3, 5, expires=False),
+                    expected(400, 1),
+                    expected(1, 1),
+                    expected(0, 1),
+                ]
+            ),
+            {
+                t.scope: (t.count, t.expires_on)
+                for t in self.org.org_tallies.filter(scope__startswith="contacts/new:other@")
+            },
         )
+        self.assertEqual(5, self.org.org_tallies.exclude(scope__startswith="contacts/new:other@").count())
+        self.assertFalse(self.org2.org_tallies.exists())
 
     def test_migration(self):
-        def assert_features(org, expected):
-            org.refresh_from_db()
-            self.assertEqual(expected, org.features)
+        self.assertState()
 
-        assert_features(self.org, [])
-        assert_features(self.child1, [])
-        assert_features(self.org2, ["shared_email"])
-        assert_features(self.child2, ["shared_email"])
-        assert_features(self.child3, ["shared_email"])
-        assert_features(self.inactive, [])
+        # running again is a noop
+        migration = import_module("temba.orgs.migrations.0204_backfill_new_contact_tallies")
+        with patch("builtins.print") as mock_print:
+            migration.backfill_new_contact_tallies(self.apps, None)
+
+        mock_print.assert_not_called()
+        self.assertState()
+
+        # but raises tallies which are behind
+        self.org.org_tallies.filter(scope=f"contacts/new:other@{self.day(4)}").update(count=1)
+        migration.backfill_new_contact_tallies(self.apps, None)
+
+        self.assertState()

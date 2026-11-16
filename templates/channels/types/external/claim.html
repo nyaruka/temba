@@ -3,64 +3,8 @@
 
 {% block pre-form %}
   {% blocktrans trimmed with branding.name as brand %}
-    You can connect an external aggregator or messaging service to {{ brand }} using our external API. You can specify parameters to substitute in the URL or body by using these variables:
+    You can connect an external aggregator or messaging service to {{ brand }} using our external API.
   {% endblocktrans %}
-  <ul class="my-4">
-    <li>
-      <div class="code">text</div>
-      {% trans "the message of the text being sent" %}
-    </li>
-    <li>
-      <div class="code">from</div>
-      {% trans "the phone number or address you have configured for this service" %}
-    </li>
-    <li>
-      <div class="code">from_no_plus</div>
-      {% trans "the phone number or address you have configured for this service, with leading +'s removed" %}
-    </li>
-    <li>
-      <div class="code">to</div>
-      {% trans "the phone number or URN this message is addressed to" %}
-    </li>
-    <li>
-      <div class="code">to_no_plus</div>
-      {% trans "the phone number or URN this message is addressed to, with leading +'s removed" %}
-    </li>
-    <li>
-      <div class="code">uuid</div>
-      {% trans "the unique UUID of this message" %}
-    </li>
-    <li>
-      <div class="code">quick_replies</div>
-      {% trans "the quick replies for this message, formatted according to send method and content type" %}
-    </li>
-    <li>
-      <div class="code">channel</div>
-      {% trans "the channel UUID" %}
-    </li>
-  </ul>
-  <div class="mb-2">
-    {% blocktrans trimmed %}
-      An example that would substitute variables in the URL:
-    {% endblocktrans %}
-  </div>
-  <pre>http://myservice.com/send.php?from={% templatetag openbrace %}{% templatetag openbrace %}from{% templatetag closebrace %}{% templatetag closebrace %}&text={% templatetag openbrace %}{% templatetag openbrace %}text{% templatetag closebrace %}{% templatetag closebrace %}&to={% templatetag openbrace %}{% templatetag openbrace %}to{% templatetag closebrace %}{% templatetag closebrace %}{% templatetag openbrace %}{% templatetag openbrace %}quick_replies{% templatetag closebrace %}{% templatetag closebrace %}{% templatetag closebrace %}</pre>
-  <div class="mt-6">
-    {% blocktrans trimmed %}
-      If using POST or PUT, you can specify the body of the request using the same variables.
-    {% endblocktrans %}
-  </div>
-  <div class="mt-4 leading-loose">
-    {% blocktrans trimmed with "<div class='code'>quick_replies</div>" as quick_replies_var and "<div class='code'>&quick_reply=(reply)</div>" as quick_replies_output %}
-      The {{ quick_replies_var }} variable with method GET or content type URL Encoded will be replaced by {{ quick_replies_output }} for each quick reply.
-    {% endblocktrans %}
-  </div>
-  <div class="mt-4">
-    {% blocktrans trimmed with branding.name as brand %}
-      After connecting your service we will provide URLs for the endpoints to call when you want to push a message to
-      {{ brand }} or notify {{ brand }} of the delivery status of a message.
-    {% endblocktrans %}
-  </div>
 {% endblock pre-form %}
 {% block extra-script %}
   {{ block.super }}

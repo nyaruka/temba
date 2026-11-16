@@ -23,9 +23,11 @@ class InstagramType(ChannelType):
 
     schemes = [URN.INSTAGRAM_SCHEME]
 
-    claim_blurb = _("Add an %(link)s bot to send and receive messages on behalf of a business Instagram account.") % {
-        "link": '<a target="_blank" href="http://instagram.com">Instagram</a>',
-    }
+    claim_blurb = _(
+        "Contacts can message your business on %(link)s from its profile, posts and stories, and reply with photos, "
+        "videos and by tapping buttons. Automated replies can be sent within 24 hours of a contact's last message, and "
+        "replies from your team for up to 7 days."
+    ) % {"link": '<a target="_blank" href="https://instagram.com">Instagram</a>'}
     claim_view = ClaimView
 
     menu_items = [dict(label=_("Reconnect Business Account"), view_name="channels.types.instagram.refresh_token")]

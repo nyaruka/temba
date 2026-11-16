@@ -22,9 +22,10 @@ class JustCallType(ChannelType):
     async_activation = False
 
     claim_view = ClaimView
-    claim_blurb = _("If you have a %(link)s number, you can quickly connect it using their APIs.") % {
-        "link": '<a target="_blank" href="https://justcall.io/">JustCall</a>'
-    }
+    claim_blurb = _(
+        "%(link)s is a phone and SMS platform built for sales and support teams. Connect a JustCall number to send and "
+        "receive text messages with contacts, and messages can include photos and other media."
+    ) % {"link": '<a target="_blank" href="https://justcall.io/">JustCall</a>'}
 
     def activate(self, channel):
         api_key = channel.config[Channel.CONFIG_API_KEY]

@@ -262,3 +262,10 @@ class TembaTagLibraryTest(TembaTest):
         # we need a context with a request
         context = {"request": self.client.get("/").wsgi_request}
         self.assertEqual(tags.absolute_url(context, "msgs.msg_inbox"), "http://testserver/msg/")
+
+    def test_sparkline(self):
+        # too few values to draw a line
+        self.assertEqual("", tags.sparkline(None))
+        self.assertEqual("", tags.sparkline([3]))
+
+        self.assertIn("<svg", tags.sparkline([1, 4, 2]))

@@ -13,8 +13,7 @@ class ChipTypeTest(CRUDLTestMixin, TembaTest):
         # not available to regular users
         self.login(self.admin)
 
-        response = self.client.get(reverse("channels.channel_claim_all"))
-        self.assertNotContains(response, claim_url)
+        self.assertChannelTypeNotOffered(claim_url)
 
         # and can't be claimed by them directly either
         response = self.client.post(claim_url, {})
@@ -23,8 +22,7 @@ class ChipTypeTest(CRUDLTestMixin, TembaTest):
         # but is available to staff
         self.login(self.customer_support, choose_org=self.org)
 
-        response = self.client.get(reverse("channels.channel_claim_all"))
-        self.assertContains(response, claim_url)
+        self.assertChannelTypeOffered(claim_url)
 
         response = self.client.post(claim_url, {})
         self.assertEqual(302, response.status_code)

@@ -1,13 +1,10 @@
 {% extends "channels/channel_claim_form.html" %}
 {% load i18n %}
 
-{% block pre-form %}
-  {% blocktrans trimmed %}
-    You can connect your <a href="http://infobip.com">Infobip</a> number by entering your number, username and password here.
-  {% endblocktrans %}
-  <div class="my-4">
-    {% blocktrans trimmed with branding.name as brand %}
-      After connecting your service we will provide URLs for the endpoints for InfoBip to call when they want to push a message to {{ brand }}.
+{% block form-lead %}
+  <div class="mt-4">
+    {% blocktrans trimmed %}
+      To get started, you'll need your number along with an API key and your account's base URL, both of which are on the API keys page of the Infobip web interface.
     {% endblocktrans %}
   </div>
-{% endblock pre-form %}
+{% endblock form-lead %}

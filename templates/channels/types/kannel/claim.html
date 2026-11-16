@@ -1,8 +1,10 @@
 {% extends "channels/channel_claim_form.html" %}
 {% load i18n %}
 
-{% block pre-form %}
-  {% blocktrans trimmed %}
-    After entering your endpoint URL below, we'll provide you with the configuration details for your Kannel configuration file.
-  {% endblocktrans %}
-{% endblock pre-form %}
+{% block form-lead %}
+  <div class="mt-4">
+    {% blocktrans trimmed %}
+      To get started, all you need is your number and the URL Kannel accepts messages to send on. You'll then get a configuration stanza to add to Kannel.
+    {% endblocktrans %}
+  </div>
+{% endblock form-lead %}

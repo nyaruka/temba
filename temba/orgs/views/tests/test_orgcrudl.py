@@ -59,7 +59,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
                 "AI",
                 "Export",
                 "Import",
-                ("Channels", ["New Channel", "Test Channel"]),
+                "Channels (1)",
                 ("Archives", ["Messages", "Flow Runs"]),
             ],
             choose_org=self.org,
@@ -167,7 +167,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
                 "AI",
                 "Export",
                 "Import",
-                ("Channels", ["New Channel", "Test Channel"]),
+                "Channels (1)",
                 ("Archives", ["Messages", "Flow Runs"]),
             ],
         )
@@ -207,7 +207,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
                 "Teams (1)",
                 "Export",
                 "Import",
-                ("Channels", ["New Channel", "Test Channel"]),
+                "Channels (1)",
                 ("Archives", ["Messages", "Flow Runs"]),
             ],
         )

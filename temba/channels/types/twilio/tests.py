@@ -25,7 +25,7 @@ class TwilioTypeTest(TembaTest):
         self.org.channels.update(is_active=False)
 
         # make sure twilio is on the claim page
-        response = self.client.get(reverse("channels.channel_claim"))
+        response = self.client.get(reverse("channels.channel_list"))
         self.assertContains(response, "Twilio")
 
         response = self.client.get(claim_twilio)
@@ -46,8 +46,7 @@ class TwilioTypeTest(TembaTest):
         session.save()
 
         # hit the claim page, should now have a claim twilio link
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, claim_twilio)
+        self.assertChannelTypeOffered(claim_twilio)
 
         response = self.client.get(claim_twilio)
         self.assertIn("account_trial", response.context)
@@ -64,7 +63,18 @@ class TwilioTypeTest(TembaTest):
             )
 
             response = self.client.get(claim_twilio)
-            self.assertRedirects(response, f"{reverse('channels.types.twilio.connect')}?claim_type=twilio")
+            self.assertRedirects(
+                response,
+                f"{reverse('channels.types.twilio.connect')}?claim_type=twilio&reset_creds=reset&invalid_creds=1",
+            )
+
+            # which no longer has the credentials that failed
+            self.assertNotIn(TwilioType.SESSION_ACCOUNT_SID, self.client.session)
+
+            session = self.client.session
+            session[TwilioType.SESSION_ACCOUNT_SID] = "account-sid"
+            session[TwilioType.SESSION_AUTH_TOKEN] = "account-token"
+            session.save()
 
         with patch("temba.tests.twilio.MockTwilioClient.MockAccounts.get") as mock_get:
             mock_get.return_value = MockTwilioClient.MockAccount("Trial")
@@ -118,7 +128,7 @@ class TwilioTypeTest(TembaTest):
 
                 # claim it
                 response = self.client.post(claim_twilio, dict(country="US", phone_number="12062345678"))
-                self.assertRedirects(response, reverse("public.public_welcome") + "?success")
+                self.assertRedirects(response, reverse("channels.channel_list"))
 
                 # make sure it is actually connected
                 channel = Channel.objects.get(channel_type="T", org=self.org)
@@ -145,7 +155,7 @@ class TwilioTypeTest(TembaTest):
 
         response = self.client.get(reverse("channels.types.twilio.connect") + "?claim_type=foo")
         self.assertEqual(302, response.status_code)
-        self.assertRedirects(response, reverse("channels.channel_claim"))
+        self.assertRedirects(response, reverse("channels.channel_list"))
 
         response = self.client.get(reverse("channels.types.twilio.connect") + "?claim_type=twilio&reset_creds=reset")
         self.assertEqual(200, response.status_code)
@@ -178,7 +188,7 @@ class TwilioTypeTest(TembaTest):
 
                 # now we can clain the number already used for Twilio WhatsApp
                 response = self.client.post(claim_twilio, dict(country="US", phone_number="12062345678"))
-                self.assertRedirects(response, reverse("public.public_welcome") + "?success")
+                self.assertRedirects(response, reverse("channels.channel_list"))
 
                 # make sure it is actually connected
                 channel = Channel.objects.get(channel_type="T", org=self.org)
@@ -221,7 +231,7 @@ class TwilioTypeTest(TembaTest):
                         [MockTwilioClient.MockPhoneNumber("+554139087835", sms=False, voice=True)]
                     )
                     response = self.client.post(claim_twilio, dict(country="BR", phone_number="554139087835"))
-                    self.assertRedirects(response, reverse("public.public_welcome") + "?success")
+                    self.assertRedirects(response, reverse("channels.channel_list"))
 
                     # make sure it is actually connected
                     channel = Channel.objects.get(channel_type="T", org=self.org)
@@ -247,7 +257,7 @@ class TwilioTypeTest(TembaTest):
 
                 # claim it
                 response = self.client.post(claim_twilio, dict(country="DK", phone_number="4545335500"))
-                self.assertRedirects(response, reverse("public.public_welcome") + "?success")
+                self.assertRedirects(response, reverse("channels.channel_list"))
 
                 # make sure it is actually connected
                 channel = Channel.objects.get(channel_type="T", org=self.org)
@@ -281,7 +291,7 @@ class TwilioTypeTest(TembaTest):
                         [MockTwilioClient.MockShortCode("8080")]
                     )
                     response = self.client.post(claim_twilio, dict(country="US", phone_number="8080"))
-                    self.assertRedirects(response, reverse("public.public_welcome") + "?success")
+                    self.assertRedirects(response, reverse("channels.channel_list"))
                     self.assertEqual(mock_numbers.call_args_list[0][1], {"page_size": 1000})
 
                     # make sure it is actually connected
@@ -485,4 +495,4 @@ class TwilioTypeTest(TembaTest):
                     response = self.client.post(
                         f"{reverse('channels.types.twilio.connect')}?claim_type=unknown", post_data, follow=True
                     )
-                    self.assertEqual(response.request["PATH_INFO"], reverse("channels.channel_claim"))
+                    self.assertEqual(response.request["PATH_INFO"], reverse("channels.channel_list"))

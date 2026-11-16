@@ -30,15 +30,13 @@ class MtnTypeTest(TembaTest):
             self.login(self.admin)
             url = reverse("channels.types.mtn.claim")
 
-            response = self.client.get(reverse("channels.channel_claim"))
-            self.assertNotContains(response, url)
+            self.assertChannelTypeNotOffered(url)
 
             self.org.timezone = "Africa/Brazzaville"
             self.org.save()
 
-            # should see the general channel claim page
-            response = self.client.get(reverse("channels.channel_claim"))
-            self.assertContains(response, url)
+            # should be offered by the new channel picker
+            self.assertChannelTypeOffered(url)
 
             # try to claim a channel
             response = self.client.get(url)
@@ -50,9 +48,18 @@ class MtnTypeTest(TembaTest):
             post_data["consumer_secret"] = "barbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbar"
             post_data["cp_address"] = "FOO"
 
+            # credentials which MTN won't take aren't connected
+            with patch("requests.post") as mock_bad_post:
+                mock_bad_post.return_value = MockResponse(400, '{"error": "Error"}')
+
+                response = self.client.post(url, post_data)
+                self.assertEqual(200, response.status_code)
+                self.assertTrue(response.context["form"].non_field_errors())
+                self.assertFalse(Channel.objects.filter(is_active=True).exists())
+
             response = self.client.post(url, post_data)
 
-            channel = Channel.objects.get()
+            channel = Channel.objects.get(is_active=True)
 
             self.assertEqual("RW", channel.country)
             self.assertTrue(channel.uuid)
@@ -95,7 +102,7 @@ class MtnTypeTest(TembaTest):
 
             with override_settings(ORG_LIMIT_DEFAULTS={"channels": 1}):
                 response = self.client.get(url)
-                self.assertRedirect(response, "/org/workspace/")
+                self.assertRedirect(response, "/channels/channel/")
 
             # release channel and deactivate the subscription
             channel.release(self.admin, interrupt=False)

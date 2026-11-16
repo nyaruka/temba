@@ -80,16 +80,39 @@ class HTTPLogCRUDL(SmartCRUDL):
             else:
                 menu.add_link(_("Errors"), f"{reverse('request_logs.httplog_webhooks')}?error=1")
 
-    class Channel(ContextMenuMixin, BaseObjLogsView):
+    class Channel(BaseObjLogsView):
+        """
+        A channel's syncs with its provider, e.g. of its templates, listed beside the one selected like its channel logs -
+        the page is a shell for the log list component, which fetches them itself
+        """
+
         source_field = "channel"
         source_url = "uuid@channels.channel_read"
-        title = _("Template Fetch Logs")
+        title = _("Sync Logs")
+        template_name = "request_logs/httplog_channel.html"
+        paginate_by = 0
 
         def derive_menu_path(self):
-            return f"/settings/channels/{self.source.uuid}"
+            return "/settings/channels"
 
         def get_source(self, uuid):
             return Channel.objects.filter(uuid=uuid, is_active=True)
+
+        def get_queryset(self, **kwargs):
+            # the component fetches the syncs, so the page needs none of them
+            return super().get_queryset(**kwargs).none()
+
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            context["list_url"] = f"{reverse('api.internal.channel_http_logs')}.json?channel={self.source.uuid}"
+
+            # a sync to show beside the list, which has to be one of the log pages
+            selected = self.request.GET.get("selected", "")
+            if selected.startswith("/") and selected.rstrip("/").split("/")[-1].isdigit():
+                log_id = int(selected.rstrip("/").split("/")[-1])
+                if HTTPLog.objects.filter(id=log_id, channel=self.source).exists():
+                    context["selected"] = reverse("request_logs.httplog_read", args=[log_id])
+            return context
 
     class Read(SpaMixin, OrgObjPermsMixin, SmartReadView):
         fields = ("description", "created_on")

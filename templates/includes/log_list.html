@@ -1,0 +1,36 @@
+{% comment %}
+  Logs beside the one selected, from a log list endpoint (list_url), with the one in `selected` showing. On a page of its
+  own the list fills the window below the header and keeps the one selected in the URL. In a sheet it fills the sheet.
+{% endcomment %}
+{% load i18n %}
+{% if not is_sheet %}
+  <style>
+    .spa-content {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      padding: 0 !important;
+    }
+
+    #log-list {
+      border-top: 1px solid var(--border);
+    }
+  </style>
+{% endif %}
+<temba-log-list data-fill id="log-list" endpoint="{{ list_url }}" selected="{{ selected|default:'' }}" empty-message="{{ empty_message }}"> </temba-log-list>
+{% if not is_sheet %}
+  <script>
+    onSpload(function() {
+      var list = document.querySelector("#log-list");
+      list.addEventListener("temba-selection", function(event) {
+        var url = new URL(window.location.href);
+        if (event.detail.url) {
+          url.searchParams.set("selected", event.detail.url);
+        } else {
+          url.searchParams.delete("selected");
+        }
+        history.replaceState(history.state, "", url.pathname + url.search);
+      });
+    });
+  </script>
+{% endif %}

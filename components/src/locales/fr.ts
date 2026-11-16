@@ -718,5 +718,6 @@
 'scc1db59d292cbc4c': `Section`,
 'sf8377ceea7083edf': `Change cover image`,
 's8fc556c37b60845d': `Add a cover image`,
+'s5898d8dbeded12e8': str`${0} a rejoint votre espace de travail`,
     };
   

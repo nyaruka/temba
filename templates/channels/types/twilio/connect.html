@@ -5,14 +5,22 @@
   {% trans "Connect Twilio" %}
 {% endblock title %}
 {% block pre-form %}
-  <div class="mb-4">
-    {# djangofmt: ignore[format] #}
-    {% blocktrans trimmed with settings_url='https://www.twilio.com/user/account/settings' %}
-      To connect your Twilio Account you will need to provide us your Twilio account SID and auth token. Both values can
-      be found on your <a target="twilio" href="{{ settings_url }}">Twilio account page</a>.
+  <div class="claim-blurb">{{ claim_blurb }}</div>
+  <div class="mt-4">
+    {% blocktrans trimmed with link='<a target="_blank" href="https://console.twilio.com/">Twilio Console</a>' %}
+      To get started, you'll need your Twilio account's Account SID and Auth Token, which are under Account Info on the {{ link }} dashboard.
     {% endblocktrans %}
   </div>
 {% endblock pre-form %}
+{% block pre-form-errors %}
+  {% if invalid_creds %}
+    <temba-alert level="error" class="mb-4">
+      {% blocktrans trimmed %}
+        Your Twilio account SID and auth token are no longer working. Enter them again or use another account.
+      {% endblocktrans %}
+    </temba-alert>
+  {% endif %}
+{% endblock pre-form-errors %}
 {% block extra-script %}
   {{ block.super }}
   <script>

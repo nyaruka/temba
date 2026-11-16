@@ -155,7 +155,20 @@ class HTTPLogCRUDLTest(TembaTest, CRUDLTestMixin):
         list_url = reverse("request_logs.httplog_channel", args=[ch1.uuid])
 
         self.assertRequestDisallowed(list_url, [None, self.editor, self.agent, self.admin2])
-        self.assertListFetch(list_url, [self.admin], context_objects=[l2, l1])
+
+        # the page is a shell for the log list, which fetches the channel's logs itself
+        response = self.assertListFetch(list_url, [self.admin], context_objects=[])
+        self.assertEqual(f"/api/internal/channel_http_logs.json?channel={ch1.uuid}", response.context["list_url"])
+        self.assertContains(response, "<temba-log-list")
+
+        # it can open with one of the channel's logs selected, but not another's
+        l1_url = reverse("request_logs.httplog_read", args=[l1.id])
+        response = self.requestView(list_url + f"?selected={l1_url}", self.admin)
+        self.assertEqual(l1_url, response.context["selected"])
+
+        other_url = reverse("request_logs.httplog_read", args=[l2.id + 1])
+        response = self.requestView(list_url + f"?selected={other_url}", self.admin)
+        self.assertNotIn("selected", response.context)
 
     def test_http_log(self):
         channel = self.create_channel("WAC", "WhatsApp: 1234", "1234")
@@ -177,14 +190,14 @@ class HTTPLogCRUDLTest(TembaTest, CRUDLTestMixin):
         log_url = reverse("request_logs.httplog_read", args=[log1.id])
         response = self.client.get(log_url)
         self.assertContains(response, "200")
-        self.assertContains(response, "Connection Error")
+        self.assertContains(response, "The connection failed before a response was received.")
         self.assertContains(response, "/v22.0/1234/message_templates")
 
         log2 = HTTPLog.from_exception(HTTPLog.WHATSAPP_TEMPLATES_SYNCED, exception, start, channel=channel)
         log2_url = reverse("request_logs.httplog_read", args=[log2.id])
         response = self.client.get(log2_url)
         self.assertContains(response, "200")
-        self.assertContains(response, "Connection Error")
+        self.assertContains(response, "The connection failed before a response was received.")
         self.assertContains(response, "/v22.0/1234/message_templates?access_token=********")
 
         # and can't be from other org

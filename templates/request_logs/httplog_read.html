@@ -1,5 +1,5 @@
 {% extends "smartmin/read.html" %}
-{% load i18n %}
+{% load i18n temba %}
 
 {% block title-text %}
   {% if object.flow %}
@@ -9,48 +9,23 @@
   {% endif %}
 {% endblock title-text %}
 {% block content %}
-  <div class="card flex mt-0 flex-shrink-0 flex-wrap">
-    <div class="inline-flex font-normal mr-8">{{ object.get_log_type_display }}</div>
-    <div class="inline-flex mr-8">
-      {% if object.flow %}
-        <div class="font-normal mr-2">{% trans "Flow" %}</div>
-        <div>
-          <a href='{% url "flows.flow_editor" object.flow.uuid %}' class="linked">{{ object.flow.name }}</a>
-        </div>
-      {% endif %}
+  <div class="log-view">
+    <div class="log-summary">
+      <span class="log-summary-title">{{ object.get_log_type_display }}</span>
+      <span class="dash-pill {% if object.is_error %}bad{% else %}good{% endif %}">
+        {% if object.is_error %}
+          {% trans "Error" %}
+        {% else %}
+          {% trans "OK" %}
+        {% endif %}
+      </span>
+      <span class="log-summary-meta">
+        {% if object.flow %}
+          <a href='{% url "flows.flow_editor" object.flow.uuid %}'>{{ object.flow.name }}</a>
+        {% endif %}
+        <span>{{ object.created_on|datetime }}</span>
+      </span>
     </div>
-    <div class="inline-flex mr-8">
-      <div class="font-normal mr-2">{% trans "Date" %}</div>
-      {{ object.created_on|datetime }}
-    </div>
+    {% include "includes/http_log.html" with log=object.get_display %}
   </div>
-  {% include "includes/http_log.html" with log=object.get_display %}
 {% endblock content %}
-{% block extra-script %}
-  {{ block.super }}
-  <script>
-    onSpload(function() {
-      prettyPrint();
-    });
-  </script>
-{% endblock extra-script %}
-{% block extra-style %}
-  {{ block.super }}
-  <link rel="stylesheet" href="{{ STATIC_URL }}rest_framework/css/prettify.css">
-  <style>
-    .page-content {
-      max-width: 100%;
-    }
-
-    pre.prettyprint {
-      max-height: none !important;
-      margin: 0;
-      padding: 1.5rem;
-      border: 0;
-    }
-
-    pre.prettyprint.request {
-      background: #ffffff;
-    }
-  </style>
-{% endblock extra-style %}

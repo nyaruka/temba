@@ -18,9 +18,10 @@ class WeChatType(ChannelType):
     schemes = [URN.WECHAT_SCHEME]
 
     claim_blurb = _(
-        "Add a %(link)s bot to send and receive messages to WeChat users for free. Your users will need an Android, "
-        "Windows or iOS device and a WeChat account to send and receive messages."
-    ) % {"link": '<a target="_blank" href="https://wechat.com">WeChat</a>'}
+        "%(link)s is the leading messaging app in China. Contacts follow your WeChat Official Account to message it, "
+        "and can send photos, videos and voice messages. Your account can reply for up to 48 hours after a contact's "
+        "last message."
+    ) % {"link": '<a target="_blank" href="https://www.wechat.com">WeChat</a>'}
     claim_view = ClaimView
 
     config_ui = ConfigUI(

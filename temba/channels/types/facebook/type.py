@@ -25,10 +25,10 @@ class FacebookType(ChannelType):
     schemes = [URN.FACEBOOK_SCHEME]
 
     claim_blurb = _(
-        "Add a %(link)s bot to send and receive messages on behalf of one of your Facebook pages for free. You will "
-        "need to connect your page by logging into your Facebook and checking the Facebook page to connect. "
-        "On the Facebook page, navigate Settings > Page roles and verify you have an admin page role on the page."
-    ) % {"link": '<a target="_blank" href="http://facebook.com">Facebook</a>'}
+        "Contacts can message your %(link)s Page on Messenger, and reply with photos, videos and locations or by "
+        "tapping buttons. Links, QR codes and ads that open Messenger can start a flow for the contact, and automated "
+        "replies can be sent within 24 hours of a contact's last message, and replies from your team for up to 7 days."
+    ) % {"link": '<a target="_blank" href="https://facebook.com">Facebook</a>'}
     claim_view = ClaimView
 
     menu_items = [dict(label=_("Reconnect Facebook Page"), view_name="channels.types.facebook.refresh_token")]

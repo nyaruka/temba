@@ -7,14 +7,9 @@ from temba.channels.views import AuthenticatedExternalClaimView, ClaimViewMixin
 
 class ClaimView(AuthenticatedExternalClaimView):
     class GlobeClaimForm(ClaimViewMixin.Form):
-        number = forms.CharField(
-            max_length=14,
-            min_length=1,
-            label=_("Number"),
-            help_text=_("The short code assigned by Globe Labs, e.g. 15543."),
-        )
-        app_id = forms.CharField(label=_("Application Id"))
-        app_secret = forms.CharField(label=_("Application Secret"))
+        number = forms.CharField(max_length=14, min_length=1, label=_("Short Code"))
+        app_id = forms.CharField(label=_("App ID"))
+        app_secret = forms.CharField(label=_("App Secret"))
         passphrase = forms.CharField(
             label=_("Passphrase"), help_text=_("Assigned by Globe Labs and required for sending.")
         )

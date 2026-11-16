@@ -1,6 +1,14 @@
 {% extends "channels/channel_claim_number.html" %}
 {% load i18n %}
 
+{% block numbers-lead %}
+  <div class="mt-4">
+    {% blocktrans trimmed %}
+      To get started, pick a number that's already on your Twilio account, or search for a new one to buy. Buying a number charges your Twilio account.
+    {% endblocktrans %}
+  </div>
+{% endblock numbers-lead %}
+
 {% block account-warning %}
   {% if account_trial %}
     <temba-alert level="warning" class="my-4">
@@ -12,7 +20,7 @@
     </temba-alert>
   {% endif %}
   {% if current_creds_account %}
-    <div class="card mt-6">
+    <div class="card mt-6 claim-account">
       {% trans "Using account" %}
       <div class="text-lg font-bold inline-block ml-2">{{ current_creds_account }}</div>
       <a href='{% url "channels.types.twilio.connect" %}?reset_creds=reset&claim_type=twilio' class="inline-block ml-4">{% trans "Change" %}</a>

@@ -1,1 +1,10 @@
 {% extends "channels/channel_claim_form.html" %}
+{% load i18n %}
+
+{% block form-lead %}
+  <div class="mt-4">
+    {% blocktrans trimmed %}
+      To get started, you'll need your short code along with your Africa's Talking username and an API key, which you can generate under Settings in your Africa's Talking app.
+    {% endblocktrans %}
+  </div>
+{% endblock form-lead %}

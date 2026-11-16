@@ -68,16 +68,23 @@ SUPPORTED_TIMEZONES = get_tz_for_countries(SUPPORTED_COUNTRIES)
 
 class ClaimView(ClaimViewMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
-        number = forms.CharField(required=True, label=_("Originating Phone number"))
+        number = forms.CharField(required=True, label=_("Number"))
         country = forms.ChoiceField(
             choices=COUNTRY_CHOICES, widget=SelectWidget(attrs={"searchable": True}), label=_("Country")
         )
         secret = forms.CharField(
             required=True,
-            label=_("Messagebird API Signing Key"),
+            label=_("Signing Key"),
             help_text=_("Used to verify webhook signatures."),
         )
-        auth_token = forms.CharField(required=True, label=_("Messagebird API Auth Token"))
+        auth_token = forms.CharField(required=True, label=_("Access Key"))
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+            # most numbers are in the workspace's own country, where it's one Messagebird supports
+            if (country := self.request.org.default_country_code) in SUPPORTED_COUNTRIES:
+                self.fields["country"].initial = country
 
         def clean_number(self):
             phone = self.cleaned_data["number"]

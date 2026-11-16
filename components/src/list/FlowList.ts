@@ -6,6 +6,7 @@ import { CustomEventType, Flow, ObjectReference } from '../interfaces';
 import { getStore, StoreAsset, StoreAssetChangedEvent } from '../store/Store';
 import { RealtimeSubscription } from '../live/Realtime';
 import { formatCount } from '../utils';
+import { renderSparkline, sparklineStyles } from './sparkline';
 
 /**
  * Flow CRUDL list — drop-in replacement for the rapidpro
@@ -20,6 +21,7 @@ export class FlowList extends ContentList<Flow> {
   static get styles() {
     return css`
       ${ContentList.styles}
+      ${sparklineStyles}
       /* The name cell is a flex row (name text, issue icon, label
          chips) that fills the grow column. When space runs out the
          text spans ellipsize — the flex items shrink instead of the
@@ -81,21 +83,6 @@ export class FlowList extends ContentList<Flow> {
         color: var(--text-2);
         min-width: 36px;
         text-align: right;
-      }
-      .sparkline {
-        display: inline-block;
-        vertical-align: middle;
-      }
-      .sparkline .line {
-        fill: none;
-        stroke: var(--accent-600);
-        stroke-width: 1.25;
-        stroke-linejoin: round;
-        stroke-linecap: round;
-      }
-      .sparkline .area {
-        fill: var(--accent-100);
-        opacity: 0.7;
       }
     `;
   }
@@ -327,7 +314,7 @@ export class FlowList extends ContentList<Flow> {
       case 'completion':
         return this.renderCompletion(item);
       case 'activity':
-        return this.renderSparkline(item.activity || []);
+        return renderSparkline(item.activity || []);
       default:
         return super.renderCell(item, column);
     }
@@ -343,39 +330,6 @@ export class FlowList extends ContentList<Flow> {
         </div>
         <span class="pct">${pct}%</span>
       </div>
-    `;
-  }
-
-  /** Render a tiny line+area sparkline from a numeric array.
-   * Values are normalized to the column's pixel viewBox; absolute
-   * magnitude isn't preserved — the goal is shape, not scale. */
-  private renderSparkline(values: number[]): TemplateResult {
-    if (!values || values.length < 2) return html``;
-    const w = 90;
-    const h = 22;
-    const max = Math.max(...values, 1);
-    const step = w / (values.length - 1);
-    const pts = values.map((v, i) => {
-      const x = i * step;
-      const y = h - (v / max) * (h - 2) - 1;
-      return [x.toFixed(1), y.toFixed(1)] as const;
-    });
-    const line = pts.map(([x, y]) => `${x},${y}`).join(' ');
-    const areaCmds = pts
-      .map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x},${y}`)
-      .join(' ');
-    const area = `${areaCmds} L${w},${h} L0,${h} Z`;
-    return html`
-      <svg
-        class="sparkline"
-        width=${w}
-        height=${h}
-        viewBox="0 0 ${w} ${h}"
-        preserveAspectRatio="none"
-      >
-        <path class="area" d=${area}></path>
-        <polyline class="line" points=${line}></polyline>
-      </svg>
     `;
   }
 }

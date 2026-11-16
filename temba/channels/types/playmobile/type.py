@@ -18,9 +18,10 @@ class PlayMobileType(ChannelType):
     available_timezones = ["Asia/Tashkent", "Asia/Samarkand"]
 
     claim_blurb = _(
-        "If you are based in Uzbekistan, you can purchase a short code from %(link)s and connect it in a few simple "
-        "steps."
-    ) % {"link": '<a href="http://playmobile.uz/">Play Mobile</a>'}
+        "%(link)s is an SMS operator for businesses in Uzbekistan, used by banks, payment systems and online stores "
+        "to message their customers. Connect a short code you have with Play Mobile to send and receive SMS with your "
+        "contacts."
+    ) % {"link": '<a target="_blank" href="https://playmobile.uz/">Play Mobile</a>'}
     claim_view = ClaimView
 
     config_ui = ConfigUI(

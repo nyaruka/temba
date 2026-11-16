@@ -19,14 +19,21 @@ class ClaimView(ClaimViewMixin, SmartFormView):
         country = forms.ChoiceField(
             choices=ALL_COUNTRIES, widget=SelectWidget(attrs={"searchable": True}), label=_("Country")
         )
-        number = forms.CharField(required=True, label=_("Originating Phone number"))
-        api_key = forms.CharField(required=True, label=_("Infobip API Key"))
+        number = forms.CharField(required=True, label=_("Number"))
+        api_key = forms.CharField(required=True, label=_("API Key"))
         subdomain = forms.CharField(
             required=True,
             max_length=63,
-            label=_("Infobip API subdomain"),
-            help_text=_("Found in the Infobip API Resource hub, e.g. xxxxx for https://xxxxx.api.infobip.com."),
+            label=_("Base URL"),
+            help_text=_("The part before .api.infobip.com, e.g. xxxxx for https://xxxxx.api.infobip.com."),
         )
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+            # most numbers are in the workspace's own country
+            if country := self.request.org.default_country_code:
+                self.fields["country"].initial = country
 
         def clean_subdomain(self):
             value = self.cleaned_data["subdomain"].strip().lower()
