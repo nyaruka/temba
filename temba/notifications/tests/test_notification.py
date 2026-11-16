@@ -394,6 +394,15 @@ class NotificationTest(TembaTest):
 
         self.assertEqual(Notification.EMAIL_STATUS_PENDING, self.admin.notifications.get(export=export2).email_status)
 
+        # a staff user has no membership, so nowhere to turn emails off
+        self.assertFalse(OrgMembership.objects.filter(org=self.org, user=self.customer_support).exists())
+        export3 = ContactExport.create(self.org, self.customer_support)
+        ExportFinishedNotificationType.create(export3)
+
+        self.assertEqual(
+            Notification.EMAIL_STATUS_PENDING, self.customer_support.notifications.get(export=export3).email_status
+        )
+
     def test_email_notifications_changed(self):
         def create():
             Notification.create_all(

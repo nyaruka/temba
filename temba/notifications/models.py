@@ -202,8 +202,8 @@ class Notification(models.Model):
         email_required: bool = False,
         **kwargs,
     ):
-        # users who've turned off emails for this workspace - users without a membership, e.g. admins via an admin
-        # group, have nowhere to turn them off so always get them
+        # users who've turned off emails for this workspace - users without a membership, e.g. staff, have nowhere to
+        # turn them off so always get them
         opted_out = set()
         if cls.MEDIUM_EMAIL in medium and not email_required:
             opted_out = set(
