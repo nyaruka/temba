@@ -1,3 +1,8 @@
+## v26.3.199 (2026-11-16)
+ * Keep a scrolled list on the items it is showing across a refresh, only scrolling back to the selection if it was in view
+ * Follow a moved selection with the smallest scroll that shows it
+ * Keep the ticket list within its column when a closed ticket has a long name
+
 ## v26.3.198 (2026-11-16)
  * Let users turn off notification emails, with the setting per workspace
  * Stop writing node counts to flow activity counts
