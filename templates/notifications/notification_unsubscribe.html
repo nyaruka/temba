@@ -13,14 +13,14 @@
       <div class="page-title mb-4">{% trans "Unsubscribed" %}</div>
       <p>
         {% blocktrans trimmed with org=membership.org.name %}
-          You won't receive notification emails from the {{ org }} workspace. Notifications still appear when you log in.
+          You'll no longer get notification emails for the {{ org }} workspace. You'll still see notifications when you log in.
         {% endblocktrans %}
       </p>
     {% else %}
       <div class="page-title mb-4">{% trans "Unsubscribe from notification emails" %}</div>
       <p class="mb-4">
         {% blocktrans trimmed with org=membership.org.name %}
-          Stop emailing you notifications from the {{ org }} workspace? Notifications still appear when you log in.
+          You'll stop getting notification emails for the {{ org }} workspace. You'll still see notifications when you log in.
         {% endblocktrans %}
       </p>
       <form method="post">

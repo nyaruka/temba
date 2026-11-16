@@ -10,5 +10,5 @@
 {% blocktrans with brand=branding.name %}The {{ brand }} Team{% endblocktrans %}
 {% if unsubscribe_url %}
 --
-{% blocktrans with org=notification.org.name %}You received this because you're a member of the {{ org }} workspace. To unsubscribe: {{ unsubscribe_url }}{% endblocktrans %}{% endif %}
+{% blocktrans with org=notification.org.name %}You're receiving this email because you're a member of the {{ org }} workspace. To unsubscribe: {{ unsubscribe_url }}{% endblocktrans %}{% endif %}
 {% endblock body %}

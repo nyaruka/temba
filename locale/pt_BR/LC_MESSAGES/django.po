@@ -5503,15 +5503,15 @@ msgid "The %(brand)s Team"
 msgstr "O time %(brand)s"
 
 #, python-format
-msgid "You received this because you're a member of the %(org)s workspace."
-msgstr "Você recebeu este e-mail porque é membro da área de trabalho %(org)s."
+msgid "You're receiving this email because you're a member of the %(org)s workspace."
+msgstr "Você está recebendo este e-mail porque é membro da área de trabalho %(org)s."
 
 msgid "Unsubscribe"
 msgstr "Cancelar inscrição"
 
 #, python-format
-msgid "You received this because you're a member of the %(org)s workspace. To unsubscribe: %(unsubscribe_url)s"
-msgstr "Você recebeu este e-mail porque é membro da área de trabalho %(org)s. Para cancelar a inscrição: %(unsubscribe_url)s"
+msgid "You're receiving this email because you're a member of the %(org)s workspace. To unsubscribe: %(unsubscribe_url)s"
+msgstr "Você está recebendo este e-mail porque é membro da área de trabalho %(org)s. Para cancelar a inscrição: %(unsubscribe_url)s"
 
 #, python-format
 msgid "Your export is ready! Click <a href=\"%(url)s\">here</a> to download it."
@@ -5607,15 +5607,15 @@ msgid "Unsubscribed"
 msgstr "Inscrição cancelada"
 
 #, python-format
-msgid "You won't receive notification emails from the %(org)s workspace. Notifications still appear when you log in."
-msgstr "Você não receberá e-mails de notificação da área de trabalho %(org)s. As notificações continuam aparecendo quando você entra."
+msgid "You'll no longer get notification emails for the %(org)s workspace. You'll still see notifications when you log in."
+msgstr "Você não receberá mais e-mails de notificação da área de trabalho %(org)s. Você continuará vendo as notificações ao entrar."
 
 msgid "Unsubscribe from notification emails"
 msgstr "Cancelar inscrição nos e-mails de notificação"
 
 #, python-format
-msgid "Stop emailing you notifications from the %(org)s workspace? Notifications still appear when you log in."
-msgstr "Parar de receber por e-mail as notificações da área de trabalho %(org)s? As notificações continuam aparecendo quando você entra."
+msgid "You'll stop getting notification emails for the %(org)s workspace. You'll still see notifications when you log in."
+msgstr "Você deixará de receber e-mails de notificação da área de trabalho %(org)s. Você continuará vendo as notificações ao entrar."
 
 msgid "Workspace flagged"
 msgstr "Área de trabalho sinalizada"

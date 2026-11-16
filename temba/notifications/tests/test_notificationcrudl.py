@@ -37,7 +37,7 @@ class NotificationCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # GET only asks for confirmation, so link scanners can't unsubscribe anyone
         response = self.client.get(unsubscribe_url)
-        self.assertContains(response, "Stop emailing you notifications from the Nyaruka workspace?")
+        self.assertContains(response, "You'll stop getting notification emails for the Nyaruka workspace.")
 
         membership.refresh_from_db()
         self.assertTrue(membership.email_notifications)
@@ -45,7 +45,7 @@ class NotificationCRUDLTest(TembaTest, CRUDLTestMixin):
         # POST unsubscribes, without login or CSRF token, as mail clients do for one-click unsubscribe
         client = self.client_class(enforce_csrf_checks=True)
         response = client.post(unsubscribe_url, {"List-Unsubscribe": "One-Click"})
-        self.assertContains(response, "You won't receive notification emails from the Nyaruka workspace.")
+        self.assertContains(response, "You'll no longer get notification emails for the Nyaruka workspace.")
 
         membership.refresh_from_db()
         self.assertFalse(membership.email_notifications)
@@ -55,7 +55,7 @@ class NotificationCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # visiting again says they're already unsubscribed
         response = self.client.get(unsubscribe_url)
-        self.assertContains(response, "You won't receive notification emails from the Nyaruka workspace.")
+        self.assertContains(response, "You'll no longer get notification emails for the Nyaruka workspace.")
 
         # an invalid token
         response = self.client.get(reverse("notifications.notification_unsubscribe", args=["xyz"]))

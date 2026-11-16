@@ -17,7 +17,7 @@
 {% block footer %}
   {% if unsubscribe_url %}
     {% blocktrans trimmed with org=notification.org.name %}
-      You received this because you're a member of the {{ org }} workspace.
+      You're receiving this email because you're a member of the {{ org }} workspace.
     {% endblocktrans %}
     <a href="{{ unsubscribe_url }}" style="color: inherit">{% trans "Unsubscribe" %}</a>
   {% else %}

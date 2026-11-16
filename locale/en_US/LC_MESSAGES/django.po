@@ -5463,14 +5463,14 @@ msgid "The %(brand)s Team"
 msgstr ""
 
 #, python-format
-msgid "You received this because you're a member of the %(org)s workspace."
+msgid "You're receiving this email because you're a member of the %(org)s workspace."
 msgstr ""
 
 msgid "Unsubscribe"
 msgstr ""
 
 #, python-format
-msgid "You received this because you're a member of the %(org)s workspace. To unsubscribe: %(unsubscribe_url)s"
+msgid "You're receiving this email because you're a member of the %(org)s workspace. To unsubscribe: %(unsubscribe_url)s"
 msgstr ""
 
 #, python-format
@@ -5562,14 +5562,14 @@ msgid "Unsubscribed"
 msgstr ""
 
 #, python-format
-msgid "You won't receive notification emails from the %(org)s workspace. Notifications still appear when you log in."
+msgid "You'll no longer get notification emails for the %(org)s workspace. You'll still see notifications when you log in."
 msgstr ""
 
 msgid "Unsubscribe from notification emails"
 msgstr ""
 
 #, python-format
-msgid "Stop emailing you notifications from the %(org)s workspace? Notifications still appear when you log in."
+msgid "You'll stop getting notification emails for the %(org)s workspace. You'll still see notifications when you log in."
 msgstr ""
 
 msgid "Workspace flagged"
