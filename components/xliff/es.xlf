@@ -1533,30 +1533,39 @@
 </trans-unit>
 <trans-unit id="s4c29078e3fac16ce">
   <source>Searching articles</source>
+  <target>Buscando artículos</target>
 </trans-unit>
 <trans-unit id="sa62d0398be435bb0">
   <source>Links to an article</source>
+  <target>Enlaza a un artículo</target>
 </trans-unit>
 <trans-unit id="s8d2ab15f65e011c2">
   <source>Links to an address</source>
+  <target>Enlaza a una dirección</target>
 </trans-unit>
 <trans-unit id="s03007732a34e7c5e">
   <source>https:// or an article title</source>
+  <target>https:// o el título de un artículo</target>
 </trans-unit>
 <trans-unit id="se44dd3f2702d6bdb">
   <source>Remove link</source>
+  <target>Quitar enlace</target>
 </trans-unit>
 <trans-unit id="s47825e83c2d9e940">
   <source>No matching articles</source>
+  <target>No hay artículos que coincidan</target>
 </trans-unit>
 <trans-unit id="scc1db59d292cbc4c">
   <source>Section</source>
+  <target>Sección</target>
 </trans-unit>
 <trans-unit id="sf8377ceea7083edf">
   <source>Change cover image</source>
+  <target>Cambiar imagen de portada</target>
 </trans-unit>
 <trans-unit id="s8fc556c37b60845d">
   <source>Add a cover image</source>
+  <target>Añadir una imagen de portada</target>
 </trans-unit>
 <trans-unit id="sd1f44f1a8bc20e67">
   <source>Email</source>
@@ -1564,54 +1573,71 @@
 </trans-unit>
 <trans-unit id="s1104a7eac4dac164">
   <source>Unable to connect to chat</source>
+  <target>No se pudo conectar al chat</target>
 </trans-unit>
 <trans-unit id="s7c459993827517b8">
   <source>Your message could not be sent</source>
+  <target>No se pudo enviar tu mensaje</target>
 </trans-unit>
 <trans-unit id="se3ed881a961f14bd">
   <source>Emoji</source>
+  <target>Emoji</target>
 </trans-unit>
 <trans-unit id="s97f6e6b329f62301">
   <source>Frequently used</source>
+  <target>Usados con frecuencia</target>
 </trans-unit>
 <trans-unit id="sa9d13f71e8de590f">
   <source>Search emoji</source>
+  <target>Buscar emoji</target>
 </trans-unit>
 <trans-unit id="sf50402600c3d5dac">
   <source>No emoji found</source>
+  <target>No se encontraron emojis</target>
 </trans-unit>
 <trans-unit id="s67cc427214876d96">
   <source>Too many attachments</source>
+  <target>Demasiados archivos adjuntos</target>
 </trans-unit>
 <trans-unit id="s2c613f55190525c2">
   <source>File type not supported</source>
+  <target>Tipo de archivo no admitido</target>
 </trans-unit>
 <trans-unit id="sfa99679af4c07130">
   <source>File is too large</source>
+  <target>El archivo es demasiado grande</target>
 </trans-unit>
 <trans-unit id="sa361fcab60d93eba">
   <source>Unable to upload file</source>
+  <target>No se pudo subir el archivo</target>
 </trans-unit>
 <trans-unit id="s82a4e28ab5b56670">
   <source>Connected</source>
+  <target>Conectado</target>
 </trans-unit>
 <trans-unit id="scde3342a428aaee8">
   <source>Offline</source>
+  <target>Sin conexión</target>
 </trans-unit>
 <trans-unit id="s7cca8a9dbdc4f5e6">
   <source>The chat is not connected.</source>
+  <target>El chat no está conectado.</target>
 </trans-unit>
 <trans-unit id="s31853dc46cf19846">
   <source>Reconnect</source>
+  <target>Reconectar</target>
 </trans-unit>
 <trans-unit id="sac72064efd7b3464">
   <source>Add an attachment</source>
+  <target>Añadir un archivo adjunto</target>
 </trans-unit>
 <trans-unit id="s3ab33766abd1267c">
   <source>Write a message</source>
+  <target>Escribe un mensaje</target>
 </trans-unit>
 <trans-unit id="se87720a0d34ad7b9">
   <source>Add an emoji</source>
+  <target>Añadir un emoji</target>
 </trans-unit>
 <trans-unit id="s57adf424d57c8a0f">
   <source>Send</source>
@@ -1619,15 +1645,19 @@
 </trans-unit>
 <trans-unit id="s2d9a6ca558b0444d">
   <source>Drop files to attach them</source>
+  <target>Suelta los archivos para adjuntarlos</target>
 </trans-unit>
 <trans-unit id="s5d47d9945079dcc7">
   <source>Close chat</source>
+  <target>Cerrar chat</target>
 </trans-unit>
 <trans-unit id="s268292503b5b4aef">
   <source>Send a message and we'll reply here.</source>
+  <target>Envía un mensaje y te responderemos aquí.</target>
 </trans-unit>
 <trans-unit id="s8739101d033ef475">
   <source>Open chat</source>
+  <target>Abrir chat</target>
 </trans-unit>
 <trans-unit id="sca4fb8fafd9b52e5">
   <source>Verified</source>
@@ -2828,6 +2858,174 @@
 <trans-unit id="s5898d8dbeded12e8">
   <source><x id="0" equiv-text="${notification.user.email}"/> joined your workspace</source>
   <target><x id="0" equiv-text="${notification.user.email}"/> se unió a tu espacio de trabajo</target>
+</trans-unit>
+<trans-unit id="s47bd157f69749a06">
+  <source>Social &amp; Chat</source>
+  <target>Redes sociales y chat</target>
+</trans-unit>
+<trans-unit id="s3d9975b514e752a2">
+  <source>SMS &amp; Voice</source>
+  <target>SMS y voz</target>
+</trans-unit>
+<trans-unit id="sf706eaac61c7e1ad">
+  <source>Developer</source>
+  <target>Desarrollador</target>
+</trans-unit>
+<trans-unit id="s026cd475c128c50c">
+  <source>Something went wrong adding this channel. Check what you entered and try again.</source>
+  <target>Algo salió mal al añadir este canal. Revisa lo que ingresaste e inténtalo de nuevo.</target>
+</trans-unit>
+<trans-unit id="sf993bb199fefbe04">
+  <source>All</source>
+  <target>Todos</target>
+</trans-unit>
+<trans-unit id="s12f6b3b9aa6fe76c">
+  <source>Recommended</source>
+  <target>Recomendados</target>
+</trans-unit>
+<trans-unit id="s0c059167793d7c1f">
+  <source>Search channel types</source>
+  <target>Buscar tipos de canal</target>
+</trans-unit>
+<trans-unit id="s922311ba10e32f77">
+  <source>Show other regions</source>
+  <target>Mostrar otras regiones</target>
+</trans-unit>
+<trans-unit id="s0083987f77e11ffc">
+  <source>No channel types match your search</source>
+  <target>Ningún tipo de canal coincide con tu búsqueda</target>
+</trans-unit>
+<trans-unit id="s92728429d85f2d85">
+  <source>Which channel should I use?</source>
+  <target>¿Qué canal debo usar?</target>
+</trans-unit>
+<trans-unit id="s51afd187717357d9">
+  <source>Back to channel types</source>
+  <target>Volver a los tipos de canal</target>
+</trans-unit>
+<trans-unit id="s95102d3115310e52">
+  <source>Setup guide</source>
+  <target>Guía de configuración</target>
+</trans-unit>
+<trans-unit id="sd9692cb22f91badd">
+  <source>This channel type could not be loaded. Try again later.</source>
+  <target>No se pudo cargar este tipo de canal. Inténtalo más tarde.</target>
+</trans-unit>
+<trans-unit id="s8738803a5194549f">
+  <source>Add Channel</source>
+  <target>Añadir canal</target>
+</trans-unit>
+<trans-unit id="s81ecf2d4386b8e84">
+  <source>Continue</source>
+  <target>Continuar</target>
+</trans-unit>
+<trans-unit id="s4cd6a179bc317596">
+  <source>Channel added</source>
+  <target>Canal añadido</target>
+</trans-unit>
+<trans-unit id="sbf3d053b3ba010c8">
+  <source>One more step: finish setting it up with <x id="0" equiv-text="${type.name}"/> so messages reach your workspace.</source>
+  <target>Un paso más: termina de configurarlo en <x id="0" equiv-text="${type.name}"/> para que los mensajes lleguen a tu espacio de trabajo.</target>
+</trans-unit>
+<trans-unit id="s7e6f64fa79cbc3fa">
+  <source>It's ready to send and receive messages.</source>
+  <target>Está listo para enviar y recibir mensajes.</target>
+</trans-unit>
+<trans-unit id="sb718fbf789a9f5c9">
+  <source>Later</source>
+  <target>Más tarde</target>
+</trans-unit>
+<trans-unit id="s43ddfdf34a82caa3">
+  <source>Finish setup</source>
+  <target>Terminar configuración</target>
+</trans-unit>
+<trans-unit id="s6806df29d3e16c43">
+  <source>View channel</source>
+  <target>Ver canal</target>
+</trans-unit>
+<trans-unit id="s0379fc73608ab971">
+  <source>Done</source>
+  <target>Listo</target>
+</trans-unit>
+<trans-unit id="s1aa7c8552e83850a">
+  <source>New Channel</source>
+  <target>Nuevo canal</target>
+</trans-unit>
+<trans-unit id="se332c443d3b35c03">
+  <source>Compared with the <x id="0" equiv-text="${length}"/> days before</source>
+  <target>Comparado con los <x id="0" equiv-text="${length}"/> días anteriores</target>
+</trans-unit>
+<trans-unit id="s062002b7b2d8a217">
+  <source>Days shown</source>
+  <target>Días mostrados</target>
+</trans-unit>
+<trans-unit id="s9976b5befb314c64">
+  <source><x id="0" equiv-text="${length}"/> days</source>
+  <target><x id="0" equiv-text="${length}"/> días</target>
+</trans-unit>
+<trans-unit id="s98c67cd0c5e7229c">
+  <source>Something went wrong loading this.</source>
+  <target>Algo salió mal al cargar esto.</target>
+</trans-unit>
+<trans-unit id="s2ec9079b1683e40c">
+  <source>Something went wrong submitting this.</source>
+  <target>Algo salió mal al enviar esto.</target>
+</trans-unit>
+<trans-unit id="sc16e00a7a8b2fde2">
+  <source>Back</source>
+  <target>Atrás</target>
+</trans-unit>
+<trans-unit id="sa562b27c1b843f5e">
+  <source>No channels</source>
+  <target>No hay canales</target>
+</trans-unit>
+<trans-unit id="s45264722940edb63">
+  <source>Search channels</source>
+  <target>Buscar canales</target>
+</trans-unit>
+<trans-unit id="s752f8d9ba5e51d72">
+  <source>Received</source>
+  <target>Recibido</target>
+</trans-unit>
+<trans-unit id="s77dede2335388812">
+  <source>Very slow</source>
+  <target>Muy lento</target>
+</trans-unit>
+<trans-unit id="s919e1424f589c498">
+  <source>Slow</source>
+  <target>Lento</target>
+</trans-unit>
+<trans-unit id="s1c2bfccc1ee0fb25">
+  <source>Sends very slowly, so large broadcasts can take hours.</source>
+  <target>Envía muy lentamente, así que los envíos masivos grandes pueden tardar horas.</target>
+</trans-unit>
+<trans-unit id="s973d417ff120e621">
+  <source>Sends slowly, so large broadcasts take longer.</source>
+  <target>Envía lentamente, así que los envíos masivos grandes tardan más.</target>
+</trans-unit>
+<trans-unit id="s66722bc2ea775e05">
+  <source>Disabled</source>
+  <target>Desactivado</target>
+</trans-unit>
+<trans-unit id="s28f3afffb84a0555">
+  <source>No logs</source>
+  <target>No hay registros</target>
+</trans-unit>
+<trans-unit id="s5f343a43e7ea9f91">
+  <source>Error</source>
+  <target>Error</target>
+</trans-unit>
+<trans-unit id="s091d3d07b5b3076f">
+  <source>OK</source>
+  <target>OK</target>
+</trans-unit>
+<trans-unit id="sbc2051fdba03c6f0">
+  <source>Failed after <x id="0" equiv-text="${ms}"/> ms</source>
+  <target>Falló después de <x id="0" equiv-text="${ms}"/> ms</target>
+</trans-unit>
+<trans-unit id="sdc72796eefa91058">
+  <source>Took <x id="0" equiv-text="${ms}"/> ms</source>
+  <target>Tardó <x id="0" equiv-text="${ms}"/> ms</target>
 </trans-unit>
 </body>
 </file>
