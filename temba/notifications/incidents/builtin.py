@@ -39,6 +39,7 @@ class OrgFlaggedIncidentType(IncidentType):
 
     slug = "org:flagged"
     title = _("Workspace Flagged")
+    email_required = True
 
     @classmethod
     def get_or_create(cls, org):
@@ -55,6 +56,7 @@ class OrgSuspendedIncidentType(IncidentType):
 
     slug = "org:suspended"
     title = _("Workspace Suspended")
+    email_required = True
 
     @classmethod
     def get_or_create(cls, org):

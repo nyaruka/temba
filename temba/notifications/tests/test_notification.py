@@ -359,6 +359,35 @@ class NotificationTest(TembaTest):
         recipients = set(mail.outbox[0].recipients()).union(mail.outbox[1].recipients())
         self.assertEqual({self.admin.email, self.editor.email}, recipients)
 
+    def test_email_notifications_disabled(self):
+        self.org.add_user(self.editor, OrgRole.ADMINISTRATOR)  # upgrade editor to administrator
+        self.admin.email_notifications = False
+        self.admin.save(update_fields=("email_notifications",))
+
+        # an opted out user still gets the notification in the UI, just not the email
+        export = ContactExport.create(self.org, self.admin)
+        ExportFinishedNotificationType.create(export)
+
+        notification = self.admin.notifications.get(export=export)
+        self.assertFalse(notification.is_seen)
+        self.assertEqual(Notification.EMAIL_STATUS_NONE, notification.email_status)
+
+        # and doesn't get emailed about most incidents...
+        ChannelDisconnectedIncidentType.get_or_create(self.channel)
+
+        send_notification_emails()
+
+        self.assertEqual(1, len(mail.outbox))
+        self.assertEqual(["editor@textit.com"], mail.outbox[0].recipients())
+
+        # but does about their workspace being flagged
+        mail.outbox.clear()
+        OrgFlaggedIncidentType.get_or_create(self.org)
+
+        send_notification_emails()
+
+        self.assertEqual({"admin@textit.com", "editor@textit.com"}, {r for m in mail.outbox for r in m.recipients()})
+
     def test_invitation_accepted(self):
         invitation = Invitation.create(self.org, self.admin, "bob@textit.com", OrgRole.ADMINISTRATOR)
         user = self.create_user("bob@textit.com")

@@ -65,6 +65,9 @@ class User(LegacyIDMixin, UUIDMixin, AbstractBaseUser, PermissionsMixin):
     external_id = models.CharField(max_length=128, null=True)
     verification_token = models.CharField(max_length=64, null=True)
 
+    # whether workspace notifications are also sent by email, for every workspace the user belongs to
+    email_notifications = models.BooleanField(default=True)
+
     # generic bucket of UI state, e.g. card order on the contact read page
     settings = models.JSONField(default=dict)
 

@@ -20,6 +20,9 @@ class IncidentType:
     slug: str
     title: str
 
+    # whether notification emails are sent even to users who have turned them off
+    email_required = False
+
     def get_notification_scope(self, incident) -> str:
         return str(incident.id)
 
@@ -196,13 +199,14 @@ class Notification(models.Model):
         scope: str,
         users,
         medium: str = MEDIUM_UI,
+        email_required: bool = False,
         **kwargs,
     ):
         created = []
         for user in users:
-            # send email if notification type supports it and user's email is verified
+            # send email if notification type supports it, the user wants it, and their email is verified
             email_status = cls.EMAIL_STATUS_NONE
-            if cls.MEDIUM_EMAIL in medium:
+            if cls.MEDIUM_EMAIL in medium and (user.email_notifications or email_required):
                 email_status = cls.EMAIL_STATUS_PENDING if user.is_verified() else cls.EMAIL_STATUS_UNVERIFIED
 
             notification, is_new = cls.objects.get_or_create(
