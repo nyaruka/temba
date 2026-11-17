@@ -263,6 +263,19 @@ describe('temba-chat channel logs', () => {
       link.getAttribute('href'),
       '/channels/channel/logs/channel-1/msg/msg-1/'
     );
+
+    // which opens in a sheet over the page rather than a tab of its own
+    assert.isNull(link.getAttribute('target'));
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+    link.dispatchEvent(click);
+    assert.isTrue(click.defaultPrevented);
+
+    const sheet = document.querySelector('temba-sheet[data-shared]') as any;
+    assert.equal(
+      sheet.current.endpoint,
+      '/channels/channel/logs/channel-1/msg/msg-1/'
+    );
+    sheet.remove();
   });
 
   it("doesn't link to the channel log for a deleted message", async () => {

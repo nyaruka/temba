@@ -24,11 +24,17 @@ const isPosting = (form: HTMLFormElement): boolean =>
 /** the headers which have a view render just its content, for a sheet */
 const SHEET_HEADERS = { 'X-Temba-Spa': '1', 'X-Temba-Sheet': '1' };
 
+/** marks an icon the content showing gave the sheet, rather than the page */
+const CONTENT_ICON = 'data-content-icon';
+
 /** One view the sheet has loaded, the last being the one showing */
 interface SheetView {
   endpoint: string;
   header: string;
   subtitle: string;
+
+  // whether the view gives its own header, the one we have only standing in for it until it loads
+  titlesItself?: boolean;
 }
 
 /**
@@ -40,6 +46,11 @@ interface SheetView {
  * A sheet shows one thing. It can go a level deeper within that thing, e.g.
  * from a list of logs to one log, with a back button to return, but it never
  * switches to something else - that's opened from the page instead.
+ *
+ * Whatever opens a sheet usually gives it a header, and the page an icon. A
+ * view opened with {@link showTitled} gives its own instead, in a
+ * `<template data-sheet-chrome data-header="" data-subtitle="">` holding the
+ * icon, so that it looks the same wherever it's opened from.
  */
 export class Sheet extends RapidElement {
   static get styles() {
@@ -203,6 +214,18 @@ export class Sheet extends RapidElement {
     }
   };
 
+  // a link in the content to another page takes the page under us there, so get out of its way - caught on the way
+  // down, as the link keeps its click to itself
+  private handleLinkClick = (event: MouseEvent) => {
+    if (event.metaKey || event.ctrlKey || event.button !== 0) {
+      return;
+    }
+    const anchor = (event.target as Element).closest('temba-anchor');
+    if (anchor && this.contains(anchor)) {
+      this.close();
+    }
+  };
+
   /** Opens the sheet on a view, replacing whatever it showed */
   public show(
     endpoint: string,
@@ -212,6 +235,16 @@ export class Sheet extends RapidElement {
   ): void {
     this.width = width;
     this.views = [{ endpoint, header, subtitle }];
+    this.open = true;
+    this.load();
+  }
+
+  /** Opens the sheet on a view which gives its own header and icon, with a header to show until it has loaded */
+  public showTitled(endpoint: string, placeholder = ''): void {
+    this.width = null;
+    this.views = [
+      { endpoint, header: placeholder, subtitle: '', titlesItself: true }
+    ];
     this.open = true;
     this.load();
   }
@@ -241,7 +274,7 @@ export class Sheet extends RapidElement {
   // once the modal's exit has played, clear the content so its scripts stop finding it
   private handleModalClosed(): void {
     if (!this.open) {
-      clearLightContent(this);
+      this.clearContent();
       this.views = [];
     }
   }
@@ -259,12 +292,14 @@ export class Sheet extends RapidElement {
   public connectedCallback(): void {
     super.connectedCallback();
     this.addEventListener('click', this.handleClick);
+    this.addEventListener('click', this.handleLinkClick, true);
     this.addEventListener('submit', this.handleSubmit);
   }
 
   public disconnectedCallback(): void {
     super.disconnectedCallback();
     this.removeEventListener('click', this.handleClick);
+    this.removeEventListener('click', this.handleLinkClick, true);
     this.removeEventListener('submit', this.handleSubmit);
   }
 
@@ -290,7 +325,7 @@ export class Sheet extends RapidElement {
 
     const id = ++this.loadId;
     this.loading = true;
-    clearLightContent(this);
+    this.clearContent();
 
     getUrl(view.endpoint, null, SHEET_HEADERS)
       .then((response: WebResponse) => {
@@ -415,10 +450,49 @@ export class Sheet extends RapidElement {
     return false;
   }
 
+  /** Clears the content showing, and any icon it gave us */
+  private clearContent(): void {
+    clearLightContent(this);
+    this.querySelectorAll(`:scope > [${CONTENT_ICON}]`).forEach((icon) =>
+      icon.remove()
+    );
+  }
+
+  /** Takes the header and icon the content gives, for a view which titles itself */
+  private applyContentChrome(): void {
+    const chrome = this.querySelector(
+      'template[data-sheet-chrome]'
+    ) as HTMLTemplateElement;
+    const view = this.current;
+    if (!chrome || !view || !view.titlesItself) {
+      return;
+    }
+
+    if (chrome.dataset.header) {
+      this.views = [
+        ...this.views.slice(0, -1),
+        {
+          ...view,
+          header: chrome.dataset.header,
+          subtitle: chrome.dataset.subtitle || ''
+        }
+      ];
+    }
+
+    const icon = chrome.content.firstElementChild;
+    if (icon && !this.querySelector(':scope > [slot="icon"]')) {
+      const clone = icon.cloneNode(true) as Element;
+      clone.setAttribute('slot', 'icon');
+      clone.setAttribute(CONTENT_ICON, '');
+      this.appendChild(clone);
+    }
+  }
+
   private setContent(response: WebResponse): void {
     setLightContent(this, response.body);
     this.contentUrl = response.url;
     this.loading = false;
+    this.applyContentChrome();
 
     // a script of the content's submitting one of its forms directly, as on signing in with Facebook, goes through
     // us too, without the validation a submit button would bring - a script building a form later has to submit it

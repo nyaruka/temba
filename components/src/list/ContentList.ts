@@ -6,6 +6,7 @@ import { Icon } from '../Icons';
 import { CustomEventType, ObjectReference } from '../interfaces';
 import { formatCount, getUrl, postJSON, postUrl } from '../utils';
 import { designTokens } from '../styles/designTokens';
+import { openLinkInSheet } from '../layout/sheets';
 import {
   buttonChrome,
   buttonChromeCompact,
@@ -2441,8 +2442,9 @@ export class ContentList<T = any> extends RapidElement {
   }
 
   /** A row's channel log icon link, or '' when {@link getChannelLogsUrl}
-   * yields nothing. stopPropagation keeps the row's own navigation
-   * from also firing when the icon is clicked. */
+   * yields nothing. It opens the log in a sheet over the list.
+   * stopPropagation keeps the row's own navigation from also firing
+   * when the icon is clicked. */
   protected renderChannelLogLink(
     item: { uuid?: string; created_on?: string; channel?: ObjectReference },
     type: 'msg' | 'call'
@@ -2453,8 +2455,11 @@ export class ContentList<T = any> extends RapidElement {
       <a
         class="log-link"
         href=${href}
-        @click=${(e: MouseEvent) => e.stopPropagation()}
-        aria-label="Channel log"
+        @click=${(e: MouseEvent) => {
+          e.stopPropagation();
+          openLinkInSheet(e);
+        }}
+        aria-label=${msg('Channel log')}
       >
         <temba-icon name=${Icon.log} size="0.95"></temba-icon>
       </a>
