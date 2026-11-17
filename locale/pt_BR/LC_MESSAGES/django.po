@@ -5503,15 +5503,28 @@ msgid "The %(brand)s Team"
 msgstr "O time %(brand)s"
 
 #, python-format
+msgid "You're receiving this email because you're a member of the <b>%(org)s</b> workspace."
+msgstr "Você está recebendo este e-mail porque é membro da área de trabalho <b>%(org)s</b>."
+
+#, python-format
+msgid "You're receiving this email because you have access to the <b>%(org)s</b> workspace."
+msgstr "Você está recebendo este e-mail porque tem acesso à área de trabalho <b>%(org)s</b>."
+
+#, python-format
+msgid "If you no longer want notification emails from this workspace, you can <a href=\"%(url)s\" style=\"color: inherit\">unsubscribe</a>."
+msgstr "Se você não quiser mais receber e-mails de notificação desta área de trabalho, pode <a href=\"%(url)s\" style=\"color: inherit\">cancelar a inscrição</a>."
+
+#, python-format
 msgid "You're receiving this email because you're a member of the %(org)s workspace."
 msgstr "Você está recebendo este e-mail porque é membro da área de trabalho %(org)s."
 
-msgid "Unsubscribe"
-msgstr "Cancelar inscrição"
+#, python-format
+msgid "You're receiving this email because you have access to the %(org)s workspace."
+msgstr "Você está recebendo este e-mail porque tem acesso à área de trabalho %(org)s."
 
 #, python-format
-msgid "You're receiving this email because you're a member of the %(org)s workspace. To unsubscribe: %(unsubscribe_url)s"
-msgstr "Você está recebendo este e-mail porque é membro da área de trabalho %(org)s. Para cancelar a inscrição: %(unsubscribe_url)s"
+msgid "If you no longer want notification emails from this workspace, you can unsubscribe here: %(url)s"
+msgstr "Se você não quiser mais receber e-mails de notificação desta área de trabalho, pode cancelar a inscrição aqui: %(url)s"
 
 #, python-format
 msgid "Your export is ready! Click <a href=\"%(url)s\">here</a> to download it."
@@ -5616,6 +5629,9 @@ msgstr "Cancelar inscrição nos e-mails de notificação"
 #, python-format
 msgid "You'll stop getting notification emails for the %(org)s workspace. You'll still see notifications when you log in."
 msgstr "Você deixará de receber e-mails de notificação da área de trabalho %(org)s. Você continuará vendo as notificações ao entrar."
+
+msgid "Unsubscribe"
+msgstr "Cancelar inscrição"
 
 msgid "Workspace flagged"
 msgstr "Área de trabalho sinalizada"

@@ -15,12 +15,18 @@
   </p>
 {% endblock body %}
 {% block footer %}
-  {% if unsubscribe_url %}
+  {% if is_member %}
     {% blocktrans trimmed with org=notification.org.name %}
-      You're receiving this email because you're a member of the {{ org }} workspace.
+      You're receiving this email because you're a member of the <b>{{ org }}</b> workspace.
     {% endblocktrans %}
-    <a href="{{ unsubscribe_url }}" style="color: inherit">{% trans "Unsubscribe" %}</a>
   {% else %}
-    {{ block.super }}
+    {% blocktrans trimmed with org=notification.org.name %}
+      You're receiving this email because you have access to the <b>{{ org }}</b> workspace.
+    {% endblocktrans %}
+  {% endif %}
+  {% if unsubscribe_url %}
+    {% blocktrans trimmed with url=unsubscribe_url %}
+      If you no longer want notification emails from this workspace, you can <a href="{{ url }}" style="color: inherit">unsubscribe</a>.
+    {% endblocktrans %}
   {% endif %}
 {% endblock footer %}

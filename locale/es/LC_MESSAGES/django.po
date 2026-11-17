@@ -5499,15 +5499,28 @@ msgid "The %(brand)s Team"
 msgstr "El Equipo de %(brand)s"
 
 #, python-format
+msgid "You're receiving this email because you're a member of the <b>%(org)s</b> workspace."
+msgstr "Recibe este correo porque es miembro del workspace <b>%(org)s</b>."
+
+#, python-format
+msgid "You're receiving this email because you have access to the <b>%(org)s</b> workspace."
+msgstr "Recibe este correo porque tiene acceso al workspace <b>%(org)s</b>."
+
+#, python-format
+msgid "If you no longer want notification emails from this workspace, you can <a href=\"%(url)s\" style=\"color: inherit\">unsubscribe</a>."
+msgstr "Si ya no desea recibir correos de notificación de este workspace, puede <a href=\"%(url)s\" style=\"color: inherit\">cancelar la suscripción</a>."
+
+#, python-format
 msgid "You're receiving this email because you're a member of the %(org)s workspace."
 msgstr "Recibe este correo porque es miembro del workspace %(org)s."
 
-msgid "Unsubscribe"
-msgstr "Cancelar suscripción"
+#, python-format
+msgid "You're receiving this email because you have access to the %(org)s workspace."
+msgstr "Recibe este correo porque tiene acceso al workspace %(org)s."
 
 #, python-format
-msgid "You're receiving this email because you're a member of the %(org)s workspace. To unsubscribe: %(unsubscribe_url)s"
-msgstr "Recibe este correo porque es miembro del workspace %(org)s. Para cancelar la suscripción: %(unsubscribe_url)s"
+msgid "If you no longer want notification emails from this workspace, you can unsubscribe here: %(url)s"
+msgstr "Si ya no desea recibir correos de notificación de este workspace, puede cancelar la suscripción aquí: %(url)s"
 
 #, python-format
 msgid "Your export is ready! Click <a href=\"%(url)s\">here</a> to download it."
@@ -5612,6 +5625,9 @@ msgstr "Cancelar la suscripción a los correos de notificación"
 #, python-format
 msgid "You'll stop getting notification emails for the %(org)s workspace. You'll still see notifications when you log in."
 msgstr "Dejará de recibir correos de notificación del workspace %(org)s. Seguirá viendo las notificaciones cuando inicie sesión."
+
+msgid "Unsubscribe"
+msgstr "Cancelar suscripción"
 
 msgid "Workspace flagged"
 msgstr "Workspace marcado"

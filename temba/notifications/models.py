@@ -146,6 +146,7 @@ class NotificationType:
         return {
             "notification": notification,
             "read_url": f"https://{branding['domain']}{read_url}",
+            "is_member": OrgMembership.objects.filter(org=notification.org, user=notification.user).exists(),
             "unsubscribe_url": notification.get_unsubscribe_url(),
         }
 
