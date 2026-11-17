@@ -3823,10 +3823,6 @@ msgstr "A conta já existe"
 msgid "Hello there 👋"
 msgstr "Olá 👋"
 
-#, python-format
-msgid "Your friends at %(site_name)s."
-msgstr "Seus amigos do %(site_name)s."
-
 msgid "We are writing to notify you about some activity on your account."
 msgstr "Estamos escrevendo para notificá-lo sobre uma atividade na sua conta."
 
@@ -5500,13 +5496,6 @@ msgstr "Olá"
 
 msgid "If you have any questions we are always here to help."
 msgstr "Se você tiver qualquer dúvida, estamos sempre aqui para ajudar."
-
-msgid "Thanks"
-msgstr "Obrigado"
-
-#, python-format
-msgid "The %(brand)s Team"
-msgstr "O time %(brand)s"
 
 #, python-format
 msgid "You're receiving this email because you're a member of the <b>%(org)s</b> workspace."

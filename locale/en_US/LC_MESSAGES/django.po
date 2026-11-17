@@ -3797,10 +3797,6 @@ msgstr ""
 msgid "Hello there 👋"
 msgstr ""
 
-#, python-format
-msgid "Your friends at %(site_name)s."
-msgstr ""
-
 msgid "We are writing to notify you about some activity on your account."
 msgstr ""
 
@@ -5459,13 +5455,6 @@ msgid "Hi"
 msgstr ""
 
 msgid "If you have any questions we are always here to help."
-msgstr ""
-
-msgid "Thanks"
-msgstr ""
-
-#, python-format
-msgid "The %(brand)s Team"
 msgstr ""
 
 #, python-format
