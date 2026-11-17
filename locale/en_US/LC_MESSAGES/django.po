@@ -2943,6 +2943,9 @@ msgstr ""
 msgid "Incident"
 msgstr ""
 
+msgid "Reminder"
+msgstr ""
+
 msgid "New user joined your workspace"
 msgstr ""
 

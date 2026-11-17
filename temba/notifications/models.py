@@ -1,5 +1,6 @@
 import logging
 from abc import abstractmethod
+from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.core import signing
@@ -23,6 +24,38 @@ class IncidentType:
 
     # whether notification emails are sent even to users who have turned them off
     email_required = False
+
+    # how long before the incident's deadline that admins are reminded of it, e.g. (timedelta(days=7),)
+    reminders: tuple[timedelta, ...] = ()
+
+    # a reminder is only sent within this long of falling due, which keeps it well within the retention period of the
+    # notification that records it was sent, and only if it falls due at least this long after the incident started
+    REMINDER_WINDOW = timedelta(days=1)
+
+    def get_deadline(self, incident) -> datetime | None:
+        """
+        Gets when the consequences of this incident take effect, which is what reminders are counted back from
+        """
+        return None
+
+    def get_due_reminder(self, incident, now: datetime) -> timedelta | None:
+        """
+        Gets the latest reminder that is due, if it should still be sent
+        """
+        deadline = self.get_deadline(incident)
+        if not deadline or deadline <= now:
+            return None
+
+        due = [r for r in self.reminders if deadline - r <= now]
+        if not due:
+            return None
+
+        reminder = min(due)
+        due_on = deadline - reminder
+        if now - due_on > self.REMINDER_WINDOW or due_on - incident.started_on < self.REMINDER_WINDOW:
+            return None
+
+        return reminder
 
     @classmethod
     def end_ongoing(cls, org):
