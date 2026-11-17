@@ -136,6 +136,11 @@ class IncidentTest(TembaTest):
             self.assertEqual(["admin@textit.com"], mail.outbox[0].recipients())
             self.assertIn("Your workspace has been suspended.", mail.outbox[0].body)
 
+            # templates can say when the deadline is
+            reminder.refresh_from_db()
+            context = reminder.type.get_email_context(reminder, self.org.branding)
+            self.assertEqual(t0 + timedelta(days=14), context["deadline"])
+
             # sent emails don't make it look unsent
             self.assertEqual({"sent": 0}, send_reminders(t0 + timedelta(days=7, hours=3)))
 
@@ -157,6 +162,24 @@ class IncidentTest(TembaTest):
             self.assertEqual({"sent": 0}, send_reminders(t0 + timedelta(days=2)))
             self.assertEqual({"sent": 1}, send_reminders(t0 + timedelta(days=4, hours=1)))
             self.assertEqual([f"{incident2.id}:172800"], reminder_scopes(incident2))
+
+            self.org2.reactivate()
+
+            # a reminder isn't sent more than a day after it fell due
+            incident3 = suspend(self.org, t0)
+
+            self.assertEqual({"sent": 0}, send_reminders(t0 + timedelta(days=9)))
+            self.assertEqual({"sent": 1}, send_reminders(t0 + timedelta(days=12, hours=1)))
+            self.assertEqual([f"{incident3.id}:172800"], reminder_scopes(incident3))
+
+            self.org.reactivate()
+
+            # or if it falls due within a day of the incident starting
+            incident4 = suspend(self.org2, t0 + timedelta(days=6, hours=23))
+            deadlines[incident4.id] = t0 + timedelta(days=14)
+
+            self.assertEqual({"sent": 0}, send_reminders(t0 + timedelta(days=7, hours=1)))
+            self.assertEqual([], reminder_scopes(incident4))
 
     def test_webhooks_unhealthy(self):
         incident = Incident.objects.create(  # mailroom will create these
