@@ -180,6 +180,13 @@ def live_q(model) -> Q:
     return Q()
 
 
+def filter_active(qs):
+    """
+    Excludes soft deleted objects from the given queryset if its model can be soft deleted
+    """
+    return qs.filter(live_q(qs.model))
+
+
 class UUIDMixin(models.Model):
     """
     Model mixin for things with a UUID
@@ -206,7 +213,7 @@ class NameMixin(models.Model):
         """
         Generates a unique name from the given base name that won't conflict with any named object in the given queryset
         """
-        qs = cls.objects.filter(live_q(cls), org=org)
+        qs = cls.get_active_for_org(org)
         if ignore:
             qs = qs.exclude(id=ignore.id)
 

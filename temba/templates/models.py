@@ -39,9 +39,14 @@ class Template(OrgAsset, DependencyMixin):
 
     org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="templates")
     name = models.CharField(max_length=512)  # overridden to be longer
+    is_active = None  # templates are deleted rather than deactivated
     base_translation = models.OneToOneField(
         "templates.TemplateTranslation", on_delete=models.PROTECT, related_name="base_template", null=True
     )
+
+    @classmethod
+    def get_active_for_org(cls, org):
+        return cls._default_manager.filter(org=org)
 
     @classmethod
     def get_or_create(cls, org, name: str):

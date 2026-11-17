@@ -1,3 +1,8 @@
+## v26.3.201 (2026-11-17)
+ * Show how closed tickets were closed in the ticket list
+ * Add Org.status with active, restricted and suspended states
+ * Drop the sign-offs from notification and account emails
+
 ## v26.3.200 (2026-11-17)
  * Add unsubscribe link to notification emails
  * Backfill call minute tallies
