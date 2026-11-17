@@ -166,6 +166,7 @@ class Team(DeletedOnMixin, OrgAsset):
     topics = models.ManyToManyField(Topic, related_name="teams")
     all_topics = models.BooleanField(default=False)
     is_default = models.BooleanField(default=False)
+    is_active = None
 
     org_limit_key = Org.LIMIT_TEAMS
     max_topics = 10

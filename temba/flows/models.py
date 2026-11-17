@@ -1906,6 +1906,7 @@ class FlowLabel(DeletedOnMixin, OrgAsset):
     """
 
     org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="flow_labels")
+    is_active = None
 
     @classmethod
     def create(cls, org, user, name: str):

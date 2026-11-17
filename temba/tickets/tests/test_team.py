@@ -39,7 +39,6 @@ class TeamTest(TembaTest):
         team1.release(self.admin)
         team1.refresh_from_db()
 
-        self.assertFalse(team1.is_active)
         self.assertIsNotNone(team1.deleted_on)
         self.assertTrue(team1.name.startswith("deleted-"))
         self.assertEqual(0, team1.get_users().count())
