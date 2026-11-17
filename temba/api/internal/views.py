@@ -159,7 +159,7 @@ AssetType = namedtuple("AssetType", ("id_field", "fetch", "get_name"))
 
 def _asset_by_field(model, id_field: str, **filters) -> AssetType:
     def fetch(org, values: list):
-        qs = model.get_active_for_org(org).filter(**{f"{id_field}__in": values}, **filters)
+        qs = model.get_for_org(org).filter(**{f"{id_field}__in": values}, **filters)
         return qs.using("readonly").only(id_field, "name")
 
     return AssetType(id_field, fetch, lambda org, obj: obj.name)
