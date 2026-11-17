@@ -153,6 +153,13 @@ describe('temba-ticket-list', () => {
     const list = await getList('/test/assets/list/tickets-merged.json');
     assert.equal(list.items.length, 6);
 
+    // closed tickets show how they were closed rather than when
+    const options = list.shadowRoot.querySelector('temba-options');
+    await (options as any).updateComplete;
+    const rows = options.shadowRoot.querySelectorAll('.option');
+    assert.include(rows[3].textContent, 'Resolved');
+    assert.include(rows[4].textContent, 'Expired');
+
     await assertScreenshot('list/tickets-merged', getClip(list));
 
     // selecting a closed ticket gets the standard selection treatment

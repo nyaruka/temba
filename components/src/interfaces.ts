@@ -440,6 +440,7 @@ export interface Contact {
     uuid: string;
     subject: string;
     closed_on?: string;
+    outcome?: 'resolved' | 'idle';
     last_activity_on: string;
     assignee?: User;
     topic?: ObjectReference;
