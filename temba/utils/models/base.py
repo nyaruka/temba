@@ -139,7 +139,7 @@ class SoftDeleteMixin(models.Model):
         abstract = True
 
 
-def filter_active(qs):
+def exclude_deleted(qs):
     """
     Excludes soft deleted objects from the given queryset if its model can be soft deleted
     """
@@ -175,7 +175,7 @@ class NameMixin(models.Model):
         """
         Generates a unique name from the given base name that won't conflict with any named object in the given queryset
         """
-        qs = cls.get_active_for_org(org)
+        qs = cls.get_for_org(org)
         if ignore:
             qs = qs.exclude(id=ignore.id)
 
@@ -230,7 +230,7 @@ class OrgLimitMixin:
         """
         The objects which count against this org's limit. Override to narrow it further.
         """
-        return cls._default_manager.filter(org=org, is_active=True)
+        return exclude_deleted(cls._default_manager.filter(org=org))
 
     @classmethod
     def is_limit_reached(cls, org) -> bool:
@@ -260,12 +260,12 @@ class OrgAsset(UUIDMixin, NameMixin, CreatedByMixin, ModifiedByMixin, SoftDelete
     is_system = models.BooleanField(default=False)  # not user created, doesn't count against limits
 
     @classmethod
-    def get_active_for_org(cls, org):
-        return cls._default_manager.filter(org=org, is_active=True)
+    def get_for_org(cls, org):
+        return exclude_deleted(cls._default_manager.filter(org=org))
 
     @classmethod
     def get_countable_for_org(cls, org):
-        return cls.get_active_for_org(org).filter(is_system=False)  # system objects don't count against limits
+        return cls.get_for_org(org).filter(is_system=False)  # system objects don't count against limits
 
     @classmethod
     def import_def(cls, org, user, definition: dict, preview: bool = False) -> tuple:
@@ -317,12 +317,12 @@ class OrgAsset(UUIDMixin, NameMixin, CreatedByMixin, ModifiedByMixin, SoftDelete
         Gets the existing object (if any) that matches the import definition.
         """
         if definition["uuid"]:
-            existing = cls.get_active_for_org(org).filter(uuid=definition["uuid"]).first()
+            existing = cls.get_for_org(org).filter(uuid=definition["uuid"]).first()
             if existing:
                 return existing
 
         if definition["name"]:
-            return cls.get_active_for_org(org).filter(name__iexact=definition["name"]).first()
+            return cls.get_for_org(org).filter(name__iexact=definition["name"]).first()
 
         return None
 
