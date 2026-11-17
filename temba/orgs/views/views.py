@@ -230,7 +230,7 @@ class UserCRUDL(SmartCRUDL):
 
                 super().__init__(*args, **kwargs)
 
-                self.fields["team"].queryset = org.teams.filter(is_active=True).order_by(Lower("name"))
+                self.fields["team"].queryset = org.teams.filter(deleted_on=None).order_by(Lower("name"))
 
             class Meta:
                 model = User
@@ -495,7 +495,7 @@ class OrgCRUDL(SmartCRUDL):
                                 name=_("Teams"),
                                 icon="agent",
                                 href="tickets.team_list",
-                                count=org.teams.filter(is_active=True).count(),
+                                count=org.teams.filter(deleted_on=None).count(),
                             )
                         )
 
@@ -1601,7 +1601,7 @@ class InvitationCRUDL(SmartCRUDL):
 
                 super().__init__(*args, **kwargs)
 
-                self.fields["team"].queryset = org.teams.filter(is_active=True).order_by(Lower("name"))
+                self.fields["team"].queryset = org.teams.filter(deleted_on=None).order_by(Lower("name"))
 
             def clean_email(self):
                 email = self.cleaned_data["email"]

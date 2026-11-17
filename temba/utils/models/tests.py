@@ -3,12 +3,14 @@ from decimal import Decimal
 from django.contrib.auth.models import Group
 from django.core import checks
 from django.db import connection, models
+from django.db.models import Q
 from django.test import TestCase
 
 from temba.contacts.models import Contact
 from temba.tests import TembaTest
+from temba.tickets.models import Team, Ticket
 
-from .base import delete_in_batches, patch_queryset_count, update_if_changed
+from .base import delete_in_batches, live_q, patch_queryset_count, update_if_changed
 from .es import SearchSliceQuerySet
 from .fields import JSONAsTextField
 
@@ -100,6 +102,11 @@ class ModelsTest(TembaTest):
         group.name = "Testers 3"
         group.save(update_fields=("name",))
         self.assertEqual(modified_on, group.modified_on)
+
+    def test_live_q(self):
+        self.assertEqual(Q(deleted_on=None), live_q(Team))
+        self.assertEqual(Q(is_active=True), live_q(Contact))
+        self.assertEqual(Q(), live_q(Ticket))
 
 
 class SearchSliceQuerySetTest(TembaTest):

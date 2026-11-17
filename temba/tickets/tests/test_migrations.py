@@ -42,3 +42,33 @@ class BackfillTicketOutcomeTest(MigrationTest):
         assert_outcome(self.old_close, Ticket.OUTCOME_RESOLVED)
         assert_outcome(self.has_outcome, Ticket.OUTCOME_RESOLVED)  # left as it was
         assert_outcome(self.open, None)
+
+
+class BackfillTeamDeletedOnTest(MigrationTest):
+    app = "tickets"
+    migrate_from = "0103_team_deleted_on"
+    migrate_to = "0104_backfill_team_deleted_on"
+
+    def setUpBeforeMigration(self, apps):
+        Team = apps.get_model("tickets", "Team")
+
+        def create_team(name, **kwargs):
+            return Team.objects.create(
+                org_id=self.org.id, name=name, created_by_id=self.admin.id, modified_by_id=self.admin.id, **kwargs
+            )
+
+        self.active = create_team("Active")
+        self.released = create_team("Released", is_active=False)
+        self.released_with_deleted_on = create_team(
+            "Released Too", is_active=False, deleted_on=datetime(2026, 11, 1, 12, 0, tzinfo=tzone.utc)
+        )
+        Team.objects.filter(id=self.released.id).update(modified_on=datetime(2026, 3, 1, 12, 0, tzinfo=tzone.utc))
+
+    def test_migration(self):
+        def assert_deleted_on(team, expected):
+            team.refresh_from_db()
+            self.assertEqual(expected, team.deleted_on)
+
+        assert_deleted_on(self.active, None)
+        assert_deleted_on(self.released, datetime(2026, 3, 1, 12, 0, tzinfo=tzone.utc))
+        assert_deleted_on(self.released_with_deleted_on, datetime(2026, 11, 1, 12, 0, tzinfo=tzone.utc))  # unchanged

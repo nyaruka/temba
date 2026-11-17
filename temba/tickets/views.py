@@ -838,7 +838,7 @@ class TicketCRUDL(SmartCRUDL):
                     {"label": self.team.name, "data": [counts[d] for d in labels]}
                 ]
 
-            teams_by_id = {t.id: t.name for t in org.teams.filter(is_active=True)}
+            teams_by_id = {t.id: t.name for t in org.teams.filter(deleted_on=None)}
             # Add default team (id=0) for users not assigned to specific teams
             teams_by_id[0] = _("No Team")
 

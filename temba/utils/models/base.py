@@ -4,6 +4,7 @@ from enum import Enum
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -151,6 +152,34 @@ class SoftDeleteMixin(models.Model):
         abstract = True
 
 
+class DeletedOnMixin(models.Model):
+    """
+    Model mixin for things which are soft deleted by setting `deleted_on`, replacing `SoftDeleteMixin`. Each step of a
+    model's move is released before the next, so that it's safe against the code it replaces:
+
+     1. declare `deleted_on` on the model itself, so releasing sets both fields while everything still reads `is_active`
+     2. backfill `deleted_on` from `is_active` and switch the model to this mixin, which switches `live_q` to it
+     3. remove `is_active` from the model (set it to `None`) and give its column a database default
+     4. drop the column
+    """
+
+    deleted_on = models.DateTimeField(null=True)
+
+    class Meta:
+        abstract = True
+
+
+def live_q(model) -> Q:
+    """
+    Returns a Q matching the objects of the given model which haven't been soft deleted
+    """
+    if issubclass(model, DeletedOnMixin):
+        return Q(deleted_on=None)
+    if any(f.name == "is_active" for f in model._meta.concrete_fields):
+        return Q(is_active=True)
+    return Q()
+
+
 class UUIDMixin(models.Model):
     """
     Model mixin for things with a UUID
@@ -177,7 +206,7 @@ class NameMixin(models.Model):
         """
         Generates a unique name from the given base name that won't conflict with any named object in the given queryset
         """
-        qs = cls.objects.filter(org=org, is_active=True)
+        qs = cls.objects.filter(live_q(cls), org=org)
         if ignore:
             qs = qs.exclude(id=ignore.id)
 
@@ -232,7 +261,7 @@ class OrgLimitMixin:
         """
         The objects which count against this org's limit. Override to narrow it further.
         """
-        return cls._default_manager.filter(org=org, is_active=True)
+        return cls._default_manager.filter(live_q(cls), org=org)
 
     @classmethod
     def is_limit_reached(cls, org) -> bool:
@@ -263,7 +292,7 @@ class OrgAsset(UUIDMixin, NameMixin, CreatedByMixin, ModifiedByMixin, SoftDelete
 
     @classmethod
     def get_active_for_org(cls, org):
-        return cls._default_manager.filter(org=org, is_active=True)
+        return cls._default_manager.filter(live_q(cls), org=org)
 
     @classmethod
     def get_countable_for_org(cls, org):

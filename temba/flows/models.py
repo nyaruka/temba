@@ -34,6 +34,7 @@ from temba.users.models import User
 from temba.utils.export.models import MultiSheetExporter
 from temba.utils.models import (
     CreatedByMixin,
+    DeletedOnMixin,
     JSONAsTextField,
     LegacyIDMixin,
     ModifiedByMixin,
@@ -1899,13 +1900,12 @@ class FlowStartCount(BaseSquashableCount):
         ]
 
 
-class FlowLabel(OrgAsset):
+class FlowLabel(DeletedOnMixin, OrgAsset):
     """
     A label applied to a flow rather than a message
     """
 
     org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="flow_labels")
-    deleted_on = models.DateTimeField(null=True)  # replacing is_active
 
     @classmethod
     def create(cls, org, user, name: str):

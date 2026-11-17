@@ -208,3 +208,27 @@ class BackfillNodeTalliesTest(MigrationTest):
         self.flow1.tallies.filter(scope=FlowTally.node_scope(self.NODE2)).update(count=1)
         migration.backfill_node_tallies(apps, None)
         assert_tallies()
+
+
+class BackfillFlowLabelDeletedOnTest(MigrationTest):
+    app = "flows"
+    migrate_from = "0422_flowlabel_deleted_on"
+    migrate_to = "0423_backfill_flowlabel_deleted_on"
+
+    def setUpBeforeMigration(self, apps):
+        FlowLabel = apps.get_model("flows", "FlowLabel")
+
+        def create_label(name, **kwargs):
+            return FlowLabel.objects.create(
+                org_id=self.org.id, name=name, created_by_id=self.admin.id, modified_by_id=self.admin.id, **kwargs
+            )
+
+        self.active = create_label("Active")
+        self.inactive = create_label("Inactive", is_active=False)
+
+    def test_migration(self):
+        self.active.refresh_from_db()
+        self.inactive.refresh_from_db()
+
+        self.assertIsNone(self.active.deleted_on)
+        self.assertEqual(self.inactive.modified_on, self.inactive.deleted_on)
