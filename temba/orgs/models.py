@@ -281,11 +281,22 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     LIMIT_TEAMS = "teams"
     LIMIT_TRIGGERS = "triggers"
 
+    # restricted orgs can't start sends from the UI or API but automated processing continues, whereas suspended orgs
+    # have no processing at all
+    STATUS_ACTIVE = "A"
+    STATUS_RESTRICTED = "R"
+    STATUS_SUSPENDED = "S"
+    STATUS_CHOICES = ((STATUS_ACTIVE, "Active"), (STATUS_RESTRICTED, "Restricted"), (STATUS_SUSPENDED, "Suspended"))
+
     DELETE_DELAY_DAYS = 7  # how many days after releasing that an org is deleted
     OUTBOX_WARNING_THRESHOLD = 10_000
 
     BLOCKER_SUSPENDED = _(
         "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please "
+        "contact support."
+    )
+    BLOCKER_RESTRICTED = _(
+        "Sorry, your workspace is currently restricted. To re-enable starting flows and sending messages, please "
         "contact support."
     )
     BLOCKER_FLAGGED = _(
@@ -345,6 +356,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     is_anon = models.BooleanField(
         default=False, help_text=_("Whether this organization anonymizes the phone numbers of contacts within it")
     )
+    status = models.CharField(max_length=1, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
     is_flagged = models.BooleanField(default=False, help_text=_("Whether this organization is currently flagged."))
     is_suspended = models.BooleanField(default=False, help_text=_("Whether this organization is currently suspended."))
     is_internal = models.BooleanField(default=False)
@@ -469,6 +481,28 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     def get_limit(self, limit_type) -> int:
         return int(self.limits.get(limit_type, settings.ORG_LIMIT_DEFAULTS.get(limit_type)))
 
+    @property
+    def send_blocker(self):
+        """
+        Gets the reason, if any, that users can't start flows or send messages in this org
+        """
+        if self.status == Org.STATUS_SUSPENDED:
+            return Org.BLOCKER_SUSPENDED
+        elif self.status == Org.STATUS_RESTRICTED:
+            return Org.BLOCKER_RESTRICTED
+        elif self.is_flagged:
+            return Org.BLOCKER_FLAGGED
+        return None
+
+    def restrict(self):
+        """
+        Restricts this org and any children, unless already restricted or suspended.
+        """
+        assert not self.is_child
+
+        if self.status == Org.STATUS_ACTIVE:
+            self._set_status(Org.STATUS_RESTRICTED)
+
     def suspend(self):
         """
         Suspends this org and any children.
@@ -477,37 +511,39 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
         assert not self.is_child
 
-        if not self.is_suspended:
-            self.is_suspended = True
-            self.suspended_on = timezone.now()
-            self.modified_on = timezone.now()
-            self.save(update_fields=("is_suspended", "suspended_on", "modified_on"))
-
-            self.children.filter(is_active=True).update(
-                is_suspended=True, suspended_on=timezone.now(), modified_on=timezone.now()
-            )
+        if self.status != Org.STATUS_SUSPENDED:
+            self._set_status(Org.STATUS_SUSPENDED)
 
             OrgSuspendedIncidentType.get_or_create(self)  # create incident which will notify admins
 
-    def unsuspend(self):
+    def reactivate(self):
         """
-        Unsuspends this org and any children.
+        Lifts any restriction or suspension of this org and any children.
         """
         from temba.notifications.incidents.builtin import OrgSuspendedIncidentType
 
         assert not self.is_child
 
-        if self.is_suspended:
-            self.is_suspended = False
-            self.suspended_on = None
-            self.modified_on = timezone.now()
-            self.save(update_fields=("is_suspended", "suspended_on", "modified_on"))
+        if self.status != Org.STATUS_ACTIVE:
+            self._set_status(Org.STATUS_ACTIVE)
 
-            self.children.filter(is_active=True).update(
-                is_suspended=False, suspended_on=None, modified_on=timezone.now()
-            )
+            OrgSuspendedIncidentType.end_ongoing(self)
 
-            OrgSuspendedIncidentType.get_or_create(self).end()
+    def _set_status(self, status: str):
+        # is_suspended is kept in sync for anything that hasn't yet switched to reading status
+        is_suspended = status == Org.STATUS_SUSPENDED
+        changes = dict(
+            status=status,
+            is_suspended=is_suspended,
+            suspended_on=timezone.now() if is_suspended else None,
+            modified_on=timezone.now(),
+        )
+
+        for name, value in changes.items():
+            setattr(self, name, value)
+        self.save(update_fields=changes.keys())
+
+        self.children.filter(is_active=True).update(**changes)
 
     def flag(self):
         """
@@ -1317,7 +1353,11 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
                 condition=Q(is_suspended=True, suspended_on__isnull=False)
                 | Q(is_suspended=False, suspended_on__isnull=True),
                 name="orgs_org_suspended_on_consistent",
-            )
+            ),
+            models.CheckConstraint(
+                condition=Q(status="S", is_suspended=True) | (~Q(status="S") & Q(is_suspended=False)),
+                name="orgs_org_status_suspended_consistent",
+            ),
         ]
 
 

@@ -1249,10 +1249,8 @@ class FlowCRUDL(SmartCRUDL):
 
             if flow.org.is_outbox_full():
                 blockers.append(self.blockers["outbox_full"])
-            if flow.org.is_suspended:
-                blockers.append(Org.BLOCKER_SUSPENDED)
-            elif flow.org.is_flagged:
-                blockers.append(Org.BLOCKER_FLAGGED)
+            if flow.org.send_blocker:
+                blockers.append(flow.org.send_blocker)
 
             hours = send_time / timedelta(hours=1)
             if settings.SEND_HOURS_BLOCK and hours >= settings.SEND_HOURS_BLOCK:

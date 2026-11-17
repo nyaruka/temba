@@ -3035,6 +3035,9 @@ msgstr "E-mail compartilhado"
 msgid "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please contact support."
 msgstr "Desculpe, sua área de trabalho está suspensa no momento. Para voltar a iniciar fluxos e enviar mensagens, por favor entre em contato com o suporte."
 
+msgid "Sorry, your workspace is currently restricted. To re-enable starting flows and sending messages, please contact support."
+msgstr "Desculpe, sua área de trabalho está restrita no momento. Para voltar a iniciar fluxos e enviar mensagens, por favor entre em contato com o suporte."
+
 msgid "Sorry, your workspace is currently flagged. To re-enable starting flows and sending messages, please contact support."
 msgstr "Desculpe, sua área de trabalho está sinalizada no momento. Para voltar a iniciar fluxos e enviar mensagens, por favor entre em contato com o suporte."
 
@@ -3466,11 +3469,11 @@ msgstr "Sinalizar"
 msgid "Unflag"
 msgstr "Não sinalizar"
 
+msgid "Restrict"
+msgstr "Restringir"
+
 msgid "Suspend"
 msgstr "Suspender"
-
-msgid "Unsuspend"
-msgstr "Remover suspensão"
 
 msgid "Verify"
 msgstr "Verificar"
@@ -3486,6 +3489,9 @@ msgstr "Interna"
 
 msgid "Flagged"
 msgstr "Sinalizada"
+
+msgid "Restricted"
+msgstr "Restrita"
 
 msgid "Suspended"
 msgstr "Suspensa"
@@ -5638,6 +5644,9 @@ msgstr "Área de trabalho sinalizada"
 
 msgid "Contact your administrator."
 msgstr "Entre em contato com seu administrador."
+
+msgid "Workspace restricted"
+msgstr "Área de trabalho restrita"
 
 msgid "can't be deleted as it is still used by the following items:"
 msgstr "não pode ser deletado pois ainda é usado pelos seguintes itens:"

@@ -1145,7 +1145,7 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         )
 
         # flagged orgs should block
-        self.org.unsuspend()
+        self.org.reactivate()
         self.org.flag()
         mr_mocks.flow_start_preview(query="age > 30", total=2)
         response = self.client.post(preview_url, {"query": "age > 30"}, content_type="application/json")

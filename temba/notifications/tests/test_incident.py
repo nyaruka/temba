@@ -62,7 +62,7 @@ class IncidentTest(TembaTest):
             {"type": "org:suspended", "started_on": matchers.ISODatetime(), "ended_on": None}, incident.as_json()
         )
 
-        self.org.unsuspend()
+        self.org.reactivate()
 
         incident = Incident.objects.get()  # still only have 1 incident, but now it has ended
         self.assertEqual("org:suspended", incident.incident_type)

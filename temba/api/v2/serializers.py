@@ -114,9 +114,8 @@ class WriteSerializer(serializers.Serializer):
                 detail={"non_field_errors": ["Request body should be a single JSON object"]}
             )
 
-        if self.context["org"].is_flagged or self.context["org"].is_suspended:
-            msg = Org.BLOCKER_FLAGGED if self.context["org"].is_flagged else Org.BLOCKER_SUSPENDED
-            raise serializers.ValidationError(detail={"non_field_errors": [msg]})
+        if self.context["org"].send_blocker:
+            raise serializers.ValidationError(detail={"non_field_errors": [self.context["org"].send_blocker]})
 
         return super().run_validation(data)
 
