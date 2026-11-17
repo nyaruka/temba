@@ -1284,6 +1284,10 @@ class OrgCRUDL(SmartCRUDL):
         success_url = "@orgs.org_grant"
         menu_path = "/settings"
 
+        def has_permission(self, request, *args, **kwargs):
+            # staff can always grant workspaces, other users need the permission
+            return request.user.is_staff or super().has_permission(request, *args, **kwargs)
+
         def save(self, obj):
             self.object = Org.create(
                 self.request.user, self.form.cleaned_data["name"], self.form.cleaned_data["timezone"]
