@@ -644,7 +644,7 @@ class FlowCRUDL(SmartCRUDL):
                     )
 
         def get_bulk_action_labels(self):
-            return self.request.org.flow_labels.filter(is_active=True).order_by(Lower("name"))
+            return self.request.org.flow_labels.filter(deleted_on=None).order_by(Lower("name"))
 
         def build_context_menu(self, menu):
             if self.has_org_perm("flows.flow_create") and not self.is_limit_reached:
