@@ -1,3 +1,6 @@
+## v26.3.203 (2026-11-17)
+ * Remove is_active from templates, Teams and FlowLabels, which are deleted rather than deactivated, with Team and FlowLabel now using deleted_on
+
 ## v26.3.202 (2026-11-17)
  * Add reminders for incidents with a deadline
  * Check soft deletion consistently between models and API fields, with get_for_org and exclude_deleted replacing get_active_for_org and filter_active
