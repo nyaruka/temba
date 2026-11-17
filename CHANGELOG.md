@@ -1,3 +1,8 @@
+## v26.3.202 (2026-11-17)
+ * Add reminders for incidents with a deadline
+ * Check soft deletion consistently between models and API fields, with get_for_org and exclude_deleted replacing get_active_for_org and filter_active
+ * Remove is_active from templates, which are deleted rather than deactivated
+
 ## v26.3.201 (2026-11-17)
  * Show how closed tickets were closed in the ticket list
  * Add Org.status with active, restricted and suspended states
