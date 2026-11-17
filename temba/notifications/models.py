@@ -2,6 +2,7 @@ import logging
 from abc import abstractmethod
 
 from django.conf import settings
+from django.core import signing
 from django.db import models, transaction
 from django.db.models import Q
 from django.urls import reverse
@@ -134,11 +135,19 @@ class NotificationType:
         """
         return ""
 
+    def is_email_required(self, notification) -> bool:
+        """
+        Whether this notification is emailed even to users who have turned off notification emails
+        """
+        return False
+
     def get_email_context(self, notification, branding: dict):
         read_url = reverse("notifications.notification_read", args=[notification.id])
         return {
             "notification": notification,
             "read_url": f"https://{branding['domain']}{read_url}",
+            "is_member": OrgMembership.objects.filter(org=notification.org, user=notification.user).exists(),
+            "unsubscribe_url": notification.get_unsubscribe_url(),
         }
 
     def as_json(self, notification) -> dict:
@@ -189,6 +198,50 @@ class Notification(models.Model):
     contact_import = models.ForeignKey(ContactImport, null=True, on_delete=models.PROTECT, related_name="notifications")
     incident = models.ForeignKey(Incident, null=True, on_delete=models.PROTECT, related_name="notifications")
     data = models.JSONField(null=True, default=dict)
+
+    UNSUBSCRIBE_SALT = "notifications.unsubscribe"
+
+    @classmethod
+    def from_unsubscribe_token(cls, token: str):
+        """
+        Gets the membership whose notification emails the given unsubscribe token turns off, if it's valid and that
+        membership still exists
+        """
+        try:
+            org_id, user_id = signing.loads(token, salt=cls.UNSUBSCRIBE_SALT)
+        except signing.BadSignature, TypeError, ValueError:
+            return None
+
+        return OrgMembership.objects.filter(org_id=org_id, org__is_active=True, user_id=user_id).first()
+
+    @classmethod
+    def unsubscribe(cls, membership):
+        """
+        Turns off notification emails for the given membership, including any already waiting to be sent
+        """
+        membership.email_notifications = False
+        membership.save(update_fields=("email_notifications",))
+
+        pending = cls.objects.filter(
+            org_id=membership.org_id, user_id=membership.user_id, email_status=cls.EMAIL_STATUS_PENDING
+        ).select_related("incident")
+        cancel = [n.id for n in pending if not n.type.is_email_required(n)]
+        cls.objects.filter(id__in=cancel).update(email_status=cls.EMAIL_STATUS_NONE)
+
+    def get_unsubscribe_url(self) -> str | None:
+        """
+        Gets an absolute URL which lets the recipient of this notification's email turn off notification emails for
+        this workspace without logging in. The token can only turn emails off, never on, so leaking it costs at most an
+        unwanted unsubscribe, and it doesn't expire since old emails should keep working.
+        """
+
+        # no point offering it for emails they'd get anyway, or to users without a membership, e.g. staff
+        if self.type.is_email_required(self) or not OrgMembership.objects.filter(org=self.org, user=self.user).exists():
+            return None
+
+        token = signing.dumps([self.org_id, self.user_id], salt=self.UNSUBSCRIBE_SALT)
+        path = reverse("notifications.notification_unsubscribe", args=[token])
+        return f"https://{self.org.branding['domain']}{path}"
 
     @classmethod
     def create_all(
@@ -267,8 +320,22 @@ class Notification(models.Model):
         context = self.type.get_email_context(self, self.org.branding)
 
         if subject and template:
+            # lets mail clients offer their own one-click unsubscribe (RFC 8058)
+            headers = {}
+            if unsubscribe_url := context.get("unsubscribe_url"):
+                headers = {
+                    "List-Unsubscribe": f"<{unsubscribe_url}>",
+                    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+                }
+
             sender = EmailSender.from_email_type(self.org.branding, "notifications")
-            sender.send([self.email_address or self.user.email], template, context, f"[{self.org.name}] {subject}")
+            sender.send(
+                [self.email_address or self.user.email],
+                template,
+                context,
+                f"[{self.org.name}] {subject}",
+                headers=headers,
+            )
         else:  # pragma: no cover
             logger.error(f"pending emails for notification type {self.type.slug} not configured for email")
 

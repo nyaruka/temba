@@ -5463,6 +5463,30 @@ msgid "The %(brand)s Team"
 msgstr ""
 
 #, python-format
+msgid "You're receiving this email because you're a member of the <b>%(org)s</b> workspace."
+msgstr ""
+
+#, python-format
+msgid "You're receiving this email because you have access to the <b>%(org)s</b> workspace."
+msgstr ""
+
+#, python-format
+msgid "If you no longer want notification emails from this workspace, you can <a href=\"%(url)s\" style=\"color: inherit\">unsubscribe</a>."
+msgstr ""
+
+#, python-format
+msgid "You're receiving this email because you're a member of the %(org)s workspace."
+msgstr ""
+
+#, python-format
+msgid "You're receiving this email because you have access to the %(org)s workspace."
+msgstr ""
+
+#, python-format
+msgid "If you no longer want notification emails from this workspace, you can unsubscribe here: %(url)s"
+msgstr ""
+
+#, python-format
 msgid "Your export is ready! Click <a href=\"%(url)s\">here</a> to download it."
 msgstr ""
 
@@ -5536,6 +5560,32 @@ msgstr ""
 
 #, python-format
 msgid "Some webhook calls from your flows are taking too long to respond or failing too frequently. If the problem persists these calls will be temporarily disabled. You can check the <a href=\"%(logs_url)s\">webhook call log</a> to see which calls are the problem."
+msgstr ""
+
+msgid "Notification emails"
+msgstr ""
+
+msgid "Link not valid"
+msgstr ""
+
+msgid "This unsubscribe link is no longer valid."
+msgstr ""
+
+msgid "Unsubscribed"
+msgstr ""
+
+#, python-format
+msgid "You'll no longer get notification emails for the %(org)s workspace. You'll still see notifications when you log in."
+msgstr ""
+
+msgid "Unsubscribe from notification emails"
+msgstr ""
+
+#, python-format
+msgid "You'll stop getting notification emails for the %(org)s workspace. You'll still see notifications when you log in."
+msgstr ""
+
+msgid "Unsubscribe"
 msgstr ""
 
 msgid "Workspace flagged"

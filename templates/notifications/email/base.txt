@@ -8,4 +8,7 @@
 
 {% trans "Thanks" %}
 {% blocktrans with brand=branding.name %}The {{ brand }} Team{% endblocktrans %}
+
+--
+{% if is_member %}{% blocktrans with org=notification.org.name %}You're receiving this email because you're a member of the {{ org }} workspace.{% endblocktrans %}{% else %}{% blocktrans with org=notification.org.name %}You're receiving this email because you have access to the {{ org }} workspace.{% endblocktrans %}{% endif %}{% if unsubscribe_url %} {% blocktrans with url=unsubscribe_url %}If you no longer want notification emails from this workspace, you can unsubscribe here: {{ url }}{% endblocktrans %}{% endif %}
 {% endblock body %}

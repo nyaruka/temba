@@ -5499,6 +5499,30 @@ msgid "The %(brand)s Team"
 msgstr "El Equipo de %(brand)s"
 
 #, python-format
+msgid "You're receiving this email because you're a member of the <b>%(org)s</b> workspace."
+msgstr "Recibe este correo porque es miembro del workspace <b>%(org)s</b>."
+
+#, python-format
+msgid "You're receiving this email because you have access to the <b>%(org)s</b> workspace."
+msgstr "Recibe este correo porque tiene acceso al workspace <b>%(org)s</b>."
+
+#, python-format
+msgid "If you no longer want notification emails from this workspace, you can <a href=\"%(url)s\" style=\"color: inherit\">unsubscribe</a>."
+msgstr "Si ya no desea recibir correos de notificación de este workspace, puede <a href=\"%(url)s\" style=\"color: inherit\">cancelar la suscripción</a>."
+
+#, python-format
+msgid "You're receiving this email because you're a member of the %(org)s workspace."
+msgstr "Recibe este correo porque es miembro del workspace %(org)s."
+
+#, python-format
+msgid "You're receiving this email because you have access to the %(org)s workspace."
+msgstr "Recibe este correo porque tiene acceso al workspace %(org)s."
+
+#, python-format
+msgid "If you no longer want notification emails from this workspace, you can unsubscribe here: %(url)s"
+msgstr "Si ya no desea recibir correos de notificación de este workspace, puede cancelar la suscripción aquí: %(url)s"
+
+#, python-format
 msgid "Your export is ready! Click <a href=\"%(url)s\">here</a> to download it."
 msgstr "¡Su exportación está lista! Haga clic <a href=\"%(url)s\">aquí</a> para descargarla."
 
@@ -5578,6 +5602,32 @@ msgstr "Su <a href=\"%(read_url)s\">canal de WhatsApp</a> parece no estar sincro
 #, python-format
 msgid "Some webhook calls from your flows are taking too long to respond or failing too frequently. If the problem persists these calls will be temporarily disabled. You can check the <a href=\"%(logs_url)s\">webhook call log</a> to see which calls are the problem."
 msgstr "Algunas llamadas de webhook de sus flujos están tardando demasiado en responder o fallan con demasiada frecuencia. Si el problema persiste, estas llamadas se desactivarán temporalmente. Puede consultar el <a href=\"%(logs_url)s\">registro de llamadas de webhook</a> para ver qué llamadas son el problema."
+
+msgid "Notification emails"
+msgstr "Correos de notificación"
+
+msgid "Link not valid"
+msgstr "Enlace no válido"
+
+msgid "This unsubscribe link is no longer valid."
+msgstr "Este enlace para cancelar la suscripción ya no es válido."
+
+msgid "Unsubscribed"
+msgstr "Suscripción cancelada"
+
+#, python-format
+msgid "You'll no longer get notification emails for the %(org)s workspace. You'll still see notifications when you log in."
+msgstr "Ya no recibirá correos de notificación del workspace %(org)s. Seguirá viendo las notificaciones cuando inicie sesión."
+
+msgid "Unsubscribe from notification emails"
+msgstr "Cancelar la suscripción a los correos de notificación"
+
+#, python-format
+msgid "You'll stop getting notification emails for the %(org)s workspace. You'll still see notifications when you log in."
+msgstr "Dejará de recibir correos de notificación del workspace %(org)s. Seguirá viendo las notificaciones cuando inicie sesión."
+
+msgid "Unsubscribe"
+msgstr "Cancelar suscripción"
 
 msgid "Workspace flagged"
 msgstr "Workspace marcado"
