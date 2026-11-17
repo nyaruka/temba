@@ -135,6 +135,18 @@ class SoftDeleteMixin(models.Model):
 
     is_active = models.BooleanField(default=True)
 
+    def mark_deleted(self) -> list[str]:
+        """
+        Marks this object as deleted without saving it, returning the fields changed. Models moving from `is_active` to
+        a `deleted_on` timestamp get whichever of the two fields they have.
+        """
+        fields = [f.name for f in self._meta.concrete_fields if f.name in ("is_active", "deleted_on")]
+        if "is_active" in fields:
+            self.is_active = False
+        if "deleted_on" in fields:
+            self.deleted_on = timezone.now()
+        return fields
+
     class Meta:
         abstract = True
 

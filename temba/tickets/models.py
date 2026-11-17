@@ -166,6 +166,7 @@ class Team(OrgAsset):
     topics = models.ManyToManyField(Topic, related_name="teams")
     all_topics = models.BooleanField(default=False)
     is_default = models.BooleanField(default=False)
+    deleted_on = models.DateTimeField(null=True)  # replacing is_active
 
     org_limit_key = Org.LIMIT_TEAMS
     max_topics = 10
@@ -203,9 +204,8 @@ class Team(OrgAsset):
         OrgMembership.objects.filter(org=self.org, team=self).update(team=self.org.default_team)
 
         self.name = self._deleted_name()
-        self.is_active = False
         self.modified_by = user
-        self.save(update_fields=("name", "is_active", "modified_by", "modified_on"))
+        self.save(update_fields=("name", "modified_by", "modified_on", *self.mark_deleted()))
 
     class Meta:
         constraints = [models.UniqueConstraint("org", Lower("name"), name="unique_team_names")]

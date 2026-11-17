@@ -1905,6 +1905,7 @@ class FlowLabel(OrgAsset):
     """
 
     org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="flow_labels")
+    deleted_on = models.DateTimeField(null=True)  # replacing is_active
 
     @classmethod
     def create(cls, org, user, name: str):
