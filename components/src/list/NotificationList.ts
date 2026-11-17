@@ -75,6 +75,11 @@ export class NotificationList extends TembaList {
           body = msg(
             'Your workspace was flagged, please contact support for assistance.'
           );
+        } else if (notification.incident.type === 'org:restricted') {
+          icon = Icon.incidents;
+          body = msg(
+            'Your workspace was restricted, please contact support for assistance.'
+          );
         } else if (notification.incident.type === 'org:suspended') {
           icon = Icon.incidents;
           body = msg(

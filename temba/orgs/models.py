@@ -288,6 +288,13 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     STATUS_SUSPENDED = "S"
     STATUS_CHOICES = ((STATUS_ACTIVE, "Active"), (STATUS_RESTRICTED, "Restricted"), (STATUS_SUSPENDED, "Suspended"))
 
+    RESTRICTED_BILLING = "B"
+    RESTRICTED_LIMITS = "L"
+    RESTRICTED_STAFF = "S"
+    RESTRICTED_CHOICES = ((RESTRICTED_BILLING, "Billing"), (RESTRICTED_LIMITS, "Limits"), (RESTRICTED_STAFF, "Staff"))
+
+    RESTRICTION_PERIOD = timedelta(days=14)  # default time between being restricted and being suspended
+
     DELETE_DELAY_DAYS = 7  # how many days after releasing that an org is deleted
     OUTBOX_WARNING_THRESHOLD = 10_000
 
@@ -357,6 +364,8 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         default=False, help_text=_("Whether this organization anonymizes the phone numbers of contacts within it")
     )
     status = models.CharField(max_length=1, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
+    restricted_reason = models.CharField(max_length=1, choices=RESTRICTED_CHOICES, null=True)
+    suspends_on = models.DateTimeField(null=True)  # when a restricted org will be suspended, if ever
     is_flagged = models.BooleanField(default=False, help_text=_("Whether this organization is currently flagged."))
     is_suspended = models.BooleanField(default=False, help_text=_("Whether this organization is currently suspended."))
     is_internal = models.BooleanField(default=False)
@@ -426,7 +435,13 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             assert Org.FEATURE_NEW_ORGS in self.features, "only orgs with this feature enabled can create new orgs"
 
         # children share their parent's status so they can't be used to get around a restriction or suspension
-        status = dict(status=self.status, is_suspended=self.is_suspended, suspended_on=self.suspended_on)
+        status = dict(
+            status=self.status,
+            restricted_reason=self.restricted_reason,
+            suspends_on=self.suspends_on,
+            is_suspended=self.is_suspended,
+            suspended_on=self.suspended_on,
+        )
 
         org = Org.objects.create(
             name=name,
@@ -498,46 +513,59 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             return Org.BLOCKER_FLAGGED
         return None
 
-    def restrict(self):
+    def restrict(self, reason: str, *, suspends_on=None):
         """
-        Restricts this org and any children, unless already restricted or suspended.
+        Restricts this org and any children, unless already restricted or suspended. Unless given a time to be
+        suspended, it will be suspended once the default restriction period is up.
         """
+        from temba.notifications.incidents.builtin import OrgRestrictedIncidentType
+
         assert not self.is_child
 
         if self.status == Org.STATUS_ACTIVE:
-            self._set_status(Org.STATUS_RESTRICTED)
+            self._set_status(
+                Org.STATUS_RESTRICTED,
+                restricted_reason=reason,
+                suspends_on=suspends_on or timezone.now() + Org.RESTRICTION_PERIOD,
+            )
+
+            OrgRestrictedIncidentType.get_or_create(self)  # create incident which will notify admins
 
     def suspend(self):
         """
         Suspends this org and any children.
         """
-        from temba.notifications.incidents.builtin import OrgSuspendedIncidentType
+        from temba.notifications.incidents.builtin import OrgRestrictedIncidentType, OrgSuspendedIncidentType
 
         assert not self.is_child
 
         if self.status != Org.STATUS_SUSPENDED:
             self._set_status(Org.STATUS_SUSPENDED)
 
+            OrgRestrictedIncidentType.end_ongoing(self)
             OrgSuspendedIncidentType.get_or_create(self)  # create incident which will notify admins
 
     def reactivate(self):
         """
         Lifts any restriction or suspension of this org and any children.
         """
-        from temba.notifications.incidents.builtin import OrgSuspendedIncidentType
+        from temba.notifications.incidents.builtin import OrgRestrictedIncidentType, OrgSuspendedIncidentType
 
         assert not self.is_child
 
         if self.status != Org.STATUS_ACTIVE:
             self._set_status(Org.STATUS_ACTIVE)
 
+            OrgRestrictedIncidentType.end_ongoing(self)
             OrgSuspendedIncidentType.end_ongoing(self)
 
-    def _set_status(self, status: str):
+    def _set_status(self, status: str, *, restricted_reason: str = None, suspends_on=None):
         # is_suspended is kept in sync for anything that hasn't yet switched to reading status
         is_suspended = status == Org.STATUS_SUSPENDED
         changes = dict(
             status=status,
+            restricted_reason=restricted_reason,
+            suspends_on=suspends_on,
             is_suspended=is_suspended,
             suspended_on=timezone.now() if is_suspended else None,
             modified_on=timezone.now(),

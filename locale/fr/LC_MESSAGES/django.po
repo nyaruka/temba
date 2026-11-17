@@ -2949,6 +2949,9 @@ msgstr "Application Android du canal obsolète"
 msgid "Workspace Flagged"
 msgstr "Espace de travail signalé"
 
+msgid "Workspace Restricted"
+msgstr "Espace de travail restreint"
+
 msgid "Workspace Suspended"
 msgstr "Espace de travail suspendu"
 
@@ -5564,6 +5567,25 @@ msgstr ""
 "Votre espace de travail a été signalé en raison d'une activité suspecte. Pour réactiver le démarrage de flux et l'envoi de\n"
 "messages, veuillez contacter le support.\n"
 
+msgid "Your workspace has been restricted because of a problem with billing."
+msgstr "Votre espace de travail a été restreint en raison d'un problème de facturation."
+
+msgid "Your workspace has been restricted because it has exceeded the limits of its plan."
+msgstr "Votre espace de travail a été restreint car il a dépassé les limites de son forfait."
+
+msgid "Your workspace has been restricted."
+msgstr "Votre espace de travail a été restreint."
+
+msgid "Starting flows and sending messages are disabled, but your flows will keep handling incoming messages."
+msgstr "Le lancement de flux et l'envoi de messages sont désactivés, mais vos flux continueront de traiter les messages entrants."
+
+#, python-format
+msgid "Unless this is resolved, your workspace will be suspended on %(date)s. Please contact support."
+msgstr "Si ce problème n'est pas résolu, votre espace de travail sera suspendu le %(date)s. Veuillez contacter le support."
+
+msgid "Please contact support."
+msgstr "Veuillez contacter le support."
+
 msgid "Your workspace has been suspended. To re-enable starting flows and sending messages, please contact support."
 msgstr "Votre espace de travail a été suspendu. Pour réactiver le démarrage de flux et l'envoi de messages, veuillez contacter le support."
 
@@ -5596,6 +5618,9 @@ msgstr "Votre <a href=\"%(read_url)s\">canal Android</a> semble encore utiliser 
 #, python-format
 msgid "Your <a href=\"%(read_url)s\">WhatsApp channel</a> appears to not be syncing templates."
 msgstr "Votre <a href=\"%(read_url)s\">canal WhatsApp</a> ne semble pas synchroniser les modèles."
+
+msgid "Your workspace has been restricted. Starting flows and sending messages are disabled until this is resolved, but your flows will keep handling incoming messages."
+msgstr "Votre espace de travail a été restreint. Le lancement de flux et l'envoi de messages sont désactivés jusqu'à ce que ce problème soit résolu, mais vos flux continueront de traiter les messages entrants."
 
 #, python-format
 msgid "Some webhook calls from your flows are taking too long to respond or failing too frequently. If the problem persists these calls will be temporarily disabled. You can check the <a href=\"%(logs_url)s\">webhook call log</a> to see which calls are the problem."

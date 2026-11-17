@@ -30,7 +30,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # flag and content menu option should be inverted
         self.org.flag()
-        self.org.restrict()
+        self.org.restrict(Org.RESTRICTED_STAFF)
 
         self.assertContentMenu(
             read_url, self.customer_support, ["Edit", "Unflag", "Suspend", "Reactivate", "Verify", "-", "Service"]
@@ -81,7 +81,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
 
         assertOrgFilter("?filter=verified", [self.org2])
 
-        self.org.restrict()
+        self.org.restrict(Org.RESTRICTED_STAFF)
 
         assertOrgFilter("", [self.org2, self.org])
         assertOrgFilter("?filter=flagged", [self.org])

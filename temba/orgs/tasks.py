@@ -77,6 +77,23 @@ def expire_invitations():
     return {"expired": num_expired}
 
 
+@cron_task()
+def suspend_restricted_orgs():
+    """
+    Suspends restricted orgs whose time to resolve the restriction is up
+    """
+    restricted = Org.objects.filter(
+        is_active=True, parent=None, status=Org.STATUS_RESTRICTED, suspends_on__lte=timezone.now()
+    )
+
+    num_suspended = 0
+    for org in restricted:
+        org.suspend()
+        num_suspended += 1
+
+    return {"suspended": num_suspended}
+
+
 @cron_task(lock_timeout=7 * 24 * 60 * 60)
 def delete_released_orgs():
     # for each org that was released over 7 days ago, delete it for real

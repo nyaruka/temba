@@ -3035,6 +3035,10 @@
   <source>Resolved</source>
   <target>Resuelto</target>
 </trans-unit>
+<trans-unit id="s6f0051e23edafc17">
+  <source>Your workspace was restricted, please contact support for assistance.</source>
+  <target>Tu workspace fue restringido, por favor contacta a soporte para recibir ayuda.</target>
+</trans-unit>
 </body>
 </file>
 </xliff>

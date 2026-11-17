@@ -338,6 +338,7 @@
 's6e25707d75fc8fc6': `Atualizar idioma`,
 's6ebc9bd6feae62a3': `Carregando…`,
 's6ecaa347faaca2fe': `Esta ação não é mais suportada e deve ser removida.`,
+'s6f0051e23edafc17': `Sua área de trabalho foi restrita, entre em contato com o suporte para obter ajuda.`,
 's6f81f9bebbc095b9': `Pode incluir expressões, ex.: \`@fields.phone\`.`,
 's6f8b83a0f895b075': `Os contatos são divididos de forma igual e aleatória entre os grupos.`,
 's6ffdc18b840acf30': str`${0} - ${1}`,
