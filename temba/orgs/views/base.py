@@ -24,19 +24,10 @@ from temba.channels.models import ChannelLog
 from temba.contacts.models import ContactField, ContactGroup
 from temba.utils import on_transaction_commit
 from temba.utils.fields import SelectMultipleWidget, TembaDateField
+from temba.utils.models import filter_active
 from temba.utils.views.mixins import ComponentFormMixin, ContextMenuMixin, ModalFormMixin, SpaMixin
 
 from .mixins import BulkActionMixin, DependencyMixin, OrgObjPermsMixin, OrgPermsMixin
-
-
-def filter_active(qs):
-    """
-    Excludes soft deleted objects from the given queryset if its model can be soft deleted
-    """
-    # not hasattr, as models drop an inherited field by setting it to None
-    if getattr(qs.model, "is_active", None) is not None:
-        return qs.filter(is_active=True)
-    return qs
 
 
 class LimitAwareMixin:

@@ -139,6 +139,16 @@ class SoftDeleteMixin(models.Model):
         abstract = True
 
 
+def filter_active(qs):
+    """
+    Excludes soft deleted objects from the given queryset if its model can be soft deleted
+    """
+    # not hasattr, as models drop an inherited field by setting it to None
+    if getattr(qs.model, "is_active", None) is not None:
+        return qs.filter(is_active=True)
+    return qs
+
+
 class UUIDMixin(models.Model):
     """
     Model mixin for things with a UUID
