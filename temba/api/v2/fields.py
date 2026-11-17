@@ -11,7 +11,7 @@ from temba.msgs.models import Attachment, Label, Media, Msg
 from temba.tickets.models import Ticket, Topic
 from temba.users.models import User
 from temba.utils import languages
-from temba.utils.models import live_q
+from temba.utils.models import filter_active
 from temba.utils.uuid import find_uuid, is_uuid
 
 
@@ -241,7 +241,7 @@ class TembaModelField(serializers.RelatedField):
 
     def get_queryset(self):
         manager = getattr(self.model, self.model_manager)
-        return manager.filter(live_q(self.model), org=self.context["org"])
+        return filter_active(manager.filter(org=self.context["org"]))
 
     def get_object(self, value):
         # ignore lookup fields that can't be queryed with the given value

@@ -24,7 +24,7 @@ from temba.channels.models import ChannelLog
 from temba.contacts.models import ContactField, ContactGroup
 from temba.utils import on_transaction_commit
 from temba.utils.fields import SelectMultipleWidget, TembaDateField
-from temba.utils.models import live_q
+from temba.utils.models import filter_active
 from temba.utils.views.mixins import ComponentFormMixin, ContextMenuMixin, ModalFormMixin, SpaMixin
 
 from .mixins import BulkActionMixin, DependencyMixin, OrgObjPermsMixin, OrgPermsMixin
@@ -59,7 +59,7 @@ class BaseReadView(OrgObjPermsMixin, SmartReadView):
         if not self.request.user.is_staff:
             qs = qs.filter(**{f"{self.model_org_lookup}__in": self.request.user.get_orgs(self.request)})
 
-        qs = qs.filter(live_q(self.model))
+        qs = filter_active(qs)
 
         return qs.select_related(self.model_org_lookup)
 
@@ -94,7 +94,7 @@ class BaseUpdateView(OrgObjPermsMixin, SmartUpdateView):
     def derive_queryset(self, **kwargs):
         qs = super().derive_queryset(**kwargs).filter(**{self.model_org_lookup: self.request.org})
 
-        qs = qs.filter(live_q(self.model))
+        qs = filter_active(qs)
 
         if hasattr(self.model, "is_system"):
             qs = qs.filter(is_system=False)
@@ -128,7 +128,7 @@ class BaseDeleteModal(OrgObjPermsMixin, SmartDeleteView):
     def get_queryset(self, **kwargs):
         qs = super().get_queryset(**kwargs).filter(**{self.model_org_lookup: self.request.org})
 
-        qs = qs.filter(live_q(self.model))
+        qs = filter_active(qs)
 
         if hasattr(self.model, "is_system"):
             qs = qs.filter(is_system=False)
@@ -164,7 +164,7 @@ class BaseListView(LimitAwareMixin, OrgPermsMixin, SmartListView):
     def derive_queryset(self, **kwargs):
         qs = super().derive_queryset(**kwargs).filter(org=self.request.org)
 
-        qs = qs.filter(live_q(self.model))
+        qs = filter_active(qs)
 
         return qs
 
