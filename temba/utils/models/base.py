@@ -139,12 +139,33 @@ class SoftDeleteMixin(models.Model):
         abstract = True
 
 
+class DeletedOnMixin(models.Model):
+    """
+    Model mixin for things which are soft deleted by setting `deleted_on`, replacing `SoftDeleteMixin`. A model moves
+    over in two releases, each safe against the code of the release before it:
+
+     1. add `deleted_on` backfilled from `is_active`, switch to this mixin and remove `is_active` from the model (set it
+        to `None`), giving its column a database default so the previous release can still insert rows
+     2. backfill anything the previous release soft deleted while the first was deploying, and drop the column
+
+    Big tables, or ones other services read, need the first step split so `deleted_on` is written alongside `is_active`
+    and backfilled before anything reads it.
+    """
+
+    deleted_on = models.DateTimeField(null=True)
+
+    class Meta:
+        abstract = True
+
+
 def exclude_deleted(qs):
     """
     Excludes soft deleted objects from the given queryset if its model can be soft deleted
     """
-    # not hasattr, as models drop an inherited field by setting it to None
-    if getattr(qs.model, "is_active", None) is not None:
+    if issubclass(qs.model, DeletedOnMixin):
+        return qs.filter(deleted_on=None)
+    # not hasattr, as models drop an inherited is_active by setting it to None
+    if any(f.name == "is_active" for f in qs.model._meta.concrete_fields):
         return qs.filter(is_active=True)
     return qs
 

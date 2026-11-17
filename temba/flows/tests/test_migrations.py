@@ -6,7 +6,7 @@ from django_valkey import get_valkey_connection
 from django.apps import apps
 from django.utils import timezone
 
-from temba.flows.models import Flow, FlowActivityCount, FlowTally
+from temba.flows.models import Flow, FlowActivityCount, FlowLabel, FlowTally
 from temba.tests import MigrationTest, cleanup
 
 
@@ -208,3 +208,27 @@ class BackfillNodeTalliesTest(MigrationTest):
         self.flow1.tallies.filter(scope=FlowTally.node_scope(self.NODE2)).update(count=1)
         migration.backfill_node_tallies(apps, None)
         assert_tallies()
+
+
+class BackfillFlowLabelDeletedOnTest(MigrationTest):
+    app = "flows"
+    migrate_from = "0421_update_triggers"
+    migrate_to = "0422_flowlabel_deleted_on"
+
+    def setUpBeforeMigration(self, apps):
+        FlowLabel = apps.get_model("flows", "FlowLabel")
+
+        def create_label(name, **kwargs):
+            return FlowLabel.objects.create(
+                org_id=self.org.id, name=name, created_by_id=self.admin.id, modified_by_id=self.admin.id, **kwargs
+            )
+
+        self.active = create_label("Active")
+        self.inactive = create_label("Inactive", is_active=False)
+
+    def test_migration(self):
+        active = FlowLabel.objects.get(id=self.active.id)
+        inactive = FlowLabel.objects.get(id=self.inactive.id)
+
+        self.assertIsNone(active.deleted_on)
+        self.assertEqual(inactive.modified_on, inactive.deleted_on)

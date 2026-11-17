@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone as tzone
 
 from temba.tests import MigrationTest
-from temba.tickets.models import Ticket
+from temba.tickets.models import Team, Ticket
 
 
 class BackfillTicketOutcomeTest(MigrationTest):
@@ -42,3 +42,32 @@ class BackfillTicketOutcomeTest(MigrationTest):
         assert_outcome(self.old_close, Ticket.OUTCOME_RESOLVED)
         assert_outcome(self.has_outcome, Ticket.OUTCOME_RESOLVED)  # left as it was
         assert_outcome(self.open, None)
+
+
+class BackfillTeamDeletedOnTest(MigrationTest):
+    app = "tickets"
+    migrate_from = "0102_ticket_closed_fields_constraint"
+    migrate_to = "0103_team_deleted_on"
+
+    def setUpBeforeMigration(self, apps):
+        Team = apps.get_model("tickets", "Team")
+
+        def create_team(name, **kwargs):
+            return Team.objects.create(
+                org_id=self.org.id, name=name, created_by_id=self.admin.id, modified_by_id=self.admin.id, **kwargs
+            )
+
+        self.active = create_team("Active")
+        self.released = create_team("Released", is_active=False)
+        Team.objects.filter(id=self.released.id).update(modified_on=datetime(2026, 3, 1, 12, 0, tzinfo=tzone.utc))
+
+    def test_migration(self):
+        def assert_deleted_on(team, expected):
+            self.assertEqual(expected, Team.objects.get(id=team.id).deleted_on)
+
+        assert_deleted_on(self.active, None)
+        assert_deleted_on(self.released, datetime(2026, 3, 1, 12, 0, tzinfo=tzone.utc))
+
+        # teams can be created without is_active
+        team = Team.create(self.org, self.admin, "New")
+        assert_deleted_on(team, None)
