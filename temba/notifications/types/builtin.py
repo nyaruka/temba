@@ -101,6 +101,38 @@ class IncidentStartedNotificationType(NotificationType):
         return json
 
 
+class IncidentReminderNotificationType(IncidentStartedNotificationType):
+    """
+    Reminder by email of an ongoing incident whose deadline is approaching. It uses the same template as the incident
+    started email, which should say what happens when.
+    """
+
+    slug = "incident:reminder"
+
+    @staticmethod
+    def get_scope(incident, reminder) -> str:
+        return f"{incident.id}:{int(reminder.total_seconds())}"
+
+    @classmethod
+    def create(cls, incident, reminder):
+        """
+        Creates a reminder for all admins in the workspace.
+        """
+
+        Notification.create_all(
+            incident.org,
+            cls.slug,
+            scope=cls.get_scope(incident, reminder),
+            users=incident.org.get_admins(),
+            medium=Notification.MEDIUM_EMAIL,
+            email_required=incident.type.email_required,
+            incident=incident,
+        )
+
+    def get_email_subject(self, notification) -> str:
+        return _("Reminder") + ": " + notification.incident.type.title
+
+
 class TicketsOpenedNotificationType(NotificationType):
     """
     Notification that a new ticket has been opened - created by mailroom.

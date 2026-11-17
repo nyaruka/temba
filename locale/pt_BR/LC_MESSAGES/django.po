@@ -2969,6 +2969,9 @@ msgstr "Sua exportação de %s está pronta"
 msgid "Incident"
 msgstr "Incidente"
 
+msgid "Reminder"
+msgstr "Lembrete"
+
 msgid "New user joined your workspace"
 msgstr "Novo usuário entrou na sua área de trabalho"
 
