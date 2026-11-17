@@ -1,9 +1,10 @@
 from django.urls import reverse
 
 from temba.contacts.models import ContactExport
+from temba.notifications.incidents.builtin import OrgFlaggedIncidentType
 from temba.notifications.models import Notification
 from temba.notifications.types.builtin import ExportFinishedNotificationType
-from temba.orgs.models import OrgMembership
+from temba.orgs.models import OrgMembership, OrgRole
 from temba.tests import CRUDLTestMixin, TembaTest
 
 
@@ -31,6 +32,9 @@ class NotificationCRUDLTest(TembaTest, CRUDLTestMixin):
         export = ContactExport.create(self.org, self.editor)
         ExportFinishedNotificationType.create(export)
 
+        self.org.add_user(self.editor, OrgRole.ADMINISTRATOR)  # so they're also notified of incidents
+        OrgFlaggedIncidentType.get_or_create(self.org)
+
         notification = self.editor.notifications.get(export=export)
         unsubscribe_url = notification.get_unsubscribe_url().removeprefix("https://app.rapidpro.io")
         membership = OrgMembership.objects.get(org=self.org, user=self.editor)
@@ -50,6 +54,14 @@ class NotificationCRUDLTest(TembaTest, CRUDLTestMixin):
         membership.refresh_from_db()
         self.assertFalse(membership.email_notifications)
 
+        # any emails waiting to be sent are cancelled, except ones they'd get anyway
+        notification.refresh_from_db()
+        self.assertEqual(Notification.EMAIL_STATUS_NONE, notification.email_status)
+        self.assertEqual(
+            Notification.EMAIL_STATUS_PENDING,
+            self.editor.notifications.get(notification_type="incident:started").email_status,
+        )
+
         # other memberships unaffected
         self.assertTrue(OrgMembership.objects.get(org=self.org, user=self.admin).email_notifications)
 
@@ -63,6 +75,16 @@ class NotificationCRUDLTest(TembaTest, CRUDLTestMixin):
 
         response = self.client.post(reverse("notifications.notification_unsubscribe", args=["xyz"]))
         self.assertContains(response, "This unsubscribe link is no longer valid.")
+
+        # as is one for a workspace which has been deleted
+        self.org.is_active = False
+        self.org.save(update_fields=("is_active",))
+
+        response = self.client.get(unsubscribe_url)
+        self.assertContains(response, "This unsubscribe link is no longer valid.")
+
+        self.org.is_active = True
+        self.org.save(update_fields=("is_active",))
 
         # as is one for a membership which no longer exists
         self.org.remove_user(self.editor)

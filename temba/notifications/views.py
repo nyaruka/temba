@@ -76,7 +76,6 @@ class UnsubscribeView(TemplateView):
 
     def post(self, request, *args, **kwargs):
         if self.membership and self.membership.email_notifications:
-            self.membership.email_notifications = False
-            self.membership.save(update_fields=("email_notifications",))
+            Notification.unsubscribe(self.membership)
 
         return self.render_to_response(self.get_context_data(unsubscribed=bool(self.membership)))

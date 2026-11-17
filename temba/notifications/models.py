@@ -213,6 +213,20 @@ class Notification(models.Model):
 
         return OrgMembership.objects.filter(org_id=org_id, org__is_active=True, user_id=user_id).first()
 
+    @classmethod
+    def unsubscribe(cls, membership):
+        """
+        Turns off notification emails for the given membership, including any already waiting to be sent
+        """
+        membership.email_notifications = False
+        membership.save(update_fields=("email_notifications",))
+
+        pending = cls.objects.filter(
+            org_id=membership.org_id, user_id=membership.user_id, email_status=cls.EMAIL_STATUS_PENDING
+        ).select_related("incident")
+        cancel = [n.id for n in pending if not n.type.is_email_required(n)]
+        cls.objects.filter(id__in=cancel).update(email_status=cls.EMAIL_STATUS_NONE)
+
     def get_unsubscribe_url(self) -> str | None:
         """
         Gets an absolute URL which lets the recipient of this notification's email turn off notification emails for

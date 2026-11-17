@@ -18,7 +18,9 @@ def send_notification_emails():
     # a released user's address has been scrubbed to one that can't receive mail
     pending.filter(user__is_active=False).update(email_status=Notification.EMAIL_STATUS_NONE)
 
-    pending = list(pending.filter(user__is_active=True).select_related("org", "user").order_by("created_on"))
+    pending = list(
+        pending.filter(user__is_active=True).select_related("org", "user", "incident").order_by("created_on")
+    )
 
     num_sent, num_errored = 0, 0
 
