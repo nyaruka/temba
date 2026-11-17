@@ -309,6 +309,22 @@ class OrgTest(TembaTest):
 
         self.assertEqual({"suspended": 0}, suspend_restricted_orgs())
 
+        # an org reactivated after being fetched but before being reached isn't suspended
+        self.org.reactivate()
+        self.org.restrict(Org.RESTRICTED_BILLING, suspends_on=timezone.now() - timedelta(minutes=5))
+
+        real_refresh = Org.refresh_from_db
+
+        def refresh(org, *args, **kwargs):
+            Org.objects.filter(id=org.id).update(status=Org.STATUS_ACTIVE, restricted_reason=None, suspends_on=None)
+            return real_refresh(org, *args, **kwargs)
+
+        with patch.object(Org, "refresh_from_db", autospec=True, side_effect=refresh):
+            self.assertEqual({"suspended": 0}, suspend_restricted_orgs())
+
+        self.org.refresh_from_db()
+        self.assertEqual(Org.STATUS_ACTIVE, self.org.status)
+
     def test_set_flow_languages(self):
         self.org.set_flow_languages(self.admin, ["eng", "fra"])
         self.org.refresh_from_db()

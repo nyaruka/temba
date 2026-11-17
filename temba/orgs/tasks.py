@@ -82,14 +82,16 @@ def suspend_restricted_orgs():
     """
     Suspends restricted orgs whose time to resolve the restriction is up
     """
-    restricted = Org.objects.filter(
-        is_active=True, parent=None, status=Org.STATUS_RESTRICTED, suspends_on__lte=timezone.now()
-    )
+    now = timezone.now()
+    restricted = Org.objects.filter(is_active=True, parent=None, status=Org.STATUS_RESTRICTED, suspends_on__lte=now)
 
     num_suspended = 0
     for org in restricted:
-        org.suspend()
-        num_suspended += 1
+        # the org may have been reactivated or given more time since we fetched it
+        org.refresh_from_db(fields=("status", "suspends_on"))
+        if org.status == Org.STATUS_RESTRICTED and org.suspends_on and org.suspends_on <= now:
+            org.suspend()
+            num_suspended += 1
 
     return {"suspended": num_suspended}
 
