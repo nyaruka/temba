@@ -4,7 +4,6 @@ from enum import Enum
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -158,7 +157,7 @@ class DeletedOnMixin(models.Model):
     model's move is released before the next, so that it's safe against the code it replaces:
 
      1. declare `deleted_on` on the model itself, so releasing sets both fields while everything still reads `is_active`
-     2. backfill `deleted_on` from `is_active` and switch the model to this mixin, which switches `live_q` to it
+     2. backfill `deleted_on` from `is_active` and switch the model to this mixin, which switches `exclude_deleted` to it
      3. remove `is_active` from the model (set it to `None`) and give its column a database default
      4. drop the column
     """
@@ -169,22 +168,16 @@ class DeletedOnMixin(models.Model):
         abstract = True
 
 
-def live_q(model) -> Q:
-    """
-    Returns a Q matching the objects of the given model which haven't been soft deleted
-    """
-    if issubclass(model, DeletedOnMixin):
-        return Q(deleted_on=None)
-    if any(f.name == "is_active" for f in model._meta.concrete_fields):
-        return Q(is_active=True)
-    return Q()
-
-
-def filter_active(qs):
+def exclude_deleted(qs):
     """
     Excludes soft deleted objects from the given queryset if its model can be soft deleted
     """
-    return qs.filter(live_q(qs.model))
+    if issubclass(qs.model, DeletedOnMixin):
+        return qs.filter(deleted_on=None)
+    # not hasattr, as models drop an inherited is_active by setting it to None
+    if any(f.name == "is_active" for f in qs.model._meta.concrete_fields):
+        return qs.filter(is_active=True)
+    return qs
 
 
 class UUIDMixin(models.Model):
@@ -213,7 +206,7 @@ class NameMixin(models.Model):
         """
         Generates a unique name from the given base name that won't conflict with any named object in the given queryset
         """
-        qs = cls.get_active_for_org(org)
+        qs = cls.get_for_org(org)
         if ignore:
             qs = qs.exclude(id=ignore.id)
 
@@ -268,7 +261,7 @@ class OrgLimitMixin:
         """
         The objects which count against this org's limit. Override to narrow it further.
         """
-        return cls._default_manager.filter(live_q(cls), org=org)
+        return exclude_deleted(cls._default_manager.filter(org=org))
 
     @classmethod
     def is_limit_reached(cls, org) -> bool:
@@ -298,12 +291,12 @@ class OrgAsset(UUIDMixin, NameMixin, CreatedByMixin, ModifiedByMixin, SoftDelete
     is_system = models.BooleanField(default=False)  # not user created, doesn't count against limits
 
     @classmethod
-    def get_active_for_org(cls, org):
-        return cls._default_manager.filter(live_q(cls), org=org)
+    def get_for_org(cls, org):
+        return exclude_deleted(cls._default_manager.filter(org=org))
 
     @classmethod
     def get_countable_for_org(cls, org):
-        return cls.get_active_for_org(org).filter(is_system=False)  # system objects don't count against limits
+        return cls.get_for_org(org).filter(is_system=False)  # system objects don't count against limits
 
     @classmethod
     def import_def(cls, org, user, definition: dict, preview: bool = False) -> tuple:
@@ -355,12 +348,12 @@ class OrgAsset(UUIDMixin, NameMixin, CreatedByMixin, ModifiedByMixin, SoftDelete
         Gets the existing object (if any) that matches the import definition.
         """
         if definition["uuid"]:
-            existing = cls.get_active_for_org(org).filter(uuid=definition["uuid"]).first()
+            existing = cls.get_for_org(org).filter(uuid=definition["uuid"]).first()
             if existing:
                 return existing
 
         if definition["name"]:
-            return cls.get_active_for_org(org).filter(name__iexact=definition["name"]).first()
+            return cls.get_for_org(org).filter(name__iexact=definition["name"]).first()
 
         return None
 
