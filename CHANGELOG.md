@@ -1,3 +1,6 @@
+## v26.3.204 (2026-11-17)
+ * Add a restricted incident and suspend restricted workspaces once their time is up
+
 ## v26.3.203 (2026-11-17)
  * Remove is_active from templates, Teams and FlowLabels, which are deleted rather than deactivated, with Team and FlowLabel now using deleted_on
 
