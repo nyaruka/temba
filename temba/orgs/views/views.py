@@ -56,7 +56,6 @@ from temba.utils.views.mixins import (
     NonAtomicMixin,
     NoNavMixin,
     SpaMixin,
-    StaffOnlyMixin,
 )
 
 from ..models import DefinitionExport, Export, IntegrationType, Invitation, Org, OrgImport, OrgMembership, OrgRole, User
@@ -1241,7 +1240,7 @@ class OrgCRUDL(SmartCRUDL):
 
             switch_to_org(self.request, obj)
 
-    class Grant(StaffOnlyMixin, SpaMixin, ComponentFormMixin, NonAtomicMixin, SmartCreateView):
+    class Grant(SpaMixin, ComponentFormMixin, NonAtomicMixin, SmartCreateView):
         class Form(forms.ModelForm):
             first_name = forms.CharField(max_length=User._meta.get_field("first_name").max_length)
             last_name = forms.CharField(max_length=User._meta.get_field("last_name").max_length)
@@ -1284,6 +1283,10 @@ class OrgCRUDL(SmartCRUDL):
         submit_button_name = _("Create")
         success_url = "@orgs.org_grant"
         menu_path = "/settings"
+
+        def has_permission(self, request, *args, **kwargs):
+            # staff can always grant workspaces, other users need the permission
+            return request.user.is_staff or super().has_permission(request, *args, **kwargs)
 
         def save(self, obj):
             self.object = Org.create(

@@ -4,6 +4,7 @@ from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
+from django.contrib.auth.models import Permission
 from django.core import mail
 from django.test.utils import override_settings
 from django.urls import reverse
@@ -528,6 +529,13 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         response = self.client.get(grant_url)
         self.assertPermissionDenied(response)
 
+        # but a user with the permission can
+        user.user_permissions.add(Permission.objects.get(content_type__app_label="orgs", codename="org_grant"))
+        self.login(user)
+        response = self.client.get(grant_url)
+        self.assertEqual(200, response.status_code)
+
+        # as can staff
         self.login(self.customer_support)
         response = self.client.get(grant_url)
         self.assertEqual(200, response.status_code)
