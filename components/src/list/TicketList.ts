@@ -118,7 +118,12 @@ export class TicketList extends TembaList {
             >
               ${contact.name}
             </div>
-            <div style="font-size:0.8em; margin-left:0.75em;">
+            <div
+              style="font-size:0.8em; margin-left:0.75em; white-space:nowrap;"
+            >
+              ${contact.ticket.outcome === 'idle'
+                ? msg('Expired')
+                : msg('Resolved')}
               <temba-date
                 value=${contact.ticket.closed_on}
                 display="duration"

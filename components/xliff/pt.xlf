@@ -3027,6 +3027,14 @@
   <source>Took <x id="0" equiv-text="${ms}"/> ms</source>
   <target>Levou <x id="0" equiv-text="${ms}"/> ms</target>
 </trans-unit>
+<trans-unit id="sd923f95605fed7b2">
+  <source>Expired</source>
+  <target>Expirado</target>
+</trans-unit>
+<trans-unit id="sefa828f161089a05">
+  <source>Resolved</source>
+  <target>Resolvido</target>
+</trans-unit>
 </body>
 </file>
 </xliff>

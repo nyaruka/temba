@@ -625,6 +625,8 @@ class TicketCRUDL(SmartCRUDL):
                     "attachments": m.attachments,
                 }
 
+            OUTCOMES = {Ticket.OUTCOME_RESOLVED: "resolved", Ticket.OUTCOME_IDLE: "idle"}
+
             def as_json(t):
                 """
                 Converts a ticket to the contact-centric format expected by our frontend components
@@ -641,6 +643,7 @@ class TicketCRUDL(SmartCRUDL):
                         "topic": topic_as_json(t.topic) if t.topic else None,
                         "last_activity_on": t.last_activity_on,
                         "closed_on": t.closed_on,
+                        "outcome": OUTCOMES.get(t.outcome),
                     },
                 }
 
