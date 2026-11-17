@@ -29,6 +29,15 @@ from temba.utils.views.mixins import ComponentFormMixin, ContextMenuMixin, Modal
 from .mixins import BulkActionMixin, DependencyMixin, OrgObjPermsMixin, OrgPermsMixin
 
 
+def filter_active(qs):
+    """
+    Excludes soft deleted objects from the given queryset if its model can be soft deleted
+    """
+    if any(f.name == "is_active" for f in qs.model._meta.concrete_fields):
+        return qs.filter(is_active=True)
+    return qs
+
+
 class LimitAwareMixin:
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -58,8 +67,7 @@ class BaseReadView(OrgObjPermsMixin, SmartReadView):
         if not self.request.user.is_staff:
             qs = qs.filter(**{f"{self.model_org_lookup}__in": self.request.user.get_orgs(self.request)})
 
-        if hasattr(self.model, "is_active"):
-            qs = qs.filter(is_active=True)
+        qs = filter_active(qs)
 
         return qs.select_related(self.model_org_lookup)
 
@@ -94,8 +102,7 @@ class BaseUpdateView(OrgObjPermsMixin, SmartUpdateView):
     def derive_queryset(self, **kwargs):
         qs = super().derive_queryset(**kwargs).filter(**{self.model_org_lookup: self.request.org})
 
-        if hasattr(self.model, "is_active"):
-            qs = qs.filter(is_active=True)
+        qs = filter_active(qs)
 
         if hasattr(self.model, "is_system"):
             qs = qs.filter(is_system=False)
@@ -129,8 +136,7 @@ class BaseDeleteModal(OrgObjPermsMixin, SmartDeleteView):
     def get_queryset(self, **kwargs):
         qs = super().get_queryset(**kwargs).filter(**{self.model_org_lookup: self.request.org})
 
-        if hasattr(self.model, "is_active"):
-            qs = qs.filter(is_active=True)
+        qs = filter_active(qs)
 
         if hasattr(self.model, "is_system"):
             qs = qs.filter(is_system=False)
@@ -166,8 +172,7 @@ class BaseListView(LimitAwareMixin, OrgPermsMixin, SmartListView):
     def derive_queryset(self, **kwargs):
         qs = super().derive_queryset(**kwargs).filter(org=self.request.org)
 
-        if hasattr(self.model, "is_active"):
-            qs = qs.filter(is_active=True)
+        qs = filter_active(qs)
 
         return qs
 

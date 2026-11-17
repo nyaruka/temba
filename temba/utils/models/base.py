@@ -165,7 +165,7 @@ class NameMixin(models.Model):
         """
         Generates a unique name from the given base name that won't conflict with any named object in the given queryset
         """
-        qs = cls.objects.filter(org=org, is_active=True)
+        qs = cls.get_active_for_org(org)
         if ignore:
             qs = qs.exclude(id=ignore.id)
 
