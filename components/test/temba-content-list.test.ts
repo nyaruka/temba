@@ -15,6 +15,7 @@ import {
   mockGET,
   mockNow,
   mockPOST,
+  removeSharedSheet,
   waitForCondition
 } from './utils.test';
 
@@ -46,6 +47,7 @@ describe('temba-content-list', () => {
   });
   afterEach(() => {
     if (nowStub) nowStub.restore();
+    removeSharedSheet();
   });
 
   it('can be created', async () => {
@@ -1003,7 +1005,6 @@ describe('temba-content-list', () => {
       '/channels/channel/logs/chan-1/msg/msg-1/'
     );
     expect(sheet.current.header).to.equal('Channel log');
-    sheet.remove();
   });
 
   it('renders the messages list (screenshot)', async () => {

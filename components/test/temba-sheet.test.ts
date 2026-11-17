@@ -6,6 +6,7 @@ import {
   clearMockPosts,
   mockGET,
   mockPOST,
+  removeSharedSheet,
   waitForCondition
 } from './utils.test';
 
@@ -17,9 +18,7 @@ describe('temba-sheet', () => {
     clearMockGets();
     clearMockPosts();
     document.cookie = 'csrftoken=; path=/; max-age=0';
-    document
-      .querySelectorAll('temba-sheet[data-shared]')
-      .forEach((shared) => shared.remove());
+    removeSharedSheet();
   });
 
   const LOG =
@@ -80,7 +79,7 @@ describe('temba-sheet', () => {
   it('closes when a link in its content leaves the page', async () => {
     mockGET(
       /\/sheet\/log/,
-      '<temba-anchor id="contact" href="/contact/read/1/"><span>Bob</span></temba-anchor>'
+      '<temba-anchor id="contact" href="/contact/read/1/">Bob</temba-anchor>'
     );
 
     // the page's own handler for these links keeps the click to itself
@@ -94,39 +93,31 @@ describe('temba-sheet', () => {
 
     try {
       const sheet = await getSheet();
-      sheet.show('/sheet/log', 'Log');
-      await waitForCondition(() => !!sheet.querySelector('#contact span'));
-      const name = sheet.querySelector('#contact span');
+
+      // a click on the link's text is one on the slot showing it
+      const open = async (): Promise<HTMLElement> => {
+        sheet.show('/sheet/log', 'Log');
+        await waitForCondition(() => !!sheet.querySelector('#contact'));
+        const anchor = sheet.querySelector('#contact') as any;
+        await anchor.updateComplete;
+        return anchor.shadowRoot.querySelector('slot');
+      };
+      const click = (init: MouseEventInit = {}) =>
+        new MouseEvent('click', { bubbles: true, composed: true, ...init });
 
       // a click asking for a new tab leaves the page where it is, and us open
-      name.dispatchEvent(
-        new MouseEvent('click', {
-          bubbles: true,
-          composed: true,
-          metaKey: true
-        })
-      );
+      let text = await open();
+      text.dispatchEvent(click({ metaKey: true }));
       expect(went).to.have.length(1);
       expect(sheet.open).to.be.true;
 
-      // any other click takes the page elsewhere, whatever else is held
-      name.dispatchEvent(
-        new MouseEvent('click', {
-          bubbles: true,
-          composed: true,
-          ctrlKey: true
-        })
-      );
+      // any other click has the page leave, whatever else is held
+      text.dispatchEvent(click({ ctrlKey: true }));
       expect(went).to.have.length(2);
       expect(sheet.open).to.be.false;
 
-      sheet.show('/sheet/log', 'Log');
-      await waitForCondition(() => !!sheet.querySelector('#contact span'));
-      sheet
-        .querySelector('#contact span')
-        .dispatchEvent(
-          new MouseEvent('click', { bubbles: true, composed: true })
-        );
+      text = await open();
+      text.dispatchEvent(click());
       expect(went).to.have.length(3);
       expect(sheet.open).to.be.false;
     } finally {

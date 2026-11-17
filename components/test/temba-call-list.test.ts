@@ -8,7 +8,8 @@ import {
   getComponent,
   loadStore,
   mockGET,
-  mockNow
+  mockNow,
+  removeSharedSheet
 } from './utils.test';
 
 const TAG = 'temba-call-list';
@@ -42,6 +43,7 @@ describe('temba-call-list', () => {
   });
   afterEach(() => {
     if (nowStub) nowStub.restore();
+    removeSharedSheet();
   });
 
   it('can be created', async () => {
@@ -163,7 +165,6 @@ describe('temba-call-list', () => {
     expect(sheet.current.endpoint).to.equal(
       '/channels/channel/logs/chan-1/call/call-1/'
     );
-    sheet.remove();
 
     const row = list.shadowRoot.querySelector('tr.row') as HTMLElement;
     row.dispatchEvent(

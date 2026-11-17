@@ -214,8 +214,8 @@ export class Sheet extends RapidElement {
     }
   };
 
-  // a link in the content to another page takes the page under us there, so get out of its way - caught on the way
-  // down, as the link keeps its click to itself. Only a click with the meta key opens a tab of its own instead.
+  // a link in the content to another page has the page under us leave for it, so get out of its way - caught on the
+  // way down, as the link keeps its click to itself. Only a click with the meta key opens a tab of its own instead.
   private handleLinkClick = (event: MouseEvent) => {
     if (event.metaKey || event.button !== 0) {
       return;

@@ -9,6 +9,7 @@ import {
   TypingEvent
 } from '../src/display/Chat';
 import { TembaUser } from '../src/display/TembaUser';
+import { clearMockGets, mockGET, removeSharedSheet } from './utils.test';
 
 const createChat = async (attrs = ''): Promise<Chat> => {
   return (await fixture(
@@ -232,6 +233,11 @@ describe('temba-chat typing indicators', () => {
 describe('temba-chat channel logs', () => {
   const CHANNEL: ObjectReference = { uuid: 'channel-1', name: 'Twilio' };
 
+  afterEach(() => {
+    clearMockGets();
+    removeSharedSheet();
+  });
+
   const withChannel = (event: ContactEvent): MsgEvent => {
     const msgEvent = event as MsgEvent;
     msgEvent.msg.channel = CHANNEL;
@@ -264,18 +270,50 @@ describe('temba-chat channel logs', () => {
       '/channels/channel/logs/channel-1/msg/msg-1/'
     );
 
-    // which opens in a sheet over the page rather than a tab of its own
-    assert.isNull(link.getAttribute('target'));
-    const click = new MouseEvent('click', { bubbles: true, cancelable: true });
-    link.dispatchEvent(click);
-    assert.isTrue(click.defaultPrevented);
+    mockGET(
+      /\/channels\/channel\/logs\/channel-1\/msg\/msg-1\//,
+      '<div id="log">a log</div>'
+    );
+
+    // the click is the link's alone, so the page doesn't take it as its own to navigate with
+    const reached: Event[] = [];
+    const listener = (e: Event) => reached.push(e);
+    document.addEventListener('click', listener);
+
+    try {
+      // one asking for a new tab is left to the browser
+      const modified = new MouseEvent('click', {
+        bubbles: true,
+        composed: true,
+        cancelable: true,
+        ctrlKey: true
+      });
+      // keep the test page from actually following the link
+      link.addEventListener('click', (e) => e.ctrlKey && e.preventDefault(), {
+        capture: true
+      });
+      link.dispatchEvent(modified);
+      assert.isNull(document.querySelector('temba-sheet[data-shared]'));
+
+      // any other opens the log in a sheet over the page rather than a tab of its own
+      assert.isNull(link.getAttribute('target'));
+      const click = new MouseEvent('click', {
+        bubbles: true,
+        composed: true,
+        cancelable: true
+      });
+      link.dispatchEvent(click);
+      assert.isTrue(click.defaultPrevented);
+      assert.lengthOf(reached, 0);
+    } finally {
+      document.removeEventListener('click', listener);
+    }
 
     const sheet = document.querySelector('temba-sheet[data-shared]') as any;
     assert.equal(
       sheet.current.endpoint,
       '/channels/channel/logs/channel-1/msg/msg-1/'
     );
-    sheet.remove();
   });
 
   it("doesn't link to the channel log for a deleted message", async () => {
