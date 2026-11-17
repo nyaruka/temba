@@ -6,13 +6,6 @@
   {% block notification-body %}
   {% endblock notification-body %}
   <p>{% trans "If you have any questions we are always here to help." %}</p>
-  <p>
-    {% trans "Thanks" %}
-    <br>
-    {% blocktrans trimmed with brand=branding.name %}
-      The {{ brand }} Team
-    {% endblocktrans %}
-  </p>
 {% endblock body %}
 {% block footer %}
   {% if is_member %}
