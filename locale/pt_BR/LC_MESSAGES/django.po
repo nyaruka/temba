@@ -2969,6 +2969,9 @@ msgstr "Sua exportação de %s está pronta"
 msgid "Incident"
 msgstr "Incidente"
 
+msgid "Reminder"
+msgstr "Lembrete"
+
 msgid "New user joined your workspace"
 msgstr "Novo usuário entrou na sua área de trabalho"
 
@@ -3034,6 +3037,9 @@ msgstr "E-mail compartilhado"
 
 msgid "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please contact support."
 msgstr "Desculpe, sua área de trabalho está suspensa no momento. Para voltar a iniciar fluxos e enviar mensagens, por favor entre em contato com o suporte."
+
+msgid "Sorry, your workspace is currently restricted. To re-enable starting flows and sending messages, please contact support."
+msgstr "Desculpe, sua área de trabalho está restrita no momento. Para voltar a iniciar fluxos e enviar mensagens, por favor entre em contato com o suporte."
 
 msgid "Sorry, your workspace is currently flagged. To re-enable starting flows and sending messages, please contact support."
 msgstr "Desculpe, sua área de trabalho está sinalizada no momento. Para voltar a iniciar fluxos e enviar mensagens, por favor entre em contato com o suporte."
@@ -3466,11 +3472,11 @@ msgstr "Sinalizar"
 msgid "Unflag"
 msgstr "Não sinalizar"
 
+msgid "Restrict"
+msgstr "Restringir"
+
 msgid "Suspend"
 msgstr "Suspender"
-
-msgid "Unsuspend"
-msgstr "Remover suspensão"
 
 msgid "Verify"
 msgstr "Verificar"
@@ -3486,6 +3492,9 @@ msgstr "Interna"
 
 msgid "Flagged"
 msgstr "Sinalizada"
+
+msgid "Restricted"
+msgstr "Restrita"
 
 msgid "Suspended"
 msgstr "Suspensa"
@@ -3816,10 +3825,6 @@ msgstr "A conta já existe"
 
 msgid "Hello there 👋"
 msgstr "Olá 👋"
-
-#, python-format
-msgid "Your friends at %(site_name)s."
-msgstr "Seus amigos do %(site_name)s."
 
 msgid "We are writing to notify you about some activity on your account."
 msgstr "Estamos escrevendo para notificá-lo sobre uma atividade na sua conta."
@@ -5495,13 +5500,6 @@ msgstr "Olá"
 msgid "If you have any questions we are always here to help."
 msgstr "Se você tiver qualquer dúvida, estamos sempre aqui para ajudar."
 
-msgid "Thanks"
-msgstr "Obrigado"
-
-#, python-format
-msgid "The %(brand)s Team"
-msgstr "O time %(brand)s"
-
 #, python-format
 msgid "You're receiving this email because you're a member of the <b>%(org)s</b> workspace."
 msgstr "Você está recebendo este e-mail porque é membro da área de trabalho <b>%(org)s</b>."
@@ -5638,6 +5636,9 @@ msgstr "Área de trabalho sinalizada"
 
 msgid "Contact your administrator."
 msgstr "Entre em contato com seu administrador."
+
+msgid "Workspace restricted"
+msgstr "Área de trabalho restrita"
 
 msgid "can't be deleted as it is still used by the following items:"
 msgstr "não pode ser deletado pois ainda é usado pelos seguintes itens:"

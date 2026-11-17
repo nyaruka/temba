@@ -680,7 +680,7 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         Starts this flow (asynchronously via mailroom).
         """
 
-        assert not self.org.is_flagged and not self.org.is_suspended, "flagged and suspended orgs can't start flows"
+        assert not self.org.send_blocker, "orgs with a send blocker can't start flows"
 
         return FlowStart.create(
             self,
@@ -918,7 +918,7 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
             "flow": self.org.flows.filter(is_active=True, uuid__in=identifiers["flow"]),
             "global": self.org.globals.filter(is_active=True, key__in=identifiers["global"]),
             "group": ContactGroup.get_groups(self.org).filter(uuid__in=identifiers["group"]),
-            "label": Label.get_active_for_org(self.org).filter(uuid__in=identifiers["label"]),
+            "label": Label.get_for_org(self.org).filter(uuid__in=identifiers["label"]),
             "llm": self.org.llms.filter(is_active=True, uuid__in=identifiers["llm"]),
             "template": self.org.templates.filter(uuid__in=identifiers["template"]),
             "topic": self.org.topics.filter(is_active=True, uuid__in=identifiers["topic"]),

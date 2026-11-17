@@ -2943,6 +2943,9 @@ msgstr ""
 msgid "Incident"
 msgstr ""
 
+msgid "Reminder"
+msgstr ""
+
 msgid "New user joined your workspace"
 msgstr ""
 
@@ -3007,6 +3010,9 @@ msgid "Shared Email"
 msgstr ""
 
 msgid "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please contact support."
+msgstr ""
+
+msgid "Sorry, your workspace is currently restricted. To re-enable starting flows and sending messages, please contact support."
 msgstr ""
 
 msgid "Sorry, your workspace is currently flagged. To re-enable starting flows and sending messages, please contact support."
@@ -3440,10 +3446,10 @@ msgstr ""
 msgid "Unflag"
 msgstr ""
 
-msgid "Suspend"
+msgid "Restrict"
 msgstr ""
 
-msgid "Unsuspend"
+msgid "Suspend"
 msgstr ""
 
 msgid "Verify"
@@ -3459,6 +3465,9 @@ msgid "Internal"
 msgstr ""
 
 msgid "Flagged"
+msgstr ""
+
+msgid "Restricted"
 msgstr ""
 
 msgid "Suspended"
@@ -3789,10 +3798,6 @@ msgid "Account Already Exists"
 msgstr ""
 
 msgid "Hello there 👋"
-msgstr ""
-
-#, python-format
-msgid "Your friends at %(site_name)s."
 msgstr ""
 
 msgid "We are writing to notify you about some activity on your account."
@@ -5455,13 +5460,6 @@ msgstr ""
 msgid "If you have any questions we are always here to help."
 msgstr ""
 
-msgid "Thanks"
-msgstr ""
-
-#, python-format
-msgid "The %(brand)s Team"
-msgstr ""
-
 #, python-format
 msgid "You're receiving this email because you're a member of the <b>%(org)s</b> workspace."
 msgstr ""
@@ -5592,6 +5590,9 @@ msgid "Workspace flagged"
 msgstr ""
 
 msgid "Contact your administrator."
+msgstr ""
+
+msgid "Workspace restricted"
 msgstr ""
 
 msgid "can't be deleted as it is still used by the following items:"

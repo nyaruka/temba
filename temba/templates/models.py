@@ -45,10 +45,6 @@ class Template(OrgAsset, DependencyMixin):
     )
 
     @classmethod
-    def get_active_for_org(cls, org):
-        return cls._default_manager.filter(org=org)
-
-    @classmethod
     def get_or_create(cls, org, name: str):
         obj, created = cls.objects.get_or_create(
             org=org, name=name, defaults={"created_by": org.created_by, "modified_by": org.created_by}

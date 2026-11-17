@@ -37,7 +37,7 @@ class LabelCRUDLTest(TembaTest, CRUDLTestMixin):
         )
 
         # check we get the limit warning when we've reached the limit
-        current_count = Label.get_active_for_org(self.org).count()
+        current_count = Label.get_for_org(self.org).count()
         with override_settings(ORG_LIMIT_DEFAULTS={"labels": current_count}):
             response = self.requestView(create_url, self.admin)
             self.assertContains(response, "You have reached the per-workspace limit")

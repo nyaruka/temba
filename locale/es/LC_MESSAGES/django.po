@@ -2965,6 +2965,9 @@ msgstr "Su exportación de %s está lista"
 msgid "Incident"
 msgstr "Incidente"
 
+msgid "Reminder"
+msgstr "Recordatorio"
+
 msgid "New user joined your workspace"
 msgstr "Un nuevo usuario se ha unido a su workspace"
 
@@ -3030,6 +3033,9 @@ msgstr "Correo electrónico compartido"
 
 msgid "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please contact support."
 msgstr "Lo sentimos, su workspace está suspendido actualmente. Para volver a habilitar el inicio de flujos y el envío de mensajes, póngase en contacto con el soporte."
+
+msgid "Sorry, your workspace is currently restricted. To re-enable starting flows and sending messages, please contact support."
+msgstr "Lo sentimos, su workspace está restringido actualmente. Para volver a habilitar el inicio de flujos y el envío de mensajes, póngase en contacto con el soporte."
 
 msgid "Sorry, your workspace is currently flagged. To re-enable starting flows and sending messages, please contact support."
 msgstr "Lo sentimos, su workspace está marcado actualmente. Para volver a habilitar el inicio de flujos y el envío de mensajes, póngase en contacto con el soporte."
@@ -3462,11 +3468,11 @@ msgstr "Bandera"
 msgid "Unflag"
 msgstr "Desmarcar"
 
+msgid "Restrict"
+msgstr "Restringir"
+
 msgid "Suspend"
 msgstr "Suspender"
-
-msgid "Unsuspend"
-msgstr "Reactivar"
 
 msgid "Verify"
 msgstr "Verificar"
@@ -3482,6 +3488,9 @@ msgstr "Interno"
 
 msgid "Flagged"
 msgstr "Marcado"
+
+msgid "Restricted"
+msgstr "Restringido"
 
 msgid "Suspended"
 msgstr "Suspendido"
@@ -3812,10 +3821,6 @@ msgstr "La cuenta ya existe"
 
 msgid "Hello there 👋"
 msgstr "Hola 👋"
-
-#, python-format
-msgid "Your friends at %(site_name)s."
-msgstr "Sus amigos de %(site_name)s."
 
 msgid "We are writing to notify you about some activity on your account."
 msgstr "Le escribimos para informarle sobre cierta actividad en su cuenta."
@@ -5491,13 +5496,6 @@ msgstr "Hola"
 msgid "If you have any questions we are always here to help."
 msgstr "Si tiene alguna pregunta, siempre estamos aquí para ayudarle."
 
-msgid "Thanks"
-msgstr "Gracias"
-
-#, python-format
-msgid "The %(brand)s Team"
-msgstr "El Equipo de %(brand)s"
-
 #, python-format
 msgid "You're receiving this email because you're a member of the <b>%(org)s</b> workspace."
 msgstr "Recibe este correo porque es miembro del workspace <b>%(org)s</b>."
@@ -5634,6 +5632,9 @@ msgstr "Workspace marcado"
 
 msgid "Contact your administrator."
 msgstr "Contacte a su administrador."
+
+msgid "Workspace restricted"
+msgstr "Workspace restringido"
 
 msgid "can't be deleted as it is still used by the following items:"
 msgstr "no se puede eliminar ya que todavía lo utilizan los siguientes elementos:"

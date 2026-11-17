@@ -184,42 +184,83 @@ class OrgTest(TembaTest):
         self.assertEqual(Org.get_unique_slug("Which part?"), "which-part")
         self.assertEqual(Org.get_unique_slug("Allo"), "allo-2")
 
-    def test_suspend_and_unsuspend(self):
-        def assert_org(org, is_suspended):
+    def test_status(self):
+        def assert_org(org, status):
             org.refresh_from_db()
-            self.assertEqual(is_suspended, org.is_suspended)
-            if is_suspended:
+            self.assertEqual(status, org.status)
+            self.assertEqual(status == Org.STATUS_SUSPENDED, org.is_suspended)
+            if status == Org.STATUS_SUSPENDED:
                 self.assertIsNotNone(org.suspended_on)
             else:
                 self.assertIsNone(org.suspended_on)
 
+        def assert_suspended_incidents(ongoing: int, total: int):
+            incidents = self.org.incidents.filter(incident_type="org:suspended")
+            self.assertEqual(ongoing, incidents.filter(ended_on=None).count())
+            self.assertEqual(total, incidents.count())
+
         self.org.features += [Org.FEATURE_CHILD_ORGS]
+        self.org.save(update_fields=("features",))
         org1_child1 = self.org.create_new(self.admin, "Child 1", tzone.utc, as_child=True)
         org1_child2 = self.org.create_new(self.admin, "Child 2", tzone.utc, as_child=True)
 
+        self.assertIsNone(self.org.send_blocker)
+
+        self.org.restrict()
+
+        assert_org(self.org, Org.STATUS_RESTRICTED)
+        assert_org(org1_child1, Org.STATUS_RESTRICTED)
+        assert_org(org1_child2, Org.STATUS_RESTRICTED)
+        assert_org(self.org2, Org.STATUS_ACTIVE)
+        assert_suspended_incidents(ongoing=0, total=0)
+        self.assertEqual(Org.BLOCKER_RESTRICTED, self.org.send_blocker)
+
+        # new children get their parent's status
+        org1_child3 = self.org.create_new(self.admin, "Child 3", tzone.utc, as_child=True)
+        assert_org(org1_child3, Org.STATUS_RESTRICTED)
+
         self.org.suspend()
 
-        assert_org(self.org, is_suspended=True)
-        assert_org(org1_child1, is_suspended=True)
-        assert_org(org1_child2, is_suspended=True)
-        assert_org(self.org2, is_suspended=False)
+        assert_org(self.org, Org.STATUS_SUSPENDED)
+        assert_org(org1_child1, Org.STATUS_SUSPENDED)
+        assert_org(org1_child2, Org.STATUS_SUSPENDED)
+        assert_org(self.org2, Org.STATUS_ACTIVE)
 
-        self.assertEqual(1, self.org.incidents.filter(incident_type="org:suspended", ended_on=None).count())
+        org1_child4 = self.org.create_new(self.admin, "Child 4", tzone.utc, as_child=True)
+        assert_org(org1_child4, Org.STATUS_SUSPENDED)
+        assert_suspended_incidents(ongoing=1, total=1)
         self.assertEqual(1, self.admin.notifications.filter(notification_type="incident:started").count())
+        self.assertEqual(Org.BLOCKER_SUSPENDED, self.org.send_blocker)
 
         self.org.suspend()  # noop
+        self.org.restrict()  # noop as suspension is stronger
 
-        assert_org(self.org, is_suspended=True)
+        assert_org(self.org, Org.STATUS_SUSPENDED)
+        assert_suspended_incidents(ongoing=1, total=1)
 
-        self.assertEqual(1, self.org.incidents.filter(incident_type="org:suspended", ended_on=None).count())
+        self.org.reactivate()
 
-        self.org.unsuspend()
+        assert_org(self.org, Org.STATUS_ACTIVE)
+        assert_org(org1_child1, Org.STATUS_ACTIVE)
+        assert_org(self.org2, Org.STATUS_ACTIVE)
+        assert_suspended_incidents(ongoing=0, total=1)
+        self.assertIsNone(self.org.send_blocker)
 
-        assert_org(self.org, is_suspended=False)
-        assert_org(org1_child1, is_suspended=False)
-        assert_org(self.org2, is_suspended=False)
+        self.org.reactivate()  # noop
 
-        self.assertEqual(0, self.org.incidents.filter(incident_type="org:suspended", ended_on=None).count())
+        # reactivating a restricted org doesn't touch suspended incidents
+        self.org.restrict()
+        self.org.reactivate()
+
+        assert_org(self.org, Org.STATUS_ACTIVE)
+        assert_suspended_incidents(ongoing=0, total=1)
+
+        # flagging blocks sending but restriction takes precedence
+        self.org.flag()
+        self.assertEqual(Org.BLOCKER_FLAGGED, self.org.send_blocker)
+
+        self.org.restrict()
+        self.assertEqual(Org.BLOCKER_RESTRICTED, self.org.send_blocker)
 
     def test_set_flow_languages(self):
         self.org.set_flow_languages(self.admin, ["eng", "fra"])
@@ -405,8 +446,29 @@ class OrgTest(TembaTest):
         response = start_flow_via_api()
         self.assertContains(response, expected_message, status_code=400)
 
-        # unflag org and suspend it instead
+        # unflag org and restrict it instead
         self.org.unflag()
+        self.org.restrict()
+
+        expected_message = "Sorry, your workspace is currently restricted. To re-enable starting flows and sending messages, please contact support."
+
+        self.assertRaises(
+            AssertionError,
+            self.client.post,
+            start_url,
+            {"flow": flow.id, "contact_search": get_contact_search(query='uuid="{mark.uuid}"')},
+        )
+
+        response = send_broadcast_via_api()
+        self.assertContains(response, expected_message, status_code=400)
+
+        response = start_flow_via_api()
+        self.assertContains(response, expected_message, status_code=400)
+
+        response = self.client.get(reverse("msgs.msg_inbox"))
+        self.assertContains(response, "Workspace restricted")
+
+        # and then suspend it
         self.org.suspend()
 
         expected_message = "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please contact support."
@@ -434,7 +496,7 @@ class OrgTest(TembaTest):
         self.assertEqual(mr_mocks.calls["flow_start"], [])
 
         # unsuspend our org and start a flow
-        self.org.unsuspend()
+        self.org.reactivate()
 
         self.client.post(
             start_url,
@@ -636,7 +698,7 @@ class OrgDeleteTest(TembaTest):
 
         # suspend and flag org to generate incident and notifications
         org.suspend()
-        org.unsuspend()
+        org.reactivate()
         org.flag()
         org.unflag()
         for incident in org.incidents.all():

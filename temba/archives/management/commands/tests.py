@@ -411,6 +411,18 @@ class ArchivesToHistoryTest(TembaTest):
             items,
         )
 
+        # restricted orgs are included but suspended orgs only on request
+        self.org2.restrict()
+        output = self._call("archives_to_history", "update", "--since", "2030-01-01")
+        self.assertIn("Starting message archive update for 2 orgs...", output)
+
+        self.org2.suspend()
+        output = self._call("archives_to_history", "update", "--since", "2030-01-01")
+        self.assertIn("Starting message archive update for 1 orgs...", output)
+
+        output = self._call("archives_to_history", "update", "--since", "2030-01-01", "--suspended")
+        self.assertIn("Starting message archive update for 2 orgs...", output)
+
     def _call(self, cmd, *args) -> str:
         out = StringIO()
         call_command(cmd, *args, stdout=out)
