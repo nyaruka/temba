@@ -15,6 +15,7 @@ import {
   mockGET,
   mockNow,
   mockPOST,
+  removeSharedSheet,
   waitForCondition
 } from './utils.test';
 
@@ -46,6 +47,7 @@ describe('temba-content-list', () => {
   });
   afterEach(() => {
     if (nowStub) nowStub.restore();
+    removeSharedSheet();
   });
 
   it('can be created', async () => {
@@ -984,6 +986,25 @@ describe('temba-content-list', () => {
       '/channels/channel/logs/chan-1/msg/msg-1/'
     );
     expect(rows[1].querySelector('.log-link')).to.not.exist;
+
+    // the link opens the log in a sheet over the list rather than being followed
+    mockGET(
+      /\/channels\/channel\/logs\/chan-1\/msg\/msg-1\//,
+      '<div id="log">a log</div>'
+    );
+    const click = new MouseEvent('click', {
+      bubbles: true,
+      composed: true,
+      cancelable: true
+    });
+    rows[0].querySelector('.log-link').dispatchEvent(click);
+    expect(click.defaultPrevented).to.be.true;
+
+    const sheet = document.querySelector('temba-sheet[data-shared]') as any;
+    expect(sheet.current.endpoint).to.equal(
+      '/channels/channel/logs/chan-1/msg/msg-1/'
+    );
+    expect(sheet.current.header).to.equal('Channel log');
   });
 
   it('renders the messages list (screenshot)', async () => {

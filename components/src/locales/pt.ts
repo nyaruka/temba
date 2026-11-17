@@ -435,6 +435,7 @@
 's8f02e3a18ffc083a': `Não estão atualmente em um fluxo`,
 's8fc556c37b60845d': `Adicionar uma imagem de capa`,
 's902c9f75eb5d9a97': `Atualizar nome`,
+'s90de00f3ed97da8e': `Registro do canal`,
 's913674ec4365e88a': `Digitar um novo nome cria um novo rótulo.`,
 's919e1424f589c498': `Lento`,
 's922311ba10e32f77': `Mostrar outras regiões`,

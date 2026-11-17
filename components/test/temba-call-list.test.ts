@@ -7,7 +7,9 @@ import {
   getClip,
   getComponent,
   loadStore,
-  mockNow
+  mockGET,
+  mockNow,
+  removeSharedSheet
 } from './utils.test';
 
 const TAG = 'temba-call-list';
@@ -41,6 +43,7 @@ describe('temba-call-list', () => {
   });
   afterEach(() => {
     if (nowStub) nowStub.restore();
+    removeSharedSheet();
   });
 
   it('can be created', async () => {
@@ -132,7 +135,11 @@ describe('temba-call-list', () => {
     expect(rows[2].querySelector('.log-link')).to.not.exist;
   });
 
-  it('navigates to the contact on row click but not on the log link', async () => {
+  it('navigates to the contact on row click, and opens the log in a sheet from its link', async () => {
+    mockGET(
+      /\/channels\/channel\/logs\/chan-1\/call\/call-1\//,
+      '<div id="log">a log</div>'
+    );
     const list: CallList = await getCallList({
       'show-logs-after': '2026-05-01T00:00:00Z'
     });
@@ -144,16 +151,20 @@ describe('temba-call-list', () => {
     );
 
     const log = list.shadowRoot.querySelector('.log-link') as HTMLElement;
-    // keep the test page from actually following the link
-    log.addEventListener('click', (e: Event) => e.preventDefault());
-    log.dispatchEvent(
-      new MouseEvent('click', {
-        bubbles: true,
-        composed: true,
-        cancelable: true
-      })
-    );
+    const click = new MouseEvent('click', {
+      bubbles: true,
+      composed: true,
+      cancelable: true
+    });
+    log.dispatchEvent(click);
+    expect(click.defaultPrevented, 'the link is not followed').to.be.true;
     expect(redirects, 'log link click stays on the link').to.have.length(0);
+
+    const sheet = document.querySelector('temba-sheet[data-shared]') as any;
+    expect(sheet).to.exist;
+    expect(sheet.current.endpoint).to.equal(
+      '/channels/channel/logs/chan-1/call/call-1/'
+    );
 
     const row = list.shadowRoot.querySelector('tr.row') as HTMLElement;
     row.dispatchEvent(

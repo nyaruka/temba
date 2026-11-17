@@ -141,7 +141,11 @@ export class Modal extends RapidElement {
   protected willUpdate(changes: PropertyValues): void {
     super.willUpdate(changes);
     if (changes.has('open') && this.open) {
-      const opener = document.activeElement as HTMLElement;
+      // what has focus may be inside a component, where the document only knows of the component
+      let opener = document.activeElement as HTMLElement;
+      while (opener && opener.shadowRoot && opener.shadowRoot.activeElement) {
+        opener = opener.shadowRoot.activeElement as HTMLElement;
+      }
       this.returnFocus =
         opener && opener.matches && opener.matches(':focus-visible')
           ? opener

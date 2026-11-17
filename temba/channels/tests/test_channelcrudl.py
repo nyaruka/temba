@@ -458,6 +458,13 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertIsNone(response.context["call"])
         self.assertEqual(1, len(response.context["logs"]))
         self.assertContains(response, "GET https://foo.bar/send1")
+        self.assertNotContains(response, "data-sheet-chrome")
+
+        # in a sheet it gives its own header, for when it's opened from somewhere other than the channel's page
+        response = self.client.get(log1_url, HTTP_X_TEMBA_SPA="1", HTTP_X_TEMBA_SHEET="1")
+        self.assertContains(response, "data-sheet-chrome")
+        self.assertContains(response, f'data-header="{self.channel.name} Log"')
+        self.assertContains(response, "<temba-channel-logo")
 
         # channels of types that don't have logs return a 404
         webchat_channel = self.create_channel("CHP", "WebChat", "123")

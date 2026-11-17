@@ -435,6 +435,7 @@
 's8f02e3a18ffc083a': `Ne sont pas actuellement dans un flux`,
 's8fc556c37b60845d': `Ajouter une image de couverture`,
 's902c9f75eb5d9a97': `Mettre à jour le nom`,
+'s90de00f3ed97da8e': `Journal du canal`,
 's913674ec4365e88a': `Saisir un nouveau nom crée une nouvelle étiquette.`,
 's919e1424f589c498': `Lent`,
 's922311ba10e32f77': `Afficher les autres régions`,

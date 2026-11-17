@@ -3027,6 +3027,10 @@
   <source>Took <x id="0" equiv-text="${ms}"/> ms</source>
   <target>Levou <x id="0" equiv-text="${ms}"/> ms</target>
 </trans-unit>
+<trans-unit id="s90de00f3ed97da8e">
+  <source>Channel log</source>
+  <target>Registro do canal</target>
+</trans-unit>
 <trans-unit id="sd923f95605fed7b2">
   <source>Expired</source>
   <target>Expirado</target>

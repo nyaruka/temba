@@ -379,6 +379,13 @@ export const clearMockPosts = () => {
   posts = [];
 };
 
+/** Removes the sheet shared by links which open in one, which a test opening it leaves on the page */
+export const removeSharedSheet = () => {
+  document
+    .querySelectorAll('temba-sheet[data-shared]')
+    .forEach((sheet) => sheet.remove());
+};
+
 export const clearMockGets = () => {
   gets = [];
 };
