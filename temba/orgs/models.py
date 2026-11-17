@@ -281,11 +281,29 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     LIMIT_TEAMS = "teams"
     LIMIT_TRIGGERS = "triggers"
 
+    # restricted orgs can't start sends from the UI or API but automated processing continues, whereas suspended orgs
+    # have no processing at all
+    STATUS_ACTIVE = "A"
+    STATUS_RESTRICTED = "R"
+    STATUS_SUSPENDED = "S"
+    STATUS_CHOICES = ((STATUS_ACTIVE, "Active"), (STATUS_RESTRICTED, "Restricted"), (STATUS_SUSPENDED, "Suspended"))
+
+    RESTRICTED_BILLING = "B"
+    RESTRICTED_LIMITS = "L"
+    RESTRICTED_STAFF = "S"
+    RESTRICTED_CHOICES = ((RESTRICTED_BILLING, "Billing"), (RESTRICTED_LIMITS, "Limits"), (RESTRICTED_STAFF, "Staff"))
+
+    RESTRICTION_PERIOD = timedelta(days=14)  # default time between being restricted and being suspended
+
     DELETE_DELAY_DAYS = 7  # how many days after releasing that an org is deleted
     OUTBOX_WARNING_THRESHOLD = 10_000
 
     BLOCKER_SUSPENDED = _(
         "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please "
+        "contact support."
+    )
+    BLOCKER_RESTRICTED = _(
+        "Sorry, your workspace is currently restricted. To re-enable starting flows and sending messages, please "
         "contact support."
     )
     BLOCKER_FLAGGED = _(
@@ -345,6 +363,9 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     is_anon = models.BooleanField(
         default=False, help_text=_("Whether this organization anonymizes the phone numbers of contacts within it")
     )
+    status = models.CharField(max_length=1, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
+    restricted_reason = models.CharField(max_length=1, choices=RESTRICTED_CHOICES, null=True)
+    suspends_on = models.DateTimeField(null=True)  # when a restricted org will be suspended, if ever
     is_flagged = models.BooleanField(default=False, help_text=_("Whether this organization is currently flagged."))
     is_suspended = models.BooleanField(default=False, help_text=_("Whether this organization is currently suspended."))
     is_internal = models.BooleanField(default=False)
@@ -413,6 +434,15 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         else:
             assert Org.FEATURE_NEW_ORGS in self.features, "only orgs with this feature enabled can create new orgs"
 
+        # children share their parent's status so they can't be used to get around a restriction or suspension
+        status = dict(
+            status=self.status,
+            restricted_reason=self.restricted_reason,
+            suspends_on=self.suspends_on,
+            is_suspended=self.is_suspended,
+            suspended_on=self.suspended_on,
+        )
+
         org = Org.objects.create(
             name=name,
             timezone=tz,
@@ -423,6 +453,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             slug=self.get_unique_slug(name),
             created_by=user,
             modified_by=user,
+            **(status if as_child else {}),
         )
 
         org.add_user(user, OrgRole.ADMINISTRATOR)
@@ -469,45 +500,82 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     def get_limit(self, limit_type) -> int:
         return int(self.limits.get(limit_type, settings.ORG_LIMIT_DEFAULTS.get(limit_type)))
 
+    @property
+    def send_blocker(self):
+        """
+        Gets the reason, if any, that users can't start flows or send messages in this org
+        """
+        if self.status == Org.STATUS_SUSPENDED:
+            return Org.BLOCKER_SUSPENDED
+        elif self.status == Org.STATUS_RESTRICTED:
+            return Org.BLOCKER_RESTRICTED
+        elif self.is_flagged:
+            return Org.BLOCKER_FLAGGED
+        return None
+
+    def restrict(self, reason: str, *, suspends_on=None):
+        """
+        Restricts this org and any children, unless already restricted or suspended. Unless given a time to be
+        suspended, it will be suspended once the default restriction period is up.
+        """
+        from temba.notifications.incidents.builtin import OrgRestrictedIncidentType
+
+        assert not self.is_child
+
+        if self.status == Org.STATUS_ACTIVE:
+            self._set_status(
+                Org.STATUS_RESTRICTED,
+                restricted_reason=reason,
+                suspends_on=suspends_on or timezone.now() + Org.RESTRICTION_PERIOD,
+            )
+
+            OrgRestrictedIncidentType.get_or_create(self)  # create incident which will notify admins
+
     def suspend(self):
         """
         Suspends this org and any children.
         """
-        from temba.notifications.incidents.builtin import OrgSuspendedIncidentType
+        from temba.notifications.incidents.builtin import OrgRestrictedIncidentType, OrgSuspendedIncidentType
 
         assert not self.is_child
 
-        if not self.is_suspended:
-            self.is_suspended = True
-            self.suspended_on = timezone.now()
-            self.modified_on = timezone.now()
-            self.save(update_fields=("is_suspended", "suspended_on", "modified_on"))
+        if self.status != Org.STATUS_SUSPENDED:
+            self._set_status(Org.STATUS_SUSPENDED)
 
-            self.children.filter(is_active=True).update(
-                is_suspended=True, suspended_on=timezone.now(), modified_on=timezone.now()
-            )
-
+            OrgRestrictedIncidentType.end_ongoing(self)
             OrgSuspendedIncidentType.get_or_create(self)  # create incident which will notify admins
 
-    def unsuspend(self):
+    def reactivate(self):
         """
-        Unsuspends this org and any children.
+        Lifts any restriction or suspension of this org and any children.
         """
-        from temba.notifications.incidents.builtin import OrgSuspendedIncidentType
+        from temba.notifications.incidents.builtin import OrgRestrictedIncidentType, OrgSuspendedIncidentType
 
         assert not self.is_child
 
-        if self.is_suspended:
-            self.is_suspended = False
-            self.suspended_on = None
-            self.modified_on = timezone.now()
-            self.save(update_fields=("is_suspended", "suspended_on", "modified_on"))
+        if self.status != Org.STATUS_ACTIVE:
+            self._set_status(Org.STATUS_ACTIVE)
 
-            self.children.filter(is_active=True).update(
-                is_suspended=False, suspended_on=None, modified_on=timezone.now()
-            )
+            OrgRestrictedIncidentType.end_ongoing(self)
+            OrgSuspendedIncidentType.end_ongoing(self)
 
-            OrgSuspendedIncidentType.get_or_create(self).end()
+    def _set_status(self, status: str, *, restricted_reason: str = None, suspends_on=None):
+        # is_suspended is kept in sync for anything that hasn't yet switched to reading status
+        is_suspended = status == Org.STATUS_SUSPENDED
+        changes = dict(
+            status=status,
+            restricted_reason=restricted_reason,
+            suspends_on=suspends_on,
+            is_suspended=is_suspended,
+            suspended_on=timezone.now() if is_suspended else None,
+            modified_on=timezone.now(),
+        )
+
+        for name, value in changes.items():
+            setattr(self, name, value)
+        self.save(update_fields=changes.keys())
+
+        self.children.filter(is_active=True).update(**changes)
 
     def flag(self):
         """

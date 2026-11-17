@@ -34,6 +34,7 @@ from temba.users.models import User
 from temba.utils.export.models import MultiSheetExporter
 from temba.utils.models import (
     CreatedByMixin,
+    DeletedOnMixin,
     JSONAsTextField,
     LegacyIDMixin,
     ModifiedByMixin,
@@ -680,7 +681,7 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         Starts this flow (asynchronously via mailroom).
         """
 
-        assert not self.org.is_flagged and not self.org.is_suspended, "flagged and suspended orgs can't start flows"
+        assert not self.org.send_blocker, "orgs with a send blocker can't start flows"
 
         return FlowStart.create(
             self,
@@ -918,7 +919,7 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
             "flow": self.org.flows.filter(is_active=True, uuid__in=identifiers["flow"]),
             "global": self.org.globals.filter(is_active=True, key__in=identifiers["global"]),
             "group": ContactGroup.get_groups(self.org).filter(uuid__in=identifiers["group"]),
-            "label": Label.get_active_for_org(self.org).filter(uuid__in=identifiers["label"]),
+            "label": Label.get_for_org(self.org).filter(uuid__in=identifiers["label"]),
             "llm": self.org.llms.filter(is_active=True, uuid__in=identifiers["llm"]),
             "template": self.org.templates.filter(uuid__in=identifiers["template"]),
             "topic": self.org.topics.filter(is_active=True, uuid__in=identifiers["topic"]),
@@ -1899,12 +1900,13 @@ class FlowStartCount(BaseSquashableCount):
         ]
 
 
-class FlowLabel(OrgAsset):
+class FlowLabel(DeletedOnMixin, OrgAsset):
     """
     A label applied to a flow rather than a message
     """
 
     org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="flow_labels")
+    is_active = None
 
     @classmethod
     def create(cls, org, user, name: str):

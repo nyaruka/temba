@@ -11,10 +11,5 @@
     <div style="margin-top: 1em">
       {% block content %} {% endblock content %}
     </div>
-    <div style="margin-top: 1em; margin-bottom: 2em">
-      {% blocktrans trimmed with site_name=branding.name site_domain=branding.domain %}
-        Your friends at {{ site_name }}.
-      {% endblocktrans %}
-    </div>
   {% endautoescape %}
 {% endblock body %}

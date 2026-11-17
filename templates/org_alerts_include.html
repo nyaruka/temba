@@ -1,10 +1,12 @@
 {% comment %}
   Alerts for the current workspace, rendered at the top of every page. Override org_alerts_extra_include.html to add
-  your own alerts, shown when the workspace isn't suspended or flagged.
+  your own alerts, shown when the workspace isn't suspended, restricted or flagged.
 {% endcomment %}
 <div class="workspace-alerts">
-  {% if user_org.is_suspended %}
+  {% if user_org.status == "S" %}
     {% include "org_suspended_include.html" %}
+  {% elif user_org.status == "R" %}
+    {% include "org_restricted_include.html" %}
   {% elif user_org.is_flagged %}
     {% include "org_flagged_include.html" %}
   {% else %}

@@ -211,7 +211,7 @@ class TeamCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # other team unafected
         team2.refresh_from_db()
-        self.assertTrue(team2.is_active)
+        self.assertIsNone(team2.deleted_on)
 
         # we should have been redirected to the team list
         self.assertEqual("/team/", response.url)

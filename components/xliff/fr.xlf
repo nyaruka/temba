@@ -3031,6 +3031,18 @@
   <source>Channel log</source>
   <target>Journal du canal</target>
 </trans-unit>
+<trans-unit id="sd923f95605fed7b2">
+  <source>Expired</source>
+  <target>Expiré</target>
+</trans-unit>
+<trans-unit id="sefa828f161089a05">
+  <source>Resolved</source>
+  <target>Résolu</target>
+</trans-unit>
+<trans-unit id="s6f0051e23edafc17">
+  <source>Your workspace was restricted, please contact support for assistance.</source>
+  <target>Votre espace de travail a été restreint, veuillez contacter l'assistance pour obtenir de l'aide.</target>
+</trans-unit>
 </body>
 </file>
 </xliff>

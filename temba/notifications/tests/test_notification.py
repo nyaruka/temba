@@ -403,6 +403,67 @@ class NotificationTest(TembaTest):
             Notification.EMAIL_STATUS_PENDING, self.customer_support.notifications.get(export=export3).email_status
         )
 
+    def test_unsubscribe_link(self):
+        self.org.add_user(self.editor, OrgRole.ADMINISTRATOR)  # upgrade editor to administrator
+
+        export = ContactExport.create(self.org, self.admin)
+        ExportFinishedNotificationType.create(export)
+
+        send_notification_emails()
+
+        self.assertEqual(1, len(mail.outbox))
+        email = mail.outbox[0]
+        unsubscribe_url = self.admin.notifications.get(export=export).get_unsubscribe_url()
+
+        self.assertTrue(unsubscribe_url.startswith("https://app.rapidpro.io/notification/unsubscribe/"))
+        self.assertEqual(f"<{unsubscribe_url}>", email.extra_headers["List-Unsubscribe"])
+        self.assertEqual("List-Unsubscribe=One-Click", email.extra_headers["List-Unsubscribe-Post"])
+        self.assertIn(
+            "You're receiving this email because you're a member of the Nyaruka workspace. If you no longer want "
+            f"notification emails from this workspace, you can unsubscribe here: {unsubscribe_url}",
+            email.body,
+        )
+        self.assertIn("you're a member of the <b>Nyaruka</b> workspace.", email.alternatives[0][0])
+        self.assertIn(f'<a href="{unsubscribe_url}" style="color: inherit">unsubscribe</a>', email.alternatives[0][0])
+        self.assertNotIn("This email was generated", email.alternatives[0][0])
+
+        # and the token in it identifies the membership
+        token = unsubscribe_url.rstrip("/").split("/")[-1]
+        self.assertEqual(
+            OrgMembership.objects.get(org=self.org, user=self.admin), Notification.from_unsubscribe_token(token)
+        )
+        self.assertIsNone(Notification.from_unsubscribe_token(token + "x"))
+        self.assertIsNone(Notification.from_unsubscribe_token("xyz"))
+
+        # emails they'd get anyway don't offer it
+        mail.outbox.clear()
+        OrgFlaggedIncidentType.get_or_create(self.org)
+
+        send_notification_emails()
+
+        self.assertEqual(2, len(mail.outbox))
+        for email in mail.outbox:
+            self.assertNotIn("List-Unsubscribe", email.extra_headers)
+            self.assertIn("you're a member of the Nyaruka workspace.\n", email.body)
+            self.assertNotIn("/notification/unsubscribe/", email.body)
+            self.assertIn("you're a member of the <b>Nyaruka</b> workspace.", email.alternatives[0][0])
+            self.assertNotIn("unsubscribe", email.alternatives[0][0])
+            self.assertNotIn("This email was generated", email.alternatives[0][0])
+
+        # nor do emails to users without a membership
+        export2 = ContactExport.create(self.org, self.customer_support)
+        ExportFinishedNotificationType.create(export2)
+
+        self.assertIsNone(self.customer_support.notifications.get(export=export2).get_unsubscribe_url())
+
+        mail.outbox.clear()
+        send_notification_emails()
+
+        self.assertEqual(1, len(mail.outbox))
+        self.assertIn("you have access to the Nyaruka workspace.\n", mail.outbox[0].body)
+        self.assertIn("you have access to the <b>Nyaruka</b> workspace.", mail.outbox[0].alternatives[0][0])
+        self.assertNotIn("unsubscribe", mail.outbox[0].alternatives[0][0])
+
     def test_email_notifications_changed(self):
         def create():
             Notification.create_all(
@@ -645,12 +706,12 @@ class NotificationTest(TembaTest):
 
     def test_trim_task(self):
         self.org.suspend()
-        self.org.unsuspend()
+        self.org.reactivate()
 
         notification1 = self.admin.notifications.order_by("id").last()
 
         self.org.suspend()
-        self.org.unsuspend()
+        self.org.reactivate()
 
         notification2 = self.admin.notifications.order_by("id").last()
 

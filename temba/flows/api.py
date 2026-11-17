@@ -42,7 +42,7 @@ class FlowsEndpoint(SearchLengthMixin, ListAPIMixin, BaseEndpoint):
             # the flows queryset above.
             if not is_uuid(label_uuid):
                 return Flow.objects.none()
-            label = FlowLabel.objects.filter(org=org, uuid=label_uuid, is_active=True).first()
+            label = FlowLabel.objects.filter(org=org, uuid=label_uuid, deleted_on=None).first()
             if not label:
                 return Flow.objects.none()
             qs = base.filter(labels=label, is_archived=False)
@@ -101,4 +101,4 @@ class FlowLabelsEndpoint(ListAPIMixin, BaseEndpoint):
 
     def derive_queryset(self):
         # FlowLabel.objects rather than org.flow_labels — see FlowsEndpoint.derive_queryset.
-        return FlowLabel.objects.filter(org=self.request.org, is_active=True)
+        return FlowLabel.objects.filter(org=self.request.org, deleted_on=None)

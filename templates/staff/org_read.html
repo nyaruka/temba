@@ -14,9 +14,13 @@
           {% trans "Internal" %}
         </temba-label>
       {% endif %}
-      {% if org.is_suspended %}
+      {% if org.status == "S" %}
         <temba-label icon="slash" backgroundcolor="#eee" textcolor="#999" class="mr-2">
           {% trans "Suspended" %}
+        </temba-label>
+      {% elif org.status == "R" %}
+        <temba-label icon="slash" backgroundcolor="#eee" textcolor="#999" class="mr-2">
+          {% trans "Restricted" %}
         </temba-label>
       {% endif %}
       {% if org.is_flagged %}

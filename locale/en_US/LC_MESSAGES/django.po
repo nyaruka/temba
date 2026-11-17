@@ -2927,6 +2927,9 @@ msgstr ""
 msgid "Workspace Flagged"
 msgstr ""
 
+msgid "Workspace Restricted"
+msgstr ""
+
 msgid "Workspace Suspended"
 msgstr ""
 
@@ -2941,6 +2944,9 @@ msgid "Your %s export is ready"
 msgstr ""
 
 msgid "Incident"
+msgstr ""
+
+msgid "Reminder"
 msgstr ""
 
 msgid "New user joined your workspace"
@@ -3007,6 +3013,9 @@ msgid "Shared Email"
 msgstr ""
 
 msgid "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please contact support."
+msgstr ""
+
+msgid "Sorry, your workspace is currently restricted. To re-enable starting flows and sending messages, please contact support."
 msgstr ""
 
 msgid "Sorry, your workspace is currently flagged. To re-enable starting flows and sending messages, please contact support."
@@ -3440,10 +3449,10 @@ msgstr ""
 msgid "Unflag"
 msgstr ""
 
-msgid "Suspend"
+msgid "Restrict"
 msgstr ""
 
-msgid "Unsuspend"
+msgid "Suspend"
 msgstr ""
 
 msgid "Verify"
@@ -3459,6 +3468,9 @@ msgid "Internal"
 msgstr ""
 
 msgid "Flagged"
+msgstr ""
+
+msgid "Restricted"
 msgstr ""
 
 msgid "Suspended"
@@ -3789,10 +3801,6 @@ msgid "Account Already Exists"
 msgstr ""
 
 msgid "Hello there 👋"
-msgstr ""
-
-#, python-format
-msgid "Your friends at %(site_name)s."
 msgstr ""
 
 msgid "We are writing to notify you about some activity on your account."
@@ -5455,11 +5463,28 @@ msgstr ""
 msgid "If you have any questions we are always here to help."
 msgstr ""
 
-msgid "Thanks"
+#, python-format
+msgid "You're receiving this email because you're a member of the <b>%(org)s</b> workspace."
 msgstr ""
 
 #, python-format
-msgid "The %(brand)s Team"
+msgid "You're receiving this email because you have access to the <b>%(org)s</b> workspace."
+msgstr ""
+
+#, python-format
+msgid "If you no longer want notification emails from this workspace, you can <a href=\"%(url)s\" style=\"color: inherit\">unsubscribe</a>."
+msgstr ""
+
+#, python-format
+msgid "You're receiving this email because you're a member of the %(org)s workspace."
+msgstr ""
+
+#, python-format
+msgid "You're receiving this email because you have access to the %(org)s workspace."
+msgstr ""
+
+#, python-format
+msgid "If you no longer want notification emails from this workspace, you can unsubscribe here: %(url)s"
 msgstr ""
 
 #, python-format
@@ -5503,6 +5528,25 @@ msgid ""
 "contact support.\n"
 msgstr ""
 
+msgid "Your workspace has been restricted because of a problem with billing."
+msgstr ""
+
+msgid "Your workspace has been restricted because it has exceeded the limits of its plan."
+msgstr ""
+
+msgid "Your workspace has been restricted."
+msgstr ""
+
+msgid "Starting flows and sending messages are disabled, but your flows will keep handling incoming messages."
+msgstr ""
+
+#, python-format
+msgid "Unless this is resolved, your workspace will be suspended on %(date)s. Please contact support."
+msgstr ""
+
+msgid "Please contact support."
+msgstr ""
+
 msgid "Your workspace has been suspended. To re-enable starting flows and sending messages, please contact support."
 msgstr ""
 
@@ -5534,14 +5578,46 @@ msgstr ""
 msgid "Your <a href=\"%(read_url)s\">WhatsApp channel</a> appears to not be syncing templates."
 msgstr ""
 
+msgid "Your workspace has been restricted. Starting flows and sending messages are disabled until this is resolved, but your flows will keep handling incoming messages."
+msgstr ""
+
 #, python-format
 msgid "Some webhook calls from your flows are taking too long to respond or failing too frequently. If the problem persists these calls will be temporarily disabled. You can check the <a href=\"%(logs_url)s\">webhook call log</a> to see which calls are the problem."
+msgstr ""
+
+msgid "Notification emails"
+msgstr ""
+
+msgid "Link not valid"
+msgstr ""
+
+msgid "This unsubscribe link is no longer valid."
+msgstr ""
+
+msgid "Unsubscribed"
+msgstr ""
+
+#, python-format
+msgid "You'll no longer get notification emails for the %(org)s workspace. You'll still see notifications when you log in."
+msgstr ""
+
+msgid "Unsubscribe from notification emails"
+msgstr ""
+
+#, python-format
+msgid "You'll stop getting notification emails for the %(org)s workspace. You'll still see notifications when you log in."
+msgstr ""
+
+msgid "Unsubscribe"
 msgstr ""
 
 msgid "Workspace flagged"
 msgstr ""
 
 msgid "Contact your administrator."
+msgstr ""
+
+msgid "Workspace restricted"
 msgstr ""
 
 msgid "can't be deleted as it is still used by the following items:"

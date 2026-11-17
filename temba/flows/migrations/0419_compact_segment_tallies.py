@@ -31,7 +31,7 @@ DELETE FROM flows_flowtally
  WHERE flow_id > %(from_id)s AND flow_id <= %(to_id)s AND scope LIKE 'segment:%%' AND count = 0"""
 
 
-def compact_segment_tallies(apps, schema_editor):
+def compact_segment_tallies(apps, schema_editor):  # pragma: no cover
     Flow = apps.get_model("flows", "Flow")
 
     max_id = Flow.objects.aggregate(max_id=Max("id"))["max_id"] or 0

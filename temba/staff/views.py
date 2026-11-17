@@ -47,10 +47,14 @@ class OrgCRUDL(SmartCRUDL):
                 menu.add_url_post(_("Unflag"), f"{reverse('staff.org_update', args=[obj.id])}?action=unflag")
 
             if not obj.is_child:
-                if not obj.is_suspended:
+                if obj.status == Org.STATUS_ACTIVE:
+                    menu.add_url_post(_("Restrict"), f"{reverse('staff.org_update', args=[obj.id])}?action=restrict")
+                if obj.status != Org.STATUS_SUSPENDED:
                     menu.add_url_post(_("Suspend"), f"{reverse('staff.org_update', args=[obj.id])}?action=suspend")
-                else:
-                    menu.add_url_post(_("Unsuspend"), f"{reverse('staff.org_update', args=[obj.id])}?action=unsuspend")
+                if obj.status != Org.STATUS_ACTIVE:
+                    menu.add_url_post(
+                        _("Reactivate"), f"{reverse('staff.org_update', args=[obj.id])}?action=reactivate"
+                    )
 
             if not obj.is_verified:
                 menu.add_url_post(_("Verify"), f"{reverse('staff.org_update', args=[obj.id])}?action=verify")
@@ -81,13 +85,16 @@ class OrgCRUDL(SmartCRUDL):
         default_order = ("-created_on",)
         search_fields = ("name__icontains", "created_by__email__iexact", "config__icontains")
         link_fields = ("name", "owner")
+        UNSUSPENDED = (Org.STATUS_ACTIVE, Org.STATUS_RESTRICTED)
+
         filters = (
             ("all", _("All"), dict(), ("-created_on",)),
-            ("anon", _("Anonymous"), dict(is_anon=True, is_suspended=False), None),
+            ("anon", _("Anonymous"), dict(is_anon=True, status__in=UNSUSPENDED), None),
             ("internal", _("Internal"), dict(is_internal=True), None),
-            ("flagged", _("Flagged"), dict(is_flagged=True, is_suspended=False), None),
-            ("suspended", _("Suspended"), dict(is_suspended=True), None),
-            ("verified", _("Verified"), dict(config__verified=True, is_suspended=False), None),
+            ("flagged", _("Flagged"), dict(is_flagged=True, status__in=UNSUSPENDED), None),
+            ("restricted", _("Restricted"), dict(status=Org.STATUS_RESTRICTED), None),
+            ("suspended", _("Suspended"), dict(status=Org.STATUS_SUSPENDED), None),
+            ("verified", _("Verified"), dict(config__verified=True, status__in=UNSUSPENDED), None),
         )
 
         @csrf_exempt
@@ -124,7 +131,7 @@ class OrgCRUDL(SmartCRUDL):
                 else:
                     qs = qs.order_by(*self.default_order)
             else:
-                qs = qs.filter(is_suspended=False).order_by(*self.default_order)
+                qs = qs.exclude(status=Org.STATUS_SUSPENDED).order_by(*self.default_order)
 
             return qs
 
@@ -147,8 +154,9 @@ class OrgCRUDL(SmartCRUDL):
     class Update(StaffOnlyMixin, ModalFormMixin, ComponentFormMixin, SmartUpdateView):
         ACTION_FLAG = "flag"
         ACTION_UNFLAG = "unflag"
+        ACTION_RESTRICT = "restrict"
         ACTION_SUSPEND = "suspend"
-        ACTION_UNSUSPEND = "unsuspend"
+        ACTION_REACTIVATE = "reactivate"
         ACTION_VERIFY = "verify"
 
         class Form(forms.ModelForm):
@@ -232,10 +240,12 @@ class OrgCRUDL(SmartCRUDL):
                     obj.flag()
                 elif action == self.ACTION_UNFLAG:
                     obj.unflag()
+                elif action == self.ACTION_RESTRICT:
+                    obj.restrict(Org.RESTRICTED_STAFF)
                 elif action == self.ACTION_SUSPEND:
                     obj.suspend()
-                elif action == self.ACTION_UNSUSPEND:
-                    obj.unsuspend()
+                elif action == self.ACTION_REACTIVATE:
+                    obj.reactivate()
                 elif action == self.ACTION_VERIFY:
                     obj.verify()
                 else:

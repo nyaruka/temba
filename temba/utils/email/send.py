@@ -45,7 +45,7 @@ class EmailSender:
                 pass
         return None
 
-    def send(self, recipients: list, template: str, context: dict, subject: str = None):
+    def send(self, recipients: list, template: str, context: dict, subject: str = None, headers: dict = None):
         """
         Sends a multi-part email rendered from templates for the text and html parts. `template` should be the name of
         the template, without .html or .txt (e.g. 'channels/email/power_charging'). If this sender has its own SMTP
@@ -68,7 +68,7 @@ class EmailSender:
         if not html:  # pragma: no cover
             raise ValueError("Could not render message template for %s" % template)
 
-        message = EmailMultiAlternatives(subject, text, self.from_email, recipients)
+        message = EmailMultiAlternatives(subject, text, self.from_email, recipients, headers=headers)
         message.attach_alternative(html, "text/html")
 
         if self.smtp_url:

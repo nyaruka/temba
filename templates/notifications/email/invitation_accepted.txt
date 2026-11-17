@@ -1,4 +1,4 @@
-{% extends "notifications/email/base.html" %}
+{% extends "notifications/email/base.txt" %}
 {% load i18n %}
 
 {% block notification-body %}
