@@ -211,6 +211,20 @@ class TemplateTest(TembaTest):
         org4.add_user(self.admin, OrgRole.ADMINISTRATOR)
         org4.release(self.admin)
 
+        # channels on restricted orgs are still refreshed
+        self.org2.restrict()
+        restricted_channel = self.create_channel(
+            "D3C",
+            "360Dialog channel",
+            address="123",
+            country="BR",
+            config={
+                Channel.CONFIG_BASE_URL: "https://waba-v2.360dialog.io",
+                Channel.CONFIG_AUTH_TOKEN: "123456789",
+            },
+            org=self.org2,
+        )
+
         # channels on suspended org are ignored
         self.create_channel(
             "D3C",
@@ -273,9 +287,11 @@ class TemplateTest(TembaTest):
 
         # cron only queues a task per eligible channel (self.channel is Android so has no templates)
         with patch("temba.templates.tasks.refresh_channel_templates.delay") as mock_delay:
-            self.assertEqual({"queued": 2}, refresh_templates())
+            self.assertEqual({"queued": 3}, refresh_templates())
 
-        self.assertCountEqual([call(d3c_channel.id), call(twa_channel.id)], mock_delay.call_args_list)
+        self.assertCountEqual(
+            [call(restricted_channel.id), call(d3c_channel.id), call(twa_channel.id)], mock_delay.call_args_list
+        )
 
     @patch("temba.templates.models.TemplateTranslation.update_local")
     @patch("temba.channels.types.dialog360.Dialog360Type.fetch_templates")

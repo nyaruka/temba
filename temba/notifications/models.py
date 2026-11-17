@@ -24,6 +24,14 @@ class IncidentType:
     # whether notification emails are sent even to users who have turned them off
     email_required = False
 
+    @classmethod
+    def end_ongoing(cls, org):
+        """
+        Ends any ongoing incidents of this type in the given org
+        """
+        for incident in org.incidents.filter(incident_type=cls.slug, ended_on=None):
+            incident.end()
+
     def get_notification_scope(self, incident) -> str:
         return str(incident.id)
 

@@ -706,12 +706,12 @@ class NotificationTest(TembaTest):
 
     def test_trim_task(self):
         self.org.suspend()
-        self.org.unsuspend()
+        self.org.reactivate()
 
         notification1 = self.admin.notifications.order_by("id").last()
 
         self.org.suspend()
-        self.org.unsuspend()
+        self.org.reactivate()
 
         notification2 = self.admin.notifications.order_by("id").last()
 

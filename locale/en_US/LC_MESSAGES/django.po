@@ -3009,6 +3009,9 @@ msgstr ""
 msgid "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please contact support."
 msgstr ""
 
+msgid "Sorry, your workspace is currently restricted. To re-enable starting flows and sending messages, please contact support."
+msgstr ""
+
 msgid "Sorry, your workspace is currently flagged. To re-enable starting flows and sending messages, please contact support."
 msgstr ""
 
@@ -3440,10 +3443,10 @@ msgstr ""
 msgid "Unflag"
 msgstr ""
 
-msgid "Suspend"
+msgid "Restrict"
 msgstr ""
 
-msgid "Unsuspend"
+msgid "Suspend"
 msgstr ""
 
 msgid "Verify"
@@ -3459,6 +3462,9 @@ msgid "Internal"
 msgstr ""
 
 msgid "Flagged"
+msgstr ""
+
+msgid "Restricted"
 msgstr ""
 
 msgid "Suspended"
@@ -5592,6 +5598,9 @@ msgid "Workspace flagged"
 msgstr ""
 
 msgid "Contact your administrator."
+msgstr ""
+
+msgid "Workspace restricted"
 msgstr ""
 
 msgid "can't be deleted as it is still used by the following items:"

@@ -680,7 +680,7 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         Starts this flow (asynchronously via mailroom).
         """
 
-        assert not self.org.is_flagged and not self.org.is_suspended, "flagged and suspended orgs can't start flows"
+        assert not self.org.send_blocker, "orgs with a send blocker can't start flows"
 
         return FlowStart.create(
             self,
