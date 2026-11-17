@@ -2382,7 +2382,7 @@ class MessagesEndpoint(ListAPIMixin, WriteAPIMixin, BaseEndpoint):
         if is_uuid(label_ref):
             label_filter |= Q(uuid=label_ref)
 
-        return Label.get_active_for_org(self.request.org).filter(label_filter).first()
+        return Label.get_for_org(self.request.org).filter(label_filter).first()
 
     def derive_queryset(self):
         org = self.request.org

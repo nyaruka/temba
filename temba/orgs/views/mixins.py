@@ -8,7 +8,7 @@ from django.http import Http404, HttpResponseForbidden, HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
-from temba.utils.models import live_q
+from temba.utils.models import exclude_deleted
 
 logger = logging.getLogger(__name__)
 
@@ -316,7 +316,7 @@ class UniqueNameMixin:
             raise forms.ValidationError(_("Is a reserved name."))
 
         # make sure the name isn't already taken
-        conflicts = self.Meta.model.objects.filter(live_q(self.Meta.model), org=self.org, name__iexact=name)
+        conflicts = exclude_deleted(self.Meta.model.objects.filter(org=self.org, name__iexact=name))
         if self.instance:
             conflicts = conflicts.exclude(id=self.instance.id)
 

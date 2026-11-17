@@ -3,14 +3,13 @@ from decimal import Decimal
 from django.contrib.auth.models import Group
 from django.core import checks
 from django.db import connection, models
-from django.db.models import Q
 from django.test import TestCase
 
 from temba.contacts.models import Contact
 from temba.tests import TembaTest
 from temba.tickets.models import Team, Ticket, Topic
 
-from .base import delete_in_batches, live_q, patch_queryset_count, update_if_changed
+from .base import delete_in_batches, exclude_deleted, patch_queryset_count, update_if_changed
 from .es import SearchSliceQuerySet
 from .fields import JSONAsTextField
 
@@ -112,10 +111,19 @@ class ModelsTest(TembaTest):
         self.assertEqual(["deleted_on"], team.mark_deleted())
         self.assertIsNotNone(team.deleted_on)
 
-    def test_live_q(self):
-        self.assertEqual(Q(deleted_on=None), live_q(Team))
-        self.assertEqual(Q(is_active=True), live_q(Contact))
-        self.assertEqual(Q(), live_q(Ticket))
+    def test_exclude_deleted(self):
+        team1 = Team.create(self.org, self.admin, "Sales")
+        team2 = Team.create(self.org, self.admin, "Support")
+        team2.release(self.admin)
+        self.assertEqual({team1}, set(exclude_deleted(Team.objects.filter(id__in=(team1.id, team2.id)))))
+
+        contact1 = self.create_contact("Ann", phone="+16055741111")
+        contact2 = self.create_contact("Bob", phone="+16055742222")
+        Contact.objects.filter(id=contact2.id).update(is_active=False)
+        self.assertEqual({contact1}, set(exclude_deleted(Contact.objects.filter(id__in=(contact1.id, contact2.id)))))
+
+        tickets = Ticket.objects.all()
+        self.assertIs(tickets, exclude_deleted(tickets))  # can't be soft deleted
 
 
 class SearchSliceQuerySetTest(TembaTest):

@@ -550,7 +550,7 @@ class MsgCRUDL(SmartCRUDL):
                 ),
             ]
 
-            labels = Label.get_active_for_org(org).order_by(Lower("name"))
+            labels = Label.get_for_org(org).order_by(Lower("name"))
             label_items = []
             label_counts = LabelCount.get_totals([lb for lb in labels])
             for label in labels:
@@ -598,7 +598,7 @@ class MsgCRUDL(SmartCRUDL):
             if len(label_id) == 1:
                 return MsgFolder.from_code(label_id), None
             else:
-                return None, Label.get_active_for_org(self.request.org).get(uuid=label_id)
+                return None, Label.get_for_org(self.request.org).get(uuid=label_id)
 
         def create_export(self, org, user, form):
             export_all = bool(int(form.cleaned_data["export_all"]))
