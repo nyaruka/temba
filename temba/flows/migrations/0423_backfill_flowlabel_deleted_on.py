@@ -2,7 +2,7 @@ from django.db import migrations
 from django.db.models import F
 
 
-def backfill_deleted_on(apps, schema_editor):
+def backfill_deleted_on(apps, schema_editor):  # pragma: no cover
     FlowLabel = apps.get_model("flows", "FlowLabel")
 
     num_updated = FlowLabel.objects.filter(is_active=False, deleted_on=None).update(deleted_on=F("modified_on"))

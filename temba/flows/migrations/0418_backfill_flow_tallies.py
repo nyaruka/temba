@@ -25,7 +25,7 @@ INSERT INTO flows_flowtally AS t (flow_id, scope, count, expires_on)
 ON CONFLICT (flow_id, scope) DO UPDATE SET count = t.count + excluded.count, expires_on = excluded.expires_on"""
 
 
-def backfill_flow_tallies(apps, schema_editor):
+def backfill_flow_tallies(apps, schema_editor):  # pragma: no cover
     from temba.flows.models import FlowTally  # for its reads of totals buffered in Valkey
 
     Flow = apps.get_model("flows", "Flow")

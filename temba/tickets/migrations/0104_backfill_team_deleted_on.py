@@ -2,7 +2,7 @@ from django.db import migrations
 from django.db.models import F
 
 
-def backfill_deleted_on(apps, schema_editor):
+def backfill_deleted_on(apps, schema_editor):  # pragma: no cover
     Team = apps.get_model("tickets", "Team")
 
     num_updated = Team.objects.filter(is_active=False, deleted_on=None).update(deleted_on=F("modified_on"))

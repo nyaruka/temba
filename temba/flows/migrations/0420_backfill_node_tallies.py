@@ -32,11 +32,11 @@ DELETE FROM flows_flowtally t
       WHERE t.flow_id = u.flow_id AND t.scope = u.scope AND t.count = 0"""
 
 
-def node_scope(node_uuid: str) -> str:
+def node_scope(node_uuid: str) -> str:  # pragma: no cover
     return "node:" + base64.urlsafe_b64encode(UUID(node_uuid).bytes).decode().rstrip("=")
 
 
-def backfill_node_tallies(apps, schema_editor):
+def backfill_node_tallies(apps, schema_editor):  # pragma: no cover
     from temba.flows.models import FlowTally  # for its reads of totals buffered in Valkey
 
     Flow = apps.get_model("flows", "Flow")
