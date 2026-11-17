@@ -1,3 +1,9 @@
+## v26.3.205 (2026-11-17)
+ * Open channel log links from message lists, call lists and chat in a sheet
+ * Close a sheet on any click which navigates, and keep its icon when going deeper
+ * Keep a log link's click from the page, so one asking for a new tab gets it
+ * Drop is_active from Team and FlowLabel
+
 ## v26.3.204 (2026-11-17)
  * Add a restricted incident and suspend restricted workspaces once their time is up
 
