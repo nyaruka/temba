@@ -8,7 +8,7 @@ from django.test import TestCase
 
 from temba.contacts.models import Contact
 from temba.tests import TembaTest
-from temba.tickets.models import Team, Ticket
+from temba.tickets.models import Team, Ticket, Topic
 
 from .base import delete_in_batches, live_q, patch_queryset_count, update_if_changed
 from .es import SearchSliceQuerySet
@@ -102,6 +102,15 @@ class ModelsTest(TembaTest):
         group.name = "Testers 3"
         group.save(update_fields=("name",))
         self.assertEqual(modified_on, group.modified_on)
+
+    def test_mark_deleted(self):
+        topic = Topic.create(self.org, self.admin, "Sales")
+        self.assertEqual(["is_active"], topic.mark_deleted())
+        self.assertFalse(topic.is_active)
+
+        team = Team.create(self.org, self.admin, "Sales")
+        self.assertEqual(["deleted_on"], team.mark_deleted())
+        self.assertIsNotNone(team.deleted_on)
 
     def test_live_q(self):
         self.assertEqual(Q(deleted_on=None), live_q(Team))
