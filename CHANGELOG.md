@@ -1,3 +1,6 @@
+## v26.3.206 (2026-11-17)
+ * Let staff reach the workspace grant view without the org_grant permission
+
 ## v26.3.205 (2026-11-17)
  * Open channel log links from message lists, call lists and chat in a sheet
  * Close a sheet on any click which navigates, and keep its icon when going deeper
