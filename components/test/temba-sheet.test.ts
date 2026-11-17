@@ -42,7 +42,20 @@ describe('temba-sheet', () => {
       sheet.querySelectorAll(':scope > .logo[slot="icon"]')
     ).to.have.length(1);
 
-    // the icon goes with the content which gave it
+    // going deeper within the view keeps its icon
+    mockGET(/\/sheet\/deeper/, '<div id="deeper">deeper</div>');
+    sheet.push('/sheet/deeper', 'Deeper');
+    await waitForCondition(() => !!sheet.querySelector('#deeper'));
+    expect(
+      sheet.querySelectorAll(':scope > .logo[slot="icon"]')
+    ).to.have.length(1);
+    sheet.back();
+    await waitForCondition(() => !!sheet.querySelector('#log'));
+    expect(
+      sheet.querySelectorAll(':scope > .logo[slot="icon"]')
+    ).to.have.length(1);
+
+    // but the icon goes when the sheet is opened on something else
     mockGET(/\/sheet\/plain/, '<div id="plain">plain</div>');
     sheet.show('/sheet/plain', 'Plain');
     await waitForCondition(() => !!sheet.querySelector('#plain'));
@@ -96,10 +109,25 @@ describe('temba-sheet', () => {
       expect(went).to.have.length(1);
       expect(sheet.open).to.be.true;
 
+      // any other click takes the page elsewhere, whatever else is held
       name.dispatchEvent(
-        new MouseEvent('click', { bubbles: true, composed: true })
+        new MouseEvent('click', {
+          bubbles: true,
+          composed: true,
+          ctrlKey: true
+        })
       );
       expect(went).to.have.length(2);
+      expect(sheet.open).to.be.false;
+
+      sheet.show('/sheet/log', 'Log');
+      await waitForCondition(() => !!sheet.querySelector('#contact span'));
+      sheet
+        .querySelector('#contact span')
+        .dispatchEvent(
+          new MouseEvent('click', { bubbles: true, composed: true })
+        );
+      expect(went).to.have.length(3);
       expect(sheet.open).to.be.false;
     } finally {
       (window as any).goto = original;

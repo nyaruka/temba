@@ -215,9 +215,9 @@ export class Sheet extends RapidElement {
   };
 
   // a link in the content to another page takes the page under us there, so get out of its way - caught on the way
-  // down, as the link keeps its click to itself
+  // down, as the link keeps its click to itself. Only a click with the meta key opens a tab of its own instead.
   private handleLinkClick = (event: MouseEvent) => {
-    if (event.metaKey || event.ctrlKey || event.button !== 0) {
+    if (event.metaKey || event.button !== 0) {
       return;
     }
     const anchor = (event.target as Element).closest('temba-anchor');
@@ -234,6 +234,7 @@ export class Sheet extends RapidElement {
     width: number = null
   ): void {
     this.width = width;
+    this.clearContentIcon();
     this.views = [{ endpoint, header, subtitle }];
     this.open = true;
     this.load();
@@ -242,6 +243,7 @@ export class Sheet extends RapidElement {
   /** Opens the sheet on a view which gives its own header and icon, with a header to show until it has loaded */
   public showTitled(endpoint: string, placeholder = ''): void {
     this.width = null;
+    this.clearContentIcon();
     this.views = [
       { endpoint, header: placeholder, subtitle: '', titlesItself: true }
     ];
@@ -274,7 +276,8 @@ export class Sheet extends RapidElement {
   // once the modal's exit has played, clear the content so its scripts stop finding it
   private handleModalClosed(): void {
     if (!this.open) {
-      this.clearContent();
+      clearLightContent(this);
+      this.clearContentIcon();
       this.views = [];
     }
   }
@@ -325,7 +328,7 @@ export class Sheet extends RapidElement {
 
     const id = ++this.loadId;
     this.loading = true;
-    this.clearContent();
+    clearLightContent(this);
 
     getUrl(view.endpoint, null, SHEET_HEADERS)
       .then((response: WebResponse) => {
@@ -450,9 +453,8 @@ export class Sheet extends RapidElement {
     return false;
   }
 
-  /** Clears the content showing, and any icon it gave us */
-  private clearContent(): void {
-    clearLightContent(this);
+  /** Removes an icon the content gave us, which otherwise stays as we go deeper within what it showed */
+  private clearContentIcon(): void {
     this.querySelectorAll(`:scope > [${CONTENT_ICON}]`).forEach((icon) =>
       icon.remove()
     );
