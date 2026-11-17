@@ -338,6 +338,7 @@
 's6e25707d75fc8fc6': `Mettre à jour la langue`,
 's6ebc9bd6feae62a3': `Chargement…`,
 's6ecaa347faaca2fe': `Cette action n'est plus prise en charge et doit être supprimée.`,
+'s6f0051e23edafc17': `Votre espace de travail a été restreint, veuillez contacter l'assistance pour obtenir de l'aide.`,
 's6f81f9bebbc095b9': `Peut inclure des expressions, p. ex. \`@fields.phone\`.`,
 's6f8b83a0f895b075': `Les contacts sont répartis équitablement et au hasard entre les groupes.`,
 's6ffdc18b840acf30': str`${0} - ${1}`,

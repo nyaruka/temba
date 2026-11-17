@@ -627,7 +627,7 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
         )
 
         # can't send if workspace is restricted
-        self.org.restrict()
+        self.org.restrict(Org.RESTRICTED_STAFF)
 
         response = self.client.post(
             chat_url, {"text": "Hello", "ticket": str(ticket.uuid)}, content_type="application/json"

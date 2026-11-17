@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from temba.msgs.models import Broadcast, MessageExport, Msg
-from temba.orgs.models import Export
+from temba.orgs.models import Export, Org
 from temba.tests import CRUDLTestMixin, TembaTest, mock_mailroom
 from temba.utils.views.mixins import TEMBA_MENU_SELECTION
 
@@ -308,7 +308,7 @@ class MsgCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual([call(self.org, self.admin, [msg2])], mr_mocks.calls["msg_resend"])
 
         # restricted and suspended orgs don't see resend as option
-        self.org.restrict()
+        self.org.restrict(Org.RESTRICTED_STAFF)
 
         response = self.client.get(failed_url)
         self.assertNotIn("resend", [a["key"] for a in response.context["list_bulk_actions"]])

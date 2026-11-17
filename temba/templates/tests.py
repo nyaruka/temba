@@ -212,7 +212,7 @@ class TemplateTest(TembaTest):
         org4.release(self.admin)
 
         # channels on restricted orgs are still refreshed
-        self.org2.restrict()
+        self.org2.restrict(Org.RESTRICTED_STAFF)
         restricted_channel = self.create_channel(
             "D3C",
             "360Dialog channel",

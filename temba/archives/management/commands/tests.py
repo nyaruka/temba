@@ -7,6 +7,7 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 
 from temba.archives.models import Archive
+from temba.orgs.models import Org
 from temba.tests import TembaTest, cleanup, matchers
 from temba.tests.dynamo import dynamo_scan_all
 from temba.utils import dynamo
@@ -412,7 +413,7 @@ class ArchivesToHistoryTest(TembaTest):
         )
 
         # restricted orgs are included but suspended orgs only on request
-        self.org2.restrict()
+        self.org2.restrict(Org.RESTRICTED_STAFF)
         output = self._call("archives_to_history", "update", "--since", "2030-01-01")
         self.assertIn("Starting message archive update for 2 orgs...", output)
 

@@ -338,6 +338,7 @@
 's6e25707d75fc8fc6': `Actualizar idioma`,
 's6ebc9bd6feae62a3': `Cargando…`,
 's6ecaa347faaca2fe': `Esta acción ya no es compatible y debe eliminarse.`,
+'s6f0051e23edafc17': `Tu workspace fue restringido, por favor contacta a soporte para recibir ayuda.`,
 's6f81f9bebbc095b9': `Puede incluir expresiones, p. ej. \`@fields.phone\`.`,
 's6f8b83a0f895b075': `Los contactos se reparten de forma equitativa y aleatoria entre los grupos.`,
 's6ffdc18b840acf30': str`${0} - ${1}`,

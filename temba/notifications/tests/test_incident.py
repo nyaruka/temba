@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone as tzone
 from unittest.mock import patch
 
 from django.core import mail
+from django.utils import timezone
 
 from temba.notifications.incidents.builtin import (
     ChannelDisconnectedIncidentType,
@@ -10,6 +11,7 @@ from temba.notifications.incidents.builtin import (
 )
 from temba.notifications.models import Incident, Notification
 from temba.notifications.tasks import send_incident_reminders, send_notification_emails
+from temba.orgs.models import Org
 from temba.tests import TembaTest, matchers
 
 
@@ -75,6 +77,63 @@ class IncidentTest(TembaTest):
         incident = Incident.objects.get()  # still only have 1 incident, but now it has ended
         self.assertEqual("org:suspended", incident.incident_type)
         self.assertIsNotNone(incident.ended_on)
+
+    def test_org_restricted(self):
+        suspends_on = datetime(2026, 12, 1, 12, 0, 0, tzinfo=tzone.utc)
+        reasons = {
+            "B": "Your workspace has been restricted because of a problem with billing.",
+            "L": "Your workspace has been restricted because it has exceeded the limits of its plan.",
+            "S": "Your workspace has been restricted.",
+        }
+
+        for reason, text in reasons.items():
+            mail.outbox.clear()
+            self.org.restrict(reason, suspends_on=suspends_on)
+
+            incident = Incident.objects.get(incident_type="org:restricted", ended_on=None)
+            self.assertEqual(suspends_on, incident.type.get_deadline(incident))
+            self.assertEqual({self.admin}, set(n.user for n in incident.notifications.all()))
+
+            send_notification_emails()
+
+            self.assertEqual(1, len(mail.outbox))
+            self.assertEqual("[Nyaruka] Incident: Workspace Restricted", mail.outbox[0].subject)
+            self.assertIn(text, mail.outbox[0].body)
+            self.assertIn("your flows will keep handling incoming messages", mail.outbox[0].body)
+            self.assertIn("your workspace will be suspended on Dec. 1, 2026", mail.outbox[0].body)
+            self.assertIn("your workspace will be suspended on Dec. 1, 2026", mail.outbox[0].alternatives[0][0])
+
+            self.org.reactivate()
+
+            incident.refresh_from_db()
+            self.assertIsNotNone(incident.ended_on)
+
+        # admins are reminded a week and two days before suspension
+        suspends_on = timezone.now() + Org.RESTRICTION_PERIOD
+        self.org.restrict(Org.RESTRICTED_BILLING, suspends_on=suspends_on)
+        send_notification_emails()
+        mail.outbox.clear()
+
+        for days in (7, 2):
+            with patch("django.utils.timezone.now", return_value=suspends_on - timedelta(days=days, hours=-1)):
+                self.assertEqual({"sent": 1}, send_incident_reminders())
+
+            send_notification_emails()
+
+        self.assertEqual(
+            ["[Nyaruka] Reminder: Workspace Restricted", "[Nyaruka] Reminder: Workspace Restricted"],
+            [m.subject for m in mail.outbox],
+        )
+
+        # without a deadline, the email doesn't give one
+        self.org.reactivate()
+        mail.outbox.clear()
+        self.org.restrict(Org.RESTRICTED_STAFF)
+        Org.objects.filter(id=self.org.id).update(suspends_on=None)
+        send_notification_emails()
+
+        self.assertNotIn("will be suspended", mail.outbox[0].body)
+        self.assertIn("Please contact support.", mail.outbox[0].body)
 
     def test_reminders(self):
         t0 = datetime(2026, 11, 1, 12, 0, 0, tzinfo=tzone.utc)

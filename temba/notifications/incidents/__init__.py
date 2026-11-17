@@ -3,6 +3,7 @@ from .builtin import (
     ChannelOutdatedAppIncidentType,
     ChannelTemplatesFailedIncidentType,
     OrgFlaggedIncidentType,
+    OrgRestrictedIncidentType,
     OrgSuspendedIncidentType,
     WebhooksUnhealthyIncidentType,
 )
@@ -22,6 +23,7 @@ def register_incident_type(typ):
 register_incident_type(ChannelDisconnectedIncidentType())
 register_incident_type(ChannelOutdatedAppIncidentType())
 register_incident_type(OrgFlaggedIncidentType())
+register_incident_type(OrgRestrictedIncidentType())
 register_incident_type(OrgSuspendedIncidentType())
 register_incident_type(WebhooksUnhealthyIncidentType())
 register_incident_type(ChannelTemplatesFailedIncidentType())
