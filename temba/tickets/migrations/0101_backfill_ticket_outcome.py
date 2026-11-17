@@ -17,7 +17,7 @@ UPDATE tickets_ticket
  WHERE id > %(from_id)s AND id <= %(to_id)s AND status = 'C' AND outcome IS NULL"""
 
 
-def backfill_ticket_outcome(apps, schema_editor):
+def backfill_ticket_outcome(apps, schema_editor):  # pragma: no cover
     Ticket = apps.get_model("tickets", "Ticket")
 
     max_id = Ticket.objects.aggregate(max_id=Max("id"))["max_id"] or 0
