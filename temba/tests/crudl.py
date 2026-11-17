@@ -8,7 +8,7 @@ from django.urls import resolve, reverse
 from django.utils import timezone
 
 from temba.users.models import User
-from temba.utils.models import live_q
+from temba.utils.models import exclude_deleted
 
 
 class CRUDLTestMixin:
@@ -350,7 +350,7 @@ class ObjectDeactivated(BaseCheck):
     def check(self, test_cls, response, msg_prefix):
         self.obj.refresh_from_db()
         model = type(self.obj)
-        is_live = model.objects.filter(live_q(model), pk=self.obj.pk).exists()
+        is_live = exclude_deleted(model.objects.filter(pk=self.obj.pk)).exists()
         test_cls.assertFalse(is_live, msg=f"{msg_prefix}: expected object to be soft deleted")
 
         if self.user:
