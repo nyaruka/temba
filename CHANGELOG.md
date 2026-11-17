@@ -1,3 +1,7 @@
+## v26.3.200 (2026-11-17)
+ * Add unsubscribe link to notification emails
+ * Backfill call minute tallies
+
 ## v26.3.199 (2026-11-16)
  * Keep a scrolled list on the items it is showing across a refresh, only scrolling back to the selection if it was in view
  * Follow a moved selection with the smallest scroll that shows it
