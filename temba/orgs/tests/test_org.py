@@ -200,6 +200,7 @@ class OrgTest(TembaTest):
             self.assertEqual(total, incidents.count())
 
         self.org.features += [Org.FEATURE_CHILD_ORGS]
+        self.org.save(update_fields=("features",))
         org1_child1 = self.org.create_new(self.admin, "Child 1", tzone.utc, as_child=True)
         org1_child2 = self.org.create_new(self.admin, "Child 2", tzone.utc, as_child=True)
 
@@ -214,12 +215,19 @@ class OrgTest(TembaTest):
         assert_suspended_incidents(ongoing=0, total=0)
         self.assertEqual(Org.BLOCKER_RESTRICTED, self.org.send_blocker)
 
+        # new children get their parent's status
+        org1_child3 = self.org.create_new(self.admin, "Child 3", tzone.utc, as_child=True)
+        assert_org(org1_child3, Org.STATUS_RESTRICTED)
+
         self.org.suspend()
 
         assert_org(self.org, Org.STATUS_SUSPENDED)
         assert_org(org1_child1, Org.STATUS_SUSPENDED)
         assert_org(org1_child2, Org.STATUS_SUSPENDED)
         assert_org(self.org2, Org.STATUS_ACTIVE)
+
+        org1_child4 = self.org.create_new(self.admin, "Child 4", tzone.utc, as_child=True)
+        assert_org(org1_child4, Org.STATUS_SUSPENDED)
         assert_suspended_incidents(ongoing=1, total=1)
         self.assertEqual(1, self.admin.notifications.filter(notification_type="incident:started").count())
         self.assertEqual(Org.BLOCKER_SUSPENDED, self.org.send_blocker)

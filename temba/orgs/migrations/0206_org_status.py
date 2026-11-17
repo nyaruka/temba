@@ -19,18 +19,4 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.RunSQL("UPDATE orgs_org SET status = 'S' WHERE is_suspended", migrations.RunSQL.noop),
-        migrations.AddConstraint(
-            model_name="org",
-            constraint=models.CheckConstraint(
-                condition=models.Q(
-                    models.Q(("is_suspended", True), ("status", "S")),
-                    models.Q(
-                        models.Q(("status", "S"), _negated=True),
-                        ("is_suspended", False),
-                    ),
-                    _connector="OR",
-                ),
-                name="orgs_org_status_suspended_consistent",
-            ),
-        ),
     ]

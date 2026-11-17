@@ -307,7 +307,12 @@ class MsgCRUDLTest(TembaTest, CRUDLTestMixin):
 
         self.assertEqual([call(self.org, self.admin, [msg2])], mr_mocks.calls["msg_resend"])
 
-        # suspended orgs don't see resend as option
+        # restricted and suspended orgs don't see resend as option
+        self.org.restrict()
+
+        response = self.client.get(failed_url)
+        self.assertNotIn("resend", [a["key"] for a in response.context["list_bulk_actions"]])
+
         self.org.suspend()
 
         response = self.client.get(failed_url)

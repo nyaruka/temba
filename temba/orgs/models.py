@@ -425,6 +425,9 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         else:
             assert Org.FEATURE_NEW_ORGS in self.features, "only orgs with this feature enabled can create new orgs"
 
+        # children share their parent's status so they can't be used to get around a restriction or suspension
+        status = dict(status=self.status, is_suspended=self.is_suspended, suspended_on=self.suspended_on)
+
         org = Org.objects.create(
             name=name,
             timezone=tz,
@@ -435,6 +438,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             slug=self.get_unique_slug(name),
             created_by=user,
             modified_by=user,
+            **(status if as_child else {}),
         )
 
         org.add_user(user, OrgRole.ADMINISTRATOR)
@@ -1353,11 +1357,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
                 condition=Q(is_suspended=True, suspended_on__isnull=False)
                 | Q(is_suspended=False, suspended_on__isnull=True),
                 name="orgs_org_suspended_on_consistent",
-            ),
-            models.CheckConstraint(
-                condition=Q(status="S", is_suspended=True) | (~Q(status="S") & Q(is_suspended=False)),
-                name="orgs_org_status_suspended_consistent",
-            ),
+            )
         ]
 
 
