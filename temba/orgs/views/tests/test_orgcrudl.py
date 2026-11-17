@@ -4,7 +4,6 @@ from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
-from django.contrib.auth.models import Permission
 from django.core import mail
 from django.test.utils import override_settings
 from django.urls import reverse
@@ -524,8 +523,12 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         response = self.client.get(grant_url)
         self.assertPermissionDenied(response)
 
-        user.user_permissions.add(Permission.objects.get(content_type__app_label="orgs", codename="org_grant"))
+        # even an org admin can't grant workspaces
+        self.login(self.admin)
+        response = self.client.get(grant_url)
+        self.assertPermissionDenied(response)
 
+        self.login(self.customer_support)
         response = self.client.get(grant_url)
         self.assertEqual(200, response.status_code)
 
@@ -547,7 +550,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # check user exists and is admin
         self.assertEqual(OrgRole.ADMINISTRATOR, org.get_user_role(User.objects.get(email="john@carmack.com")))
-        self.assertEqual(OrgRole.ADMINISTRATOR, org.get_user_role(User.objects.get(email="tito@textit.com")))
+        self.assertEqual(OrgRole.ADMINISTRATOR, org.get_user_role(self.customer_support))
 
         # try a new org with a user that already exists instead
         del post_data["password"]
@@ -560,7 +563,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(org.date_format, Org.DATE_FORMAT_DAY_FIRST)
 
         self.assertEqual(OrgRole.ADMINISTRATOR, org.get_user_role(User.objects.get(email="john@carmack.com")))
-        self.assertEqual(OrgRole.ADMINISTRATOR, org.get_user_role(User.objects.get(email="tito@textit.com")))
+        self.assertEqual(OrgRole.ADMINISTRATOR, org.get_user_role(self.customer_support))
 
         # try a new org with US timezone
         post_data["name"] = "Bulls"
@@ -577,9 +580,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
     def test_org_grant_invalid_form(self):
         grant_url = reverse("orgs.org_grant")
 
-        self.admin.user_permissions.add(Permission.objects.get(content_type__app_label="orgs", codename="org_grant"))
-
-        self.login(self.admin)
+        self.login(self.customer_support)
 
         post_data = dict(
             email="",
@@ -635,9 +636,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
     def test_org_grant_form_clean(self):
         grant_url = reverse("orgs.org_grant")
 
-        self.admin.user_permissions.add(Permission.objects.get(content_type__app_label="orgs", codename="org_grant"))
-
-        self.login(self.admin)
+        self.login(self.customer_support)
 
         # user with email admin@textit.com already exists and we set a password
         response = self.client.post(
