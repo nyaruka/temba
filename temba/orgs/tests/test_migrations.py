@@ -109,23 +109,25 @@ class BackfillNewContactTalliesTest(MigrationTest):
         self.assertState()
 
 
-class BackfillOrgStatusFieldsTest(MigrationTest):
+class SwitchOrgStatusFieldsTest(MigrationTest):
     app = "orgs"
-    migrate_from = "0209_org_status_reason_status_changed_on"
-    migrate_to = "0210_backfill_org_status_fields"
+    migrate_from = "0210_backfill_org_status_fields"
+    migrate_to = "0211_switch_org_status_fields"
 
     def setUpBeforeMigration(self, apps):
+        OldOrg = apps.get_model("orgs", "Org")
+
         self.t1 = datetime(2026, 11, 1, 12, 0, 0, tzinfo=tz.utc)
         self.t2 = datetime(2026, 11, 2, 12, 0, 0, tzinfo=tz.utc)
         self.t3 = datetime(2026, 11, 3, 12, 0, 0, tzinfo=tz.utc)
         suspends_on = datetime(2026, 12, 1, 12, 0, 0, tzinfo=tz.utc)
 
         def restrict(org, reason):
-            Org.objects.filter(id=org.id).update(
+            OldOrg.objects.filter(id=org.id).update(
                 status="R", restricted_reason=reason, suspends_on=suspends_on, modified_on=self.t3
             )
 
-        # restricted with an ongoing incident, as well as an earlier one which ended
+        # restricted by code that didn't write the new fields, with an ongoing incident and an earlier one which ended
         restrict(self.org, "B")
         self.org.incidents.create(
             incident_type="org:restricted",
@@ -137,11 +139,7 @@ class BackfillOrgStatusFieldsTest(MigrationTest):
 
         # a child of a restricted org has its parent's incident
         self.child = Org.objects.create(
-            name="Child",
-            timezone="UTC",
-            parent=self.org,
-            created_by=self.admin,
-            modified_by=self.admin,
+            name="Child", timezone="UTC", parent=self.org, created_by=self.admin, modified_by=self.admin
         )
         restrict(self.child, "B")
 
@@ -149,9 +147,12 @@ class BackfillOrgStatusFieldsTest(MigrationTest):
         self.org3 = Org.objects.create(name="Org 3", timezone="UTC", created_by=self.admin, modified_by=self.admin)
         restrict(self.org3, "S")
 
-        Org.objects.filter(id=self.org2.id).update(status="S", suspended_on=self.t2)
+        # suspended, keeping the reason it had while restricted
+        OldOrg.objects.filter(id=self.org2.id).update(status="S", status_reason="B", suspended_on=self.t2)
 
+        # reactivated, leaving the reason it had while restricted
         self.org4 = Org.objects.create(name="Org 4", timezone="UTC", created_by=self.admin, modified_by=self.admin)
+        OldOrg.objects.filter(id=self.org4.id).update(status_reason="L", status_changed_on=self.t1)
 
     def test_migration(self):
         def assert_org(org, reason, changed_on):
@@ -162,5 +163,5 @@ class BackfillOrgStatusFieldsTest(MigrationTest):
         assert_org(self.org, "B", self.t1)
         assert_org(self.child, "B", self.t1)
         assert_org(self.org3, "S", self.t3)
-        assert_org(self.org2, None, self.t2)
-        assert_org(self.org4, None, None)
+        assert_org(self.org2, "B", self.t2)
+        assert_org(self.org4, None, self.t1)
