@@ -2,9 +2,17 @@
 {% load i18n %}
 
 {% block notification-body %}
-  <p>
-    {% blocktrans trimmed %}
-      Your workspace has been suspended. To re-enable starting flows and sending messages, please contact support.
-    {% endblocktrans %}
-  </p>
+  {% with org=notification.incident.org %}
+    <p>
+      {% if org.status_reason == "B" %}
+        {% trans "Your workspace has been suspended because of a problem with billing." %}
+      {% elif org.status_reason == "L" %}
+        {% trans "Your workspace has been suspended because it has exceeded the limits of its plan." %}
+      {% else %}
+        {% trans "Your workspace has been suspended." %}
+      {% endif %}
+      {% trans "Your flows have stopped, including those started by triggers and campaigns, and no messages will be sent." %}
+    </p>
+    <p>{% trans "To reactivate your workspace, please contact support." %}</p>
+  {% endwith %}
 {% endblock notification-body %}
