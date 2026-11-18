@@ -1,3 +1,7 @@
+## v26.3.207 (2026-11-18)
+ * Block sends only for restricted workspaces, and check the blocker server-side
+ * Add Org.write_blocker to block the API's non-send writes for restricted workspaces, with tests for messages and contact writes
+
 ## v26.3.206 (2026-11-17)
  * Let staff reach the workspace grant view without the org_grant permission
 
