@@ -1,3 +1,9 @@
+## v26.3.211 (2026-11-18)
+ * Switch org status to Org.status_reason and Org.status_changed_on
+ * Read status tally totals once per batch of flows
+ * Add Contact.current_flow_uuid
+ * Backfill flow run status tallies from activity counts
+
 ## v26.3.210 (2026-11-18)
  * Rework the ticket list for working through a backlog: keep its width as different tickets open, word the open count on the server, and guard blank contact names
  * Mark closed tickets with a filled or dashed check and expired tickets with a clock switched off
