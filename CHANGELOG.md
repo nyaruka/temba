@@ -1,3 +1,8 @@
+## v26.3.213 (2026-11-18)
+ * Say in suspension emails and incidents that flows started by triggers and campaigns will be stopped
+ * Read the contact's current flow from current_flow_uuid
+ * Stop writing run status counts to flow activity counts
+
 ## v26.3.212 (2026-11-18)
  * Backfill Contact.current_flow_uuid
  * Read flow run status counts from tallies, including those still buffered in Valkey
