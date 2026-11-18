@@ -5,6 +5,6 @@
 {% endblocktrans %}
 {% if not incident.ended_on and incident.org.suspends_on %}
   {% blocktrans trimmed with date=incident.org.suspends_on|timezone:incident.org.timezone|date %}
-    Unless this is resolved, your workspace will be suspended on {{ date }}. Please contact support.
+    Unless this is resolved, your workspace will be suspended on {{ date }}, which stops all of its flows, including those started by triggers and campaigns. Please contact support.
   {% endblocktrans %}
 {% endif %}

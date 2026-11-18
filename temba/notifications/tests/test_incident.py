@@ -93,8 +93,11 @@ class IncidentTest(TembaTest):
             self.assertEqual(1, len(mail.outbox))
             self.assertEqual("[Nyaruka] Incident: Workspace Suspended", mail.outbox[0].subject)
             self.assertIn(text, mail.outbox[0].body)
-            self.assertIn("including those started by triggers and campaigns", mail.outbox[0].body)
-            self.assertIn("including those started by triggers and campaigns", mail.outbox[0].alternatives[0][0])
+            self.assertIn(text, mail.outbox[0].alternatives[0][0])
+            self.assertIn("including those started by triggers and campaigns, will be stopped", mail.outbox[0].body)
+            self.assertIn(
+                "including those started by triggers and campaigns, will be stopped", mail.outbox[0].alternatives[0][0]
+            )
 
             self.org.reactivate()
 
