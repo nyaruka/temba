@@ -1057,6 +1057,22 @@ msgid "Access Key"
 msgstr ""
 
 #, python-format
+msgid "%(link)s provides voice numbers in Ghana. If you have an IVR number with them, connect it to make and receive calls. Calls can only play recorded audio, so every message in your voice flows needs a recording."
+msgstr ""
+
+msgid "To finish configuring this channel, you'll need to have mNotify set the following callback URL for your number. Voice flows on this channel need a recording for every message as text can't be read out."
+msgstr ""
+
+msgid "All call events for your number are sent to this URL. Keep it private as it includes a secret."
+msgstr ""
+
+msgid "e.g. 0501234567"
+msgstr ""
+
+msgid "Not a valid phone number."
+msgstr ""
+
+#, python-format
 msgid "%(link)s is a French messaging platform with direct connections to mobile operators, used by more than 3,000 clients. Connect a service you have with MTarget to send and receive SMS in France and internationally."
 msgstr ""
 
@@ -2071,9 +2087,6 @@ msgid "Delete All"
 msgstr ""
 
 msgid "Usages"
-msgstr ""
-
-msgid "Not a valid phone number."
 msgstr ""
 
 msgid "An error occurred updating your contact. Please try again later."
