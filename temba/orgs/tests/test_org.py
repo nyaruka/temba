@@ -297,15 +297,9 @@ class OrgTest(TembaTest):
         self.org.features += [Org.FEATURE_CHILD_ORGS]
         self.org.save(update_fields=("features",))
         child = self.org.create_new(self.admin, "Child", tzone.utc, as_child=True)
-        org3 = Org.objects.create(name="Org 3", timezone="UTC", created_by=self.admin, modified_by=self.admin)
-        org3.add_user(self.admin, OrgRole.ADMINISTRATOR)
 
         self.org.restrict(Org.RESTRICTED_BILLING, suspends_on=timezone.now() - timedelta(minutes=5))
         self.org2.restrict(Org.RESTRICTED_LIMITS, suspends_on=timezone.now() + timedelta(days=1))
-
-        # restricted with no time to be suspended, e.g. before restrictions recorded one
-        org3.restrict(Org.RESTRICTED_STAFF)
-        Org.objects.filter(id=org3.id).update(suspends_on=None)
 
         # each org is locked while deciding whether to suspend it
         with CaptureQueriesContext(connection) as queries:
@@ -313,7 +307,7 @@ class OrgTest(TembaTest):
 
         self.assertTrue(any("FOR UPDATE" in q["sql"] for q in queries.captured_queries))
 
-        for org, status in ((self.org, "S"), (child, "S"), (self.org2, "R"), (org3, "R")):
+        for org, status in ((self.org, "S"), (child, "S"), (self.org2, "R")):
             org.refresh_from_db()
             self.assertEqual(status, org.status, f"unexpected status for {org.name}")
 

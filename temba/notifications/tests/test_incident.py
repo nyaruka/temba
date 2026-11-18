@@ -125,16 +125,6 @@ class IncidentTest(TembaTest):
             [m.subject for m in mail.outbox],
         )
 
-        # without a deadline, the email doesn't give one
-        self.org.reactivate()
-        mail.outbox.clear()
-        self.org.restrict(Org.RESTRICTED_STAFF)
-        Org.objects.filter(id=self.org.id).update(suspends_on=None)
-        send_notification_emails()
-
-        self.assertNotIn("will be suspended", mail.outbox[0].body)
-        self.assertIn("Please contact support.", mail.outbox[0].body)
-
     def test_reminders(self):
         t0 = datetime(2026, 11, 1, 12, 0, 0, tzinfo=tzone.utc)
         deadlines = {}

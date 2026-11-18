@@ -1387,10 +1387,14 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
     class Meta:
         constraints = [
-            # suspended_on must be set if and only if org is suspended
+            # each status has its own fields, which are only set in that status
             models.CheckConstraint(
-                condition=Q(status="S", suspended_on__isnull=False) | (~Q(status="S") & Q(suspended_on__isnull=True)),
-                name="orgs_org_suspended_on_consistent",
+                condition=Q(
+                    status="A", restricted_reason__isnull=True, suspends_on__isnull=True, suspended_on__isnull=True
+                )
+                | Q(status="R", restricted_reason__isnull=False, suspends_on__isnull=False, suspended_on__isnull=True)
+                | Q(status="S", restricted_reason__isnull=True, suspends_on__isnull=True, suspended_on__isnull=False),
+                name="orgs_org_status_consistent",
             )
         ]
 

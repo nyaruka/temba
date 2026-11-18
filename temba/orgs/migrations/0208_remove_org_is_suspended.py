@@ -18,20 +18,31 @@ class Migration(migrations.Migration):
                 ),
             ],
         ),
-        # status is the source of truth, and suspended_on could only have drifted from it through a workspace move
-        migrations.RunSQL(
-            """
-            UPDATE orgs_org SET suspended_on = NULL WHERE status != 'S' AND suspended_on IS NOT NULL;
-            UPDATE orgs_org SET suspended_on = NOW() WHERE status = 'S' AND suspended_on IS NULL;
-            """,
-            migrations.RunSQL.noop,
-        ),
         migrations.AddConstraint(
             model_name="org",
             constraint=models.CheckConstraint(
-                condition=models.Q(("status", "S"), ("suspended_on__isnull", False))
-                | models.Q(models.Q(("status", "S"), _negated=True), ("suspended_on__isnull", True)),
-                name="orgs_org_suspended_on_consistent",
+                condition=models.Q(
+                    models.Q(
+                        ("restricted_reason__isnull", True),
+                        ("status", "A"),
+                        ("suspended_on__isnull", True),
+                        ("suspends_on__isnull", True),
+                    ),
+                    models.Q(
+                        ("restricted_reason__isnull", False),
+                        ("status", "R"),
+                        ("suspended_on__isnull", True),
+                        ("suspends_on__isnull", False),
+                    ),
+                    models.Q(
+                        ("restricted_reason__isnull", True),
+                        ("status", "S"),
+                        ("suspended_on__isnull", False),
+                        ("suspends_on__isnull", True),
+                    ),
+                    _connector="OR",
+                ),
+                name="orgs_org_status_consistent",
             ),
         ),
     ]
