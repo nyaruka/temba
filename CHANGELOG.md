@@ -1,3 +1,8 @@
+## v26.3.212 (2026-11-18)
+ * Backfill Contact.current_flow_uuid
+ * Read flow run status counts from tallies, including those still buffered in Valkey
+ * Drop the org status columns that status, status_reason and status_changed_on replaced
+
 ## v26.3.211 (2026-11-18)
  * Switch org status to Org.status_reason and Org.status_changed_on
  * Read status tally totals once per batch of flows
