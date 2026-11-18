@@ -5,7 +5,9 @@ import { CustomEventType } from '../src/interfaces';
 import { resetContactWatches, watchContact } from '../src/live/ContactWatch';
 import { setSocketProvider, SocketProvider } from '../src/live/SocketService';
 import {
+  assertScreenshot,
   clearMockGets,
+  getClip,
   getComponent,
   loadStore,
   mockGET,
@@ -49,6 +51,31 @@ describe(TAG, () => {
       'Dave Matthews'
     );
     assert.deepEqual(mockSocket.activeChannels(), []);
+  });
+
+  it('leads with an avatar with the scheme inset when asked', async () => {
+    const name = await getContactName({
+      name: 'Dave Matthews',
+      urn: 'tel:+12065551212',
+      avatar: true
+    });
+    const avatar = name.shadowRoot.querySelector('temba-contact-avatar');
+    assert.equal(avatar.getAttribute('name'), 'Dave Matthews');
+    assert.equal(avatar.getAttribute('scheme'), 'tel');
+
+    // the scheme is inset on the avatar rather than shown on its own
+    assert.isNull(name.shadowRoot.querySelector(':scope > temba-urn'));
+    await assertScreenshot('contacts/name-avatar', getClip(name));
+  });
+
+  it('names the avatar of a watched contact once it arrives', async () => {
+    const name = await getContactName({ contact: CONTACT, avatar: true });
+    await waitForCondition(() => !!name.urn);
+    await name.updateComplete;
+
+    const avatar = name.shadowRoot.querySelector('temba-contact-avatar');
+    assert.equal(avatar.getAttribute('name'), 'Dave Matthews');
+    assert.isNotEmpty(avatar.getAttribute('scheme'));
   });
 
   it('gets its initial value through the central watcher', async () => {

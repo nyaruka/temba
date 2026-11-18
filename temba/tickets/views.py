@@ -17,7 +17,7 @@ from django.utils.translation import gettext_lazy as _
 
 from temba import mailroom
 from temba.channels.models import ChannelLog
-from temba.contacts.models import URN
+from temba.contacts.models import URN, ContactURN
 from temba.msgs.models import Msg
 from temba.orgs.models import Org, OrgRole
 from temba.orgs.views.base import (
@@ -55,7 +55,6 @@ from .models import (
     TicketFolder,
     Topic,
     TopicFolder,
-    UnassignedFolder,
     export_ticket_stats,
 )
 
@@ -157,6 +156,16 @@ class TopicCRUDL(SmartCRUDL):
         form_class = TopicForm
         success_url = "hide"
 
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+
+            # the topic is deleted from here rather than from a menu of its own
+            if self.has_org_perm("tickets.topic_delete"):
+                context["delete_url"] = reverse("tickets.topic_delete", args=[self.object.uuid])
+                context["delete_label"] = _("Delete topic")
+                context["delete_title"] = _("Delete Topic")
+            return context
+
     class Delete(BaseDeleteModal):
         cancel_url = "@tickets.ticket_list"
 
@@ -257,11 +266,7 @@ class TicketCRUDL(SmartCRUDL):
             org = self.request.org
             user = self.request.user
             topics = Topic.get_accessible(org, user).order_by("-is_system", "name")
-            counts = {
-                MineFolder.slug: Ticket.get_assignee_count(org, user, topics, Ticket.STATUS_OPEN),
-                UnassignedFolder.slug: Ticket.get_assignee_count(org, None, topics, Ticket.STATUS_OPEN),
-                AllFolder.slug: Ticket.get_status_count(org, topics, Ticket.STATUS_OPEN),
-            }
+            counts = {f.slug: f.get_open_count(org, user, topics) for f in TicketFolder.all().values()}
 
             menu = []
             for folder in TicketFolder.all().values():
@@ -278,6 +283,7 @@ class TicketCRUDL(SmartCRUDL):
             menu.append(self.create_divider())
 
             counts = Ticket.get_topic_counts(org, topics, Ticket.STATUS_OPEN)
+            can_edit = self.has_org_perm("tickets.topic_update")
             topic_items = [
                 {
                     "id": topic.uuid,
@@ -285,6 +291,7 @@ class TicketCRUDL(SmartCRUDL):
                     "icon": "topic",
                     "count": counts[topic],
                     "href": f"/ticket/{topic.uuid}/",
+                    "editable": can_edit and not topic.is_system,
                 }
                 for topic in topics
             ]
@@ -399,8 +406,8 @@ class TicketCRUDL(SmartCRUDL):
 
             # is the request for a specific ticket? (a malformed uuid is treated as not found)
             if (uuid := self.kwargs.get("uuid")) and is_uuid(uuid):
-                # is the ticket in the first page of the current folder?
-                first_page_qs = folder.get_queryset(org, user, ordered=True)
+                # is the ticket in the first page of the current folder, in the order the user will see it?
+                first_page_qs = folder.get_queryset(org, user, ordered=True, oldest_first=self.oldest_first)
 
                 for ticket in list(first_page_qs[: TicketCRUDL.Folder.paginate_by]):
                     if str(ticket.uuid) == uuid:
@@ -414,6 +421,10 @@ class TicketCRUDL(SmartCRUDL):
                         return fallback, ticket, False
 
             return folder, None, False
+
+        @cached_property
+        def oldest_first(self) -> bool:
+            return self.request.user.settings.get("ticket_order") == TicketCRUDL.Folder.ORDER_OLDEST
 
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
@@ -438,6 +449,21 @@ class TicketCRUDL(SmartCRUDL):
             if assignee_uuid and is_uuid(assignee_uuid) and isinstance(folder, AllFolder):
                 context["assignee_uuid"] = assignee_uuid
 
+            # the list's endpoint query is built the same way by the page's script, which reloads the list
+            # whenever the two differ
+            context["ticket_order"] = TicketCRUDL.Folder.ORDER_OLDEST if self.oldest_first else "newest"
+            context["topic_editable"] = (
+                isinstance(folder, TopicFolder)
+                and not folder.topic.is_system
+                and self.has_org_perm("tickets.topic_update")
+            )
+            query = []
+            if "assignee_uuid" in context:
+                query.append(f"assignee={assignee_uuid}")
+            if self.oldest_first:
+                query.append(f"order={TicketCRUDL.Folder.ORDER_OLDEST}")
+            context["tickets_query"] = f"?{'&'.join(query)}" if query else ""
+
             # pass agent permission flags to template
             membership = self.request.org.get_membership(self.request.user)
             context["user_role"] = membership.role_code if membership else OrgRole.ADMINISTRATOR.code
@@ -460,12 +486,15 @@ class TicketCRUDL(SmartCRUDL):
         def get_queryset(self, **kwargs):
             return super().get_queryset(**kwargs).none()
 
-    class Folder(ContextMenuMixin, OrgPermsMixin, SmartTemplateView):
+    class Folder(OrgPermsMixin, SmartTemplateView):
         permission = "tickets.ticket_list"
         paginate_by = 25
 
         # microsecond timestamp of 9999-12-31 23:59:59 - anything beyond this can't be converted to a datetime
         MAX_CURSOR = 253_402_300_799_000_000
+
+        # ?order= value for the oldest first order, anything else is the default newest first
+        ORDER_OLDEST = "oldest"
 
         @classmethod
         def derive_url_pattern(cls, path, action):
@@ -480,24 +509,6 @@ class TicketCRUDL(SmartCRUDL):
 
             return folder
 
-        def build_context_menu(self, menu):
-            if isinstance(self.folder, TopicFolder) and not self.folder.topic.is_system:
-                if self.has_org_perm("tickets.topic_update"):
-                    menu.add_modax(
-                        _("Edit"),
-                        "edit-topic",
-                        f"{reverse('tickets.topic_update', args=[self.folder.topic.uuid])}",
-                        title=_("Edit Topic"),
-                        on_submit="handleTopicUpdated()",
-                    )
-                if self.has_org_perm("tickets.topic_delete"):
-                    menu.add_modax(
-                        _("Delete"),
-                        "delete-topic",
-                        f"{reverse('tickets.topic_delete', args=[self.folder.topic.uuid])}",
-                        title=_("Delete Topic"),
-                    )
-
         @cached_property
         def assignee(self):
             # filtering by assignee only applies to the All folder, and a malformed uuid is ignored
@@ -506,8 +517,14 @@ class TicketCRUDL(SmartCRUDL):
                 return User.objects.filter(uuid=assignee_uuid).first()
             return None
 
-        def _get_queryset(self, *, ordered: bool):
-            qs = self.folder.get_queryset(self.request.org, self.request.user, ordered=ordered)
+        @cached_property
+        def oldest_first(self) -> bool:
+            return self.request.GET.get("order") == self.ORDER_OLDEST
+
+        def _get_queryset(self, *, ordered: bool, oldest_first: bool = False):
+            qs = self.folder.get_queryset(
+                self.request.org, self.request.user, ordered=ordered, oldest_first=oldest_first
+            )
             if self.assignee:
                 qs = qs.filter(assignee=self.assignee)
             return qs
@@ -523,6 +540,17 @@ class TicketCRUDL(SmartCRUDL):
                 return 0
 
             return value if 0 <= value <= self.MAX_CURSOR else 0
+
+        def get_open_count(self) -> int:
+            """
+            The folder's count of open tickets, as the list shows it - it's read from the folder's totals rather than
+            counted, so it's cheap enough to send with every page and poll
+            """
+            org, user = self.request.org, self.request.user
+            topics = Topic.get_accessible(org, user)
+            if self.assignee:
+                return self.folder.get_open_count(org, user, topics, assignee=self.assignee)
+            return self.folder.get_open_count(org, user, topics)
 
         def get_tickets(self) -> list:
             uuid = self.kwargs.get("uuid", None)
@@ -567,6 +595,22 @@ class TicketCRUDL(SmartCRUDL):
 
                 return tickets
 
+            # oldest first pages are only open tickets, least recent activity first, paged by an exact
+            # (last_activity_on, id) cursor so that tickets sharing a timestamp can't be lost
+            if self.oldest_first:
+                qs = self._get_queryset(ordered=True, oldest_first=True)
+                start, start_id = self._int_param("from"), self._int_param("from_id")
+                if start and start_id:
+                    qs = qs.filter(
+                        RawSQL(
+                            "(tickets_ticket.last_activity_on, tickets_ticket.id) > (%s, %s)",
+                            (timestamp_to_datetime(start), start_id),
+                            output_field=models.BooleanField(),
+                        )
+                    )
+
+                return list(qs[: self.paginate_by])
+
             # pages are read in index order - open before closed, then most recent activity - and paged by an
             # exact (status, last_activity_on, id) cursor so that tickets sharing a timestamp can't be lost. The
             # status component comes from the row the previous page ended on, since a page can cross the open/closed
@@ -591,6 +635,9 @@ class TicketCRUDL(SmartCRUDL):
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
 
+            # read before the tickets, so a client polling for activity after it can't miss anything
+            context["now"] = timezone.now()
+
             tickets = self.get_tickets()
             context["tickets"] = tickets
 
@@ -600,6 +647,15 @@ class TicketCRUDL(SmartCRUDL):
             last_msgs = Msg.objects.filter(id__in=[m["last_msg"] for m in last_msg_ids]).select_related("created_by")
 
             context["last_msgs"] = {m.contact_id: m for m in last_msgs}
+
+            # and the scheme of each contact's top URN, for the channel their avatar shows
+            top_urns = (
+                ContactURN.objects.filter(contact_id__in=contact_ids)
+                .order_by("contact_id", "-priority", "id")
+                .distinct("contact_id")
+                .values_list("contact_id", "scheme")
+            )
+            context["schemes"] = dict(top_urns)
             return context
 
         def render_to_response(self, context, **response_kwargs):
@@ -621,7 +677,7 @@ class TicketCRUDL(SmartCRUDL):
                     "direction": m.direction,
                     "type": m.msg_type,
                     "created_on": m.created_on,
-                    "sender": {"id": m.created_by.id, "email": m.created_by.email} if m.created_by else None,
+                    "sender": user_as_json(m.created_by) if m.created_by else None,
                     "attachments": m.attachments,
                 }
 
@@ -633,6 +689,9 @@ class TicketCRUDL(SmartCRUDL):
                 return {
                     "uuid": str(t.contact.uuid),
                     "name": t.contact.get_display(org=self.request.org),
+                    # only contacts with a name have a first name - the rest are shown by their URN in full
+                    "first_name": t.contact.name.split()[0] if t.contact.name else None,
+                    "scheme": context["schemes"].get(t.contact_id),
                     "last_seen_on": t.contact.last_seen_on,
                     "last_msg": msg_as_json(last_msg) if last_msg else None,
                     "ticket": {
@@ -644,7 +703,12 @@ class TicketCRUDL(SmartCRUDL):
                     },
                 }
 
-            results = {"results": [as_json(t) for t in context["tickets"]]}
+            results = {"results": [as_json(t) for t in context["tickets"]], "count": self.get_open_count()}
+
+            # an oldest first list only loads the oldest part of a folder, so it can't take the newest activity it
+            # has seen as where to poll for new activity from - it polls from when its first page was read instead
+            if self.oldest_first:
+                results["now"] = context["now"]
 
             # build up our next link if we have more - refreshes (?after=) are never paged because they're ordered
             # oldest first, so a next link from the newest ticket would page backwards from an arbitrary point
@@ -654,10 +718,16 @@ class TicketCRUDL(SmartCRUDL):
                 # the uuid part of the pattern is optional so it can only be reversed by folder
                 folder_url = reverse("tickets.ticket_folder", kwargs={"folder": self.folder.slug})
 
-                next_url = (
-                    f"{folder_url}?before={datetime_to_timestamp(last.last_activity_on)}"
-                    f"&before_id={last.id}&before_status={last.status}"
-                )
+                if self.oldest_first:
+                    next_url = (
+                        f"{folder_url}?order={self.ORDER_OLDEST}"
+                        f"&from={datetime_to_timestamp(last.last_activity_on)}&from_id={last.id}"
+                    )
+                else:
+                    next_url = (
+                        f"{folder_url}?before={datetime_to_timestamp(last.last_activity_on)}"
+                        f"&before_id={last.id}&before_status={last.status}"
+                    )
                 if self.assignee:
                     next_url += f"&assignee={self.assignee.uuid}"
 

@@ -1855,6 +1855,12 @@ msgstr "Hace que el canal esté disponible para el envío. Los mensajes entrante
 msgid "%s Channel"
 msgstr "%s Canal"
 
+msgid "Delete channel"
+msgstr "Eliminar canal"
+
+msgid "Delete Channel"
+msgstr "Eliminar canal"
+
 msgid "Channel Log"
 msgstr "Registro de Canales"
 
@@ -3565,6 +3571,12 @@ msgstr "Tickets sin asignar"
 msgid "All Tickets"
 msgstr "Todos los tickets"
 
+msgid "Delete topic"
+msgstr "Eliminar tema"
+
+msgid "Delete Topic"
+msgstr "Eliminar tema"
+
 msgid "New Team"
 msgstr "Nuevo equipo"
 
@@ -3585,12 +3597,6 @@ msgstr "Exportar sin procesar"
 
 msgid "Add Note"
 msgstr "Añadir nota"
-
-msgid "Edit Topic"
-msgstr "Editar tema"
-
-msgid "Delete Topic"
-msgstr "Eliminar tema"
 
 msgid "Notes are never shown to the contact."
 msgstr "Las notas nunca se muestran al contacto."
@@ -4406,12 +4412,6 @@ msgstr "No se ha sincronizado ninguna plantilla para este canal."
 
 msgid "Cancel"
 msgstr "Cancelar"
-
-msgid "Delete channel"
-msgstr "Eliminar canal"
-
-msgid "Delete Channel"
-msgstr "Eliminar canal"
 
 msgid "To get started, you'll need your short code along with your Africa's Talking username and an API key, which you can generate under Settings in your Africa's Talking app."
 msgstr "Para comenzar, necesitará su código corto junto con su nombre de usuario de Africa's Talking y una clave de API, que puede generar en Settings en su aplicación de Africa's Talking."
@@ -6150,8 +6150,24 @@ msgstr "Error al cargar"
 msgid "Any tickets opened within the selected date range will be included. You may optionally include additional columns for fields for each contact."
 msgstr "Se incluirán todos los tickets abiertos dentro del rango de fechas seleccionado. Opcionalmente puede incluir columnas adicionales para los campos de cada contacto."
 
-msgid "All Agents"
+#, python-format
+msgid "%(count)s open tickets"
+msgstr "%(count)s tickets abiertos"
+
+msgid "1 open ticket"
+msgstr "1 ticket abierto"
+
+msgid "Edit Topic"
+msgstr "Editar tema"
+
+msgid "All agents"
 msgstr "Todos los agentes"
+
+msgid "Oldest"
+msgstr "Más antiguos"
+
+msgid "Most recent"
+msgstr "Más recientes"
 
 msgid "See more tickets"
 msgstr "Ver más tickets"

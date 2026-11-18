@@ -106,9 +106,10 @@ export class ContactChat extends ContactStoreElement {
         flex-direction: column;
         min-height: 0;
         background: var(--surface);
-        border: 1px solid var(--border-strong);
-        border-radius: var(--r-sm);
-        box-shadow: var(--shadow-2);
+        /* inside a card layout's header frame, the frame draws these */
+        border: var(--framed-border, 1px solid var(--border-strong));
+        border-radius: var(--framed-radius, var(--r-lg));
+        box-shadow: var(--framed-shadow, var(--shadow-2));
         overflow: hidden;
       }
 
@@ -281,7 +282,7 @@ export class ContactChat extends ContactStoreElement {
         margin-bottom: var(--layout-spacing, 8px);
         background: var(--surface);
         border: 1px solid var(--border-strong);
-        border-radius: var(--r-sm);
+        border-radius: var(--r-lg);
         box-shadow: var(--shadow-2);
         color: var(--text-3);
         font-family: var(--font);

@@ -521,6 +521,12 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
         self.assertContains(response, "temba-card-layout")
         self.assertContains(response, "temba-page-header")
         self.assertContains(response, '-temba-button-clicked="handleFieldSearch"')
+
+        # the contact's name heads their chat card, the same header as on the tickets page
+        self.assertContains(response, '<div slot="header" class="contact-header">')
+        self.assertContains(response, f'contact="{joe.uuid}"')
+        self.assertNotContains(response, "temba-header-bar")
+        self.assertNotContains(response, "back-button")
         self.assertContains(response, "evt.detail.key === undefined")
         self.assertNotContains(response, "temba-tabs")
 

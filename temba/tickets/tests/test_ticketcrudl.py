@@ -84,6 +84,10 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("All", response.context["title"])
         self.assertEqual("all", response.context["folder"])
 
+        # the selected contact's name heads their chat card, the same header as on the contact page
+        self.assertContains(response, '<div slot="header" class="contact-header">')
+        self.assertContains(response, 'class="back-button"')
+
         # our ticket exists on the first page, so it'll get flagged to be focused
         self.assertEqual(str(ticket.uuid), response.context["nextUUID"])
 
@@ -371,11 +375,20 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
 
             return response
 
-        # system topic has no menu options
-        self.assertContentMenu(general_url, self.admin, [])
+        # the list page offers editing a user topic, but not the system one or a folder
+        def topic_editable(url):
+            return self.requestView(url, self.admin).context["topic_editable"]
 
-        # user topic gets edit too
-        self.assertContentMenu(sales_url, self.admin, ["Edit", "Delete"])
+        self.assertFalse(topic_editable(f"/ticket/{self.org.default_topic.uuid}/"))
+        self.assertTrue(topic_editable(f"/ticket/{self.sales.uuid}/"))
+        self.assertFalse(topic_editable("/ticket/mine/"))
+
+        # and the menu says which topics can be edited, for when the list switches between them
+        menu = self.requestView(reverse("tickets.ticket_menu"), self.admin).json()["results"]
+        topics = next(item for item in menu if item.get("id") == "topics")["items"]
+        editable = {item["name"]: item["editable"] for item in topics}
+        self.assertFalse(editable["General"])
+        self.assertTrue(editable["Sales"])
 
         # no tickets yet so no contacts returned
         assert_tickets(all_url, self.admin, expected=[])
@@ -418,7 +431,7 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # a folder returns open tickets followed by closed tickets
         self.login(self.admin)
-        with self.assertNumQueries(11):
+        with self.assertNumQueries(14):
             response = self.client.get(all_url)
 
         assert_tickets(all_url, self.admin, expected=[c2_t1, c4_t1, c1_t1, c3_t2, c3_t1, c2_t2])
@@ -438,6 +451,8 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
                 {
                     "uuid": str(contact2.uuid),
                     "name": "Frank",
+                    "first_name": "Frank",
+                    "scheme": "tel",
                     "last_seen_on": matchers.ISODatetime(),
                     "last_msg": {
                         "text": "Hello?",
@@ -458,13 +473,21 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
                 {
                     "uuid": str(contact4.uuid),
                     "name": "Dave",
+                    "first_name": "Dave",
+                    "scheme": "tel",
                     "last_seen_on": matchers.ISODatetime(),
                     "last_msg": {
                         "text": "Sales can help",
                         "direction": "O",
                         "type": "T",
                         "created_on": matchers.ISODatetime(),
-                        "sender": {"id": self.admin.id, "email": "admin@textit.com"},
+                        "sender": {
+                            "id": self.admin.id,
+                            "first_name": "Andy",
+                            "last_name": "",
+                            "email": "admin@textit.com",
+                            "uuid": str(self.admin.uuid),
+                        },
                         "attachments": [],
                     },
                     "ticket": {
@@ -484,13 +507,21 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
                 {
                     "uuid": str(contact1.uuid),
                     "name": "Joe",
+                    "first_name": "Joe",
+                    "scheme": "tel",
                     "last_seen_on": matchers.ISODatetime(),
                     "last_msg": {
                         "text": "We can help",
                         "direction": "O",
                         "type": "T",
                         "created_on": matchers.ISODatetime(),
-                        "sender": {"id": self.admin.id, "email": "admin@textit.com"},
+                        "sender": {
+                            "id": self.admin.id,
+                            "first_name": "Andy",
+                            "last_name": "",
+                            "email": "admin@textit.com",
+                            "uuid": str(self.admin.uuid),
+                        },
                         "attachments": [],
                     },
                     "ticket": {
@@ -516,13 +547,21 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
             {
                 "uuid": str(contact3.uuid),
                 "name": "Anne",
+                "first_name": "Anne",
+                "scheme": "tel",
                 "last_seen_on": matchers.ISODatetime(),
                 "last_msg": {
                     "text": "Yes",
                     "direction": "O",
                     "type": "T",
                     "created_on": matchers.ISODatetime(),
-                    "sender": {"id": self.agent.id, "email": "agent@textit.com"},
+                    "sender": {
+                        "id": self.agent.id,
+                        "first_name": "Agnes",
+                        "last_name": "",
+                        "email": "agent@textit.com",
+                        "uuid": str(self.agent.uuid),
+                    },
                     "attachments": [],
                 },
                 "ticket": {
@@ -550,6 +589,18 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         assert_tickets(f"{all_url}?assignee={self.admin.uuid}", self.admin, expected=[c1_t1])
         assert_tickets(f"{all_url}?assignee={self.agent3.uuid}", self.admin, expected=[c4_t1])
         assert_tickets(f"{all_url}?assignee={self.agent.uuid}", self.admin, expected=[])
+
+        # each response carries its folder's count of open tickets, for the list to show
+        def open_count(url, user):
+            return self.requestView(url, user).json()["count"]
+
+        self.assertEqual(3, open_count(all_url, self.admin))
+        self.assertEqual(1, open_count(mine_url, self.admin))
+        self.assertEqual(1, open_count(unassigned_url, self.admin))
+        self.assertEqual(1, open_count(sales_url, self.admin))
+        self.assertEqual(1, open_count(f"{all_url}?assignee={self.agent3.uuid}", self.admin))
+        self.assertEqual(0, open_count(f"{all_url}?assignee={self.agent.uuid}", self.admin))
+        self.assertEqual(1, open_count(all_url, self.agent2))  # only sales topic
 
         # assignee filter is ignored on non-all folders
         assert_tickets(f"{mine_url}?assignee={self.agent3.uuid}", self.admin, expected=[c1_t1])
@@ -711,6 +762,110 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
             response = self.requestView(response.json()["next"], self.admin)
             self.assertEqual([], response.json()["results"])
             self.assertNotIn("next", response.json())
+
+    def test_folder_first_names(self):
+        self.create_ticket(self.create_contact("Maria Fernanda Oliveira", phone="123"))
+        self.create_ticket(self.create_contact(None, phone="125"))
+
+        # contacts without a name have no first name, so the list shows their URN in full
+        response = self.requestView("/ticket/folder/all/", self.admin)
+        self.assertEqual(
+            [(None, "125", "tel"), ("Maria", "Maria Fernanda Oliveira", "tel")],
+            [(t["first_name"], t["name"], t["scheme"]) for t in response.json()["results"]],
+        )
+
+    def test_folder_oldest_first(self):
+        contacts = [self.create_contact(f"Contact {i}", phone=f"12{i}") for i in range(5)]
+        tickets = [self.create_ticket(c) for c in contacts]
+        closed = self.create_ticket(self.create_contact("Closed", phone="130"), closed_on=timezone.now())
+        mine = self.create_ticket(self.create_contact("Mine", phone="131"), assignee=self.admin)
+
+        # spread out activity, with the closed and assigned tickets the oldest of all, and two tickets tied
+        base = timezone.now().replace(microsecond=0) - timedelta(hours=1)
+        activity = {closed: 0, mine: 1, tickets[0]: 2, tickets[1]: 3, tickets[2]: 3, tickets[3]: 4, tickets[4]: 5}
+        for ticket, minutes in activity.items():
+            Ticket.objects.filter(id=ticket.id).update(last_activity_on=base + timedelta(minutes=minutes))
+
+        def uuids(response):
+            return [t["ticket"]["uuid"] for t in response.json()["results"]]
+
+        all_url = reverse("tickets.ticket_folder", kwargs={"folder": "all"})
+        unassigned_url = reverse("tickets.ticket_folder", kwargs={"folder": "unassigned"})
+
+        with patch("temba.tickets.views.TicketCRUDL.Folder.paginate_by", 2):
+            # open tickets only, least recent activity first, paged by an exact cursor so the tie isn't split
+            response = self.requestView(f"{all_url}?order=oldest", self.admin)
+            self.assertEqual([str(mine.uuid), str(tickets[0].uuid)], uuids(response))
+            self.assertIn("now", response.json())
+            self.assertIn("order=oldest", response.json()["next"])
+
+            response = self.requestView(response.json()["next"], self.admin)
+            self.assertEqual([str(tickets[1].uuid), str(tickets[2].uuid)], uuids(response))
+
+            response = self.requestView(response.json()["next"], self.admin)
+            self.assertEqual([str(tickets[3].uuid), str(tickets[4].uuid)], uuids(response))
+
+            response = self.requestView(response.json()["next"], self.admin)
+            self.assertEqual([], uuids(response))
+            self.assertNotIn("next", response.json())
+
+            # folder filters still apply, and the assignee filter is carried in the next link
+            response = self.requestView(f"{unassigned_url}?order=oldest", self.admin)
+            self.assertEqual([str(tickets[0].uuid), str(tickets[1].uuid)], uuids(response))
+
+            response = self.requestView(f"{all_url}?order=oldest&assignee={self.admin.uuid}", self.admin)
+            self.assertEqual([str(mine.uuid)], uuids(response))
+
+            response = self.requestView(f"{all_url}?assignee={self.admin.uuid}&order=oldest", self.admin)
+            self.assertEqual([str(mine.uuid)], uuids(response))
+
+        # polling for new activity is the same in either order, closed tickets included so clients can drop them
+        Ticket.objects.filter(id=closed.id).update(last_activity_on=timezone.now())
+        after = datetime_to_timestamp(base + timedelta(minutes=10))
+        response = self.requestView(f"{all_url}?order=oldest&after={after}", self.admin)
+        self.assertEqual([str(closed.uuid)], uuids(response))
+        self.assertNotIn("next", response.json())
+
+        # an unknown order is the default newest first, without the server time
+        response = self.requestView(f"{all_url}?order=sideways", self.admin)
+        self.assertEqual(str(tickets[4].uuid), uuids(response)[0])
+        self.assertNotIn("now", response.json())
+
+        # bad cursor params are ignored so we get the first page
+        response = self.requestView(f"{all_url}?order=oldest&from=x&from_id=y", self.admin)
+        self.assertEqual(str(mine.uuid), uuids(response)[0])
+
+    def test_list_oldest_first(self):
+        list_url = reverse("tickets.ticket_list")
+
+        old = self.create_ticket(self.contact)
+        new = self.create_ticket(self.create_contact("Ann", phone="123"))
+        Ticket.objects.filter(id=old.id).update(last_activity_on=timezone.now() - timedelta(days=1))
+
+        # newest first by default
+        response = self.assertListFetch(f"{list_url}all/", [self.admin])
+        self.assertEqual("newest", response.context["ticket_order"])
+        self.assertEqual("", response.context["tickets_query"])
+
+        # until the user picks oldest first
+        self.admin.settings["ticket_order"] = "oldest"
+        self.admin.save(update_fields=("settings",))
+
+        response = self.assertListFetch(f"{list_url}all/", [self.admin])
+        self.assertEqual("oldest", response.context["ticket_order"])
+        self.assertEqual("?order=oldest", response.context["tickets_query"])
+
+        # the query matches the one the page's script builds, assignee first
+        response = self.assertListFetch(f"{list_url}all/?assignee={self.admin.uuid}", [self.admin])
+        self.assertEqual(f"?assignee={self.admin.uuid}&order=oldest", response.context["tickets_query"])
+
+        # a deep link is checked against the first page in the order the user sees it
+        with patch("temba.tickets.views.TicketCRUDL.Folder.paginate_by", 1):
+            response = self.assertListFetch(f"{list_url}all/{old.uuid}/", [self.admin])
+            self.assertEqual(str(old.uuid), response.context["nextUUID"])
+
+            response = self.assertListFetch(f"{list_url}all/{new.uuid}/", [self.admin])
+            self.assertEqual(str(new.uuid), response.context["uuid"])
 
     def test_folder_cursor_without_status(self):
         contact = self.create_contact("Joe", phone="123")

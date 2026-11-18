@@ -3027,6 +3027,22 @@
   <source>Took <x id="0" equiv-text="${ms}"/> ms</source>
   <target>Tardó <x id="0" equiv-text="${ms}"/> ms</target>
 </trans-unit>
+<trans-unit id="s215ad519258e9d97">
+  <source>now</source>
+  <target>ahora</target>
+</trans-unit>
+<trans-unit id="scb6a9c1a1757adbc">
+  <source>You</source>
+  <target>Tú</target>
+</trans-unit>
+<trans-unit id="s07f4431917564077">
+  <source>min</source>
+  <target>min</target>
+</trans-unit>
+<trans-unit id="sda4e07a2a78ec6cc">
+  <source>mins</source>
+  <target>min</target>
+</trans-unit>
 </body>
 </file>
 </xliff>

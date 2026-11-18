@@ -3,6 +3,8 @@
     {
       "uuid": "c1000000-0000-0000-0000-000000000001",
       "name": "Amara Okafor",
+      "scheme": "tel",
+      "first_name": "Amara",
       "last_seen_on": "2024-05-01T10:30:00.000000Z",
       "last_msg": {
         "text": "I still haven't received my confirmation code",
@@ -17,9 +19,13 @@
         "assignee": {
           "uuid": "u1000000-0000-0000-0000-000000000001",
           "name": "Agnes McAgent",
+          "first_name": "Agnes",
           "email": "agent1@nyaruka.com"
         },
-        "topic": { "uuid": "b1000000-0000-0000-0000-000000000001", "name": "General" },
+        "topic": {
+          "uuid": "b1000000-0000-0000-0000-000000000001",
+          "name": "General"
+        },
         "last_activity_on": "2024-05-01T10:30:00.000000Z",
         "closed_on": null
       }
@@ -27,19 +33,28 @@
     {
       "uuid": "c1000000-0000-0000-0000-000000000002",
       "name": "Ben Haggerty",
+      "scheme": "whatsapp",
+      "first_name": "Ben",
       "last_seen_on": "2024-05-01T08:00:00.000000Z",
       "last_msg": {
         "text": "Thanks, that fixed it for me. One more question though, can I change my number?",
         "direction": "O",
         "type": "T",
         "created_on": "2024-05-01T08:00:00.000000Z",
-        "sender": { "id": 1, "email": "agent1@nyaruka.com" },
+        "sender": {
+          "id": 1,
+          "first_name": "Agnes",
+          "email": "agent1@nyaruka.com"
+        },
         "attachments": []
       },
       "ticket": {
         "uuid": "a1000000-0000-0000-0000-000000000002",
         "assignee": null,
-        "topic": { "uuid": "b1000000-0000-0000-0000-000000000001", "name": "General" },
+        "topic": {
+          "uuid": "b1000000-0000-0000-0000-000000000001",
+          "name": "General"
+        },
         "last_activity_on": "2024-05-01T08:00:00.000000Z",
         "closed_on": null
       }
@@ -47,6 +62,8 @@
     {
       "uuid": "c1000000-0000-0000-0000-000000000003",
       "name": "Carmen Reyes",
+      "scheme": "telegram",
+      "first_name": "Carmen",
       "last_seen_on": "2024-04-30T16:45:00.000000Z",
       "last_msg": {
         "text": "Hola, necesito ayuda con mi cuenta",
@@ -59,7 +76,10 @@
       "ticket": {
         "uuid": "a1000000-0000-0000-0000-000000000003",
         "assignee": null,
-        "topic": { "uuid": "b1000000-0000-0000-0000-000000000001", "name": "General" },
+        "topic": {
+          "uuid": "b1000000-0000-0000-0000-000000000001",
+          "name": "General"
+        },
         "last_activity_on": "2024-04-30T16:45:00.000000Z",
         "closed_on": null
       }
@@ -67,12 +87,24 @@
     {
       "uuid": "c1000000-0000-0000-0000-000000000004",
       "name": "Dave Matthews",
+      "scheme": "tel",
+      "first_name": "Dave",
       "last_seen_on": "2024-04-29T09:00:00.000000Z",
-      "last_msg": null,
+      "last_msg": {
+        "text": "Thanks for getting in touch, how did we do?",
+        "direction": "O",
+        "type": "T",
+        "created_on": "2024-04-29T09:00:00.000000Z",
+        "sender": null,
+        "attachments": []
+      },
       "ticket": {
         "uuid": "a1000000-0000-0000-0000-000000000004",
         "assignee": null,
-        "topic": { "uuid": "b1000000-0000-0000-0000-000000000001", "name": "General" },
+        "topic": {
+          "uuid": "b1000000-0000-0000-0000-000000000001",
+          "name": "General"
+        },
         "last_activity_on": "2024-04-29T09:00:00.000000Z",
         "closed_on": "2024-04-29T09:00:00.000000Z"
       }
@@ -80,25 +112,34 @@
     {
       "uuid": "c1000000-0000-0000-0000-000000000005",
       "name": "Esther Kimani",
+      "scheme": "tel",
+      "first_name": "Esther",
       "last_seen_on": "2024-04-25T14:20:00.000000Z",
       "last_msg": null,
       "ticket": {
         "uuid": "a1000000-0000-0000-0000-000000000005",
         "assignee": null,
-        "topic": { "uuid": "b1000000-0000-0000-0000-000000000001", "name": "General" },
+        "topic": {
+          "uuid": "b1000000-0000-0000-0000-000000000001",
+          "name": "General"
+        },
         "last_activity_on": "2024-04-25T14:20:00.000000Z",
         "closed_on": "2024-04-25T14:20:00.000000Z"
       }
     },
     {
       "uuid": "c1000000-0000-0000-0000-000000000006",
-      "name": "Femi Adeyemi",
+      "name": "+1 206-555-0142",
+      "scheme": "tel",
       "last_seen_on": "2024-04-18T11:05:00.000000Z",
       "last_msg": null,
       "ticket": {
         "uuid": "a1000000-0000-0000-0000-000000000006",
         "assignee": null,
-        "topic": { "uuid": "b1000000-0000-0000-0000-000000000001", "name": "General" },
+        "topic": {
+          "uuid": "b1000000-0000-0000-0000-000000000001",
+          "name": "General"
+        },
         "last_activity_on": "2024-04-18T11:05:00.000000Z",
         "closed_on": "2024-04-18T11:05:00.000000Z"
       }

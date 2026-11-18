@@ -1833,6 +1833,12 @@ msgstr ""
 msgid "%s Channel"
 msgstr ""
 
+msgid "Delete channel"
+msgstr ""
+
+msgid "Delete Channel"
+msgstr ""
+
 msgid "Channel Log"
 msgstr ""
 
@@ -3543,6 +3549,12 @@ msgstr ""
 msgid "All Tickets"
 msgstr ""
 
+msgid "Delete topic"
+msgstr ""
+
+msgid "Delete Topic"
+msgstr ""
+
 msgid "New Team"
 msgstr ""
 
@@ -3562,12 +3574,6 @@ msgid "Export Raw"
 msgstr ""
 
 msgid "Add Note"
-msgstr ""
-
-msgid "Edit Topic"
-msgstr ""
-
-msgid "Delete Topic"
 msgstr ""
 
 msgid "Notes are never shown to the contact."
@@ -4381,12 +4387,6 @@ msgid "No templates have been synced for this channel."
 msgstr ""
 
 msgid "Cancel"
-msgstr ""
-
-msgid "Delete channel"
-msgstr ""
-
-msgid "Delete Channel"
 msgstr ""
 
 msgid "To get started, you'll need your short code along with your Africa's Talking username and an API key, which you can generate under Settings in your Africa's Talking app."
@@ -6107,7 +6107,23 @@ msgstr ""
 msgid "Any tickets opened within the selected date range will be included. You may optionally include additional columns for fields for each contact."
 msgstr ""
 
-msgid "All Agents"
+#, python-format
+msgid "%(count)s open tickets"
+msgstr ""
+
+msgid "1 open ticket"
+msgstr ""
+
+msgid "Edit Topic"
+msgstr ""
+
+msgid "All agents"
+msgstr ""
+
+msgid "Oldest"
+msgstr ""
+
+msgid "Most recent"
 msgstr ""
 
 msgid "See more tickets"
