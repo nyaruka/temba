@@ -1166,7 +1166,7 @@ class Contact(LegacyIDMixin, LegacyUUIDMixin, CreatedByMixin, ModifiedByMixin, S
         """
         Interrupts this contact's current flow
         """
-        if self.current_flow:
+        if self.current_flow_uuid:
             mailroom.get_client().contact_interrupt(self.org, user, [self])
 
     def block(self, user):
@@ -1350,6 +1350,36 @@ class Contact(LegacyIDMixin, LegacyUUIDMixin, CreatedByMixin, ModifiedByMixin, S
         """
         types = (ContactGroup.TYPE_MANUAL,) if manual_only else (ContactGroup.TYPE_MANUAL, ContactGroup.TYPE_SMART)
         return self.groups.filter(group_type__in=types, is_active=True)
+
+    @classmethod
+    def bulk_current_flow_cache_initialize(cls, org, contacts, *, using: str = "default"):
+        """
+        Initializes the current flow caches on the given contacts.
+        """
+        flow_uuids = {c.current_flow_uuid for c in contacts if c.current_flow_uuid}
+        flows_by_uuid = {}
+        if flow_uuids:
+            flows = org.flows.filter(uuid__in=flow_uuids, is_active=True).only("uuid", "name").using(using)
+            flows_by_uuid = {f.uuid: f for f in flows}
+
+        for contact in contacts:
+            contact._current_flow_cache = flows_by_uuid.get(contact.current_flow_uuid)
+
+    def get_current_flow(self):
+        """
+        Gets the flow this contact is currently in, if any
+        """
+        cache_attr = "_current_flow_cache"
+        if hasattr(self, cache_attr):
+            return getattr(self, cache_attr)
+
+        # a soft reference so the flow may no longer exist
+        flow = None
+        if self.current_flow_uuid:
+            flow = self.org.flows.filter(uuid=self.current_flow_uuid, is_active=True).first()
+
+        setattr(self, cache_attr, flow)
+        return flow
 
     def get_urns(self):
         """

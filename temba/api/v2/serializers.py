@@ -682,7 +682,7 @@ class ContactReadSerializer(ReadSerializer):
     name = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     language = serializers.SerializerMethodField()
-    flow = fields.FlowField(source="current_flow")
+    flow = fields.FlowField(source="get_current_flow")
     urns = serializers.SerializerMethodField()
     email = serializers.SerializerMethodField()
     email_verified_on = serializers.SerializerMethodField()

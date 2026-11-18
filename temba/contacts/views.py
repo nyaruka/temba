@@ -284,7 +284,6 @@ class ContactCRUDL(SmartCRUDL):
 
     class Read(SpaMixin, ContextMenuMixin, BaseReadView):
         fields = ("name",)
-        select_related = ("current_flow",)
 
         def derive_menu_path(self):
             return f"/contact/{self.object.get_status_display().lower()}"
