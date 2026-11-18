@@ -322,13 +322,15 @@ class OrgTest(TembaTest):
         self.org.reactivate()
         self.org.restrict(Org.RESTRICTED_BILLING, suspends_on=timezone.now() - timedelta(minutes=5))
 
-        real_refresh = Org.refresh_from_db
+        real_select_for_update = Org.objects.select_for_update
 
-        def refresh(org, *args, **kwargs):
-            Org.objects.filter(id=org.id).update(status=Org.STATUS_ACTIVE, restricted_reason=None, suspends_on=None)
-            return real_refresh(org, *args, **kwargs)
+        def select_for_update(*args, **kwargs):
+            Org.objects.filter(id=self.org.id).update(
+                status=Org.STATUS_ACTIVE, restricted_reason=None, suspends_on=None
+            )
+            return real_select_for_update(*args, **kwargs)
 
-        with patch.object(Org, "refresh_from_db", autospec=True, side_effect=refresh):
+        with patch.object(Org.objects, "select_for_update", side_effect=select_for_update):
             self.assertEqual({"suspended": 0}, suspend_restricted_orgs())
 
         self.org.refresh_from_db()
