@@ -18,7 +18,7 @@ class BackfillCurrentFlowUUIDTest(MigrationTest):
         self.contact1.save(update_fields=("current_flow",))
 
         self.contact2.current_flow = self.flow2
-        self.contact2.current_flow_uuid = self.flow2.uuid
+        self.contact2.current_flow_uuid = self.flow1.uuid  # differs from its flow so we can tell it wasn't overwritten
         self.contact2.save(update_fields=("current_flow", "current_flow_uuid"))
 
     def test_migration(self):
@@ -27,5 +27,5 @@ class BackfillCurrentFlowUUIDTest(MigrationTest):
         self.contact3.refresh_from_db()
 
         self.assertEqual(self.flow1.uuid, self.contact1.current_flow_uuid)
-        self.assertEqual(self.flow2.uuid, self.contact2.current_flow_uuid)
+        self.assertEqual(self.flow1.uuid, self.contact2.current_flow_uuid)
         self.assertIsNone(self.contact3.current_flow_uuid)
