@@ -1867,7 +1867,7 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
         self.assertEqual(302, response.status_code)
 
         contact.refresh_from_db()
-        self.assertIsNone(contact.current_flow)
+        self.assertIsNone(contact.current_flow_uuid)
 
         # can't interrupt contact in other org
         other_contact_interrupt = reverse("contacts.contact_interrupt", args=[other_org_contact.uuid])
@@ -1876,7 +1876,7 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
 
         # contact should be unchanged
         other_org_contact.refresh_from_db()
-        self.assertIsNotNone(other_org_contact.current_flow)
+        self.assertIsNotNone(other_org_contact.current_flow_uuid)
 
     @mock_mailroom
     def test_delete(self, mr_mocks):

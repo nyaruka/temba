@@ -161,9 +161,29 @@ class ContactTest(TembaTest):
         # noop when contact not in a flow
         self.joe.interrupt(self.admin)
 
-        self.joe.current_flow = self.create_flow("Test Flow")
+        self.joe.current_flow_uuid = self.create_flow("Test Flow").uuid
 
         self.joe.interrupt(self.admin)
+
+    def test_get_current_flow(self):
+        flow = self.create_flow("Test Flow")
+
+        self.assertIsNone(self.joe.get_current_flow())
+
+        self.joe.current_flow_uuid = flow.uuid
+        self.joe.save(update_fields=("current_flow_uuid",))
+
+        joe = Contact.objects.get(id=self.joe.id)
+        self.assertEqual(flow, joe.get_current_flow())
+
+        with self.assertNumQueries(0):
+            self.assertEqual(flow, joe.get_current_flow())
+
+        # a soft reference so might be to a flow that's been released
+        flow.release(self.admin)
+
+        joe = Contact.objects.get(id=self.joe.id)
+        self.assertIsNone(joe.get_current_flow())
 
     @cleanup(dynamodb=True)
     def test_release(self):

@@ -1370,8 +1370,9 @@ class FlowCRUDL(SmartCRUDL):
                     # changed, and if they're in a flow the user must confirm interrupting it
                     search_attrs = self.fields["contact_search"].widget.attrs
                     search_attrs["fixed"] = True
-                    if contact.current_flow:
-                        search_attrs["current_flow"] = contact.current_flow.name
+                    current_flow = contact.get_current_flow()
+                    if current_flow:
+                        search_attrs["current_flow"] = current_flow.name
 
                 if flow:
                     self.fields["flow"].widget = forms.HiddenInput(
@@ -1459,11 +1460,7 @@ class FlowCRUDL(SmartCRUDL):
             """
             uuids = [u for u in self.request.GET.get("c", "").split(",") if u]
             if len(uuids) == 1:
-                return (
-                    self.request.org.contacts.filter(uuid=uuids[0], is_active=True)
-                    .select_related("current_flow")
-                    .first()
-                )
+                return self.request.org.contacts.filter(uuid=uuids[0], is_active=True).first()
             return None
 
         def get_form_kwargs(self):

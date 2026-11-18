@@ -52,9 +52,19 @@ class ContactsEndpointTest(APITest):
         contact4.modified_on = timezone.now()
         contact4.last_seen_on = datetime(2020, 8, 12, 13, 30, 45, 123456, tzone.utc)
         contact4.current_flow = survey
+        contact4.current_flow_uuid = survey.uuid
         contact4.email = "don@example.com"
         contact4.email_verified_on = datetime(2020, 8, 10, 9, 15, 0, 0, tzone.utc)
-        contact4.save(update_fields=("modified_on", "last_seen_on", "current_flow", "email", "email_verified_on"))
+        contact4.save(
+            update_fields=(
+                "modified_on",
+                "last_seen_on",
+                "current_flow",
+                "current_flow_uuid",
+                "email",
+                "email_verified_on",
+            ),
+        )
 
         contact1.refresh_from_db()
         contact4.refresh_from_db()

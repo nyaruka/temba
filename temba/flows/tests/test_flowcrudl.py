@@ -1718,7 +1718,8 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # if the contact is in a flow, that's passed to the widget so it can ask for confirmation
         contact.current_flow = current
-        contact.save(update_fields=("current_flow",))
+        contact.current_flow_uuid = current.uuid
+        contact.save(update_fields=("current_flow", "current_flow_uuid"))
 
         response = self.assertUpdateFetch(start_url, [self.admin], form_fields=["flow", "contact_search"])
         attrs = response.context["form"].fields["contact_search"].widget.attrs
