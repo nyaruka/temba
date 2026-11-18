@@ -364,6 +364,8 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         default=False, help_text=_("Whether this organization anonymizes the phone numbers of contacts within it")
     )
     status = models.CharField(max_length=1, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
+    status_reason = models.CharField(max_length=1, choices=RESTRICTED_CHOICES, null=True)
+    status_changed_on = models.DateTimeField(null=True)
     restricted_reason = models.CharField(max_length=1, choices=RESTRICTED_CHOICES, null=True)
     suspends_on = models.DateTimeField(null=True)  # when a restricted org will be suspended, if ever
     is_flagged = models.BooleanField(default=False, help_text=_("Whether this organization is currently flagged."))
@@ -436,6 +438,8 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         # children share their parent's status so they can't be used to get around a restriction or suspension
         status = dict(
             status=self.status,
+            status_reason=self.status_reason,
+            status_changed_on=self.status_changed_on,
             restricted_reason=self.restricted_reason,
             suspends_on=self.suspends_on,
             suspended_on=self.suspended_on,
@@ -535,22 +539,22 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         if self.status == Org.STATUS_ACTIVE:
             self._set_status(
                 Org.STATUS_RESTRICTED,
-                restricted_reason=reason,
+                reason=reason,
                 suspends_on=suspends_on or timezone.now() + Org.RESTRICTION_PERIOD,
             )
 
             OrgRestrictedIncidentType.get_or_create(self)  # create incident which will notify admins
 
-    def suspend(self):
+    def suspend(self, reason: str = None):
         """
-        Suspends this org and any children.
+        Suspends this org and any children. Unless given a reason, it keeps the reason it was restricted for.
         """
         from temba.notifications.incidents.builtin import OrgRestrictedIncidentType, OrgSuspendedIncidentType
 
         assert not self.is_child
 
         if self.status != Org.STATUS_SUSPENDED:
-            self._set_status(Org.STATUS_SUSPENDED)
+            self._set_status(Org.STATUS_SUSPENDED, reason=reason or self.restricted_reason)
 
             OrgRestrictedIncidentType.end_ongoing(self)
             OrgSuspendedIncidentType.get_or_create(self)  # create incident which will notify admins
@@ -569,13 +573,16 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             OrgRestrictedIncidentType.end_ongoing(self)
             OrgSuspendedIncidentType.end_ongoing(self)
 
-    def _set_status(self, status: str, *, restricted_reason: str = None, suspends_on=None):
+    def _set_status(self, status: str, *, reason: str = None, suspends_on=None):
+        now = timezone.now()
         changes = dict(
             status=status,
-            restricted_reason=restricted_reason,
+            status_reason=reason,
+            status_changed_on=now,
+            restricted_reason=reason if status == Org.STATUS_RESTRICTED else None,
             suspends_on=suspends_on,
-            suspended_on=timezone.now() if status == Org.STATUS_SUSPENDED else None,
-            modified_on=timezone.now(),
+            suspended_on=now if status == Org.STATUS_SUSPENDED else None,
+            modified_on=now,
         )
 
         for name, value in changes.items():

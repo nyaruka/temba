@@ -243,7 +243,7 @@ class OrgCRUDL(SmartCRUDL):
                 elif action == self.ACTION_RESTRICT:
                     obj.restrict(Org.RESTRICTED_STAFF)
                 elif action == self.ACTION_SUSPEND:
-                    obj.suspend()
+                    obj.suspend(Org.RESTRICTED_STAFF)
                 elif action == self.ACTION_REACTIVATE:
                     obj.reactivate()
                 elif action == self.ACTION_VERIFY:
