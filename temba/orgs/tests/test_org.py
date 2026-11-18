@@ -280,9 +280,18 @@ class OrgTest(TembaTest):
         # flagging blocks sending but restriction takes precedence
         self.org.flag()
         self.assertEqual(Org.BLOCKER_FLAGGED, self.org.send_blocker)
+        self.assertEqual(Org.BLOCKER_FLAGGED, self.org.write_blocker)
 
         self.org.restrict(Org.RESTRICTED_STAFF)
         self.assertEqual(Org.BLOCKER_RESTRICTED, self.org.send_blocker)
+        self.assertEqual(Org.BLOCKER_FLAGGED, self.org.write_blocker)
+
+        # restriction alone doesn't block other changes, but suspension does
+        self.org.unflag()
+        self.assertIsNone(self.org.write_blocker)
+
+        self.org.suspend()
+        self.assertEqual(Org.BLOCKER_SUSPENDED, self.org.write_blocker)
 
     def test_suspend_restricted_orgs(self):
         self.org.features += [Org.FEATURE_CHILD_ORGS]

@@ -7,6 +7,7 @@ from django.utils import timezone
 from temba import mailroom
 from temba.api.v2.serializers import format_datetime
 from temba.contacts.models import Contact, ContactField, ContactGroup
+from temba.orgs.models import Org
 
 from . import APITest
 
@@ -775,6 +776,25 @@ class ContactsEndpointTest(APITest):
             endpoint_url + f"?uuid={self.joe.uuid}", self.editor, {"fields": {"activated_at": "el123a41"}}
         )
         self.assertIsNone(response.json()["fields"]["activated_at"])
+
+    def test_restricted_org(self):
+        endpoint_url = reverse("api.v2.contacts") + ".json"
+
+        # restricted orgs can't send but can still create and update contacts
+        self.org.restrict(Org.RESTRICTED_BILLING)
+
+        self.assertPost(endpoint_url, self.editor, {"name": "Jean", "urns": ["tel:+250783333333"]}, status=201)
+        jean = Contact.objects.get(name="Jean", is_active=True)
+
+        self.assertPost(endpoint_url + f"?uuid={jean.uuid}", self.editor, {"name": "Jean II"})
+        jean.refresh_from_db()
+        self.assertEqual("Jean II", jean.name)
+
+        # suspended orgs can't do either
+        self.org.suspend()
+
+        self.assertPost(endpoint_url, self.editor, {"name": "Bob"}, errors={"non_field_errors": Org.BLOCKER_SUSPENDED})
+        self.assertFalse(Contact.objects.filter(name="Bob").exists())
 
     def test_anonymous_org(self):
         endpoint_url = reverse("api.v2.contacts") + ".json"

@@ -108,9 +108,7 @@ class WriteSerializer(serializers.Serializer):
     new instance. Since our logic for that gets relatively complex, we have the serializer make that call.
     """
 
-    # whether writing starts sends, which restricted orgs can't do, though they can still make other writes that feed
-    # their automation, e.g. creating contacts
-    starts_sends = False
+    starts_sends = False  # whether writing starts sends, which are blocked in more orgs than other writes
 
     def run_validation(self, data=serializers.empty):
         if not isinstance(data, dict):
@@ -119,8 +117,9 @@ class WriteSerializer(serializers.Serializer):
             )
 
         org = self.context["org"]
-        if org.send_blocker and (self.starts_sends or org.status == Org.STATUS_SUSPENDED or org.is_flagged):
-            raise serializers.ValidationError(detail={"non_field_errors": [org.send_blocker]})
+        blocker = org.send_blocker if self.starts_sends else org.write_blocker
+        if blocker:
+            raise serializers.ValidationError(detail={"non_field_errors": [blocker]})
 
         return super().run_validation(data)
 

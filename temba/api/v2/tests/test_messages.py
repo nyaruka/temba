@@ -7,6 +7,7 @@ from django.utils import timezone
 from temba.api.v2.serializers import format_datetime
 from temba.api.v2.views import MessagesEndpoint
 from temba.msgs.models import Msg
+from temba.orgs.models import Org
 from temba.tests import mock_mailroom
 
 from . import APITest
@@ -407,3 +408,14 @@ class MessagesEndpointTest(APITest):
             },
             response.json(),
         )
+
+        # restricted orgs can't send messages
+        self.org.restrict(Org.RESTRICTED_BILLING)
+        num_sends = len(mr_mocks.calls["msg_send"])
+        self.assertPost(
+            endpoint_url,
+            self.admin,
+            {"contact": joe.uuid, "text": "Hello"},
+            errors={"non_field_errors": Org.BLOCKER_RESTRICTED},
+        )
+        self.assertEqual(num_sends, len(mr_mocks.calls["msg_send"]))
