@@ -4271,6 +4271,19 @@ msgstr "Aucun canal"
 msgid "No logs in the last 7 days."
 msgstr "Aucun journal au cours des 7 derniers jours."
 
+msgid "Showing these logs unredacted."
+msgstr "Ces journaux sont affichés sans masquage."
+
+msgid "These logs are redacted as this workspace is anonymous."
+msgstr "Ces journaux sont masqués car cet espace de travail est anonyme."
+
+msgctxt "button to hide contact details in logs again"
+msgid "Redact"
+msgstr "Masquer"
+
+msgid "Show unredacted"
+msgstr "Afficher sans masquage"
+
 msgid "Incoming message from"
 msgstr "Message entrant de"
 
