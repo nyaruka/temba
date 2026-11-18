@@ -57,4 +57,6 @@ class APITokenCRUDLTest(CRUDLTestMixin, TembaTest):
         token2.refresh_from_db()
 
         self.assertFalse(token1.is_active)
+        self.assertIsNotNone(token1.deleted_on)
         self.assertTrue(token2.is_active)
+        self.assertIsNone(token2.deleted_on)

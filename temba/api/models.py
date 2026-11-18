@@ -216,6 +216,7 @@ class APIToken(models.Model):
     created = models.DateTimeField(default=timezone.now)
     last_used_on = models.DateTimeField(null=True)
     is_active = models.BooleanField(default=True)
+    deleted_on = models.DateTimeField(null=True)
 
     @classmethod
     def create(cls, org, user):
@@ -241,7 +242,8 @@ class APIToken(models.Model):
 
     def release(self, user=None):
         self.is_active = False
-        self.save(update_fields=("is_active",))
+        self.deleted_on = timezone.now()
+        self.save(update_fields=("is_active", "deleted_on"))
 
         audit.record("api_token.released", user=self.user, org=self.org, actor=user, token=self.key[:4])
 

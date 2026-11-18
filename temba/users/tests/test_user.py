@@ -202,6 +202,7 @@ class UserTest(TembaTest):
 
         token.refresh_from_db()
         self.assertFalse(token.is_active)
+        self.assertIsNotNone(token.deleted_on)
         self.assertEqual(0, self.admin.groups.count())
 
     def test_last_seen(self):
