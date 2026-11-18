@@ -35,10 +35,14 @@ class CatchUpAPITokenDeletedOnTest(MigrationTest):
     migrate_to = "0056_backfill_apitoken_deleted_on"
 
     def setUpBeforeMigration(self, apps):
+        Token = apps.get_model("api", "APIToken")
+
         self.deleted_on = datetime(2026, 11, 1, 12, 0, tzinfo=tzone.utc)
 
         def create(key, is_active, deleted_on=None):
-            APIToken.objects.create(key=key, org=self.org, user=self.admin, is_active=is_active, deleted_on=deleted_on)
+            Token.objects.create(
+                key=key, org_id=self.org.id, user_id=self.admin.id, is_active=is_active, deleted_on=deleted_on
+            )
 
         create("live", True)
         create("revoked", False, self.deleted_on)
