@@ -3070,9 +3070,6 @@ msgstr "Si cette organisation anonymise les numéros de téléphone de contacts 
 msgid "Whether this organization is currently flagged."
 msgstr "Si cette organisation est actuellement signalée."
 
-msgid "Whether this organization is currently suspended."
-msgstr "Si cette organisation est actuellement suspendue."
-
 #, python-format
 msgid "[%(name)s] Invitation to join workspace"
 msgstr "[%(name)s] Invitation à rejoindre l'espace de travail"

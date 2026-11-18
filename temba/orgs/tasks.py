@@ -92,7 +92,7 @@ def suspend_restricted_orgs():
         # happen between checking and suspending it - a reactivation that comes after will undo the suspension
         with transaction.atomic():
             org = Org.objects.select_for_update().get(id=org_id)
-            if org.status == Org.STATUS_RESTRICTED and org.suspends_on and org.suspends_on <= now:
+            if org.status == Org.STATUS_RESTRICTED and org.suspends_on <= now:
                 org.suspend()
                 num_suspended += 1
 

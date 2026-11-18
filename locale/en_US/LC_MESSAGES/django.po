@@ -3048,9 +3048,6 @@ msgstr ""
 msgid "Whether this organization is currently flagged."
 msgstr ""
 
-msgid "Whether this organization is currently suspended."
-msgstr ""
-
 #, python-format
 msgid "[%(name)s] Invitation to join workspace"
 msgstr ""
