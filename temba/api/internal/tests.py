@@ -813,8 +813,8 @@ class EndpointsTest(APITestMixin, TembaTest):
 
         # give flow1 some runs (3 completed, 1 waiting, 1 active, 1 expired) and flow2 some waiting runs
         for scope, count in (("status:C", 3), ("status:W", 1), ("status:A", 1), ("status:X", 1)):
-            flow1.counts.create(scope=scope, count=count)
-        flow2.counts.create(scope="status:W", count=5)
+            flow1.tallies.create(scope=scope, count=count)
+        flow2.tallies.create(scope="status:W", count=5)
 
         # and some recent engagement for the sparkline
         today = timezone.now().date()
