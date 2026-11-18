@@ -367,10 +367,8 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     restricted_reason = models.CharField(max_length=1, choices=RESTRICTED_CHOICES, null=True)
     suspends_on = models.DateTimeField(null=True)  # when a restricted org will be suspended, if ever
     is_flagged = models.BooleanField(default=False, help_text=_("Whether this organization is currently flagged."))
-    is_suspended = models.BooleanField(default=False, help_text=_("Whether this organization is currently suspended."))
     is_internal = models.BooleanField(default=False)
 
-    suspended_on = models.DateTimeField(null=True)
     released_on = models.DateTimeField(null=True)
     deleted_on = models.DateTimeField(null=True)
 
@@ -439,8 +437,6 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             status=self.status,
             restricted_reason=self.restricted_reason,
             suspends_on=self.suspends_on,
-            is_suspended=self.is_suspended,
-            suspended_on=self.suspended_on,
         )
 
         org = Org.objects.create(
@@ -572,14 +568,10 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             OrgSuspendedIncidentType.end_ongoing(self)
 
     def _set_status(self, status: str, *, restricted_reason: str = None, suspends_on=None):
-        # is_suspended is kept in sync for anything that hasn't yet switched to reading status
-        is_suspended = status == Org.STATUS_SUSPENDED
         changes = dict(
             status=status,
             restricted_reason=restricted_reason,
             suspends_on=suspends_on,
-            is_suspended=is_suspended,
-            suspended_on=timezone.now() if is_suspended else None,
             modified_on=timezone.now(),
         )
 
@@ -1389,16 +1381,6 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
     def __str__(self):
         return self.name
-
-    class Meta:
-        constraints = [
-            # suspended_on must be set if and only if org is suspended
-            models.CheckConstraint(
-                condition=Q(is_suspended=True, suspended_on__isnull=False)
-                | Q(is_suspended=False, suspended_on__isnull=True),
-                name="orgs_org_suspended_on_consistent",
-            )
-        ]
 
 
 class OrgMembership(models.Model):
