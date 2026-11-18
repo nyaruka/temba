@@ -488,6 +488,13 @@ class OrgTest(TembaTest):
                 url + ".json", json.dumps(data), content_type="application/json", HTTP_X_FORWARDED_HTTPS="https"
             )
 
+        start_url = f"{reverse('flows.flow_start', args=[])}?flow={flow.id}"
+
+        def start_flow_via_ui():
+            return self.client.post(
+                start_url, {"flow": flow.id, "contact_search": get_contact_search(query='uuid="{mark.uuid}"')}
+            )
+
         self.org.flag()
         self.org.refresh_from_db()
         self.assertTrue(self.org.is_flagged)
@@ -495,13 +502,8 @@ class OrgTest(TembaTest):
         expected_message = "Sorry, your workspace is currently flagged. To re-enable starting flows and sending messages, please contact support."
 
         # while we are flagged, we can't start flows
-        start_url = f"{reverse('flows.flow_start', args=[])}?flow={flow.id}"
-        self.assertRaises(
-            AssertionError,
-            self.client.post,
-            start_url,
-            {"flow": flow.id, "contact_search": get_contact_search(query='uuid="{mark.uuid}"')},
-        )
+        response = start_flow_via_ui()
+        self.assertFormError(response.context["form"], "contact_search", [expected_message])
 
         response = send_broadcast_via_api()
         self.assertContains(response, expected_message, status_code=400)
@@ -515,12 +517,8 @@ class OrgTest(TembaTest):
 
         expected_message = "Sorry, your workspace is currently restricted. To re-enable starting flows and sending messages, please contact support."
 
-        self.assertRaises(
-            AssertionError,
-            self.client.post,
-            start_url,
-            {"flow": flow.id, "contact_search": get_contact_search(query='uuid="{mark.uuid}"')},
-        )
+        response = start_flow_via_ui()
+        self.assertFormError(response.context["form"], "contact_search", [expected_message])
 
         response = send_broadcast_via_api()
         self.assertContains(response, expected_message, status_code=400)
@@ -537,12 +535,8 @@ class OrgTest(TembaTest):
         expected_message = "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please contact support."
 
         # we also can't start flows
-        self.assertRaises(
-            AssertionError,
-            self.client.post,
-            start_url,
-            {"flow": flow.id, "contact_search": get_contact_search(query='uuid="{mark.uuid}"')},
-        )
+        response = start_flow_via_ui()
+        self.assertFormError(response.context["form"], "contact_search", [expected_message])
 
         response = send_broadcast_via_api()
         self.assertContains(response, expected_message, status_code=400)
@@ -561,10 +555,7 @@ class OrgTest(TembaTest):
         # unsuspend our org and start a flow
         self.org.reactivate()
 
-        self.client.post(
-            start_url,
-            {"flow": flow.id, "contact_search": get_contact_search(query='uuid="{mark.uuid}"')},
-        )
+        start_flow_via_ui()
 
         self.assertEqual(len(mr_mocks.calls["flow_start"]), 1)
 

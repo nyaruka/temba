@@ -1688,6 +1688,19 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
             ),
         )
 
+        # restricted and suspended orgs can't start flows even if the page didn't stop them
+        for block in (lambda: self.org.restrict(Org.RESTRICTED_STAFF), self.org.suspend):
+            block()
+            self.assertUpdateSubmit(
+                start_url,
+                self.admin,
+                {"flow": flow.id, "contact_search": get_contact_search(query=query)},
+                form_errors={"contact_search": str(self.org.send_blocker)},
+                object_unchanged=flow,
+            )
+
+        self.assertEqual(2, len(mr_mocks.calls["flow_start"]))
+
     @mock_mailroom
     def test_start_seeded_contact(self, mr_mocks):
         contact = self.create_contact("Bob", phone="+593979099111")

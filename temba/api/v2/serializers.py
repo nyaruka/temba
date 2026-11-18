@@ -108,14 +108,19 @@ class WriteSerializer(serializers.Serializer):
     new instance. Since our logic for that gets relatively complex, we have the serializer make that call.
     """
 
+    # whether writing starts sends, which restricted orgs can't do, though they can still make other writes that feed
+    # their automation, e.g. creating contacts
+    starts_sends = False
+
     def run_validation(self, data=serializers.empty):
         if not isinstance(data, dict):
             raise serializers.ValidationError(
                 detail={"non_field_errors": ["Request body should be a single JSON object"]}
             )
 
-        if self.context["org"].send_blocker:
-            raise serializers.ValidationError(detail={"non_field_errors": [self.context["org"].send_blocker]})
+        org = self.context["org"]
+        if org.send_blocker and (self.starts_sends or org.status == Org.STATUS_SUSPENDED or org.is_flagged):
+            raise serializers.ValidationError(detail={"non_field_errors": [org.send_blocker]})
 
         return super().run_validation(data)
 
@@ -343,6 +348,8 @@ class BroadcastReadSerializer(ReadSerializer):
 
 
 class BroadcastWriteSerializer(WriteSerializer):
+    starts_sends = True
+
     urns = serializers.ListField(required=False, child=fields.URNField(), max_length=100)
     contacts = fields.ContactField(many=True, required=False)
     groups = fields.ContactGroupField(many=True, required=False)
@@ -1329,6 +1336,8 @@ class FlowStartReadSerializer(ReadSerializer):
 
 
 class FlowStartWriteSerializer(WriteSerializer):
+    starts_sends = True
+
     PARAMS_MAX_LENGTH = 10_000
 
     flow = fields.FlowField()
@@ -1582,6 +1591,8 @@ class MsgReadSerializer(ReadSerializer):
 
 
 class MsgWriteSerializer(WriteSerializer):
+    starts_sends = True
+
     contact = fields.ContactField()
     text = serializers.CharField(required=False, max_length=Msg.MAX_TEXT_LEN)
     attachments = fields.MediaField(required=False, many=True, max_items=Msg.MAX_ATTACHMENTS)

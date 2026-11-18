@@ -8,6 +8,7 @@ from temba import mailroom
 from temba.msgs.forms import ComposeForm
 from temba.msgs.models import Broadcast, Media
 from temba.msgs.views import ScheduleForm
+from temba.orgs.models import Org
 from temba.schedules.models import Schedule
 from temba.templates.models import TemplateTranslation
 from temba.tests import CRUDLTestMixin, TembaTest, mock_mailroom
@@ -229,6 +230,18 @@ class BroadcastCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # we should have a sent broadcast, so no schedule attached
         self.assertEqual(1, Broadcast.objects.filter(schedule=None).count())
+
+        # restricted orgs can't send even if the page didn't stop them
+        self.org.restrict(Org.RESTRICTED_STAFF)
+        response = self.process_wizard(
+            "create",
+            create_url,
+            self._form_data(translations={"eng": {"text": text}}, contacts=[self.joe], send_when=ScheduleForm.SEND_NOW),
+        )
+        self.assertFormError(response.context["form"], "contact_search", [str(Org.BLOCKER_RESTRICTED)])
+        self.assertEqual(2, Broadcast.objects.count())
+
+        self.org.reactivate()
 
         # servicers should be able to use wizard up to the last step
         self.login(self.customer_support, choose_org=self.org)
