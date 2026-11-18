@@ -3,7 +3,7 @@ from unittest.mock import ANY, patch
 from django.db import IntegrityError, connection, transaction
 from django.utils import timezone
 
-from temba.flows.models import FlowActivityCount, FlowRun, FlowSession
+from temba.flows.models import FlowActivityCount, FlowRun
 from temba.flows.tasks import squash_flow_counts
 from temba.tests import TembaTest
 from temba.utils.models.counts import get_merge_squashed_sql
@@ -11,7 +11,7 @@ from temba.utils.uuid import uuid4
 
 
 class FlowActivityCountTest(TembaTest):
-    def test_no_node_counts(self):
+    def test_no_trigger_counts(self):
         flow = self.create_flow("Test 1")
         contact = self.create_contact("Bob", phone="+1234567890")
 
@@ -43,100 +43,8 @@ class FlowActivityCountTest(TembaTest):
 
         FlowRun.objects.all().delete()
 
-        # runs at each node are counted by flow tallies which mailroom writes
-        self.assertFalse(flow.counts.prefix("node:").exists())
-
-    def test_status_counts(self):
-        contact = self.create_contact("Bob", phone="+1234567890")
-        session = FlowSession.objects.create(
-            uuid=uuid4(),
-            contact_uuid=contact.uuid,
-            status=FlowSession.STATUS_WAITING,
-            output={"status": "waiting"},
-            created_on=timezone.now(),
-        )
-
-        def create_runs(flow_status_pairs: tuple) -> list:
-            runs = []
-            for flow, status in flow_status_pairs:
-                runs.append(
-                    FlowRun(
-                        uuid=uuid4(),
-                        org=self.org,
-                        flow=flow,
-                        contact=contact,
-                        status=status,
-                        session_uuid=session.uuid,
-                        created_on=timezone.now(),
-                        modified_on=timezone.now(),
-                        exited_on=timezone.now() if status not in ("A", "W") else None,
-                    )
-                )
-            return FlowRun.objects.bulk_create(runs)
-
-        flow1 = self.create_flow("Test 1")
-        flow2 = self.create_flow("Test 2")
-
-        runs1 = create_runs(
-            (
-                (flow1, FlowRun.STATUS_ACTIVE),
-                (flow2, FlowRun.STATUS_WAITING),
-                (flow1, FlowRun.STATUS_ACTIVE),
-                (flow2, FlowRun.STATUS_WAITING),
-                (flow1, FlowRun.STATUS_WAITING),
-                (flow1, FlowRun.STATUS_COMPLETED),
-            )
-        )
-
-        self.assertEqual(
-            {(flow1, "status:A"): 2, (flow2, "status:W"): 2, (flow1, "status:W"): 1, (flow1, "status:C"): 1},
-            {(c.flow, c.scope): c.count for c in FlowActivityCount.objects.all()},
-        )
-        self.assertEqual({"status:A": 2, "status:W": 1, "status:C": 1}, flow1.counts.scope_totals())
-        self.assertEqual({"status:W": 2}, flow2.counts.scope_totals())
-
-        # no difference after squashing
-        squash_flow_counts()
-
-        self.assertEqual({"status:A": 2, "status:W": 1, "status:C": 1}, flow1.counts.scope_totals())
-        self.assertEqual({"status:W": 2}, flow2.counts.scope_totals())
-
-        runs2 = create_runs(
-            (
-                (flow1, FlowRun.STATUS_ACTIVE),
-                (flow1, FlowRun.STATUS_ACTIVE),
-                (flow2, FlowRun.STATUS_EXPIRED),
-            )
-        )
-
-        self.assertEqual({"status:A": 4, "status:W": 1, "status:C": 1}, flow1.counts.scope_totals())
-        self.assertEqual({"status:W": 2, "status:X": 1}, flow2.counts.scope_totals())
-
-        # bulk update runs like they're being interrupted
-        FlowRun.objects.filter(id__in=[r.id for r in runs1]).update(
-            status=FlowRun.STATUS_INTERRUPTED, exited_on=timezone.now()
-        )
-
-        self.assertEqual({"status:A": 2, "status:W": 0, "status:C": 0, "status:I": 4}, flow1.counts.scope_totals())
-        self.assertEqual({"status:W": 0, "status:X": 1, "status:I": 2}, flow2.counts.scope_totals())
-
-        # no difference after squashing except zeros gone
-        squash_flow_counts()
-
-        self.assertEqual({"status:A": 2, "status:I": 4}, flow1.counts.scope_totals())
-        self.assertEqual({"status:X": 1, "status:I": 2}, flow2.counts.scope_totals())
-
-        # deleting runs which are still active or waiting decrements their status counts
-        FlowRun.objects.filter(id__in=[r.id for r in runs2]).delete()
-
-        self.assertEqual({"status:A": 0, "status:I": 4}, flow1.counts.scope_totals())
-        self.assertEqual({"status:X": 1, "status:I": 2}, flow2.counts.scope_totals())
-
-        # but deleting exited runs doesn't change status counts
-        FlowRun.objects.filter(id__in=[r.id for r in runs1]).delete()
-
-        self.assertEqual({"status:A": 0, "status:I": 4}, flow1.counts.scope_totals())
-        self.assertEqual({"status:X": 1, "status:I": 2}, flow2.counts.scope_totals())
+        # runs by status and at each node are counted by flow tallies which mailroom writes
+        self.assertFalse(FlowActivityCount.objects.exists())
 
     def test_squashing(self):
         def squashed(flow) -> dict:
