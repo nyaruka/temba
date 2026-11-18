@@ -282,7 +282,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     LIMIT_TRIGGERS = "triggers"
 
     # restricted orgs can't start sends from the UI or API but automated processing continues, whereas suspended orgs
-    # have no processing at all
+    # also can't send any messages, automated or not, or make changes via the API
     STATUS_ACTIVE = "A"
     STATUS_RESTRICTED = "R"
     STATUS_SUSPENDED = "S"

@@ -5,6 +5,7 @@ from datetime import timedelta
 from celery import shared_task
 
 from django.conf import settings
+from django.db import transaction
 from django.utils import timezone
 
 from temba.channels.models import ChannelTally
@@ -86,12 +87,14 @@ def suspend_restricted_orgs():
     restricted = Org.objects.filter(is_active=True, parent=None, status=Org.STATUS_RESTRICTED, suspends_on__lte=now)
 
     num_suspended = 0
-    for org in restricted:
-        # the org may have been reactivated or given more time since we fetched it
-        org.refresh_from_db(fields=("status", "suspends_on"))
-        if org.status == Org.STATUS_RESTRICTED and org.suspends_on and org.suspends_on <= now:
-            org.suspend()
-            num_suspended += 1
+    for org_id in restricted.values_list("id", flat=True):
+        # the org may have been reactivated or given more time since we fetched it, and locking it means that can't
+        # happen between checking and suspending it - a reactivation that comes after will undo the suspension
+        with transaction.atomic():
+            org = Org.objects.select_for_update().get(id=org_id)
+            if org.status == Org.STATUS_RESTRICTED and org.suspends_on and org.suspends_on <= now:
+                org.suspend()
+                num_suspended += 1
 
     return {"suspended": num_suspended}
 
