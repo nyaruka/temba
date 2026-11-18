@@ -177,6 +177,9 @@ export class CardLayout extends RapidElement {
         --framed-border: none;
         --framed-radius: 0;
         --framed-shadow: none;
+        /* room for anything floating inside the frame, e.g. the chat's
+           search bar, to keep off its edges */
+        --framed-inset: 8px;
       }
 
       :host([narrow]) .frame.framed {

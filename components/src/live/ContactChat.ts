@@ -279,7 +279,10 @@ export class ContactChat extends ContactStoreElement {
         align-items: center;
         gap: 6px;
         padding: 4px 12px;
-        margin-bottom: var(--layout-spacing, 8px);
+        /* inside a framed card it keeps off the frame's edges - outside one
+           it sits flush above the chat card */
+        margin: var(--framed-inset, 0) var(--framed-inset, 0)
+          var(--layout-spacing, 8px);
         background: var(--surface);
         border: 1px solid var(--border-strong);
         border-radius: var(--r-lg);
