@@ -1,3 +1,6 @@
+## v26.3.209 (2026-11-18)
+ * Remove Org.is_suspended and constrain each org status to its own fields
+
 ## v26.3.208 (2026-11-18)
  * Lock each restricted org while deciding whether to suspend it
 
