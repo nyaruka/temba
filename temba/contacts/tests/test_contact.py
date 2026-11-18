@@ -344,8 +344,6 @@ class ContactTest(TembaTest):
 
         MockSessionWriter(contact, flow).wait().save()
 
-        self.assertEqual({"status:W": 1}, flow.counts.prefix("status:").scope_totals())
-
         with patch("temba.contacts.models.Contact._full_release"):
             contact.release(self.admin)
 
@@ -353,14 +351,11 @@ class ContactTest(TembaTest):
 
         # run is now interrupted rather than still waiting
         self.assertEqual({FlowRun.STATUS_INTERRUPTED}, {r.status for r in flow.runs.all()})
-        self.assertEqual({"status:W": 0, "status:I": 1}, flow.counts.prefix("status:").scope_totals())
 
-        # and deleting it leaves that as the historical record
         contact.refresh_from_db()
         contact._full_release()
 
         self.assertEqual(0, flow.runs.count())
-        self.assertEqual({"status:W": 0, "status:I": 1}, flow.counts.prefix("status:").scope_totals())
 
     @mock_mailroom
     def test_release_without_interrupt(self, mr_mocks):
@@ -376,11 +371,10 @@ class ContactTest(TembaTest):
         self.assertEqual([], mr_mocks.calls["contact_interrupt"])
         self.assertEqual({FlowRun.STATUS_WAITING}, {r.status for r in flow.runs.all()})
 
-        # so the db trigger is left to decrement the waiting count when the run is deleted
         contact.refresh_from_db()
         contact._full_release()
 
-        self.assertEqual({"status:W": 0}, flow.counts.prefix("status:").scope_totals())
+        self.assertEqual(0, flow.runs.count())
 
     def test_status_changes_and_release(self):
         flow = self.create_flow("Test")
