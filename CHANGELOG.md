@@ -1,3 +1,6 @@
+## v26.3.208 (2026-11-18)
+ * Lock each restricted org while deciding whether to suspend it
+
 ## v26.3.207 (2026-11-18)
  * Block sends only for restricted workspaces, and check the blocker server-side
  * Add Org.write_blocker to block the API's non-send writes for restricted workspaces, with tests for messages and contact writes
