@@ -17,9 +17,10 @@ interface PickerUser {
 /**
  * Picks a user, shown as the user themselves - their avatar and name, with an
  * arrow - rather than as a form field. Opening it shows a searchable list of
- * users, led by an option for all of them when allLabel is set. Its value is
- * the picked user's uuid, empty for all of them, and it fires change when
- * that changes.
+ * users, led by an option for none in particular when allLabel is set, e.g.
+ * All agents or Unassigned. Its value is the picked user's uuid (or email,
+ * for callers that only know that), empty for none, and it fires change when
+ * that changes - selected has the whole user.
  */
 export class UserPicker extends RapidElement {
   static get styles() {
@@ -34,9 +35,16 @@ export class UserPicker extends RapidElement {
       }
 
       /* the whole width is the control, with its arrow at the far end */
+      /* optionally a filled, bordered box, for a picker sitting among other
+         form controls */
       .current {
         display: flex;
         align-items: center;
+        text-align: left;
+        box-sizing: border-box;
+        min-height: var(--user-picker-min-height, auto);
+        background: var(--user-picker-bg, transparent);
+        border: var(--user-picker-border, none);
         gap: var(--user-picker-gap, 12px);
         min-width: 0;
         padding: 4px 8px 4px var(--user-picker-inset, 6px);
@@ -44,25 +52,39 @@ export class UserPicker extends RapidElement {
         cursor: pointer;
         user-select: none;
         font-size: var(--user-picker-font-size, 15.5px);
-        font-weight: var(--w-semibold, 600);
+        font-weight: var(--user-picker-font-weight, var(--w-semibold, 600));
         color: var(--text-1);
       }
 
       .current:hover {
-        background: var(--sunken);
+        background: var(--user-picker-hover-bg, var(--sunken));
       }
 
-      /* the user's own 26px circle scaled from its left edge to 32px */
+      :host([disabled]) .current {
+        cursor: default;
+        opacity: 0.6;
+      }
+
+      :host([disabled]) .current:hover {
+        background: none;
+      }
+
+      :host([disabled]) .current > temba-icon {
+        visibility: hidden;
+      }
+
+      /* the user's own 26px circle scaled from its left edge, to 32px unless
+         the size and its scale are set together */
       .current .avatar {
         display: flex;
         align-items: center;
         flex-shrink: 0;
-        width: 32px;
-        height: 32px;
+        width: var(--user-picker-avatar-size, 32px);
+        height: var(--user-picker-avatar-size, 32px);
       }
 
       .current .avatar temba-user {
-        --temba-scale: 1.23;
+        --temba-scale: var(--user-picker-avatar-scale, 1.23);
       }
 
       /* all users take the same place as one, as an outlined circle that
@@ -173,9 +195,20 @@ export class UserPicker extends RapidElement {
   @property({ type: String })
   value = '';
 
-  // when set, the list leads with this option for all users
+  // when set, the list leads with this option for none in particular
   @property({ type: String, attribute: 'all-label' })
   allLabel = '';
+
+  // the icon standing in for an avatar beside allLabel
+  @property({ type: String, attribute: 'all-icon' })
+  allIcon: string = Icon.group;
+
+  @property({ type: Boolean, reflect: true })
+  disabled = false;
+
+  // opens the list above, for a picker near the bottom of the page
+  @property({ type: Boolean })
+  up = false;
 
   @state()
   private users: PickerUser[] = [];
@@ -205,8 +238,16 @@ export class UserPicker extends RapidElement {
     }
   }
 
-  private get picked(): PickerUser {
-    return this.users.find((user) => user.uuid === this.value) || null;
+  // the picked user, matched on their uuid or email
+  public get selected(): PickerUser {
+    if (!this.value) {
+      return null;
+    }
+    return (
+      this.users.find(
+        (user) => user.uuid === this.value || user.email === this.value
+      ) || null
+    );
   }
 
   // the options for the current search, the all option first while browsing
@@ -238,7 +279,7 @@ export class UserPicker extends RapidElement {
 
   private pick(user: PickerUser) {
     this.closeMenu();
-    if (user.uuid !== this.value) {
+    if (user.uuid !== (this.selected?.uuid ?? '')) {
       this.value = user.uuid;
       this.fireEvent('change');
     }
@@ -279,34 +320,46 @@ export class UserPicker extends RapidElement {
       ><span class="name">${user.name}</span>`;
   }
 
+  // the picked user, or the label for none, with the arrow that opens the
+  // list - on its own when disabled, so it can't open
+  private renderCurrent(picked: PickerUser): TemplateResult {
+    return html`<div
+      slot="toggle"
+      class="current"
+      role="button"
+      aria-haspopup="listbox"
+      aria-disabled=${this.disabled}
+    >
+      ${picked
+        ? html`<span class="avatar"
+              ><temba-user
+                name=${picked.name}
+                email=${picked.email}
+                avatar=${picked.avatar || ''}
+              ></temba-user></span
+            ><span class="name">${picked.name}</span>`
+        : html`<span class="avatar all"
+              ><temba-icon name=${this.allIcon}></temba-icon></span
+            ><span class="name">${this.allLabel}</span>`}
+      <temba-icon name=${Icon.arrow_down} size="1"></temba-icon>
+    </div>`;
+  }
+
   public render(): TemplateResult {
-    const picked = this.picked;
+    const picked = this.selected;
+    if (this.disabled) {
+      return this.renderCurrent(picked);
+    }
+
     const options = this.options;
     return html`
       <temba-dropdown
         arrowSize="0"
         margin="4"
+        ?up=${this.up}
         @temba-opened=${this.handleOpened}
       >
-        <div
-          slot="toggle"
-          class="current"
-          role="button"
-          aria-haspopup="listbox"
-        >
-          ${picked
-            ? html`<span class="avatar"
-                  ><temba-user
-                    name=${picked.name}
-                    email=${picked.email}
-                    avatar=${picked.avatar || ''}
-                  ></temba-user></span
-                ><span class="name">${picked.name}</span>`
-            : html`<span class="avatar all"
-                  ><temba-icon name=${Icon.group}></temba-icon></span
-                ><span class="name">${this.allLabel}</span>`}
-          <temba-icon name=${Icon.arrow_down} size="1"></temba-icon>
-        </div>
+        ${this.renderCurrent(picked)}
         <div slot="dropdown" class="menu">
           <div class="search">
             <temba-icon name=${Icon.search} size="0.9"></temba-icon>
@@ -327,7 +380,7 @@ export class UserPicker extends RapidElement {
                         ? 'picked'
                         : ''} ${index === this.cursor ? 'cursor' : ''}"
                       role="option"
-                      aria-selected=${user.uuid === this.value}
+                      aria-selected=${user.uuid === (picked?.uuid ?? '')}
                       @click=${() => this.pick(user)}
                     >
                       ${user.uuid

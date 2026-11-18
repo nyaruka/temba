@@ -228,21 +228,22 @@ export class TicketList extends TembaList {
             : this.workspace
           : null;
 
-      // closed is a mark where the age would be, with how it closed in words
-      // for screen readers and on hover - a check in the success tone when
-      // it was resolved, a clock switched off when it expired from going idle
+      // closed is a check in a circle, centred where the age would be, with
+      // how it closed in words for screen readers and on hover - a solid
+      // green disc when it was resolved, a light dashed ring when it expired
+      // from going idle, closed but not by anyone
       const expired = ticket.outcome === 'idle';
       const outcome = expired ? msg('Expired') : msg('Resolved');
       const rail = closed
-        ? html`<temba-icon
-            name=${expired ? Icon.ticket_expired : Icon.tickets_closed}
-            size=${expired ? '1.1' : '1.2'}
+        ? html`<span
             title=${outcome}
             aria-label=${outcome}
-            style="--icon-color:${expired
-              ? 'var(--text-3)'
-              : 'var(--success)'};"
-          ></temba-icon>`
+            role="img"
+            style="display:flex; align-items:center; justify-content:center; box-sizing:border-box; width:20px; height:20px; border-radius:50%; ${expired
+              ? 'border:1px dashed var(--text-4); --icon-color:var(--text-3);'
+              : 'background:var(--success); --icon-color:#fff;'}"
+            ><temba-icon name=${Icon.tickets_closed} size="0.75"></temba-icon
+          ></span>`
         : html`<temba-date
             value=${ticket.last_activity_on}
             display="age"
@@ -288,7 +289,9 @@ export class TicketList extends TembaList {
               : null}
           </div>
           <div
-            style="align-self:stretch; display:flex; align-items:flex-end; justify-content:flex-end; border-left:1px solid var(--border);"
+            style="align-self:stretch; display:flex; align-items:${closed
+              ? 'center'
+              : 'flex-end'}; justify-content:flex-end; border-left:1px solid var(--border);"
           >
             ${rail}
           </div>

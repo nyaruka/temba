@@ -3055,6 +3055,14 @@
   <source>Your workspace was restricted, please contact support for assistance.</source>
   <target>Votre espace de travail a été restreint, veuillez contacter l'assistance pour obtenir de l'aide.</target>
 </trans-unit>
+<trans-unit id="s8a49b21a2c9c0022">
+  <source>Unassigned</source>
+  <target>Non assigné</target>
+</trans-unit>
+<trans-unit id="sd92f50233df5a438">
+  <source>Reopen</source>
+  <target>Rouvrir</target>
+</trans-unit>
 </body>
 </file>
 </xliff>

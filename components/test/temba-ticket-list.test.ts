@@ -200,28 +200,20 @@ describe('temba-ticket-list', () => {
     assert.equal(list.items.length, 6);
 
     // no divider between the open and the closed - a closed row marks how
-    // it closed where the open rows show their age, a check when resolved
-    // and an hourglass when it expired
+    // it closed where the open rows show their age, a check in a circle
+    // labelled with its outcome
     const options = list.shadowRoot.querySelector('temba-options');
     await (options as any).updateComplete;
     assert.isNull(options.shadowRoot.querySelector('[role="separator"]'));
     const rows = options.shadowRoot.querySelectorAll('.option');
     assert.equal(rows.length, 6);
     assert.isNotNull(rows[0].querySelector('temba-date[display="age"]'));
-    assert.isNull(rows[0].querySelector('temba-icon[name="check"]'));
+    assert.isNull(rows[0].querySelector('[role="img"]'));
     assert.isNull(rows[3].querySelector('temba-date'));
-    assert.equal(
-      rows[3]
-        .querySelector('temba-icon[name="check"]')
-        .getAttribute('aria-label'),
-      'Resolved'
-    );
-    assert.equal(
-      rows[4]
-        .querySelector('temba-icon[name="alarm-clock-off"]')
-        .getAttribute('aria-label'),
-      'Expired'
-    );
+    const outcome = (row: Element) =>
+      row.querySelector('[role="img"]')?.getAttribute('aria-label');
+    assert.equal(outcome(rows[3]), 'Resolved');
+    assert.equal(outcome(rows[4]), 'Expired');
 
     await assertScreenshot('list/tickets-merged', getClip(list));
 
@@ -1004,7 +996,7 @@ describe('temba-ticket-list', () => {
     assert.isNull(options.shadowRoot.querySelector('[role="separator"]'));
     const closed = Array.from(
       options.shadowRoot.querySelectorAll('.option')
-    ).map((row) => !!row.querySelector('temba-icon[name="check"]'));
+    ).map((row) => !!row.querySelector('[role="img"]'));
     assert.deepEqual(closed, [false, true, false]);
 
     // and it stays there once the selection moves on

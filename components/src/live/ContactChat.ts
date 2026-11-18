@@ -36,7 +36,7 @@ import {
   TypingEvent as RenderedTypingEvent
 } from '../display/Chat';
 import { DEFAULT_AVATAR } from '../webchat/assets';
-import { UserSelect } from '../form/select/UserSelect';
+import { UserPicker } from '../form/UserPicker';
 import { Select } from '../form/select/Select';
 import {
   Events,
@@ -569,16 +569,29 @@ export class ContactChat extends ContactStoreElement {
         border-top: 1px solid #ddd;
       }
 
-      /* Keep the assignment + topic controls the same height as the
-         Close button so the row reads as one strip. Shrink the user
-         avatars (--temba-scale) so they fit in the smaller box. */
-      .ticket-controls temba-user-select,
+      /* the row's controls all stand 32px tall, the height the assignee
+         picker's avatar needs, so it reads as one strip - the select's
+         height doesn't count its 1px border */
       .ticket-controls temba-select {
-        --temba-select-min-height: 28px;
+        --temba-select-min-height: 30px;
       }
 
-      .ticket-controls temba-user-select {
-        --temba-scale: 0.75;
+      /* the assignee picker, the same one that heads the ticket list, sized
+         down to the strip - a 22px avatar (its 26px circle at 0.85) and the
+         row's own type - and boxed like the topic select beside it */
+      .ticket-controls temba-user-picker {
+        width: 220px;
+        flex-shrink: 0;
+        --user-picker-font-size: 13px;
+        --user-picker-font-weight: var(--w-medium, 500);
+        --user-picker-avatar-size: 22px;
+        --user-picker-avatar-scale: 0.85;
+        --user-picker-gap: 6px;
+        --user-picker-inset: 4px;
+        --user-picker-min-height: 32px;
+        --user-picker-bg: var(--color-widget-bg, #fff);
+        --user-picker-hover-bg: var(--color-widget-bg-focused, #fff);
+        --user-picker-border: 1px solid var(--color-widget-border);
       }
 
       temba-user {
@@ -600,12 +613,19 @@ export class ContactChat extends ContactStoreElement {
         margin: 0.25em;
       }
 
-      temba-user-select {
-        width: 250px;
-      }
-
       temba-button {
         --button-border: 1px solid #ddd;
+      }
+
+      /* close and reopen sit at the height, type and corners of the row's
+         other controls */
+      .ticket-controls temba-button {
+        /* a button's edge is a 1px ring outside its box, so 30px reads as
+           32px beside the bordered select */
+        --button-small-height: 30px;
+        --button-small-x-pad: 12px;
+        --button-small-font-size: 13px;
+        --button-small-radius: var(--r, 8px);
       }
     `;
   }
@@ -1967,11 +1987,8 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private handleAssignmentChanged(evt: CustomEvent) {
-    const users = evt.currentTarget as UserSelect;
-    const assignee = users.values[0];
-
-    this.assignTicket(assignee ? assignee.email : null);
-    users.blur();
+    const picker = evt.currentTarget as UserPicker;
+    this.assignTicket(picker.selected ? picker.selected.email : null);
   }
 
   private handleTopicChanged(evt: CustomEvent) {
@@ -2184,17 +2201,14 @@ export class ContactChat extends ContactStoreElement {
                 ? html`<div class="status-area">
                     ${inTicket
                       ? html`<div class="ticket-controls">
-                          <temba-user-select
-                            placeholder="Assign to.."
-                            searchable
-                            searchOnFocus
-                            clearable
-                            .values=${this.currentTicket.assignee
-                              ? [this.currentTicket.assignee]
-                              : []}
+                          <temba-user-picker
+                            all-label=${msg('Unassigned')}
+                            all-icon=${Icon.contact}
+                            up
+                            value=${this.currentTicket.assignee?.email || ''}
                             @change=${this.handleAssignmentChanged}
                             ?disabled=${ticketClosed || this.disableAssign}
-                          ></temba-user-select>
+                          ></temba-user-picker>
 
                           <temba-select
                             style="margin:0 0.5em; flex-grow:1"
@@ -2209,14 +2223,16 @@ export class ContactChat extends ContactStoreElement {
                           ${this.currentTicket.closed_on
                             ? html`
                                 <temba-button
-                                  name="Reopen"
+                                  name=${msg('Reopen')}
+                                  small
                                   @click=${this.handleReopen}
                                 ></temba-button>
                               `
                             : html`
                                 <temba-button
-                                  name="Close"
+                                  name=${msg('Close')}
                                   destructive
+                                  small
                                   @click=${this.handleClose}
                                 ></temba-button>
                               `}
