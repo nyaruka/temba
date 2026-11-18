@@ -154,6 +154,11 @@ class SwitchOrgStatusFieldsTest(MigrationTest):
         self.org4 = Org.objects.create(name="Org 4", timezone="UTC", created_by=self.admin, modified_by=self.admin)
         OldOrg.objects.filter(id=self.org4.id).update(status_reason="L", status_changed_on=self.t1)
 
+        # restricted by code that wrote the new fields, which are left alone
+        self.org5 = Org.objects.create(name="Org 5", timezone="UTC", created_by=self.admin, modified_by=self.admin)
+        restrict(self.org5, "L")
+        OldOrg.objects.filter(id=self.org5.id).update(status_reason="L", status_changed_on=self.t2)
+
     def test_migration(self):
         def assert_org(org, reason, changed_on):
             org.refresh_from_db()
@@ -165,3 +170,4 @@ class SwitchOrgStatusFieldsTest(MigrationTest):
         assert_org(self.org3, "S", self.t3)
         assert_org(self.org2, "B", self.t2)
         assert_org(self.org4, None, self.t1)
+        assert_org(self.org5, "L", self.t2)

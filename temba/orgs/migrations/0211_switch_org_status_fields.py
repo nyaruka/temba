@@ -1,7 +1,7 @@
 from django.db import migrations, models
 
 # catches up rows whose status changed while the previous release was being deployed, since code from before it only
-# wrote the fields being replaced
+# wrote the fields being replaced, leaving rows that code since has kept up to date
 BACKFILL_SQL = """
 UPDATE orgs_org o SET
     status_reason = o.restricted_reason,
@@ -12,9 +12,10 @@ UPDATE orgs_org o SET
         ),
         o.modified_on
     )
-WHERE o.status = 'R';
+WHERE o.status = 'R' AND (o.status_changed_on IS NULL OR o.status_reason IS DISTINCT FROM o.restricted_reason);
 
-UPDATE orgs_org SET status_changed_on = suspended_on WHERE status = 'S';
+UPDATE orgs_org SET status_changed_on = suspended_on
+WHERE status = 'S' AND status_changed_on IS DISTINCT FROM suspended_on;
 
 UPDATE orgs_org SET status_reason = NULL WHERE status = 'A' AND status_reason IS NOT NULL;
 """
