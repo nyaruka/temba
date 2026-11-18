@@ -36,6 +36,7 @@ class FlowsEndpointTest(APITest):
             status=FlowRun.STATUS_COMPLETED,
             exited_on=timezone.now(),
         )
+        color.tallies.create(scope=f"status:{FlowRun.STATUS_COMPLETED}", count=1)
 
         # flow belong to other org
         other_org = self.create_flow("Other", org=self.org2)

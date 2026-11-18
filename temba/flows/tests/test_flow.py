@@ -286,7 +286,7 @@ class FlowTest(TembaTest, CRUDLTestMixin):
         flow = self.create_flow("Test Flow")
 
         # add ongoing runs
-        flow.counts.create(scope=f"status:{FlowRun.STATUS_WAITING}", count=10)
+        flow.tallies.create(scope=f"status:{FlowRun.STATUS_WAITING}", count=10)
 
         # do not archive if flow has ongoing runs
         Flow.apply_action_archive(self.admin, Flow.objects.filter(pk=flow.pk))
@@ -295,8 +295,8 @@ class FlowTest(TembaTest, CRUDLTestMixin):
         self.assertFalse(flow.is_archived)
 
         # clear the waiting runs and add only completed
-        flow.counts.all().delete()
-        flow.counts.create(scope=f"status:{FlowRun.STATUS_COMPLETED}", count=10)
+        flow.tallies.all().delete()
+        flow.tallies.create(scope=f"status:{FlowRun.STATUS_COMPLETED}", count=10)
 
         # can archive if no ongoing runs
         Flow.apply_action_archive(self.admin, Flow.objects.filter(pk=flow.pk))

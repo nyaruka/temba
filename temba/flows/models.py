@@ -562,12 +562,23 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         self.save(update_fields=("is_archived", "modified_by", "modified_on"))
 
     @classmethod
+    def _run_count_scopes(cls) -> list[str]:
+        return [f"status:{s}" for s, _ in FlowRun.STATUS_CHOICES]
+
+    @classmethod
     def prefetch_run_counts(cls, flows, *, using="default"):
         """
-        Prefetches the counts required by get_run_counts
+        Prefetches the counts required by get_run_counts. The using argument is ignored as tallies must be read from
+        the default database at the same moment as Valkey.
         """
 
-        FlowActivityCount.prefetch_by_scope(flows, prefix="status:", to_attr="_status_counts", using=using)
+        totals = FlowTally.get_totals_by_flow(flows, cls._run_count_scopes())
+        by_flow = defaultdict(dict)
+        for (flow_id, scope), count in totals.items():
+            by_flow[flow_id][scope] = count
+
+        for flow in flows:
+            flow._status_counts = by_flow[flow.id]
 
     def get_run_counts(self) -> dict[str, int]:
         """
@@ -577,7 +588,7 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         if hasattr(self, "_status_counts"):
             counts = self._status_counts
         else:
-            counts = self.counts.prefix("status:").scope_totals()
+            counts = FlowTally.get_totals(self, self._run_count_scopes())
 
         return defaultdict(int, {scope[7:]: count for scope, count in counts.items()})
 
@@ -1368,22 +1379,6 @@ class FlowActivityCount(BaseScopedCount):
     squash_over = ("flow_id", "scope")
 
     flow = models.ForeignKey(Flow, on_delete=models.PROTECT, related_name="counts", db_index=False)  # indexed below
-
-    @classmethod
-    def prefetch_by_scope(cls, flows, *, prefix: str, to_attr: str, using: str):
-        counts = (
-            cls.objects.using(using)
-            .filter(flow__in=flows)
-            .prefix(prefix)
-            .values_list("flow_id", "scope")
-            .annotate(total=Sum("count"))
-        )
-        by_flow = defaultdict(dict)
-        for count in counts:
-            by_flow[count[0]][count[1]] = count[2]
-
-        for flow in flows:
-            setattr(flow, to_attr, by_flow[flow.id])
 
     class Meta:
         indexes = [
