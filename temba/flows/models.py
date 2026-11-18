@@ -13,7 +13,6 @@ from packaging.version import Version
 
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
-from django.contrib.postgres.indexes import OpClass
 from django.db import models, transaction
 from django.db.models import Prefetch, Q, Sum
 from django.db.models.functions import Lower
@@ -41,7 +40,7 @@ from temba.utils.models import (
     OrgAsset,
     delete_in_batches,
 )
-from temba.utils.models.counts import BaseScopedCount, BaseSquashableCount
+from temba.utils.models.counts import BaseSquashableCount
 from temba.utils.uuid import uuid4
 
 from . import legacy
@@ -1032,7 +1031,6 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         self.topic_dependencies.clear()
         self.user_dependencies.clear()
 
-        self.counts.all().delete()
         self.tallies.all().delete()
 
         # call mailroom to interrupt sessions where contact is currently in this flow
@@ -1056,7 +1054,6 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
 
         self.labels.clear()
 
-        delete_in_batches(self.counts.all())
         delete_in_batches(self.result_counts.all())
         delete_in_batches(self.tallies.all(), pk="pk")
 
@@ -1369,28 +1366,6 @@ class FlowRevision(LegacyIDMixin, CreatedByMixin):
             "revision": self.revision,
             "changes": self.changes or {},
         }
-
-
-class FlowActivityCount(BaseScopedCount):
-    """
-    Flow-level counts of activity.
-    """
-
-    squash_over = ("flow_id", "scope")
-
-    flow = models.ForeignKey(Flow, on_delete=models.PROTECT, related_name="counts", db_index=False)  # indexed below
-
-    class Meta:
-        indexes = [
-            models.Index("flow", OpClass("scope", name="varchar_pattern_ops"), name="flowactivitycount_flow_scope"),
-            # for squashing task
-            models.Index(name="flowactivitycount_unsquashed", fields=("flow", "scope"), condition=Q(is_squashed=False)),
-        ]
-        constraints = [
-            models.UniqueConstraint(
-                name="flowactivitycount_squashed", fields=("flow", "scope"), condition=Q(is_squashed=True)
-            )
-        ]
 
 
 class FlowResultCount(BaseSquashableCount):
