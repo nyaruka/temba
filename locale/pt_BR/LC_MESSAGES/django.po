@@ -3614,6 +3614,13 @@ msgstr "Exportar bruto"
 msgid "Add Note"
 msgstr "Adicionar nota"
 
+#, python-format
+msgid "%(count)s open ticket"
+msgid_plural "%(count)s open tickets"
+msgstr[0] "%(count)s ticket aberto"
+msgstr[1] "%(count)s de tickets abertos"
+msgstr[2] "%(count)s tickets abertos"
+
 msgid "Notes are never shown to the contact."
 msgstr "As notas nunca são mostradas ao contato."
 
@@ -6229,13 +6236,6 @@ msgstr "Falha ao carregar"
 
 msgid "Any tickets opened within the selected date range will be included. You may optionally include additional columns for fields for each contact."
 msgstr "Serão incluídos todos os tickets abertos dentro do intervalo de datas selecionado. Você pode, opcionalmente, incluir colunas adicionais para os campos de cada contato."
-
-#, python-format
-msgid "%(count)s open tickets"
-msgstr "%(count)s tickets abertos"
-
-msgid "1 open ticket"
-msgstr "1 ticket aberto"
 
 msgid "Edit Topic"
 msgstr "Editar tópico"

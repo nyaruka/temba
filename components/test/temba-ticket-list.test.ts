@@ -297,15 +297,17 @@ describe('temba-ticket-list', () => {
 
     mockGET(/tickets-counted\.json\?after=/, {
       results: [ticketResult('t2', '2024-05-01T12:05:00.000Z')],
-      count: 2
+      count: 2,
+      count_label: '2 open tickets'
     });
     mockGET(/tickets-counted\.json$/, {
       results: [ticketResult('t1', '2024-05-01T11:00:00.000Z')],
       count: 1,
+      count_label: '1 open ticket',
       now: '2024-05-01T12:00:00.000Z'
     });
 
-    const counts: number[] = [];
+    const counts: string[] = [];
     const list = (await getComponent(
       'temba-ticket-list',
       { endpoint: '/test/assets/list/tickets-counted.json' },
@@ -314,7 +316,7 @@ describe('temba-ticket-list', () => {
       600
     )) as TicketList;
     list.addEventListener(CustomEventType.CountChanged, (event: CustomEvent) =>
-      counts.push(event.detail.count)
+      counts.push(event.detail.label)
     );
     await new Promise<void>((resolve) => {
       list.addEventListener(CustomEventType.FetchComplete, () => resolve(), {
@@ -322,11 +324,12 @@ describe('temba-ticket-list', () => {
       });
     });
     assert.equal(list.count, 1);
+    assert.equal(list.countLabel, '1 open ticket');
 
     // and again when a refresh brings a new count
     await refreshList(list, 'counted');
     assert.equal(list.count, 2);
-    assert.deepEqual(counts.slice(-1), [2]);
+    assert.deepEqual(counts.slice(-1), ['2 open tickets']);
     now.restore();
   });
 

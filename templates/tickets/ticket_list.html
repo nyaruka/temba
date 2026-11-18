@@ -662,11 +662,9 @@
       }
     }
 
-    {% blocktrans trimmed with count="__COUNT__" asvar open_tickets_label %}{{ count }} open tickets{% endblocktrans %}
     function handleTicketCount(event) {
-      const count = event.detail.count;
-      const label = count === 1 ? '{{ _("1 open ticket")|escapejs }}' : '{{ open_tickets_label|escapejs }}';
-      document.querySelector('#ticket-count').textContent = label.replace('__COUNT__', count.toLocaleString());
+      // the server words the count, in the user's language
+      document.querySelector('#ticket-count').textContent = event.detail.label;
     }
 
     function handleTicketsRefreshed(event) {

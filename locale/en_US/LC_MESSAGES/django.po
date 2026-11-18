@@ -3588,6 +3588,12 @@ msgstr ""
 msgid "Add Note"
 msgstr ""
 
+#, python-format
+msgid "%(count)s open ticket"
+msgid_plural "%(count)s open tickets"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "Notes are never shown to the contact."
 msgstr ""
 
@@ -6181,13 +6187,6 @@ msgid "Failed to load"
 msgstr ""
 
 msgid "Any tickets opened within the selected date range will be included. You may optionally include additional columns for fields for each contact."
-msgstr ""
-
-#, python-format
-msgid "%(count)s open tickets"
-msgstr ""
-
-msgid "1 open ticket"
 msgstr ""
 
 msgid "Edit Topic"

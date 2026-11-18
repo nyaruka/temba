@@ -174,6 +174,25 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         ticket.save(update_fields=("status", "closed_on", "outcome"))
         self.assertContentMenu(deep_link, self.admin, [])
 
+    def test_list_closed_ticket_oldest_first(self):
+        ticket = self.create_ticket(self.contact, closed_on=timezone.now())
+
+        self.admin.settings = {"ticket_order": "oldest"}
+        self.admin.save(update_fields=("settings",))
+
+        # an oldest first list only has open tickets, so a link to a closed one can't find it on the first page -
+        # it opens on the ticket itself instead
+        response = self.assertListFetch(f"/ticket/all/{ticket.uuid}/", [self.admin])
+        self.assertEqual("all", response.context["folder"])
+        self.assertEqual(str(ticket.uuid), response.context["uuid"])
+        self.assertNotIn("nextUUID", response.context)
+        self.assertEqual("?order=oldest", response.context["tickets_query"])
+
+        # and the list's fetch for that one ticket returns it, closed as it is
+        response = self.requestView(f"/ticket/folder/all/{ticket.uuid}?order=oldest", self.admin)
+        self.assertEqual([str(ticket.uuid)], [t["ticket"]["uuid"] for t in response.json()["results"]])
+        self.assertIsNotNone(response.json()["results"][0]["ticket"]["closed_on"])
+
     def test_list_legacy_status_redirect(self):
         ticket = self.create_ticket(self.contact, assignee=self.admin)
 
@@ -606,6 +625,15 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(1, open_count(f"{all_url}?assignee={self.agent3.uuid}", self.admin))
         self.assertEqual(0, open_count(f"{all_url}?assignee={self.agent.uuid}", self.admin))
         self.assertEqual(1, open_count(all_url, self.agent2))  # only sales topic
+        self.assertEqual(1, open_count(sales_url, self.agent2))  # their one topic, as a folder
+
+        # and how it reads, in the user's language with its plural rules
+        self.assertEqual("3 open tickets", self.requestView(all_url, self.admin).json()["count_label"])
+        self.assertEqual("1 open ticket", self.requestView(mine_url, self.admin).json()["count_label"])
+        self.assertEqual(
+            "0 open tickets",
+            self.requestView(f"{all_url}?assignee={self.agent.uuid}", self.admin).json()["count_label"],
+        )
 
         # assignee filter is ignored on non-all folders
         assert_tickets(f"{mine_url}?assignee={self.agent3.uuid}", self.admin, expected=[c1_t1])
@@ -770,12 +798,13 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
 
     def test_folder_first_names(self):
         self.create_ticket(self.create_contact("Maria Fernanda Oliveira", phone="123"))
+        self.create_ticket(self.create_contact("  ", phone="124"))
         self.create_ticket(self.create_contact(None, phone="125"))
 
-        # contacts without a name have no first name, so the list shows their URN in full
+        # contacts without a name, or with a blank one, have no first name - the list shows what they have in full
         response = self.requestView("/ticket/folder/all/", self.admin)
         self.assertEqual(
-            [(None, "125", "tel"), ("Maria", "Maria Fernanda Oliveira", "tel")],
+            [(None, "125", "tel"), (None, "  ", "tel"), ("Maria", "Maria Fernanda Oliveira", "tel")],
             [(t["first_name"], t["name"], t["scheme"]) for t in response.json()["results"]],
         )
 

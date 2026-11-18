@@ -117,16 +117,24 @@ export class TicketList extends TembaList {
     this.activityCursor = isNaN(now) ? 0 : now;
   }
 
-  // how many open tickets the list's folder has, as the server last told us
-  // - it's for the page to show, so a change is announced with an event
+  // how many open tickets the list's folder has, as the server last told us,
+  // and its wording of that in the user's language - they're for the page to
+  // show, so a change is announced with an event
   @property({ type: Number, attribute: false })
   count: number = null;
+
+  @property({ type: String, attribute: false })
+  countLabel: string = null;
 
   protected handleCurrentPage(page: ResultsPage): void {
     const count = page.data?.count;
     if (typeof count === 'number' && count !== this.count) {
       this.count = count;
-      this.fireCustomEvent(CustomEventType.CountChanged, { count });
+      this.countLabel = page.data.count_label || String(count);
+      this.fireCustomEvent(CustomEventType.CountChanged, {
+        count,
+        label: this.countLabel
+      });
     }
   }
 

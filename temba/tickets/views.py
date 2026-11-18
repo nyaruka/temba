@@ -12,8 +12,9 @@ from django.db.models.functions import Cast, Lower
 from django.http import Http404, JsonResponse
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import number_format
 from django.utils.functional import cached_property
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _, ngettext
 
 from temba import mailroom
 from temba.channels.models import ChannelLog
@@ -692,7 +693,7 @@ class TicketCRUDL(SmartCRUDL):
                     "uuid": str(t.contact.uuid),
                     "name": t.contact.get_display(org=self.request.org),
                     # only contacts with a name have a first name - the rest are shown by their URN in full
-                    "first_name": t.contact.name.split()[0] if t.contact.name else None,
+                    "first_name": (t.contact.name.split() or [None])[0] if t.contact.name else None,
                     "scheme": context["schemes"].get(t.contact_id),
                     "last_seen_on": t.contact.last_seen_on,
                     "last_msg": msg_as_json(last_msg) if last_msg else None,
@@ -706,7 +707,12 @@ class TicketCRUDL(SmartCRUDL):
                     },
                 }
 
-            results = {"results": [as_json(t) for t in context["tickets"]], "count": self.get_open_count()}
+            # the count, and how it reads in the user's language - plural rules vary too much to apply in the browser
+            count = self.get_open_count()
+            count_label = ngettext("%(count)s open ticket", "%(count)s open tickets", count) % {
+                "count": number_format(count, force_grouping=True)
+            }
+            results = {"results": [as_json(t) for t in context["tickets"]], "count": count, "count_label": count_label}
 
             # an oldest first list only loads the oldest part of a folder, so it can't take the newest activity it
             # has seen as where to poll for new activity from - it polls from when its first page was read instead
