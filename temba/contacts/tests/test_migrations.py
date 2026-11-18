@@ -1,29 +1,31 @@
-from temba.contacts.models import ContactGroup
 from temba.tests import MigrationTest
 
 
-class UpdateOpenTicketsQueryTest(MigrationTest):
+class BackfillCurrentFlowUUIDTest(MigrationTest):
     app = "contacts"
-    migrate_from = "0225_squashed_counts_unique"
-    migrate_to = "0226_update_open_tickets_query"
+    migrate_from = "0229_contact_current_flow_uuid"
+    migrate_to = "0230_backfill_contact_current_flow_uuid"
 
     def setUpBeforeMigration(self, apps):
-        ContactGroup.objects.filter(is_system=True, group_type=ContactGroup.TYPE_SMART).update(query="tickets > 0")
+        self.flow1 = self.create_flow("Flow 1")
+        self.flow2 = self.create_flow("Flow 2")
 
-        self.group1 = self.org.groups.create(
-            name="Has Tickets",
-            group_type=ContactGroup.TYPE_SMART,
-            query="tickets > 0",
-            status=ContactGroup.STATUS_READY,
-            created_by=self.admin,
-            modified_by=self.admin,
-        )
+        self.contact1 = self.create_contact("Ann", phone="+16055741111")  # in a flow, no uuid
+        self.contact2 = self.create_contact("Bob", phone="+16055742222")  # in a flow, uuid already written
+        self.contact3 = self.create_contact("Cat", phone="+16055743333")  # not in a flow
+
+        self.contact1.current_flow = self.flow1
+        self.contact1.save(update_fields=("current_flow",))
+
+        self.contact2.current_flow = self.flow2
+        self.contact2.current_flow_uuid = self.flow2.uuid
+        self.contact2.save(update_fields=("current_flow", "current_flow_uuid"))
 
     def test_migration(self):
-        for org in (self.org, self.org2):
-            open_tickets = org.groups.get(name="Open Tickets")
-            self.assertEqual('ticket = "open"', open_tickets.query)
-            self.assertEqual(ContactGroup.STATUS_READY, open_tickets.status)
+        self.contact1.refresh_from_db()
+        self.contact2.refresh_from_db()
+        self.contact3.refresh_from_db()
 
-        self.group1.refresh_from_db()
-        self.assertEqual("tickets > 0", self.group1.query)  # user smart groups untouched
+        self.assertEqual(self.flow1.uuid, self.contact1.current_flow_uuid)
+        self.assertEqual(self.flow2.uuid, self.contact2.current_flow_uuid)
+        self.assertIsNone(self.contact3.current_flow_uuid)
