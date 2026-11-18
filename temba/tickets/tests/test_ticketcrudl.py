@@ -1100,12 +1100,12 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
             response.json(),
         )
 
-        self.org.daily_counts.create(day=date(2024, 4, 25), scope="tickets:opened:0", count=1)
-        self.org.daily_counts.create(day=date(2024, 4, 25), scope=f"tickets:opened:{cats.id}", count=3)
-        self.org.daily_counts.create(day=date(2024, 4, 25), scope=f"tickets:opened:{dogs.id}", count=2)
-        self.org.daily_counts.create(day=date(2024, 4, 26), scope=f"tickets:opened:{cats.id}", count=5)
-        self.org.daily_counts.create(day=date(2024, 4, 26), scope=f"tickets:opened:{dogs.id}", count=4)
-        self.org.daily_counts.create(day=date(2024, 5, 3), scope="tickets:opened:0", count=2)  # out of period
+        self.org.org_tallies.create(scope="tickets/opened:0@2024-04-25", count=1)
+        self.org.org_tallies.create(scope=f"tickets/opened:{cats.id}@2024-04-25", count=3)
+        self.org.org_tallies.create(scope=f"tickets/opened:{dogs.id}@2024-04-25", count=2)
+        self.org.org_tallies.create(scope=f"tickets/opened:{cats.id}@2024-04-26", count=5)
+        self.org.org_tallies.create(scope=f"tickets/opened:{dogs.id}@2024-04-26", count=4)
+        self.org.org_tallies.create(scope="tickets/opened:0@2024-05-03", count=2)  # out of period
 
         response = self.client.get(opened_url + "?since=2024-03-01&until=2024-05-01")
         self.assertEqual(
@@ -1178,12 +1178,12 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
             response.json(),
         )
 
-        self.org.daily_counts.create(day=date(2024, 4, 25), scope="ticketresptime:total", count=1000)
-        self.org.daily_counts.create(day=date(2024, 4, 25), scope="ticketresptime:count", count=5)
-        self.org.daily_counts.create(day=date(2024, 4, 26), scope="ticketresptime:total", count=500)
-        self.org.daily_counts.create(day=date(2024, 4, 26), scope="ticketresptime:count", count=2)
-        self.org.daily_counts.create(day=date(2024, 5, 3), scope="ticketresptime:total", count=100)  # out of period
-        self.org.daily_counts.create(day=date(2024, 5, 3), scope="ticketresptime:count", count=3)
+        self.org.org_tallies.create(scope="tickets/resptime:total@2024-04-25", count=1000)
+        self.org.org_tallies.create(scope="tickets/resptime:count@2024-04-25", count=5)
+        self.org.org_tallies.create(scope="tickets/resptime:total@2024-04-26", count=500)
+        self.org.org_tallies.create(scope="tickets/resptime:count@2024-04-26", count=2)
+        self.org.org_tallies.create(scope="tickets/resptime:total@2024-05-03", count=100)  # out of period
+        self.org.org_tallies.create(scope="tickets/resptime:count@2024-05-03", count=3)
 
         response = self.client.get(opened_url + "?since=2024-03-01&until=2024-05-01")
         self.assertEqual(
@@ -1212,21 +1212,11 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
             response.json(),
         )
 
-        # Create some test data - msgs:ticketreplies:{team_id}:{user_id}
-        self.org.daily_counts.create(day=date(2024, 4, 25), scope="msgs:ticketreplies:0:1", count=2)  # No Team
-        self.org.daily_counts.create(
-            day=date(2024, 4, 25), scope=f"msgs:ticketreplies:{self.sales_only.id}:2", count=3
-        )  # Sales team
-        self.org.daily_counts.create(
-            day=date(2024, 4, 25), scope=f"msgs:ticketreplies:{self.support_only.id}:3", count=1
-        )  # Support team
-        self.org.daily_counts.create(
-            day=date(2024, 4, 26), scope=f"msgs:ticketreplies:{self.sales_only.id}:2", count=5
-        )  # Sales team next day
-        self.org.daily_counts.create(
-            day=date(2024, 4, 26), scope=f"msgs:ticketreplies:{self.sales_only.id}:4", count=2
-        )  # Sales team, different user
-        self.org.daily_counts.create(day=date(2024, 5, 3), scope="msgs:ticketreplies:0:1", count=1)  # out of period
+        self.org.org_tallies.create(scope="tickets/teamreplies:0@2024-04-25", count=2)  # no team
+        self.org.org_tallies.create(scope=f"tickets/teamreplies:{self.sales_only.id}@2024-04-25", count=3)
+        self.org.org_tallies.create(scope=f"tickets/teamreplies:{self.support_only.id}@2024-04-25", count=1)
+        self.org.org_tallies.create(scope=f"tickets/teamreplies:{self.sales_only.id}@2024-04-26", count=7)
+        self.org.org_tallies.create(scope="tickets/teamreplies:0@2024-05-03", count=1)  # out of period
 
         response = self.client.get(replies_url + "?since=2024-03-01&until=2024-05-01")
         self.assertEqual(
@@ -1236,7 +1226,7 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
                     "labels": ["2024-04-25", "2024-04-26"],
                     "datasets": [
                         {"label": "No Team", "data": [2, 0]},
-                        {"label": "Sales", "data": [3, 7]},  # 5 + 2 from different users
+                        {"label": "Sales", "data": [3, 7]},
                         {"label": "Support", "data": [1, 0]},
                     ],
                 },
@@ -1279,16 +1269,11 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(200, response.status_code)
         self.assertEqual({"results": []}, response.json())
 
-        # create reply counts - scope format: msgs:ticketreplies:{team_id}:{user_id}
-        self.org.daily_counts.create(day=date(2024, 4, 25), scope=f"msgs:ticketreplies:0:{self.admin.id}", count=5)
-        self.org.daily_counts.create(day=date(2024, 4, 26), scope=f"msgs:ticketreplies:0:{self.admin.id}", count=3)
-        self.org.daily_counts.create(
-            day=date(2024, 4, 25), scope=f"msgs:ticketreplies:{self.sales_only.id}:{self.agent2.id}", count=10
-        )
-        self.org.daily_counts.create(day=date(2024, 4, 25), scope=f"msgs:ticketreplies:0:{self.editor.id}", count=2)
-        self.org.daily_counts.create(
-            day=date(2024, 5, 3), scope=f"msgs:ticketreplies:0:{self.admin.id}", count=100
-        )  # out of period
+        self.org.org_tallies.create(scope=f"tickets/userreplies:{self.admin.id}@2024-04-25", count=5)
+        self.org.org_tallies.create(scope=f"tickets/userreplies:{self.admin.id}@2024-04-26", count=3)
+        self.org.org_tallies.create(scope=f"tickets/userreplies:{self.agent2.id}@2024-04-25", count=10)
+        self.org.org_tallies.create(scope=f"tickets/userreplies:{self.editor.id}@2024-04-25", count=2)
+        self.org.org_tallies.create(scope=f"tickets/userreplies:{self.admin.id}@2024-05-03", count=100)  # out of period
 
         response = self.client.get(leaderboard_url + "?since=2024-03-01&until=2024-05-01")
         data = response.json()

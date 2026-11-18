@@ -3,6 +3,7 @@ import logging
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 from datetime import date
+from typing import Any
 
 import openpyxl
 
@@ -15,7 +16,7 @@ from django.utils.translation import gettext_lazy as _
 
 from temba import mailroom
 from temba.contacts.models import Contact
-from temba.orgs.models import DependencyMixin, Export, ExportType, Org, OrgMembership
+from temba.orgs.models import DependencyMixin, Export, ExportType, Org, OrgMembership, OrgTally
 from temba.users.models import User
 from temba.utils.dates import date_range
 from temba.utils.db.functions import SplitPart
@@ -502,6 +503,16 @@ class TopicFolder(TicketFolder):
         return super().get_queryset(org, user, ordered=ordered, oldest_first=oldest_first).filter(topic=self.topic)
 
 
+def get_daily_tallies(org: Org, keys_by_scope: dict, since: date, until: date) -> dict[tuple[date, Any], int]:
+    """
+    Gets the daily totals of the given ticket tally scopes, e.g. opened:<topic>, over days from since up to until, by
+    day and the key given for each scope, omitting those with no total.
+    """
+    full_scopes = {f"tickets/{s}": k for s, k in keys_by_scope.items()}
+    totals = OrgTally.get_daily_totals(org, list(full_scopes), since, until)
+    return {(day, full_scopes[scope]): count for (day, scope), count in totals.items()}
+
+
 def export_ticket_stats(org: Org, since: date, until: date) -> openpyxl.Workbook:
     workbook = openpyxl.Workbook()
     sheet = workbook.active
@@ -526,29 +537,40 @@ def export_ticket_stats(org: Org, since: date, until: date) -> openpyxl.Workbook
         sheet.cell(row=2, column=user_col + 1, value="Replies")
         user_col += 2
 
-    org_openings = org.daily_counts.period(since, until).prefix("tickets:opened:").day_totals(scoped=False)
-    all_replies = org.daily_counts.period(since, until).prefix("msgs:ticketreplies:").day_totals(scoped=True)
-    all_assignments = org.daily_counts.period(since, until).prefix("tickets:assigned:").day_totals(scoped=True)
-    all_resptimes = org.daily_counts.period(since, until).prefix("ticketresptime:").day_totals(scoped=True)
+    topic_ids = [0] + list(org.topics.values_list("id", flat=True))  # 0 is no topic
+    team_ids = [0] + list(org.teams.values_list("id", flat=True))  # 0 is no team
 
-    user_assignments = defaultdict(dict)
-    for (day, scope), count in all_assignments.items():
-        user_id = int(scope.split(":")[-1])
-        user_assignments[user_id][day] = count
+    totals = get_daily_tallies(
+        org,
+        {
+            **{f"opened:{t}": ("opened", t) for t in topic_ids},
+            **{f"teamreplies:{t}": ("teamreplies", t) for t in team_ids},
+            **{f"assigned:{u.id}": ("assigned", u.id) for u in users},
+            **{f"userreplies:{u.id}": ("userreplies", u.id) for u in users},
+            "resptime:total": ("resptime", "total"),
+            "resptime:count": ("resptime", "count"),
+        },
+        since,
+        until,
+    )
 
-    org_replies = defaultdict(int)
-    user_replies = defaultdict(dict)
-    for (day, scope), count in all_replies.items():
-        user_id = int(scope.split(":")[-1])
-        user_replies[user_id][day] = count
-        org_replies[day] += count
+    org_openings, org_replies = defaultdict(int), defaultdict(int)
+    org_resptimes, org_respcounts = {}, {}
+    user_assignments, user_replies = defaultdict(dict), defaultdict(dict)
 
-    org_resptimes, org_respcounts = defaultdict(int), defaultdict(int)
-    for (day, scope), count in all_resptimes.items():
-        if scope.endswith(":total"):
-            org_resptimes[day] += count
-        elif scope.endswith(":count"):
-            org_respcounts[day] += count
+    for (day, (kind, key)), count in totals.items():
+        if kind == "opened":
+            org_openings[day] += count
+        elif kind == "teamreplies":
+            org_replies[day] += count
+        elif kind == "assigned":
+            user_assignments[key][day] = count
+        elif kind == "userreplies":
+            user_replies[key][day] = count
+        elif key == "total":
+            org_resptimes[day] = count
+        else:
+            org_respcounts[day] = count
 
     org_respavgs = {}
     for day, total in org_resptimes.items():
