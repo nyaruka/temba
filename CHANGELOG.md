@@ -1,3 +1,11 @@
+## v26.3.210 (2026-11-18)
+ * Rework the ticket list for working through a backlog: keep its width as different tickets open, word the open count on the server, and guard blank contact names
+ * Mark closed tickets with a filled or dashed check and expired tickets with a clock switched off
+ * Assign tickets from the ticket view with the user picker
+ * Keep the chat's search bar off the edges of a framed card
+ * Add Org.status_reason and Org.status_changed_on, written alongside the fields they replace, and backfill them
+ * Add tests for closed links and restricted counts in the ticket list
+
 ## v26.3.209 (2026-11-18)
  * Remove Org.is_suspended and constrain each org status to its own fields
 
