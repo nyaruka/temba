@@ -106,7 +106,8 @@
           "name": "General"
         },
         "last_activity_on": "2024-04-29T09:00:00.000000Z",
-        "closed_on": "2024-04-29T09:00:00.000000Z"
+        "closed_on": "2024-04-29T09:00:00.000000Z",
+        "outcome": "resolved"
       }
     },
     {
@@ -124,7 +125,8 @@
           "name": "General"
         },
         "last_activity_on": "2024-04-25T14:20:00.000000Z",
-        "closed_on": "2024-04-25T14:20:00.000000Z"
+        "closed_on": "2024-04-25T14:20:00.000000Z",
+        "outcome": "idle"
       }
     },
     {
@@ -141,7 +143,8 @@
           "name": "General"
         },
         "last_activity_on": "2024-04-18T11:05:00.000000Z",
-        "closed_on": "2024-04-18T11:05:00.000000Z"
+        "closed_on": "2024-04-18T11:05:00.000000Z",
+        "outcome": "resolved"
       }
     }
   ]

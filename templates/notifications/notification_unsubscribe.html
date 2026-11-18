@@ -1,0 +1,39 @@
+{% extends "no_nav.html" %}
+{% load i18n %}
+
+{% block head-title %}
+  {% trans "Notification emails" %}
+{% endblock head-title %}
+{% block content %}
+  <div class="mb-4">
+    {% if not membership %}
+      <div class="page-title mb-4">{% trans "Link not valid" %}</div>
+      <p>{% trans "This unsubscribe link is no longer valid." %}</p>
+    {% elif unsubscribed or not membership.email_notifications %}
+      <div class="page-title mb-4">{% trans "Unsubscribed" %}</div>
+      <p>
+        {% blocktrans trimmed with org=membership.org.name %}
+          You'll no longer get notification emails for the {{ org }} workspace. You'll still see notifications when you log in.
+        {% endblocktrans %}
+      </p>
+    {% else %}
+      <div class="page-title mb-4">{% trans "Unsubscribe from notification emails" %}</div>
+      <p class="mb-4">
+        {% blocktrans trimmed with org=membership.org.name %}
+          You'll stop getting notification emails for the {{ org }} workspace. You'll still see notifications when you log in.
+        {% endblocktrans %}
+      </p>
+      <form method="post">
+        <input type="submit" value="{% trans "Unsubscribe" %}" class="button-primary">
+      </form>
+    {% endif %}
+  </div>
+{% endblock content %}
+{% block extra-style %}
+  {{ block.super }}
+  <style>
+    .content-card {
+      width: 28em;
+    }
+  </style>
+{% endblock extra-style %}

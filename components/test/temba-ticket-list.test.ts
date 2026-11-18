@@ -199,8 +199,9 @@ describe('temba-ticket-list', () => {
     const list = await getList('/test/assets/list/tickets-merged.json');
     assert.equal(list.items.length, 6);
 
-    // no divider between the open and the closed - a closed row marks
-    // itself with a check where the open rows show their age
+    // no divider between the open and the closed - a closed row marks how
+    // it closed where the open rows show their age, a check when resolved
+    // and an hourglass when it expired
     const options = list.shadowRoot.querySelector('temba-options');
     await (options as any).updateComplete;
     assert.isNull(options.shadowRoot.querySelector('[role="separator"]'));
@@ -209,7 +210,18 @@ describe('temba-ticket-list', () => {
     assert.isNotNull(rows[0].querySelector('temba-date[display="age"]'));
     assert.isNull(rows[0].querySelector('temba-icon[name="check"]'));
     assert.isNull(rows[3].querySelector('temba-date'));
-    assert.isNotNull(rows[3].querySelector('temba-icon[name="check"]'));
+    assert.equal(
+      rows[3]
+        .querySelector('temba-icon[name="check"]')
+        .getAttribute('aria-label'),
+      'Resolved'
+    );
+    assert.equal(
+      rows[4]
+        .querySelector('temba-icon[name="hourglass-01"]')
+        .getAttribute('aria-label'),
+      'Expired'
+    );
 
     await assertScreenshot('list/tickets-merged', getClip(list));
 

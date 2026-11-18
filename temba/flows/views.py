@@ -644,7 +644,7 @@ class FlowCRUDL(SmartCRUDL):
                     )
 
         def get_bulk_action_labels(self):
-            return self.request.org.flow_labels.filter(is_active=True).order_by(Lower("name"))
+            return self.request.org.flow_labels.filter(deleted_on=None).order_by(Lower("name"))
 
         def build_context_menu(self, menu):
             if self.has_org_perm("flows.flow_create") and not self.is_limit_reached:
@@ -1249,10 +1249,8 @@ class FlowCRUDL(SmartCRUDL):
 
             if flow.org.is_outbox_full():
                 blockers.append(self.blockers["outbox_full"])
-            if flow.org.is_suspended:
-                blockers.append(Org.BLOCKER_SUSPENDED)
-            elif flow.org.is_flagged:
-                blockers.append(Org.BLOCKER_FLAGGED)
+            if flow.org.send_blocker:
+                blockers.append(flow.org.send_blocker)
 
             hours = send_time / timedelta(hours=1)
             if settings.SEND_HOURS_BLOCK and hours >= settings.SEND_HOURS_BLOCK:

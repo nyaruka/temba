@@ -139,6 +139,37 @@ class SoftDeleteMixin(models.Model):
         abstract = True
 
 
+class DeletedOnMixin(models.Model):
+    """
+    Model mixin for things which are soft deleted by setting `deleted_on`, replacing `SoftDeleteMixin`. A model moves
+    over in two releases, each safe against the code of the release before it:
+
+     1. add `deleted_on` backfilled from `is_active`, switch to this mixin and remove `is_active` from the model (set it
+        to `None`), giving its column a database default so the previous release can still insert rows
+     2. backfill anything the previous release soft deleted while the first was deploying, and drop the column
+
+    Big tables, or ones other services read, need the first step split so `deleted_on` is written alongside `is_active`
+    and backfilled before anything reads it.
+    """
+
+    deleted_on = models.DateTimeField(null=True)
+
+    class Meta:
+        abstract = True
+
+
+def exclude_deleted(qs):
+    """
+    Excludes soft deleted objects from the given queryset if its model can be soft deleted
+    """
+    if issubclass(qs.model, DeletedOnMixin):
+        return qs.filter(deleted_on=None)
+    # not hasattr, as models drop an inherited is_active by setting it to None
+    if any(f.name == "is_active" for f in qs.model._meta.concrete_fields):
+        return qs.filter(is_active=True)
+    return qs
+
+
 class UUIDMixin(models.Model):
     """
     Model mixin for things with a UUID
@@ -165,7 +196,7 @@ class NameMixin(models.Model):
         """
         Generates a unique name from the given base name that won't conflict with any named object in the given queryset
         """
-        qs = cls.objects.filter(org=org, is_active=True)
+        qs = cls.get_for_org(org)
         if ignore:
             qs = qs.exclude(id=ignore.id)
 
@@ -220,7 +251,7 @@ class OrgLimitMixin:
         """
         The objects which count against this org's limit. Override to narrow it further.
         """
-        return cls._default_manager.filter(org=org, is_active=True)
+        return exclude_deleted(cls._default_manager.filter(org=org))
 
     @classmethod
     def is_limit_reached(cls, org) -> bool:
@@ -250,12 +281,12 @@ class OrgAsset(UUIDMixin, NameMixin, CreatedByMixin, ModifiedByMixin, SoftDelete
     is_system = models.BooleanField(default=False)  # not user created, doesn't count against limits
 
     @classmethod
-    def get_active_for_org(cls, org):
-        return cls._default_manager.filter(org=org, is_active=True)
+    def get_for_org(cls, org):
+        return exclude_deleted(cls._default_manager.filter(org=org))
 
     @classmethod
     def get_countable_for_org(cls, org):
-        return cls.get_active_for_org(org).filter(is_system=False)  # system objects don't count against limits
+        return cls.get_for_org(org).filter(is_system=False)  # system objects don't count against limits
 
     @classmethod
     def import_def(cls, org, user, definition: dict, preview: bool = False) -> tuple:
@@ -307,12 +338,12 @@ class OrgAsset(UUIDMixin, NameMixin, CreatedByMixin, ModifiedByMixin, SoftDelete
         Gets the existing object (if any) that matches the import definition.
         """
         if definition["uuid"]:
-            existing = cls.get_active_for_org(org).filter(uuid=definition["uuid"]).first()
+            existing = cls.get_for_org(org).filter(uuid=definition["uuid"]).first()
             if existing:
                 return existing
 
         if definition["name"]:
-            return cls.get_active_for_org(org).filter(name__iexact=definition["name"]).first()
+            return cls.get_for_org(org).filter(name__iexact=definition["name"]).first()
 
         return None
 

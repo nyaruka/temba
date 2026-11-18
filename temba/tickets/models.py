@@ -20,7 +20,7 @@ from temba.users.models import User
 from temba.utils.dates import date_range
 from temba.utils.db.functions import SplitPart
 from temba.utils.export import MultiSheetExporter
-from temba.utils.models import OrgAsset
+from temba.utils.models import DeletedOnMixin, OrgAsset
 from temba.utils.uuid import is_uuid
 
 logger = logging.getLogger(__name__)
@@ -157,7 +157,7 @@ class Topic(OrgAsset, DependencyMixin):
         constraints = [models.UniqueConstraint("org", Lower("name"), name="unique_topic_names")]
 
 
-class Team(OrgAsset):
+class Team(DeletedOnMixin, OrgAsset):
     """
     Agent users are assigned to a team which controls which topics they can access.
     """
@@ -166,6 +166,7 @@ class Team(OrgAsset):
     topics = models.ManyToManyField(Topic, related_name="teams")
     all_topics = models.BooleanField(default=False)
     is_default = models.BooleanField(default=False)
+    is_active = None
 
     org_limit_key = Org.LIMIT_TEAMS
     max_topics = 10
@@ -186,7 +187,7 @@ class Team(OrgAsset):
     @classmethod
     def create(cls, org, user, name: str, *, topics=(), all_topics: bool = False):
         assert cls.is_valid_name(name), f"'{name}' is not a valid team name"
-        assert not org.teams.filter(name__iexact=name, is_active=True).exists()
+        assert not org.teams.filter(name__iexact=name, deleted_on=None).exists()
         assert not (topics and all_topics), "can't specify topics and all_topics"
 
         team = org.teams.create(name=name, all_topics=all_topics, created_by=user, modified_by=user)
@@ -203,9 +204,9 @@ class Team(OrgAsset):
         OrgMembership.objects.filter(org=self.org, team=self).update(team=self.org.default_team)
 
         self.name = self._deleted_name()
-        self.is_active = False
+        self.deleted_on = timezone.now()
         self.modified_by = user
-        self.save(update_fields=("name", "is_active", "modified_by", "modified_on"))
+        self.save(update_fields=("name", "deleted_on", "modified_by", "modified_on"))
 
     class Meta:
         constraints = [models.UniqueConstraint("org", Lower("name"), name="unique_team_names")]

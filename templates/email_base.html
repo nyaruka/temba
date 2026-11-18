@@ -54,8 +54,10 @@
           {% block alert-settings %}
           {% endblock alert-settings %}
           <div style="color: #ffffff">
-            {% trans "This email was generated at" %}
-            {% format_datetime now %}
+            {% block footer %}
+              {% trans "This email was generated at" %}
+              {% format_datetime now %}
+            {% endblock footer %}
           </div>
         </td>
       </tr>

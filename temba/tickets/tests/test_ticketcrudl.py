@@ -417,7 +417,7 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         self.create_incoming_msg(contact2, "Hello?")
 
         # contact 3 has two closed tickets
-        c3_t1 = self.create_ticket(contact3, closed_on=timezone.now(), topic=self.sales)
+        c3_t1 = self.create_ticket(contact3, closed_on=timezone.now(), outcome=Ticket.OUTCOME_IDLE, topic=self.sales)
         c3_t2 = self.create_ticket(contact3, closed_on=timezone.now())
 
         self.create_outgoing_msg(contact3, "Yes", created_by=self.agent)
@@ -468,6 +468,7 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
                         "topic": {"uuid": matchers.UUIDString(version=4), "name": "General"},
                         "last_activity_on": matchers.ISODatetime(),
                         "closed_on": None,
+                        "outcome": None,
                     },
                 },
                 {
@@ -502,6 +503,7 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
                         "topic": {"uuid": matchers.UUIDString(version=4), "name": "Sales"},
                         "last_activity_on": matchers.ISODatetime(),
                         "closed_on": None,
+                        "outcome": None,
                     },
                 },
                 {
@@ -536,13 +538,14 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
                         "topic": {"uuid": matchers.UUIDString(version=4), "name": "General"},
                         "last_activity_on": matchers.ISODatetime(),
                         "closed_on": None,
+                        "outcome": None,
                     },
                 },
             ],
             response.json()["results"][:3],
         )
 
-        # the newest closed ticket carries its closed_on
+        # the newest closed ticket carries its closed_on and outcome
         self.assertEqual(
             {
                 "uuid": str(contact3.uuid),
@@ -570,10 +573,12 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
                     "topic": {"uuid": matchers.UUIDString(version=4), "name": "General"},
                     "last_activity_on": matchers.ISODatetime(),
                     "closed_on": matchers.ISODatetime(),
+                    "outcome": "resolved",
                 },
             },
             response.json()["results"][3],
         )
+        self.assertEqual("idle", response.json()["results"][4]["ticket"]["outcome"])
 
         # fetching new activity returns both open and closed tickets (oldest first)
         response = self.client.get(f"{all_url}?after={datetime_to_timestamp(c2_t2.last_activity_on)}")

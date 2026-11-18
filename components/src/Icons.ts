@@ -203,6 +203,7 @@ export enum Icon {
   tickets = 'agent',
   tickets_all = 'archive',
   tickets_closed = 'check',
+  ticket_expired = 'hourglass-01',
   tickets_mine = 'coffee',
   tickets_mine_done = 'coffee-empty',
   tickets_open = 'inbox-01',

@@ -2959,6 +2959,9 @@ msgstr "Aplicativo Android do canal desatualizado"
 msgid "Workspace Flagged"
 msgstr "Área de trabalho sinalizada"
 
+msgid "Workspace Restricted"
+msgstr "Área de trabalho restrita"
+
 msgid "Workspace Suspended"
 msgstr "Área de trabalho suspensa"
 
@@ -2974,6 +2977,9 @@ msgstr "Sua exportação de %s está pronta"
 
 msgid "Incident"
 msgstr "Incidente"
+
+msgid "Reminder"
+msgstr "Lembrete"
 
 msgid "New user joined your workspace"
 msgstr "Novo usuário entrou na sua área de trabalho"
@@ -3040,6 +3046,9 @@ msgstr "E-mail compartilhado"
 
 msgid "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please contact support."
 msgstr "Desculpe, sua área de trabalho está suspensa no momento. Para voltar a iniciar fluxos e enviar mensagens, por favor entre em contato com o suporte."
+
+msgid "Sorry, your workspace is currently restricted. To re-enable starting flows and sending messages, please contact support."
+msgstr "Desculpe, sua área de trabalho está restrita no momento. Para voltar a iniciar fluxos e enviar mensagens, por favor entre em contato com o suporte."
 
 msgid "Sorry, your workspace is currently flagged. To re-enable starting flows and sending messages, please contact support."
 msgstr "Desculpe, sua área de trabalho está sinalizada no momento. Para voltar a iniciar fluxos e enviar mensagens, por favor entre em contato com o suporte."
@@ -3472,11 +3481,11 @@ msgstr "Sinalizar"
 msgid "Unflag"
 msgstr "Não sinalizar"
 
+msgid "Restrict"
+msgstr "Restringir"
+
 msgid "Suspend"
 msgstr "Suspender"
-
-msgid "Unsuspend"
-msgstr "Remover suspensão"
 
 msgid "Verify"
 msgstr "Verificar"
@@ -3492,6 +3501,9 @@ msgstr "Interna"
 
 msgid "Flagged"
 msgstr "Sinalizada"
+
+msgid "Restricted"
+msgstr "Restrita"
 
 msgid "Suspended"
 msgstr "Suspensa"
@@ -3822,10 +3834,6 @@ msgstr "A conta já existe"
 
 msgid "Hello there 👋"
 msgstr "Olá 👋"
-
-#, python-format
-msgid "Your friends at %(site_name)s."
-msgstr "Seus amigos do %(site_name)s."
 
 msgid "We are writing to notify you about some activity on your account."
 msgstr "Estamos escrevendo para notificá-lo sobre uma atividade na sua conta."
@@ -5495,12 +5503,29 @@ msgstr "Olá"
 msgid "If you have any questions we are always here to help."
 msgstr "Se você tiver qualquer dúvida, estamos sempre aqui para ajudar."
 
-msgid "Thanks"
-msgstr "Obrigado"
+#, python-format
+msgid "You're receiving this email because you're a member of the <b>%(org)s</b> workspace."
+msgstr "Você está recebendo este e-mail porque é membro da área de trabalho <b>%(org)s</b>."
 
 #, python-format
-msgid "The %(brand)s Team"
-msgstr "O time %(brand)s"
+msgid "You're receiving this email because you have access to the <b>%(org)s</b> workspace."
+msgstr "Você está recebendo este e-mail porque tem acesso à área de trabalho <b>%(org)s</b>."
+
+#, python-format
+msgid "If you no longer want notification emails from this workspace, you can <a href=\"%(url)s\" style=\"color: inherit\">unsubscribe</a>."
+msgstr "Se você não quiser mais receber e-mails de notificação desta área de trabalho, pode <a href=\"%(url)s\" style=\"color: inherit\">cancelar a inscrição</a>."
+
+#, python-format
+msgid "You're receiving this email because you're a member of the %(org)s workspace."
+msgstr "Você está recebendo este e-mail porque é membro da área de trabalho %(org)s."
+
+#, python-format
+msgid "You're receiving this email because you have access to the %(org)s workspace."
+msgstr "Você está recebendo este e-mail porque tem acesso à área de trabalho %(org)s."
+
+#, python-format
+msgid "If you no longer want notification emails from this workspace, you can unsubscribe here: %(url)s"
+msgstr "Se você não quiser mais receber e-mails de notificação desta área de trabalho, pode cancelar a inscrição aqui: %(url)s"
 
 #, python-format
 msgid "Your export is ready! Click <a href=\"%(url)s\">here</a> to download it."
@@ -5546,6 +5571,25 @@ msgstr ""
 "Sua área de trabalho foi sinalizada devido a atividade suspeita. Para voltar a iniciar fluxos e enviar mensagens, por favor\n"
 "entre em contato com o suporte.\n"
 
+msgid "Your workspace has been restricted because of a problem with billing."
+msgstr "Sua área de trabalho foi restrita devido a um problema com o faturamento."
+
+msgid "Your workspace has been restricted because it has exceeded the limits of its plan."
+msgstr "Sua área de trabalho foi restrita porque excedeu os limites do seu plano."
+
+msgid "Your workspace has been restricted."
+msgstr "Sua área de trabalho foi restrita."
+
+msgid "Starting flows and sending messages are disabled, but your flows will keep handling incoming messages."
+msgstr "Iniciar fluxos e enviar mensagens estão desabilitados, mas seus fluxos continuarão processando as mensagens recebidas."
+
+#, python-format
+msgid "Unless this is resolved, your workspace will be suspended on %(date)s. Please contact support."
+msgstr "Se isso não for resolvido, sua área de trabalho será suspensa em %(date)s. Por favor, entre em contato com o suporte."
+
+msgid "Please contact support."
+msgstr "Por favor, entre em contato com o suporte."
+
 msgid "Your workspace has been suspended. To re-enable starting flows and sending messages, please contact support."
 msgstr "Sua área de trabalho foi suspensa. Para voltar a iniciar fluxos e enviar mensagens, por favor entre em contato com o suporte."
 
@@ -5579,15 +5623,47 @@ msgstr "Seu <a href=\"%(read_url)s\">canal Android</a> parece ainda estar rodand
 msgid "Your <a href=\"%(read_url)s\">WhatsApp channel</a> appears to not be syncing templates."
 msgstr "Seu <a href=\"%(read_url)s\">canal do WhatsApp</a> parece não estar sincronizando os templates."
 
+msgid "Your workspace has been restricted. Starting flows and sending messages are disabled until this is resolved, but your flows will keep handling incoming messages."
+msgstr "Sua área de trabalho foi restrita. Iniciar fluxos e enviar mensagens estão desabilitados até que isso seja resolvido, mas seus fluxos continuarão processando as mensagens recebidas."
+
 #, python-format
 msgid "Some webhook calls from your flows are taking too long to respond or failing too frequently. If the problem persists these calls will be temporarily disabled. You can check the <a href=\"%(logs_url)s\">webhook call log</a> to see which calls are the problem."
 msgstr "Algumas chamadas de webhook dos seus fluxos estão demorando demais para responder ou falhando com muita frequência. Se o problema persistir, essas chamadas serão temporariamente desabilitadas. Você pode consultar o <a href=\"%(logs_url)s\">log de chamadas de webhook</a> para ver quais chamadas são o problema."
+
+msgid "Notification emails"
+msgstr "E-mails de notificação"
+
+msgid "Link not valid"
+msgstr "Link inválido"
+
+msgid "This unsubscribe link is no longer valid."
+msgstr "Este link de cancelamento de inscrição não é mais válido."
+
+msgid "Unsubscribed"
+msgstr "Inscrição cancelada"
+
+#, python-format
+msgid "You'll no longer get notification emails for the %(org)s workspace. You'll still see notifications when you log in."
+msgstr "Você não receberá mais e-mails de notificação da área de trabalho %(org)s. Você continuará vendo as notificações ao entrar."
+
+msgid "Unsubscribe from notification emails"
+msgstr "Cancelar inscrição nos e-mails de notificação"
+
+#, python-format
+msgid "You'll stop getting notification emails for the %(org)s workspace. You'll still see notifications when you log in."
+msgstr "Você deixará de receber e-mails de notificação da área de trabalho %(org)s. Você continuará vendo as notificações ao entrar."
+
+msgid "Unsubscribe"
+msgstr "Cancelar inscrição"
 
 msgid "Workspace flagged"
 msgstr "Área de trabalho sinalizada"
 
 msgid "Contact your administrator."
 msgstr "Entre em contato com seu administrador."
+
+msgid "Workspace restricted"
+msgstr "Área de trabalho restrita"
 
 msgid "can't be deleted as it is still used by the following items:"
 msgstr "não pode ser deletado pois ainda é usado pelos seguintes itens:"

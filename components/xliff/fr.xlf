@@ -54,10 +54,6 @@
   <source>Last seen <x id="0" equiv-text="${lastSeen.duration}"/></source>
   <target>Vu pour la dernière fois <x id="0" equiv-text="${lastSeen.duration}"/></target>
 </trans-unit>
-<trans-unit id="s6dbbe2646b239ca5">
-  <source>Closed</source>
-  <target>Fermé</target>
-</trans-unit>
 <trans-unit id="sf7c0eba7c822e3d6">
   <source>Bold</source>
   <target>Gras</target>
@@ -3042,6 +3038,22 @@
 <trans-unit id="sda4e07a2a78ec6cc">
   <source>mins</source>
   <target>min</target>
+</trans-unit>
+<trans-unit id="s90de00f3ed97da8e">
+  <source>Channel log</source>
+  <target>Journal du canal</target>
+</trans-unit>
+<trans-unit id="sd923f95605fed7b2">
+  <source>Expired</source>
+  <target>Expiré</target>
+</trans-unit>
+<trans-unit id="sefa828f161089a05">
+  <source>Resolved</source>
+  <target>Résolu</target>
+</trans-unit>
+<trans-unit id="s6f0051e23edafc17">
+  <source>Your workspace was restricted, please contact support for assistance.</source>
+  <target>Votre espace de travail a été restreint, veuillez contacter l'assistance pour obtenir de l'aide.</target>
 </trans-unit>
 </body>
 </file>

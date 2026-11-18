@@ -681,6 +681,8 @@ class TicketCRUDL(SmartCRUDL):
                     "attachments": m.attachments,
                 }
 
+            OUTCOMES = {Ticket.OUTCOME_RESOLVED: "resolved", Ticket.OUTCOME_IDLE: "idle"}
+
             def as_json(t):
                 """
                 Converts a ticket to the contact-centric format expected by our frontend components
@@ -700,6 +702,7 @@ class TicketCRUDL(SmartCRUDL):
                         "topic": topic_as_json(t.topic) if t.topic else None,
                         "last_activity_on": t.last_activity_on,
                         "closed_on": t.closed_on,
+                        "outcome": OUTCOMES.get(t.outcome),
                     },
                 }
 
@@ -905,7 +908,7 @@ class TicketCRUDL(SmartCRUDL):
                     {"label": self.team.name, "data": [counts[d] for d in labels]}
                 ]
 
-            teams_by_id = {t.id: t.name for t in org.teams.filter(is_active=True)}
+            teams_by_id = {t.id: t.name for t in org.teams.filter(deleted_on=None)}
             # Add default team (id=0) for users not assigned to specific teams
             teams_by_id[0] = _("No Team")
 

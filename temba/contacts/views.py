@@ -363,6 +363,9 @@ class ContactCRUDL(SmartCRUDL):
                 return JsonResponse({"error": "must specify before or after parameter"}, status=400)
 
         def post(self, request, *args, **kwargs):
+            if request.org.send_blocker:
+                return JsonResponse({"error": str(request.org.send_blocker)}, status=400)
+
             payload = json.loads(request.body)
             text = payload.get("text", "")
             attachments = []

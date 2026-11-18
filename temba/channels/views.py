@@ -855,11 +855,7 @@ class ChannelCRUDL(SmartCRUDL):
             from temba.request_logs.models import HTTPLog
             from temba.templates.models import TemplateTranslation
 
-            counts = dict(
-                channel.template_translations.filter(template__is_active=True)
-                .values_list("status")
-                .annotate(count=Count("id"))
-            )
+            counts = dict(channel.template_translations.values_list("status").annotate(count=Count("id")))
             last_sync = (
                 HTTPLog.objects.filter(channel=channel, log_type=HTTPLog.WHATSAPP_TEMPLATES_SYNCED)
                 .order_by("-created_on")
@@ -1027,10 +1023,8 @@ class ChannelCRUDL(SmartCRUDL):
             from temba.request_logs.models import HTTPLog
 
             context = super().get_context_data(**kwargs)
-            context["translations"] = (
-                self.object.template_translations.filter(template__is_active=True)
-                .select_related("template")
-                .order_by("template__name", "locale")
+            context["translations"] = self.object.template_translations.select_related("template").order_by(
+                "template__name", "locale"
             )
             context["last_sync"] = (
                 HTTPLog.objects.filter(channel=self.object, log_type=HTTPLog.WHATSAPP_TEMPLATES_SYNCED)

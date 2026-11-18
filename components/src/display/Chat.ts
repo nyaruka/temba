@@ -8,6 +8,7 @@ import { TicketEvent } from '../events';
 import { renderEventSummary } from '../events/eventRenderers';
 import { DEFAULT_AVATAR } from '../webchat/assets';
 import { attachmentAsString } from '../utils';
+import { openLinkInSheet } from '../layout/sheets';
 import { DateTime } from 'luxon';
 
 const SCROLL_FETCH_BUFFER = 200; // pixels from top
@@ -2153,8 +2154,8 @@ export class Chat extends RapidElement {
                 ? html`<a
                     class="log-link"
                     href="${logsURL}"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    aria-label=${msg('Channel log')}
+                    @click=${openLinkInSheet}
                     ><temba-icon name="log"></temba-icon
                   ></a>`
                 : null}

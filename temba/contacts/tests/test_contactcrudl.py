@@ -14,7 +14,7 @@ from temba.contacts.models import Contact, ContactExport, ContactField, ContactG
 from temba.locations.models import AdminBoundary
 from temba.mailroom.client.types import Exclusions
 from temba.msgs.models import Media
-from temba.orgs.models import Export, OrgMembership, OrgRole
+from temba.orgs.models import Export, Org, OrgMembership, OrgRole
 from temba.schedules.models import Schedule
 from temba.tests import CRUDLTestMixin, MockResponse, TembaTest, matchers, mock_mailroom
 from temba.tests.engine import MockSessionWriter
@@ -631,6 +631,18 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
             ),
             mr_mocks.calls["msg_send"][-1],
         )
+
+        # can't send if workspace is restricted
+        self.org.restrict(Org.RESTRICTED_STAFF)
+
+        response = self.client.post(
+            chat_url, {"text": "Hello", "ticket": str(ticket.uuid)}, content_type="application/json"
+        )
+        self.assertEqual(400, response.status_code)
+        self.assertEqual({"error": str(Org.BLOCKER_RESTRICTED)}, response.json())
+        self.assertEqual(2, len(mr_mocks.calls["msg_send"]))
+
+        self.org.reactivate()
 
         # can't send to contact in a different org
         self.login(self.admin2)

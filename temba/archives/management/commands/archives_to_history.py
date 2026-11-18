@@ -29,7 +29,7 @@ class Command(BaseCommand):
         if org_id:
             orgs = orgs.filter(id=org_id)
         if not suspended:
-            orgs = orgs.filter(is_suspended=False)
+            orgs = orgs.exclude(status=Org.STATUS_SUSPENDED)
 
         since = datetime.combine(since, datetime.min.time(), tzinfo=tzone.utc) if since else None
         until = datetime.combine(until, datetime.max.time(), tzinfo=tzone.utc) if until else None

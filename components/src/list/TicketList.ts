@@ -220,15 +220,20 @@ export class TicketList extends TembaList {
             : this.workspace
           : null;
 
-      // closed is a check where the age would be, in the success tone, with
-      // the word for screen readers and on hover
+      // closed is a mark where the age would be, with how it closed in words
+      // for screen readers and on hover - a check in the success tone when
+      // it was resolved, a quiet hourglass when it expired from going idle
+      const expired = ticket.outcome === 'idle';
+      const outcome = expired ? msg('Expired') : msg('Resolved');
       const rail = closed
         ? html`<temba-icon
-            name=${Icon.tickets_closed}
-            size="1.2"
-            title=${msg('Closed')}
-            aria-label=${msg('Closed')}
-            style="--icon-color:var(--success);"
+            name=${expired ? Icon.ticket_expired : Icon.tickets_closed}
+            size=${expired ? '1.1' : '1.2'}
+            title=${outcome}
+            aria-label=${outcome}
+            style="--icon-color:${expired
+              ? 'var(--text-3)'
+              : 'var(--success)'};"
           ></temba-icon>`
         : html`<temba-date
             value=${ticket.last_activity_on}

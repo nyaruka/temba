@@ -428,10 +428,8 @@ class BroadcastCRUDL(SmartCRUDL):
             if org.is_outbox_full():
                 blockers.append(self.blockers["outbox_full"])
 
-            if org.is_suspended:
-                blockers.append(Org.BLOCKER_SUSPENDED)
-            elif org.is_flagged:
-                blockers.append(Org.BLOCKER_FLAGGED)
+            if org.send_blocker:
+                blockers.append(org.send_blocker)
 
             if not org.get_send_channel():
                 # users who can't add channels themselves can't follow a link to do so
@@ -552,7 +550,7 @@ class MsgCRUDL(SmartCRUDL):
                 ),
             ]
 
-            labels = Label.get_active_for_org(org).order_by(Lower("name"))
+            labels = Label.get_for_org(org).order_by(Lower("name"))
             label_items = []
             label_counts = LabelCount.get_totals([lb for lb in labels])
             for label in labels:
@@ -600,7 +598,7 @@ class MsgCRUDL(SmartCRUDL):
             if len(label_id) == 1:
                 return MsgFolder.from_code(label_id), None
             else:
-                return None, Label.get_active_for_org(self.request.org).get(uuid=label_id)
+                return None, Label.get_for_org(self.request.org).get(uuid=label_id)
 
         def create_export(self, org, user, form):
             export_all = bool(int(form.cleaned_data["export_all"]))
@@ -692,7 +690,7 @@ class MsgCRUDL(SmartCRUDL):
         allow_export = True
 
         def get_bulk_actions(self):
-            return () if self.request.org.is_suspended else ("resend",)
+            return () if self.request.org.send_blocker else ("resend",)
 
     class Filter(MsgListView):
         search_fields = ("text__icontains", "contact__name__icontains")

@@ -1,3 +1,32 @@
+## v26.3.206 (2026-11-17)
+ * Let staff reach the workspace grant view without the org_grant permission
+
+## v26.3.205 (2026-11-17)
+ * Open channel log links from message lists, call lists and chat in a sheet
+ * Close a sheet on any click which navigates, and keep its icon when going deeper
+ * Keep a log link's click from the page, so one asking for a new tab gets it
+ * Drop is_active from Team and FlowLabel
+
+## v26.3.204 (2026-11-17)
+ * Add a restricted incident and suspend restricted workspaces once their time is up
+
+## v26.3.203 (2026-11-17)
+ * Remove is_active from templates, Teams and FlowLabels, which are deleted rather than deactivated, with Team and FlowLabel now using deleted_on
+
+## v26.3.202 (2026-11-17)
+ * Add reminders for incidents with a deadline
+ * Check soft deletion consistently between models and API fields, with get_for_org and exclude_deleted replacing get_active_for_org and filter_active
+ * Remove is_active from templates, which are deleted rather than deactivated
+
+## v26.3.201 (2026-11-17)
+ * Show how closed tickets were closed in the ticket list
+ * Add Org.status with active, restricted and suspended states
+ * Drop the sign-offs from notification and account emails
+
+## v26.3.200 (2026-11-17)
+ * Add unsubscribe link to notification emails
+ * Backfill call minute tallies
+
 ## v26.3.199 (2026-11-16)
  * Keep a scrolled list on the items it is showing across a refresh, only scrolling back to the selection if it was in view
  * Follow a moved selection with the smallest scroll that shows it
