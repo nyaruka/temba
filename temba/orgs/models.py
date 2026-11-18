@@ -513,6 +513,18 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             return Org.BLOCKER_FLAGGED
         return None
 
+    @property
+    def write_blocker(self):
+        """
+        Gets the reason, if any, that users can't make changes in this org via the API. Unlike sends, restricted orgs
+        can still make changes, since they feed automation which keeps running.
+        """
+        if self.status == Org.STATUS_SUSPENDED:
+            return Org.BLOCKER_SUSPENDED
+        elif self.is_flagged:
+            return Org.BLOCKER_FLAGGED
+        return None
+
     def restrict(self, reason: str, *, suspends_on=None):
         """
         Restricts this org and any children, unless already restricted or suspended. Unless given a time to be

@@ -285,3 +285,29 @@ class BroadcastsEndpointTest(APITest):
             {"text": "Hello", "contacts": [joe.uuid]},
             errors={"non_field_errors": Org.BLOCKER_FLAGGED},
         )
+
+        labels_url = reverse("api.v2.labels") + ".json"
+
+        # flagged orgs can't make other writes either
+        self.assertPost(labels_url, self.admin, {"name": "Spam"}, errors={"non_field_errors": Org.BLOCKER_FLAGGED})
+
+        # restricted orgs can't send but can make other writes
+        self.org.unflag()
+        self.org.restrict(Org.RESTRICTED_BILLING)
+        self.assertPost(
+            endpoint_url,
+            self.admin,
+            {"text": "Hello", "contacts": [joe.uuid]},
+            errors={"non_field_errors": Org.BLOCKER_RESTRICTED},
+        )
+        self.assertPost(labels_url, self.admin, {"name": "Spam"}, status=201)
+
+        # suspended orgs can't do either
+        self.org.suspend()
+        self.assertPost(
+            endpoint_url,
+            self.admin,
+            {"text": "Hello", "contacts": [joe.uuid]},
+            errors={"non_field_errors": Org.BLOCKER_SUSPENDED},
+        )
+        self.assertPost(labels_url, self.admin, {"name": "Ham"}, errors={"non_field_errors": Org.BLOCKER_SUSPENDED})

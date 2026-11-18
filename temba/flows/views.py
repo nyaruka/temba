@@ -1386,6 +1386,11 @@ class FlowCRUDL(SmartCRUDL):
                         search_attrs["in_a_flow"] = True
 
             def clean_contact_search(self):
+                # the page only hides the start button when there's a blocker, and mailroom delivers for restricted
+                # orgs
+                if self.org.send_blocker:
+                    raise ValidationError(self.org.send_blocker)
+
                 contact_search = self.cleaned_data.get("contact_search")
                 recipients = contact_search.get("recipients", [])
 
