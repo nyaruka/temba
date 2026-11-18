@@ -608,6 +608,7 @@ class Contact(LegacyIDMixin, LegacyUUIDMixin, CreatedByMixin, ModifiedByMixin, S
 
     current_session_uuid = models.UUIDField(null=True)  # waiting session if any
     current_flow = models.ForeignKey("flows.Flow", on_delete=models.PROTECT, null=True, db_index=False)
+    current_flow_uuid = models.UUIDField(null=True)  # not a foreign key so deleting flows doesn't scan contacts
     last_seen_on = models.DateTimeField(null=True)
 
     created_by = models.ForeignKey(
