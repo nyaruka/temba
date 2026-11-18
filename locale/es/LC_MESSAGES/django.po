@@ -5584,21 +5584,26 @@ msgid "Starting flows and sending messages are disabled, but your flows will kee
 msgstr "El inicio de flujos y el envío de mensajes están deshabilitados, pero sus flujos seguirán gestionando los mensajes entrantes."
 
 #, python-format
-msgid "Unless this is resolved, your workspace will be suspended on %(date)s. Please contact support."
-msgstr "Si esto no se resuelve, su workspace será suspendido el %(date)s. Póngase en contacto con el soporte."
+msgid "Unless this is resolved, your workspace will be suspended on %(date)s, which stops all of its flows, including those started by triggers and campaigns. Please contact support."
+msgstr "Si esto no se resuelve, su workspace será suspendido el %(date)s, lo que detendrá todos sus flujos, incluidos los iniciados por disparadores y campañas. Póngase en contacto con el soporte."
 
 msgid "Please contact support."
 msgstr "Póngase en contacto con el soporte."
 
-msgid "Your workspace has been suspended. To re-enable starting flows and sending messages, please contact support."
-msgstr "Su workspace ha sido suspendido. Para volver a habilitar el inicio de flujos y el envío de mensajes, póngase en contacto con el soporte."
+msgid "Your workspace has been suspended because of a problem with billing."
+msgstr "Su workspace ha sido suspendido debido a un problema con la facturación."
 
-msgid ""
-"\n"
-"Your workspace has been suspended. To re-enable starting flows and sending messages, please contact support.\n"
-msgstr ""
-"\n"
-"Su workspace ha sido suspendido. Para volver a habilitar el inicio de flujos y el envío de mensajes, póngase en contacto con el soporte.\n"
+msgid "Your workspace has been suspended because it has exceeded the limits of its plan."
+msgstr "Su workspace ha sido suspendido porque ha superado los límites de su plan."
+
+msgid "Your workspace has been suspended."
+msgstr "Su workspace ha sido suspendido."
+
+msgid "No messages will be sent, and your flows, including those started by triggers and campaigns, will be stopped."
+msgstr "No se enviará ningún mensaje y sus flujos, incluidos los iniciados por disparadores y campañas, se detendrán."
+
+msgid "To reactivate your workspace, please contact support."
+msgstr "Para reactivar su workspace, póngase en contacto con el soporte."
 
 #, python-format
 msgid "User <b>%(email)s</b> accepted an invitation to join your workspace."

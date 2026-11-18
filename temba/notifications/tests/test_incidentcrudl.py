@@ -45,7 +45,7 @@ class IncidentCRUDLTest(TembaTest, CRUDLTestMixin):
         self.login(self.admin)
         response = self.client.get(list_url)
         self.assertContains(response, "Your workspace has been restricted.")
-        self.assertContains(response, "your workspace will be suspended on Dec. 1, 2026")
+        self.assertContains(response, "your workspace will be suspended on Dec. 1, 2026, which stops all of its flows")
 
         # an ended one doesn't
         self.org.reactivate()
@@ -53,3 +53,10 @@ class IncidentCRUDLTest(TembaTest, CRUDLTestMixin):
         response = self.client.get(list_url)
         self.assertContains(response, "Your workspace has been restricted.")
         self.assertNotContains(response, "will be suspended on")
+
+        # a suspension says that flows started by triggers and campaigns will be stopped
+        self.org.suspend()
+
+        response = self.client.get(list_url)
+        self.assertContains(response, "Your workspace has been suspended.")
+        self.assertContains(response, "including those started by triggers and campaigns, will be stopped.")

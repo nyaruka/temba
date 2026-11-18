@@ -78,6 +78,29 @@ class IncidentTest(TembaTest):
         self.assertEqual("org:suspended", incident.incident_type)
         self.assertIsNotNone(incident.ended_on)
 
+        reasons = {
+            "B": "Your workspace has been suspended because of a problem with billing.",
+            "L": "Your workspace has been suspended because it has exceeded the limits of its plan.",
+            "S": "Your workspace has been suspended.",
+        }
+
+        for reason, text in reasons.items():
+            send_notification_emails()
+            mail.outbox.clear()
+            self.org.suspend(reason)
+            send_notification_emails()
+
+            self.assertEqual(1, len(mail.outbox))
+            self.assertEqual("[Nyaruka] Incident: Workspace Suspended", mail.outbox[0].subject)
+            self.assertIn(text, mail.outbox[0].body)
+            self.assertIn(text, mail.outbox[0].alternatives[0][0])
+            self.assertIn("including those started by triggers and campaigns, will be stopped", mail.outbox[0].body)
+            self.assertIn(
+                "including those started by triggers and campaigns, will be stopped", mail.outbox[0].alternatives[0][0]
+            )
+
+            self.org.reactivate()
+
     def test_org_restricted(self):
         suspends_on = datetime(2026, 12, 1, 12, 0, 0, tzinfo=tzone.utc)
         reasons = {
@@ -102,6 +125,7 @@ class IncidentTest(TembaTest):
             self.assertIn("your flows will keep handling incoming messages", mail.outbox[0].body)
             self.assertIn("your workspace will be suspended on Dec. 1, 2026", mail.outbox[0].body)
             self.assertIn("your workspace will be suspended on Dec. 1, 2026", mail.outbox[0].alternatives[0][0])
+            self.assertIn("which stops all of its flows", mail.outbox[0].body)
 
             self.org.reactivate()
 
