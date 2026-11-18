@@ -470,6 +470,32 @@ class FlowTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("Copy of abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabc", copy2.name)
 
     @cleanup(valkey=True)
+    def test_get_run_counts(self):
+        flow1 = self.create_flow("Test 1")
+        flow2 = self.create_flow("Test 2")
+
+        # a flushed status has its buffered amount added, and one only buffered in Valkey is still counted
+        flow1.tallies.create(scope="status:C", count=3)
+        flow1.tallies.create(scope="segment:a:b", count=7)
+        flow2.tallies.create(scope="status:W", count=2)
+        r = get_valkey_connection()
+        r.hset(
+            "{tallies}:live",
+            mapping={f"F{flow1.id}|status:C": 1, f"F{flow1.id}|status:A": 2, f"F{flow2.id}|status:W": -2},
+        )
+
+        self.assertEqual({"C": 4, "A": 2}, flow1.get_run_counts())
+        self.assertEqual({}, flow2.get_run_counts())
+        self.assertEqual(0, flow1.get_run_counts()[FlowRun.STATUS_WAITING])
+
+        flow1, flow2 = Flow.objects.filter(id__in=[flow1.id, flow2.id]).order_by("id")
+        Flow.prefetch_run_counts([flow1, flow2])
+
+        with self.assertNumQueries(0):
+            self.assertEqual({"C": 4, "A": 2}, flow1.get_run_counts())
+            self.assertEqual({}, flow2.get_run_counts())
+
+    @cleanup(valkey=True)
     def test_get_activity(self):
         # node 1 exits to node 2 and nowhere, node 2 exits back to node 1
         nodes = [
