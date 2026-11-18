@@ -189,8 +189,12 @@
       border-right: none;
     }
 
+    /* the list column keeps the width it's been given whatever ticket is
+       open - space is taken from left to right, so when there isn't
+       enough it's the details that give way, never the list */
     temba-resizer {
       --resizer-handle-size: 8px;
+      flex-shrink: 0;
     }
 
     .chat-pane {
@@ -211,8 +215,11 @@
       --textarea-height: 5em;
     }
 
+    /* without a min-width the details' widest content, e.g. a long topic
+       name, would set how narrow they can get and squeeze the list */
     .chat-pane {
       flex-shrink: 9999;
+      min-width: 0;
     }
 
     temba-card-layout {
