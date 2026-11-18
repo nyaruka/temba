@@ -325,6 +325,8 @@ export interface Msg {
   flow?: ObjectReference;
   /** When the message was created. */
   created_on?: string;
+  /** The user who sent it, for outgoing messages a user sent. */
+  sender?: User;
   unsendable_reason?:
     | 'no_route'
     | 'contact_blocked'
@@ -433,6 +435,8 @@ export interface Contact {
   status: string;
 
   ref?: string; // only returned for anon workspaces
+  first_name?: string; // only returned for ticket lists, when the contact has a name
+  scheme?: string; // only returned for ticket lists, the scheme of the contact's top URN
   flow?: ObjectReference;
   last_msg?: Msg;
   direction?: string;
@@ -513,6 +517,7 @@ export enum CustomEventType {
   Loading = 'temba-loading',
   Canceled = 'temba-canceled',
   CursorChanged = 'temba-cursor-changed',
+  CountChanged = 'temba-count-changed',
   Refreshed = 'temba-refreshed',
   WorkspaceAccessLost = 'temba-workspace-access-lost',
   Selection = 'temba-selection',

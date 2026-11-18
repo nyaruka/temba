@@ -333,8 +333,10 @@ describe(TAG, () => {
       dropdown.calculatePosition();
       await waitForStableRender(dropdown);
 
-      // Verify position was adjusted for bottom edge (bumped up)
-      expect(dropdown.dropdownStyle).to.have.property('top');
+      // Verify position was adjusted for bottom edge (bumped up), anchored by
+      // its bottom so it stays against the toggle if its content shrinks
+      expect(dropdown.dropdownStyle['top']).to.equal('auto');
+      expect(dropdown.dropdownStyle['bottom']).to.match(/^-?\d+(\.\d+)?px$/);
       expect(dropdown.arrowStyle).to.have.property('transform');
       expect(dropdown.arrowStyle['transform']).to.include('rotate(180deg)');
     } finally {

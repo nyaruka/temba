@@ -1,6 +1,6 @@
 import itertools
 import logging
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 from datetime import date
 
@@ -391,10 +391,20 @@ class TicketFolder(metaclass=ABCMeta):
     def get_icon(self, count) -> str:
         return self.icon
 
-    def get_queryset(self, org, user, *, ordered: bool):
+    @abstractmethod
+    def get_open_count(self, org, user, topics) -> int:  # pragma: no cover
+        """
+        Gets the count of open tickets in this folder for the given user, across the given topics they can access.
+        """
+
+    def get_queryset(self, org, user, *, ordered: bool, oldest_first: bool = False):
         qs = Ticket.get_accessible(org, user) if self.restrict_topics else org.tickets.all()
 
-        if ordered:
+        if ordered and oldest_first:
+            # the ticket UI's oldest first order: only open tickets, least recent activity first - with status fixed
+            # this reads the same indexes as the default order, backwards
+            qs = qs.filter(status=Ticket.STATUS_OPEN).order_by("last_activity_on", "id")
+        elif ordered:
             # the ticket UI's display order: open ('O' > 'C') before closed, then most recent activity - for
             # status filtered fetches the leading term is constant so this is just most recent activity
             qs = qs.order_by("-status", "-last_activity_on", "-id")
@@ -428,8 +438,11 @@ class MineFolder(TicketFolder):
     def get_icon(self, count) -> str:
         return self.icon if count else "tickets_mine_done"
 
-    def get_queryset(self, org, user, *, ordered: bool):
-        return super().get_queryset(org, user, ordered=ordered).filter(assignee=user)
+    def get_open_count(self, org, user, topics) -> int:
+        return Ticket.get_assignee_count(org, user, topics, Ticket.STATUS_OPEN)
+
+    def get_queryset(self, org, user, *, ordered: bool, oldest_first: bool = False):
+        return super().get_queryset(org, user, ordered=ordered, oldest_first=oldest_first).filter(assignee=user)
 
 
 class UnassignedFolder(TicketFolder):
@@ -443,8 +456,11 @@ class UnassignedFolder(TicketFolder):
     icon = "tickets_unassigned"
     restrict_topics = True
 
-    def get_queryset(self, org, user, *, ordered: bool):
-        return super().get_queryset(org, user, ordered=ordered).filter(assignee=None)
+    def get_open_count(self, org, user, topics) -> int:
+        return Ticket.get_assignee_count(org, None, topics, Ticket.STATUS_OPEN)
+
+    def get_queryset(self, org, user, *, ordered: bool, oldest_first: bool = False):
+        return super().get_queryset(org, user, ordered=ordered, oldest_first=oldest_first).filter(assignee=None)
 
 
 class AllFolder(TicketFolder):
@@ -457,6 +473,12 @@ class AllFolder(TicketFolder):
     verbose_name = _("All Tickets")
     icon = "tickets_all"
     restrict_topics = True
+
+    def get_open_count(self, org, user, topics, assignee=None) -> int:
+        # filtered to one agent's tickets, it's their count
+        if assignee:
+            return Ticket.get_assignee_count(org, assignee, topics, Ticket.STATUS_OPEN)
+        return Ticket.get_status_count(org, topics, Ticket.STATUS_OPEN)
 
 
 FOLDERS = {f.slug: f() for f in TicketFolder.__subclasses__()}
@@ -473,8 +495,11 @@ class TopicFolder(TicketFolder):
         self.topic = topic
         self.restrict_topics = False  # already filtered by a single topic
 
-    def get_queryset(self, org, user, *, ordered: bool):
-        return super().get_queryset(org, user, ordered=ordered).filter(topic=self.topic)
+    def get_open_count(self, org, user, topics) -> int:
+        return Ticket.get_topic_counts(org, [self.topic], Ticket.STATUS_OPEN)[self.topic]
+
+    def get_queryset(self, org, user, *, ordered: bool, oldest_first: bool = False):
+        return super().get_queryset(org, user, ordered=ordered, oldest_first=oldest_first).filter(topic=self.topic)
 
 
 def export_ticket_stats(org: Org, since: date, until: date) -> openpyxl.Workbook:

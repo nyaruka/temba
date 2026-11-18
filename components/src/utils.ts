@@ -56,6 +56,8 @@ interface AssetPage<T = Asset> {
 export interface ResultsPage {
   results: any[];
   next: string;
+  // the whole response, for endpoints that send more than a page of results
+  data?: any;
 }
 
 export enum Color {
@@ -205,7 +207,8 @@ export const fetchResultsPage = (
       .then((response: WebResponse) => {
         resolve({
           results: response.json.results,
-          next: response.json.next
+          next: response.json.next,
+          data: response.json
         });
       })
       .catch((error) => {

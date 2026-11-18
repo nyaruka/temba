@@ -90,6 +90,16 @@ export class TembaList extends RapidElement {
   // subclasses that get realtime updates can opt out of interval polling
   protected pollingEnabled = true;
 
+  // items that changed while selected (say a reply bumped a ticket's
+  // activity) stay in the row they were in until the list reloads, rather
+  // than re-sorting - either while being worked on or once the user clicks
+  // on to the next one, which would move rows under their pointer
+  private held = new Set<any>();
+
+  // set when we move the cursor only to keep it on the same item, so that
+  // doesn't read as a new selection
+  private silentCursor = false;
+
   // our next page from our endpoint
   nextPage: string = null;
 
@@ -124,6 +134,8 @@ export class TembaList extends RapidElement {
     this.cursorIndex = -1;
     this.mostRecentItem = null;
     this.items = [];
+    this.pages = 0;
+    this.held = new Set();
   }
 
   refreshInterval = null;
@@ -184,13 +196,11 @@ export class TembaList extends RapidElement {
     }
 
     if (changedProperties.has('cursorIndex')) {
-      if (this.cursorIndex > -1) {
+      if (this.silentCursor) {
+        this.silentCursor = false;
+      } else if (this.cursorIndex > -1) {
         this.handleSelected(this.selected);
       }
-    }
-
-    if (changedProperties.has('items')) {
-      //
     }
   }
 
@@ -230,15 +240,25 @@ export class TembaList extends RapidElement {
 
   public removeItem(value: string) {
     const index = this.getItemIndex(value);
-    this.items.splice(index, 1);
-    this.items = [...this.items];
-    if (this.cursorIndex === index) {
-      this.cursorIndex = -1;
+    if (index < 0) {
+      return;
     }
 
-    // request a change even if it is the same, the item is different
-    this.requestUpdate('cursorIndex');
-    this.requestUpdate('items');
+    const items = [...this.items];
+    items.splice(index, 1);
+    this.items = items;
+    this.held.delete(value);
+
+    if (this.cursorIndex === index) {
+      this.cursorIndex = -1;
+
+      // request a change even if it is the same, the item is different
+      this.requestUpdate('cursorIndex');
+    } else if (index < this.cursorIndex) {
+      // the rows below shifted up, keep the cursor on the same item
+      this.silentCursor = true;
+      this.cursorIndex = this.cursorIndex - 1;
+    }
   }
 
   public getSelection(): any {
@@ -268,6 +288,116 @@ export class TembaList extends RapidElement {
 
   protected sanitizeResults(results: any[]): Promise<any[]> {
     return Promise.resolve(results);
+  }
+
+  /**
+   * Whether a refreshed item belongs in the list - subclasses can leave out
+   * ones that no longer fit it, say ones that now sort past what's loaded
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  protected keepItem(item: any): boolean {
+    return true;
+  }
+
+  /**
+   * Called with the first page each time the list loads from its endpoint
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  protected handleFirstPage(page: ResultsPage): void {
+    // nothing by default
+  }
+
+  /**
+   * Called with each response that reads the list as it is now - the first
+   * page each time the list loads, and every refresh
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  protected handleCurrentPage(page: ResultsPage): void {
+    // nothing by default
+  }
+
+  /**
+   * Swaps in the latest data for an item and holds it in its current row
+   * until the list reloads, for changes made here that would otherwise
+   * re-sort it or drop it from the list on the next refresh.
+   */
+  public holdItem(item: any): void {
+    const value = this.getValue(item);
+    const index = this.getItemIndex(value);
+    if (index < 0) {
+      return;
+    }
+
+    this.held.add(value);
+    const items = [...this.items];
+    items[index] = item;
+    this.items = items;
+    if (index === this.cursorIndex) {
+      this.selected = item;
+    }
+  }
+
+  /**
+   * Sorts merged items into display order. Held items are the exception:
+   * each stays just below the row it followed before, so they don't move
+   * while the user works through the list. The selected item becomes held
+   * when it's one of the refreshed items, i.e. it changed itself.
+   */
+  private arrange(items: any[], selected: any, refreshed: Set<any>): any[] {
+    if (!this.compareItems) {
+      return items;
+    }
+
+    if (selected && refreshed.has(this.getValue(selected))) {
+      this.held.add(this.getValue(selected));
+    }
+
+    // where each held item was, as the item it followed (null for the top),
+    // skipping items that just changed since they may sort elsewhere now
+    const anchors = new Map<any, any>();
+    let previous: any = null;
+    this.items.forEach((item) => {
+      const value = this.getValue(item);
+      if (this.held.has(value)) {
+        anchors.set(value, previous);
+      } else if (!refreshed.has(value)) {
+        previous = value;
+      }
+    });
+
+    const held = new Map<any, any[]>();
+    const others: any[] = [];
+    items.forEach((item) => {
+      const value = this.getValue(item);
+      if (anchors.has(value)) {
+        const anchor = anchors.get(value);
+        held.set(anchor, [...(held.get(anchor) || []), item]);
+      } else {
+        others.push(item);
+      }
+    });
+    others.sort(this.compareItems);
+
+    if (held.size === 0) {
+      return others;
+    }
+
+    // an anchor that's gone from the list leaves its held items at the top
+    const present = new Set(others.map((item) => this.getValue(item)));
+    const result: any[] = [];
+    held.forEach((group, anchor) => {
+      if (anchor === null || !present.has(anchor)) {
+        result.push(...group);
+      }
+    });
+    others.forEach((item) => {
+      result.push(item);
+      const group = held.get(this.getValue(item));
+      if (group) {
+        result.push(...group);
+      }
+    });
+    return result;
   }
 
   /**
@@ -391,6 +521,7 @@ export class TembaList extends RapidElement {
         controller
       );
 
+      this.handleCurrentPage(page);
       const sanitizedResults = await this.sanitizeResults(page.results);
 
       // read our list and selection only now - either can change while we
@@ -400,11 +531,13 @@ export class TembaList extends RapidElement {
 
       // remove any dupes already in our list
       if (sanitizedResults) {
+        const refreshed = new Set<any>();
         sanitizedResults.forEach((newOption: any) => {
           if (this.sanitizeOption) {
             this.sanitizeOption(newOption);
           }
           const newValue = this.getValue(newOption);
+          refreshed.add(newValue);
           const removeIndex = items.findIndex(
             (option) => this.getValue(option) === newValue
           );
@@ -419,16 +552,25 @@ export class TembaList extends RapidElement {
         if (this.reverseRefresh) {
           results = sanitizedResults.reverse();
         }
-        const newItems = [...results, ...items];
 
-        // capture the top item before any display sort - it means "the newest
-        // item we just fetched, or the previous top if we fetched nothing" and
-        // drives the Refreshed event
-        const topItem = newItems[0];
+        // capture the top item before any filtering or display sort - it means
+        // "the newest item we just fetched, or the previous top if we fetched
+        // nothing" and drives the Refreshed event
+        const topItem = results.length > 0 ? results[0] : items[0];
 
-        if (this.compareItems) {
-          newItems.sort(this.compareItems);
-        }
+        // the selected item and held items always stay, even if they no
+        // longer belong, until the list reloads
+        const prevValue = prevItem ? this.getValue(prevItem) : null;
+        const kept = results.filter((option: any) => {
+          const value = this.getValue(option);
+          return (
+            (prevValue !== null && value === prevValue) ||
+            this.held.has(value) ||
+            this.keepItem(option)
+          );
+        });
+
+        const newItems = this.arrange([...kept, ...items], prevItem, refreshed);
 
         if (
           !this.mostRecentItem ||
@@ -447,12 +589,18 @@ export class TembaList extends RapidElement {
           // from it back on every refresh
           follow = this.isFocusedOptionVisible();
           this.cursorIndex = newIndex;
+        } else if (newIndex === null && prevItem) {
+          // still on the same row, but pick up the item's latest data
+          this.selected = newItems[this.cursorIndex];
         }
 
         this.items = newItems;
       }
     } catch (error) {
-      this.paused = true;
+      // a newer request cancelled this one, that's not a failure
+      if (!controller.signal.aborted) {
+        this.paused = true;
+      }
       return;
     }
 
@@ -492,6 +640,10 @@ export class TembaList extends RapidElement {
 
       try {
         const page = await fetchResultsPage(endpoint, controller);
+        if (pages === 0) {
+          this.handleFirstPage(page);
+          this.handleCurrentPage(page);
+        }
         const sanitizedResults = await this.sanitizeResults(page.results);
 
         // sanitize our options if necessary
@@ -509,7 +661,11 @@ export class TembaList extends RapidElement {
         pagesToFetch--;
         pages++;
       } catch (error) {
-        // aborted
+        // a newer fetch cancelled this one and owns the list now
+        if (controller.signal.aborted) {
+          return;
+        }
+
         this.reset();
         this.paused = true;
         this.loading = false;
@@ -615,15 +771,15 @@ export class TembaList extends RapidElement {
                 }
               );
 
-              const items = [...this.items, ...appended];
-
               // the server pages in the same total order we display in, so this is
               // normally a no-op, but a poll can re-sort an item (say a ticket that
               // just closed) into the loaded window - without this the appended
-              // page would land below it
-              if (this.compareItems) {
-                items.sort(this.compareItems);
-              }
+              // page would land below it. Held items keep their rows.
+              const items = this.arrange(
+                [...this.items, ...appended],
+                prevItem,
+                new Set()
+              );
 
               // the sort can shift our selection, keep the cursor on it
               const newIndex = this.findRepinnedCursorIndex(prevItem, items);

@@ -4,11 +4,29 @@ import { SinonStub } from 'sinon';
 import { CustomEventType } from '../src/interfaces';
 import { Card } from '../src/layout/Card';
 import { CardLayout } from '../src/layout/CardLayout';
-import { mockPOST, waitForCondition } from './utils.test';
+import {
+  assertScreenshot,
+  getClip,
+  mockPOST,
+  waitForCondition
+} from './utils.test';
 
 const LAYOUT = html`
   <temba-card-layout breakpoint="800">
     <div slot="main" id="main-view" style="height:200px">main content</div>
+    <temba-card id="card-a" label="Alpha" icon="info">
+      <div id="panel-a" style="height:30px">A</div>
+    </temba-card>
+    <temba-card id="card-b" label="Beta" icon="fields" count="3">
+      <div id="panel-b" style="height:30px">B</div>
+    </temba-card>
+  </temba-card-layout>
+`;
+
+const HEADED_LAYOUT = html`
+  <temba-card-layout breakpoint="800" style="height:300px">
+    <div slot="header" id="header" style="padding:12px">Amina Mwangi</div>
+    <div slot="main" id="main-view" style="flex-grow:1">main content</div>
     <temba-card id="card-a" label="Alpha" icon="info">
       <div id="panel-a" style="height:30px">A</div>
     </temba-card>
@@ -68,6 +86,47 @@ describe('temba-card-layout', () => {
       expect(card.hasAttribute('plain')).to.be.true;
       expect(card.getAttribute('slot')).to.equal(`panel-${card.id}`);
     });
+  });
+
+  it('heads the main view with the header in one card when wide', async () => {
+    const layout = await createLayout(1000, HEADED_LAYOUT);
+    await waitForCondition(
+      () => !!layout.shadowRoot.querySelector('.frame.framed')
+    );
+
+    // the header and main view share the frame, the cards stay outside it
+    const frame = layout.shadowRoot.querySelector('.frame.framed');
+    expect(frame.closest('.main')).to.exist;
+    expect(frame.querySelector('slot[name="header"]')).to.exist;
+    expect(frame.querySelector('slot[name="main"]')).to.exist;
+    expect(frame.querySelector('temba-card-stack')).to.not.exist;
+
+    await assertScreenshot('layout/headed-wide', getClip(layout));
+  });
+
+  it('takes the tabs into the header card when narrow', async () => {
+    const layout = await createLayout(600, HEADED_LAYOUT);
+    await waitForCondition(
+      () => !!layout.shadowRoot.querySelector('.frame.framed')
+    );
+
+    const frame = layout.shadowRoot.querySelector('.frame.framed');
+    expect(frame.querySelector('temba-tabs')).to.exist;
+
+    // the cards inside it drop their own chrome
+    const card = layout.querySelector('#card-a') as Card;
+    expect(card.hasAttribute('plain')).to.be.true;
+    const cardFrame = card.shadowRoot.querySelector('.frame') as HTMLElement;
+    expect(getComputedStyle(cardFrame).borderTopStyle).to.equal('none');
+
+    await assertScreenshot('layout/headed-narrow', getClip(layout));
+  });
+
+  it('leaves the layout unframed without a header', async () => {
+    const layout = await createLayout(1000);
+    const frame = layout.shadowRoot.querySelector('.frame') as HTMLElement;
+    expect(frame.classList.contains('framed')).to.be.false;
+    expect(getComputedStyle(frame).display).to.equal('contents');
   });
 
   it('keeps panel instances connected across mode switches', async () => {

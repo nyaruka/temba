@@ -1139,6 +1139,8 @@ class ChannelCRUDL(SmartCRUDL):
             # the channel is deleted from here rather than from its page
             if self.has_org_perm("channels.channel_delete"):
                 context["delete_url"] = reverse("channels.channel_delete", args=[self.object.uuid])
+                context["delete_label"] = _("Delete channel")
+                context["delete_title"] = _("Delete Channel")
             return context
 
         def get_form_class(self):

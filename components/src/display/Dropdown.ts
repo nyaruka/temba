@@ -255,8 +255,15 @@ export class Dropdown extends RapidElement {
           toggleBounds.top > dropdownBounds.height + this.arrowSize) ||
         toggleBounds.bottom + dropdownBounds.height > window.innerHeight
       ) {
-        dropdownStyle['top'] =
-          toggleBounds.top - dropdownBounds.height - this.arrowSize + 'px';
+        // anchored by its bottom edge, so it stays against the toggle when
+        // its content changes height while open, e.g. a list being searched.
+        // The negative margin matches the overlap the top margin gives a
+        // dropdown opening below
+        dropdownStyle['top'] = 'auto';
+        dropdownStyle['bottom'] =
+          window.innerHeight - toggleBounds.top + this.arrowSize + 'px';
+        dropdownStyle['marginTop'] = '0';
+        dropdownStyle['marginBottom'] = '-0.5em';
         bumpedUp = true;
       }
 

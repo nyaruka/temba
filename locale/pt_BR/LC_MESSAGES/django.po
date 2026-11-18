@@ -1859,6 +1859,12 @@ msgstr "Torna o canal disponível para envio. Mensagens recebidas serão arquiva
 msgid "%s Channel"
 msgstr "%s Canal"
 
+msgid "Delete channel"
+msgstr "Deletar canal"
+
+msgid "Delete Channel"
+msgstr "Deletar Canal"
+
 msgid "Channel Log"
 msgstr "Log de canais"
 
@@ -3578,6 +3584,12 @@ msgstr "Tickets sem responsável"
 msgid "All Tickets"
 msgstr "Todos os tickets"
 
+msgid "Delete topic"
+msgstr "Deletar tópico"
+
+msgid "Delete Topic"
+msgstr "Deletar tópico"
+
 msgid "New Team"
 msgstr "Nova equipe"
 
@@ -3599,11 +3611,12 @@ msgstr "Exportar bruto"
 msgid "Add Note"
 msgstr "Adicionar nota"
 
-msgid "Edit Topic"
-msgstr "Editar tópico"
-
-msgid "Delete Topic"
-msgstr "Deletar tópico"
+#, python-format
+msgid "%(count)s open ticket"
+msgid_plural "%(count)s open tickets"
+msgstr[0] "%(count)s ticket aberto"
+msgstr[1] "%(count)s de tickets abertos"
+msgstr[2] "%(count)s tickets abertos"
 
 msgid "Notes are never shown to the contact."
 msgstr "As notas nunca são mostradas ao contato."
@@ -4415,12 +4428,6 @@ msgstr "Nenhum template foi sincronizado para este canal."
 
 msgid "Cancel"
 msgstr "Cancelar"
-
-msgid "Delete channel"
-msgstr "Deletar canal"
-
-msgid "Delete Channel"
-msgstr "Deletar Canal"
 
 msgid "To get started, you'll need your short code along with your Africa's Talking username and an API key, which you can generate under Settings in your Africa's Talking app."
 msgstr "Para começar, você vai precisar do seu código curto, junto com seu nome de usuário do Africa's Talking e uma chave de API, que você pode gerar em Settings no seu aplicativo do Africa's Talking."
@@ -6227,8 +6234,17 @@ msgstr "Falha ao carregar"
 msgid "Any tickets opened within the selected date range will be included. You may optionally include additional columns for fields for each contact."
 msgstr "Serão incluídos todos os tickets abertos dentro do intervalo de datas selecionado. Você pode, opcionalmente, incluir colunas adicionais para os campos de cada contato."
 
-msgid "All Agents"
+msgid "Edit Topic"
+msgstr "Editar tópico"
+
+msgid "All agents"
 msgstr "Todos os agentes"
+
+msgid "Oldest"
+msgstr "Mais antigos"
+
+msgid "Most recent"
+msgstr "Mais recentes"
 
 msgid "See more tickets"
 msgstr "Ver mais tickets"

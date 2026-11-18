@@ -1855,6 +1855,12 @@ msgstr "Rend le canal disponible pour l'envoi. Les messages entrants seront arch
 msgid "%s Channel"
 msgstr "%s Canal"
 
+msgid "Delete channel"
+msgstr "Supprimer le canal"
+
+msgid "Delete Channel"
+msgstr "Supprimer le canal"
+
 msgid "Channel Log"
 msgstr "Journal des canaux"
 
@@ -3574,6 +3580,12 @@ msgstr "Billets non assignés"
 msgid "All Tickets"
 msgstr "Tous les billets"
 
+msgid "Delete topic"
+msgstr "Supprimer le sujet"
+
+msgid "Delete Topic"
+msgstr "Supprimer le sujet"
+
 msgid "New Team"
 msgstr "Nouvelle équipe"
 
@@ -3595,11 +3607,12 @@ msgstr "Exporter les données brutes"
 msgid "Add Note"
 msgstr "Ajouter une note"
 
-msgid "Edit Topic"
-msgstr "Modifier le sujet"
-
-msgid "Delete Topic"
-msgstr "Supprimer le sujet"
+#, python-format
+msgid "%(count)s open ticket"
+msgid_plural "%(count)s open tickets"
+msgstr[0] "%(count)s billet ouvert"
+msgstr[1] "%(count)s de billets ouverts"
+msgstr[2] "%(count)s billets ouverts"
 
 msgid "Notes are never shown to the contact."
 msgstr "Les notes ne sont jamais montrées au contact."
@@ -4411,12 +4424,6 @@ msgstr "Aucun modèle n'a été synchronisé pour ce canal."
 
 msgid "Cancel"
 msgstr "Annuler"
-
-msgid "Delete channel"
-msgstr "Supprimer le canal"
-
-msgid "Delete Channel"
-msgstr "Supprimer le canal"
 
 msgid "To get started, you'll need your short code along with your Africa's Talking username and an API key, which you can generate under Settings in your Africa's Talking app."
 msgstr "Pour commencer, vous aurez besoin de votre code court ainsi que de votre nom d'utilisateur Africa's Talking et d'une clé d'API, que vous pouvez générer sous Settings dans votre application Africa's Talking."
@@ -6223,8 +6230,17 @@ msgstr "Échec du chargement"
 msgid "Any tickets opened within the selected date range will be included. You may optionally include additional columns for fields for each contact."
 msgstr "Tous les billets ouverts dans la plage de dates sélectionnée seront inclus. Vous pouvez éventuellement inclure des colonnes supplémentaires pour les champs de chaque contact."
 
-msgid "All Agents"
+msgid "Edit Topic"
+msgstr "Modifier le sujet"
+
+msgid "All agents"
 msgstr "Tous les agents"
+
+msgid "Oldest"
+msgstr "Plus anciens"
+
+msgid "Most recent"
+msgstr "Plus récents"
 
 msgid "See more tickets"
 msgstr "Voir plus de billets"
