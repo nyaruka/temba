@@ -5,6 +5,7 @@ from unittest.mock import patch
 from django.utils import timezone
 
 from temba.contacts.models import Contact
+from temba.orgs.models import Org
 from temba.tests import MigrationTest
 
 
@@ -106,3 +107,60 @@ class BackfillNewContactTalliesTest(MigrationTest):
         migration.backfill_new_contact_tallies(self.apps, None)
 
         self.assertState()
+
+
+class BackfillOrgStatusFieldsTest(MigrationTest):
+    app = "orgs"
+    migrate_from = "0209_org_status_reason_status_changed_on"
+    migrate_to = "0210_backfill_org_status_fields"
+
+    def setUpBeforeMigration(self, apps):
+        self.t1 = datetime(2026, 11, 1, 12, 0, 0, tzinfo=tz.utc)
+        self.t2 = datetime(2026, 11, 2, 12, 0, 0, tzinfo=tz.utc)
+        self.t3 = datetime(2026, 11, 3, 12, 0, 0, tzinfo=tz.utc)
+        suspends_on = datetime(2026, 12, 1, 12, 0, 0, tzinfo=tz.utc)
+
+        def restrict(org, reason):
+            Org.objects.filter(id=org.id).update(
+                status="R", restricted_reason=reason, suspends_on=suspends_on, modified_on=self.t3
+            )
+
+        # restricted with an ongoing incident, as well as an earlier one which ended
+        restrict(self.org, "B")
+        self.org.incidents.create(
+            incident_type="org:restricted",
+            scope="",
+            started_on=self.t1 - timedelta(days=30),
+            ended_on=self.t1 - timedelta(days=20),
+        )
+        self.org.incidents.create(incident_type="org:restricted", scope="", started_on=self.t1)
+
+        # a child of a restricted org has its parent's incident
+        self.child = Org.objects.create(
+            name="Child",
+            timezone="UTC",
+            parent=self.org,
+            created_by=self.admin,
+            modified_by=self.admin,
+        )
+        restrict(self.child, "B")
+
+        # restricted with no incident
+        self.org3 = Org.objects.create(name="Org 3", timezone="UTC", created_by=self.admin, modified_by=self.admin)
+        restrict(self.org3, "S")
+
+        Org.objects.filter(id=self.org2.id).update(status="S", suspended_on=self.t2)
+
+        self.org4 = Org.objects.create(name="Org 4", timezone="UTC", created_by=self.admin, modified_by=self.admin)
+
+    def test_migration(self):
+        def assert_org(org, reason, changed_on):
+            org.refresh_from_db()
+            self.assertEqual(reason, org.status_reason)
+            self.assertEqual(changed_on, org.status_changed_on)
+
+        assert_org(self.org, "B", self.t1)
+        assert_org(self.child, "B", self.t1)
+        assert_org(self.org3, "S", self.t3)
+        assert_org(self.org2, None, self.t2)
+        assert_org(self.org4, None, None)

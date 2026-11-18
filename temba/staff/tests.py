@@ -243,6 +243,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         self.client.post(update_url, {"action": "suspend"})
         self.org.refresh_from_db()
         self.assertEqual(Org.STATUS_SUSPENDED, self.org.status)
+        self.assertEqual(Org.RESTRICTED_STAFF, self.org.status_reason)
 
         # reactivate org
         self.client.post(update_url, {"action": "reactivate"})

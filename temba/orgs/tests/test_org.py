@@ -188,13 +188,15 @@ class OrgTest(TembaTest):
     def test_status(self):
         suspends_on = datetime(2026, 12, 1, 12, 0, 0, tzinfo=tzone.utc)
 
-        def assert_org(org, status, reason=None, suspends_on=None):
+        def assert_org(org, status, reason=None, suspends_on=None, *, changed=True):
             org.refresh_from_db()
             self.assertEqual(status, org.status)
-            self.assertEqual(reason, org.restricted_reason)
+            self.assertEqual(reason, org.status_reason)
+            self.assertEqual(changed, org.status_changed_on is not None)
+            self.assertEqual(reason if status == Org.STATUS_RESTRICTED else None, org.restricted_reason)
             self.assertEqual(suspends_on, org.suspends_on)
             if status == Org.STATUS_SUSPENDED:
-                self.assertIsNotNone(org.suspended_on)
+                self.assertEqual(org.status_changed_on, org.suspended_on)
             else:
                 self.assertIsNone(org.suspended_on)
 
@@ -215,7 +217,7 @@ class OrgTest(TembaTest):
         assert_org(self.org, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
         assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
         assert_org(org1_child2, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
-        assert_org(self.org2, Org.STATUS_ACTIVE)
+        assert_org(self.org2, Org.STATUS_ACTIVE, changed=False)
         assert_incidents("org:restricted", ongoing=1, total=1)
         assert_incidents("org:suspended", ongoing=0, total=0)
         self.assertEqual(1, self.admin.notifications.filter(notification_type="incident:started").count())
@@ -230,15 +232,16 @@ class OrgTest(TembaTest):
         assert_org(self.org, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
         assert_incidents("org:restricted", ongoing=1, total=1)
 
+        # suspending keeps the reason for the restriction
         self.org.suspend()
 
-        assert_org(self.org, Org.STATUS_SUSPENDED)
-        assert_org(org1_child1, Org.STATUS_SUSPENDED)
-        assert_org(org1_child2, Org.STATUS_SUSPENDED)
-        assert_org(self.org2, Org.STATUS_ACTIVE)
+        assert_org(self.org, Org.STATUS_SUSPENDED, Org.RESTRICTED_BILLING)
+        assert_org(org1_child1, Org.STATUS_SUSPENDED, Org.RESTRICTED_BILLING)
+        assert_org(org1_child2, Org.STATUS_SUSPENDED, Org.RESTRICTED_BILLING)
+        assert_org(self.org2, Org.STATUS_ACTIVE, changed=False)
 
         org1_child4 = self.org.create_new(self.admin, "Child 4", tzone.utc, as_child=True)
-        assert_org(org1_child4, Org.STATUS_SUSPENDED)
+        assert_org(org1_child4, Org.STATUS_SUSPENDED, Org.RESTRICTED_BILLING)
         assert_incidents("org:restricted", ongoing=0, total=1)
         assert_incidents("org:suspended", ongoing=1, total=1)
         self.assertEqual(2, self.admin.notifications.filter(notification_type="incident:started").count())
@@ -247,7 +250,7 @@ class OrgTest(TembaTest):
         self.org.suspend()  # noop
         self.org.restrict(Org.RESTRICTED_STAFF)  # noop as suspension is stronger
 
-        assert_org(self.org, Org.STATUS_SUSPENDED)
+        assert_org(self.org, Org.STATUS_SUSPENDED, Org.RESTRICTED_BILLING)
         assert_incidents("org:restricted", ongoing=0, total=1)
         assert_incidents("org:suspended", ongoing=1, total=1)
 
@@ -255,7 +258,7 @@ class OrgTest(TembaTest):
 
         assert_org(self.org, Org.STATUS_ACTIVE)
         assert_org(org1_child1, Org.STATUS_ACTIVE)
-        assert_org(self.org2, Org.STATUS_ACTIVE)
+        assert_org(self.org2, Org.STATUS_ACTIVE, changed=False)
         assert_incidents("org:suspended", ongoing=0, total=1)
         self.assertIsNone(self.org.send_blocker)
 
@@ -292,6 +295,16 @@ class OrgTest(TembaTest):
 
         self.org.suspend()
         self.assertEqual(Org.BLOCKER_SUSPENDED, self.org.write_blocker)
+
+        # a suspension can be given its own reason
+        self.org2.suspend(Org.RESTRICTED_STAFF)
+        assert_org(self.org2, Org.STATUS_SUSPENDED, Org.RESTRICTED_STAFF)
+
+        # including over the reason for a restriction
+        self.org.reactivate()
+        self.org.restrict(Org.RESTRICTED_LIMITS, suspends_on=suspends_on)
+        self.org.suspend(Org.RESTRICTED_STAFF)
+        assert_org(self.org, Org.STATUS_SUSPENDED, Org.RESTRICTED_STAFF)
 
     def test_suspend_restricted_orgs(self):
         self.org.features += [Org.FEATURE_CHILD_ORGS]
