@@ -52,14 +52,15 @@ def backfill_status_tallies(apps, schema_editor):
             for flow_id, scope in cursor.fetchall():
                 counts_by_flow.setdefault(flow_id, {}).setdefault(scope, 0)
 
+        # runs which were already active or waiting before mailroom tallied statuses are taken off those statuses as
+        # they exit, so a tally can be anything until it's made to match its count. Making it match rather than only
+        # raising it means this can be re-run to repair drift for as long as the counts are still written. There are
+        # few statuses, so reading the whole batch's totals at once costs little over reading each flow's own.
+        scopes = list({s for counts in counts_by_flow.values() for s in counts})
+        totals = FlowTally._get_totals(list(counts_by_flow.keys()), scopes)
         rows = ([], [], [])
 
         for flow_id, counts in counts_by_flow.items():
-            # runs which were already active or waiting before mailroom tallied statuses are taken off those statuses
-            # as they exit, so a tally can be anything until it's made to match its count. Making it match rather than
-            # only raising it means this can be re-run to repair drift for as long as the counts are still written.
-            totals = FlowTally._get_totals([flow_id], list(counts.keys()))
-
             for scope, count in counts.items():
                 diff = count - totals.get((flow_id, scope), 0)
                 if diff != 0:
