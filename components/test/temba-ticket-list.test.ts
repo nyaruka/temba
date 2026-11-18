@@ -218,7 +218,7 @@ describe('temba-ticket-list', () => {
     );
     assert.equal(
       rows[4]
-        .querySelector('temba-icon[name="hourglass-01"]')
+        .querySelector('temba-icon[name="alarm-clock-off"]')
         .getAttribute('aria-label'),
       'Expired'
     );

@@ -222,7 +222,7 @@ export class TicketList extends TembaList {
 
       // closed is a mark where the age would be, with how it closed in words
       // for screen readers and on hover - a check in the success tone when
-      // it was resolved, a quiet hourglass when it expired from going idle
+      // it was resolved, a clock switched off when it expired from going idle
       const expired = ticket.outcome === 'idle';
       const outcome = expired ? msg('Expired') : msg('Resolved');
       const rail = closed
