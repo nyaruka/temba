@@ -6,8 +6,9 @@ from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
+from django.db import connection
 from django.db.models import F, Model
-from django.test.utils import override_settings
+from django.test.utils import CaptureQueriesContext, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -307,7 +308,11 @@ class OrgTest(TembaTest):
         org3.restrict(Org.RESTRICTED_STAFF)
         Org.objects.filter(id=org3.id).update(suspends_on=None)
 
-        self.assertEqual({"suspended": 1}, suspend_restricted_orgs())
+        # each org is locked while deciding whether to suspend it
+        with CaptureQueriesContext(connection) as queries:
+            self.assertEqual({"suspended": 1}, suspend_restricted_orgs())
+
+        self.assertTrue(any("FOR UPDATE" in q["sql"] for q in queries.captured_queries))
 
         for org, status in ((self.org, "S"), (child, "S"), (self.org2, "R"), (org3, "R")):
             org.refresh_from_db()
