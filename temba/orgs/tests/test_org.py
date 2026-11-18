@@ -193,6 +193,10 @@ class OrgTest(TembaTest):
             self.assertEqual(status, org.status)
             self.assertEqual(reason, org.restricted_reason)
             self.assertEqual(suspends_on, org.suspends_on)
+            if status == Org.STATUS_SUSPENDED:
+                self.assertIsNotNone(org.suspended_on)
+            else:
+                self.assertIsNone(org.suspended_on)
 
         def assert_incidents(incident_type: str, ongoing: int, total: int):
             incidents = self.org.incidents.filter(incident_type=incident_type)

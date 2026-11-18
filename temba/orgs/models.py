@@ -369,6 +369,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     is_flagged = models.BooleanField(default=False, help_text=_("Whether this organization is currently flagged."))
     is_internal = models.BooleanField(default=False)
 
+    suspended_on = models.DateTimeField(null=True)
     released_on = models.DateTimeField(null=True)
     deleted_on = models.DateTimeField(null=True)
 
@@ -437,6 +438,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             status=self.status,
             restricted_reason=self.restricted_reason,
             suspends_on=self.suspends_on,
+            suspended_on=self.suspended_on,
         )
 
         org = Org.objects.create(
@@ -572,6 +574,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             status=status,
             restricted_reason=restricted_reason,
             suspends_on=suspends_on,
+            suspended_on=timezone.now() if status == Org.STATUS_SUSPENDED else None,
             modified_on=timezone.now(),
         )
 
@@ -1381,6 +1384,15 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        constraints = [
+            # suspended_on must be set if and only if org is suspended
+            models.CheckConstraint(
+                condition=Q(status="S", suspended_on__isnull=False) | (~Q(status="S") & Q(suspended_on__isnull=True)),
+                name="orgs_org_suspended_on_consistent",
+            )
+        ]
 
 
 class OrgMembership(models.Model):
