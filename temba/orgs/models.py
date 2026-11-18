@@ -366,12 +366,10 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     status = models.CharField(max_length=1, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
     status_reason = models.CharField(max_length=1, choices=RESTRICTED_CHOICES, null=True)
     status_changed_on = models.DateTimeField(null=True)
-    restricted_reason = models.CharField(max_length=1, choices=RESTRICTED_CHOICES, null=True)
-    suspends_on = models.DateTimeField(null=True)  # when a restricted org will be suspended, if ever
+    suspends_on = models.DateTimeField(null=True)  # when a restricted org will be suspended
     is_flagged = models.BooleanField(default=False, help_text=_("Whether this organization is currently flagged."))
     is_internal = models.BooleanField(default=False)
 
-    suspended_on = models.DateTimeField(null=True)
     released_on = models.DateTimeField(null=True)
     deleted_on = models.DateTimeField(null=True)
 
@@ -440,9 +438,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             status=self.status,
             status_reason=self.status_reason,
             status_changed_on=self.status_changed_on,
-            restricted_reason=self.restricted_reason,
             suspends_on=self.suspends_on,
-            suspended_on=self.suspended_on,
         )
 
         org = Org.objects.create(
@@ -554,7 +550,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         assert not self.is_child
 
         if self.status != Org.STATUS_SUSPENDED:
-            self._set_status(Org.STATUS_SUSPENDED, reason=reason or self.restricted_reason)
+            self._set_status(Org.STATUS_SUSPENDED, reason=reason or self.status_reason)
 
             OrgRestrictedIncidentType.end_ongoing(self)
             OrgSuspendedIncidentType.get_or_create(self)  # create incident which will notify admins
@@ -579,9 +575,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             status=status,
             status_reason=reason,
             status_changed_on=now,
-            restricted_reason=reason if status == Org.STATUS_RESTRICTED else None,
             suspends_on=suspends_on,
-            suspended_on=now if status == Org.STATUS_SUSPENDED else None,
             modified_on=now,
         )
 
@@ -1394,13 +1388,11 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
     class Meta:
         constraints = [
-            # each status has its own fields, which are only set in that status
+            # a restricted org always has a reason and a time it will be suspended, and a suspended org keeps any reason
             models.CheckConstraint(
-                condition=Q(
-                    status="A", restricted_reason__isnull=True, suspends_on__isnull=True, suspended_on__isnull=True
-                )
-                | Q(status="R", restricted_reason__isnull=False, suspends_on__isnull=False, suspended_on__isnull=True)
-                | Q(status="S", restricted_reason__isnull=True, suspends_on__isnull=True, suspended_on__isnull=False),
+                condition=Q(status="A", status_reason__isnull=True, suspends_on__isnull=True)
+                | Q(status="R", status_reason__isnull=False, suspends_on__isnull=False, status_changed_on__isnull=False)
+                | Q(status="S", suspends_on__isnull=True, status_changed_on__isnull=False),
                 name="orgs_org_status_consistent",
             )
         ]

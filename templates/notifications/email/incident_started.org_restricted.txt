@@ -1,7 +1,7 @@
 {% extends "notifications/email/base.txt" %}
 {% load i18n tz %}
 
-{% block notification-body %}{% with org=notification.incident.org %}{% if org.restricted_reason == "B" %}{% trans "Your workspace has been restricted because of a problem with billing." %}{% elif org.restricted_reason == "L" %}{% trans "Your workspace has been restricted because it has exceeded the limits of its plan." %}{% else %}{% trans "Your workspace has been restricted." %}{% endif %} {% trans "Starting flows and sending messages are disabled, but your flows will keep handling incoming messages." %}
+{% block notification-body %}{% with org=notification.incident.org %}{% if org.status_reason == "B" %}{% trans "Your workspace has been restricted because of a problem with billing." %}{% elif org.status_reason == "L" %}{% trans "Your workspace has been restricted because it has exceeded the limits of its plan." %}{% else %}{% trans "Your workspace has been restricted." %}{% endif %} {% trans "Starting flows and sending messages are disabled, but your flows will keep handling incoming messages." %}
 
 {% if deadline %}{% blocktrans with date=deadline|timezone:org.timezone|date %}Unless this is resolved, your workspace will be suspended on {{ date }}. Please contact support.{% endblocktrans %}{% else %}{% trans "Please contact support." %}{% endif %}{% endwith %}
 {% endblock notification-body %}

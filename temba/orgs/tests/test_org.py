@@ -193,12 +193,7 @@ class OrgTest(TembaTest):
             self.assertEqual(status, org.status)
             self.assertEqual(reason, org.status_reason)
             self.assertEqual(changed, org.status_changed_on is not None)
-            self.assertEqual(reason if status == Org.STATUS_RESTRICTED else None, org.restricted_reason)
             self.assertEqual(suspends_on, org.suspends_on)
-            if status == Org.STATUS_SUSPENDED:
-                self.assertEqual(org.status_changed_on, org.suspended_on)
-            else:
-                self.assertIsNone(org.suspended_on)
 
         def assert_incidents(incident_type: str, ongoing: int, total: int):
             incidents = self.org.incidents.filter(incident_type=incident_type)
@@ -269,7 +264,7 @@ class OrgTest(TembaTest):
         self.org.restrict(Org.RESTRICTED_LIMITS)
 
         self.org.refresh_from_db()
-        self.assertEqual(Org.RESTRICTED_LIMITS, self.org.restricted_reason)
+        self.assertEqual(Org.RESTRICTED_LIMITS, self.org.status_reason)
         self.assertGreaterEqual(self.org.suspends_on, before + Org.RESTRICTION_PERIOD)
         self.assertLessEqual(self.org.suspends_on, timezone.now() + Org.RESTRICTION_PERIOD)
 
@@ -336,9 +331,7 @@ class OrgTest(TembaTest):
         real_select_for_update = Org.objects.select_for_update
 
         def select_for_update(*args, **kwargs):
-            Org.objects.filter(id=self.org.id).update(
-                status=Org.STATUS_ACTIVE, restricted_reason=None, suspends_on=None
-            )
+            Org.objects.filter(id=self.org.id).update(status=Org.STATUS_ACTIVE, status_reason=None, suspends_on=None)
             return real_select_for_update(*args, **kwargs)
 
         with patch.object(Org.objects, "select_for_update", side_effect=select_for_update):

@@ -4,9 +4,9 @@
 {% block notification-body %}
   {% with org=notification.incident.org %}
     <p>
-      {% if org.restricted_reason == "B" %}
+      {% if org.status_reason == "B" %}
         {% trans "Your workspace has been restricted because of a problem with billing." %}
-      {% elif org.restricted_reason == "L" %}
+      {% elif org.status_reason == "L" %}
         {% trans "Your workspace has been restricted because it has exceeded the limits of its plan." %}
       {% else %}
         {% trans "Your workspace has been restricted." %}
