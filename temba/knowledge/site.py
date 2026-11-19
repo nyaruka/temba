@@ -14,7 +14,7 @@ from django.views.generic import TemplateView
 from temba import helpsites
 from temba.orgs.models import Org
 
-from .models import ArticleCount, HelpSite, KnowledgeSource
+from .models import ArticleTally, HelpSite, KnowledgeSource
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +135,7 @@ class ArticleView(SiteView):
         if not article:
             raise Http404()
 
-        ArticleCount.record_view(article)
+        ArticleTally.record_view(article)
 
         context["section"] = section
         context["article"] = article

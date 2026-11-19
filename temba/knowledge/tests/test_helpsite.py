@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import timedelta
 from types import SimpleNamespace
 from unittest.mock import call, patch
 
@@ -14,6 +14,7 @@ from temba.knowledge.middleware import HelpSiteMiddleware
 from temba.knowledge.models import (
     Article,
     ArticleCount,
+    ArticleTally,
     HelpSite,
     KnowledgeSource,
     is_dark_color,
@@ -24,7 +25,7 @@ from temba.knowledge.models import (
 from temba.knowledge.tasks import check_helpsite_domains, squash_article_counts, trim_article_counts
 from temba.mailroom.client.exceptions import RequestException
 from temba.orgs.models import Org
-from temba.tests import MockJsonResponse, TembaTest, mock_mailroom
+from temba.tests import MockJsonResponse, TembaTest, cleanup, mock_mailroom
 
 
 class HelpSiteTest(TembaTest):
@@ -363,6 +364,7 @@ class HelpSiteTest(TembaTest):
         nodes.save(update_fields=("title", "slug"))
         self.assertIn('href="/flows/flow-nodes/"', article.as_html(links=site.get_link_targets()))
 
+    @cleanup(valkey=True)
     def test_popular(self):
         site = HelpSite.get_or_create(self.helpdesk, self.admin)
 
@@ -375,32 +377,46 @@ class HelpSiteTest(TembaTest):
 
         self.assertEqual([], site.get_popular())
 
-        for _ in range(3):
-            ArticleCount.record_view(nodes)
-        ArticleCount.record_view(actions)
-        for _ in range(5):
-            ArticleCount.record_view(draft)  # not published, so not popular however often it was read
-        for _ in range(5):
-            ArticleCount.record_view(visible)  # nor is an article in an unpublished section
+        today = timezone.now().date()
 
-        # a view from before the window doesn't count
-        ArticleCount.objects.create(
-            article=actions, day=date.today() - timedelta(days=HelpSite.POPULAR_DAYS + 1), scope="views", count=10
-        )
+        def views(article, days_ago: int, count: int):
+            article.tallies.create(scope=f"views@{today - timedelta(days=days_ago)}", count=count)
+
+        views(nodes, 0, 3)
+        views(actions, 1, 1)
+        views(draft, 0, 5)  # not published, so not popular however often it was read
+        views(visible, 0, 5)  # nor is an article in an unpublished section
 
         self.assertEqual([nodes, actions], site.get_popular())
         self.assertEqual([nodes], site.get_popular(limit=1))
 
-        # squashing doesn't change the ranking
-        squash_article_counts()
-        self.assertEqual(1, ArticleCount.objects.filter(article=nodes).count())
-        self.assertEqual(3, ArticleCount.objects.filter(article=nodes).sum())
-        self.assertEqual([nodes, actions], site.get_popular())
+        # views from the start of the window count, those from before it don't
+        views(actions, HelpSite.POPULAR_DAYS, 3)
+        views(nodes, HelpSite.POPULAR_DAYS + 1, 10)
 
-        # trimming drops the old view
-        with override_settings(RETENTION_PERIODS={"articlecount": timedelta(days=HelpSite.POPULAR_DAYS)}):
-            trim_article_counts()
-        self.assertEqual(1, ArticleCount.objects.filter(article=actions).sum())
+        self.assertEqual([actions, nodes], site.get_popular())
+
+        # unflushed views aren't counted
+        for _ in range(5):
+            ArticleTally.record_view(nodes)
+
+        self.assertEqual([actions, nodes], site.get_popular())
+
+    def test_article_count_tasks(self):
+        flows = self.create_article("Flows")
+        nodes = self.create_article("Nodes", parent=flows)
+        today = timezone.now().date()
+
+        ArticleCount.objects.create(article=nodes, day=today, scope="views", count=1)
+        ArticleCount.objects.create(article=nodes, day=today, scope="views", count=2)
+        ArticleCount.objects.create(article=nodes, day=today - timedelta(days=91), scope="views", count=5)
+
+        squash_article_counts()
+        self.assertEqual(2, ArticleCount.objects.filter(article=nodes).count())
+        self.assertEqual(8, ArticleCount.objects.filter(article=nodes).sum())
+
+        trim_article_counts()
+        self.assertEqual(3, ArticleCount.objects.filter(article=nodes).sum())
 
     @mock_mailroom
     def test_search(self, mr_mocks):
@@ -516,13 +532,15 @@ class HelpSiteTest(TembaTest):
 
         flows = self.create_article("Flows")
         nodes = self.create_article("Nodes", parent=flows)
-        ArticleCount.record_view(nodes)
+        ArticleCount.objects.create(article=nodes, day=timezone.now().date(), scope="views", count=1)
+        nodes.tallies.create(scope="views@2026-11-01", count=1)
 
         # purging the helpdesk takes the site and the counts with it
         self.helpdesk.delete()
 
         self.assertFalse(HelpSite.objects.filter(id=site.id).exists())
         self.assertEqual(0, ArticleCount.objects.count())
+        self.assertEqual(0, ArticleTally.objects.count())
 
     def test_to_plain_text(self):
         self.assertEqual(
