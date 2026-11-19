@@ -1243,7 +1243,7 @@ describe('temba-ticket-list realtime', () => {
     let reloads = 0;
     list.reload = () => {
       reloads++;
-      return Promise.resolve();
+      return Promise.resolve('merged' as const);
     };
 
     const many = [];
@@ -1255,6 +1255,83 @@ describe('temba-ticket-list realtime', () => {
     assert.equal(reloads, 1);
     assert.equal(refreshes.count, 0);
     assert.notInclude(list.getRefreshEndpoint(), 'tickets=');
+  });
+
+  it('backs off a full reload that keeps failing', async () => {
+    const list = await getQuietList();
+    let reloads = 0;
+    list.reload = () => {
+      reloads++;
+      return Promise.resolve('failed' as const);
+    };
+
+    mockSocket.serverPublish(TICKETS_CHANNEL, { type: 'tickets_changed' });
+    clock.tick(0);
+    assert.equal(reloads, 1);
+    await clock.tickAsync(0);
+
+    // still owed, after twice the window
+    await clock.tickAsync(TICKETS_REFRESH_THROTTLE * 2 - 1);
+    assert.equal(reloads, 1);
+    await clock.tickAsync(1);
+    assert.equal(reloads, 2);
+
+    // then four times
+    await clock.tickAsync(TICKETS_REFRESH_THROTTLE * 4 - 1);
+    assert.equal(reloads, 2);
+    await clock.tickAsync(1);
+    assert.equal(reloads, 3);
+  });
+
+  it('tries again when a refresh in flight never ends', async () => {
+    const list = await getQuietList();
+    const refreshes = stubRefresh(list);
+
+    tickets([MERGED[0]]);
+    clock.tick(0);
+    assert.equal(refreshes.count, 1);
+
+    // heard of more, but the first never reports back
+    tickets([MERGED[1]]);
+    clock.tick(29999);
+    assert.equal(refreshes.count, 1);
+    clock.tick(1);
+    assert.equal(refreshes.count, 2);
+  });
+
+  it('schedules from the end of a refresh, not from when it would go stale', async () => {
+    const list = await getQuietList();
+    const refreshes = stubRefresh(list);
+
+    tickets([MERGED[0]]);
+    clock.tick(0);
+    tickets([MERGED[1]]);
+    clock.tick(0);
+
+    refreshes.end('merged');
+    clock.tick(TICKETS_REFRESH_THROTTLE);
+    assert.equal(refreshes.count, 2);
+  });
+
+  it('starts afresh when the list moves to another endpoint', async () => {
+    const list = await getQuietList();
+    const refreshes = stubRefresh(list);
+
+    tickets([MERGED[0]]);
+    clock.tick(0);
+    assert.equal(refreshes.count, 1);
+
+    // the new endpoint's load reads everything, so nothing is owed, and the
+    // refresh it cancelled no longer holds up the next
+    list.endpoint = '/test/assets/list/tickets-merged.json?folder=other';
+    tickets([MERGED[1]]);
+    list.willUpdate(new Map([['endpoint', null]]));
+    (list as any).loading = false;
+    tickets([MERGED[2]]);
+    clock.tick(TICKETS_REFRESH_THROTTLE);
+    assert.equal(refreshes.count, 2);
+    assert.include(list.getRefreshEndpoint(), `tickets=${MERGED[2]}`);
+    assert.notInclude(list.getRefreshEndpoint(), MERGED[1]);
   });
 
   it('leaves changes to a hidden page until it is shown', async () => {
@@ -1298,7 +1375,7 @@ describe('temba-ticket-list realtime', () => {
     let reloads = 0;
     list.reload = () => {
       reloads++;
-      return Promise.resolve();
+      return Promise.resolve('merged' as const);
     };
 
     clock.tick(TICKETS_REFRESH_THROTTLE);
@@ -1317,7 +1394,7 @@ describe('temba-ticket-list realtime', () => {
     let reloads = 0;
     list.reload = () => {
       reloads++;
-      return Promise.resolve();
+      return Promise.resolve('merged' as const);
     };
 
     mockSocket.serverPublish(TICKETS_CHANNEL, { type: 'tickets_changed' });

@@ -7,6 +7,10 @@ import { fetchResultsPage, ResultsPage } from '../utils';
 
 const DEFAULT_REFRESH = 10000;
 
+/** How a fetch of a list's items ended: merged into the list, failed, or
+ * cancelled by a newer request */
+export type RefreshOutcome = 'merged' | 'failed' | 'aborted';
+
 export class TembaList extends RapidElement {
   @property({ type: Array, attribute: false })
   items: any[] = [];
@@ -281,7 +285,7 @@ export class TembaList extends RapidElement {
    * Reads the list again from its endpoint, as many pages as are loaded,
    * keeping the selection where it can
    */
-  public reload(): Promise<void> {
+  public reload(): Promise<RefreshOutcome> {
     return this.fetchItems();
   }
 
@@ -311,7 +315,7 @@ export class TembaList extends RapidElement {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     scope: Set<any>,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    outcome: 'merged' | 'failed' | 'aborted'
+    outcome: RefreshOutcome
   ): void {
     // nothing by default
   }
@@ -667,7 +671,7 @@ export class TembaList extends RapidElement {
     }
   }
 
-  private async fetchItems(): Promise<void> {
+  private async fetchItems(): Promise<RefreshOutcome> {
     // cancel any outstanding requests
     while (this.pending.length > 0) {
       const pending = this.pending.pop();
@@ -710,13 +714,13 @@ export class TembaList extends RapidElement {
       } catch (error) {
         // a newer fetch cancelled this one and owns the list now
         if (controller.signal.aborted) {
-          return;
+          return 'aborted';
         }
 
         this.reset();
         this.paused = true;
         this.loading = false;
-        return;
+        return 'failed';
       }
       this.nextPage = nextPage;
     }
@@ -785,7 +789,7 @@ export class TembaList extends RapidElement {
       this.dispatchEvent(evt);
     }
 
-    return Promise.resolve();
+    return 'merged';
   }
 
   private handleScrollThreshold() {

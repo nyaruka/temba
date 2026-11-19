@@ -1,7 +1,7 @@
 import { css, html, PropertyValues, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { msg } from '@lit/localize';
-import { TembaList } from './TembaList';
+import { RefreshOutcome, TembaList } from './TembaList';
 import { Contact, CustomEventType } from '../interfaces';
 import { Icon } from '../Icons';
 import { ResultsPage } from '../utils';
@@ -119,6 +119,14 @@ export class TicketList extends TembaList {
     if (changedProperties.has('endpoint')) {
       this.activityCursor = 0;
       this.count = null;
+
+      // the list loads from scratch, which reads everything we'd heard of, and
+      // cancels any refresh in flight - which might never have started, if it
+      // was asked for in the same update
+      this.refreshingSince = 0;
+      this.refreshAfterLoad = false;
+      this.changedTickets.clear();
+      this.reloadNeeded = false;
     }
     super.willUpdate(changedProperties);
   }
@@ -132,27 +140,27 @@ export class TicketList extends TembaList {
     return batch.length > 0 ? new Set(batch) : null;
   }
 
-  protected handleRefreshEnded(
-    scope: Set<any>,
-    outcome: 'merged' | 'failed' | 'aborted'
-  ): void {
+  protected handleRefreshEnded(scope: Set<any>, outcome: RefreshOutcome): void {
     // a refresh our own scheduling didn't start, say a direct refresh()
     if (!this.refreshingSince) {
       return;
     }
-    this.refreshEnded(outcome === 'merged', outcome === 'failed');
+    this.refreshEnded(outcome);
     if (outcome === 'merged' && scope) {
       scope.forEach((uuid) => this.changedTickets.delete(uuid));
     }
     this.scheduleRefresh();
   }
 
-  private refreshEnded(merged: boolean, failed: boolean) {
+  private refreshEnded(outcome: RefreshOutcome) {
+    // the next is scheduled from now, not from when this one went stale
+    window.clearTimeout(this.refreshTimer);
+    this.refreshTimer = null;
     this.refreshingSince = 0;
     this.lastRefreshAt = Date.now();
-    if (merged) {
+    if (outcome === 'merged') {
       this.refreshFailures = 0;
-    } else if (failed) {
+    } else if (outcome === 'failed') {
       this.refreshFailures++;
     }
   }
@@ -355,12 +363,17 @@ export class TicketList extends TembaList {
   }
 
   private startRefresh() {
-    // one at a time - the one in flight schedules the next when it ends
-    if (
-      this.refreshingSince &&
-      Date.now() - this.refreshingSince < TICKETS_REFRESH_STALE
-    ) {
-      return;
+    // one at a time - the one in flight schedules the next when it ends, or
+    // if it never does, we try again once it's taken too long
+    if (this.refreshingSince) {
+      const stale = this.refreshingSince + TICKETS_REFRESH_STALE - Date.now();
+      if (stale > 0) {
+        this.refreshTimer = window.setTimeout(() => {
+          this.refreshTimer = null;
+          this.startRefresh();
+        }, stale);
+        return;
+      }
     }
 
     // a refresh aborts whatever is in flight, which mid-load would be the
@@ -380,12 +393,21 @@ export class TicketList extends TembaList {
       this.reloadNeeded = true;
     }
 
-    this.refreshingSince = Date.now();
+    const startedAt = Date.now();
+    this.refreshingSince = startedAt;
     if (this.reloadNeeded) {
       this.reloadNeeded = false;
       this.changedTickets.clear();
-      this.reload().finally(() => {
-        this.refreshEnded(true, false);
+      this.reload().then((outcome) => {
+        // a load from a new endpoint took over from this one, and owns the list
+        if (this.refreshingSince !== startedAt) {
+          return;
+        }
+        // a reload that failed owes the whole list again
+        if (outcome === 'failed') {
+          this.reloadNeeded = true;
+        }
+        this.refreshEnded(outcome);
         this.scheduleRefresh();
       });
     } else if (this.changedTickets.size > 0) {
