@@ -4,6 +4,7 @@ from django.test.utils import override_settings
 from django.urls import reverse
 
 from temba.contacts.models import ContactField, ContactGroup, ContactImport
+from temba.orgs.models import Org
 from temba.tests import CRUDLTestMixin, TembaTest
 
 
@@ -55,6 +56,59 @@ class ContactImportCRUDLTest(TembaTest, CRUDLTestMixin):
         response = self.client.get(preview_url)
         self.assertEqual(302, response.status_code)
         self.assertEqual(read_url, response.url)
+
+    def test_blocked_workspaces(self):
+        create_url = reverse("contacts.contactimport_create")
+
+        self.login(self.admin)
+
+        # create an import while the workspace is active, so we can try to start it once it isn't
+        response = self.client.post(create_url, {"file": self.upload("test-data/imports/simple.xlsx")})
+        self.assertEqual(302, response.status_code)
+
+        imp = ContactImport.objects.get()
+        preview_url = reverse("contacts.contactimport_preview", args=[imp.id])
+
+        self.org.suspend()
+
+        response = self.client.post(create_url, {"file": self.upload("test-data/imports/simple.xlsx")})
+        self.assertFormError(
+            response.context["form"],
+            "file",
+            "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please "
+            "contact support.",
+        )
+
+        response = self.client.post(preview_url, {})
+        self.assertFormError(
+            response.context["form"],
+            None,
+            "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please "
+            "contact support.",
+        )
+
+        # flagged workspaces are blocked too
+        self.org.reactivate()
+        self.org.flag()
+
+        response = self.client.post(preview_url, {})
+        self.assertFormError(
+            response.context["form"],
+            None,
+            "Sorry, your workspace is currently flagged. To re-enable starting flows and sending messages, please "
+            "contact support.",
+        )
+
+        # but restricted workspaces can still import, since their automation keeps running
+        self.org.unflag()
+        self.org.restrict(Org.RESTRICTED_BILLING)
+
+        response = self.client.post(preview_url, {})
+        self.assertEqual(302, response.status_code)
+
+        imp.refresh_from_db()
+        self.assertIsNotNone(imp.started_on)
+        self.assertEqual(1, ContactImport.objects.count())
 
     def test_creating_new_group(self):
         self.login(self.admin)
