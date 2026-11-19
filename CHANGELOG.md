@@ -1,3 +1,9 @@
+## v26.3.214 (2026-11-19)
+ * Read ticket analytics from tallies
+ * Ignore incidents and notifications whose types aren't registered
+ * Move restriction and suspension incidents to an org status signal
+ * Drop FlowActivityCount
+
 ## v26.3.213 (2026-11-18)
  * Say in suspension emails and incidents that flows started by triggers and campaigns will be stopped
  * Read the contact's current flow from current_flow_uuid
