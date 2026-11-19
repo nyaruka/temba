@@ -263,14 +263,9 @@ class OrgTest(TembaTest):
         self.org.reactivate()  # noop
         assert_signalled()
 
-        # without a time to be suspended, a restriction lasts for the default period
-        before = timezone.now()
-        self.org.restrict(Org.RESTRICTED_LIMITS)
-
-        self.org.refresh_from_db()
-        self.assertEqual(Org.RESTRICTED_LIMITS, self.org.status_reason)
-        self.assertGreaterEqual(self.org.suspends_on, before + Org.RESTRICTION_PERIOD)
-        self.assertLessEqual(self.org.suspends_on, timezone.now() + Org.RESTRICTION_PERIOD)
+        # without a time to be suspended, a restriction lasts until it's lifted
+        self.org.restrict(Org.RESTRICTED_STAFF)
+        assert_org(self.org, Org.STATUS_RESTRICTED, Org.RESTRICTED_STAFF)
 
         self.org.reactivate()
 
@@ -338,6 +333,19 @@ class OrgTest(TembaTest):
 
         self.org.refresh_from_db()
         self.assertEqual(Org.STATUS_ACTIVE, self.org.status)
+
+        # nor is one restricted again in that time for a reason which doesn't lead to suspension
+        self.org.restrict(Org.RESTRICTED_BILLING, suspends_on=timezone.now() - timedelta(minutes=5))
+
+        def select_for_update(*args, **kwargs):
+            Org.objects.filter(id=self.org.id).update(status_reason=Org.RESTRICTED_STAFF, suspends_on=None)
+            return real_select_for_update(*args, **kwargs)
+
+        with patch.object(Org.objects, "select_for_update", side_effect=select_for_update):
+            self.assertEqual({"suspended": 0}, suspend_restricted_orgs())
+
+        self.org.refresh_from_db()
+        self.assertEqual(Org.STATUS_RESTRICTED, self.org.status)
 
     def test_set_flow_languages(self):
         self.org.set_flow_languages(self.admin, ["eng", "fra"])

@@ -295,8 +295,6 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     RESTRICTED_STAFF = "S"
     RESTRICTED_CHOICES = ((RESTRICTED_BILLING, "Billing"), (RESTRICTED_LIMITS, "Limits"), (RESTRICTED_STAFF, "Staff"))
 
-    RESTRICTION_PERIOD = timedelta(days=14)  # default time between being restricted and being suspended
-
     DELETE_DELAY_DAYS = 7  # how many days after releasing that an org is deleted
     OUTBOX_WARNING_THRESHOLD = 10_000
 
@@ -527,17 +525,13 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
     def restrict(self, reason: str, *, suspends_on=None):
         """
-        Restricts this org and any children, unless already restricted or suspended. Unless given a time to be
-        suspended, it will be suspended once the default restriction period is up.
+        Restricts this org and any children, unless already restricted or suspended. If given a time, it will be
+        suspended then unless the restriction is lifted first.
         """
         assert not self.is_child
 
         if self.status == Org.STATUS_ACTIVE:
-            self._set_status(
-                Org.STATUS_RESTRICTED,
-                reason=reason,
-                suspends_on=suspends_on or timezone.now() + Org.RESTRICTION_PERIOD,
-            )
+            self._set_status(Org.STATUS_RESTRICTED, reason=reason, suspends_on=suspends_on)
 
     def suspend(self, reason: str = None):
         """
@@ -1377,10 +1371,10 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
     class Meta:
         constraints = [
-            # a restricted org always has a reason and a time it will be suspended, and a suspended org keeps any reason
+            # a restricted org always has a reason, and a suspended org keeps any reason
             models.CheckConstraint(
                 condition=Q(status="A", status_reason__isnull=True, suspends_on__isnull=True)
-                | Q(status="R", status_reason__isnull=False, suspends_on__isnull=False, status_changed_on__isnull=False)
+                | Q(status="R", status_reason__isnull=False, status_changed_on__isnull=False)
                 | Q(status="S", suspends_on__isnull=True, status_changed_on__isnull=False),
                 name="orgs_org_status_consistent",
             )
