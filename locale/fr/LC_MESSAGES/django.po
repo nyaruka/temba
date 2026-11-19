@@ -2978,10 +2978,8 @@ msgstr "Application Android du canal obsolète"
 msgid "Workspace Flagged"
 msgstr "Espace de travail signalé"
 
-#, fuzzy
-#| msgid "Your password has been changed."
 msgid "Your workspace has been flagged"
-msgstr "Votre mot de passe a été modifié."
+msgstr "Votre espace de travail a été signalé"
 
 msgid "Webhooks Unhealthy"
 msgstr "Webhooks défaillants"
@@ -5530,8 +5528,6 @@ msgstr "Pas de messages"
 msgid "Hi"
 msgstr "Bonjour"
 
-#, fuzzy
-#| msgid "If you have any questions we are always here to help."
 msgid "If you have any questions, we are always here to help."
 msgstr "Si vous avez des questions, nous sommes toujours là pour vous aider."
 
@@ -5591,8 +5587,6 @@ msgstr "Votre <a href=\"%(url)s\">canal WhatsApp</a> rencontre actuellement des 
 msgid "Your WhatsApp channel (%(url)s) is currently having problems fetching templates."
 msgstr "Votre canal WhatsApp (%(url)s) rencontre actuellement des problèmes de récupération des modèles."
 
-#, fuzzy
-#| msgid "Your workspace has been flagged due to suspicious activity. To re-enable starting flows and sending messages, please contact support."
 msgid "Your workspace has been flagged because of suspicious activity. To re-enable starting flows and sending messages, please contact support."
 msgstr "Votre espace de travail a été signalé en raison d'une activité suspecte. Pour réactiver le démarrage de flux et l'envoi de messages, veuillez contacter le support."
 
