@@ -607,6 +607,8 @@ describe('temba-contact-chat', () => {
     // resending won't help, so there's no retry, and the draft is kept
     expect(getSendError(chat)).to.deep.equal({ message: reason, retry: false });
     expect(compose.currentText).to.equal(text);
+
+    await assertScreenshot('contacts/chat-send-blocked', getClip(chat));
   });
 
   it('hides search toggle when showSearch is not set', async () => {
