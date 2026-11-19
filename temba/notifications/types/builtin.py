@@ -80,6 +80,7 @@ class IncidentStartedNotificationType(NotificationType):
             users=incident.org.get_admins(),
             medium=Notification.MEDIUM_UI + Notification.MEDIUM_EMAIL,
             email_required=incident.type.email_required,
+            email_unverified=incident.type.email_unverified,
             incident=incident,
         )
 

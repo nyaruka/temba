@@ -24,6 +24,10 @@ class IncidentType:
     # whether notification emails are sent even to users who have turned them off
     email_required = False
 
+    # whether notification emails are sent even to users whose address isn't verified - only for incidents a user must
+    # hear about, since nobody has confirmed the address belongs to them or that it isn't a typo
+    email_unverified = False
+
     @classmethod
     def end_ongoing(cls, org):
         """
@@ -288,6 +292,7 @@ class Notification(models.Model):
         users,
         medium: str = MEDIUM_UI,
         email_required: bool = False,
+        email_unverified: bool = False,
         **kwargs,
     ):
         # users who've turned off emails for this workspace - users without a membership, e.g. staff, have nowhere to
@@ -300,10 +305,13 @@ class Notification(models.Model):
 
         created = []
         for user in users:
-            # send email if notification type supports it, the user wants it, and their email is verified
+            # send email if notification type supports it, the user wants it, and their email is verified (or needn't be)
             email_status = cls.EMAIL_STATUS_NONE
             if cls.MEDIUM_EMAIL in medium and user.id not in opted_out:
-                email_status = cls.EMAIL_STATUS_PENDING if user.is_verified() else cls.EMAIL_STATUS_UNVERIFIED
+                if email_unverified or user.is_verified():
+                    email_status = cls.EMAIL_STATUS_PENDING
+                else:
+                    email_status = cls.EMAIL_STATUS_UNVERIFIED
 
             lookup = dict(
                 org=org,
