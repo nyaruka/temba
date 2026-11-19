@@ -858,10 +858,8 @@ CELERY_BEAT_SCHEDULE = {
     "squash-group-counts": {"task": "squash_group_counts", "schedule": timedelta(seconds=60)},
     "squash-flow-counts": {"task": "squash_flow_counts", "schedule": timedelta(seconds=30)},
     "squash-item-counts": {"task": "squash_item_counts", "schedule": timedelta(seconds=30)},
-    "squash-article-counts": {"task": "squash_article_counts", "schedule": timedelta(seconds=60)},
     "squash-msg-counts": {"task": "squash_msg_counts", "schedule": timedelta(seconds=60)},
     "suspend-restricted-orgs": {"task": "suspend_restricted_orgs", "schedule": timedelta(hours=1)},
-    "trim-article-counts": {"task": "trim_article_counts", "schedule": crontab(hour=3, minute=0)},
     "check-helpsite-domains": {"task": "check_helpsite_domains", "schedule": crontab(hour=4, minute=0)},
     "trim-channel-events": {"task": "trim_channel_events", "schedule": crontab(hour=3, minute=0)},
     "trim-channel-sync-events": {"task": "trim_channel_sync_events", "schedule": crontab(hour=3, minute=0)},
@@ -1040,7 +1038,6 @@ ORG_LIMIT_DEFAULTS = {
 }
 
 RETENTION_PERIODS = {
-    "articlecount": timedelta(days=90),
     "channelevent": timedelta(days=90),
     "channellog": timedelta(days=7),
     "export": timedelta(days=90),
