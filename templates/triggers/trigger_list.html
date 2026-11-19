@@ -87,9 +87,7 @@
             disabled: item.disabled,
             onSubmit: item.on_submit,
             onRedirect: item.on_redirect,
-            id: item.modal_id,
-            originX: event.detail.originX,
-            originY: event.detail.originY
+            id: item.modal_id
           });
         } else if (item.type === "url_post") {
           posterize(item.url);

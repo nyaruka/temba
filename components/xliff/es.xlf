@@ -688,10 +688,6 @@
   <source>Featured</source>
   <target>Destacados</target>
 </trans-unit>
-<trans-unit id="sfa7fe0d8c2046111">
-  <source>Everything Else</source>
-  <target>Todo lo demás</target>
-</trans-unit>
 <trans-unit id="scd576e61f93828d0">
   <source>Search tickets</source>
   <target>Buscar tickets</target>

@@ -97,7 +97,6 @@ export class FlowList extends ContentList<Flow> {
 
   constructor() {
     super();
-    this.valueKey = 'uuid';
     // The name column is a `grow` column — it pools the table's
     // leftover width so long names (and their label chips) get all
     // available space before truncating, instead of clipping against

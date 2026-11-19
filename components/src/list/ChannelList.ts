@@ -150,7 +150,6 @@ export class ChannelList extends ContentList<ChannelItem> {
 
   constructor() {
     super();
-    this.valueKey = 'uuid';
     this.minTableWidth = '640px';
   }
 

@@ -3809,10 +3809,6 @@ export class MarkdownEditor extends FieldElement {
   // Rendering
   // ==========================================================
 
-  public render(): TemplateResult {
-    return this.renderField();
-  }
-
   /** A floor under the document, which a filled editor doesn't get - it's the container that's being sized, and an
    * inline minimum here would win over the flex rules and put the scroll back on the page. */
   private get documentStyle(): string {

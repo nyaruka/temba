@@ -40,7 +40,6 @@ export class CampaignList extends ContentList<Campaign> {
 
   constructor() {
     super();
-    this.valueKey = 'uuid';
     this.bulkActions = [
       { key: 'archive', label: 'Archive', icon: Icon.archive }
     ];

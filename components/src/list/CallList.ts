@@ -94,7 +94,6 @@ export class CallList extends ContentList<Call> {
 
   constructor() {
     super();
-    this.valueKey = 'uuid';
     this.searchable = false;
     this.minTableWidth = '520px';
   }

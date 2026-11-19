@@ -687,9 +687,6 @@ export class NodeEditor extends RapidElement {
   @property({ type: Object })
   nodeUI?: NodeUI;
 
-  @property({ attribute: false })
-  dialogOrigin?: { x: number; y: number };
-
   @property({ type: Boolean })
   isOpen: boolean = false;
 
@@ -3471,8 +3468,6 @@ export class NodeEditor extends RapidElement {
         header="${header}"
         subtitle="${config?.subtitle || ''}"
         .open="${this.isOpen}"
-        .originX=${this.dialogOrigin?.x ?? null}
-        .originY=${this.dialogOrigin?.y ?? null}
         .checkForChanges=${() => this.hasUnsavedChanges()}
         @temba-button-clicked=${this.handleDialogButtonClick}
         primaryButtonName="${msg('Save')}"

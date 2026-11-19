@@ -188,11 +188,6 @@ export class ShortcutContentList extends ContentList<Shortcut> {
     return msg('Search shortcuts');
   }
 
-  constructor() {
-    super();
-    this.valueKey = 'uuid';
-  }
-
   protected buildColumns(): ContentListColumn[] {
     return [
       {

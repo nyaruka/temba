@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
-import { html, TemplateResult } from 'lit-html';
+import { html } from 'lit-html';
 import { property } from 'lit/decorators.js';
-import { Button } from './display/Button';
-import { Dialog } from './layout/Dialog';
 import { Attachment, ContactField, Shortcut, Ticket, User } from './interfaces';
 import ColorHash from 'color-hash';
 import { Toast } from './display/Toast';
@@ -40,9 +38,6 @@ export const attachmentAsString = (attachment: string | Attachment): string => {
 export const colorHash = new ColorHash();
 
 export type Asset = KeyedAsset & Ticket & ContactField & Shortcut;
-
-export const DATE_FORMAT =
-  /(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z))/;
 
 interface KeyedAsset {
   key?: string;
@@ -385,52 +380,6 @@ export const postForm = (
   return postFormData(url, formData, headers);
 };
 
-/**
- */
-export const renderIf =
-  (predicate: boolean | any) =>
-  (then: () => TemplateResult, otherwise?: () => TemplateResult) => {
-    return predicate ? then() : otherwise ? otherwise() : html``;
-  };
-
-export const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result
-    ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16)
-      }
-    : null;
-};
-
-export const getElementOffset = (
-  ele: HTMLElement
-): {
-  top: number;
-  left: number;
-  bottom: number;
-  right: number;
-  width: number;
-  height: number;
-} => {
-  const rect = ele.getBoundingClientRect();
-  const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-  const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-  return {
-    top: rect.top + scrollTop,
-    left: rect.left + scrollLeft,
-    bottom: rect.top + rect.height,
-    right: rect.left + rect.width,
-    width: rect.width,
-    height: rect.height
-  };
-};
-
-export const plural = (count: number, singular: string, plural: string) => {
-  return count === 1 ? singular : plural;
-};
-
 export const formatCount = (count: number, locale = getPageLocale()) =>
   count.toLocaleString(locale);
 
@@ -449,21 +398,6 @@ export const formatDuration = (seconds: number): string => {
 
 export const range = (start: number, end: number) =>
   Array.from({ length: end - start }, (v: number, k: number) => k + start);
-
-export const fillTemplate = (
-  template: string,
-  replacements: { [key: string]: string | number }
-): TemplateResult => {
-  for (const key in replacements) {
-    const className = key + '-replaced';
-    replacements[key] =
-      `<span class="${className}">${replacements[key]}</span>`;
-  }
-
-  const templateDiv = document.createElement('div');
-  // templateDiv.innerHTML = dynamicTemplate(template, replacements);
-  return html` ${templateDiv} `;
-};
 
 /*!
  * Serialize all form data into a query string
@@ -564,88 +498,6 @@ export const getScrollParent = (node: any): any => {
   return null;
 };
 
-export const isElementVisible = (el: any, holder?: any) => {
-  holder = holder || document.body;
-  const { top, bottom } = el.getBoundingClientRect();
-  const holderRect = holder.getBoundingClientRect();
-
-  return top <= holderRect.top
-    ? bottom > holderRect.top
-    : bottom < holderRect.bottom;
-};
-
-const HOUR = 3600;
-const DAY = HOUR * 24;
-const MONTH = DAY * 30;
-
-export class Stubbable {
-  public getCurrentDate() {
-    return new Date();
-  }
-}
-
-export const stubbable = new Stubbable();
-
-export const timeSince = (
-  date: Date,
-  options: { compareDate?: Date; hideRecentText?: boolean; suffix?: string } = {
-    suffix: ''
-  }
-) => {
-  const { compareDate, hideRecentText, suffix } = options;
-  const now = compareDate || stubbable.getCurrentDate();
-  const secondsPast = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (secondsPast < 60) {
-    if (compareDate) {
-      return secondsPast + 's' + suffix;
-    }
-
-    if (!hideRecentText && suffix) {
-      return suffix;
-    }
-    return 'just now';
-  }
-
-  if (secondsPast < HOUR) {
-    return Math.round(secondsPast / 60) + 'm' + suffix;
-  }
-
-  if (secondsPast <= DAY) {
-    return Math.round(secondsPast / HOUR) + 'h' + suffix;
-  }
-
-  if (secondsPast <= MONTH) {
-    return Math.round(secondsPast / DAY) + 'd' + suffix;
-  }
-
-  if (secondsPast < MONTH * 6) {
-    return Math.round(secondsPast / MONTH) + 'mth' + suffix;
-  } else {
-    const day = date.getDate();
-    const month = date
-      .toDateString()
-      .match(/ [a-zA-Z]*/)[0]
-      .replace(' ', '');
-    const year =
-      date.getFullYear() == now.getFullYear() ? '' : ' ' + date.getFullYear();
-    return day + ' ' + month + year;
-  }
-};
-
-export const isDate = (value: any): boolean => {
-  if (toString.call(value) === '[object Date]') {
-    return true;
-  }
-  /* c8 ignore next 3 */
-  if (typeof value.replace === 'function') {
-    value.replace(/^\s+|\s+$/gm, '');
-  }
-
-  // value = value.split("+")[0];
-  return DATE_FORMAT.test(value);
-};
-
 export const debounce = (fn: any, millis: number, immediate = false) => {
   let timeout: any;
   return function (...args: any) {
@@ -684,62 +536,6 @@ export const throttle = (fn: any, millis: number) => {
 export interface NamedObject {
   name: string;
 }
-
-export const truncate = (input: string, max: number): string => {
-  if (input.length > max) {
-    return input.substring(0, max) + '...';
-  }
-
-  return input;
-};
-
-export const oxford = (items: any[], joiner = 'and'): any => {
-  if (items.length === 0) {
-    return '';
-  }
-
-  if (items.length === 1) {
-    return items[0];
-  }
-
-  if (items.length === 2) {
-    // TemplateResults get a different treatment
-    if (typeof items[0] === 'object') {
-      return html`${items[0]} ${joiner} ${items[1]}`;
-    }
-    return items.join(' ' + joiner + ' ');
-  }
-
-  // TemplateResults get a different treatment
-  if (typeof items[0] === 'object') {
-    return items.map((tr: TemplateResult, idx: number) => {
-      if (idx < items.length - 1) {
-        return html`${tr}, `;
-      }
-      return html`${joiner} ${tr}`;
-    });
-  }
-
-  const allButLast = items.slice(0, -1);
-  const last = items[items.length - 1];
-  return allButLast.join(', ') + ', ' + joiner + ' ' + last;
-};
-
-export const oxfordFn = (
-  items: any[],
-  fn: (item: any) => any,
-  joiner = 'and'
-): any => {
-  return oxford(items.map(fn), joiner);
-};
-
-export const oxfordNamed = (items: NamedObject[], joiner = 'and'): any => {
-  return oxfordFn(items, (value: any) => value.name, joiner);
-};
-
-export const getDialog = (button: Button): Dialog => {
-  return (button.getRootNode() as ShadowRoot).host as Dialog;
-};
 
 export const setCookie = (name: string, value: any, path = '/') => {
   const now = new Date();
@@ -906,39 +702,11 @@ export function cookieProperty(
   };
 }
 
-export enum COOKIE_KEYS {
-  SETTINGS = 'settings',
-  MENU_COLLAPSED = 'menu-collapsed',
-  TICKET_SHOW_DETAILS = 'tickets.show-details'
-}
-
 export const capitalize = (
   [first, ...rest]: string[] | string,
   locale = getPageLocale()
 ) =>
   first === undefined ? '' : first.toLocaleUpperCase(locale) + rest.join('');
-
-export const formatFileType = (type: string): string => {
-  return type.split('/')[1];
-};
-export const formatFileSize = (
-  bytes: number,
-  decimalPoint?: number
-): string => {
-  if (bytes == 0) return '0 KB';
-  const k = 1024,
-    dm = decimalPoint || 2,
-    sizes = ['B', 'KB', 'MB', 'GB'], //, 'TB', 'PB', 'EB', 'ZB', 'YB'],
-    i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-};
-
-export const isImageAttachment = (attachment: Attachment) => {
-  if (attachment) {
-    return attachment.content_type.split('/')[0] === 'image';
-  }
-  return false;
-};
 
 export const stopEvent = (event: Event) => {
   if (event) {
@@ -1094,13 +862,6 @@ export const renderAvatar = (input: {
     </div>
   `;
   return avatar;
-};
-
-export const hashCode = (s) => {
-  return s.split('').reduce((a, b) => {
-    a = (a << 5) - a + b.charCodeAt(0);
-    return a & a;
-  }, 0);
 };
 
 export const showModax = (title: string, endpoint: string) => {

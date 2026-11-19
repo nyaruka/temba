@@ -7,7 +7,11 @@ import { assertScreenshot, getClip, getComponent } from './utils.test';
 
 let clock: any;
 
+// TembaList is a base class with no tag of its own, so register one to test it
 const TAG = 'temba-list';
+if (!customElements.get(TAG)) {
+  customElements.define(TAG, TembaList);
+}
 const getList = async (attrs: any = {}) => {
   const list = (await getComponent(TAG, attrs)) as TembaList;
 
