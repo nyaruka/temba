@@ -353,6 +353,43 @@ msgstr "Dirección"
 msgid "Country"
 msgstr "País"
 
+msgid "Nothing has been received from the provider yet."
+msgstr "Aún no se ha recibido nada del proveedor."
+
+msgid "Disabled"
+msgstr "Deshabilitado"
+
+msgid "Won't send or receive messages until it's enabled."
+msgstr "No enviará ni recibirá mensajes hasta que se habilite."
+
+msgid "Paused"
+msgstr "Pausado"
+
+msgid "The provider isn't accepting messages."
+msgstr "El proveedor no está aceptando mensajes."
+
+msgid "Not syncing"
+msgstr "Sin sincronización"
+
+msgid "The phone hasn't synced for over an hour."
+msgstr "El teléfono no se ha sincronizado desde hace más de una hora."
+
+#, python-format
+msgid "%(percent)d%% of the last %(count)s messages sent have failed."
+msgstr "El %(percent)d%% de los últimos %(count)s mensajes enviados han fallado."
+
+msgid "Unhealthy"
+msgstr "Con problemas"
+
+msgid "Degraded"
+msgstr "Degradado"
+
+msgid "Waiting"
+msgstr "Esperando"
+
+msgid "Sending and receiving messages."
+msgstr "Enviando y recibiendo mensajes."
+
 msgid "Outgoing"
 msgstr "Saliente"
 
@@ -1799,6 +1836,19 @@ msgstr[0] "%(count)d en apelación"
 msgstr[1] "%(count)d en apelación"
 msgstr[2] "%(count)d en apelación"
 
+msgid "Very slow"
+msgstr "Muy lento"
+
+msgid "Slow"
+msgstr "Lento"
+
+#, python-format
+msgid "Sends %(count)d message a second, so a broadcast to 100k contacts takes about %(duration)s."
+msgid_plural "Sends %(count)d messages a second, so a broadcast to 100k contacts takes about %(duration)s."
+msgstr[0] "Envía %(count)d mensaje por segundo, así que una difusión a 100 mil contactos tarda aproximadamente %(duration)s."
+msgstr[1] "Envía %(count)d mensajes por segundo, así que una difusión a 100 mil contactos tarda aproximadamente %(duration)s."
+msgstr[2] "Envía %(count)d mensajes por segundo, así que una difusión a 100 mil contactos tarda aproximadamente %(duration)s."
+
 msgid "View setup"
 msgstr "Ver configuración"
 
@@ -1810,33 +1860,6 @@ msgstr "Ver sincronizaciones"
 
 msgid "See activity"
 msgstr "Ver actividad"
-
-msgid "Disabled"
-msgstr "Deshabilitado"
-
-msgid "Won't send or receive messages until it's enabled."
-msgstr "No enviará ni recibirá mensajes hasta que se habilite."
-
-msgid "Paused"
-msgstr "Pausado"
-
-msgid "The provider isn't accepting messages."
-msgstr "El proveedor no está aceptando mensajes."
-
-msgid "Not syncing"
-msgstr "Sin sincronización"
-
-msgid "The phone hasn't synced for over an hour."
-msgstr "El teléfono no se ha sincronizado desde hace más de una hora."
-
-msgid "Waiting"
-msgstr "Esperando"
-
-msgid "Nothing has been received from the provider yet."
-msgstr "Aún no se ha recibido nada del proveedor."
-
-msgid "Sending and receiving messages."
-msgstr "Enviando y recibiendo mensajes."
 
 msgid "Allows Messenger extensions on this domain, e.g. https://example.com."
 msgstr "Permite las extensiones de Messenger en este dominio, p. ej. https://example.com."
@@ -4310,6 +4333,17 @@ msgid "Messages won't be sent or received until it does. Check that it's on and 
 msgstr "No se enviarán ni recibirán mensajes hasta que lo haga. Compruebe que esté encendido y conectado a internet."
 
 #, python-format
+msgid "Failures · %(days)s days"
+msgstr "Fallos · %(days)s días"
+
+msgid "failed"
+msgstr "fallidos"
+
+#, python-format
+msgid "%(failed)s of %(sent)s sent"
+msgstr "%(failed)s de %(sent)s enviados"
+
+#, python-format
 msgid "Messages · %(days)s days"
 msgstr "Mensajes · %(days)s días"
 
@@ -4353,19 +4387,6 @@ msgstr "Sin sincronizar"
 
 msgid "The phone hasn't connected yet."
 msgstr "El teléfono aún no se ha conectado."
-
-msgid "Speed"
-msgstr "Velocidad"
-
-msgid "msg/sec"
-msgstr "msj/seg"
-
-#, python-format
-msgid "A broadcast to 100k contacts takes about %(duration)s"
-msgstr "Una difusión a 100 mil contactos tarda aproximadamente %(duration)s"
-
-msgid "About speed"
-msgstr "Acerca de la velocidad"
 
 msgid "Recent logs"
 msgstr "Registros recientes"

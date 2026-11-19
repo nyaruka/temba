@@ -43,6 +43,10 @@ export interface ContentListColumn {
    * column ignores `maxWidth` but still honours `minWidth` as a
    * floor for when the table overflows. */
   grow?: boolean;
+  /** Text shown in a tip when the header's label is hovered, for
+   * something about the column its label alone doesn't say, e.g. the
+   * period it counts over. */
+  tip?: string;
   /** Pin the column so it stays visible while the table scrolls
    * horizontally. `true` / `'left'` freezes it against the left
    * edge; `'right'` freezes it against the right edge. Left-pinned
@@ -733,6 +737,15 @@ export class ContentList<T = any> extends RapidElement {
       .head-inner .label {
         flex: 0 0 auto;
         white-space: nowrap;
+      }
+      /* a label with a tip is the tip, which hugs it like the plain label,
+         dotted underneath to say there's more to it */
+      .head-inner temba-tip.label {
+        display: inline-block;
+        cursor: help;
+        text-decoration: underline dotted;
+        text-decoration-color: var(--text-3, currentColor);
+        text-underline-offset: 3px;
       }
       .head-cell.right .head-inner {
         margin-left: auto;
@@ -3932,9 +3945,11 @@ export class ContentList<T = any> extends RapidElement {
     // column is aligned, with no offset to reconcile. Its slot is a
     // fixed width, reserved even while the arrow is hidden, so the
     // label never shifts when the arrow appears on hover.
-    const label = html`<span class="label"
-      >${column.label ?? column.key}</span
-    >`;
+    const label = column.tip
+      ? html`<temba-tip class="label" text=${column.tip} position="top"
+          >${column.label ?? column.key}</temba-tip
+        >`
+      : html`<span class="label">${column.label ?? column.key}</span>`;
     const slot = column.sortable
       ? html`<span class="sort-slot"
           ><temba-icon

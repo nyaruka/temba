@@ -339,6 +339,43 @@ msgstr ""
 msgid "Country"
 msgstr ""
 
+msgid "Nothing has been received from the provider yet."
+msgstr ""
+
+msgid "Disabled"
+msgstr ""
+
+msgid "Won't send or receive messages until it's enabled."
+msgstr ""
+
+msgid "Paused"
+msgstr ""
+
+msgid "The provider isn't accepting messages."
+msgstr ""
+
+msgid "Not syncing"
+msgstr ""
+
+msgid "The phone hasn't synced for over an hour."
+msgstr ""
+
+#, python-format
+msgid "%(percent)d%% of the last %(count)s messages sent have failed."
+msgstr ""
+
+msgid "Unhealthy"
+msgstr ""
+
+msgid "Degraded"
+msgstr ""
+
+msgid "Waiting"
+msgstr ""
+
+msgid "Sending and receiving messages."
+msgstr ""
+
 msgid "Outgoing"
 msgstr ""
 
@@ -1777,6 +1814,18 @@ msgid_plural "%(count)d in appeal"
 msgstr[0] ""
 msgstr[1] ""
 
+msgid "Very slow"
+msgstr ""
+
+msgid "Slow"
+msgstr ""
+
+#, python-format
+msgid "Sends %(count)d message a second, so a broadcast to 100k contacts takes about %(duration)s."
+msgid_plural "Sends %(count)d messages a second, so a broadcast to 100k contacts takes about %(duration)s."
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "View setup"
 msgstr ""
 
@@ -1787,33 +1836,6 @@ msgid "View syncs"
 msgstr ""
 
 msgid "See activity"
-msgstr ""
-
-msgid "Disabled"
-msgstr ""
-
-msgid "Won't send or receive messages until it's enabled."
-msgstr ""
-
-msgid "Paused"
-msgstr ""
-
-msgid "The provider isn't accepting messages."
-msgstr ""
-
-msgid "Not syncing"
-msgstr ""
-
-msgid "The phone hasn't synced for over an hour."
-msgstr ""
-
-msgid "Waiting"
-msgstr ""
-
-msgid "Nothing has been received from the provider yet."
-msgstr ""
-
-msgid "Sending and receiving messages."
 msgstr ""
 
 msgid "Allows Messenger extensions on this domain, e.g. https://example.com."
@@ -4286,6 +4308,17 @@ msgid "Messages won't be sent or received until it does. Check that it's on and 
 msgstr ""
 
 #, python-format
+msgid "Failures · %(days)s days"
+msgstr ""
+
+msgid "failed"
+msgstr ""
+
+#, python-format
+msgid "%(failed)s of %(sent)s sent"
+msgstr ""
+
+#, python-format
 msgid "Messages · %(days)s days"
 msgstr ""
 
@@ -4327,19 +4360,6 @@ msgid "Not synced"
 msgstr ""
 
 msgid "The phone hasn't connected yet."
-msgstr ""
-
-msgid "Speed"
-msgstr ""
-
-msgid "msg/sec"
-msgstr ""
-
-#, python-format
-msgid "A broadcast to 100k contacts takes about %(duration)s"
-msgstr ""
-
-msgid "About speed"
 msgstr ""
 
 msgid "Recent logs"

@@ -652,8 +652,28 @@ class EndpointsTest(APITestMixin, TembaTest):
         self.create_channel_tally(twilio, "voice:in", yesterday, 1)
         self.create_channel_tally(twilio, "text:out", today - timedelta(days=30), 100)
 
+        # and a channel failing most of what it sends
+        self.create_channel_tally(vonage, "text:out", yesterday, 30)
+        self.create_channel_tally(vonage, "text:failed", yesterday, 20)
+
+        # prefetched health is the same as each channel's own, and takes the same few reads however many channels
+        channels = list(Channel.objects.filter(org=self.org, is_active=True))
+        with self.assertNumQueries(6):
+            Channel.prefetch_health(channels)
+        with self.assertNumQueries(0):
+            prefetched = [c.health for c in channels]
+
+        self.assertEqual([Channel.objects.get(id=c.id).health for c in channels], prefetched)
+        self.assertEqual({"Ready", "Unhealthy", "Disabled"}, {str(h.value) for h in prefetched})
+
+        # an empty page has nothing to prefetch
+        with self.assertNumQueries(0):
+            Channel.prefetch_health([])
+
         # without the endpoint's bulk prefetch, the series reads the tallies directly
-        self.assertEqual({"in": [0] * 12 + [3, 0], "out": [0] * 12 + [10, 0]}, twilio.get_activity_series())
+        self.assertEqual(
+            {"in": [0] * 12 + [3, 0], "out": [0] * 12 + [10, 0], "failed": [0] * 14}, twilio.get_activity_series()
+        )
 
         # an empty page has nothing to prefetch
         with self.assertNumQueries(0):
@@ -678,18 +698,39 @@ class EndpointsTest(APITestMixin, TembaTest):
                     "address": "+1 206-555-1212",
                     "is_enabled": True,
                     "speed": "very_slow",
+                    "health": {
+                        "tone": "good",
+                        "value": "Ready",
+                        "note": "Sending and receiving messages.",
+                        "cause": None,
+                    },
                     "received": 3,
                     "sent": 10,
-                    "activity": {"in": [0] * 12 + [3, 0], "out": [0] * 12 + [10, 0]},
+                    "activity": {"in": [0] * 12 + [3, 0], "out": [0] * 12 + [10, 0], "failed": [0] * 14},
                     "created_on": matchers.ISODatetime(),
                 },
                 rows[str(twilio.uuid)],
             )
             self.assertEqual("slow", rows[str(vonage.uuid)]["speed"])
+            self.assertEqual(
+                {
+                    "tone": "bad",
+                    "value": "Unhealthy",
+                    "note": "67% of the last 30 messages sent have failed.",
+                    "cause": "failing",
+                },
+                rows[str(vonage.uuid)]["health"],
+            )
+            self.assertEqual("disabled", rows[str(old.uuid)]["health"]["cause"])
             self.assertIsNone(rows[str(android.uuid)]["speed"])  # no limit of its own, so the default
             self.assertIsNone(rows[str(old.uuid)]["speed"])  # disabled
             self.assertFalse(rows[str(old.uuid)]["is_enabled"])
-            self.assertEqual({"in": [0] * 14, "out": [0] * 14}, rows[str(telegram.uuid)]["activity"])
+            self.assertEqual(
+                {"in": [0] * 14, "out": [0] * 14, "failed": [0] * 14}, rows[str(telegram.uuid)]["activity"]
+            )
+
+            # the share of what a channel sent each day which failed, for its sparkline when it's failing
+            self.assertEqual([0] * 12 + [66.7, 0], rows[str(vonage.uuid)]["activity"]["failed"])
             return True
 
         # slow channels are only pointed out to workspaces big enough for it to matter

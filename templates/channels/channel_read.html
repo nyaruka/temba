@@ -55,21 +55,49 @@
         <span class="dash-card-note">{{ status.note }}</span>
         <span class="dash-card-more">{{ status.more }}</span>
       </button>
-      <button type="button" class="dash-card" data-sheet="activity">
-        <span class="dash-card-label">
-          {% blocktrans trimmed with days=activity.days %}
-            Messages · {{ days }} days
-          {% endblocktrans %}
-        </span>
-        <span class="dash-card-value">{{ activity.total|intcomma }}</span>
-        {{ activity.series|sparkline }}
-        <span class="dash-card-note">
-          {% blocktrans trimmed with received=activity.received|intcomma sent=activity.sent|intcomma %}
-            {{ received }} in · {{ sent }} out
-          {% endblocktrans %}
-        </span>
-        <span class="dash-card-more">{% trans "See activity" %}</span>
-      </button>
+      {# how much of what it sends fails when that's worth a look, in place of how much it's sent #}
+      {% if failures %}
+        <button type="button" class="dash-card {{ failures.tone }}" data-sheet="{% if sheets.logs %}logs{% else %}activity{% endif %}">
+          <span class="dash-card-label">
+            {% blocktrans trimmed with days=failures.days %}
+              Failures · {{ days }} days
+            {% endblocktrans %}
+          </span>
+          <span class="dash-card-value">
+            {{ failures.rate }}
+            <small>{% trans "failed" %}</small>
+          </span>
+          {{ failures.series|sparkline }}
+          <span class="dash-card-note">
+            {% blocktrans trimmed with failed=failures.failed|intcomma sent=failures.sent|intcomma %}
+              {{ failed }} of {{ sent }} sent
+            {% endblocktrans %}
+          </span>
+          <span class="dash-card-more">
+            {% if sheets.logs %}
+              {% trans "View logs" %}
+            {% else %}
+              {% trans "See activity" %}
+            {% endif %}
+          </span>
+        </button>
+      {% else %}
+        <button type="button" class="dash-card" data-sheet="activity">
+          <span class="dash-card-label">
+            {% blocktrans trimmed with days=activity.days %}
+              Messages · {{ days }} days
+            {% endblocktrans %}
+          </span>
+          <span class="dash-card-value">{{ activity.total|intcomma }}</span>
+          {{ activity.series|sparkline }}
+          <span class="dash-card-note">
+            {% blocktrans trimmed with received=activity.received|intcomma sent=activity.sent|intcomma %}
+              {{ received }} in · {{ sent }} out
+            {% endblocktrans %}
+          </span>
+          <span class="dash-card-more">{% trans "See activity" %}</span>
+        </button>
+      {% endif %}
       {% if sheets.templates %}
         <button type="button" class="dash-card {% if templates.last_sync.is_error %}bad{% endif %}" data-sheet="templates">
           <span class="dash-card-label">{% trans "Templates" %}</span>
@@ -129,21 +157,6 @@
           <span class="dash-card-more">{% trans "View syncs" %}</span>
         </button>
       {% endif %}
-      <div class="dash-card {{ speed.tone }}">
-        <span class="dash-card-label">{% trans "Speed" %}</span>
-        <span class="dash-card-value">
-          {{ speed.tps|intcomma }}
-          <small>{% trans "msg/sec" %}</small>
-        </span>
-        <span class="dash-card-note">
-          {% blocktrans trimmed with duration=speed.duration %}
-            A broadcast to 100k contacts takes about {{ duration }}
-          {% endblocktrans %}
-        </span>
-        {% if speed.help_url %}
-          <a class="dash-card-more" href="{{ speed.help_url }}" target="_blank" rel="noopener">{% trans "About speed" %}</a>
-        {% endif %}
-      </div>
     </div>
     <div class="dash-columns">
       {% if sheets.logs %}
