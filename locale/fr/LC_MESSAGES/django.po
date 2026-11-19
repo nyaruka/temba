@@ -1071,6 +1071,22 @@ msgid "Access Key"
 msgstr "Clé d'accès"
 
 #, python-format
+msgid "%(link)s provides voice numbers in Ghana. If you have an IVR number with them, connect it to make and receive calls. Calls can only play recorded audio, so every message in your voice flows needs a recording."
+msgstr "%(link)s fournit des numéros vocaux au Ghana. Si vous avez un numéro SVI chez eux, connectez-le pour passer et recevoir des appels. Les appels ne peuvent lire que de l'audio enregistré, donc chaque message de vos flux vocaux a besoin d'un enregistrement."
+
+msgid "To finish configuring this channel, you'll need to have mNotify set the following callback URL for your number. Voice flows on this channel need a recording for every message as text can't be read out."
+msgstr "Pour terminer la configuration de ce canal, vous devrez demander à mNotify de définir l'URL de rappel suivante pour votre numéro. Les flux vocaux sur ce canal ont besoin d'un enregistrement pour chaque message, car le texte ne peut pas être lu à voix haute."
+
+msgid "All call events for your number are sent to this URL. Keep it private as it includes a secret."
+msgstr "Tous les événements d'appel de votre numéro sont envoyés à cette URL. Gardez-la privée, car elle contient un secret."
+
+msgid "e.g. 0501234567"
+msgstr "par ex. 0501234567"
+
+msgid "Not a valid phone number."
+msgstr "Numéro de téléphone non valide."
+
+#, python-format
 msgid "%(link)s is a French messaging platform with direct connections to mobile operators, used by more than 3,000 clients. Connect a service you have with MTarget to send and receive SMS in France and internationally."
 msgstr "%(link)s est une plateforme de messagerie française directement connectée aux opérateurs mobiles, utilisée par plus de 3 000 clients. Connectez un service que vous avez chez MTarget pour envoyer et recevoir des SMS en France et à l'international."
 
@@ -2100,9 +2116,6 @@ msgstr "Tout supprimer"
 
 msgid "Usages"
 msgstr "Utilisations"
-
-msgid "Not a valid phone number."
-msgstr "Numéro de téléphone non valide."
 
 msgid "An error occurred updating your contact. Please try again later."
 msgstr "Une erreur s'est produite lors de la mise à jour de votre contact. Veuillez réessayer plus tard."
