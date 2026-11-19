@@ -47,7 +47,7 @@ from temba.utils.models import (
     UUIDMixin,
     delete_in_batches,
 )
-from temba.utils.models.counts import BaseDailyCount, BaseScopedCount
+from temba.utils.models.counts import BaseScopedCount
 from temba.utils.text import generate_secret
 from temba.utils.timezones import timezone_to_country_code
 from temba.utils.uuid import uuid4
@@ -1355,7 +1355,6 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
         # needs to come after deletion of other things as those insert new negative counts
         delete_in_batches(self.counts.all())
-        delete_in_batches(self.daily_counts.all())
 
         delete_in_batches(self.org_tallies.all(), pk="pk")
 
@@ -1841,30 +1840,6 @@ class ItemCount(BaseScopedCount):
         ]
         constraints = [
             models.UniqueConstraint(name="orgcount_squashed", fields=("org", "scope"), condition=Q(is_squashed=True))
-        ]
-
-
-class DailyCount(BaseDailyCount):
-    """
-    Org-level daily counts of things.
-    """
-
-    squash_over = ("org_id", "day", "scope")
-
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="daily_counts", db_index=False)  # indexed below
-
-    class Meta:
-        indexes = [
-            models.Index("org", "day", OpClass("scope", name="varchar_pattern_ops"), name="orgdailycount_org_scope"),
-            # for squashing task
-            models.Index(
-                name="orgdailycount_unsquashed", fields=("org", "day", "scope"), condition=Q(is_squashed=False)
-            ),
-        ]
-        constraints = [
-            models.UniqueConstraint(
-                name="orgdailycount_squashed", fields=("org", "day", "scope"), condition=Q(is_squashed=True)
-            )
         ]
 
 
