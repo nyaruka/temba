@@ -171,3 +171,30 @@ class SwitchOrgStatusFieldsTest(MigrationTest):
         assert_org(self.org2, "B", self.t2)
         assert_org(self.org4, None, self.t1)
         assert_org(self.org5, "L", self.t2)
+
+
+class RestrictWithoutSuspensionTest(MigrationTest):
+    app = "orgs"
+    migrate_from = "0213_drop_dailycount"
+    migrate_to = "0214_restrict_without_suspension"
+
+    def setUpBeforeMigration(self, apps):
+        self.changed_on = datetime(2026, 11, 1, 12, 0, 0, tzinfo=tz.utc)
+        self.suspends_on = datetime(2026, 12, 1, 12, 0, 0, tzinfo=tz.utc)
+
+        def restrict(org, reason):
+            Org.objects.filter(id=org.id).update(
+                status="R", status_reason=reason, status_changed_on=self.changed_on, suspends_on=self.suspends_on
+            )
+
+        restrict(self.org, "S")
+        restrict(self.org2, "B")
+
+    def test_migration(self):
+        self.org.refresh_from_db()
+        self.org2.refresh_from_db()
+
+        self.assertEqual(("R", "S", None), (self.org.status, self.org.status_reason, self.org.suspends_on))
+        self.assertEqual(
+            ("R", "B", self.suspends_on), (self.org2.status, self.org2.status_reason, self.org2.suspends_on)
+        )
