@@ -1112,6 +1112,10 @@ class ContactImportCRUDL(SmartCRUDL):
                 super().__init__(*args, **kwargs)
 
             def clean_file(self):
+                # checked here rather than in clean() so we don't parse a file we're going to refuse
+                if self.org.write_blocker:
+                    raise ValidationError(self.org.write_blocker)
+
                 file = self.cleaned_data["file"]
 
                 # try to parse the file saving the mappings so we don't have to repeat parsing when saving the import
@@ -1267,6 +1271,10 @@ class ContactImportCRUDL(SmartCRUDL):
                 return data
 
             def clean(self):
+                # an import created before the workspace was blocked still can't be started
+                if self.org.write_blocker:
+                    raise ValidationError(self.org.write_blocker)
+
                 org_fields = self.org.fields.filter(is_system=False, is_active=True)
                 existing_field_keys = {f.key for f in org_fields}
                 used_field_keys = set()
