@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-from unittest.mock import call
+from unittest.mock import call, patch
 
 from django.core import mail
 from django.urls import reverse
@@ -440,6 +440,43 @@ class NotificationTest(TembaTest):
         self.assertEqual(
             Notification.EMAIL_STATUS_PENDING, self.customer_support.notifications.get(export=export3).email_status
         )
+
+    def test_incident_started_unverified_user(self):
+        self.org.add_user(self.editor, OrgRole.ADMINISTRATOR)  # upgrade editor to administrator
+        self.editor.set_verified(False)
+
+        # an unverified admin isn't emailed about an incident, even one whose emails are required...
+        OrgFlaggedIncidentType.get_or_create(self.org)
+
+        self.assertEqual(
+            Notification.EMAIL_STATUS_UNVERIFIED, self.editor.notifications.get(incident__ended_on=None).email_status
+        )
+
+        send_notification_emails()
+
+        self.assertEqual([["admin@textit.com"]], [m.recipients() for m in mail.outbox])
+
+        # unless its type opts into emailing unverified addresses
+        mail.outbox.clear()
+        OrgFlaggedIncidentType.end_ongoing(self.org)
+
+        with patch.object(OrgFlaggedIncidentType, "email_unverified", True):
+            OrgFlaggedIncidentType.get_or_create(self.org)
+
+        send_notification_emails()
+
+        self.assertEqual({"admin@textit.com", "editor@textit.com"}, {r for m in mail.outbox for r in m.recipients()})
+
+        # which still doesn't override a user's opt-out for types whose emails aren't required
+        mail.outbox.clear()
+        OrgMembership.objects.filter(org=self.org, user=self.editor).update(email_notifications=False)
+
+        with patch.object(ChannelDisconnectedIncidentType, "email_unverified", True):
+            ChannelDisconnectedIncidentType.get_or_create(self.channel)
+
+        send_notification_emails()
+
+        self.assertEqual([["admin@textit.com"]], [m.recipients() for m in mail.outbox])
 
     def test_unsubscribe_link(self):
         self.org.add_user(self.editor, OrgRole.ADMINISTRATOR)  # upgrade editor to administrator
