@@ -1,4 +1,3 @@
-from datetime import date
 from unittest.mock import call, patch
 from xml.etree.ElementTree import Element, SubElement
 
@@ -9,7 +8,6 @@ from django.test.utils import override_settings
 
 from temba.knowledge.models import (
     Article,
-    ArticleCount,
     ArticleImage,
     ArticleTally,
     ColumnStylesProcessor,
@@ -213,7 +211,6 @@ class KnowledgeSourceTest(TembaTest):
             size=3,
             created_by=self.admin,
         )
-        ArticleCount.objects.create(article=parent, day=date(2026, 11, 1), scope="views", count=1)
         parent.tallies.create(scope="views@2026-11-01", count=1)
         site = HelpSite.get_or_create(helpdesk, self.admin)
 
@@ -222,7 +219,6 @@ class KnowledgeSourceTest(TembaTest):
         self.assertFalse(KnowledgeSource.objects.filter(id=helpdesk.id).exists())
         self.assertFalse(Article.objects.filter(id__in=(parent.id, child.id)).exists())
         self.assertEqual(0, ArticleImage.objects.count())
-        self.assertEqual(0, ArticleCount.objects.count())
         self.assertEqual(0, ArticleTally.objects.count())
         self.assertFalse(HelpSite.objects.filter(id=site.id).exists())
         self.assertEqual(0, KnowledgeChunk.objects.count())

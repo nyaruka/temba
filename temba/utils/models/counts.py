@@ -153,14 +153,3 @@ class BaseScopedCount(BaseSquashableCount):
 
     class Meta:
         abstract = True
-
-
-class BaseDailyCount(BaseScopedCount):
-    """
-    Base class for count models which have scope and day field.
-    """
-
-    day = models.DateField()
-
-    class Meta:
-        abstract = True

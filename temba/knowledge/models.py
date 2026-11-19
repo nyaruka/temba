@@ -25,7 +25,6 @@ from markdown.util import HTML_PLACEHOLDER_RE
 from pgvector.django import HnswIndex, VectorField
 
 from django.conf import settings
-from django.contrib.postgres.indexes import OpClass
 from django.core.cache import cache
 from django.core.files.storage import default_storage
 from django.db import models, transaction
@@ -43,7 +42,6 @@ from temba.mailroom.client.exceptions import RequestException
 from temba.orgs.models import BaseTally, Org
 from temba.utils import on_transaction_commit
 from temba.utils.models import CreatedByMixin, ModifiedByMixin, OrgAsset, SoftDeleteMixin, delete_in_batches
-from temba.utils.models.counts import BaseDailyCount
 from temba.utils.s3 import public_file_storage
 from temba.utils.text import generate_secret
 from temba.utils.uuid import uuid4
@@ -876,7 +874,6 @@ class KnowledgeSource(OrgAsset):
         delete_in_batches(self.chunks.all())
         delete_in_batches(self.items.all())
         delete_in_batches(ArticleImage.objects.filter(article__source=self))
-        delete_in_batches(ArticleCount.objects.filter(article__source=self))
         delete_in_batches(ArticleTally.objects.filter(article__source=self), pk="pk")
 
         # the helpdesk's public site goes with its articles, and its favicon with the article images
@@ -1268,34 +1265,6 @@ class ArticleImage(CreatedByMixin):
 
         # only remove the storage object once the deletion has committed - see Article.release
         on_transaction_commit(lambda: public_file_storage.delete(path))
-
-
-class ArticleCount(BaseDailyCount):
-    """
-    Daily counts of article views on the help site, being replaced by ArticleTally.
-    """
-
-    squash_over = ("article_id", "day", "scope")
-
-    SCOPE_VIEWS = "views"
-
-    article = models.ForeignKey(Article, on_delete=models.PROTECT, related_name="counts", db_index=False)
-
-    class Meta:
-        indexes = [
-            models.Index(
-                "article", "day", OpClass("scope", name="varchar_pattern_ops"), name="articlecount_article_scope"
-            ),
-            # for squashing task
-            models.Index(
-                name="articlecount_unsquashed", fields=("article", "day", "scope"), condition=Q(is_squashed=False)
-            ),
-        ]
-        constraints = [
-            models.UniqueConstraint(
-                name="articlecount_squashed", fields=("article", "day", "scope"), condition=Q(is_squashed=True)
-            )
-        ]
 
 
 class ArticleTally(BaseTally):
