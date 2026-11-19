@@ -186,8 +186,26 @@ class EndpointsTest(APITest):
         self.assertEqual(request_by_token(campaigns_url, token1.key).status_code, 403)
         self.assertEqual(request_by_basic_auth(campaigns_url, self.admin.email, token1.key).status_code, 403)
 
-        # and if user is inactive, disallow the request
+        # tokens can't be used once the workspace is suspended, but session auth still works
         self.org.add_user(self.admin, OrgRole.ADMINISTRATOR)
+        self.org.api_rates = {}
+        self.org.save(update_fields=("api_rates",))
+        cache.delete(f"throttle_v2_{self.org.id}")
+        self.org.suspend()
+
+        response = request_by_token(contacts_url, token1.key)
+        self.assertResponseError(response, None, "Workspace is suspended", status_code=403)
+        response = request_by_basic_auth(contacts_url, self.admin.email, token1.key)
+        self.assertResponseError(response, None, "Workspace is suspended", status_code=403)
+        response = request_by_session(contacts_url, self.admin)
+        self.assertEqual(200, response.status_code)
+
+        self.org.reactivate()
+
+        response = request_by_token(contacts_url, token1.key)
+        self.assertEqual(200, response.status_code)
+
+        # and if user is inactive, disallow the request
         self.admin.is_active = False
         self.admin.save()
 
