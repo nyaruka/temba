@@ -1,3 +1,8 @@
+## v26.3.216 (2026-11-19)
+ * Drop contacts_contact.current_flow_id
+ * Let incident types email admins whose address isn't verified
+ * Move help site article views to tallies
+
 ## v26.3.215 (2026-11-19)
  * Remove Contact.current_flow and drop its foreign key constraint
  * Drop DailyCount
