@@ -52,6 +52,8 @@ from temba.utils.text import generate_secret
 from temba.utils.timezones import timezone_to_country_code
 from temba.utils.uuid import uuid4
 
+from .signals import org_status_changed
+
 logger = logging.getLogger(__name__)
 
 
@@ -528,8 +530,6 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         Restricts this org and any children, unless already restricted or suspended. Unless given a time to be
         suspended, it will be suspended once the default restriction period is up.
         """
-        from temba.notifications.incidents.builtin import OrgRestrictedIncidentType
-
         assert not self.is_child
 
         if self.status == Org.STATUS_ACTIVE:
@@ -539,35 +539,23 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
                 suspends_on=suspends_on or timezone.now() + Org.RESTRICTION_PERIOD,
             )
 
-            OrgRestrictedIncidentType.get_or_create(self)  # create incident which will notify admins
-
     def suspend(self, reason: str = None):
         """
         Suspends this org and any children. Unless given a reason, it keeps the reason it was restricted for.
         """
-        from temba.notifications.incidents.builtin import OrgRestrictedIncidentType, OrgSuspendedIncidentType
-
         assert not self.is_child
 
         if self.status != Org.STATUS_SUSPENDED:
             self._set_status(Org.STATUS_SUSPENDED, reason=reason or self.status_reason)
 
-            OrgRestrictedIncidentType.end_ongoing(self)
-            OrgSuspendedIncidentType.get_or_create(self)  # create incident which will notify admins
-
     def reactivate(self):
         """
         Lifts any restriction or suspension of this org and any children.
         """
-        from temba.notifications.incidents.builtin import OrgRestrictedIncidentType, OrgSuspendedIncidentType
-
         assert not self.is_child
 
         if self.status != Org.STATUS_ACTIVE:
             self._set_status(Org.STATUS_ACTIVE)
-
-            OrgRestrictedIncidentType.end_ongoing(self)
-            OrgSuspendedIncidentType.end_ongoing(self)
 
     def _set_status(self, status: str, *, reason: str = None, suspends_on=None):
         now = timezone.now()
@@ -584,6 +572,8 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         self.save(update_fields=changes.keys())
 
         self.children.filter(is_active=True).update(**changes)
+
+        org_status_changed.send(sender=Org, org=self, status=status)
 
     def flag(self):
         """

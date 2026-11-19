@@ -705,13 +705,13 @@ class NotificationTest(TembaTest):
         assert_count(self.org2, self.editor, 1)
 
     def test_trim_task(self):
-        self.org.suspend()
-        self.org.reactivate()
+        self.org.flag()
+        self.org.unflag()
 
         notification1 = self.admin.notifications.order_by("id").last()
 
-        self.org.suspend()
-        self.org.reactivate()
+        self.org.flag()
+        self.org.unflag()
 
         notification2 = self.admin.notifications.order_by("id").last()
 

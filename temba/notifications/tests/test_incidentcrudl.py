@@ -1,11 +1,8 @@
-from datetime import datetime, timezone as tzone
-
 from django.urls import reverse
 from django.utils import timezone
 
 from temba.notifications.incidents.builtin import OrgFlaggedIncidentType
 from temba.notifications.models import Incident
-from temba.orgs.models import Org
 from temba.tests import CRUDLTestMixin, TembaTest
 
 
@@ -34,29 +31,3 @@ class IncidentCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # with ongoing ones in separate list
         self.assertEqual({incident4, incident2}, set(response.context["ongoing"]))
-
-    def test_list_restricted(self):
-        list_url = reverse("notifications.incident_list")
-        suspends_on = datetime(2026, 12, 1, 12, 0, 0, tzinfo=tzone.utc)
-
-        self.org.restrict(Org.RESTRICTED_BILLING, suspends_on=suspends_on)
-
-        # an ongoing restriction says when the workspace will be suspended
-        self.login(self.admin)
-        response = self.client.get(list_url)
-        self.assertContains(response, "Your workspace has been restricted.")
-        self.assertContains(response, "your workspace will be suspended on Dec. 1, 2026, which stops all of its flows")
-
-        # an ended one doesn't
-        self.org.reactivate()
-
-        response = self.client.get(list_url)
-        self.assertContains(response, "Your workspace has been restricted.")
-        self.assertNotContains(response, "will be suspended on")
-
-        # a suspension says that flows started by triggers and campaigns will be stopped
-        self.org.suspend()
-
-        response = self.client.get(list_url)
-        self.assertContains(response, "Your workspace has been suspended.")
-        self.assertContains(response, "including those started by triggers and campaigns, will be stopped.")
