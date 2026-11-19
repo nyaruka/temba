@@ -219,7 +219,7 @@ class RootView(BaseEndpoint):
                 resources.
      * **400**: The request failed due to invalid parameters. Do not retry with the same values, and the body of the
                 response will contain details.
-     * **403**: You do not have permission to access this resource.
+     * **403**: You do not have permission to access this resource, or your workspace is suspended.
      * **404**: The resource was not found (returned by `POST` and `DELETE` methods).
      * **429**: You have exceeded the rate limit for this endpoint (see below).
 
