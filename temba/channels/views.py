@@ -797,15 +797,20 @@ class ChannelCRUDL(SmartCRUDL):
         def get_failures(self, channel) -> dict | None:
             """
             The share of the text messages sent over the last ACTIVITY_DAYS which failed, overall and by day as
-            percentages for the failures card's sparkline, or None if too few failed to be worth a card
+            percentages for the failures card's sparkline, or None if too few failed to be worth a card. A channel
+            that's failing is judged by its last sends however old, so its card reaches back to them as the evidence.
             """
-            daily = channel.get_daily_failures(self.ACTIVITY_DAYS)
+            days = self.ACTIVITY_DAYS
+            if channel.health.cause == ChannelHealth.CAUSE_FAILING:
+                days = max(days, (timezone.now().date() - channel.health.since).days + 1)
+
+            daily = channel.get_daily_failures(days)
             sent, failed = sum(daily["sent"]), sum(daily["failed"])
             if not sent or failed / sent < self.FAILURES_SHOWN_RATE:
                 return None
 
             return {
-                "days": self.ACTIVITY_DAYS,
+                "days": days,
                 "sent": sent,
                 "failed": failed,
                 "rate": self.format_rate(failed / sent),

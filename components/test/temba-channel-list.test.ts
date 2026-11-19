@@ -64,7 +64,7 @@ describe('temba-channel-list', () => {
     expect(statuses[0].textContent.trim()).to.equal('Unhealthy');
     expect(statuses[0].classList.contains('bad')).to.be.true;
     expect(statuses[0].getAttribute('title')).to.equal(
-      '71% of the last 650 messages sent have failed.'
+      '71% of the 650 messages sent since November 12 have failed.'
     );
 
     // a healthy one which sends slowly says that instead, linking to help on it - with no throughput article, the

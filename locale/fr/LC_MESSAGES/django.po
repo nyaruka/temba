@@ -375,8 +375,8 @@ msgid "The phone hasn't synced for over an hour."
 msgstr "Le téléphone ne s'est pas synchronisé depuis plus d'une heure."
 
 #, python-format
-msgid "%(percent)d%% of the last %(count)s messages sent have failed."
-msgstr "%(percent)d %% des %(count)s derniers messages envoyés ont échoué."
+msgid "%(percent)d%% of the %(count)s messages sent since %(date)s have failed."
+msgstr "%(percent)d %% des %(count)s messages envoyés depuis le %(date)s ont échoué."
 
 msgid "Unhealthy"
 msgstr "Défaillant"

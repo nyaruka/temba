@@ -14,7 +14,7 @@
       "health": {
         "tone": "bad",
         "value": "Unhealthy",
-        "note": "71% of the last 650 messages sent have failed.",
+        "note": "71% of the 650 messages sent since November 12 have failed.",
         "cause": "failing"
       },
       "received": 94,

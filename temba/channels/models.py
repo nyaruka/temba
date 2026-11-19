@@ -22,6 +22,7 @@ from django.db.models import Q
 from django.template import Engine
 from django.urls import re_path
 from django.utils import timezone
+from django.utils.formats import date_format
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
@@ -681,14 +682,16 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
     def has_received(self) -> bool:
         """
         Whether this channel has received any messages since it was added, i.e. whether its setup on the provider's side
-        is working
+        is working - remembered, as both judging its health and saying it's waiting can ask
         """
-        return bool(self._get_received([self]))
+        if "_has_received" not in self.__dict__:
+            self.__dict__["_has_received"] = bool(self._get_received([self]))
+        return self.__dict__["_has_received"]
 
-    def get_recent_failures(self) -> tuple[int, int] | None:
+    def get_recent_failures(self) -> tuple[int, int, date] | None:
         """
-        How many of its most recent text messages this channel has failed to send, as failed and sent counts, or None if
-        it hasn't sent enough to judge
+        How many of its most recent text messages this channel has failed to send, as failed and sent counts and the day
+        the earliest of them was sent, or None if it hasn't sent enough to judge
         """
         return self._get_recent_failures([self]).get(self.id)
 
@@ -738,15 +741,17 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         if self.is_sync_delayed():
             return H("warn", _("Not syncing"), _("The phone hasn't synced for over an hour."), H.CAUSE_SYNC)
         if self.ROLE_SEND in self.role and (failures := get_recent_failures()):
-            failed, sent = failures
+            failed, sent, since = failures
             if failed / sent >= self.FAILURE_RATE_DEGRADED:
                 unhealthy = failed / sent >= self.FAILURE_RATE_UNHEALTHY
-                note = _("%(percent)d%% of the last %(count)s messages sent have failed.") % {
+                # when they were sent, as a channel that's sent nothing since is judged by sends however old
+                note = _("%(percent)d%% of the %(count)s messages sent since %(date)s have failed.") % {
                     "percent": round(failed / sent * 100),
                     "count": intcomma(sent),
+                    "date": date_format(since, "MONTH_DAY_FORMAT"),
                 }
                 # either is a problem with its health, so is red - the word says how bad
-                return H("bad", _("Unhealthy") if unhealthy else _("Degraded"), note, H.CAUSE_FAILING)
+                return H("bad", _("Unhealthy") if unhealthy else _("Degraded"), note, H.CAUSE_FAILING, since)
         if self._can_wait() and not has_received():
             return H("warn", _("Waiting"), self.WAITING_NOTE, H.CAUSE_WAITING)
         return H("good", _("Ready"), _("Sending and receiving messages."), None)
@@ -805,11 +810,12 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         return received | {channel_id for (channel_id, _day, _scope), count in totals.items() if count > 0}
 
     @classmethod
-    def _get_recent_failures(cls, channels) -> dict[int, tuple[int, int]]:
+    def _get_recent_failures(cls, channels) -> dict[int, tuple[int, int, date]]:
         """
         How many of their most recent text messages the given channels have failed to send, as failed and sent counts
-        by channel id, omitting those which haven't sent, or failed, enough to judge. Starts with those since yesterday, as today's
-        haven't all had the time to fail yet, and goes back a day at a time until enough were sent, so a channel stays
+        and the day the earliest of them was sent, by channel id, omitting those which haven't sent, or failed, enough to
+        judge. Today's are left out, as they haven't all had time to fail yet, so a big send queued today would hide
+        failures. Starts with yesterday's and goes back a day at a time until enough were sent, so a channel stays
         judged by what it last sent.
         """
         if not channels:
@@ -827,7 +833,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
 
         # most channels will have sent enough in the last week, so only those which haven't need reading further back
         recent_since = today - timedelta(days=cls.FAILURE_RATE_RECENT_DAYS - 1)
-        read(channels, recent_since, today + timedelta(days=1))
+        read(channels, recent_since, today)
 
         short = [c for c in channels if sum(s for _, s in by_day[c.id].values()) < cls.FAILURE_RATE_MIN_SENT]
         if short:
@@ -836,14 +842,16 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         failures = {}
         for c in channels:
             failed = sent = 0
+            since = None
             for day in sorted(by_day[c.id], reverse=True):
-                if sent >= cls.FAILURE_RATE_MIN_SENT and day < today - timedelta(days=1):
+                if sent >= cls.FAILURE_RATE_MIN_SENT:
                     break
                 failed += by_day[c.id][day][0]
                 sent += by_day[c.id][day][1]
+                since = day
 
             if sent >= cls.FAILURE_RATE_MIN_SENT or (sent and failed >= cls.FAILURE_RATE_MIN_FAILED):
-                failures[c.id] = (min(failed, sent), sent)
+                failures[c.id] = (min(failed, sent), sent, since)
 
         return failures
 
@@ -1096,6 +1104,7 @@ class ChannelHealth:
     value: str
     note: str
     cause: str | None
+    since: date | None = None  # when failing, the day the earliest of the sends it's judged by was sent
 
     def as_json(self) -> dict:
         return {"tone": self.tone, "value": str(self.value), "note": str(self.note), "cause": self.cause}

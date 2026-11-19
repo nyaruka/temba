@@ -5,6 +5,7 @@ from django_valkey import get_valkey_connection
 
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import date_format
 
 from temba import mailroom
 from temba.ai.models import LLM
@@ -658,7 +659,7 @@ class EndpointsTest(APITestMixin, TembaTest):
 
         # prefetched health is the same as each channel's own, and takes the same few reads however many channels
         channels = list(Channel.objects.filter(org=self.org, is_active=True))
-        with self.assertNumQueries(6):
+        with self.assertNumQueries(5):
             Channel.prefetch_health(channels)
         with self.assertNumQueries(0):
             prefetched = [c.health for c in channels]
@@ -716,7 +717,7 @@ class EndpointsTest(APITestMixin, TembaTest):
                 {
                     "tone": "bad",
                     "value": "Unhealthy",
-                    "note": "67% of the last 30 messages sent have failed.",
+                    "note": f"67% of the 30 messages sent since {date_format(yesterday, 'MONTH_DAY_FORMAT')} have failed.",
                     "cause": "failing",
                 },
                 rows[str(vonage.uuid)]["health"],
