@@ -69,13 +69,13 @@ class ChannelLogCRUDLTest(CRUDLTestMixin, TembaTest):
             self.assertTrue(response.context["can_break"])
             self.assertFalse(response.context["unredacted"])
             self.assertContains(response, f'href="{read_url}?break=1"')
-            self.assertNotContains(response, "<script>\n      (function() {")
+            self.assertNotContains(response, "document.currentScript")
 
             response = self.client.get(read_url, headers={"X-Temba-Spa": "1", "X-Temba-Sheet": "1"})
             self.assertRedacted(response, ("3527065", "Nic", "Pottier"))
             self.assertContains(response, f'href="{read_url}?break=1"')
             self.assertContains(response, "data-log-root")
-            self.assertContains(response, "<script>")
+            self.assertContains(response, "document.currentScript")
 
             response = self.client.get(read_url + "?break=1", headers={"X-Temba-Spa": "1", "X-Temba-Sheet": "1"})
             self.assertNotRedacted(response, ("3527065", "Nic", "Pottier"))
