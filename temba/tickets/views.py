@@ -493,6 +493,7 @@ class TicketCRUDL(SmartCRUDL):
 
         # microsecond timestamp of 9999-12-31 23:59:59 - anything beyond this can't be converted to a datetime
         MAX_CURSOR = 253_402_300_799_000_000
+        MAX_CHANGED = 100  # the most changed tickets a refresh reads, which clients batch to
 
         # ?order= value for the oldest first order, anything else is the default newest first
         ORDER_OLDEST = "oldest"
@@ -553,8 +554,16 @@ class TicketCRUDL(SmartCRUDL):
                 return self.folder.get_open_count(org, user, topics, assignee=self.assignee)
             return self.folder.get_open_count(org, user, topics)
 
+        def _changed_param(self) -> list[str]:
+            """
+            Reads the tickets a client heard had changed, ignoring anything that isn't a ticket UUID
+            """
+            values = self.request.GET.get("tickets", "").split(",")
+            return [v for v in values if is_uuid(v)][: self.MAX_CHANGED]
+
         def get_tickets(self) -> list:
             uuid = self.kwargs.get("uuid", None)
+            changed = self._changed_param()
             after = self._int_param("after")
             before = self._int_param("before")
             before_id = self._int_param("before_id")
@@ -565,6 +574,15 @@ class TicketCRUDL(SmartCRUDL):
                     return []
 
                 return list(self._get_queryset(ordered=True).filter(uuid=uuid))
+
+            # a refresh of tickets the client heard had changed - those that still belong in this folder, so the
+            # client can tell which ones to update and which have left it
+            if changed:
+                return list(
+                    self._get_queryset(ordered=False)
+                    .filter(uuid__in=changed, status__in=(Ticket.STATUS_OPEN, Ticket.STATUS_CLOSED))
+                    .order_by("last_activity_on", "id")
+                )
 
             # all new activity since a previous fetch.. our indexes have status between org/assignee and
             # last_activity_on so status always needs to be constrained - as both statuses so the planner can still
@@ -719,9 +737,11 @@ class TicketCRUDL(SmartCRUDL):
             if self.oldest_first:
                 results["now"] = context["now"]
 
-            # build up our next link if we have more - refreshes (?after=) are never paged because they're ordered
-            # oldest first, so a next link from the newest ticket would page backwards from an arbitrary point
-            if not self._int_param("after") and len(context["tickets"]) >= self.paginate_by:
+            # build up our next link if we have more - refreshes (?after= or ?tickets=) are never paged because
+            # they're ordered oldest first, so a next link from the newest ticket would page backwards from an
+            # arbitrary point
+            is_refresh = self._int_param("after") or self._changed_param()
+            if not is_refresh and len(context["tickets"]) >= self.paginate_by:
                 last = context["tickets"][-1]
 
                 # the uuid part of the pattern is optional so it can only be reversed by folder

@@ -5,6 +5,10 @@ import { TembaList } from './TembaList';
 import { Contact, CustomEventType } from '../interfaces';
 import { Icon } from '../Icons';
 import { ResultsPage } from '../utils';
+import {
+  RealtimeSubscription,
+  subscribeToOrganizationTickets
+} from '../live/Realtime';
 
 // a ticket's last activity in ms, or 0 if it's unparseable, so a single bad
 // timestamp can't poison a refresh cursor with NaN
@@ -12,6 +16,13 @@ const parseActivity = (item: Contact): number => {
   const activity = new Date(item.ticket?.last_activity_on).getTime();
   return isNaN(activity) ? 0 : activity;
 };
+
+// the least time between two refreshes driven by tickets_changed, so a busy
+// workspace costs each open list at most one fetch per window
+export const TICKETS_REFRESH_THROTTLE = 3000;
+
+// the most changed tickets read in one refresh - the folder view reads no more
+export const TICKETS_REFRESH_BATCH = 100;
 
 export class TicketList extends TembaList {
   // the current user's email, so their own messages read as You
@@ -26,6 +37,21 @@ export class TicketList extends TembaList {
   // every row, e.g. the user's own tickets
   @property({ type: Boolean })
   hideAssignee = false;
+
+  // refreshed when the workspace says its tickets changed, not on an interval,
+  // over a socket held only while the list is on the page
+  protected pollingEnabled = false;
+
+  private ticketsWatch: RealtimeSubscription = null;
+  private subscribedOnce = false;
+  private refreshTimer: number = null;
+  private lastRefreshAt = 0;
+  private refreshAfterLoad = false;
+
+  // tickets we've heard changed and have yet to read again, and whether we
+  // heard of changes we can't name, so have to reload the whole list
+  private changedTickets = new Set<string>();
+  private reloadNeeded = false;
 
   static get styles() {
     return css`
@@ -76,7 +102,47 @@ export class TicketList extends TembaList {
     super.willUpdate(changedProperties);
   }
 
+  /**
+   * Reading the tickets we heard changed returns those still in our folder,
+   * which says that any others have left it - say moved to another topic.
+   */
+  protected getRefreshScope(): Set<any> {
+    const batch = this.getRefreshBatch();
+    return batch.length > 0 ? new Set(batch) : null;
+  }
+
+  protected handleRefreshed(scope: Set<any>): void {
+    if (!scope) {
+      return;
+    }
+    scope.forEach((uuid) => this.changedTickets.delete(uuid));
+
+    // more changed than one refresh reads
+    if (this.changedTickets.size > 0) {
+      this.scheduleRefresh();
+    }
+  }
+
+  private getRefreshBatch(): string[] {
+    return [...this.changedTickets].slice(0, TICKETS_REFRESH_BATCH);
+  }
+
   public getRefreshEndpoint() {
+    if (!this.endpoint) {
+      return this.endpoint;
+    }
+
+    const separator = this.endpoint.includes('?') ? '&' : '?';
+    const batch = this.getRefreshBatch();
+    if (batch.length > 0) {
+      return (
+        this.endpoint +
+        separator +
+        'tickets=' +
+        batch.map(encodeURIComponent).join(',')
+      );
+    }
+
     // open tickets sort above closed ones, so the newest activity can be
     // anywhere in the list, not just the top
     const lastActivity = this.items.reduce(
@@ -85,7 +151,6 @@ export class TicketList extends TembaList {
     );
 
     if (lastActivity > 0) {
-      const separator = this.endpoint.includes('?') ? '&' : '?';
       return this.endpoint + separator + 'after=' + lastActivity * 1000;
     }
     return this.endpoint;
@@ -150,6 +215,96 @@ export class TicketList extends TembaList {
     // row arrives with a later page instead
     const last = this.items[this.items.length - 1];
     return !this.nextPage || !last || this.compareItems(item, last) <= 0;
+  }
+
+  public connectedCallback() {
+    super.connectedCallback();
+    this.ticketsWatch = subscribeToOrganizationTickets(
+      (event) => {
+        if (event?.type === 'tickets_changed') {
+          // the event names the tickets that changed, unless there were too
+          // many to name
+          if (event.tickets) {
+            event.tickets.forEach((uuid) => this.changedTickets.add(uuid));
+          } else {
+            this.reloadNeeded = true;
+          }
+          this.scheduleRefresh();
+        }
+      },
+      () => this.handleSubscribed()
+    );
+  }
+
+  public disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this.ticketsWatch) {
+      this.ticketsWatch.unsubscribe();
+      this.ticketsWatch = null;
+    }
+    window.clearTimeout(this.refreshTimer);
+    this.refreshTimer = null;
+    this.subscribedOnce = false;
+    this.refreshAfterLoad = false;
+    this.changedTickets.clear();
+    this.reloadNeeded = false;
+  }
+
+  public updated(changed: Map<string, any>): void {
+    super.updated(changed);
+    if (changed.has('loading') && !this.loading && this.refreshAfterLoad) {
+      this.refreshAfterLoad = false;
+      this.scheduleRefresh();
+    }
+  }
+
+  /**
+   * Fires on every (re)subscribe. The initial fetch covers the first, so only
+   * a resubscribe - after a dropped connection - reloads, to catch up on
+   * anything that changed while we couldn't hear about it.
+   */
+  private handleSubscribed() {
+    if (this.subscribedOnce) {
+      this.reloadNeeded = true;
+      this.scheduleRefresh();
+    }
+    this.subscribedOnce = true;
+  }
+
+  /**
+   * Refreshes on the leading edge, then coalesces anything else that arrives
+   * within the throttle window into one trailing refresh, which reads every
+   * ticket we heard changed in the meantime.
+   */
+  private scheduleRefresh() {
+    if (this.refreshTimer) {
+      return;
+    }
+
+    const wait = Math.max(
+      0,
+      this.lastRefreshAt + TICKETS_REFRESH_THROTTLE - Date.now()
+    );
+
+    this.refreshTimer = window.setTimeout(() => {
+      this.refreshTimer = null;
+
+      // a refresh aborts whatever is in flight, which mid-load would be the
+      // page fetch itself, so wait for that and refresh after it instead
+      if (this.loading) {
+        this.refreshAfterLoad = true;
+        return;
+      }
+
+      this.lastRefreshAt = Date.now();
+      if (this.reloadNeeded) {
+        this.reloadNeeded = false;
+        this.changedTickets.clear();
+        this.reload();
+      } else if (this.changedTickets.size > 0) {
+        this.refresh();
+      }
+    }, wait);
   }
 
   protected sanitizeResults(results: any[]): Promise<any[]> {

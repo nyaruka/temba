@@ -277,6 +277,14 @@ export class TembaList extends RapidElement {
     this.refreshKey = 'requested_' + new Date().getTime();
   }
 
+  /**
+   * Reads the list again from its endpoint, as many pages as are loaded,
+   * keeping the selection where it can
+   */
+  public reload(): Promise<void> {
+    return this.fetchItems();
+  }
+
   public setEndpoint(endpoint: string, nextSelection: any = null) {
     this.endpoint = endpoint;
     this.nextSelection = nextSelection;
@@ -284,6 +292,23 @@ export class TembaList extends RapidElement {
 
   public getRefreshEndpoint() {
     return this.endpoint;
+  }
+
+  /**
+   * The items a refresh is a complete answer for: any of them it doesn't
+   * return no longer belong in the list. Null for a refresh that only brings
+   * in what's new.
+   */
+  protected getRefreshScope(): Set<any> {
+    return null;
+  }
+
+  /**
+   * Called once a refresh has been merged in, with the scope it was for
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  protected handleRefreshed(scope: Set<any>): void {
+    // nothing by default
   }
 
   protected sanitizeResults(results: any[]): Promise<any[]> {
@@ -500,6 +525,7 @@ export class TembaList extends RapidElement {
     if (!refreshEndpoint) {
       return;
     }
+    const scope = this.getRefreshScope();
 
     // cancel any outstanding requests
     while (this.pending.length > 0) {
@@ -516,10 +542,7 @@ export class TembaList extends RapidElement {
     let follow = false;
 
     try {
-      const page = await fetchResultsPage(
-        this.getRefreshEndpoint(),
-        controller
-      );
+      const page = await fetchResultsPage(refreshEndpoint, controller);
 
       this.handleCurrentPage(page);
       const sanitizedResults = await this.sanitizeResults(page.results);
@@ -527,7 +550,8 @@ export class TembaList extends RapidElement {
       // read our list and selection only now - either can change while we
       // wait on the fetch, say if a different item gets selected
       const prevItem = this.items[this.cursorIndex];
-      const items = [...this.items];
+      const prevValue = prevItem ? this.getValue(prevItem) : null;
+      let items = [...this.items];
 
       // remove any dupes already in our list
       if (sanitizedResults) {
@@ -558,9 +582,18 @@ export class TembaList extends RapidElement {
         // nothing" and drives the Refreshed event
         const topItem = results.length > 0 ? results[0] : items[0];
 
-        // the selected item and held items always stay, even if they no
-        // longer belong, until the list reloads
-        const prevValue = prevItem ? this.getValue(prevItem) : null;
+        // anything the refresh was for but didn't return has left the list -
+        // except the selected item and held items, which always stay, even if
+        // they no longer belong, until the list reloads
+        if (scope) {
+          items = items.filter((option: any) => {
+            const value = this.getValue(option);
+            return (
+              !scope.has(value) || value === prevValue || this.held.has(value)
+            );
+          });
+        }
+
         const kept = results.filter((option: any) => {
           const value = this.getValue(option);
           return (
@@ -596,6 +629,8 @@ export class TembaList extends RapidElement {
 
         this.items = newItems;
       }
+
+      this.handleRefreshed(scope);
     } catch (error) {
       // a newer request cancelled this one, that's not a failure
       if (!controller.signal.aborted) {

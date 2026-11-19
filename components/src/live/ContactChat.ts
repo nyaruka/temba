@@ -890,6 +890,8 @@ export class ContactChat extends ContactStoreElement {
       return;
     }
 
+    this.applyTicketEvents([event]);
+
     // ephemeral contact state updates - they don't touch the history view
     // so they apply even while searching
     if (
@@ -1803,6 +1805,9 @@ export class ContactChat extends ContactStoreElement {
             return;
           }
 
+          // pages come newest first, ticket changes apply oldest first
+          this.applyTicketEvents([...(page.events || [])].reverse());
+
           const messages = this.createMessages(page);
           messages.reverse();
           chat.addMessages(messages, null, true);
@@ -1939,11 +1944,7 @@ export class ContactChat extends ContactStoreElement {
       } else {
         if (!this.currentTicket.closed_on) {
           // hide compose if agent can't reply to unassigned tickets
-          if (
-            this.disableReply &&
-            (!this.currentTicket.assignee ||
-              this.currentTicket.assignee.email !== this.agent)
-          ) {
+          if (this.disableReply && !this.isAgent(this.currentTicket.assignee)) {
             return null;
           }
           //chatbox for active contacts with an open ticket
@@ -2003,13 +2004,9 @@ export class ContactChat extends ContactStoreElement {
         tickets: [this.currentTicket.uuid],
         action: 'change_topic',
         topic: topic.uuid
-      })
-        .then(() => {
-          this.refreshTicket();
-        })
-        .catch((response: any) => {
-          console.error(response);
-        });
+      }).catch((response: any) => {
+        console.error(response);
+      });
     }
   }
 
@@ -2021,7 +2018,9 @@ export class ContactChat extends ContactStoreElement {
     // if its already assigned to use, it's a noop
     if (
       (this.currentTicket.assignee &&
-        this.currentTicket.assignee.email === email) ||
+        (this.currentTicket.assignee.email === email ||
+          (email === this.agent &&
+            this.isAgent(this.currentTicket.assignee)))) ||
       (this.currentTicket.assignee === null && email === null)
     ) {
       return;
@@ -2031,29 +2030,94 @@ export class ContactChat extends ContactStoreElement {
       tickets: [this.currentTicket.uuid],
       action: 'assign',
       assignee: email
-    })
-      .then(() => {
-        this.refreshTicket();
-      })
-      .catch((response: any) => {
-        console.error(response);
-      });
+    }).catch((response: any) => {
+      console.error(response);
+    });
     return true;
   }
 
-  public refreshTicket() {
-    if (this.currentTicket) {
-      fetchResults(`/api/v2/tickets.json?uuid=${this.currentTicket.uuid}`).then(
-        (values) => {
-          if (values.length > 0) {
-            this.fireCustomEvent(CustomEventType.TicketUpdated, {
-              ticket: values[0],
-              previous: this.currentTicket
-            });
-            this.currentTicket = values[0];
+  // whether the given user is us
+  private isAgent(user: { uuid?: string; email?: string }): boolean {
+    return (
+      !!user &&
+      ((!!user.uuid && user.uuid === this.userUuid) ||
+        (!!user.email && user.email === this.agent))
+    );
+  }
+
+  /**
+   * Keeps the current ticket in step with changes made to it, by us or by
+   * anyone else, as they arrive over its sockets - or in the history fetched
+   * to catch up after a dropped connection. Our own ticket actions rely on
+   * this too, rather than re-reading the ticket after making them.
+   */
+  private applyTicketEvents(events: any[]) {
+    const previous = this.currentTicket;
+    if (!previous || !events?.length) {
+      return;
+    }
+
+    let ticket = previous;
+    let changed = false;
+
+    for (const event of events) {
+      if ((event.ticket_uuid || event.ticket?.uuid) !== ticket.uuid) {
+        continue;
+      }
+
+      switch (event.type) {
+        case Events.TICKET_ASSIGNEE_CHANGED: {
+          const assignee = event.assignee || null;
+          const current = ticket.assignee || null;
+          if (assignee?.uuid !== current?.uuid || (!assignee && current)) {
+            // a socket event names a user by uuid, which our copy may not
+            // have yet if it came from the api - keep what we know of them
+            const same = current && assignee && current.uuid === assignee.uuid;
+            ticket = {
+              ...ticket,
+              assignee: assignee
+                ? {
+                    ...(same ? current : {}),
+                    uuid: assignee.uuid,
+                    name: assignee.name
+                  }
+                : null
+            };
+            changed = true;
           }
+          break;
         }
-      );
+        case Events.TICKET_TOPIC_CHANGED:
+          if (event.topic && event.topic.uuid !== ticket.topic?.uuid) {
+            ticket = { ...ticket, topic: event.topic };
+            changed = true;
+          }
+          break;
+        case Events.TICKET_CLOSED:
+          if (!ticket.closed_on) {
+            ticket = {
+              ...ticket,
+              status: 'closed',
+              closed_on: event.created_on
+            };
+            changed = true;
+          }
+          break;
+        case Events.TICKET_REOPENED:
+          if (ticket.closed_on) {
+            ticket = { ...ticket, status: 'open', closed_on: null };
+            changed = true;
+          }
+          break;
+      }
+    }
+
+    if (changed) {
+      this.currentTicket = ticket;
+      this.fireCustomEvent(CustomEventType.TicketUpdated, {
+        ticket,
+        previous
+      });
     }
   }
 
@@ -2062,13 +2126,9 @@ export class ContactChat extends ContactStoreElement {
     postJSON(`/api/v2/ticket_actions.json`, {
       tickets: [uuid],
       action: 'reopen'
-    })
-      .then(() => {
-        this.refreshTicket();
-      })
-      .catch((response: any) => {
-        console.error(response);
-      });
+    }).catch((response: any) => {
+      console.error(response);
+    });
   }
 
   private handleClose() {
@@ -2076,13 +2136,9 @@ export class ContactChat extends ContactStoreElement {
     postJSON(`/api/v2/ticket_actions.json`, {
       tickets: [uuid],
       action: 'close'
-    })
-      .then(() => {
-        this.refreshTicket();
-      })
-      .catch((response: any) => {
-        console.error(response);
-      });
+    }).catch((response: any) => {
+      console.error(response);
+    });
   }
 
   /** The search bar rendered above the chat card while searching —
@@ -2208,7 +2264,9 @@ export class ContactChat extends ContactStoreElement {
                             all-label=${msg('Unassigned')}
                             all-icon=${Icon.contact}
                             up
-                            value=${this.currentTicket.assignee?.email || ''}
+                            value=${this.currentTicket.assignee?.uuid ||
+                            this.currentTicket.assignee?.email ||
+                            ''}
                             @change=${this.handleAssignmentChanged}
                             ?disabled=${ticketClosed || this.disableAssign}
                           ></temba-user-picker>

@@ -767,6 +767,37 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
             response = self.requestView(f"/ticket/folder/all/?after={after}", self.admin)
             self.assertEqual([str(t.uuid) for t in tied], [t["ticket"]["uuid"] for t in response.json()["results"]])
 
+    def test_folder_changed_tickets(self):
+        contact1 = self.create_contact("Joe", phone="123")
+        contact2 = self.create_contact("Ann", phone="124")
+        sales1 = self.create_ticket(contact1, topic=self.sales)
+        sales2 = self.create_ticket(contact2, topic=self.sales, closed_on=timezone.now())
+        support1 = self.create_ticket(contact2, topic=self.support)
+
+        sales_url = f"/ticket/folder/{self.sales.uuid}/"
+        changed = ",".join(str(t.uuid) for t in (sales1, sales2, support1))
+
+        # only the changed tickets still in the folder come back, open or closed, so a client knows the rest left it
+        response = self.requestView(f"{sales_url}?tickets={changed}", self.admin)
+        self.assertEqual(
+            {str(sales1.uuid), str(sales2.uuid)}, {t["ticket"]["uuid"] for t in response.json()["results"]}
+        )
+        self.assertEqual(1, response.json()["count"])
+        self.assertNotIn("next", response.json())
+
+        # a ticket moved into the folder comes back without having had any new activity
+        Ticket.objects.filter(id=support1.id).update(topic=self.sales)
+        response = self.requestView(f"{sales_url}?tickets={support1.uuid}", self.admin)
+        self.assertEqual([str(support1.uuid)], [t["ticket"]["uuid"] for t in response.json()["results"]])
+
+        # an agent only gets back tickets in topics they can see, whichever folder they ask
+        response = self.requestView(f"/ticket/folder/all/?tickets={changed}", self.agent3)
+        self.assertEqual([], response.json()["results"])
+
+        # anything that isn't a ticket UUID is ignored
+        response = self.requestView(f"{sales_url}?tickets=foo,{sales1.uuid},", self.admin)
+        self.assertEqual([str(sales1.uuid)], [t["ticket"]["uuid"] for t in response.json()["results"]])
+
     def test_folder_merged_page_ties(self):
         contact = self.create_contact("Joe", phone="123")
         open1 = self.create_ticket(contact)
