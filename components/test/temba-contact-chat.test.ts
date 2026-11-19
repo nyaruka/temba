@@ -73,6 +73,22 @@ const settleLoaded = async (chat: ContactChat) => {
   await settle(() => chatLoaded(chat), 150, 400, 5);
 };
 
+const getSendError = (chat: ContactChat) => {
+  const gutter = chat.shadowRoot.querySelector('.error-gutter');
+  if (!gutter) {
+    return null;
+  }
+  return {
+    message: gutter.querySelector('.error-message').textContent.trim(),
+    retry: !!gutter.querySelector('temba-button')
+  };
+};
+
+const waitForSendError = async (chat: ContactChat) => {
+  await settle(() => !!chat.errorMessage);
+  await chat.updateComplete;
+};
+
 const getContactChat = async (attrs: any = {}) => {
   attrs['endpoint'] = '/test/assets/contacts/';
   // add some sizes and styles to force our chat history to scroll
@@ -527,7 +543,7 @@ describe('temba-contact-chat', () => {
     const response_headers = {};
     const response_status = '500';
     mockPOST(
-      /api\/v2\/messages\.json/,
+      /contact\/chat\/contact-dave-active\//,
       response_body,
       response_headers,
       response_status
@@ -537,8 +553,60 @@ describe('temba-contact-chat', () => {
     const listener = oneEvent(compose, CustomEventType.Submitted, false);
     await typeInto('temba-contact-chat:temba-compose', '', false, true);
     expect(await listener).to.exist;
+    await waitForSendError(chat);
+
+    expect(getSendError(chat)).to.deep.equal({
+      message: 'Send failed, please try again.',
+      retry: true
+    });
 
     await assertScreenshot('contacts/chat-failure', getClip(chat));
+  });
+
+  it('shows generic failure when an error response has no reason', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+    mockPOST(/contact\/chat\/contact-dave-active\//, {}, {}, '400');
+
+    await typeInto(
+      'temba-contact-chat:temba-compose',
+      getValidText(),
+      true,
+      true
+    );
+    await waitForSendError(chat);
+
+    expect(getSendError(chat)).to.deep.equal({
+      message: 'Send failed, please try again.',
+      retry: true
+    });
+  });
+
+  it("shows the server's reason when it refuses to send", async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+    const compose = chat.shadowRoot.querySelector('temba-compose') as Compose;
+    const text = getValidText();
+
+    const reason =
+      'Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please contact support.';
+    mockPOST(
+      /contact\/chat\/contact-dave-active\//,
+      { error: reason },
+      {},
+      '400'
+    );
+
+    await typeInto('temba-contact-chat:temba-compose', text, true, true);
+    await waitForSendError(chat);
+
+    // resending won't help, so there's no retry, and the draft is kept
+    expect(getSendError(chat)).to.deep.equal({ message: reason, retry: false });
+    expect(compose.currentText).to.equal(text);
   });
 
   it('hides search toggle when showSearch is not set', async () => {

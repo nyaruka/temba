@@ -3063,6 +3063,14 @@
   <source>Reopen</source>
   <target>Reabrir</target>
 </trans-unit>
+<trans-unit id="sb5a58a8b4c4b541f">
+  <source>Send failed, please try again.</source>
+  <target>Error al enviar, inténtalo de nuevo.</target>
+</trans-unit>
+<trans-unit id="s2c8189544e3ea679">
+  <source>Retry</source>
+  <target>Reintentar</target>
+</trans-unit>
 </body>
 </file>
 </xliff>

@@ -694,6 +694,9 @@ export class ContactChat extends ContactStoreElement {
   errorMessage: string;
 
   @property({ type: Boolean, attribute: false })
+  errorRetryable = true;
+
+  @property({ type: Boolean, attribute: false })
   searchMode = false;
 
   @property({ type: String, attribute: false })
@@ -1637,7 +1640,7 @@ export class ContactChat extends ContactStoreElement {
       payload['ticket'] = this.currentTicket.uuid;
     }
 
-    const genericError = 'Send failed, please try again.';
+    const genericError = msg('Send failed, please try again.');
     postJSON(`/contact/chat/${this.currentContact.uuid}/`, payload)
       .then((response) => {
         if (response.status < 400) {
@@ -1650,12 +1653,19 @@ export class ContactChat extends ContactStoreElement {
             msg: payload,
             response
           });
+        } else if (response.json?.['error']) {
+          // the server says why it refused (e.g. the workspace can't send),
+          // which resending won't change
+          this.errorMessage = response.json['error'];
+          this.errorRetryable = false;
         } else {
           this.errorMessage = genericError;
+          this.errorRetryable = true;
         }
       })
       .catch(() => {
         this.errorMessage = genericError;
+        this.errorRetryable = true;
       });
   }
 
@@ -1979,10 +1989,12 @@ export class ContactChat extends ContactStoreElement {
         ${this.errorMessage
           ? html` <div class="error-gutter">
               <div class="error-message">${this.errorMessage}</div>
-              <temba-button
-                name="Retry"
-                @click=${this.handleRetry}
-              ></temba-button>
+              ${this.errorRetryable
+                ? html`<temba-button
+                    name=${msg('Retry')}
+                    @click=${this.handleRetry}
+                  ></temba-button>`
+                : null}
             </div>`
           : null}
       </div>
