@@ -1,3 +1,9 @@
+## v26.3.218 (2026-11-19)
+ * Show channel health from failure rates on channel read and list pages
+ * Don't allow contact imports for suspended or flagged workspaces
+ * Add an org_restricted icon and use it for the restricted workspace alert
+ * Add Contact.uuid2 kept in sync with uuid by a trigger
+
 ## v26.3.217 (2026-11-19)
  * Don't allow API token use for suspended workspaces
  * Only suspend restricted workspaces when given a time to suspend them
