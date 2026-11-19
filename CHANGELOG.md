@@ -1,3 +1,7 @@
+## v26.3.219 (2026-11-19)
+ * Let incident types set their own email subject
+ * Move Channels to second in the settings menu
+
 ## v26.3.218 (2026-11-19)
  * Show channel health from failure rates on channel read and list pages
  * Don't allow contact imports for suspended or flagged workspaces
