@@ -91,6 +91,14 @@ class ContactImportCRUDLTest(TembaTest, CRUDLTestMixin):
         self.org.reactivate()
         self.org.flag()
 
+        response = self.client.post(create_url, {"file": self.upload("test-data/imports/simple.xlsx")})
+        self.assertFormError(
+            response.context["form"],
+            "file",
+            "Sorry, your workspace is currently flagged. To re-enable starting flows and sending messages, please "
+            "contact support.",
+        )
+
         response = self.client.post(preview_url, {})
         self.assertFormError(
             response.context["form"],
@@ -108,7 +116,10 @@ class ContactImportCRUDLTest(TembaTest, CRUDLTestMixin):
 
         imp.refresh_from_db()
         self.assertIsNotNone(imp.started_on)
-        self.assertEqual(1, ContactImport.objects.count())
+
+        response = self.client.post(create_url, {"file": self.upload("test-data/imports/simple.xlsx")})
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(2, ContactImport.objects.count())
 
     def test_creating_new_group(self):
         self.login(self.admin)
