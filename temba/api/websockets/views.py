@@ -226,6 +226,7 @@ class SubscriptionEndpoint(BaseEndpoint):
             "_notifications_allowed",
         ),
         (re.compile(rf"org:(?P<org_uuid>{UUID_PATTERN})"), "_org_allowed"),
+        (re.compile(rf"org:(?P<org_uuid>{UUID_PATTERN}):tickets"), "_org_tickets_allowed"),
         (re.compile(rf"history:(?P<contact_uuid>{UUID_PATTERN})"), "_contact_history_allowed"),
         (
             re.compile(rf"history:(?P<contact_uuid>{UUID_PATTERN}):(?P<ticket_uuid>{UUID_PATTERN})"),
@@ -272,6 +273,15 @@ class SubscriptionEndpoint(BaseEndpoint):
         name, and nothing at all about assets that are never renamed.
         """
         return org_uuid == str(request.org.uuid)
+
+    def _org_tickets_allowed(self, request, org_uuid: str) -> bool:
+        """
+        ``org:<org-uuid>:tickets`` - which of the current workspace's tickets changed, for the tickets page. Any user
+        who can list tickets may watch it. Events name tickets only by UUID, so an agent restricted to some topics
+        learns nothing about tickets outside them beyond that they exist and changed - a ticket list then reads the
+        ones it can see over http, scoped to that agent's topics.
+        """
+        return org_uuid == str(request.org.uuid) and request.user.has_org_perm(request.org, "tickets.ticket_list")
 
     def _contact_history_allowed(self, request, contact_uuid: str) -> bool:
         """

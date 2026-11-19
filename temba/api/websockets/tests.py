@@ -353,6 +353,28 @@ class EndpointsTest(APITestMixin, TembaTest):
             self.assertEqual(200, response.status_code)
             self.assertEqual({"error": {"code": 403, "message": "forbidden"}}, response.json())
 
+    def test_subscribe_org_tickets(self):
+        def subscribe(socket):
+            return self.post("api.websockets.subscribe", {"channel": socket, "client": "conn-1"})
+
+        # anyone who can list tickets may watch which of the workspace's tickets change
+        for user in (self.agent, self.editor, self.admin):
+            self.login(user)
+
+            response = subscribe(f"org:{self.org.uuid}:tickets")
+            self.assertEqual(200, response.status_code)
+            self.assertExpiry(response.json()["result"]["expire_at"])
+
+        for socket in (
+            f"org:{self.org2.uuid}:tickets",
+            "org:not-a-uuid:tickets",
+            f"org:{self.org.uuid}:other",
+            f"org:{self.org.uuid}:tickets:extra",
+        ):
+            response = subscribe(socket)
+            self.assertEqual(200, response.status_code)
+            self.assertEqual({"error": {"code": 403, "message": "forbidden"}}, response.json())
+
     @override_settings(ALLOWED_HOSTS=["testserver", ".rapidpro.io"])
     def test_subscribe_origin(self):
         contact = self.create_contact("Ann", phone="+1234", org=self.org)

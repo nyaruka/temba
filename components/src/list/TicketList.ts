@@ -1,10 +1,14 @@
 import { css, html, PropertyValues, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { msg } from '@lit/localize';
-import { TembaList } from './TembaList';
+import { RefreshOutcome, TembaList } from './TembaList';
 import { Contact, CustomEventType } from '../interfaces';
 import { Icon } from '../Icons';
 import { ResultsPage } from '../utils';
+import {
+  RealtimeSubscription,
+  subscribeToOrganizationTickets
+} from '../live/Realtime';
 
 // a ticket's last activity in ms, or 0 if it's unparseable, so a single bad
 // timestamp can't poison a refresh cursor with NaN
@@ -12,6 +16,22 @@ const parseActivity = (item: Contact): number => {
   const activity = new Date(item.ticket?.last_activity_on).getTime();
   return isNaN(activity) ? 0 : activity;
 };
+
+// the least time between the end of one refresh driven by tickets_changed and
+// the start of the next, so however many events a busy workspace publishes,
+// each open list makes at most one fetch per window, and never two at once
+export const TICKETS_REFRESH_THROTTLE = 3000;
+
+// the most changed tickets read in one refresh - the folder view reads no more,
+// so a backlog bigger than this reloads the list instead
+export const TICKETS_REFRESH_BATCH = 100;
+
+// after a failed refresh the window doubles each time, up to this
+export const TICKETS_REFRESH_MAX_BACKOFF = 60000;
+
+// a refresh that hasn't ended after this long is taken to have been lost, so
+// it can't hold up the ones after it forever
+const TICKETS_REFRESH_STALE = 30000;
 
 export class TicketList extends TembaList {
   // the current user's email, so their own messages read as You
@@ -26,6 +46,33 @@ export class TicketList extends TembaList {
   // every row, e.g. the user's own tickets
   @property({ type: Boolean })
   hideAssignee = false;
+
+  // refreshed when the workspace says its tickets changed, not on an interval,
+  // over a socket held only while the list is on the page
+  protected pollingEnabled = false;
+
+  // a random delay of up to this many ms before each refresh, so every list
+  // open in the workspace doesn't fetch at the same moment for the same event
+  public refreshJitter = 500;
+
+  private ticketsWatch: RealtimeSubscription = null;
+  private subscribedOnce = false;
+  private refreshTimer: number = null;
+  private lastRefreshAt = 0;
+  private refreshAfterLoad = false;
+
+  // when the refresh in flight started, or 0 if there isn't one, and how many
+  // in a row have failed
+  private refreshingSince = 0;
+  private refreshFailures = 0;
+
+  // a hidden page leaves its changes to read when it's next looked at
+  private refreshWhenVisible = false;
+
+  // tickets we've heard changed and have yet to read again, and whether we
+  // heard of changes we can't name, so have to reload the whole list
+  private changedTickets = new Set<string>();
+  private reloadNeeded = false;
 
   static get styles() {
     return css`
@@ -72,11 +119,72 @@ export class TicketList extends TembaList {
     if (changedProperties.has('endpoint')) {
       this.activityCursor = 0;
       this.count = null;
+
+      // the list loads from scratch, which reads everything we'd heard of, and
+      // cancels any refresh in flight - which might never have started, if it
+      // was asked for in the same update
+      this.refreshingSince = 0;
+      this.refreshAfterLoad = false;
+      this.changedTickets.clear();
+      this.reloadNeeded = false;
     }
     super.willUpdate(changedProperties);
   }
 
+  /**
+   * Reading the tickets we heard changed returns those still in our folder,
+   * which says that any others have left it - say moved to another topic.
+   */
+  protected getRefreshScope(): Set<any> {
+    const batch = this.getRefreshBatch();
+    return batch.length > 0 ? new Set(batch) : null;
+  }
+
+  protected handleRefreshEnded(scope: Set<any>, outcome: RefreshOutcome): void {
+    // a refresh our own scheduling didn't start, say a direct refresh()
+    if (!this.refreshingSince) {
+      return;
+    }
+    this.refreshEnded(outcome);
+    if (outcome === 'merged' && scope) {
+      scope.forEach((uuid) => this.changedTickets.delete(uuid));
+    }
+    this.scheduleRefresh();
+  }
+
+  private refreshEnded(outcome: RefreshOutcome) {
+    // the next is scheduled from now, not from when this one went stale
+    window.clearTimeout(this.refreshTimer);
+    this.refreshTimer = null;
+    this.refreshingSince = 0;
+    this.lastRefreshAt = Date.now();
+    if (outcome === 'merged') {
+      this.refreshFailures = 0;
+    } else if (outcome === 'failed') {
+      this.refreshFailures++;
+    }
+  }
+
+  private getRefreshBatch(): string[] {
+    return [...this.changedTickets].slice(0, TICKETS_REFRESH_BATCH);
+  }
+
   public getRefreshEndpoint() {
+    if (!this.endpoint) {
+      return this.endpoint;
+    }
+
+    const separator = this.endpoint.includes('?') ? '&' : '?';
+    const batch = this.getRefreshBatch();
+    if (batch.length > 0) {
+      return (
+        this.endpoint +
+        separator +
+        'tickets=' +
+        batch.map(encodeURIComponent).join(',')
+      );
+    }
+
     // open tickets sort above closed ones, so the newest activity can be
     // anywhere in the list, not just the top
     const lastActivity = this.items.reduce(
@@ -85,7 +193,6 @@ export class TicketList extends TembaList {
     );
 
     if (lastActivity > 0) {
-      const separator = this.endpoint.includes('?') ? '&' : '?';
       return this.endpoint + separator + 'after=' + lastActivity * 1000;
     }
     return this.endpoint;
@@ -150,6 +257,164 @@ export class TicketList extends TembaList {
     // row arrives with a later page instead
     const last = this.items[this.items.length - 1];
     return !this.nextPage || !last || this.compareItems(item, last) <= 0;
+  }
+
+  private handleVisibilityChange = () => {
+    if (!this.isPageHidden() && this.refreshWhenVisible) {
+      this.refreshWhenVisible = false;
+      this.scheduleRefresh();
+    }
+  };
+
+  protected isPageHidden(): boolean {
+    return document.visibilityState === 'hidden';
+  }
+
+  public connectedCallback() {
+    super.connectedCallback();
+    document.addEventListener('visibilitychange', this.handleVisibilityChange);
+    this.ticketsWatch = subscribeToOrganizationTickets(
+      (event) => {
+        if (event?.type === 'tickets_changed') {
+          // the event names the tickets that changed, unless there were too
+          // many to name
+          if (event.tickets) {
+            event.tickets.forEach((uuid) => this.changedTickets.add(uuid));
+          } else {
+            this.reloadNeeded = true;
+          }
+          this.scheduleRefresh();
+        }
+      },
+      () => this.handleSubscribed()
+    );
+  }
+
+  public disconnectedCallback() {
+    super.disconnectedCallback();
+    document.removeEventListener(
+      'visibilitychange',
+      this.handleVisibilityChange
+    );
+    if (this.ticketsWatch) {
+      this.ticketsWatch.unsubscribe();
+      this.ticketsWatch = null;
+    }
+    window.clearTimeout(this.refreshTimer);
+    this.refreshTimer = null;
+    this.subscribedOnce = false;
+    this.refreshAfterLoad = false;
+    this.refreshWhenVisible = false;
+    this.refreshingSince = 0;
+    this.refreshFailures = 0;
+    this.changedTickets.clear();
+    this.reloadNeeded = false;
+  }
+
+  public updated(changed: Map<string, any>): void {
+    super.updated(changed);
+    if (changed.has('loading') && !this.loading && this.refreshAfterLoad) {
+      this.refreshAfterLoad = false;
+      this.scheduleRefresh();
+    }
+  }
+
+  /**
+   * Fires on every (re)subscribe. The initial fetch covers the first, so only
+   * a resubscribe - after a dropped connection - reloads, to catch up on
+   * anything that changed while we couldn't hear about it.
+   */
+  private handleSubscribed() {
+    if (this.subscribedOnce) {
+      this.reloadNeeded = true;
+      this.scheduleRefresh();
+    }
+    this.subscribedOnce = true;
+  }
+
+  /**
+   * Refreshes on the leading edge, then coalesces anything else that arrives
+   * into one trailing refresh, which reads every ticket we heard changed in
+   * the meantime. Refreshes never overlap - the next waits out the window from
+   * the end of the last, which a failure doubles - so a firehose of events
+   * costs each list one fetch per window, and a struggling server no more.
+   */
+  private scheduleRefresh() {
+    if (this.refreshTimer || !this.refreshOwed()) {
+      return;
+    }
+
+    const backoff = Math.min(
+      TICKETS_REFRESH_THROTTLE * 2 ** this.refreshFailures,
+      TICKETS_REFRESH_MAX_BACKOFF
+    );
+    const wait =
+      Math.max(0, this.lastRefreshAt + backoff - Date.now()) +
+      Math.random() * this.refreshJitter;
+
+    this.refreshTimer = window.setTimeout(() => {
+      this.refreshTimer = null;
+      this.startRefresh();
+    }, wait);
+  }
+
+  private refreshOwed(): boolean {
+    return this.reloadNeeded || this.changedTickets.size > 0;
+  }
+
+  private startRefresh() {
+    // one at a time - the one in flight schedules the next when it ends, or
+    // if it never does, we try again once it's taken too long
+    if (this.refreshingSince) {
+      const stale = this.refreshingSince + TICKETS_REFRESH_STALE - Date.now();
+      if (stale > 0) {
+        this.refreshTimer = window.setTimeout(() => {
+          this.refreshTimer = null;
+          this.startRefresh();
+        }, stale);
+        return;
+      }
+    }
+
+    // a refresh aborts whatever is in flight, which mid-load would be the
+    // page fetch itself, so wait for that and refresh after it instead
+    if (this.loading) {
+      this.refreshAfterLoad = true;
+      return;
+    }
+
+    if (this.isPageHidden()) {
+      this.refreshWhenVisible = true;
+      return;
+    }
+
+    // more changed than one refresh can read, so read the list again instead
+    if (this.changedTickets.size > TICKETS_REFRESH_BATCH) {
+      this.reloadNeeded = true;
+    }
+
+    const startedAt = Date.now();
+    this.refreshingSince = startedAt;
+    if (this.reloadNeeded) {
+      this.reloadNeeded = false;
+      this.changedTickets.clear();
+      this.reload().then((outcome) => {
+        // a load from a new endpoint took over from this one, and owns the list
+        if (this.refreshingSince !== startedAt) {
+          return;
+        }
+        // a reload that failed owes the whole list again
+        if (outcome === 'failed') {
+          this.reloadNeeded = true;
+        }
+        this.refreshEnded(outcome);
+        this.scheduleRefresh();
+      });
+    } else if (this.changedTickets.size > 0) {
+      this.refresh();
+    } else {
+      this.refreshingSince = 0;
+    }
   }
 
   protected sanitizeResults(results: any[]): Promise<any[]> {
