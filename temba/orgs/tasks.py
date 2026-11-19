@@ -13,7 +13,7 @@ from temba.flows.models import FlowTally
 from temba.utils.crons import cron_task
 from temba.utils.models import delete_in_batches
 
-from .models import DailyCount, Export, Invitation, ItemCount, Org, OrgImport, OrgMembership, OrgTally
+from .models import Export, Invitation, ItemCount, Org, OrgImport, OrgMembership, OrgTally
 
 
 @cron_task()
@@ -127,7 +127,6 @@ def delete_released_orgs():
 @cron_task(lock_timeout=7200)
 def squash_item_counts():
     ItemCount.squash()
-    DailyCount.squash()
 
 
 @cron_task(lock_timeout=7200)

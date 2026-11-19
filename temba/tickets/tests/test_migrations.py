@@ -18,8 +18,10 @@ class BackfillTicketTalliesTest(MigrationTest):
         def day(days_ago: int):
             return self.today - timedelta(days=days_ago)
 
+        DailyCount = apps.get_model("orgs", "DailyCount")
+
         def count(org, scope: str, days_ago: int, n: int):
-            org.daily_counts.create(day=day(days_ago), scope=scope, count=n)
+            DailyCount.objects.create(org_id=org.id, day=day(days_ago), scope=scope, count=n)
 
         def tally(org, scope: str, days_ago: int, n: int):
             org.org_tallies.create(scope=f"tickets/{scope}@{day(days_ago)}", count=n)

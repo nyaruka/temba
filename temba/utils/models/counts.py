@@ -1,5 +1,3 @@
-from datetime import date
-
 from django.db import connection, models
 from django.db.models import Q, Sum
 
@@ -157,48 +155,12 @@ class BaseScopedCount(BaseSquashableCount):
         abstract = True
 
 
-class DailyCountQuerySet(ScopedCountQuerySet):
-    """
-    Specialized queryset for scope + day + count models.
-    """
-
-    def period(self, since, until):
-        return self.filter(day__gte=since, day__lt=until)
-
-    def day_totals(self, *, scoped: bool) -> dict[date | tuple, int]:
-        """
-        Sums counts grouped by day or day + scope.
-        """
-        if scoped:
-            counts = self.values_list("day", "scope").annotate(count_sum=Sum("count"))
-            return {(c[0], c[1]): c[2] for c in counts}
-        else:
-            counts = self.values_list("day").annotate(count_sum=Sum("count"))
-            return {c[0]: c[1] for c in counts}
-
-    def month_totals(self, *, scoped: bool) -> dict[date | tuple, int]:
-        """
-        Sums counts grouped by month or month + scope.
-        """
-
-        with_month = self.extra({"month": "date_trunc('month', day)::date"})
-
-        if scoped:
-            counts = with_month.values_list("month", "scope").annotate(count_sum=Sum("count"))
-            return {(c[0], c[1]): c[2] for c in counts}
-        else:
-            counts = with_month.values_list("month").annotate(count_sum=Sum("count"))
-            return {c[0]: c[1] for c in counts}
-
-
 class BaseDailyCount(BaseScopedCount):
     """
     Base class for count models which have scope and day field.
     """
 
     day = models.DateField()
-
-    objects = DailyCountQuerySet.as_manager()
 
     class Meta:
         abstract = True
