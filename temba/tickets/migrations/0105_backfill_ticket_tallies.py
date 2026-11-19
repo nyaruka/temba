@@ -29,6 +29,7 @@ CROSS JOIN LATERAL unnest(CASE
                     ARRAY['tickets/resptime:' || substring(c.scope FROM '[^:]+$')]
            END) AS m(scope)
      WHERE c.org_id = %(org_id)s AND c.day <= (SELECT day FROM cutoff)
+       AND (c.scope LIKE 'tickets:%%' OR c.scope LIKE 'msgs:ticketreplies:%%' OR c.scope LIKE 'ticketresptime:%%')
   GROUP BY 1, 2
 )
 INSERT INTO orgs_orgtally AS t (org_id, scope, count, expires_on)
