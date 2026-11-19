@@ -1,3 +1,7 @@
+## v26.3.215 (2026-11-19)
+ * Remove Contact.current_flow and drop its foreign key constraint
+ * Drop DailyCount
+
 ## v26.3.214 (2026-11-19)
  * Read ticket analytics from tallies
  * Ignore incidents and notifications whose types aren't registered
