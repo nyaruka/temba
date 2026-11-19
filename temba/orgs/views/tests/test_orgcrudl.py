@@ -53,13 +53,13 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
             self.admin,
             [
                 "Nyaruka",
+                "Channels (1)",
                 "API Tokens",
                 "Resthooks",
                 "Incidents",
                 "AI",
                 "Export",
                 "Import",
-                "Channels (1)",
                 ("Archives", ["Messages", "Flow Runs"]),
             ],
             choose_org=self.org,
@@ -161,13 +161,13 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
             self.admin,
             [
                 "Nyaruka",
+                "Channels (1)",
                 "API Tokens",
                 "Resthooks",
                 "Incidents",
                 "AI",
                 "Export",
                 "Import",
-                "Channels (1)",
                 ("Archives", ["Messages", "Flow Runs"]),
             ],
         )
@@ -196,6 +196,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
             self.admin,
             [
                 "Nyaruka",
+                "Channels (1)",
                 "API Tokens",
                 "Resthooks",
                 "Incidents",
@@ -207,7 +208,6 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
                 "Teams (1)",
                 "Export",
                 "Import",
-                "Channels (1)",
                 ("Archives", ["Messages", "Flow Runs"]),
             ],
         )

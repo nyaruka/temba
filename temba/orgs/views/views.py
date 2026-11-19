@@ -440,6 +440,17 @@ class OrgCRUDL(SmartCRUDL):
                     )
                 ]
 
+                if self.has_org_perm("channels.channel_list"):
+                    menu.append(
+                        self.create_menu_item(
+                            menu_id="channels",
+                            name=_("Channels"),
+                            icon="channel",
+                            href="channels.channel_list",
+                            count=org.channels.filter(is_active=True).count(),
+                        )
+                    )
+
                 menu.append(self.create_menu_item(name=_("API Tokens"), icon="user_token", href="api.apitoken_list"))
                 menu.append(self.create_menu_item(name=_("Resthooks"), icon="resthooks", href="orgs.org_resthooks"))
 
@@ -505,18 +516,6 @@ class OrgCRUDL(SmartCRUDL):
 
                 if self.has_org_perm("orgs.orgimport_create"):
                     menu.append(self.create_menu_item(name=_("Import"), icon="import", href="orgs.orgimport_create"))
-
-                if self.has_org_perm("channels.channel_list"):
-                    menu.append(self.create_divider())
-                    menu.append(
-                        self.create_menu_item(
-                            menu_id="channels",
-                            name=_("Channels"),
-                            icon="channel",
-                            href="channels.channel_list",
-                            count=org.channels.filter(is_active=True).count(),
-                        )
-                    )
 
                 if self.has_org_perm("archives.archive_message"):
                     items = [
