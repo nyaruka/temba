@@ -5,7 +5,7 @@ import mimetypes
 import os
 import re
 from collections import defaultdict
-from datetime import date, timedelta
+from datetime import timedelta
 from html import unescape
 from pathlib import Path
 from typing import NamedTuple
@@ -29,7 +29,7 @@ from django.contrib.postgres.indexes import OpClass
 from django.core.cache import cache
 from django.core.files.storage import default_storage
 from django.db import models, transaction
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.db.models.functions import Lower
 from django.http.request import split_domain_port
 from django.utils import timezone
@@ -1317,14 +1317,6 @@ class ArticleTally(BaseTally):
         field = f"{cls.field_prefixes[0]}{article.id}|{cls.SCOPE_VIEWS}@{timezone.now().date().isoformat()}"
         get_valkey_connection().hincrby(cls.LIVE_KEY, field, 1)
 
-    @classmethod
-    def get_daily_totals_by_article(cls, articles, scopes: list[str], since, until) -> dict[tuple[int, date, str], int]:
-        """
-        Gets totals by article id, day and scope for the given undated scopes of each of the given articles over days
-        from since up to until, omitting those with no total.
-        """
-        return cls._get_daily_totals([a.id for a in articles], scopes, since, until)
-
     class Meta:
         indexes = [
             # for trimming
@@ -1723,22 +1715,25 @@ class HelpSite(CreatedByMixin, ModifiedByMixin):
         The most viewed published articles over the last POPULAR_DAYS, most viewed first. Only articles that are
         currently reachable - published, in a published section - count.
         """
+        # unflushed views are left out, as they're only the last moments of a 30 day window
         today = timezone.now().date()
-        readable = self._published().filter(parent__in=self._published().filter(parent=None))
-        daily = ArticleTally._get_daily_totals(
-            list(readable.values_list("id", flat=True)),
-            [ArticleTally.SCOPE_VIEWS],
-            today - timedelta(days=self.POPULAR_DAYS),
-            today + timedelta(days=1),
+        since, until = today - timedelta(days=self.POPULAR_DAYS), today + timedelta(days=1)
+        totals = (
+            ArticleTally.objects.filter(
+                article__source=self.source,
+                article__is_active=True,
+                article__status=Article.STATUS_PUBLISHED,
+                article__parent__is_active=True,
+                article__parent__status=Article.STATUS_PUBLISHED,
+                scope__gte=f"{ArticleTally.SCOPE_VIEWS}@{since.isoformat()}",
+                scope__lt=f"{ArticleTally.SCOPE_VIEWS}@{until.isoformat()}",
+            )
+            .values_list("article_id")
+            .annotate(total=Sum("count"))
+            .order_by("-total", "article_id")[:limit]
         )
-
-        totals = defaultdict(int)
-        for key, count in daily.items():
-            totals[key[0]] += count
-
-        top_ids = [i for i, _ in sorted(totals.items(), key=lambda t: (-t[1], t[0]))[:limit]]
-        by_id = {a.id: a for a in readable.filter(id__in=top_ids).select_related("parent")}
-        return [by_id[i] for i in top_ids if i in by_id]
+        by_id = {a.id: a for a in self._published().filter(id__in=[t[0] for t in totals]).select_related("parent")}
+        return [by_id[t[0]] for t in totals if t[0] in by_id]
 
     def search(self, query: str, limit: int = SEARCH_LIMIT) -> list:
         """

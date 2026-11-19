@@ -377,22 +377,28 @@ class HelpSiteTest(TembaTest):
 
         self.assertEqual([], site.get_popular())
 
-        # today's views are read from Valkey
-        for _ in range(3):
-            ArticleTally.record_view(nodes)
-        ArticleTally.record_view(actions)
-        for _ in range(5):
-            ArticleTally.record_view(draft)  # not published, so not popular however often it was read
-        for _ in range(5):
-            ArticleTally.record_view(visible)  # nor is an article in an unpublished section
+        today = timezone.now().date()
+
+        def views(article, days_ago: int, count: int):
+            article.tallies.create(scope=f"views@{today - timedelta(days=days_ago)}", count=count)
+
+        views(nodes, 0, 3)
+        views(actions, 1, 1)
+        views(draft, 0, 5)  # not published, so not popular however often it was read
+        views(visible, 0, 5)  # nor is an article in an unpublished section
 
         self.assertEqual([nodes, actions], site.get_popular())
         self.assertEqual([nodes], site.get_popular(limit=1))
 
-        # earlier days' are flushed, and those from before the window don't count
-        today = timezone.now().date()
-        actions.tallies.create(scope=f"views@{today - timedelta(days=HelpSite.POPULAR_DAYS)}", count=3)
-        nodes.tallies.create(scope=f"views@{today - timedelta(days=HelpSite.POPULAR_DAYS + 1)}", count=10)
+        # views from the start of the window count, those from before it don't
+        views(actions, HelpSite.POPULAR_DAYS, 3)
+        views(nodes, HelpSite.POPULAR_DAYS + 1, 10)
+
+        self.assertEqual([actions, nodes], site.get_popular())
+
+        # unflushed views aren't counted
+        for _ in range(5):
+            ArticleTally.record_view(nodes)
 
         self.assertEqual([actions, nodes], site.get_popular())
 
