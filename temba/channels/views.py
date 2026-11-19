@@ -1303,7 +1303,10 @@ class ChannelCRUDL(SmartCRUDL):
             return ChannelLog.get_by_uuid(self.object, [UUID(self.kwargs["refid"])]), None
 
         def get_context_data(self, **kwargs):
-            anonymize = self.request.org.is_anon and not (self.request.GET.get("break") and self.request.user.is_staff)
+            # staff can choose to see the logs of an anonymous workspace as they are
+            can_break = self.request.org.is_anon and self.request.user.is_staff
+            unredacted = can_break and bool(self.request.GET.get("break"))
+            anonymize = self.request.org.is_anon and not unredacted
             raw_logs, owner_urn = self.get_logs_and_urn()
 
             logs = []
@@ -1316,4 +1319,6 @@ class ChannelCRUDL(SmartCRUDL):
             context["msg"] = self.owner if isinstance(self.owner, Msg) else None
             context["call"] = self.owner if isinstance(self.owner, Call) else None
             context["logs"] = logs
+            context["can_break"] = can_break
+            context["unredacted"] = unredacted
             return context
