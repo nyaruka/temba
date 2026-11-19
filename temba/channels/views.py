@@ -37,7 +37,7 @@ from temba.utils import audit, countries
 from temba.utils.fields import SelectWidget
 from temba.utils.views.mixins import ComponentFormMixin, ContextMenuMixin, ModalFormMixin, SpaMixin
 
-from .models import Channel, ChannelLog
+from .models import Channel, ChannelHealth, ChannelLog
 
 logger = logging.getLogger(__name__)
 
@@ -690,6 +690,11 @@ class ChannelCRUDL(SmartCRUDL):
         CHART_DAYS = 90
         SPEED_EXAMPLE_CONTACTS = 100_000
 
+        # the failures card is left off for channels failing less than this share of what they sent, as it's nothing
+        # to look into, and is red from the rate that makes a channel degraded
+        FAILURES_SHOWN_RATE = 0.01
+        FAILURES_BAD_RATE = Channel.FAILURE_RATE_DEGRADED
+
         def build_context_menu(self, menu):
             obj = self.get_object()
 
@@ -789,17 +794,43 @@ class ChannelCRUDL(SmartCRUDL):
                 "chart": Channel.get_activity_chart_json(series),
             }
 
-        def get_speed(self, channel) -> dict:
+        def get_failures(self, channel) -> dict | None:
             """
-            How fast the channel sends, as how long a broadcast to SPEED_EXAMPLE_CONTACTS contacts would take
+            The share of the text messages sent over the last ACTIVITY_DAYS which failed, overall and by day as
+            percentages for the failures card's sparkline, or None if too few failed to be worth a card. A channel
+            that's failing is judged by its last sends however old, so its card reaches back to them as the evidence.
             """
+            days = self.ACTIVITY_DAYS
+            if channel.health.cause == ChannelHealth.CAUSE_FAILING:
+                days = max(days, (timezone.now().date() - channel.health.since).days + 1)
+
+            daily = channel.get_daily_failures(days)
+            sent, failed = sum(daily["sent"]), sum(daily["failed"])
+            if not sent or failed / sent < self.FAILURES_SHOWN_RATE:
+                return None
+
             return {
-                "tps": channel.tps,
-                "duration": self.get_rough_duration(self.SPEED_EXAMPLE_CONTACTS / channel.tps),
-                # very slow channels hold everything up, slow ones just some
-                "tone": {"very_slow": "bad", "slow": "warn"}.get(channel.get_speed(), ""),
-                "help_url": get_channel_help_links(self.request.branding).get("channels.throughput"),
+                "days": days,
+                "sent": sent,
+                "failed": failed,
+                "rate": self.format_rate(failed / sent),
+                "tone": "bad" if failed / sent >= self.FAILURES_BAD_RATE else "",
+                "series": [round(f / s * 100, 1) if s else 0 for s, f in zip(daily["sent"], daily["failed"])],
             }
+
+        @staticmethod
+        def format_rate(rate: float) -> str:
+            """
+            A rate as a percentage which reads easily, e.g. "0%", "<0.1%", "4.2%" or "38%"
+            """
+            percent = rate * 100
+            if percent == 0:
+                return "0%"
+            if percent < 0.1:
+                return "<0.1%"
+            if percent < 10:
+                return f"{percent:.1f}%"
+            return f"{min(round(percent), 100)}%"
 
         @staticmethod
         def get_rough_duration(seconds: float) -> str:
@@ -878,11 +909,12 @@ class ChannelCRUDL(SmartCRUDL):
             context = super().get_context_data(**kwargs)
             channel = self.object
 
-            # paused only matters while the channel is enabled
-            context["send_paused"] = channel.is_enabled and channel.is_send_paused()
+            # paused only matters while the channel is enabled, so it's taken from the health that judges that
+            context["send_paused"] = channel.health.cause == ChannelHealth.CAUSE_PAUSED
 
             context["activity"] = self.get_activity(channel)
-            context["speed"] = self.get_speed(channel)
+            if Channel.ROLE_SEND in channel.role and (failures := self.get_failures(channel)):
+                context["failures"] = failures
 
             sheets = self.get_sheets(channel)
             context["sheets"] = sheets
@@ -893,48 +925,51 @@ class ChannelCRUDL(SmartCRUDL):
                 context["templates"] = self.get_template_summary(channel)
 
             if channel.is_android:
-                last_sync = channel.last_sync
-                context["last_sync"] = last_sync
+                context["last_sync"] = channel.last_sync
+                context["delayed_sync"] = channel.is_sync_delayed()
 
-                # if the phone hasn't synced for an hour, it's not getting messages to send or reporting ones it got
-                if last_sync and not channel.is_new():
-                    context["delayed_sync"] = (timezone.now() - last_sync.created_on).total_seconds() > 3600
-
-            context["status"] = self.get_status(channel, sheets, context["send_paused"], context.get("delayed_sync"))
+            context["status"] = self.get_status(channel, sheets)
             return context
 
-        def get_status(self, channel, sheets: dict, send_paused: bool, delayed_sync: bool) -> dict:
+        def get_status(self, channel, sheets: dict) -> dict:
             """
-            Whether the channel is working, as the status card shows it: a value and note in a tone, and the sheet that
-            explains it - the setup if there is one, unless something else is wrong
+            The channel's health as the status card shows it, with the sheet that explains it - the setup if there is
+            one, unless something else is wrong
             """
+            health = channel.health
+            tone, value, note = health.tone, health.value, health.note
 
-            def status(tone, value, note, sheet=None):
-                # with nothing in particular to explain it, the card leads to the setup, or else what it's been doing
-                sheet = sheet or next(s for s in ("setup", "logs", "activity") if s in sheets)
-                more = {
-                    "setup": _("View setup"),
-                    "logs": _("View logs"),
-                    "syncs": _("View syncs"),
-                    "activity": _("See activity"),
-                }[sheet]
-                return {"tone": tone, "value": value, "note": note, "sheet": sheet, "more": more}
+            # a channel that's slow to send says so, unless there's a problem with its health to say instead, in amber
+            # however slow, as red is kept for problems with its health
+            if tone == "good" and (speed := channel.get_speed()) and Channel.shows_speed(self.request.org):
+                tps = channel.tps
+                tone = "warn"
+                value = _("Very slow") if speed == "very_slow" else _("Slow")
+                note = ngettext(
+                    "Sends %(count)d message a second, so a broadcast to 100k contacts takes about %(duration)s.",
+                    "Sends %(count)d messages a second, so a broadcast to 100k contacts takes about %(duration)s.",
+                    tps,
+                ) % {"count": tps, "duration": self.get_rough_duration(self.SPEED_EXAMPLE_CONTACTS / tps)}
 
-            # a disabled channel isn't sending anyway, so whether it's paused doesn't matter
-            if not channel.is_enabled:
-                return status("", _("Disabled"), _("Won't send or receive messages until it's enabled."))
-            if send_paused:
-                return status(
-                    "bad",
-                    _("Paused"),
-                    _("The provider isn't accepting messages."),
-                    "logs" if "logs" in sheets else None,
-                )
-            if delayed_sync:
-                return status("warn", _("Not syncing"), _("The phone hasn't synced for over an hour."), "syncs")
-            if "setup" in sheets and Channel.ROLE_RECEIVE in channel.role and not channel.has_received():
-                return status("warn", _("Waiting"), _("Nothing has been received from the provider yet."))
-            return status("good", _("Ready"), _("Sending and receiving messages."))
+            # anything worse than waiting takes its place, but whether it's received anything yet is still worth saying
+            if health.cause not in (None, ChannelHealth.CAUSE_DISABLED, ChannelHealth.CAUSE_WAITING) and (
+                channel.is_waiting()
+            ):
+                note = f"{note} {Channel.WAITING_NOTE}"
+
+            sheet = {ChannelHealth.CAUSE_SYNC: "syncs"}.get(health.cause)
+            if health.cause in (ChannelHealth.CAUSE_PAUSED, ChannelHealth.CAUSE_FAILING) and "logs" in sheets:
+                sheet = "logs"
+
+            # with nothing in particular to explain it, the card leads to the setup, or else what it's been doing
+            sheet = sheet or next(s for s in ("setup", "logs", "activity") if s in sheets)
+            more = {
+                "setup": _("View setup"),
+                "logs": _("View logs"),
+                "syncs": _("View syncs"),
+                "activity": _("See activity"),
+            }[sheet]
+            return {"tone": tone, "value": value, "note": note, "sheet": sheet, "more": more}
 
     class Activity(SpaMixin, BaseReadView):
         """

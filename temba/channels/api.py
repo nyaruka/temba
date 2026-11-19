@@ -20,7 +20,7 @@ class ChannelsEndpoint(SearchLengthMixin, ListAPIMixin, BaseEndpoint):
     """
     Channels for the current org, used by the channel list component. Enabled channels come first, then by name. An
     optional `search` param filters by name or address. Each item is serialized via Channel.as_json() (name, type,
-    address, slowness, message counts and activity sparkline).
+    address, slowness, health, message counts and activity sparkline).
     """
 
     model = Channel
@@ -46,12 +46,13 @@ class ChannelsEndpoint(SearchLengthMixin, ListAPIMixin, BaseEndpoint):
         context = super().get_serializer_context()
 
         # slow channels only hold up workspaces big enough to notice, so smaller ones aren't told about them
-        context["show_speed"] = self.request.org.get_contact_count() > Channel.SPEED_MIN_CONTACTS
+        context["show_speed"] = Channel.shows_speed(self.request.org)
         return context
 
     def prepare_for_serialization(self, page, using: str):
-        # bulk-load the daily counts for the page so as_json doesn't N+1
+        # bulk-load the daily counts and health for the page so as_json doesn't N+1
         Channel.prefetch_activity_series(page)
+        Channel.prefetch_health(page)
 
 
 class ChannelLogsEndpoint(BaseEndpoint):

@@ -5,6 +5,7 @@ from django_valkey import get_valkey_connection
 
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import date_format
 
 from temba import mailroom
 from temba.notifications.incidents.builtin import ChannelDisconnectedIncidentType
@@ -472,11 +473,9 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(100, response.context["last_sync"].power_level)
         self.assertEqual({"activity", "syncs"}, set(response.context["sheets"]))
 
-        # with the default limit, it sends at 10 a second, so a broadcast to 100k takes about 3 hours
-        self.assertEqual(
-            {"tps": 10, "duration": "3 hours", "tone": ""},
-            {k: response.context["speed"][k] for k in ("tps", "duration", "tone")},
-        )
+        # it hasn't sent anything to have failed, so has no failures card, just the messages card
+        self.assertNotIn("failures", response.context)
+        self.assertContains(response, "Messages · 30 days")
 
         test_date = datetime(2020, 1, 20, 0, 0, 0, 0, tzone.utc)
         two_hours_ago = test_date - timedelta(hours=2)
@@ -524,6 +523,21 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
             ("warn", "Waiting", "setup"), tuple(str(response.context["status"][k]) for k in ("tone", "value", "sheet"))
         )
 
+        # unless it's failing what it sends, which is the bigger problem, though the card still says it's waiting
+        yesterday = timezone.now().date() - timedelta(days=1)
+        self.create_channel_tally(vonage, "text:out", yesterday, 16)
+        self.create_channel_tally(vonage, "text:failed", yesterday, 16)
+        response = self.requestView(read_url, self.admin)
+        self.assertEqual(
+            (
+                "Unhealthy",
+                f"100% of the 16 messages sent since {date_format(yesterday, 'MONTH_DAY_FORMAT')} have failed. "
+                "Nothing has been received from the provider yet.",
+            ),
+            tuple(str(response.context["status"][k]) for k in ("value", "note")),
+        )
+        vonage.tallies.all().delete()
+
         self.create_channel_tally(vonage, "text:in", timezone.now().date(), 1)
 
         response = self.requestView(read_url, self.admin)
@@ -536,6 +550,89 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         response = self.requestView(reverse("channels.channel_read", args=[send_only.uuid]), self.admin)
         self.assertEqual("Ready", str(response.context["status"]["value"]))
 
+        # one which has sent and failed too few to judge isn't failing, however many of them failed
+        today = timezone.now().date()
+        yesterday, day10 = today - timedelta(days=1), today - timedelta(days=10)
+        self.create_channel_tally(self.facebook_channel, "text:out", day10, 2)
+        self.create_channel_tally(self.facebook_channel, "text:failed", day10, 2)
+
+        def since(day) -> str:
+            return date_format(day, "MONTH_DAY_FORMAT")
+
+        fb_read_url = reverse("channels.channel_read", args=[self.facebook_channel.uuid])
+        response = self.requestView(fb_read_url, self.admin)
+        self.assertEqual("Ready", str(response.context["status"]["value"]))
+
+        # but enough failures are worth judging however few were sent
+        self.facebook_channel.tallies.update(count=3)
+        response = self.requestView(fb_read_url, self.admin)
+        self.assertEqual(
+            ("Unhealthy", f"100% of the 3 messages sent since {since(day10)} have failed."),
+            tuple(str(response.context["status"][k]) for k in ("value", "note")),
+        )
+
+        # one which failed most of what it last sent is failing, however long ago that was, which it says, and leads to
+        # its logs
+        self.facebook_channel.tallies.filter(scope__endswith=day10.isoformat()).update(count=100)
+        self.facebook_channel.tallies.filter(scope__startswith="text:failed@").update(count=80)
+
+        def assert_status(tone, value, note):
+            response = self.requestView(fb_read_url, self.admin)
+            self.assertEqual(
+                (tone, value, "logs", note),
+                tuple(str(response.context["status"][k]) for k in ("tone", "value", "sheet", "note")),
+            )
+
+        assert_status("bad", "Unhealthy", f"80% of the 100 messages sent since {since(day10)} have failed.")
+
+        # a big send queued today doesn't hide it, as today's are left out until they've all had time to fail
+        self.create_channel_tally(self.facebook_channel, "text:out", today, 5_000)
+        assert_status("bad", "Unhealthy", f"80% of the 100 messages sent since {since(day10)} have failed.")
+        self.facebook_channel.tallies.filter(scope__endswith=today.isoformat()).delete()
+
+        # but enough sends since do, as they're all that's judged
+        self.create_channel_tally(self.facebook_channel, "text:out", yesterday, 1_000)
+        self.create_channel_tally(self.facebook_channel, "text:failed", yesterday, 150)
+        assert_status("bad", "Degraded", f"15% of the 1,000 messages sent since {since(yesterday)} have failed.")
+
+        self.facebook_channel.tallies.filter(scope=f"text:failed@{yesterday.isoformat()}").update(count=50)
+        response = self.requestView(fb_read_url, self.admin)
+        self.assertEqual("Ready", str(response.context["status"]["value"]))  # 5% isn't worth flagging
+
+        # and once enough have been sent, what was sent before that isn't judged, however badly it went
+        self.create_channel_tally(self.facebook_channel, "text:out", today - timedelta(days=3), 100)
+        self.create_channel_tally(self.facebook_channel, "text:failed", today - timedelta(days=3), 100)
+        self.assertEqual((50, 1_000, yesterday), self.facebook_channel.get_recent_failures())
+        self.facebook_channel.tallies.filter(scope__endswith=(today - timedelta(days=3)).isoformat()).delete()
+        response = self.requestView(fb_read_url, self.admin)
+
+        # the failures card covers the last 30 days, by day for its sparkline, leads to the logs, and is red from the
+        # rate that makes a channel degraded
+        failures = response.context["failures"]
+        self.assertEqual(
+            (30, 1_100, 130, "12%", "bad"),
+            (failures["days"], failures["sent"], failures["failed"], failures["rate"], failures["tone"]),
+        )
+        self.assertEqual([80.0, 5.0, 0], [failures["series"][-11], failures["series"][-2], failures["series"][-1]])
+        self.assertContains(response, "130 of 1,100 sent")
+        self.assertNotContains(response, "Messages · 30 days")  # which it takes the place of
+        self.assertNotContains(response, "{#")  # template comments only span one line
+
+        # unless the channel is failing on sends older than that, when it reaches back to them as the evidence
+        quiet = self.create_channel("NX", "Quiet", "+12065551217", country="US", role=Channel.ROLE_SEND)
+        self.create_channel_tally(quiet, "text:out", today - timedelta(days=44), 100)
+        self.create_channel_tally(quiet, "text:failed", today - timedelta(days=44), 80)
+        response = self.requestView(reverse("channels.channel_read", args=[quiet.uuid]), self.admin)
+        self.assertEqual(
+            f"80% of the 100 messages sent since {since(today - timedelta(days=44))} have failed.",
+            str(response.context["status"]["note"]),
+        )
+        failures = response.context["failures"]
+        self.assertEqual(
+            (45, 100, 80, 45), (failures["days"], failures["sent"], failures["failed"], len(failures["series"]))
+        )
+        self.assertContains(response, "Failures · 45 days")
+
         # nor does one older than its counts go back
         old = self.create_channel("NX", "Old", "+12065551214", country="US")
         old.created_on = timezone.now() - timedelta(days=500)
@@ -543,18 +640,58 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         response = self.requestView(reverse("channels.channel_read", args=[old.uuid]), self.admin)
         self.assertEqual("Ready", str(response.context["status"]["value"]))
 
-        # a very slow channel's speed is a problem, a slow one worth a look
+        # a channel that's slow to send is only pointed out to workspaces big enough for it to matter
         vonage.tps = 1
         vonage.save(update_fields=("tps",))
         response = self.requestView(read_url, self.admin)
-        self.assertEqual(("bad", "a day"), (response.context["speed"]["tone"], response.context["speed"]["duration"]))
+        self.assertEqual("Ready", str(response.context["status"]["value"]))
 
-        vonage.tps = 5
-        vonage.save(update_fields=("tps",))
-        response = self.requestView(read_url, self.admin)
-        self.assertEqual(
-            ("warn", "6 hours"), (response.context["speed"]["tone"], response.context["speed"]["duration"])
+        def assert_speed(value, note):
+            response = self.requestView(read_url, self.admin)
+            self.assertEqual(
+                ("warn", value, note), tuple(str(response.context["status"][k]) for k in ("tone", "value", "note"))
+            )
+
+        with patch.object(Channel, "SPEED_MIN_CONTACTS", -1):
+            # where it says so in amber however slow, as red is kept for problems with its health
+            assert_speed("Very slow", "Sends 1 message a second, so a broadcast to 100k contacts takes about a day.")
+
+            vonage.tps = 5
+            vonage.save(update_fields=("tps",))
+            assert_speed("Slow", "Sends 5 messages a second, so a broadcast to 100k contacts takes about 6 hours.")
+
+            # but a problem with its health takes its place
+            self.create_channel_tally(vonage, "text:out", yesterday, 100)
+            self.create_channel_tally(vonage, "text:failed", yesterday, 60)
+            response = self.requestView(read_url, self.admin)
+            self.assertEqual("Unhealthy", str(response.context["status"]["value"]))
+
+        # below that the failures card is neutral, and below a small share left off as nothing to look into
+        rates_url = reverse("channels.channel_read", args=[send_only.uuid])
+        self.create_channel_tally(send_only, "text:out", timezone.now().date(), 1_000)
+        self.create_channel_tally(send_only, "text:failed", timezone.now().date(), 5)
+        response = self.requestView(rates_url, self.admin)
+        self.assertNotIn("failures", response.context)
+
+        send_only.tallies.filter(scope__startswith="text:failed@").update(count=50)
+        response = self.requestView(rates_url, self.admin)
+        self.assertEqual(("5.0%", ""), (response.context["failures"]["rate"], response.context["failures"]["tone"]))
+
+        # a channel which only receives has no failures card
+        receive_only = self.create_channel(
+            "NX", "Receive Only", "+12065551215", country="US", role=Channel.ROLE_RECEIVE
         )
+        response = self.requestView(reverse("channels.channel_read", args=[receive_only.uuid]), self.admin)
+        self.assertNotIn("failures", response.context)
+
+    def test_format_rate(self):
+        rate = ChannelCRUDL.Read.format_rate
+
+        self.assertEqual("0%", rate(0))
+        self.assertEqual("<0.1%", rate(0.0004))
+        self.assertEqual("4.2%", rate(0.0421))
+        self.assertEqual("38%", rate(0.384))
+        self.assertEqual("100%", rate(1.2))
 
     def test_rough_duration(self):
         duration = ChannelCRUDL.Read.get_rough_duration

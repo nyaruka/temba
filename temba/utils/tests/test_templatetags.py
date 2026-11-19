@@ -269,3 +269,4 @@ class TembaTagLibraryTest(TembaTest):
         self.assertEqual("", tags.sparkline([3]))
 
         self.assertIn("<svg", tags.sparkline([1, 4, 2]))
+        self.assertIn('<path class="end" d="M160.0 15.0h0.01"></path>', tags.sparkline([1, 4, 2]))

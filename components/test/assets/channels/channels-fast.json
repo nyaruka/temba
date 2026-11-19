@@ -11,6 +11,12 @@
       "address": "rapidbot",
       "is_enabled": true,
       "speed": null,
+      "health": {
+        "tone": "good",
+        "value": "Ready",
+        "note": "Sending and receiving messages.",
+        "cause": null
+      },
       "received": 0,
       "sent": 0,
       "activity": {
@@ -31,6 +37,22 @@
           0
         ],
         "out": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "failed": [
           0,
           0,
           0,
