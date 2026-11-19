@@ -304,10 +304,15 @@ export class TembaList extends RapidElement {
   }
 
   /**
-   * Called once a refresh has been merged in, with the scope it was for
+   * Called once a refresh is over, with the scope it was for and whether it
+   * was merged in - one that failed or was cancelled by a newer request wasn't
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  protected handleRefreshed(scope: Set<any>): void {
+  protected handleRefreshEnded(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    scope: Set<any>,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    outcome: 'merged' | 'failed' | 'aborted'
+  ): void {
     // nothing by default
   }
 
@@ -610,6 +615,10 @@ export class TembaList extends RapidElement {
           JSON.stringify(this.mostRecentItem) !== JSON.stringify(topItem)
         ) {
           this.mostRecentItem = topItem;
+        } else if (scope) {
+          // a scoped refresh can drop rows without changing the top one, and
+          // that's a change too
+          this.fireCustomEvent(CustomEventType.Refreshed);
         }
 
         // a list that has been scrolled stays on the items it is showing
@@ -630,11 +639,14 @@ export class TembaList extends RapidElement {
         this.items = newItems;
       }
 
-      this.handleRefreshed(scope);
+      this.handleRefreshEnded(scope, 'merged');
     } catch (error) {
       // a newer request cancelled this one, that's not a failure
-      if (!controller.signal.aborted) {
+      if (controller.signal.aborted) {
+        this.handleRefreshEnded(scope, 'aborted');
+      } else {
         this.paused = true;
+        this.handleRefreshEnded(scope, 'failed');
       }
       return;
     }

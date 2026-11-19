@@ -1,7 +1,12 @@
 import { fixture, assert } from '@open-wc/testing';
 import { useFakeTimers } from 'sinon';
 import { CustomEventType } from '../src/interfaces';
-import { TicketList, TICKETS_REFRESH_THROTTLE } from '../src/list/TicketList';
+import {
+  TicketList,
+  TICKETS_REFRESH_BATCH,
+  TICKETS_REFRESH_MAX_BACKOFF,
+  TICKETS_REFRESH_THROTTLE
+} from '../src/list/TicketList';
 import { setRealtimeContext } from '../src/live/Realtime';
 import { setSocketProvider, SocketProvider } from '../src/live/SocketService';
 import {
@@ -1084,8 +1089,26 @@ describe('temba-ticket-list realtime', () => {
     const list = await getList('/test/assets/list/tickets-merged.json');
     // let the initial subscribe confirmation land first
     await new Promise((resolve) => setTimeout(resolve, 0));
+    list.refreshJitter = 0;
     clock = useFakeTimers({ now: Date.now() });
     return list;
+  };
+
+  // stands in for the list's refresh, counting them and leaving each in
+  // flight until the test ends it
+  const stubRefresh = (list: TicketList) => {
+    let scope: Set<string> = null;
+    const stub = {
+      count: 0,
+      end: (outcome: 'merged' | 'failed' | 'aborted') => {
+        (list as any).handleRefreshEnded(scope, outcome);
+      }
+    };
+    list.refresh = () => {
+      stub.count++;
+      scope = (list as any).getRefreshScope();
+    };
+    return stub;
   };
 
   const tickets = (uuids: string[] = [MERGED[0]]) => {
@@ -1136,32 +1159,123 @@ describe('temba-ticket-list realtime', () => {
 
   it('coalesces a burst of changes into one trailing refresh', async () => {
     const list = await getQuietList();
-    const keys = new Set<string>();
-    const record = () => keys.add(list.refreshKey);
-    record();
+    const refreshes = stubRefresh(list);
 
     // the first refreshes straight away
-    tickets();
+    tickets([MERGED[0]]);
     clock.tick(0);
-    record();
-    assert.equal(keys.size, 2);
+    assert.equal(refreshes.count, 1);
 
-    // the rest of the burst waits out the window, then refreshes once
-    tickets();
-    tickets();
-    tickets();
+    // the rest of the burst never overlaps the refresh in flight, however
+    // long it takes
+    tickets([MERGED[1]]);
+    tickets([MERGED[2]]);
+    clock.tick(TICKETS_REFRESH_THROTTLE * 5);
+    assert.equal(refreshes.count, 1);
+
+    // then waits out the window from when it ended, and refreshes once
+    refreshes.end('merged');
     clock.tick(TICKETS_REFRESH_THROTTLE - 1);
-    record();
-    assert.equal(keys.size, 2);
-
+    assert.equal(refreshes.count, 1);
     clock.tick(1);
-    record();
-    assert.equal(keys.size, 3);
+    assert.equal(refreshes.count, 2);
+    assert.include(
+      list.getRefreshEndpoint(),
+      `tickets=${MERGED[1]},${MERGED[2]}`
+    );
 
     // and nothing more is owed
+    refreshes.end('merged');
     clock.tick(TICKETS_REFRESH_THROTTLE * 2);
-    record();
-    assert.equal(keys.size, 3);
+    assert.equal(refreshes.count, 2);
+  });
+
+  it('retries a failed refresh, backing off while it keeps failing', async () => {
+    const list = await getQuietList();
+    const refreshes = stubRefresh(list);
+
+    tickets();
+    clock.tick(0);
+    assert.equal(refreshes.count, 1);
+
+    // the changes are still owed, so it tries again after twice the window
+    refreshes.end('failed');
+    clock.tick(TICKETS_REFRESH_THROTTLE * 2 - 1);
+    assert.equal(refreshes.count, 1);
+    clock.tick(1);
+    assert.equal(refreshes.count, 2);
+
+    // then four times
+    refreshes.end('failed');
+    clock.tick(TICKETS_REFRESH_THROTTLE * 4 - 1);
+    assert.equal(refreshes.count, 2);
+    clock.tick(1);
+    assert.equal(refreshes.count, 3);
+
+    // never longer than the most
+    for (let i = 0; i < 10; i++) {
+      refreshes.end('failed');
+      clock.tick(TICKETS_REFRESH_MAX_BACKOFF);
+    }
+    assert.equal(refreshes.count, 13);
+
+    // and once one gets through, nothing more is owed
+    refreshes.end('merged');
+    clock.tick(TICKETS_REFRESH_MAX_BACKOFF);
+    assert.equal(refreshes.count, 13);
+    assert.notInclude(list.getRefreshEndpoint(), 'tickets=');
+  });
+
+  it('tries again after a refresh that was cancelled', async () => {
+    const list = await getQuietList();
+    const refreshes = stubRefresh(list);
+
+    tickets();
+    clock.tick(0);
+    refreshes.end('aborted');
+    clock.tick(TICKETS_REFRESH_THROTTLE);
+    assert.equal(refreshes.count, 2);
+  });
+
+  it('reloads instead when more changed than a refresh can read', async () => {
+    const list = await getQuietList();
+    const refreshes = stubRefresh(list);
+    let reloads = 0;
+    list.reload = () => {
+      reloads++;
+      return Promise.resolve();
+    };
+
+    const many = [];
+    for (let i = 0; i <= TICKETS_REFRESH_BATCH; i++) {
+      many.push(`ticket-${i}`);
+    }
+    tickets(many);
+    clock.tick(0);
+    assert.equal(reloads, 1);
+    assert.equal(refreshes.count, 0);
+    assert.notInclude(list.getRefreshEndpoint(), 'tickets=');
+  });
+
+  it('leaves changes to a hidden page until it is shown', async () => {
+    const list = await getQuietList();
+    const refreshes = stubRefresh(list);
+    let hidden = true;
+    (list as any).isPageHidden = () => hidden;
+
+    tickets([MERGED[0]]);
+    tickets([MERGED[1]]);
+    clock.tick(TICKETS_REFRESH_THROTTLE * 10);
+    assert.equal(refreshes.count, 0);
+
+    hidden = false;
+    document.dispatchEvent(new Event('visibilitychange'));
+    clock.tick(0);
+    assert.equal(refreshes.count, 1);
+    assert.include(
+      list.getRefreshEndpoint(),
+      `tickets=${MERGED[0]},${MERGED[1]}`
+    );
   });
 
   it('waits for a load in flight rather than aborting it', async () => {
@@ -1215,6 +1329,7 @@ describe('temba-ticket-list realtime', () => {
   it('reads the tickets that changed, dropping those that left the folder', async () => {
     const list = await getList('/test/assets/list/tickets-merged.json');
     await new Promise((resolve) => setTimeout(resolve, 0));
+    list.refreshJitter = 0;
     assert.deepEqual(ticketUuids(list), MERGED);
 
     // the first ticket is selected, so it stays even though it left
@@ -1242,5 +1357,22 @@ describe('temba-ticket-list realtime', () => {
 
     // and none are left to read
     assert.isFalse(list.getRefreshEndpoint().includes('tickets='));
+  });
+
+  it('announces a refresh that only dropped tickets', async () => {
+    const list = await getList('/test/assets/list/tickets-merged.json');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    list.refreshJitter = 0;
+
+    let refreshed = 0;
+    list.addEventListener(CustomEventType.Refreshed, () => refreshed++);
+
+    // the ticket left the folder, so nothing comes back and the top row is
+    // unchanged, but the page still needs to know, say to update its counts
+    mockGET(/tickets-merged\.json\?tickets=/, { results: [] });
+    tickets([MERGED[2]]);
+
+    await until(() => !ticketUuids(list).includes(MERGED[2]));
+    assert.equal(refreshed, 1);
   });
 });
