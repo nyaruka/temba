@@ -659,7 +659,7 @@ class EndpointsTest(APITestMixin, TembaTest):
 
         # prefetched health is the same as each channel's own, and takes the same few reads however many channels
         channels = list(Channel.objects.filter(org=self.org, is_active=True))
-        with self.assertNumQueries(5):
+        with self.assertNumQueries(6):
             Channel.prefetch_health(channels)
         with self.assertNumQueries(0):
             prefetched = [c.health for c in channels]

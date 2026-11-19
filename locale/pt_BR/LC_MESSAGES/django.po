@@ -382,6 +382,17 @@ msgstr "O telefone não sincroniza há mais de uma hora."
 msgid "%(percent)d%% of the %(count)s messages sent since %(date)s have failed."
 msgstr "%(percent)d%% das %(count)s mensagens enviadas desde %(date)s falharam."
 
+#, python-format
+msgid "%(today_percent)d%% of the %(today_count)s messages sent today have failed, down from %(percent)d%% of the %(count)s sent since %(date)s."
+msgstr "%(today_percent)d%% das %(today_count)s mensagens enviadas hoje falharam, abaixo de %(percent)d%% das %(count)s enviadas desde %(date)s."
+
+#, python-format
+msgid "None of the %(today_count)s messages sent today have failed, after %(percent)d%% of the %(count)s sent since %(date)s did."
+msgstr "Nenhuma das %(today_count)s mensagens enviadas hoje falhou, depois que %(percent)d%% das %(count)s enviadas desde %(date)s falharam."
+
+msgid "Recovering"
+msgstr "Recuperando"
+
 msgid "Unhealthy"
 msgstr "Com problemas"
 
