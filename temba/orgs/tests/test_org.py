@@ -837,9 +837,8 @@ class OrgDeleteTest(TembaTest):
                 exited_on=timezone.now(),
             )
         )
-        contacts[0].current_flow = flow1
         contacts[0].current_flow_uuid = flow1.uuid
-        contacts[0].save(update_fields=("current_flow", "current_flow_uuid"))
+        contacts[0].save(update_fields=("current_flow_uuid",))
 
         flow_label1 = add(FlowLabel.create(org, user, "Cool Flows"))
         flow_label2 = add(FlowLabel.create(org, user, "Crazy Flows"))
