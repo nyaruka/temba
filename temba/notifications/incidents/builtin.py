@@ -34,7 +34,7 @@ class ChannelOutdatedAppIncidentType(IncidentType):
 
 class OrgFlaggedIncidentType(IncidentType):
     """
-    Org has been flagged due to suspicious activity.
+    Org has been flagged because of suspicious activity.
     """
 
     slug = "org:flagged"
@@ -47,6 +47,9 @@ class OrgFlaggedIncidentType(IncidentType):
         Creates a flagged incident if one is not already ongoing
         """
         return Incident.get_or_create(org, cls.slug, scope="")
+
+    def get_email_subject(self, incident) -> str:
+        return _("Your workspace has been flagged")
 
 
 class WebhooksUnhealthyIncidentType(IncidentType):
