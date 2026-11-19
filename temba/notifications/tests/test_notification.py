@@ -393,6 +393,10 @@ class NotificationTest(TembaTest):
         self.assertEqual(2, len(mail.outbox))
         self.assertEqual("[Nyaruka] Your workspace has been flagged", mail.outbox[0].subject)
         self.assertEqual("[Nyaruka] Your workspace has been flagged", mail.outbox[1].subject)
+        self.assertIn(
+            "flagged because of suspicious activity. To re-enable starting flows and sending messages, please contact",
+            mail.outbox[0].body,
+        )
 
         recipients = set(mail.outbox[0].recipients()).union(mail.outbox[1].recipients())
         self.assertEqual({self.admin.email, self.editor.email}, recipients)
