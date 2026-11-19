@@ -592,6 +592,13 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         response = self.requestView(fb_read_url, self.admin)
         self.assertEqual("Ready", str(response.context["status"]["value"]))  # 5% isn't worth flagging
 
+        # and once enough have been sent, what was sent before that isn't judged, however badly it went
+        self.create_channel_tally(self.facebook_channel, "text:out", today - timedelta(days=3), 100)
+        self.create_channel_tally(self.facebook_channel, "text:failed", today - timedelta(days=3), 100)
+        self.assertEqual((50, 1_005), self.facebook_channel.get_recent_failures())
+        self.facebook_channel.tallies.filter(scope__endswith=(today - timedelta(days=3)).isoformat()).delete()
+        response = self.requestView(fb_read_url, self.admin)
+
         # the failures card covers the last 30 days, by day for its sparkline, leads to the logs, and is red from the
         # rate that makes a channel degraded
         failures = response.context["failures"]
