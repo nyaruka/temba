@@ -862,6 +862,7 @@ def create_contact_locally(
         last_seen_on=last_seen_on,
         **kwargs,
     )
+    contact.refresh_from_db(fields=("uuid2",))  # set by a trigger
     update_urns_locally(contact, urns)
     update_fields_locally(user, contact, fields)
     update_groups_locally(contact, group_uuids, add=True)

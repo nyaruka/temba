@@ -606,6 +606,9 @@ class Contact(LegacyIDMixin, LegacyUUIDMixin, CreatedByMixin, ModifiedByMixin, S
     email = models.EmailField(null=True)
     email_verified_on = models.DateTimeField(null=True)
 
+    # native copy of uuid kept in sync by a trigger, which will replace the varchar column
+    uuid2 = models.UUIDField(null=True)
+
     current_session_uuid = models.UUIDField(null=True)  # waiting session if any
     current_flow_uuid = models.UUIDField(null=True)  # not a foreign key so deleting flows doesn't scan contacts
     last_seen_on = models.DateTimeField(null=True)

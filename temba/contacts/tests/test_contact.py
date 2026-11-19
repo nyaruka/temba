@@ -56,6 +56,22 @@ class ContactTest(TembaTest):
         self.assertEqual("NVQ26R", Contact(id=1_073_741_823).ref)
         self.assertEqual("GQENS3N", Contact(id=1_073_741_824).ref)
 
+    def test_uuid2(self):
+        # set from uuid on insert
+        contact = self.create_contact("Jim")
+        contact.refresh_from_db()
+        self.assertEqual(UUID(contact.uuid), contact.uuid2)
+
+        # and kept in step when uuid changes
+        Contact.objects.filter(id=contact.id).update(uuid="93fe7ac3-9a30-4f5c-9c5e-8f1dd3f1c3b0")
+        contact.refresh_from_db()
+        self.assertEqual(UUID("93fe7ac3-9a30-4f5c-9c5e-8f1dd3f1c3b0"), contact.uuid2)
+
+        # but not by writes that only touch uuid2
+        Contact.objects.filter(id=contact.id).update(uuid2=None)
+        contact.refresh_from_db()
+        self.assertIsNone(contact.uuid2)
+
     def test_email(self):
         # any number of contacts can claim an address
         self.joe.email = "joe@nyaruka.com"
