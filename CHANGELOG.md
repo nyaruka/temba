@@ -1,3 +1,10 @@
+## v26.3.217 (2026-11-19)
+ * Don't allow API token use for suspended workspaces
+ * Only suspend restricted workspaces when given a time to suspend them
+ * Refresh tickets from socket events instead of polling
+ * Drop ArticleCount
+ * Give staff a toggle to see an anonymous workspace's channel logs unredacted
+
 ## v26.3.216 (2026-11-19)
  * Drop contacts_contact.current_flow_id
  * Let incident types email admins whose address isn't verified
