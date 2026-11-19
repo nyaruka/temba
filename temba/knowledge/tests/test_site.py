@@ -1,3 +1,4 @@
+from datetime import timedelta
 from unittest.mock import patch
 
 import requests
@@ -7,9 +8,9 @@ from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from temba.knowledge.models import Article, ArticleCount, HelpSite, KnowledgeSource
+from temba.knowledge.models import Article, ArticleTally, HelpSite, KnowledgeSource
 from temba.orgs.models import Org
-from temba.tests import TembaTest, mock_mailroom
+from temba.tests import TembaTest, cleanup, mock_mailroom
 from temba.tests.requests import MockResponse
 
 
@@ -55,6 +56,7 @@ class SiteViewsTest(TembaTest):
     def public(self, path: str, host="help.nyaruka.com", **kwargs):
         return self.client.get(path, HTTP_HOST=host, **kwargs)
 
+    @cleanup(valkey=True)
     def test_public_home(self):
         response = self.public("/")
         self.assertEqual(200, response.status_code)
@@ -122,8 +124,8 @@ class SiteViewsTest(TembaTest):
 
         # popular articles show up once there are views
         for _ in range(2):
-            ArticleCount.record_view(self.importing)
-        ArticleCount.record_view(self.nodes)
+            ArticleTally.record_view(self.importing)
+        ArticleTally.record_view(self.nodes)
         response = self.public("/")
         self.assertEqual([self.importing, self.nodes], response.context["popular"])
         self.assertContains(response, 'href="/contacts/importing/"')
@@ -168,6 +170,7 @@ class SiteViewsTest(TembaTest):
         self.actions.unpublish(self.admin)
         self.assertEqual(404, self.public("/flows/").status_code)
 
+    @cleanup(valkey=True)
     def test_public_article(self):
         response = self.public("/flows/nodes/")
         self.assertEqual(200, response.status_code)
@@ -183,9 +186,17 @@ class SiteViewsTest(TembaTest):
         self.assertContains(response, 'See <a href="/flows/nodes/" rel="noopener noreferrer">nodes</a>.')
 
         # reading counts as a view
-        self.assertEqual(1, ArticleCount.objects.filter(article=self.nodes, scope="views").sum())
+        today = timezone.now().date()
+        tomorrow = today + timedelta(days=1)
+        self.assertEqual(
+            {(self.nodes.id, today, "views"): 1},
+            ArticleTally.get_daily_totals_by_article([self.nodes], ["views"], today, tomorrow),
+        )
         self.public("/flows/nodes/")
-        self.assertEqual(2, ArticleCount.objects.filter(article=self.nodes, scope="views").sum())
+        self.assertEqual(
+            {(self.nodes.id, today, "views"): 2},
+            ArticleTally.get_daily_totals_by_article([self.nodes], ["views"], today, tomorrow),
+        )
 
         # an article with no top level headings lists none, and doesn't need the script that follows them
         self.assertEqual([], response.context["headings"])

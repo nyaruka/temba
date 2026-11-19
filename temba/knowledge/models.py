@@ -5,7 +5,7 @@ import mimetypes
 import os
 import re
 from collections import defaultdict
-from datetime import timedelta
+from datetime import date, timedelta
 from html import unescape
 from pathlib import Path
 from typing import NamedTuple
@@ -16,6 +16,7 @@ import dns.exception
 import dns.resolver
 import markdown
 import nh3
+from django_valkey import get_valkey_connection
 from markdown.extensions import Extension
 from markdown.extensions.toc import TocExtension, slugify_unicode
 from markdown.preprocessors import Preprocessor
@@ -28,7 +29,7 @@ from django.contrib.postgres.indexes import OpClass
 from django.core.cache import cache
 from django.core.files.storage import default_storage
 from django.db import models, transaction
-from django.db.models import Q, Sum
+from django.db.models import Q
 from django.db.models.functions import Lower
 from django.http.request import split_domain_port
 from django.utils import timezone
@@ -39,7 +40,7 @@ from django.utils.translation import gettext_lazy as _
 
 from temba import mailroom
 from temba.mailroom.client.exceptions import RequestException
-from temba.orgs.models import Org
+from temba.orgs.models import BaseTally, Org
 from temba.utils import on_transaction_commit
 from temba.utils.models import CreatedByMixin, ModifiedByMixin, OrgAsset, SoftDeleteMixin, delete_in_batches
 from temba.utils.models.counts import BaseDailyCount
@@ -876,6 +877,7 @@ class KnowledgeSource(OrgAsset):
         delete_in_batches(self.items.all())
         delete_in_batches(ArticleImage.objects.filter(article__source=self))
         delete_in_batches(ArticleCount.objects.filter(article__source=self))
+        delete_in_batches(ArticleTally.objects.filter(article__source=self), pk="pk")
 
         # the helpdesk's public site goes with its articles, and its favicon with the article images
         for site in HelpSite.objects.filter(source=self):
@@ -1270,8 +1272,7 @@ class ArticleImage(CreatedByMixin):
 
 class ArticleCount(BaseDailyCount):
     """
-    Daily counts of article activity on the help site - for now just views, which are what the site ranks its popular
-    articles by. Written as deltas by the site as it serves pages and squashed periodically.
+    Daily counts of article views on the help site, being replaced by ArticleTally.
     """
 
     squash_over = ("article_id", "day", "scope")
@@ -1279,10 +1280,6 @@ class ArticleCount(BaseDailyCount):
     SCOPE_VIEWS = "views"
 
     article = models.ForeignKey(Article, on_delete=models.PROTECT, related_name="counts", db_index=False)
-
-    @classmethod
-    def record_view(cls, article):
-        cls.objects.create(article=article, day=timezone.now().date(), scope=cls.SCOPE_VIEWS, count=1)
 
     class Meta:
         indexes = [
@@ -1298,6 +1295,40 @@ class ArticleCount(BaseDailyCount):
             models.UniqueConstraint(
                 name="articlecount_squashed", fields=("article", "day", "scope"), condition=Q(is_squashed=True)
             )
+        ]
+
+
+class ArticleTally(BaseTally):
+    """
+    Article-level daily totals of help site activity - for now just views, which are what the site ranks its popular
+    articles by.
+    """
+
+    owner_field = "article"
+    field_prefixes = ("A",)
+
+    SCOPE_VIEWS = "views"
+
+    pk = models.CompositePrimaryKey("article", "scope")
+    article = models.ForeignKey(Article, on_delete=models.PROTECT, related_name="tallies", db_index=False)  # leads key
+
+    @classmethod
+    def record_view(cls, article):
+        field = f"{cls.field_prefixes[0]}{article.id}|{cls.SCOPE_VIEWS}@{timezone.now().date().isoformat()}"
+        get_valkey_connection().hincrby(cls.LIVE_KEY, field, 1)
+
+    @classmethod
+    def get_daily_totals_by_article(cls, articles, scopes: list[str], since, until) -> dict[tuple[int, date, str], int]:
+        """
+        Gets totals by article id, day and scope for the given undated scopes of each of the given articles over days
+        from since up to until, omitting those with no total.
+        """
+        return cls._get_daily_totals([a.id for a in articles], scopes, since, until)
+
+    class Meta:
+        indexes = [
+            # for trimming
+            models.Index(name="articletally_expires_on", fields=("expires_on",), condition=Q(expires_on__isnull=False))
         ]
 
 
@@ -1692,23 +1723,22 @@ class HelpSite(CreatedByMixin, ModifiedByMixin):
         The most viewed published articles over the last POPULAR_DAYS, most viewed first. Only articles that are
         currently reachable - published, in a published section - count.
         """
-        since = timezone.now().date() - timedelta(days=self.POPULAR_DAYS)
-        totals = (
-            ArticleCount.objects.filter(
-                article__source=self.source,
-                article__is_active=True,
-                article__status=Article.STATUS_PUBLISHED,
-                article__parent__is_active=True,
-                article__parent__status=Article.STATUS_PUBLISHED,
-                scope=ArticleCount.SCOPE_VIEWS,
-                day__gte=since,
-            )
-            .values_list("article_id")
-            .annotate(total=Sum("count"))
-            .order_by("-total", "article_id")[:limit]
+        today = timezone.now().date()
+        readable = self._published().filter(parent__in=self._published().filter(parent=None))
+        daily = ArticleTally._get_daily_totals(
+            list(readable.values_list("id", flat=True)),
+            [ArticleTally.SCOPE_VIEWS],
+            today - timedelta(days=self.POPULAR_DAYS),
+            today + timedelta(days=1),
         )
-        by_id = {a.id: a for a in self._published().filter(id__in=[t[0] for t in totals]).select_related("parent")}
-        return [by_id[t[0]] for t in totals if t[0] in by_id]
+
+        totals = defaultdict(int)
+        for key, count in daily.items():
+            totals[key[0]] += count
+
+        top_ids = [i for i, _ in sorted(totals.items(), key=lambda t: (-t[1], t[0]))[:limit]]
+        by_id = {a.id: a for a in readable.filter(id__in=top_ids).select_related("parent")}
+        return [by_id[i] for i in top_ids if i in by_id]
 
     def search(self, query: str, limit: int = SEARCH_LIMIT) -> list:
         """
