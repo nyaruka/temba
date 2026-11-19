@@ -32,6 +32,10 @@ class MNotifyTypeTest(TembaTest):
         self.assertFormError(response.context["form"], "api_key", "This field is required.")
         self.assertEqual(0, Channel.objects.count())
 
+        response = self.client.post(url, {"number": "abcd", "api_key": "key123"})
+        self.assertFormError(response.context["form"], "number", "Not a valid phone number.")
+        self.assertEqual(0, Channel.objects.count())
+
         # a number in local format is saved in international format
         post_data["number"] = "050 123 4567"
         post_data["api_key"] = "key123"
