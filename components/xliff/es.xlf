@@ -2983,6 +2983,10 @@
   <source>Received</source>
   <target>Recibido</target>
 </trans-unit>
+<trans-unit id="s7c0f70928e0e1281">
+  <source>Last 14 days</source>
+  <target>Últimos 14 días</target>
+</trans-unit>
 <trans-unit id="s77dede2335388812">
   <source>Very slow</source>
   <target>Muy lento</target>

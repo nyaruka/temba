@@ -378,6 +378,7 @@
 's7a3db3fc50f93b32': `Entrar en un flujo`,
 's7ae012587bc4bd7f': `Solo se inicia un contacto coincidente.`,
 's7b3a70561cec8d75': `Tipo:`,
+'s7c0f70928e0e1281': `Últimos 14 días`,
 's7c459993827517b8': `No se pudo enviar tu mensaje`,
 's7c9c59c9097ac27c': `Los resultados aparecen en los informes del flujo y pueden usarse más adelante en el flujo.`,
 's7cca8a9dbdc4f5e6': `El chat no está conectado.`,

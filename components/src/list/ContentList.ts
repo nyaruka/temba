@@ -739,13 +739,13 @@ export class ContentList<T = any> extends RapidElement {
         white-space: nowrap;
       }
       /* a label with a tip is the tip, which hugs it like the plain label,
-         dotted underneath to say there's more to it */
+         dashed underneath to say there's more to it - a border rather than a
+         text decoration, as that doesn't reach the label slotted inside it */
       .head-inner temba-tip.label {
         display: inline-block;
         cursor: help;
-        text-decoration: underline dotted;
-        text-decoration-color: var(--text-3, currentColor);
-        text-underline-offset: 3px;
+        border-bottom: 1px dashed var(--text-3, currentColor);
+        line-height: 1.2;
       }
       .head-cell.right .head-inner {
         margin-left: auto;
