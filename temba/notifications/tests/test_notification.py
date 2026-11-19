@@ -13,7 +13,7 @@ from temba.notifications.incidents.builtin import (
     ChannelTemplatesFailedIncidentType,
     OrgFlaggedIncidentType,
 )
-from temba.notifications.models import Notification
+from temba.notifications.models import Incident, Notification
 from temba.notifications.tasks import send_notification_emails, trim_notifications
 from temba.notifications.types.builtin import ExportFinishedNotificationType, InvitationAcceptedNotificationType
 from temba.orgs.models import Invitation, ItemCount, OrgMembership, OrgRole
@@ -136,6 +136,44 @@ class NotificationTest(TembaTest):
         self.assertEqual(0, len(mail.outbox))
         notification.refresh_from_db()
         self.assertEqual(Notification.EMAIL_STATUS_NONE, notification.email_status)
+
+    def test_unregistered_types(self):
+        incident = Incident.objects.create(org=self.org, incident_type="foo:gone", scope="")
+        notification1 = Notification.objects.create(
+            org=self.org,
+            notification_type="incident:started",
+            scope=str(incident.id),
+            user=self.admin,
+            medium=Notification.MEDIUM_UI + Notification.MEDIUM_EMAIL,
+            email_status=Notification.EMAIL_STATUS_PENDING,
+            incident=incident,
+        )
+        notification2 = Notification.objects.create(
+            org=self.org,
+            notification_type="foo:gone",
+            scope="",
+            user=self.admin,
+            medium=Notification.MEDIUM_UI + Notification.MEDIUM_EMAIL,
+            email_status=Notification.EMAIL_STATUS_PENDING,
+        )
+        ExportFinishedNotificationType.create(ContactExport.create(self.org, self.admin))
+        notification3 = self.admin.notifications.get(notification_type="export:finished")
+
+        self.assertEqual([notification3], list(Notification.objects.registered()))
+
+        # they can't be read
+        self.login(self.admin)
+        response = self.client.get(reverse("notifications.notification_read", args=[notification1.id]))
+        self.assertEqual(404, response.status_code)
+
+        # or emailed, and are no longer pending
+        self.assertEqual({"sent": 1, "errored": 0}, send_notification_emails())
+        self.assertEqual(1, len(mail.outbox))
+
+        notification1.refresh_from_db()
+        notification2.refresh_from_db()
+        self.assertEqual(Notification.EMAIL_STATUS_NONE, notification1.email_status)
+        self.assertEqual(Notification.EMAIL_STATUS_NONE, notification2.email_status)
 
     def test_message_export_finished(self):
         export = MessageExport.create(

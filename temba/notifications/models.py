@@ -46,6 +46,16 @@ class IncidentType:
         }
 
 
+class IncidentQuerySet(models.QuerySet):
+    def registered(self):
+        """
+        Excludes incidents whose type isn't registered, e.g. one a deployment no longer provides
+        """
+        from .incidents import TYPES  # noqa
+
+        return self.filter(incident_type__in=TYPES.keys())
+
+
 class Incident(models.Model):
     """
     Models a problem with something in a workspace - e.g. a channel experiencing high error rates, webhooks in a flow
@@ -64,6 +74,8 @@ class Incident(models.Model):
     ended_on = models.DateTimeField(null=True)
 
     channel = models.ForeignKey(Channel, null=True, on_delete=models.PROTECT, related_name="incidents")
+
+    objects = IncidentQuerySet.as_manager()
 
     @classmethod
     def get_or_create(cls, org, incident_type: str, *, scope: str, **kwargs):
@@ -167,6 +179,19 @@ class NotificationType:
         }
 
 
+class NotificationQuerySet(models.QuerySet):
+    def registered(self):
+        """
+        Excludes notifications whose type, or incident's type, isn't registered, e.g. one a deployment no longer provides
+        """
+        from .incidents import TYPES as INCIDENT_TYPES  # noqa
+        from .types import TYPES  # noqa
+
+        return self.filter(notification_type__in=TYPES.keys()).filter(
+            Q(incident=None) | Q(incident__incident_type__in=INCIDENT_TYPES.keys())
+        )
+
+
 class Notification(models.Model):
     """
     A user specific notification
@@ -206,6 +231,8 @@ class Notification(models.Model):
     contact_import = models.ForeignKey(ContactImport, null=True, on_delete=models.PROTECT, related_name="notifications")
     incident = models.ForeignKey(Incident, null=True, on_delete=models.PROTECT, related_name="notifications")
     data = models.JSONField(null=True, default=dict)
+
+    objects = NotificationQuerySet.as_manager()
 
     UNSUBSCRIBE_SALT = "notifications.unsubscribe"
 

@@ -25,6 +25,10 @@ class IncidentCRUDLTest(TembaTest, CRUDLTestMixin):
         )
         incident4 = Incident.objects.create(org=self.org, incident_type="webhooks:unhealthy", scope="")
 
+        # and incidents of a type which is no longer registered, which aren't listed
+        Incident.objects.create(org=self.org, incident_type="foo:gone", scope="", ended_on=timezone.now())
+        Incident.objects.create(org=self.org, incident_type="foo:gone", scope="")
+
         # main list items are the ended incidents
         self.assertRequestDisallowed(list_url, [None, self.editor, self.agent])
         response = self.assertListFetch(list_url, [self.admin], context_objects=[incident3, incident1])
