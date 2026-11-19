@@ -910,12 +910,12 @@ class EndpointsTest(APITestMixin, TembaTest):
         export2 = TicketExport.create(self.org, self.editor, start_date=timezone.now(), end_date=timezone.now())
         ExportFinishedNotificationType.create(export2)
 
-        # and org being suspended
-        self.org.suspend()
+        # and org being flagged
+        self.org.flag()
 
         export1_notification = export1.notifications.get()
         export2_notification = export2.notifications.get()
-        suspended_notification = self.admin.notifications.get(notification_type="incident:started")
+        flagged_notification = self.admin.notifications.get(notification_type="incident:started")
 
         self.assertGet(
             endpoint_url,
@@ -924,10 +924,10 @@ class EndpointsTest(APITestMixin, TembaTest):
                 {
                     "type": "incident:started",
                     "created_on": matchers.ISODatetime(),
-                    "url": f"/notification/read/{suspended_notification.id}/",
+                    "url": f"/notification/read/{flagged_notification.id}/",
                     "is_seen": False,
                     "incident": {
-                        "type": "org:suspended",
+                        "type": "org:flagged",
                         "started_on": matchers.ISODatetime(),
                         "ended_on": None,
                     },

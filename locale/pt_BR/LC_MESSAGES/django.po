@@ -2959,12 +2959,6 @@ msgstr "Aplicativo Android do canal desatualizado"
 msgid "Workspace Flagged"
 msgstr "Área de trabalho sinalizada"
 
-msgid "Workspace Restricted"
-msgstr "Área de trabalho restrita"
-
-msgid "Workspace Suspended"
-msgstr "Área de trabalho suspensa"
-
 msgid "Webhooks Unhealthy"
 msgstr "Webhooks com problemas"
 
@@ -2977,9 +2971,6 @@ msgstr "Sua exportação de %s está pronta"
 
 msgid "Incident"
 msgstr "Incidente"
-
-msgid "Reminder"
-msgstr "Lembrete"
 
 msgid "New user joined your workspace"
 msgstr "Novo usuário entrou na sua área de trabalho"
@@ -5575,40 +5566,6 @@ msgstr ""
 "Sua área de trabalho foi sinalizada devido a atividade suspeita. Para voltar a iniciar fluxos e enviar mensagens, por favor\n"
 "entre em contato com o suporte.\n"
 
-msgid "Your workspace has been restricted because of a problem with billing."
-msgstr "Sua área de trabalho foi restrita devido a um problema com o faturamento."
-
-msgid "Your workspace has been restricted because it has exceeded the limits of its plan."
-msgstr "Sua área de trabalho foi restrita porque excedeu os limites do seu plano."
-
-msgid "Your workspace has been restricted."
-msgstr "Sua área de trabalho foi restrita."
-
-msgid "Starting flows and sending messages are disabled, but your flows will keep handling incoming messages."
-msgstr "Iniciar fluxos e enviar mensagens estão desabilitados, mas seus fluxos continuarão processando as mensagens recebidas."
-
-#, python-format
-msgid "Unless this is resolved, your workspace will be suspended on %(date)s, which stops all of its flows, including those started by triggers and campaigns. Please contact support."
-msgstr "Se isso não for resolvido, sua área de trabalho será suspensa em %(date)s, o que interromperá todos os seus fluxos, incluindo os iniciados por gatilhos e campanhas. Por favor, entre em contato com o suporte."
-
-msgid "Please contact support."
-msgstr "Por favor, entre em contato com o suporte."
-
-msgid "Your workspace has been suspended because of a problem with billing."
-msgstr "Sua área de trabalho foi suspensa devido a um problema com o faturamento."
-
-msgid "Your workspace has been suspended because it has exceeded the limits of its plan."
-msgstr "Sua área de trabalho foi suspensa porque excedeu os limites do seu plano."
-
-msgid "Your workspace has been suspended."
-msgstr "Sua área de trabalho foi suspensa."
-
-msgid "No messages will be sent, and your flows, including those started by triggers and campaigns, will be stopped."
-msgstr "Nenhuma mensagem será enviada e seus fluxos, incluindo os iniciados por gatilhos e campanhas, serão interrompidos."
-
-msgid "To reactivate your workspace, please contact support."
-msgstr "Para reativar sua área de trabalho, por favor entre em contato com o suporte."
-
 #, python-format
 msgid "User <b>%(email)s</b> accepted an invitation to join your workspace."
 msgstr "O usuário %(email)s aceitou um convite para entrar na sua área de trabalho."
@@ -5631,9 +5588,6 @@ msgstr "Seu <a href=\"%(read_url)s\">canal Android</a> parece ainda estar rodand
 #, python-format
 msgid "Your <a href=\"%(read_url)s\">WhatsApp channel</a> appears to not be syncing templates."
 msgstr "Seu <a href=\"%(read_url)s\">canal do WhatsApp</a> parece não estar sincronizando os templates."
-
-msgid "Your workspace has been restricted. Starting flows and sending messages are disabled until this is resolved, but your flows will keep handling incoming messages."
-msgstr "Sua área de trabalho foi restrita. Iniciar fluxos e enviar mensagens estão desabilitados até que isso seja resolvido, mas seus fluxos continuarão processando as mensagens recebidas."
 
 #, python-format
 msgid "Some webhook calls from your flows are taking too long to respond or failing too frequently. If the problem persists these calls will be temporarily disabled. You can check the <a href=\"%(logs_url)s\">webhook call log</a> to see which calls are the problem."
