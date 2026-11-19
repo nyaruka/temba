@@ -1,6 +1,6 @@
 from datetime import datetime, timezone as tzone
 
-from temba.notifications.incidents.builtin import ChannelDisconnectedIncidentType
+from temba.notifications.incidents.builtin import ChannelDisconnectedIncidentType, OrgFlaggedIncidentType
 from temba.notifications.models import Incident, Notification
 from temba.tests import TembaTest, matchers
 
@@ -33,6 +33,20 @@ class IncidentTest(TembaTest):
         self.assertNotEqual(incident1, incident4)
         self.assertEqual(3, Notification.objects.count())
         self.assertEqual(1, incident4.notifications.count())
+
+    def test_end_ongoing(self):
+        incident1 = OrgFlaggedIncidentType.get_or_create(self.org)
+        incident2 = OrgFlaggedIncidentType.get_or_create(self.org2)
+        incident3 = ChannelDisconnectedIncidentType.get_or_create(self.channel)
+
+        OrgFlaggedIncidentType.end_ongoing(self.org)
+
+        incident1.refresh_from_db()
+        incident2.refresh_from_db()
+        incident3.refresh_from_db()
+        self.assertIsNotNone(incident1.ended_on)
+        self.assertIsNone(incident2.ended_on)  # other org
+        self.assertIsNone(incident3.ended_on)  # other type
 
     def test_org_flagged(self):
         self.org.flag()
