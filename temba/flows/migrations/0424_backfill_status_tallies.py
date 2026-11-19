@@ -29,7 +29,7 @@ DELETE FROM flows_flowtally t
       WHERE t.flow_id = u.flow_id AND t.scope = u.scope AND t.count = 0"""
 
 
-def backfill_status_tallies(apps, schema_editor):
+def backfill_status_tallies(apps, schema_editor):  # pragma: no cover
     from temba.flows.models import FlowTally  # for its reads of totals buffered in Valkey
 
     Flow = apps.get_model("flows", "Flow")
