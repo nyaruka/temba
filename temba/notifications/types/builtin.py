@@ -88,7 +88,7 @@ class IncidentStartedNotificationType(NotificationType):
         return notification.incident.type.get_notification_target_url(notification.incident)
 
     def get_email_subject(self, notification) -> str:
-        return _("Incident") + ": " + notification.incident.type.title
+        return notification.incident.type.get_email_subject(notification.incident)
 
     def get_email_template(self, notification) -> str:
         return notification.incident.email_template

@@ -2955,17 +2955,20 @@ msgstr ""
 msgid "Workspace Flagged"
 msgstr ""
 
+msgid "Your workspace has been flagged"
+msgstr ""
+
 msgid "Webhooks Unhealthy"
 msgstr ""
 
 msgid "WhatsApp Templates Sync Failed"
 msgstr ""
 
-#, python-format
-msgid "Your %s export is ready"
+msgid "Incident"
 msgstr ""
 
-msgid "Incident"
+#, python-format
+msgid "Your %s export is ready"
 msgstr ""
 
 msgid "New user joined your workspace"
@@ -5487,7 +5490,7 @@ msgstr ""
 msgid "Hi"
 msgstr ""
 
-msgid "If you have any questions we are always here to help."
+msgid "If you have any questions, we are always here to help."
 msgstr ""
 
 #, python-format
@@ -5546,13 +5549,7 @@ msgstr ""
 msgid "Your WhatsApp channel (%(url)s) is currently having problems fetching templates."
 msgstr ""
 
-msgid "Your workspace has been flagged due to suspicious activity. To re-enable starting flows and sending messages, please contact support."
-msgstr ""
-
-msgid ""
-"\n"
-"Your workspace has been flagged due to suspicious activity. To re-enable starting flows and sending messages, please\n"
-"contact support.\n"
+msgid "Your workspace has been flagged because of suspicious activity. To re-enable starting flows and sending messages, please contact support."
 msgstr ""
 
 #, python-format

@@ -7,6 +7,7 @@ from django.db import models, transaction
 from django.db.models import Q
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from temba.channels.models import Channel
 from temba.contacts.models import ContactImport
@@ -35,6 +36,9 @@ class IncidentType:
         """
         for incident in org.incidents.filter(incident_type=cls.slug, ended_on=None):
             incident.end()
+
+    def get_email_subject(self, incident) -> str:
+        return _("Incident") + ": " + self.title
 
     def get_notification_scope(self, incident) -> str:
         return str(incident.id)

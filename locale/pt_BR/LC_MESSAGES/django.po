@@ -2982,18 +2982,23 @@ msgstr "Aplicativo Android do canal desatualizado"
 msgid "Workspace Flagged"
 msgstr "Área de trabalho sinalizada"
 
+#, fuzzy
+#| msgid "Your password has been changed."
+msgid "Your workspace has been flagged"
+msgstr "Sua senha foi alterada."
+
 msgid "Webhooks Unhealthy"
 msgstr "Webhooks com problemas"
 
 msgid "WhatsApp Templates Sync Failed"
 msgstr "Falha na sincronização dos templates do WhatsApp"
 
+msgid "Incident"
+msgstr "Incidente"
+
 #, python-format
 msgid "Your %s export is ready"
 msgstr "Sua exportação de %s está pronta"
-
-msgid "Incident"
-msgstr "Incidente"
 
 msgid "New user joined your workspace"
 msgstr "Novo usuário entrou na sua área de trabalho"
@@ -5529,7 +5534,9 @@ msgstr "Nenhuma mensagem"
 msgid "Hi"
 msgstr "Olá"
 
-msgid "If you have any questions we are always here to help."
+#, fuzzy
+#| msgid "If you have any questions we are always here to help."
+msgid "If you have any questions, we are always here to help."
 msgstr "Se você tiver qualquer dúvida, estamos sempre aqui para ajudar."
 
 #, python-format
@@ -5588,17 +5595,10 @@ msgstr "Seu <a href=\"%(url)s\">canal do WhatsApp</a> está tendo problemas para
 msgid "Your WhatsApp channel (%(url)s) is currently having problems fetching templates."
 msgstr "Seu canal do WhatsApp (%(url)s) está tendo problemas para buscar templates no momento."
 
-msgid "Your workspace has been flagged due to suspicious activity. To re-enable starting flows and sending messages, please contact support."
+#, fuzzy
+#| msgid "Your workspace has been flagged due to suspicious activity. To re-enable starting flows and sending messages, please contact support."
+msgid "Your workspace has been flagged because of suspicious activity. To re-enable starting flows and sending messages, please contact support."
 msgstr "Sua área de trabalho foi sinalizada devido a atividade suspeita. Para voltar a iniciar fluxos e enviar mensagens, por favor entre em contato com o suporte."
-
-msgid ""
-"\n"
-"Your workspace has been flagged due to suspicious activity. To re-enable starting flows and sending messages, please\n"
-"contact support.\n"
-msgstr ""
-"\n"
-"Sua área de trabalho foi sinalizada devido a atividade suspeita. Para voltar a iniciar fluxos e enviar mensagens, por favor\n"
-"entre em contato com o suporte.\n"
 
 #, python-format
 msgid "User <b>%(email)s</b> accepted an invitation to join your workspace."
