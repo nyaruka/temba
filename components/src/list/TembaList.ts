@@ -7,6 +7,10 @@ import { fetchResultsPage, ResultsPage } from '../utils';
 
 const DEFAULT_REFRESH = 10000;
 
+/** How a fetch of a list's items ended: merged into the list, failed, or
+ * cancelled by a newer request */
+export type RefreshOutcome = 'merged' | 'failed' | 'aborted';
+
 export class TembaList extends RapidElement {
   @property({ type: Array, attribute: false })
   items: any[] = [];
@@ -277,6 +281,14 @@ export class TembaList extends RapidElement {
     this.refreshKey = 'requested_' + new Date().getTime();
   }
 
+  /**
+   * Reads the list again from its endpoint, as many pages as are loaded,
+   * keeping the selection where it can
+   */
+  public reload(): Promise<RefreshOutcome> {
+    return this.fetchItems();
+  }
+
   public setEndpoint(endpoint: string, nextSelection: any = null) {
     this.endpoint = endpoint;
     this.nextSelection = nextSelection;
@@ -284,6 +296,28 @@ export class TembaList extends RapidElement {
 
   public getRefreshEndpoint() {
     return this.endpoint;
+  }
+
+  /**
+   * The items a refresh is a complete answer for: any of them it doesn't
+   * return no longer belong in the list. Null for a refresh that only brings
+   * in what's new.
+   */
+  protected getRefreshScope(): Set<any> {
+    return null;
+  }
+
+  /**
+   * Called once a refresh is over, with the scope it was for and whether it
+   * was merged in - one that failed or was cancelled by a newer request wasn't
+   */
+  protected handleRefreshEnded(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    scope: Set<any>,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    outcome: RefreshOutcome
+  ): void {
+    // nothing by default
   }
 
   protected sanitizeResults(results: any[]): Promise<any[]> {
@@ -500,6 +534,7 @@ export class TembaList extends RapidElement {
     if (!refreshEndpoint) {
       return;
     }
+    const scope = this.getRefreshScope();
 
     // cancel any outstanding requests
     while (this.pending.length > 0) {
@@ -516,10 +551,7 @@ export class TembaList extends RapidElement {
     let follow = false;
 
     try {
-      const page = await fetchResultsPage(
-        this.getRefreshEndpoint(),
-        controller
-      );
+      const page = await fetchResultsPage(refreshEndpoint, controller);
 
       this.handleCurrentPage(page);
       const sanitizedResults = await this.sanitizeResults(page.results);
@@ -527,7 +559,8 @@ export class TembaList extends RapidElement {
       // read our list and selection only now - either can change while we
       // wait on the fetch, say if a different item gets selected
       const prevItem = this.items[this.cursorIndex];
-      const items = [...this.items];
+      const prevValue = prevItem ? this.getValue(prevItem) : null;
+      let items = [...this.items];
 
       // remove any dupes already in our list
       if (sanitizedResults) {
@@ -558,9 +591,18 @@ export class TembaList extends RapidElement {
         // nothing" and drives the Refreshed event
         const topItem = results.length > 0 ? results[0] : items[0];
 
-        // the selected item and held items always stay, even if they no
-        // longer belong, until the list reloads
-        const prevValue = prevItem ? this.getValue(prevItem) : null;
+        // anything the refresh was for but didn't return has left the list -
+        // except the selected item and held items, which always stay, even if
+        // they no longer belong, until the list reloads
+        if (scope) {
+          items = items.filter((option: any) => {
+            const value = this.getValue(option);
+            return (
+              !scope.has(value) || value === prevValue || this.held.has(value)
+            );
+          });
+        }
+
         const kept = results.filter((option: any) => {
           const value = this.getValue(option);
           return (
@@ -577,6 +619,10 @@ export class TembaList extends RapidElement {
           JSON.stringify(this.mostRecentItem) !== JSON.stringify(topItem)
         ) {
           this.mostRecentItem = topItem;
+        } else if (scope) {
+          // a scoped refresh can drop rows without changing the top one, and
+          // that's a change too
+          this.fireCustomEvent(CustomEventType.Refreshed);
         }
 
         // a list that has been scrolled stays on the items it is showing
@@ -596,10 +642,15 @@ export class TembaList extends RapidElement {
 
         this.items = newItems;
       }
+
+      this.handleRefreshEnded(scope, 'merged');
     } catch (error) {
       // a newer request cancelled this one, that's not a failure
-      if (!controller.signal.aborted) {
+      if (controller.signal.aborted) {
+        this.handleRefreshEnded(scope, 'aborted');
+      } else {
         this.paused = true;
+        this.handleRefreshEnded(scope, 'failed');
       }
       return;
     }
@@ -620,7 +671,7 @@ export class TembaList extends RapidElement {
     }
   }
 
-  private async fetchItems(): Promise<void> {
+  private async fetchItems(): Promise<RefreshOutcome> {
     // cancel any outstanding requests
     while (this.pending.length > 0) {
       const pending = this.pending.pop();
@@ -663,13 +714,13 @@ export class TembaList extends RapidElement {
       } catch (error) {
         // a newer fetch cancelled this one and owns the list now
         if (controller.signal.aborted) {
-          return;
+          return 'aborted';
         }
 
         this.reset();
         this.paused = true;
         this.loading = false;
-        return;
+        return 'failed';
       }
       this.nextPage = nextPage;
     }
@@ -738,7 +789,7 @@ export class TembaList extends RapidElement {
       this.dispatchEvent(evt);
     }
 
-    return Promise.resolve();
+    return 'merged';
   }
 
   private handleScrollThreshold() {

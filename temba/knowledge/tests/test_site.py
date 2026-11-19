@@ -1,15 +1,16 @@
 from unittest.mock import patch
 
 import requests
+from django_valkey import get_valkey_connection
 
 from django.conf import settings
 from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from temba.knowledge.models import Article, ArticleCount, HelpSite, KnowledgeSource
+from temba.knowledge.models import Article, HelpSite, KnowledgeSource
 from temba.orgs.models import Org
-from temba.tests import TembaTest, mock_mailroom
+from temba.tests import TembaTest, cleanup, mock_mailroom
 from temba.tests.requests import MockResponse
 
 
@@ -121,9 +122,9 @@ class SiteViewsTest(TembaTest):
         self.assertNotContains(self.public("/"), "<temba-webchat")
 
         # popular articles show up once there are views
-        for _ in range(2):
-            ArticleCount.record_view(self.importing)
-        ArticleCount.record_view(self.nodes)
+        today = timezone.now().date().isoformat()
+        self.importing.tallies.create(scope=f"views@{today}", count=2)
+        self.nodes.tallies.create(scope=f"views@{today}", count=1)
         response = self.public("/")
         self.assertEqual([self.importing, self.nodes], response.context["popular"])
         self.assertContains(response, 'href="/contacts/importing/"')
@@ -168,6 +169,7 @@ class SiteViewsTest(TembaTest):
         self.actions.unpublish(self.admin)
         self.assertEqual(404, self.public("/flows/").status_code)
 
+    @cleanup(valkey=True)
     def test_public_article(self):
         response = self.public("/flows/nodes/")
         self.assertEqual(200, response.status_code)
@@ -182,10 +184,12 @@ class SiteViewsTest(TembaTest):
         response = self.public("/flows/actions/")
         self.assertContains(response, 'See <a href="/flows/nodes/" rel="noopener noreferrer">nodes</a>.')
 
-        # reading counts as a view
-        self.assertEqual(1, ArticleCount.objects.filter(article=self.nodes, scope="views").sum())
+        # reading counts as a view, buffered in Valkey until mailroom flushes it
+        r = get_valkey_connection()
+        field = f"A{self.nodes.id}|views@{timezone.now().date().isoformat()}"
+        self.assertEqual(b"1", r.hget("{tallies}:live", field))
         self.public("/flows/nodes/")
-        self.assertEqual(2, ArticleCount.objects.filter(article=self.nodes, scope="views").sum())
+        self.assertEqual(b"2", r.hget("{tallies}:live", field))
 
         # an article with no top level headings lists none, and doesn't need the script that follows them
         self.assertEqual([], response.context["headings"])

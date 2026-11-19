@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-from unittest.mock import call
+from unittest.mock import call, patch
 
 from django.core import mail
 from django.urls import reverse
@@ -13,7 +13,7 @@ from temba.notifications.incidents.builtin import (
     ChannelTemplatesFailedIncidentType,
     OrgFlaggedIncidentType,
 )
-from temba.notifications.models import Notification
+from temba.notifications.models import Incident, Notification
 from temba.notifications.tasks import send_notification_emails, trim_notifications
 from temba.notifications.types.builtin import ExportFinishedNotificationType, InvitationAcceptedNotificationType
 from temba.orgs.models import Invitation, ItemCount, OrgMembership, OrgRole
@@ -136,6 +136,44 @@ class NotificationTest(TembaTest):
         self.assertEqual(0, len(mail.outbox))
         notification.refresh_from_db()
         self.assertEqual(Notification.EMAIL_STATUS_NONE, notification.email_status)
+
+    def test_unregistered_types(self):
+        incident = Incident.objects.create(org=self.org, incident_type="foo:gone", scope="")
+        notification1 = Notification.objects.create(
+            org=self.org,
+            notification_type="incident:started",
+            scope=str(incident.id),
+            user=self.admin,
+            medium=Notification.MEDIUM_UI + Notification.MEDIUM_EMAIL,
+            email_status=Notification.EMAIL_STATUS_PENDING,
+            incident=incident,
+        )
+        notification2 = Notification.objects.create(
+            org=self.org,
+            notification_type="foo:gone",
+            scope="",
+            user=self.admin,
+            medium=Notification.MEDIUM_UI + Notification.MEDIUM_EMAIL,
+            email_status=Notification.EMAIL_STATUS_PENDING,
+        )
+        ExportFinishedNotificationType.create(ContactExport.create(self.org, self.admin))
+        notification3 = self.admin.notifications.get(notification_type="export:finished")
+
+        self.assertEqual([notification3], list(Notification.objects.registered()))
+
+        # they can't be read
+        self.login(self.admin)
+        response = self.client.get(reverse("notifications.notification_read", args=[notification1.id]))
+        self.assertEqual(404, response.status_code)
+
+        # or emailed, and are no longer pending
+        self.assertEqual({"sent": 1, "errored": 0}, send_notification_emails())
+        self.assertEqual(1, len(mail.outbox))
+
+        notification1.refresh_from_db()
+        notification2.refresh_from_db()
+        self.assertEqual(Notification.EMAIL_STATUS_NONE, notification1.email_status)
+        self.assertEqual(Notification.EMAIL_STATUS_NONE, notification2.email_status)
 
     def test_message_export_finished(self):
         export = MessageExport.create(
@@ -402,6 +440,43 @@ class NotificationTest(TembaTest):
         self.assertEqual(
             Notification.EMAIL_STATUS_PENDING, self.customer_support.notifications.get(export=export3).email_status
         )
+
+    def test_incident_started_unverified_user(self):
+        self.org.add_user(self.editor, OrgRole.ADMINISTRATOR)  # upgrade editor to administrator
+        self.editor.set_verified(False)
+
+        # an unverified admin isn't emailed about an incident, even one whose emails are required...
+        OrgFlaggedIncidentType.get_or_create(self.org)
+
+        self.assertEqual(
+            Notification.EMAIL_STATUS_UNVERIFIED, self.editor.notifications.get(incident__ended_on=None).email_status
+        )
+
+        send_notification_emails()
+
+        self.assertEqual([["admin@textit.com"]], [m.recipients() for m in mail.outbox])
+
+        # unless its type opts into emailing unverified addresses
+        mail.outbox.clear()
+        OrgFlaggedIncidentType.end_ongoing(self.org)
+
+        with patch.object(OrgFlaggedIncidentType, "email_unverified", True):
+            OrgFlaggedIncidentType.get_or_create(self.org)
+
+        send_notification_emails()
+
+        self.assertEqual({"admin@textit.com", "editor@textit.com"}, {r for m in mail.outbox for r in m.recipients()})
+
+        # which still doesn't override a user's opt-out for types whose emails aren't required
+        mail.outbox.clear()
+        OrgMembership.objects.filter(org=self.org, user=self.editor).update(email_notifications=False)
+
+        with patch.object(ChannelDisconnectedIncidentType, "email_unverified", True):
+            ChannelDisconnectedIncidentType.get_or_create(self.channel)
+
+        send_notification_emails()
+
+        self.assertEqual([["admin@textit.com"]], [m.recipients() for m in mail.outbox])
 
     def test_unsubscribe_link(self):
         self.org.add_user(self.editor, OrgRole.ADMINISTRATOR)  # upgrade editor to administrator
@@ -705,13 +780,13 @@ class NotificationTest(TembaTest):
         assert_count(self.org2, self.editor, 1)
 
     def test_trim_task(self):
-        self.org.suspend()
-        self.org.reactivate()
+        self.org.flag()
+        self.org.unflag()
 
         notification1 = self.admin.notifications.order_by("id").last()
 
-        self.org.suspend()
-        self.org.reactivate()
+        self.org.flag()
+        self.org.unflag()
 
         notification2 = self.admin.notifications.order_by("id").last()
 

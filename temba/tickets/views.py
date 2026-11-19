@@ -5,10 +5,9 @@ from smartmin.views import SmartCRUDL, SmartListView, SmartTemplateView, SmartUp
 
 from django import forms
 from django.db import models
-from django.db.models import F, Sum, Value
 from django.db.models.aggregates import Max
 from django.db.models.expressions import RawSQL
-from django.db.models.functions import Cast, Lower
+from django.db.models.functions import Lower
 from django.http import Http404, JsonResponse
 from django.urls import reverse
 from django.utils import timezone
@@ -33,7 +32,6 @@ from temba.orgs.views.mixins import OrgObjPermsMixin, OrgPermsMixin, RequireFeat
 from temba.users.models import User
 from temba.utils import json
 from temba.utils.dates import datetime_to_timestamp, timestamp_to_datetime
-from temba.utils.db.functions import SplitPart
 from temba.utils.export import response_from_workbook
 from temba.utils.fields import InputWidget
 from temba.utils.uuid import UUID_REGEX, is_uuid
@@ -57,6 +55,7 @@ from .models import (
     Topic,
     TopicFolder,
     export_ticket_stats,
+    get_daily_tallies,
 )
 
 
@@ -493,6 +492,7 @@ class TicketCRUDL(SmartCRUDL):
 
         # microsecond timestamp of 9999-12-31 23:59:59 - anything beyond this can't be converted to a datetime
         MAX_CURSOR = 253_402_300_799_000_000
+        MAX_CHANGED = 100  # the most changed tickets a refresh reads, which clients batch to
 
         # ?order= value for the oldest first order, anything else is the default newest first
         ORDER_OLDEST = "oldest"
@@ -553,8 +553,16 @@ class TicketCRUDL(SmartCRUDL):
                 return self.folder.get_open_count(org, user, topics, assignee=self.assignee)
             return self.folder.get_open_count(org, user, topics)
 
+        def _changed_param(self) -> list[str]:
+            """
+            Reads the tickets a client heard had changed, ignoring anything that isn't a ticket UUID
+            """
+            values = self.request.GET.get("tickets", "").split(",")
+            return [v for v in values if is_uuid(v)][: self.MAX_CHANGED]
+
         def get_tickets(self) -> list:
             uuid = self.kwargs.get("uuid", None)
+            changed = self._changed_param()
             after = self._int_param("after")
             before = self._int_param("before")
             before_id = self._int_param("before_id")
@@ -565,6 +573,15 @@ class TicketCRUDL(SmartCRUDL):
                     return []
 
                 return list(self._get_queryset(ordered=True).filter(uuid=uuid))
+
+            # a refresh of tickets the client heard had changed - those that still belong in this folder, so the
+            # client can tell which ones to update and which have left it
+            if changed:
+                return list(
+                    self._get_queryset(ordered=False)
+                    .filter(uuid__in=changed, status__in=(Ticket.STATUS_OPEN, Ticket.STATUS_CLOSED))
+                    .order_by("last_activity_on", "id")
+                )
 
             # all new activity since a previous fetch.. our indexes have status between org/assignee and
             # last_activity_on so status always needs to be constrained - as both statuses so the planner can still
@@ -719,9 +736,11 @@ class TicketCRUDL(SmartCRUDL):
             if self.oldest_first:
                 results["now"] = context["now"]
 
-            # build up our next link if we have more - refreshes (?after=) are never paged because they're ordered
-            # oldest first, so a next link from the newest ticket would page backwards from an arbitrary point
-            if not self._int_param("after") and len(context["tickets"]) >= self.paginate_by:
+            # build up our next link if we have more - refreshes (?after= or ?tickets=) are never paged because
+            # they're ordered oldest first, so a next link from the newest ticket would page backwards from an
+            # arbitrary point
+            is_refresh = self._int_param("after") or self._changed_param()
+            if not is_refresh and len(context["tickets"]) >= self.paginate_by:
                 last = context["tickets"][-1]
 
                 # the uuid part of the pattern is optional so it can only be reversed by folder
@@ -847,23 +866,22 @@ class TicketCRUDL(SmartCRUDL):
         def get_opened_chart(self, org, since, until) -> tuple:
             topics_by_id = {t.id: t.name for t in org.topics.filter(is_active=True)}
 
-            counts = org.daily_counts.period(since, until).prefix("tickets:opened:")
-
             # agents on a topic-limited team only see openings in their team's topics
             if self.team and not self.team.all_topics:
-                counts = counts.filter(scope__in=[f"tickets:opened:{t.id}" for t in self.team.topics.all()])
+                topic_ids = list(self.team.topics.values_list("id", flat=True))
+            else:
+                topic_ids = [0] + list(org.topics.values_list("id", flat=True))  # 0 is no topic
 
-            counts = counts.day_totals(scoped=True)
+            counts = get_daily_tallies(org, {f"opened:{t}": t for t in topic_ids}, since, until)
 
             # collect all dates and values by topic
             dates_set = set()
-            values_by_topic = defaultdict(dict)
+            values_by_topic = defaultdict(lambda: defaultdict(int))
 
-            for (day, scope), count in counts.items():
-                topic_id = int(scope.split(":")[-1])
+            for (day, topic_id), count in counts.items():
                 topic_name = topics_by_id.get(topic_id, "<Unknown>")
                 dates_set.add(day)
-                values_by_topic[topic_name][day] = count
+                values_by_topic[topic_name][day] += count
 
             # create sorted list of dates
             labels = sorted(list(dates_set))
@@ -879,12 +897,12 @@ class TicketCRUDL(SmartCRUDL):
             if self.team:  # response times are only tracked workspace-wide
                 raise Http404()
 
-            counts = org.daily_counts.period(since, until).prefix("ticketresptime:").day_totals(scoped=True)
+            counts = get_daily_tallies(org, {"resptime:total": "total", "resptime:count": "count"}, since, until)
             totals_by_date, counts_by_date = {}, {}
-            for (day, scope), count in counts.items():
-                if scope.endswith(":total"):
+            for (day, key), count in counts.items():
+                if key == "total":
                     totals_by_date[day] = count
-                elif scope.endswith(":count"):
+                else:
                     counts_by_date[day] = count
 
             # collect all dates
@@ -904,40 +922,26 @@ class TicketCRUDL(SmartCRUDL):
         def get_replies_chart(self, org, since, until) -> tuple:
             # agents only see replies from their own team
             if self.team:
-                counts = (
-                    org.daily_counts.period(since, until)
-                    .prefix(f"msgs:ticketreplies:{self.team.id}:")
-                    .day_totals(scoped=False)
-                )
-                labels = sorted(counts.keys())
+                counts = get_daily_tallies(org, {f"teamreplies:{self.team.id}": None}, since, until)
+                labels = sorted(day for day, _key in counts.keys())
                 return [d.strftime("%Y-%m-%d") for d in labels], [
-                    {"label": self.team.name, "data": [counts[d] for d in labels]}
+                    {"label": self.team.name, "data": [counts[(d, None)] for d in labels]}
                 ]
 
             teams_by_id = {t.id: t.name for t in org.teams.filter(deleted_on=None)}
-            # Add default team (id=0) for users not assigned to specific teams
-            teams_by_id[0] = _("No Team")
+            teams_by_id[0] = _("No Team")  # for users not on a team
 
-            # Follow the pattern from get_topic_counts - use database aggregation to extract team_id
-            # scope format: msgs:ticketreplies:{team_id}:{user_id} - team_id is at position 3 (1-indexed)
-            daily_counts = org.daily_counts.period(since, until).prefix("msgs:ticketreplies:")
-
-            counts = (
-                daily_counts.annotate(
-                    team_id=Cast(SplitPart(F("scope"), Value(":"), Value(3)), output_field=models.IntegerField())
-                )
-                .values_list("day", "team_id")
-                .annotate(count_sum=Sum("count"))
-            )
+            team_ids = [0] + list(org.teams.values_list("id", flat=True))  # including deleted teams
+            counts = get_daily_tallies(org, {f"teamreplies:{t}": t for t in team_ids}, since, until)
 
             # collect all dates and values by team
             dates_set = set()
             values_by_team = defaultdict(lambda: defaultdict(int))
 
-            for day, team_id, count_sum in counts:
+            for (day, team_id), count in counts.items():
                 team_name = teams_by_id.get(team_id, f"Team {team_id}")
                 dates_set.add(day)
-                values_by_team[team_name][day] += count_sum
+                values_by_team[team_name][day] += count
 
             # create sorted list of dates
             labels = sorted(list(dates_set))
@@ -966,26 +970,22 @@ class TicketCRUDL(SmartCRUDL):
             org = self.request.org
             since, until = self.get_chart_period()
 
-            # agents only see responders from their own team
-            prefix = f"msgs:ticketreplies:{self.team.id}:" if self.team else "msgs:ticketreplies:"
-            daily_counts = org.daily_counts.period(since, until).prefix(prefix)
+            # agents only see responders who are on their own team
+            users = org.users.all()
+            if self.team:
+                users = users.filter(orgmembership__org=org, orgmembership__team=self.team)
+            users_by_id = {u.id: u for u in users}
 
-            counts = (
-                daily_counts.annotate(
-                    user_id=Cast(SplitPart(F("scope"), Value(":"), Value(4)), output_field=models.IntegerField())
-                )
-                .values("user_id")
-                .annotate(replies=Sum("count"))
-                .order_by("-replies")
-            )
+            counts = get_daily_tallies(org, {f"userreplies:{u}": u for u in users_by_id}, since, until)
 
-            users_by_id = {u.id: u for u in org.users.all()}
+            replies_by_user = defaultdict(int)
+            for (_day, user_id), count in counts.items():
+                replies_by_user[user_id] += count
 
             results = []
-            for row in counts:
-                user = users_by_id.get(row["user_id"])
-                if user:
-                    results.append({"name": str(user), "uuid": str(user.uuid), "replies": row["replies"]})
+            for user_id, replies in sorted(replies_by_user.items(), key=lambda r: -r[1]):
+                user = users_by_id[user_id]
+                results.append({"name": str(user), "uuid": str(user.uuid), "replies": replies})
 
             return JsonResponse({"results": results})
 

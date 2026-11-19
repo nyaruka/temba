@@ -1197,7 +1197,6 @@ def exit_sessions(session_uuids: list, status: str):
 
     Contact.objects.filter(uuid__in=contact_uuids).update(
         current_session_uuid=None,
-        current_flow=None,
         current_flow_uuid=None,
         modified_on=timezone.now(),
     )

@@ -1,3 +1,25 @@
+## v26.3.217 (2026-11-19)
+ * Don't allow API token use for suspended workspaces
+ * Only suspend restricted workspaces when given a time to suspend them
+ * Refresh tickets from socket events instead of polling
+ * Drop ArticleCount
+ * Give staff a toggle to see an anonymous workspace's channel logs unredacted
+
+## v26.3.216 (2026-11-19)
+ * Drop contacts_contact.current_flow_id
+ * Let incident types email admins whose address isn't verified
+ * Move help site article views to tallies
+
+## v26.3.215 (2026-11-19)
+ * Remove Contact.current_flow and drop its foreign key constraint
+ * Drop DailyCount
+
+## v26.3.214 (2026-11-19)
+ * Read ticket analytics from tallies
+ * Ignore incidents and notifications whose types aren't registered
+ * Move restriction and suspension incidents to an org status signal
+ * Drop FlowActivityCount
+
 ## v26.3.213 (2026-11-18)
  * Say in suspension emails and incidents that flows started by triggers and campaigns will be stopped
  * Read the contact's current flow from current_flow_uuid

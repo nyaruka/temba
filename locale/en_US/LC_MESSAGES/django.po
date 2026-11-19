@@ -2955,12 +2955,6 @@ msgstr ""
 msgid "Workspace Flagged"
 msgstr ""
 
-msgid "Workspace Restricted"
-msgstr ""
-
-msgid "Workspace Suspended"
-msgstr ""
-
 msgid "Webhooks Unhealthy"
 msgstr ""
 
@@ -2972,9 +2966,6 @@ msgid "Your %s export is ready"
 msgstr ""
 
 msgid "Incident"
-msgstr ""
-
-msgid "Reminder"
 msgstr ""
 
 msgid "New user joined your workspace"
@@ -4279,6 +4270,19 @@ msgstr ""
 msgid "No logs in the last 7 days."
 msgstr ""
 
+msgid "Showing these logs unredacted."
+msgstr ""
+
+msgid "These logs are redacted as this workspace is anonymous."
+msgstr ""
+
+msgctxt "button to hide contact details in logs again"
+msgid "Redact"
+msgstr ""
+
+msgid "Show unredacted"
+msgstr ""
+
 msgid "Incoming message from"
 msgstr ""
 
@@ -5551,40 +5555,6 @@ msgid ""
 "contact support.\n"
 msgstr ""
 
-msgid "Your workspace has been restricted because of a problem with billing."
-msgstr ""
-
-msgid "Your workspace has been restricted because it has exceeded the limits of its plan."
-msgstr ""
-
-msgid "Your workspace has been restricted."
-msgstr ""
-
-msgid "Starting flows and sending messages are disabled, but your flows will keep handling incoming messages."
-msgstr ""
-
-#, python-format
-msgid "Unless this is resolved, your workspace will be suspended on %(date)s, which stops all of its flows, including those started by triggers and campaigns. Please contact support."
-msgstr ""
-
-msgid "Please contact support."
-msgstr ""
-
-msgid "Your workspace has been suspended because of a problem with billing."
-msgstr ""
-
-msgid "Your workspace has been suspended because it has exceeded the limits of its plan."
-msgstr ""
-
-msgid "Your workspace has been suspended."
-msgstr ""
-
-msgid "No messages will be sent, and your flows, including those started by triggers and campaigns, will be stopped."
-msgstr ""
-
-msgid "To reactivate your workspace, please contact support."
-msgstr ""
-
 #, python-format
 msgid "User <b>%(email)s</b> accepted an invitation to join your workspace."
 msgstr ""
@@ -5606,9 +5576,6 @@ msgstr ""
 
 #, python-format
 msgid "Your <a href=\"%(read_url)s\">WhatsApp channel</a> appears to not be syncing templates."
-msgstr ""
-
-msgid "Your workspace has been restricted. Starting flows and sending messages are disabled until this is resolved, but your flows will keep handling incoming messages."
 msgstr ""
 
 #, python-format

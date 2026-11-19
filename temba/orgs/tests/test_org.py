@@ -27,6 +27,7 @@ from temba.msgs.models import MessageExport, Msg
 from temba.notifications.incidents.builtin import ChannelDisconnectedIncidentType
 from temba.notifications.types.builtin import ExportFinishedNotificationType
 from temba.orgs.models import Export, Invitation, Org, OrgMembership, OrgRole
+from temba.orgs.signals import org_status_changed
 from temba.orgs.tasks import delete_released_orgs, restart_stalled_exports, suspend_restricted_orgs
 from temba.request_logs.models import HTTPLog
 from temba.schedules.models import Schedule
@@ -195,10 +196,17 @@ class OrgTest(TembaTest):
             self.assertEqual(changed, org.status_changed_on is not None)
             self.assertEqual(suspends_on, org.suspends_on)
 
-        def assert_incidents(incident_type: str, ongoing: int, total: int):
-            incidents = self.org.incidents.filter(incident_type=incident_type)
-            self.assertEqual(ongoing, incidents.filter(ended_on=None).count())
-            self.assertEqual(total, incidents.count())
+        signalled = []
+
+        def on_status_changed(sender, org, status, **kwargs):
+            signalled.append((org, status))
+
+        def assert_signalled(*expected):
+            self.assertEqual(list(expected), signalled)
+            signalled.clear()
+
+        org_status_changed.connect(on_status_changed)
+        self.addCleanup(org_status_changed.disconnect, on_status_changed)
 
         self.org.features += [Org.FEATURE_CHILD_ORGS]
         self.org.save(update_fields=("features",))
@@ -213,9 +221,7 @@ class OrgTest(TembaTest):
         assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
         assert_org(org1_child2, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
         assert_org(self.org2, Org.STATUS_ACTIVE, changed=False)
-        assert_incidents("org:restricted", ongoing=1, total=1)
-        assert_incidents("org:suspended", ongoing=0, total=0)
-        self.assertEqual(1, self.admin.notifications.filter(notification_type="incident:started").count())
+        assert_signalled((self.org, Org.STATUS_RESTRICTED))
         self.assertEqual(Org.BLOCKER_RESTRICTED, self.org.send_blocker)
 
         # new children get their parent's status
@@ -225,7 +231,7 @@ class OrgTest(TembaTest):
         self.org.restrict(Org.RESTRICTED_STAFF)  # noop as already restricted
 
         assert_org(self.org, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
-        assert_incidents("org:restricted", ongoing=1, total=1)
+        assert_signalled()
 
         # suspending keeps the reason for the restriction
         self.org.suspend()
@@ -237,43 +243,34 @@ class OrgTest(TembaTest):
 
         org1_child4 = self.org.create_new(self.admin, "Child 4", tzone.utc, as_child=True)
         assert_org(org1_child4, Org.STATUS_SUSPENDED, Org.RESTRICTED_BILLING)
-        assert_incidents("org:restricted", ongoing=0, total=1)
-        assert_incidents("org:suspended", ongoing=1, total=1)
-        self.assertEqual(2, self.admin.notifications.filter(notification_type="incident:started").count())
+        assert_signalled((self.org, Org.STATUS_SUSPENDED))
         self.assertEqual(Org.BLOCKER_SUSPENDED, self.org.send_blocker)
 
         self.org.suspend()  # noop
         self.org.restrict(Org.RESTRICTED_STAFF)  # noop as suspension is stronger
 
         assert_org(self.org, Org.STATUS_SUSPENDED, Org.RESTRICTED_BILLING)
-        assert_incidents("org:restricted", ongoing=0, total=1)
-        assert_incidents("org:suspended", ongoing=1, total=1)
+        assert_signalled()
 
         self.org.reactivate()
 
         assert_org(self.org, Org.STATUS_ACTIVE)
         assert_org(org1_child1, Org.STATUS_ACTIVE)
         assert_org(self.org2, Org.STATUS_ACTIVE, changed=False)
-        assert_incidents("org:suspended", ongoing=0, total=1)
+        assert_signalled((self.org, Org.STATUS_ACTIVE))
         self.assertIsNone(self.org.send_blocker)
 
         self.org.reactivate()  # noop
+        assert_signalled()
 
-        # without a time to be suspended, a restriction lasts for the default period
-        before = timezone.now()
-        self.org.restrict(Org.RESTRICTED_LIMITS)
+        # without a time to be suspended, a restriction lasts until it's lifted
+        self.org.restrict(Org.RESTRICTED_STAFF)
+        assert_org(self.org, Org.STATUS_RESTRICTED, Org.RESTRICTED_STAFF)
 
-        self.org.refresh_from_db()
-        self.assertEqual(Org.RESTRICTED_LIMITS, self.org.status_reason)
-        self.assertGreaterEqual(self.org.suspends_on, before + Org.RESTRICTION_PERIOD)
-        self.assertLessEqual(self.org.suspends_on, timezone.now() + Org.RESTRICTION_PERIOD)
-
-        # reactivating a restricted org ends its restricted incident
         self.org.reactivate()
 
         assert_org(self.org, Org.STATUS_ACTIVE)
-        assert_incidents("org:restricted", ongoing=0, total=2)
-        assert_incidents("org:suspended", ongoing=0, total=1)
+        assert_signalled((self.org, Org.STATUS_RESTRICTED), (self.org, Org.STATUS_ACTIVE))
 
         # flagging blocks sending but restriction takes precedence
         self.org.flag()
@@ -319,9 +316,6 @@ class OrgTest(TembaTest):
             org.refresh_from_db()
             self.assertEqual(status, org.status, f"unexpected status for {org.name}")
 
-        self.assertEqual(1, self.org.incidents.filter(incident_type="org:suspended", ended_on=None).count())
-        self.assertEqual(0, self.org.incidents.filter(incident_type="org:restricted", ended_on=None).count())
-
         self.assertEqual({"suspended": 0}, suspend_restricted_orgs())
 
         # an org reactivated after being fetched but before being reached isn't suspended
@@ -339,6 +333,19 @@ class OrgTest(TembaTest):
 
         self.org.refresh_from_db()
         self.assertEqual(Org.STATUS_ACTIVE, self.org.status)
+
+        # nor is one restricted again in that time for a reason which doesn't lead to suspension
+        self.org.restrict(Org.RESTRICTED_BILLING, suspends_on=timezone.now() - timedelta(minutes=5))
+
+        def select_for_update(*args, **kwargs):
+            Org.objects.filter(id=self.org.id).update(status_reason=Org.RESTRICTED_STAFF, suspends_on=None)
+            return real_select_for_update(*args, **kwargs)
+
+        with patch.object(Org.objects, "select_for_update", side_effect=select_for_update):
+            self.assertEqual({"suspended": 0}, suspend_restricted_orgs())
+
+        self.org.refresh_from_db()
+        self.assertEqual(Org.STATUS_RESTRICTED, self.org.status)
 
     def test_set_flow_languages(self):
         self.org.set_flow_languages(self.admin, ["eng", "fra"])
@@ -765,9 +772,7 @@ class OrgDeleteTest(TembaTest):
         self._create_archive_content(org, add)
         self._create_tally_content(org, add)
 
-        # suspend and flag org to generate incident and notifications
-        org.suspend()
-        org.reactivate()
+        # flag org to generate incident and notifications
         org.flag()
         org.unflag()
         for incident in org.incidents.all():
@@ -840,9 +845,8 @@ class OrgDeleteTest(TembaTest):
                 exited_on=timezone.now(),
             )
         )
-        contacts[0].current_flow = flow1
         contacts[0].current_flow_uuid = flow1.uuid
-        contacts[0].save(update_fields=("current_flow", "current_flow_uuid"))
+        contacts[0].save(update_fields=("current_flow_uuid",))
 
         flow_label1 = add(FlowLabel.create(org, user, "Cool Flows"))
         flow_label2 = add(FlowLabel.create(org, user, "Crazy Flows"))

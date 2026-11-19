@@ -129,7 +129,8 @@ export interface Ticket {
   status: string;
   contact: ObjectReference;
   topic: ObjectReference;
-  assignee?: { email: string; name: string; avatar?: string };
+  // from the api an assignee has an email, from a socket event a uuid
+  assignee?: { uuid?: string; email?: string; name: string; avatar?: string };
 }
 
 export interface FlowResult {

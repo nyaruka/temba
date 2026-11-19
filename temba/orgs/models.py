@@ -47,10 +47,12 @@ from temba.utils.models import (
     UUIDMixin,
     delete_in_batches,
 )
-from temba.utils.models.counts import BaseDailyCount, BaseScopedCount
+from temba.utils.models.counts import BaseScopedCount
 from temba.utils.text import generate_secret
 from temba.utils.timezones import timezone_to_country_code
 from temba.utils.uuid import uuid4
+
+from .signals import org_status_changed
 
 logger = logging.getLogger(__name__)
 
@@ -293,8 +295,6 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     RESTRICTED_STAFF = "S"
     RESTRICTED_CHOICES = ((RESTRICTED_BILLING, "Billing"), (RESTRICTED_LIMITS, "Limits"), (RESTRICTED_STAFF, "Staff"))
 
-    RESTRICTION_PERIOD = timedelta(days=14)  # default time between being restricted and being suspended
-
     DELETE_DELAY_DAYS = 7  # how many days after releasing that an org is deleted
     OUTBOX_WARNING_THRESHOLD = 10_000
 
@@ -525,49 +525,31 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
     def restrict(self, reason: str, *, suspends_on=None):
         """
-        Restricts this org and any children, unless already restricted or suspended. Unless given a time to be
-        suspended, it will be suspended once the default restriction period is up.
+        Restricts this org and any children, unless already restricted or suspended. If given a time, it will be
+        suspended then unless the restriction is lifted first.
         """
-        from temba.notifications.incidents.builtin import OrgRestrictedIncidentType
-
         assert not self.is_child
 
         if self.status == Org.STATUS_ACTIVE:
-            self._set_status(
-                Org.STATUS_RESTRICTED,
-                reason=reason,
-                suspends_on=suspends_on or timezone.now() + Org.RESTRICTION_PERIOD,
-            )
-
-            OrgRestrictedIncidentType.get_or_create(self)  # create incident which will notify admins
+            self._set_status(Org.STATUS_RESTRICTED, reason=reason, suspends_on=suspends_on)
 
     def suspend(self, reason: str = None):
         """
         Suspends this org and any children. Unless given a reason, it keeps the reason it was restricted for.
         """
-        from temba.notifications.incidents.builtin import OrgRestrictedIncidentType, OrgSuspendedIncidentType
-
         assert not self.is_child
 
         if self.status != Org.STATUS_SUSPENDED:
             self._set_status(Org.STATUS_SUSPENDED, reason=reason or self.status_reason)
 
-            OrgRestrictedIncidentType.end_ongoing(self)
-            OrgSuspendedIncidentType.get_or_create(self)  # create incident which will notify admins
-
     def reactivate(self):
         """
         Lifts any restriction or suspension of this org and any children.
         """
-        from temba.notifications.incidents.builtin import OrgRestrictedIncidentType, OrgSuspendedIncidentType
-
         assert not self.is_child
 
         if self.status != Org.STATUS_ACTIVE:
             self._set_status(Org.STATUS_ACTIVE)
-
-            OrgRestrictedIncidentType.end_ongoing(self)
-            OrgSuspendedIncidentType.end_ongoing(self)
 
     def _set_status(self, status: str, *, reason: str = None, suspends_on=None):
         now = timezone.now()
@@ -584,6 +566,8 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         self.save(update_fields=changes.keys())
 
         self.children.filter(is_active=True).update(**changes)
+
+        org_status_changed.send(sender=Org, org=self, status=status)
 
     def flag(self):
         """
@@ -1365,7 +1349,6 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
         # needs to come after deletion of other things as those insert new negative counts
         delete_in_batches(self.counts.all())
-        delete_in_batches(self.daily_counts.all())
 
         delete_in_batches(self.org_tallies.all(), pk="pk")
 
@@ -1388,10 +1371,10 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
     class Meta:
         constraints = [
-            # a restricted org always has a reason and a time it will be suspended, and a suspended org keeps any reason
+            # a restricted org always has a reason, and a suspended org keeps any reason
             models.CheckConstraint(
                 condition=Q(status="A", status_reason__isnull=True, suspends_on__isnull=True)
-                | Q(status="R", status_reason__isnull=False, suspends_on__isnull=False, status_changed_on__isnull=False)
+                | Q(status="R", status_reason__isnull=False, status_changed_on__isnull=False)
                 | Q(status="S", suspends_on__isnull=True, status_changed_on__isnull=False),
                 name="orgs_org_status_consistent",
             )
@@ -1851,30 +1834,6 @@ class ItemCount(BaseScopedCount):
         ]
         constraints = [
             models.UniqueConstraint(name="orgcount_squashed", fields=("org", "scope"), condition=Q(is_squashed=True))
-        ]
-
-
-class DailyCount(BaseDailyCount):
-    """
-    Org-level daily counts of things.
-    """
-
-    squash_over = ("org_id", "day", "scope")
-
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="daily_counts", db_index=False)  # indexed below
-
-    class Meta:
-        indexes = [
-            models.Index("org", "day", OpClass("scope", name="varchar_pattern_ops"), name="orgdailycount_org_scope"),
-            # for squashing task
-            models.Index(
-                name="orgdailycount_unsquashed", fields=("org", "day", "scope"), condition=Q(is_squashed=False)
-            ),
-        ]
-        constraints = [
-            models.UniqueConstraint(
-                name="orgdailycount_squashed", fields=("org", "day", "scope"), condition=Q(is_squashed=True)
-            )
         ]
 
 

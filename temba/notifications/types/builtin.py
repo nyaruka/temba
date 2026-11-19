@@ -80,6 +80,7 @@ class IncidentStartedNotificationType(NotificationType):
             users=incident.org.get_admins(),
             medium=Notification.MEDIUM_UI + Notification.MEDIUM_EMAIL,
             email_required=incident.type.email_required,
+            email_unverified=incident.type.email_unverified,
             incident=incident,
         )
 
@@ -95,47 +96,10 @@ class IncidentStartedNotificationType(NotificationType):
     def is_email_required(self, notification) -> bool:
         return notification.incident.type.email_required
 
-    def get_email_context(self, notification, branding: dict):
-        context = super().get_email_context(notification, branding)
-        context["deadline"] = notification.incident.type.get_deadline(notification.incident)
-        return context
-
     def as_json(self, notification) -> dict:
         json = super().as_json(notification)
         json["incident"] = notification.incident.as_json()
         return json
-
-
-class IncidentReminderNotificationType(IncidentStartedNotificationType):
-    """
-    Reminder by email of an ongoing incident whose deadline is approaching. It uses the same template as the incident
-    started email, which can use the deadline in its context to say what happens when.
-    """
-
-    slug = "incident:reminder"
-
-    @staticmethod
-    def get_scope(incident, reminder) -> str:
-        return f"{incident.id}:{int(reminder.total_seconds())}"
-
-    @classmethod
-    def create(cls, incident, reminder):
-        """
-        Creates a reminder for all admins in the workspace.
-        """
-
-        Notification.create_all(
-            incident.org,
-            cls.slug,
-            scope=cls.get_scope(incident, reminder),
-            users=incident.org.get_admins(),
-            medium=Notification.MEDIUM_EMAIL,
-            email_required=incident.type.email_required,
-            incident=incident,
-        )
-
-    def get_email_subject(self, notification) -> str:
-        return _("Reminder") + ": " + notification.incident.type.title
 
 
 class TicketsOpenedNotificationType(NotificationType):

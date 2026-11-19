@@ -693,43 +693,43 @@
       chat.refresh();
     }
 
+    // whether the given user is us - users from the api have an email, from socket events a uuid
+    function isMe(user) {
+      return !!user && (user.uuid == '{{ request.user.uuid }}' || user.email == '{{ request.user.email }}');
+    }
+
+    // the chat's ticket changed, by us or by someone else
     function handleTicketUpdated(event) {
       var tickets = document.querySelector("temba-ticket-list");
-      var chat = document.querySelector("temba-contact-chat");
-
-      if (event.detail.ticket) {
-        const ticket = event.detail.ticket;
-        const previous = event.detail.previous;
-        if (ticket && previous && ticket.uuid == previous.uuid) {
-          // current agent took a ticket by replying to it - it stays where it is, showing them as its
-          // assignee, so the rows they're working through don't move under them
-          if (messageSent && ticket.assignee && ticket.assignee.email == '{{request.user.email}}') {
-            if (folder == 'unassigned') {
-              tickets.holdTicket(ticket);
-            }
-            messageSent = false;
-          } else if (ticket.assignee && !previous.assignee && folder == 'unassigned') {
-            removeTicket(ticket.uuid);
-          }
-          // unassigning an assigned ticket
-          else if ((!ticket.assignee || ticket.assignee.email != '{{request.user.email}}') && folder == "mine" && previous.assignee) {
-            removeTicket(ticket.uuid);
-          }
-          // closed and reopened tickets stay in the list - the refresh below
-          // resorts and restyles them
-          else if (folder == previous.topic.uuid && folder != ticket.topic.uuid) {
-            removeTicket(ticket.uuid);
-          }
-
-          tickets.refresh();
-          chat.refresh();
-          refreshMenu();
-
-          var header = document.querySelector("#page-header");
-          header.refresh();
-
-        }
+      const ticket = event.detail.ticket;
+      const previous = event.detail.previous;
+      if (!ticket || !previous || ticket.uuid != previous.uuid) {
+        return;
       }
+
+      // current agent took a ticket by replying to it - it stays where it is, showing them as its
+      // assignee, so the rows they're working through don't move under them
+      if (messageSent && isMe(ticket.assignee)) {
+        if (folder == 'unassigned') {
+          tickets.holdTicket(ticket);
+        }
+        messageSent = false;
+      } else if (ticket.assignee && !previous.assignee && folder == 'unassigned') {
+        removeTicket(ticket.uuid);
+      }
+      // unassigning an assigned ticket
+      else if (!isMe(ticket.assignee) && folder == "mine" && previous.assignee) {
+        removeTicket(ticket.uuid);
+      }
+      // closed and reopened tickets stay in the list, which resorts and restyles them
+      else if (previous.topic && folder == previous.topic.uuid && folder != ticket.topic.uuid) {
+        removeTicket(ticket.uuid);
+      }
+
+      // the list and the menu catch up when the workspace's tickets change, and the chat already has the
+      // change - only the header's actions depend on the ticket
+      var header = document.querySelector("#page-header");
+      header.refresh();
     }
 
     function handleInterruptContact(event) {

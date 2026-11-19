@@ -1,13 +1,22 @@
 import { fixture, assert } from '@open-wc/testing';
+import { useFakeTimers } from 'sinon';
 import { CustomEventType } from '../src/interfaces';
-import { TicketList } from '../src/list/TicketList';
+import {
+  TicketList,
+  TICKETS_REFRESH_BATCH,
+  TICKETS_REFRESH_MAX_BACKOFF,
+  TICKETS_REFRESH_THROTTLE
+} from '../src/list/TicketList';
+import { setRealtimeContext } from '../src/live/Realtime';
+import { setSocketProvider, SocketProvider } from '../src/live/SocketService';
 import {
   assertScreenshot,
   getClip,
   getComponent,
   loadStore,
   mockGET,
-  mockNow
+  mockNow,
+  MockSocketProvider
 } from './utils.test';
 
 export const getHTML = () => {
@@ -1049,5 +1058,398 @@ describe('temba-ticket-list', () => {
       items.map((item) => item.ticket.uuid),
       ['o1', 'o2']
     );
+  });
+});
+
+describe('temba-ticket-list realtime', () => {
+  const ORG_CHANNEL = 'org:org-uuid';
+  const TICKETS_CHANNEL = 'org:org-uuid:tickets';
+  let clock: any;
+  let mockSocket: MockSocketProvider;
+  let previousProvider: SocketProvider;
+
+  beforeEach(async () => {
+    await loadStore();
+    mockSocket = new MockSocketProvider();
+    previousProvider = setSocketProvider(mockSocket);
+    setRealtimeContext({ org: 'org-uuid', user: 'user-uuid' });
+  });
+
+  afterEach(() => {
+    if (clock) {
+      clock.restore();
+      clock = null;
+    }
+    setRealtimeContext(null);
+    setSocketProvider(previousProvider);
+  });
+
+  // loads the list for real, then takes over the clock from a quiet start
+  const getQuietList = async () => {
+    const list = await getList('/test/assets/list/tickets-merged.json');
+    // let the initial subscribe confirmation land first
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    list.refreshJitter = 0;
+    clock = useFakeTimers({ now: Date.now() });
+    return list;
+  };
+
+  // stands in for the list's refresh, counting them and leaving each in
+  // flight until the test ends it
+  const stubRefresh = (list: TicketList) => {
+    let scope: Set<string> = null;
+    const stub = {
+      count: 0,
+      end: (outcome: 'merged' | 'failed' | 'aborted') => {
+        (list as any).handleRefreshEnded(scope, outcome);
+      }
+    };
+    list.refresh = () => {
+      stub.count++;
+      scope = (list as any).getRefreshScope();
+    };
+    return stub;
+  };
+
+  const tickets = (uuids: string[] = [MERGED[0]]) => {
+    mockSocket.serverPublish(TICKETS_CHANNEL, {
+      type: 'tickets_changed',
+      tickets: uuids
+    });
+  };
+
+  // waits on real timers for something the list does in response to a fetch
+  const until = async (check: () => boolean) => {
+    for (let i = 0; i < 100 && !check(); i++) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    assert.isTrue(check());
+  };
+
+  it("subscribes to the workspace's tickets channel and unsubscribes on removal", async () => {
+    const list = await getQuietList();
+    assert.include(mockSocket.activeChannels(), TICKETS_CHANNEL);
+
+    list.remove();
+    assert.notInclude(mockSocket.activeChannels(), TICKETS_CHANNEL);
+  });
+
+  it('does not poll', async () => {
+    const list = await getQuietList();
+    const refreshKey = list.refreshKey;
+    clock.tick(60000);
+    assert.equal(list.refreshKey, refreshKey);
+  });
+
+  it('refreshes when tickets change, ignoring the rest of the workspace', async () => {
+    const list = await getQuietList();
+    const refreshKey = list.refreshKey;
+
+    mockSocket.serverPublish(ORG_CHANNEL, {
+      type: 'asset_changed',
+      asset: { type: 'flow', uuid: 'f1', name: 'Renamed' }
+    });
+    clock.tick(TICKETS_REFRESH_THROTTLE);
+    assert.equal(list.refreshKey, refreshKey);
+
+    tickets();
+    clock.tick(0);
+    assert.notEqual(list.refreshKey, refreshKey);
+  });
+
+  it('coalesces a burst of changes into one trailing refresh', async () => {
+    const list = await getQuietList();
+    const refreshes = stubRefresh(list);
+
+    // the first refreshes straight away
+    tickets([MERGED[0]]);
+    clock.tick(0);
+    assert.equal(refreshes.count, 1);
+
+    // the rest of the burst never overlaps the refresh in flight, however
+    // long it takes
+    tickets([MERGED[1]]);
+    tickets([MERGED[2]]);
+    clock.tick(TICKETS_REFRESH_THROTTLE * 5);
+    assert.equal(refreshes.count, 1);
+
+    // then waits out the window from when it ended, and refreshes once
+    refreshes.end('merged');
+    clock.tick(TICKETS_REFRESH_THROTTLE - 1);
+    assert.equal(refreshes.count, 1);
+    clock.tick(1);
+    assert.equal(refreshes.count, 2);
+    assert.include(
+      list.getRefreshEndpoint(),
+      `tickets=${MERGED[1]},${MERGED[2]}`
+    );
+
+    // and nothing more is owed
+    refreshes.end('merged');
+    clock.tick(TICKETS_REFRESH_THROTTLE * 2);
+    assert.equal(refreshes.count, 2);
+  });
+
+  it('retries a failed refresh, backing off while it keeps failing', async () => {
+    const list = await getQuietList();
+    const refreshes = stubRefresh(list);
+
+    tickets();
+    clock.tick(0);
+    assert.equal(refreshes.count, 1);
+
+    // the changes are still owed, so it tries again after twice the window
+    refreshes.end('failed');
+    clock.tick(TICKETS_REFRESH_THROTTLE * 2 - 1);
+    assert.equal(refreshes.count, 1);
+    clock.tick(1);
+    assert.equal(refreshes.count, 2);
+
+    // then four times
+    refreshes.end('failed');
+    clock.tick(TICKETS_REFRESH_THROTTLE * 4 - 1);
+    assert.equal(refreshes.count, 2);
+    clock.tick(1);
+    assert.equal(refreshes.count, 3);
+
+    // never longer than the most
+    for (let i = 0; i < 10; i++) {
+      refreshes.end('failed');
+      clock.tick(TICKETS_REFRESH_MAX_BACKOFF);
+    }
+    assert.equal(refreshes.count, 13);
+
+    // and once one gets through, nothing more is owed
+    refreshes.end('merged');
+    clock.tick(TICKETS_REFRESH_MAX_BACKOFF);
+    assert.equal(refreshes.count, 13);
+    assert.notInclude(list.getRefreshEndpoint(), 'tickets=');
+  });
+
+  it('tries again after a refresh that was cancelled', async () => {
+    const list = await getQuietList();
+    const refreshes = stubRefresh(list);
+
+    tickets();
+    clock.tick(0);
+    refreshes.end('aborted');
+    clock.tick(TICKETS_REFRESH_THROTTLE);
+    assert.equal(refreshes.count, 2);
+  });
+
+  it('reloads instead when more changed than a refresh can read', async () => {
+    const list = await getQuietList();
+    const refreshes = stubRefresh(list);
+    let reloads = 0;
+    list.reload = () => {
+      reloads++;
+      return Promise.resolve('merged' as const);
+    };
+
+    const many = [];
+    for (let i = 0; i <= TICKETS_REFRESH_BATCH; i++) {
+      many.push(`ticket-${i}`);
+    }
+    tickets(many);
+    clock.tick(0);
+    assert.equal(reloads, 1);
+    assert.equal(refreshes.count, 0);
+    assert.notInclude(list.getRefreshEndpoint(), 'tickets=');
+  });
+
+  it('backs off a full reload that keeps failing', async () => {
+    const list = await getQuietList();
+    let reloads = 0;
+    list.reload = () => {
+      reloads++;
+      return Promise.resolve('failed' as const);
+    };
+
+    mockSocket.serverPublish(TICKETS_CHANNEL, { type: 'tickets_changed' });
+    clock.tick(0);
+    assert.equal(reloads, 1);
+    await clock.tickAsync(0);
+
+    // still owed, after twice the window
+    await clock.tickAsync(TICKETS_REFRESH_THROTTLE * 2 - 1);
+    assert.equal(reloads, 1);
+    await clock.tickAsync(1);
+    assert.equal(reloads, 2);
+
+    // then four times
+    await clock.tickAsync(TICKETS_REFRESH_THROTTLE * 4 - 1);
+    assert.equal(reloads, 2);
+    await clock.tickAsync(1);
+    assert.equal(reloads, 3);
+  });
+
+  it('tries again when a refresh in flight never ends', async () => {
+    const list = await getQuietList();
+    const refreshes = stubRefresh(list);
+
+    tickets([MERGED[0]]);
+    clock.tick(0);
+    assert.equal(refreshes.count, 1);
+
+    // heard of more, but the first never reports back
+    tickets([MERGED[1]]);
+    clock.tick(29999);
+    assert.equal(refreshes.count, 1);
+    clock.tick(1);
+    assert.equal(refreshes.count, 2);
+  });
+
+  it('schedules from the end of a refresh, not from when it would go stale', async () => {
+    const list = await getQuietList();
+    const refreshes = stubRefresh(list);
+
+    tickets([MERGED[0]]);
+    clock.tick(0);
+    tickets([MERGED[1]]);
+    clock.tick(0);
+
+    refreshes.end('merged');
+    clock.tick(TICKETS_REFRESH_THROTTLE);
+    assert.equal(refreshes.count, 2);
+  });
+
+  it('starts afresh when the list moves to another endpoint', async () => {
+    const list = await getQuietList();
+    const refreshes = stubRefresh(list);
+
+    tickets([MERGED[0]]);
+    clock.tick(0);
+    assert.equal(refreshes.count, 1);
+
+    // the new endpoint's load reads everything, so nothing is owed, and the
+    // refresh it cancelled no longer holds up the next
+    list.endpoint = '/test/assets/list/tickets-merged.json?folder=other';
+    tickets([MERGED[1]]);
+    list.willUpdate(new Map([['endpoint', null]]));
+    (list as any).loading = false;
+    tickets([MERGED[2]]);
+    clock.tick(TICKETS_REFRESH_THROTTLE);
+    assert.equal(refreshes.count, 2);
+    assert.include(list.getRefreshEndpoint(), `tickets=${MERGED[2]}`);
+    assert.notInclude(list.getRefreshEndpoint(), MERGED[1]);
+  });
+
+  it('leaves changes to a hidden page until it is shown', async () => {
+    const list = await getQuietList();
+    const refreshes = stubRefresh(list);
+    let hidden = true;
+    (list as any).isPageHidden = () => hidden;
+
+    tickets([MERGED[0]]);
+    tickets([MERGED[1]]);
+    clock.tick(TICKETS_REFRESH_THROTTLE * 10);
+    assert.equal(refreshes.count, 0);
+
+    hidden = false;
+    document.dispatchEvent(new Event('visibilitychange'));
+    clock.tick(0);
+    assert.equal(refreshes.count, 1);
+    assert.include(
+      list.getRefreshEndpoint(),
+      `tickets=${MERGED[0]},${MERGED[1]}`
+    );
+  });
+
+  it('waits for a load in flight rather than aborting it', async () => {
+    const list = await getQuietList();
+    const refreshKey = list.refreshKey;
+
+    list.loading = true;
+    tickets();
+    clock.tick(TICKETS_REFRESH_THROTTLE);
+    assert.equal(list.refreshKey, refreshKey);
+
+    list.loading = false;
+    await list.updateComplete;
+    clock.tick(TICKETS_REFRESH_THROTTLE);
+    assert.notEqual(list.refreshKey, refreshKey);
+  });
+
+  it('reloads on resubscribe but not on the initial subscribe', async () => {
+    const list = await getQuietList();
+    let reloads = 0;
+    list.reload = () => {
+      reloads++;
+      return Promise.resolve('merged' as const);
+    };
+
+    clock.tick(TICKETS_REFRESH_THROTTLE);
+    assert.equal(reloads, 0);
+
+    // a reconnect catches up on anything missed, including tickets that left
+    // the folder, which only a reload can tell
+    mockSocket.subs[0].onSubscribed();
+    clock.tick(0);
+    assert.equal(reloads, 1);
+  });
+
+  it('reloads when there were too many changes to name', async () => {
+    const list = await getQuietList();
+    const refreshKey = list.refreshKey;
+    let reloads = 0;
+    list.reload = () => {
+      reloads++;
+      return Promise.resolve('merged' as const);
+    };
+
+    mockSocket.serverPublish(TICKETS_CHANNEL, { type: 'tickets_changed' });
+    clock.tick(0);
+    assert.equal(reloads, 1);
+    assert.equal(list.refreshKey, refreshKey);
+  });
+
+  it('reads the tickets that changed, dropping those that left the folder', async () => {
+    const list = await getList('/test/assets/list/tickets-merged.json');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    list.refreshJitter = 0;
+    assert.deepEqual(ticketUuids(list), MERGED);
+
+    // the first ticket is selected, so it stays even though it left
+    assert.equal(list.getSelection().ticket.uuid, MERGED[0]);
+
+    // of the named tickets, only one is still in the folder, and one is new
+    // to it, say just moved in from another topic
+    const moved = ticketResult('moved-in', '2000-01-01T00:00:00.000Z');
+    mockGET(/tickets-merged\.json\?tickets=/, {
+      results: [ticketResult(MERGED[1], '2000-01-02T00:00:00.000Z'), moved]
+    });
+
+    tickets([MERGED[0], MERGED[1], MERGED[2], 'moved-in']);
+    assert.include(
+      list.getRefreshEndpoint(),
+      `tickets=${MERGED[0]},${MERGED[1]},${MERGED[2]},moved-in`
+    );
+
+    await until(() => ticketUuids(list).includes('moved-in'));
+
+    const uuids = ticketUuids(list);
+    assert.notInclude(uuids, MERGED[2]);
+    assert.include(uuids, MERGED[0]);
+    assert.include(uuids, MERGED[1]);
+
+    // and none are left to read
+    assert.isFalse(list.getRefreshEndpoint().includes('tickets='));
+  });
+
+  it('announces a refresh that only dropped tickets', async () => {
+    const list = await getList('/test/assets/list/tickets-merged.json');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    list.refreshJitter = 0;
+
+    let refreshed = 0;
+    list.addEventListener(CustomEventType.Refreshed, () => refreshed++);
+
+    // the ticket left the folder, so nothing comes back and the top row is
+    // unchanged, but the page still needs to know, say to update its counts
+    mockGET(/tickets-merged\.json\?tickets=/, { results: [] });
+    tickets([MERGED[2]]);
+
+    await until(() => !ticketUuids(list).includes(MERGED[2]));
+    assert.equal(refreshed, 1);
   });
 });

@@ -2978,12 +2978,6 @@ msgstr "Aplicación Android del canal desactualizada"
 msgid "Workspace Flagged"
 msgstr "Workspace marcado"
 
-msgid "Workspace Restricted"
-msgstr "Workspace restringido"
-
-msgid "Workspace Suspended"
-msgstr "Workspace suspendido"
-
 msgid "Webhooks Unhealthy"
 msgstr "Webhooks con problemas"
 
@@ -2996,9 +2990,6 @@ msgstr "Su exportación de %s está lista"
 
 msgid "Incident"
 msgstr "Incidente"
-
-msgid "Reminder"
-msgstr "Recordatorio"
 
 msgid "New user joined your workspace"
 msgstr "Un nuevo usuario se ha unido a su workspace"
@@ -4304,6 +4295,19 @@ msgstr "No hay canales"
 msgid "No logs in the last 7 days."
 msgstr "No hay registros en los últimos 7 días."
 
+msgid "Showing these logs unredacted."
+msgstr "Mostrando estos registros sin censurar."
+
+msgid "These logs are redacted as this workspace is anonymous."
+msgstr "Estos registros están censurados porque este workspace es anónimo."
+
+msgctxt "button to hide contact details in logs again"
+msgid "Redact"
+msgstr "Censurar"
+
+msgid "Show unredacted"
+msgstr "Mostrar sin censurar"
+
 msgid "Incoming message from"
 msgstr "Mensaje entrante de"
 
@@ -5592,40 +5596,6 @@ msgstr ""
 "Su workspace ha sido marcado debido a actividad sospechosa. Para volver a habilitar el inicio de flujos y el envío de mensajes,\n"
 "póngase en contacto con el soporte.\n"
 
-msgid "Your workspace has been restricted because of a problem with billing."
-msgstr "Su workspace ha sido restringido debido a un problema con la facturación."
-
-msgid "Your workspace has been restricted because it has exceeded the limits of its plan."
-msgstr "Su workspace ha sido restringido porque ha superado los límites de su plan."
-
-msgid "Your workspace has been restricted."
-msgstr "Su workspace ha sido restringido."
-
-msgid "Starting flows and sending messages are disabled, but your flows will keep handling incoming messages."
-msgstr "El inicio de flujos y el envío de mensajes están deshabilitados, pero sus flujos seguirán gestionando los mensajes entrantes."
-
-#, python-format
-msgid "Unless this is resolved, your workspace will be suspended on %(date)s, which stops all of its flows, including those started by triggers and campaigns. Please contact support."
-msgstr "Si esto no se resuelve, su workspace será suspendido el %(date)s, lo que detendrá todos sus flujos, incluidos los iniciados por disparadores y campañas. Póngase en contacto con el soporte."
-
-msgid "Please contact support."
-msgstr "Póngase en contacto con el soporte."
-
-msgid "Your workspace has been suspended because of a problem with billing."
-msgstr "Su workspace ha sido suspendido debido a un problema con la facturación."
-
-msgid "Your workspace has been suspended because it has exceeded the limits of its plan."
-msgstr "Su workspace ha sido suspendido porque ha superado los límites de su plan."
-
-msgid "Your workspace has been suspended."
-msgstr "Su workspace ha sido suspendido."
-
-msgid "No messages will be sent, and your flows, including those started by triggers and campaigns, will be stopped."
-msgstr "No se enviará ningún mensaje y sus flujos, incluidos los iniciados por disparadores y campañas, se detendrán."
-
-msgid "To reactivate your workspace, please contact support."
-msgstr "Para reactivar su workspace, póngase en contacto con el soporte."
-
 #, python-format
 msgid "User <b>%(email)s</b> accepted an invitation to join your workspace."
 msgstr "El usuario %(email)s aceptó una invitación para unirse a su workspace."
@@ -5648,9 +5618,6 @@ msgstr "Su <a href=\"%(read_url)s\">canal Android</a> parece seguir ejecutando u
 #, python-format
 msgid "Your <a href=\"%(read_url)s\">WhatsApp channel</a> appears to not be syncing templates."
 msgstr "Su <a href=\"%(read_url)s\">canal de WhatsApp</a> parece no estar sincronizando las plantillas."
-
-msgid "Your workspace has been restricted. Starting flows and sending messages are disabled until this is resolved, but your flows will keep handling incoming messages."
-msgstr "Su workspace ha sido restringido. El inicio de flujos y el envío de mensajes están deshabilitados hasta que esto se resuelva, pero sus flujos seguirán gestionando los mensajes entrantes."
 
 #, python-format
 msgid "Some webhook calls from your flows are taking too long to respond or failing too frequently. If the problem persists these calls will be temporarily disabled. You can check the <a href=\"%(logs_url)s\">webhook call log</a> to see which calls are the problem."

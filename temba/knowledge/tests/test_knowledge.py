@@ -8,8 +8,8 @@ from django.test.utils import override_settings
 
 from temba.knowledge.models import (
     Article,
-    ArticleCount,
     ArticleImage,
+    ArticleTally,
     ColumnStylesProcessor,
     HelpSite,
     KnowledgeChunk,
@@ -211,7 +211,7 @@ class KnowledgeSourceTest(TembaTest):
             size=3,
             created_by=self.admin,
         )
-        ArticleCount.record_view(parent)
+        parent.tallies.create(scope="views@2026-11-01", count=1)
         site = HelpSite.get_or_create(helpdesk, self.admin)
 
         helpdesk.delete()
@@ -219,7 +219,7 @@ class KnowledgeSourceTest(TembaTest):
         self.assertFalse(KnowledgeSource.objects.filter(id=helpdesk.id).exists())
         self.assertFalse(Article.objects.filter(id__in=(parent.id, child.id)).exists())
         self.assertEqual(0, ArticleImage.objects.count())
-        self.assertEqual(0, ArticleCount.objects.count())
+        self.assertEqual(0, ArticleTally.objects.count())
         self.assertFalse(HelpSite.objects.filter(id=site.id).exists())
         self.assertEqual(0, KnowledgeChunk.objects.count())
         self.assertFalse(public_file_storage.exists(image_path))

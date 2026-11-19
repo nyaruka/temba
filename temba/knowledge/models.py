@@ -16,6 +16,7 @@ import dns.exception
 import dns.resolver
 import markdown
 import nh3
+from django_valkey import get_valkey_connection
 from markdown.extensions import Extension
 from markdown.extensions.toc import TocExtension, slugify_unicode
 from markdown.preprocessors import Preprocessor
@@ -24,7 +25,6 @@ from markdown.util import HTML_PLACEHOLDER_RE
 from pgvector.django import HnswIndex, VectorField
 
 from django.conf import settings
-from django.contrib.postgres.indexes import OpClass
 from django.core.cache import cache
 from django.core.files.storage import default_storage
 from django.db import models, transaction
@@ -39,10 +39,9 @@ from django.utils.translation import gettext_lazy as _
 
 from temba import mailroom
 from temba.mailroom.client.exceptions import RequestException
-from temba.orgs.models import Org
+from temba.orgs.models import BaseTally, Org
 from temba.utils import on_transaction_commit
 from temba.utils.models import CreatedByMixin, ModifiedByMixin, OrgAsset, SoftDeleteMixin, delete_in_batches
-from temba.utils.models.counts import BaseDailyCount
 from temba.utils.s3 import public_file_storage
 from temba.utils.text import generate_secret
 from temba.utils.uuid import uuid4
@@ -875,7 +874,7 @@ class KnowledgeSource(OrgAsset):
         delete_in_batches(self.chunks.all())
         delete_in_batches(self.items.all())
         delete_in_batches(ArticleImage.objects.filter(article__source=self))
-        delete_in_batches(ArticleCount.objects.filter(article__source=self))
+        delete_in_batches(ArticleTally.objects.filter(article__source=self), pk="pk")
 
         # the helpdesk's public site goes with its articles, and its favicon with the article images
         for site in HelpSite.objects.filter(source=self):
@@ -1268,36 +1267,29 @@ class ArticleImage(CreatedByMixin):
         on_transaction_commit(lambda: public_file_storage.delete(path))
 
 
-class ArticleCount(BaseDailyCount):
+class ArticleTally(BaseTally):
     """
-    Daily counts of article activity on the help site - for now just views, which are what the site ranks its popular
-    articles by. Written as deltas by the site as it serves pages and squashed periodically.
+    Article-level daily totals of help site activity - for now just views, which are what the site ranks its popular
+    articles by.
     """
 
-    squash_over = ("article_id", "day", "scope")
+    owner_field = "article"
+    field_prefixes = ("A",)
 
     SCOPE_VIEWS = "views"
 
-    article = models.ForeignKey(Article, on_delete=models.PROTECT, related_name="counts", db_index=False)
+    pk = models.CompositePrimaryKey("article", "scope")
+    article = models.ForeignKey(Article, on_delete=models.PROTECT, related_name="tallies", db_index=False)  # leads key
 
     @classmethod
     def record_view(cls, article):
-        cls.objects.create(article=article, day=timezone.now().date(), scope=cls.SCOPE_VIEWS, count=1)
+        field = f"{cls.field_prefixes[0]}{article.id}|{cls.SCOPE_VIEWS}@{timezone.now().date().isoformat()}"
+        get_valkey_connection().hincrby(cls.LIVE_KEY, field, 1)
 
     class Meta:
         indexes = [
-            models.Index(
-                "article", "day", OpClass("scope", name="varchar_pattern_ops"), name="articlecount_article_scope"
-            ),
-            # for squashing task
-            models.Index(
-                name="articlecount_unsquashed", fields=("article", "day", "scope"), condition=Q(is_squashed=False)
-            ),
-        ]
-        constraints = [
-            models.UniqueConstraint(
-                name="articlecount_squashed", fields=("article", "day", "scope"), condition=Q(is_squashed=True)
-            )
+            # for trimming
+            models.Index(name="articletally_expires_on", fields=("expires_on",), condition=Q(expires_on__isnull=False))
         ]
 
 
@@ -1692,16 +1684,18 @@ class HelpSite(CreatedByMixin, ModifiedByMixin):
         The most viewed published articles over the last POPULAR_DAYS, most viewed first. Only articles that are
         currently reachable - published, in a published section - count.
         """
-        since = timezone.now().date() - timedelta(days=self.POPULAR_DAYS)
+        # unflushed views are left out, as they're only the last moments of a 30 day window
+        today = timezone.now().date()
+        since, until = today - timedelta(days=self.POPULAR_DAYS), today + timedelta(days=1)
         totals = (
-            ArticleCount.objects.filter(
+            ArticleTally.objects.filter(
                 article__source=self.source,
                 article__is_active=True,
                 article__status=Article.STATUS_PUBLISHED,
                 article__parent__is_active=True,
                 article__parent__status=Article.STATUS_PUBLISHED,
-                scope=ArticleCount.SCOPE_VIEWS,
-                day__gte=since,
+                scope__gte=f"{ArticleTally.SCOPE_VIEWS}@{since.isoformat()}",
+                scope__lt=f"{ArticleTally.SCOPE_VIEWS}@{until.isoformat()}",
             )
             .values_list("article_id")
             .annotate(total=Sum("count"))
