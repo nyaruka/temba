@@ -14,7 +14,7 @@ from temba.api.models import APIToken
 from temba.api.v2.serializers import normalize_extra
 from temba.contacts.models import Contact
 from temba.flows.models import FlowRun
-from temba.orgs.models import OrgRole
+from temba.orgs.models import Org, OrgRole
 from temba.utils.uuid import uuid7
 
 from . import APITest
@@ -186,8 +186,41 @@ class EndpointsTest(APITest):
         self.assertEqual(request_by_token(campaigns_url, token1.key).status_code, 403)
         self.assertEqual(request_by_basic_auth(campaigns_url, self.admin.email, token1.key).status_code, 403)
 
-        # and if user is inactive, disallow the request
+        # tokens can't be used once the workspace is suspended, but session auth still works
         self.org.add_user(self.admin, OrgRole.ADMINISTRATOR)
+        self.org.api_rates = {}
+        self.org.save(update_fields=("api_rates",))
+        cache.delete(f"throttle_v2_{self.org.id}")
+        self.org.features += [Org.FEATURE_CHILD_ORGS]
+        child = self.org.create_new(self.admin, "Child", self.org.timezone, as_child=True)
+        child_token = APIToken.create(child, self.admin)
+        APIToken.get_used_keys()  # clear any recorded use
+
+        self.org.suspend()
+
+        response = request_by_token(contacts_url, token1.key)
+        self.assertResponseError(response, None, "Workspace is suspended", status_code=403)
+        response = request_by_basic_auth(contacts_url, self.admin.email, token1.key)
+        self.assertResponseError(response, None, "Workspace is suspended", status_code=403)
+        response = request_by_session(contacts_url, self.admin)
+        self.assertEqual(200, response.status_code)
+
+        # children are suspended with their parent
+        response = request_by_token(contacts_url, child_token.key)
+        self.assertResponseError(response, None, "Workspace is suspended", status_code=403)
+
+        # rejected requests don't count as use of the token
+        self.assertEqual([], APIToken.get_used_keys())
+
+        self.org.reactivate()
+
+        response = request_by_token(contacts_url, token1.key)
+        self.assertEqual(200, response.status_code)
+        response = request_by_token(contacts_url, child_token.key)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual({token1.key, child_token.key}, set(APIToken.get_used_keys()))
+
+        # and if user is inactive, disallow the request
         self.admin.is_active = False
         self.admin.save()
 
