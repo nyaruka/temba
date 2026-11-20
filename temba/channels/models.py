@@ -1,6 +1,5 @@
 import json
 import logging
-import math
 from abc import ABCMeta
 from collections import defaultdict
 from dataclasses import dataclass
@@ -761,10 +760,11 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
                     failures.sent_today >= self.RECOVERING_MIN_SENT
                     and failures.failed_today / failures.sent_today < self.FAILURE_RATE_DEGRADED
                 ):
-                    # saying how today's went, as some can still fail, rounded up so a few failures don't read as none
+                    # saying how today's went, as some can still fail, in whole percents of at least one so a few
+                    # failures don't read as none, and rounded down so it's always below the rate it recovered from
                     args = {
                         "today_count": intcomma(failures.sent_today),
-                        "today_percent": math.ceil(failures.failed_today / failures.sent_today * 100),
+                        "today_percent": max(1, failures.failed_today * 100 // failures.sent_today),
                         "percent": round(failed / sent * 100),
                         "count": intcomma(sent),
                         "date": date_format(since, "MONTH_DAY_FORMAT"),

@@ -624,6 +624,16 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.create_channel_tally(self.facebook_channel, "text:failed", yesterday, 150)
         assert_status("bad", "Degraded", f"15% of the 1,000 messages sent since {since(yesterday)} have failed.")
 
+        # which recovers the same way, saying today's in whole percents, as 7 of 100 can come out over 7 in floats
+        self.create_channel_tally(self.facebook_channel, "text:out", today, 100)
+        self.create_channel_tally(self.facebook_channel, "text:failed", today, 7)
+        assert_status(
+            "warn",
+            "Recovering",
+            f"7% of the 100 messages sent today have failed, down from 15% of the 1,000 sent since {since(yesterday)}.",
+        )
+        self.facebook_channel.tallies.filter(scope__endswith=today.isoformat()).delete()
+
         self.facebook_channel.tallies.filter(scope=f"text:failed@{yesterday.isoformat()}").update(count=50)
         response = self.requestView(fb_read_url, self.admin)
         self.assertEqual("Ready", str(response.context["status"]["value"]))  # 5% isn't worth flagging

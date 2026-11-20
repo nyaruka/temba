@@ -657,6 +657,13 @@ class EndpointsTest(APITestMixin, TembaTest):
         self.create_channel_tally(vonage, "text:out", yesterday, 30)
         self.create_channel_tally(vonage, "text:failed", yesterday, 20)
 
+        # and one that was, but whose sends today are going through
+        recovering = self.create_channel("NX", "Recovering", "+12065551414", country="US")
+        self.create_channel_tally(recovering, "text:out", yesterday, 30)
+        self.create_channel_tally(recovering, "text:failed", yesterday, 20)
+        self.create_channel_tally(recovering, "text:out", today, 100)
+        self.create_channel_tally(recovering, "text:failed", today, 1)
+
         # prefetched health is the same as each channel's own, and takes the same few reads however many channels
         channels = list(Channel.objects.filter(org=self.org, is_active=True))
         with self.assertNumQueries(6):
@@ -665,7 +672,8 @@ class EndpointsTest(APITestMixin, TembaTest):
             prefetched = [c.health for c in channels]
 
         self.assertEqual([Channel.objects.get(id=c.id).health for c in channels], prefetched)
-        self.assertEqual({"Ready", "Unhealthy", "Disabled"}, {str(h.value) for h in prefetched})
+        self.assertEqual({"Ready", "Unhealthy", "Recovering", "Disabled"}, {str(h.value) for h in prefetched})
+        Channel.objects.filter(id=recovering.id).update(is_active=False)  # only needed here
 
         # an empty page has nothing to prefetch
         with self.assertNumQueries(0):
