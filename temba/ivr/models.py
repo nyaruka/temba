@@ -135,6 +135,8 @@ class Call(models.Model):
         indexes = [
             # used to list calls in the UI, which pages by uuid (time ordered, as call uuids are v7)
             models.Index(name="calls_by_org", fields=["org", "-uuid"]),
+            # used by mailroom to look up calls by their provider's call ID
+            models.Index(name="calls_by_external_id", fields=["channel", "external_id"]),
             # used by mailroom to fetch calls that need to be retried
             models.Index(
                 name="calls_to_retry",
