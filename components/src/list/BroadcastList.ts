@@ -350,11 +350,6 @@ export class BroadcastList extends ContentList<Broadcast> {
     return msg('Search broadcasts');
   }
 
-  constructor() {
-    super();
-    this.valueKey = 'uuid';
-  }
-
   protected willUpdate(changes: PropertyValues): void {
     super.willUpdate(changes);
     if (changes.has('mode')) {

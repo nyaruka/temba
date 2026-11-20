@@ -524,14 +524,6 @@ export const renderGroupLinks = (groups: NamedObject[], icon?: string) => {
   return renderLinkedObjects(groups, CustomEventType.GroupClicked, icon);
 };
 
-/**
- * Renders a list of contacts as clickable links, showing up to 3 items
- * with a "+X more" indicator if there are more items
- */
-export const renderContactLinks = (contacts: NamedObject[], icon?: string) => {
-  return renderLinkedObjects(contacts, CustomEventType.ContactClicked, icon);
-};
-
 export interface Scheme {
   scheme: string;
   name: string;

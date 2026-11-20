@@ -69,19 +69,6 @@ import { FlowSearch, SearchResult } from './FlowSearch';
 import { RealtimeSubscription, subscribeToFlow } from '../live/Realtime';
 import { FlowDependency } from './dependencies';
 
-export function findNodeForExit(
-  definition: FlowDefinition,
-  exitUuid: string
-): string | null {
-  for (const node of definition.nodes) {
-    const exit = node.exits.find((e) => e.uuid === exitUuid);
-    if (exit) {
-      return node.uuid;
-    }
-  }
-  return null;
-}
-
 const SAVE_QUIET_TIME = 2000;
 
 export interface DraggableItem {
@@ -392,8 +379,6 @@ export class Editor extends RapidElement {
 
   @state()
   public editingAction: Action | null = null;
-
-  private dialogOrigin: { x: number; y: number } | null = null;
 
   // Message table view toggle
   @property({ type: Boolean, reflect: true, attribute: 'message-view' })
@@ -3235,10 +3220,6 @@ export class Editor extends RapidElement {
     // For action editing, we set the action and find the corresponding node
     this.editingAction = requested;
     this.editForceBase = !!event.detail.forceBase;
-    this.dialogOrigin =
-      event.detail.originX != null
-        ? { x: event.detail.originX, y: event.detail.originY }
-        : null;
 
     if (node) {
       this.editingNode = node;
@@ -3282,10 +3263,6 @@ export class Editor extends RapidElement {
     this.editingAction = null;
     this.editingNode = event.detail.node;
     this.editingNodeUI = event.detail.nodeUI;
-    this.dialogOrigin =
-      event.detail.originX != null
-        ? { x: event.detail.originX, y: event.detail.originY }
-        : null;
   }
 
   private handleNodeDeleted(event: CustomEvent): void {
@@ -3375,7 +3352,6 @@ export class Editor extends RapidElement {
     this.editingNode = null;
     this.editingNodeUI = null;
     this.editingAction = null;
-    this.dialogOrigin = null;
     this.editForceBase = false;
   }
 
@@ -4259,12 +4235,10 @@ export class Editor extends RapidElement {
         this.editingAction = result.action;
         this.editingNode = node;
         this.editingNodeUI = nodeUI;
-        this.dialogOrigin = null;
       } else {
         // Open the node editor (for splits, webhooks, etc.)
         this.editingNode = node;
         this.editingNodeUI = nodeUI;
-        this.dialogOrigin = null;
       }
     }, 200);
   }
@@ -4506,7 +4480,6 @@ export class Editor extends RapidElement {
             .node=${this.editingNode}
             .nodeUI=${this.editingNodeUI}
             .action=${this.editingAction}
-            .dialogOrigin=${this.dialogOrigin}
             ?force-base=${this.editForceBase}
             @temba-node-saved=${(e: CustomEvent) =>
               this.handleNodeSaved(e.detail.node, e.detail.uiConfig)}

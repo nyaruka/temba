@@ -164,22 +164,8 @@ export class ContentMenu extends RapidElement {
     }
   }
 
-  private getTopCenter(el: Element): { x: number; y: number } {
-    const rect = el.getBoundingClientRect();
-    return { x: rect.left + rect.width / 2, y: rect.top };
-  }
-
   private handleItemClicked(item: ContentMenuItem, event: MouseEvent) {
-    const el = event.currentTarget as Element;
-    const origin = el
-      ? this.getTopCenter(el)
-      : { x: event.clientX, y: event.clientY };
-    this.fireCustomEvent(CustomEventType.Selection, {
-      item,
-      event,
-      originX: origin.x,
-      originY: origin.y
-    });
+    this.fireCustomEvent(CustomEventType.Selection, { item, event });
   }
 
   public render(): TemplateResult {

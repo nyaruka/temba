@@ -40,9 +40,6 @@ export class TembaList extends RapidElement {
   loading = false;
 
   @property({ type: Boolean })
-  collapsed: boolean;
-
-  @property({ type: Boolean })
   hideShadow: boolean;
 
   @property({ type: Boolean })
@@ -74,9 +71,6 @@ export class TembaList extends RapidElement {
 
   @property({ attribute: false })
   renderDivider: (prev: any, option: any) => TemplateResult | null;
-
-  @property({ attribute: false })
-  renderOptionDetail: (option: any, selected: boolean) => TemplateResult;
 
   @property({ attribute: false, type: Object })
   mostRecentItem: any;
@@ -113,9 +107,6 @@ export class TembaList extends RapidElement {
 
   store: Store;
 
-  // used for testing only
-  preserve: boolean;
-
   static get styles() {
     return css`
       temba-options {
@@ -129,7 +120,6 @@ export class TembaList extends RapidElement {
   constructor() {
     super();
     this.store = document.querySelector('temba-store') as Store;
-    this.handleSelection.bind(this);
   }
 
   private reset(): void {
@@ -889,14 +879,12 @@ export class TembaList extends RapidElement {
         block
         cursorSelection
         ?hideShadow=${this.hideShadow}
-        ?collapsed=${this.collapsed}
         ?loading=${this.loading}
         ?internalFocusDisabled=${this.internalFocusDisabled}
         ?showEmptyMessage=${!!emptyMessage && !this.loading}
         .emptyMessage=${emptyMessage}
         .renderOption=${this.renderOption}
         .renderDivider=${this.renderDivider}
-        .renderOptionDetail=${this.renderOptionDetail}
         @temba-scroll-threshold=${this.handleScrollThreshold}
         @temba-selection=${this.handleSelection.bind(this)}
         .options=${this.items}

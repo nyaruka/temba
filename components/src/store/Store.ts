@@ -1114,8 +1114,6 @@ export class Store extends RapidElement {
 
   public set(key: string, value: string) {
     this.settings[key] = value;
-    // not sure yet if we really want to perist these
-    // setCookie(COOKIE_KEYS.SETTINGS, JSON.stringify(this.settings), '/');
   }
 
   public render() {

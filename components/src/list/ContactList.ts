@@ -97,7 +97,6 @@ export class ContactList extends ContentList<Contact> {
 
   constructor() {
     super();
-    this.valueKey = 'uuid';
     this.bulkActions = [
       { key: 'send', label: 'Send', icon: Icon.compose },
       { key: 'flow', label: 'Start flow', icon: Icon.flow },

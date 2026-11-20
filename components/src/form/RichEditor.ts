@@ -174,18 +174,6 @@ export class RichEditor extends FieldElement {
   @property({ type: Boolean })
   textarea: boolean;
 
-  @property({ type: Boolean })
-  autogrow = false;
-
-  @property({ type: Boolean })
-  gsm: boolean;
-
-  @property({ type: String })
-  counter: string;
-
-  @property({ type: Number })
-  maxLength: number;
-
   @property({ type: String })
   flavor = 'default';
 
@@ -744,9 +732,5 @@ export class RichEditor extends FieldElement {
         </temba-options>
       </div>
     `;
-  }
-
-  public render(): TemplateResult {
-    return this.renderField();
   }
 }

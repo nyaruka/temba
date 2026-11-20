@@ -724,16 +724,10 @@ export class TembaMenu extends ResizeElement {
   }
 
   @property({ type: Boolean })
-  wraps = false;
-
-  @property({ type: Boolean })
   wait: boolean;
 
   @property({ type: String })
   endpoint: string;
-
-  @property({ type: String })
-  expanding: string;
 
   @property({ type: String })
   value: string;
@@ -771,7 +765,7 @@ export class TembaMenu extends ResizeElement {
     // scroll any lists to the top
     this.addEventListener('blur', () => {
       this.shadowRoot
-        .querySelectorAll('temba-list, temba-notification-list')
+        .querySelectorAll('temba-notification-list')
         .forEach((ele: NotificationList) => {
           ele.scrollToTop();
         });
@@ -1321,7 +1315,6 @@ export class TembaMenu extends ResizeElement {
       avatar: !!menuItem.avatar,
       popup: menuItem.popup,
       inline: menuItem.inline,
-      expanding: this.expanding && this.expanding === menuItem.id,
       expanded: this.isExpanded(menuItem),
       iconless: !icon && !collapsedIcon && !menuItem.avatar,
       pressed: this.pressedItem && this.pressedItem.id == menuItem.id
@@ -1376,9 +1369,7 @@ export class TembaMenu extends ResizeElement {
         <div class="details" style="flex-grow:1;display:flex">
           <div
             class="name"
-            style="flex-grow:1; flex-shrink:0; white-space: ${this.wraps
-              ? 'normal'
-              : 'nowrap'};"
+            style="flex-grow:1; flex-shrink:0; white-space: nowrap;"
           >
             ${menuItem.name}
           </div>

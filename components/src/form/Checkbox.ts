@@ -254,8 +254,4 @@ export class Checkbox extends FieldElement {
       </div>
     `;
   }
-
-  public render(): TemplateResult {
-    return this.renderField();
-  }
 }
