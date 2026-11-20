@@ -204,7 +204,6 @@ export class RichEditor extends FieldElement {
 
   private editableDiv: HTMLDivElement;
   private anchorElement: HTMLDivElement;
-  private hiddenElement: HTMLInputElement;
   private query: string;
   private _skipRender = false;
   private _composing = false;
@@ -220,13 +219,6 @@ export class RichEditor extends FieldElement {
     this.editableDiv = this.shadowRoot.querySelector('.highlight-editor');
     this.anchorElement = this.shadowRoot.querySelector('#anchor');
 
-    // Create hidden input for form serialization
-    this.hiddenElement = document.createElement('input');
-    this.hiddenElement.setAttribute('type', 'hidden');
-    this.hiddenElement.setAttribute('name', this.getAttribute('name') || '');
-    this.hiddenElement.setAttribute('value', this.getAttribute('value') || '');
-    this.appendChild(this.hiddenElement);
-
     // Patch the contenteditable div with HTMLInputElement-like API
     this.patchEditableAsInput();
 
@@ -240,10 +232,6 @@ export class RichEditor extends FieldElement {
     super.updated(changedProperties);
 
     if (changedProperties.has('value')) {
-      if (this.hiddenElement) {
-        this.hiddenElement.setAttribute('value', this.value || '');
-      }
-
       if (this._skipRender) {
         this._skipRender = false;
       } else if (this.editableDiv) {

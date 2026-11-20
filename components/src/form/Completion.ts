@@ -122,7 +122,6 @@ export class Completion extends FieldElement {
   @property({ type: Number })
   minHeight: number;
 
-  private hiddenElement: HTMLInputElement;
   private query: string;
 
   public firstUpdated() {
@@ -130,13 +129,6 @@ export class Completion extends FieldElement {
       'temba-textinput'
     ) as TextInput;
     this.anchorElement = this.shadowRoot.querySelector('#anchor');
-
-    // create our hidden container so it gets included in our host element's form
-    this.hiddenElement = document.createElement('input');
-    this.hiddenElement.setAttribute('type', 'hidden');
-    this.hiddenElement.setAttribute('name', this.getAttribute('name'));
-    this.hiddenElement.setAttribute('value', this.getAttribute('value') || '');
-    this.appendChild(this.hiddenElement);
   }
 
   private handleKeyUp(evt: KeyboardEvent) {
@@ -187,19 +179,11 @@ export class Completion extends FieldElement {
     this.query = result.query;
     this.options = result.options;
     this.anchorPosition = result.anchorPosition;
+    this.currentFunction = result.currentFunction;
   }
 
   private handleClick(evt: MouseEvent) {
     this.executeQuery(evt.currentTarget as TextInput);
-  }
-
-  public updated(changedProperties: Map<string, any>) {
-    super.updated(changedProperties);
-
-    // if our cursor changed, lets make sure our scrollbox is showing it
-    if (changedProperties.has('value')) {
-      this.hiddenElement.setAttribute('value', this.value);
-    }
   }
 
   private handleInput(evt: KeyboardEvent) {

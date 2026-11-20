@@ -107,12 +107,26 @@ export class FlowList extends ContentList<Flow> {
     this.bulkActions = [
       {
         key: 'label',
-        label: 'Label',
+        get label() {
+          return msg('Label');
+        },
         icon: Icon.label,
         labelsEndpoint: '/api/v2/flow-labels.json'
       },
-      { key: 'export', label: 'Export results', icon: Icon.export },
-      { key: 'archive', label: 'Archive', icon: Icon.archive }
+      {
+        key: 'export',
+        get label() {
+          return msg('Export results');
+        },
+        icon: Icon.export
+      },
+      {
+        key: 'archive',
+        get label() {
+          return msg('Archive');
+        },
+        icon: Icon.archive
+      }
     ];
   }
 

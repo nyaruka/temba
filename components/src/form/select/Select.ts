@@ -508,6 +508,15 @@ export class Select<T extends SelectOption> extends FieldElement {
         align-self: center;
       }
 
+      .current-fn {
+        padding: 10px;
+        margin: 5px;
+        background: var(--color-primary-light);
+        color: rgba(0, 0, 0, 0.5);
+        border-radius: var(--curvature-widget);
+        font-size: 90%;
+      }
+
       .footer {
         padding: 5px 10px;
         background: var(--color-primary-light);
@@ -1703,6 +1712,7 @@ export class Select<T extends SelectOption> extends FieldElement {
       );
       this.query = result.query;
       this.completionOptions = result.options;
+      this.currentFunction = result.currentFunction;
       this.visibleOptions = [];
       this.anchorPosition = result.anchorPosition;
       this.fireCustomEvent(CustomEventType.FetchComplete);

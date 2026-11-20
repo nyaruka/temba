@@ -98,22 +98,49 @@ export class ContactList extends ContentList<Contact> {
   constructor() {
     super();
     this.bulkActions = [
-      { key: 'send', label: 'Send', icon: Icon.compose },
-      { key: 'flow', label: 'Start flow', icon: Icon.flow },
+      {
+        key: 'send',
+        get label() {
+          return msg('Send');
+        },
+        icon: Icon.compose
+      },
+      {
+        key: 'flow',
+        get label() {
+          return msg('Start flow');
+        },
+        icon: Icon.flow
+      },
       // Group toggle — a dropdown of the workspace's static (manual)
       // groups to add/remove the selection to/from, like the message
       // list's label dropdown.
       {
         key: 'label',
-        label: 'Group',
+        get label() {
+          return msg('Group');
+        },
         icon: Icon.group,
         labelsEndpoint: '/api/v2/groups.json?manual_only=1',
         labelsKey: 'groups'
       },
       // Archive trails the reversible actions; Delete, when offered,
       // always goes last.
-      { key: 'archive', label: 'Archive', icon: Icon.archive },
-      { key: 'delete', label: 'Delete', icon: Icon.delete, destructive: true }
+      {
+        key: 'archive',
+        get label() {
+          return msg('Archive');
+        },
+        icon: Icon.archive
+      },
+      {
+        key: 'delete',
+        get label() {
+          return msg('Delete');
+        },
+        icon: Icon.delete,
+        destructive: true
+      }
     ];
   }
 
