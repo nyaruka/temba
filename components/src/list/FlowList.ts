@@ -56,10 +56,6 @@ export class FlowList extends ContentList<Flow> {
         flex: none;
         --icon-color: var(--warning);
       }
-      .num {
-        font-variant-numeric: tabular-nums;
-        color: inherit;
-      }
       .completion-bar {
         display: inline-flex;
         align-items: center;
