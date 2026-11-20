@@ -1,3 +1,6 @@
+## v26.3.221 (2026-11-20)
+ * Run CI against PostgreSQL 18
+
 ## v26.3.220 (2026-11-20)
  * Add index for looking up calls by channel and external ID
 
