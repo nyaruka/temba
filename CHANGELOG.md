@@ -1,3 +1,6 @@
+## v26.3.220 (2026-11-20)
+ * Add index for looking up calls by channel and external ID
+
 ## v26.3.219 (2026-11-19)
  * Let incident types set their own email subject
  * Move Channels to second in the settings menu
