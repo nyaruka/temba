@@ -77,14 +77,6 @@ export class CallList extends ContentList<Call> {
       .duration {
         font-variant-numeric: tabular-nums;
       }
-      /* Created cell — the date with an optional channel-log icon to
-         its right, matching the message list's sent cell. */
-      .created-cell {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 6px;
-      }
     `;
   }
 
@@ -157,21 +149,9 @@ export class CallList extends ContentList<Call> {
           >${formatDuration(item.duration)}</span
         >`;
       case 'created_on':
-        return this.renderCreatedCell(item);
+        return this.renderDateWithLog(item, 'call');
       default:
         return super.renderCell(item, column);
     }
-  }
-
-  /** The created cell — timedate timestamp with the channel-log icon
-   * to its right when the host page has enabled log links. */
-  private renderCreatedCell(item: Call): TemplateResult | string {
-    if (!item.created_on) return '';
-    return html`
-      <div class="created-cell">
-        <temba-date value=${item.created_on} display="timedate"></temba-date>
-        ${this.renderChannelLogLink(item, 'call')}
-      </div>
-    `;
   }
 }

@@ -3,16 +3,24 @@ import { LOCALE_STATUS_EVENT, msg, str } from '@lit/localize';
 import { property, state } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { Icon } from '../Icons';
-import { CustomEventType, ObjectReference } from '../interfaces';
-import { formatCount, getUrl, postJSON, postUrl } from '../utils';
+import { Attachment, CustomEventType, ObjectReference } from '../interfaces';
+import {
+  attachmentAsString,
+  formatCount,
+  getUrl,
+  postJSON,
+  postUrl
+} from '../utils';
 import { designTokens } from '../styles/designTokens';
 import { openLinkInSheet } from '../layout/sheets';
 import {
-  buttonChrome,
-  buttonChromeCompact,
-  buttonChromeActive,
-  buttonChromeHover
-} from '../styles/buttonChrome';
+  headerActionsStyles,
+  panelStyles,
+  searchbarStyles
+} from '../styles/pageChrome';
+import { detailDialogStyles } from '../styles/detailDialog';
+import { DetailDialogContent, renderDetailDialog } from './detailDialog';
+import { renderSearchAction, renderSearchbar } from './pageChrome';
 
 /** A single column in the list. Subclasses typically define a static
  * set via {@link ContentList.columns}; consumers may also set it as
@@ -207,33 +215,8 @@ export class ContentList<T = any> extends RapidElement {
 
       /* The header — title + content menu — is temba-page-header.
          The list slots its search / bulk-action controls into that
-         header's actions area through this row. When rows are
-         selected the search is replaced inline by bulk-action chips
-         so the toolbar stays in the same spot visually. */
-      .header-actions {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        color: var(--text-2);
-        font-size: 13px;
-      }
-
-      /* Built-in action button (Search). Bordered text + icon on a
-         transparent ground; host's slotted buttons can match this
-         style or bring their own. */
-      .action {
-        ${buttonChrome}
-        ${buttonChromeCompact}
-      }
-      .action:hover {
-        ${buttonChromeHover}
-      }
-      .action:active {
-        ${buttonChromeActive}
-      }
-      .action temba-icon {
-        --icon-color: currentColor;
-      }
+         header's actions area. */
+      ${headerActionsStyles}
 
       /* When rows are selected, the bulk actions overlay the column-
          header row (covering the column labels) starting just right of
@@ -414,82 +397,16 @@ export class ContentList<T = any> extends RapidElement {
         white-space: nowrap;
       }
 
-      /* Inline search bar — slides below the title row inside the
-         panel when the search trigger is active. Bare single-line
-         input, no border, --sunken background. */
-      .searchbar {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 12px;
-        /* Pull up under the header — the header carries its own bottom
-           padding, so without this the searchbar sits a full gap below
-           the title row. The negative top margin tightens that gap. */
-        margin: -6px 0 12px 0;
-        background: var(--sunken);
-        border-radius: var(--r-sm);
-        color: var(--text-3);
-      }
-      .searchbar input {
-        flex: 1 1 auto;
-        border: 0;
-        background: transparent;
-        outline: 0;
-        font: inherit;
-        color: var(--text-1);
-        min-width: 0;
-      }
-      .searchbar input::placeholder {
-        color: var(--text-3);
-      }
-      /* Trailing controls — a run-search icon and a close (✕), both
-         always present while the bar is open so the bar's height stays
-         put. The close is the way out (the header's Search button hides
-         itself while the bar is open). The "↵ to search" hint sits just
-         left of the run icon and fades in only when there's a pending
-         draft to apply — the same trigger that lights the icon. */
-      .searchbar .search-hint {
-        flex: 0 0 auto;
-        font-size: 0.75em;
-        color: var(--text-3);
-        white-space: nowrap;
-        user-select: none;
-      }
-      .searchbar .search-hint .enter-key {
-        position: relative;
-        top: 2px;
-      }
-      /* Both are our standard clickable icons — bare glyph at rest, a
-         circular wash only on hover. The left margin opens a bit of
-         breathing room between the icons (and the hint). The default
-         hover wash is near-white, which washes out against the sunken
-         (grey) box, so each carries a more saturated one. */
-      .searchbar .search-go,
-      .searchbar .search-cancel {
-        flex: 0 0 auto;
-        margin-left: 5px;
-        --icon-color: var(--text-3);
-        --icon-color-circle-hover: rgba(15, 22, 36, 0.1);
-      }
-      /* Run search only renders once a draft is pending (alongside the
-         "↵ to search" hint), so it's always the primary action — its
-         hover wash warms to accent. */
-      .searchbar .search-go {
-        --icon-color-circle-hover: var(--accent-200);
-      }
+      ${searchbarStyles}
 
-      /* Card panel — surface white wrapping the header and table.
-         Soft shadow + radius gives it the contained-card feel from
-         the styleguide. The 20px horizontal padding insets the
-         header and table from the card edges. A flex column so the
-         header stays put and the table region takes the slack —
-         when the host is height-bounded the table scrolls inside it
-         rather than growing the page. */
+      /* Card panel — the shared card surface wrapping the header and
+         table. The 20px horizontal padding insets the header and table
+         from the card edges. A flex column so the header stays put and
+         the table region takes the slack — when the host is
+         height-bounded the table scrolls inside it rather than growing
+         the page. */
+      ${panelStyles}
       .panel {
-        background: var(--surface);
-        border-radius: var(--r);
-        overflow: hidden;
-        box-shadow: var(--shadow-1);
         padding: 0 20px;
         flex: 1 1 auto;
         min-height: 0;
@@ -1290,6 +1207,82 @@ export class ContentList<T = any> extends RapidElement {
       .log-link temba-icon {
         --icon-color: currentColor;
       }
+      /* Date cell, rendered by renderDateWithLog — the date with an
+         optional channel-log icon to its right. The cell stays
+         right-aligned (the column's own alignment) and uses a flex row
+         so the icon sits flush against the date with a small gap. */
+      .date-cell {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 6px;
+      }
+
+      /* Message cell, rendered by renderMessageCell — the body text on
+         the leading edge with its attachment thumbnails right after it,
+         and any pills pushed to the trailing edge. The text sizes to
+         content and ellipsizes when squeezed — resolved per row, so a
+         busy row doesn't widen a column for all of them. */
+      .msg-cell {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .msg-text {
+        flex: 0 1 auto;
+        /* A small floor so the message keeps a few words even on a
+           row whose meta is wide — the message yields most of its
+           width to the attachments and pills before they clip. */
+        min-width: 80px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .msg-attachments {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .cell-pills {
+        flex: 0 0 auto;
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      /* Attachment thumbnails are sized well below the 44px row so
+         they never grow its height — a small square preview rather
+         than the chat history's full-size thumbnail. --thumb-icon-
+         padding shrinks temba-thumbnail's non-image fallback (the
+         document/video icon box) to match. The max-height clamp is
+         a backstop for any type that still carries its own larger
+         intrinsic size (e.g. a location map). */
+      .msg-thumb {
+        --thumb-size: 24px;
+        --thumb-padding: 2px;
+        --thumb-icon-padding: 4px;
+        max-height: 36px;
+        overflow: hidden;
+      }
+
+      /* A count or other figure, in digits that line up down a
+         column. */
+      .num {
+        font-variant-numeric: tabular-nums;
+        color: inherit;
+      }
+      /* A row's name — the one cell that carries a slightly heavier
+         weight, so the other values don't read as emphasised. */
+      .item-name {
+        color: inherit;
+        font-weight: var(--w-medium);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      ${detailDialogStyles}
     `;
   }
 
@@ -1522,6 +1515,10 @@ export class ContentList<T = any> extends RapidElement {
 
   @state()
   protected items: T[] = [];
+
+  /** The row whose detail dialog is open — see {@link hasDetail}. */
+  @state()
+  protected detailItem: T = null;
 
   @state()
   protected total = 0;
@@ -2325,10 +2322,38 @@ export class ContentList<T = any> extends RapidElement {
    * the click leads somewhere. A row with an href always does;
    * override for a list whose rows are opened by the host off
    * `temba-row-click` rather than by navigating, so it keeps the
-   * affordance without a URL to link to. */
+   * affordance without a URL to link to. Rows that open a detail
+   * dialog always do. */
   protected isRowClickable(item: T): boolean {
-    return !!this.getRowHref(item);
+    return this.hasDetail || !!this.getRowHref(item);
   }
+
+  /** Whether a row click opens a detail dialog, in place of a read
+   * page, for that row. A subclass that returns true draws the
+   * dialog's content with {@link renderDetail}. */
+  protected get hasDetail(): boolean {
+    return false;
+  }
+
+  /** The content of the detail dialog for the row it's open on. */
+  protected renderDetail(_item: T): DetailDialogContent | null {
+    return null;
+  }
+
+  /** Close the detail dialog, returning the row it was open on — for
+   * actions that hand off to the host (e.g. edit or delete), which
+   * opens its own modal in the dialog's place so modals never stack. */
+  protected closeDetail(): T {
+    const item = this.detailItem;
+    this.detailItem = null;
+    return item;
+  }
+
+  // every way the dialog closes (✕, Escape, a click outside) must reset
+  // detailItem, or the next open is a no-op change and it never reopens
+  private handleDetailClosed = (): void => {
+    this.detailItem = null;
+  };
 
   /** Extra classes a subclass wants on a row — e.g. to animate rows
    * arriving in or leaving the list. */
@@ -2427,6 +2452,9 @@ export class ContentList<T = any> extends RapidElement {
       return;
     }
     this.fireCustomEvent(CustomEventType.RowClick, { item });
+    if (this.hasDetail) {
+      this.detailItem = item;
+    }
     if (href) {
       // Fire Redirected rather than assigning window.location so the
       // host SPA frame swaps content in place instead of doing a full
@@ -2472,6 +2500,54 @@ export class ContentList<T = any> extends RapidElement {
       >
         <temba-icon name=${Icon.log} size="0.95"></temba-icon>
       </a>
+    `;
+  }
+
+  /** A date cell — the timedate timestamp with the row's channel log
+   * link ({@link renderChannelLogLink}) to its right. */
+  protected renderDateWithLog(
+    item: { uuid?: string; created_on?: string; channel?: ObjectReference },
+    type: 'msg' | 'call'
+  ): TemplateResult | string {
+    if (!item.created_on) return '';
+    return html`
+      <div class="date-cell">
+        <temba-date value=${item.created_on} display="timedate"></temba-date>
+        ${this.renderChannelLogLink(item, type)}
+      </div>
+    `;
+  }
+
+  /** A message cell — the body text on the leading edge with its
+   * attachment thumbnails immediately after it, and the given pills
+   * pushed to the trailing edge. Each piece sizes to content, so the
+   * split is resolved independently for every row. A message with no
+   * text renders no text span at all — otherwise its min-width would
+   * strand an attachment-only row's thumbnails away from the leading
+   * edge. */
+  protected renderMessageCell(
+    text: TemplateResult | string,
+    attachments: (string | Attachment)[],
+    pills: TemplateResult | string
+  ): TemplateResult {
+    return html`
+      <div class="msg-cell">
+        ${text ? html`<span class="msg-text">${text}</span>` : ''}
+        ${attachments?.length
+          ? html`
+              <div class="msg-attachments">
+                ${attachments.map(
+                  (a) => html`
+                    <temba-thumbnail
+                      class="msg-thumb"
+                      attachment=${attachmentAsString(a)}
+                    ></temba-thumbnail>
+                  `
+                )}
+              </div>
+            `
+          : ''}${pills}
+      </div>
     `;
   }
 
@@ -2615,29 +2691,22 @@ export class ContentList<T = any> extends RapidElement {
         <div slot="actions" class="header-actions">
           ${this.renderPager()}
           ${this.searchable && !this.searchOpen
-            ? html`
-                <span class="action" @click=${() => this.toggleSearch()}>
-                  <temba-icon name=${Icon.search} size="0.95"></temba-icon>
-                  ${msg('Search')}
-                </span>
-              `
+            ? renderSearchAction(() => this.toggleSearch())
             : null}
           <slot name="actions"></slot>
         </div>
       </temba-page-header>
       ${this.searchable && this.searchOpen
-        ? html`
-            <div class="searchbar">
-              <input
-                type="text"
-                placeholder=${this.searchPlaceholder ??
-                this.defaultSearchPlaceholder()}
-                .value=${this.searchDraft}
-                ?disabled=${this.searching}
-                @input=${this.handleSearchInput}
-                @keydown=${this.handleSearchKey}
-              />
-              ${!this.searching && this.searchDraft !== this.search
+        ? renderSearchbar({
+            placeholder:
+              this.searchPlaceholder ?? this.defaultSearchPlaceholder(),
+            value: this.searchDraft,
+            disabled: this.searching,
+            onInput: (e) => this.handleSearchInput(e),
+            onKeydown: (e) => this.handleSearchKey(e),
+            onCancel: () => this.toggleSearch(),
+            extras:
+              !this.searching && this.searchDraft !== this.search
                 ? html`
                     <span class="search-hint">
                       <span class="enter-key">↵</span> ${msg('to search')}
@@ -2652,18 +2721,8 @@ export class ContentList<T = any> extends RapidElement {
                       @click=${() => this.commitSearch()}
                     ></temba-icon>
                   `
-                : null}
-              <temba-icon
-                class="search-cancel"
-                name=${Icon.close}
-                size="1.1"
-                clickable
-                title=${msg('Cancel search')}
-                aria-label=${msg('Cancel search')}
-                @click=${() => this.toggleSearch()}
-              ></temba-icon>
-            </div>
-          `
+                : null
+          })
         : null}
     `;
   }
@@ -4197,6 +4256,12 @@ export class ContentList<T = any> extends RapidElement {
           <div class="scroll-shadow"></div>
         </div>
       </div>
+      ${this.hasDetail
+        ? renderDetailDialog(
+            this.detailItem ? this.renderDetail(this.detailItem) : null,
+            this.handleDetailClosed
+          )
+        : null}
     `;
   }
 }
