@@ -585,8 +585,37 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
 
         assert_status("bad", "Unhealthy", f"80% of the 100 messages sent since {since(day10)} have failed.")
 
-        # a big send queued today doesn't hide it, as today's are left out until they've all had time to fail
+        # today's sends aren't judged with them, as failures follow their sends by minutes, so a big send today that's
+        # failing much less shows it's recovering, still leading to its logs
         self.create_channel_tally(self.facebook_channel, "text:out", today, 5_000)
+        self.create_channel_tally(self.facebook_channel, "text:failed", today, 100)
+        assert_status(
+            "warn",
+            "Recovering",
+            f"2% of the 5,000 messages sent today have failed, down from 80% of the 100 sent since {since(day10)}.",
+        )
+
+        # which says so when none of today's have failed, and rounds up so a few failures don't read as none
+        self.facebook_channel.tallies.filter(scope=f"text:failed@{today.isoformat()}").delete()
+        assert_status(
+            "warn",
+            "Recovering",
+            f"None of the 5,000 messages sent today have failed, after 80% of the 100 sent since {since(day10)} did.",
+        )
+        self.create_channel_tally(self.facebook_channel, "text:failed", today, 1)
+        assert_status(
+            "warn",
+            "Recovering",
+            f"1% of the 5,000 messages sent today have failed, down from 80% of the 100 sent since {since(day10)}.",
+        )
+
+        # but not if today's are failing too
+        self.facebook_channel.tallies.filter(scope=f"text:failed@{today.isoformat()}").update(count=1_000)
+        assert_status("bad", "Unhealthy", f"80% of the 100 messages sent since {since(day10)} have failed.")
+
+        # nor if too few have been sent today to tell
+        self.facebook_channel.tallies.filter(scope__endswith=today.isoformat()).delete()
+        self.create_channel_tally(self.facebook_channel, "text:out", today, 19)
         assert_status("bad", "Unhealthy", f"80% of the 100 messages sent since {since(day10)} have failed.")
         self.facebook_channel.tallies.filter(scope__endswith=today.isoformat()).delete()
 
@@ -595,6 +624,16 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.create_channel_tally(self.facebook_channel, "text:failed", yesterday, 150)
         assert_status("bad", "Degraded", f"15% of the 1,000 messages sent since {since(yesterday)} have failed.")
 
+        # which recovers the same way, saying today's in whole percents, as 7 of 100 can come out over 7 in floats
+        self.create_channel_tally(self.facebook_channel, "text:out", today, 100)
+        self.create_channel_tally(self.facebook_channel, "text:failed", today, 7)
+        assert_status(
+            "warn",
+            "Recovering",
+            f"7% of the 100 messages sent today have failed, down from 15% of the 1,000 sent since {since(yesterday)}.",
+        )
+        self.facebook_channel.tallies.filter(scope__endswith=today.isoformat()).delete()
+
         self.facebook_channel.tallies.filter(scope=f"text:failed@{yesterday.isoformat()}").update(count=50)
         response = self.requestView(fb_read_url, self.admin)
         self.assertEqual("Ready", str(response.context["status"]["value"]))  # 5% isn't worth flagging
@@ -602,7 +641,7 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         # and once enough have been sent, what was sent before that isn't judged, however badly it went
         self.create_channel_tally(self.facebook_channel, "text:out", today - timedelta(days=3), 100)
         self.create_channel_tally(self.facebook_channel, "text:failed", today - timedelta(days=3), 100)
-        self.assertEqual((50, 1_000, yesterday), self.facebook_channel.get_recent_failures())
+        self.assertEqual((50, 1_000, yesterday, 0, 0), self.facebook_channel.get_recent_failures())
         self.facebook_channel.tallies.filter(scope__endswith=(today - timedelta(days=3)).isoformat()).delete()
         response = self.requestView(fb_read_url, self.admin)
 
