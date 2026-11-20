@@ -582,4 +582,21 @@ describe('temba-store', () => {
     assert.deepEqual(await installed([]), []);
     assert.deepEqual(await store.resolveAssets([]), []);
   });
+
+  it('serves a cached url when made without options', async () => {
+    const store = await createStore('<temba-store></temba-store>');
+    const url = '/test/assets/store/cached-request.json';
+    (store as any).cache.set(url, { results: ['cached'] });
+
+    const updates = [];
+    const listener = (evt: CustomEvent) => updates.push(evt.detail);
+    store.addEventListener('temba-store-updated', listener);
+    try {
+      store.makeRequest(url);
+    } finally {
+      store.removeEventListener('temba-store-updated', listener);
+    }
+
+    assert.deepEqual(updates, [{ url, data: { results: ['cached'] } }]);
+  });
 });

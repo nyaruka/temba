@@ -41,7 +41,13 @@ export class CampaignList extends ContentList<Campaign> {
   constructor() {
     super();
     this.bulkActions = [
-      { key: 'archive', label: 'Archive', icon: Icon.archive }
+      {
+        key: 'archive',
+        get label() {
+          return msg('Archive');
+        },
+        icon: Icon.archive
+      }
     ];
   }
 

@@ -1244,6 +1244,25 @@ describe('temba-select', () => {
       await assertScreenshot('select/expressions', getClipWithOptions(select));
     });
 
+    it('shows the function being called in an expression', async () => {
+      await loadStore();
+      const select = await createSelect(
+        clock,
+        getSelectHTML([], {
+          endpoint: '/colors.json',
+          searchable: true,
+          expressions: 'session'
+        })
+      );
+
+      await typeInto('temba-select', '@(upper(contact', false);
+      await openSelect(clock, select);
+
+      assert.equal(select.currentFunction.signature, 'upper(text)');
+      const hint = select.shadowRoot.querySelector('.current-fn');
+      assert.include(hint.textContent, 'to uppercase');
+    });
+
     it('clears single selection', async () => {
       const select = await createSelect(
         clock,
