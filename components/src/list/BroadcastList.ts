@@ -1,17 +1,11 @@
 import { css, html, PropertyValues, TemplateResult } from 'lit';
 import { msg } from '@lit/localize';
-import { property, state } from 'lit/decorators.js';
+import { property } from 'lit/decorators.js';
 import { ContentList, ContentListColumn } from './ContentList';
+import { DetailDialogContent, renderDetailButton } from './detailDialog';
 import { Icon } from '../Icons';
 import { Broadcast, CustomEventType, ObjectReference } from '../interfaces';
 import { attachmentAsString, formatCount } from '../utils';
-import {
-  buttonChrome,
-  buttonChromeActive,
-  buttonChromeDestructive,
-  buttonChromeDestructiveHover,
-  buttonChromeHover
-} from '../styles/buttonChrome';
 
 /** Placeholder shown in any cell whose value is empty. */
 const EMPTY = '--';
@@ -50,49 +44,6 @@ export class BroadcastList extends ContentList<Broadcast> {
   static get styles() {
     return css`
       ${ContentList.styles}
-      /* Rows are clickable (they open the detail dialog) but carry no
-         href, so ContentList doesn't mark them .clickable — carry the
-         affordance ourselves. */
-      tr.row {
-        cursor: pointer;
-      }
-      /* The message cell holds the body text on the leading edge with
-         its attachment thumbnails right after it and the template
-         pill pushed to the trailing edge — the msg-list treatment. */
-      .msg-cell {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-      .msg-text {
-        flex: 0 1 auto;
-        min-width: 80px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .msg-attachments {
-        flex: 0 0 auto;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-      .cell-pills {
-        flex: 0 0 auto;
-        margin-left: auto;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-      /* Attachment thumbnails sized well under the row height — the
-         same small square preview the message list uses. */
-      .msg-thumb {
-        --thumb-size: 24px;
-        --thumb-padding: 2px;
-        --thumb-icon-padding: 4px;
-        max-height: 36px;
-        overflow: hidden;
-      }
       /* Recipient pills — a capped run with a "+N" summary. Pills
          never shrink (the cap bounds the row); the summary carries
          the hidden names in its tooltip. */
@@ -106,10 +57,6 @@ export class BroadcastList extends ContentList<Broadcast> {
       }
       .pills temba-label {
         flex: 0 0 auto;
-      }
-      .num {
-        font-variant-numeric: tabular-nums;
-        color: inherit;
       }
       /* In-flight send progress — a compact bare meter, right-aligned
          in the Messages cell. */
@@ -132,76 +79,9 @@ export class BroadcastList extends ContentList<Broadcast> {
         color: var(--text-3);
       }
 
-      /* ---- detail dialog — the campaign-events detail treatment:
-         page-like (no colored header bar), header and footer pinned
-         with full-bleed rules, the body scrolling between them. */
-      .detail {
-        display: flex;
-        flex-direction: column;
-      }
-      .detail-header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 1em;
-        border-bottom: 1px solid var(--border, #e4e7ec);
-      }
-      .detail-title {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-      .detail-name {
-        font-size: 15.5px;
-        font-weight: var(--w-semibold, 600);
-        color: var(--text-1);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      .detail-when {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 0.9em;
-        color: var(--text-3, #7b8593);
-      }
-      .detail-actions {
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
       /* the status pill sits in the header just left of the close */
       .detail-header .status-pill {
         flex-shrink: 0;
-      }
-      /* match the page header's content-menu buttons so the dialog's
-         actions read like page actions */
-      .menu-button {
-        ${buttonChrome}
-      }
-      .menu-button:hover {
-        ${buttonChromeHover}
-      }
-      .menu-button:active {
-        ${buttonChromeActive}
-      }
-      .menu-button.destructive {
-        ${buttonChromeDestructive}
-      }
-      .menu-button.destructive:hover {
-        ${buttonChromeDestructiveHover}
-      }
-      .detail-body {
-        display: flex;
-        flex-direction: column;
-        gap: 1.25em;
-        overflow-y: auto;
-        max-height: calc(100vh - 300px);
-        padding: 1.25em 1.75em;
       }
       /* the status line leads the body — schedule / delivery facts on
          the left, the labeled message count on the right */
@@ -267,13 +147,6 @@ export class BroadcastList extends ContentList<Broadcast> {
       .detail-attachments temba-thumbnail {
         --thumb-size: 48px;
       }
-      .detail-section-title {
-        font-size: 0.75em;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--text-3, #7b8593);
-      }
       /* a section heading with a trailing fact on its right — the
          recipients title with the message count across from it */
       .detail-section-row {
@@ -296,29 +169,6 @@ export class BroadcastList extends ContentList<Broadcast> {
         font-size: 0.85em;
         color: var(--text-3, #7b8593);
       }
-      /* the close (✕) in the header's upper right - the square
-         hover-wash button treatment (the pager buttons'), sitting
-         just outboard of the action buttons */
-      .detail-close {
-        flex-shrink: 0;
-        margin-left: -4px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 28px;
-        height: 28px;
-        border-radius: var(--r-sm);
-        color: var(--text-3, #7b8593);
-        cursor: pointer;
-        user-select: none;
-      }
-      .detail-close:hover {
-        background: var(--sunken);
-        color: var(--text-1);
-      }
-      .detail-close temba-icon {
-        --icon-color: currentColor;
-      }
     `;
   }
 
@@ -337,10 +187,6 @@ export class BroadcastList extends ContentList<Broadcast> {
    * the detail dialog's Delete action. */
   @property({ type: Boolean, attribute: 'can-delete' })
   canDelete = false;
-
-  /** The broadcast whose detail dialog is open. */
-  @state()
-  private detailBroadcast: Broadcast = null;
 
   protected defaultEmptyMessage(): string {
     return msg('No broadcasts');
@@ -412,58 +258,25 @@ export class BroadcastList extends ContentList<Broadcast> {
     return this.mode === 'scheduled' ? Icon.schedule : Icon.broadcast;
   }
 
-  public connectedCallback(): void {
-    super.connectedCallback();
-    // In place of a broadcast read page, a row click opens the detail
-    // dialog. ContentList fires RowClick on the host element, so we
-    // can listen to ourselves rather than override its private click
-    // handler; the event still bubbles on to outside listeners.
-    this.addEventListener(
-      CustomEventType.RowClick,
-      this.handleRowClickEvent as EventListener
-    );
+  /** In place of a broadcast read page, a row click opens the detail
+   * dialog. */
+  protected get hasDetail(): boolean {
+    return true;
   }
-
-  public disconnectedCallback(): void {
-    super.disconnectedCallback();
-    this.removeEventListener(
-      CustomEventType.RowClick,
-      this.handleRowClickEvent as EventListener
-    );
-  }
-
-  private handleRowClickEvent = (event: CustomEvent): void => {
-    const item = event.detail?.item as Broadcast;
-    if (item) {
-      this.detailBroadcast = item;
-    }
-  };
-
-  // closes arrive from the header ✕, our own @keyup ESC handler, and
-  // mask clicks (which fire temba-dialog-hidden) - our open state must
-  // reset on every path or the next open is a no-op change and the
-  // dialog never reopens
-  private handleDetailClosed = (): void => {
-    this.detailBroadcast = null;
-  };
 
   // edit / delete close the detail dialog before the host opens the
   // edit or delete-confirm modal in its place - modals never stack
   public handleEditClicked(): void {
-    const broadcast = this.detailBroadcast;
-    this.detailBroadcast = null;
     this.fireCustomEvent(CustomEventType.Selection, {
       action: 'edit_broadcast',
-      broadcast
+      broadcast: this.closeDetail()
     });
   }
 
   public handleDeleteClicked(): void {
-    const broadcast = this.detailBroadcast;
-    this.detailBroadcast = null;
     this.fireCustomEvent(CustomEventType.Selection, {
       action: 'delete_broadcast',
-      broadcast
+      broadcast: this.closeDetail()
     });
   }
 
@@ -480,7 +293,7 @@ export class BroadcastList extends ContentList<Broadcast> {
       window.open(href, '_blank');
       return;
     }
-    this.detailBroadcast = null;
+    this.closeDetail();
     this.fireCustomEvent(CustomEventType.Redirected, { url: href });
   }
 
@@ -562,35 +375,6 @@ export class BroadcastList extends ContentList<Broadcast> {
     </span>`;
   }
 
-  /** The message cell — body text with attachment thumbnails right
-   * after it and the template pill pushed to the trailing edge. */
-  private renderMessage(item: Broadcast): TemplateResult {
-    const text = item.text || '';
-    return html`
-      <div class="msg-cell">
-        ${text ? html`<span class="msg-text">${text}</span>` : ''}
-        ${this.renderAttachmentThumbs(item)}${this.renderContentPills(item)}
-      </div>
-    `;
-  }
-
-  private renderAttachmentThumbs(item: Broadcast): TemplateResult | string {
-    const attachments = item.attachments || [];
-    if (!attachments.length) return '';
-    return html`
-      <div class="msg-attachments">
-        ${attachments.map(
-          (a) => html`
-            <temba-thumbnail
-              class="msg-thumb"
-              attachment=${attachmentAsString(a)}
-            ></temba-thumbnail>
-          `
-        )}
-      </div>
-    `;
-  }
-
   /** Template pill — what the broadcast sends beyond (or instead of)
    * plain text. */
   private renderContentPills(item: Broadcast): TemplateResult | string {
@@ -652,7 +436,11 @@ export class BroadcastList extends ContentList<Broadcast> {
   ): TemplateResult | string {
     switch (column.key) {
       case 'message':
-        return this.renderMessage(item);
+        return this.renderMessageCell(
+          item.text || '',
+          item.attachments,
+          this.renderContentPills(item)
+        );
       case 'recipients':
         return this.renderRecipients(item);
       case 'messages':
@@ -746,161 +534,97 @@ export class BroadcastList extends ContentList<Broadcast> {
    * — the full message (text, attachments, quick replies, template),
    * everyone it addresses including exclusions, and the
    * schedule or delivery specifics in the header. */
-  private renderDetail(): TemplateResult {
-    const broadcast = this.detailBroadcast;
-    const pills = broadcast ? this.getRecipientPills(broadcast) : [];
+  protected renderDetail(broadcast: Broadcast): DetailDialogContent {
+    const pills = this.getRecipientPills(broadcast);
     const showActions =
       this.mode === 'scheduled' && (this.canEdit || this.canDelete);
 
-    return html`
-      <temba-dialog
-        size="xlarge"
-        variant="flat"
-        primaryButtonName=""
-        cancelButtonName=""
-        hideOnClick
-        ?open=${!!broadcast}
-        @temba-dialog-hidden=${this.handleDetailClosed}
-        @keyup=${(e: KeyboardEvent) => {
-          if (e.key === 'Escape') {
-            this.handleDetailClosed();
-          }
-        }}
-      >
-        ${broadcast
+    return {
+      title: this.mode === 'scheduled' ? 'Scheduled Broadcast' : 'Broadcast',
+      subtitle:
+        broadcast.created_on || broadcast.created_by
+          ? html`${broadcast.created_on
+              ? html`${this.mode === 'scheduled' ? 'Created' : 'Sent'}
+                  <temba-date
+                    value=${broadcast.created_on}
+                    display="datetime"
+                  ></temba-date>`
+              : null}
+            ${broadcast.created_by
+              ? html`<span>by ${broadcast.created_by}</span>`
+              : null}`
+          : null,
+      actions: showActions
+        ? html`${this.canEdit
+            ? renderDetailButton('Edit', () => this.handleEditClicked())
+            : null}${this.canDelete
+            ? renderDetailButton(
+                'Delete',
+                () => this.handleDeleteClicked(),
+                true
+              )
+            : null}`
+        : null,
+      trailing: this.renderHeaderStatus(broadcast),
+      body: html`
+        ${this.mode === 'scheduled' || this.isSending(broadcast)
+          ? html`<div class="detail-status-row">
+              ${this.renderDetailStatus(broadcast)}
+            </div>`
+          : null}
+
+        <div class="detail-message">
+          <div class="detail-section-title">${msg('Message')}</div>
+          ${broadcast.text
+            ? html`<temba-expression-highlight
+                >${broadcast.text}</temba-expression-highlight
+              >`
+            : null}
+          ${broadcast.attachments?.length
+            ? html`<div class="detail-attachments">
+                ${broadcast.attachments.map(
+                  (a) => html`
+                    <temba-thumbnail
+                      attachment=${attachmentAsString(a)}
+                    ></temba-thumbnail>
+                  `
+                )}
+              </div>`
+            : null}
+          ${broadcast.quick_replies?.length
+            ? html`<div class="detail-pills">
+                ${broadcast.quick_replies.map(
+                  (reply) =>
+                    html`<temba-label type="neutral"
+                      >${typeof reply === 'string'
+                        ? reply
+                        : (reply.text ?? reply.type)}</temba-label
+                    >`
+                )}
+              </div>`
+            : null}
+          ${this.renderContentPills(broadcast)}
+        </div>
+
+        ${pills.length ||
+        broadcast.exclusions?.length ||
+        broadcast.msg_count != null
           ? html`
-              <div class="detail">
-                <div class="detail-header">
-                  <div class="detail-title">
-                    <div class="detail-name">
-                      ${this.mode === 'scheduled'
-                        ? 'Scheduled Broadcast'
-                        : 'Broadcast'}
-                    </div>
-                    ${broadcast.created_on || broadcast.created_by
-                      ? html`<div class="detail-when">
-                          ${broadcast.created_on
-                            ? html`${this.mode === 'scheduled'
-                                  ? 'Created'
-                                  : 'Sent'}
-                                <temba-date
-                                  value=${broadcast.created_on}
-                                  display="datetime"
-                                ></temba-date>`
-                            : null}
-                          ${broadcast.created_by
-                            ? html`<span>by ${broadcast.created_by}</span>`
-                            : null}
-                        </div>`
-                      : null}
-                  </div>
-                  ${showActions
-                    ? html`<div class="detail-actions">
-                        ${this.canEdit
-                          ? html`<button
-                              class="menu-button"
-                              @click=${this.handleEditClicked}
-                            >
-                              Edit
-                            </button>`
-                          : null}
-                        ${this.canDelete
-                          ? html`<button
-                              class="menu-button destructive"
-                              @click=${this.handleDeleteClicked}
-                            >
-                              Delete
-                            </button>`
-                          : null}
-                      </div>`
-                    : null}
-                  ${this.renderHeaderStatus(broadcast)}
-                  <div
-                    class="detail-close"
-                    role="button"
-                    tabindex="0"
-                    aria-label="Close"
-                    @click=${this.handleDetailClosed}
-                    @keydown=${(e: KeyboardEvent) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        this.handleDetailClosed();
-                      }
-                    }}
-                  >
-                    <temba-icon name=${Icon.close} size="1.4"></temba-icon>
-                  </div>
-                </div>
-
-                <div class="detail-body">
-                  ${this.mode === 'scheduled' || this.isSending(broadcast)
-                    ? html`<div class="detail-status-row">
-                        ${this.renderDetailStatus(broadcast)}
-                      </div>`
-                    : null}
-
-                  <div class="detail-message">
-                    <div class="detail-section-title">${msg('Message')}</div>
-                    ${broadcast.text
-                      ? html`<temba-expression-highlight
-                          >${broadcast.text}</temba-expression-highlight
-                        >`
-                      : null}
-                    ${broadcast.attachments?.length
-                      ? html`<div class="detail-attachments">
-                          ${broadcast.attachments.map(
-                            (a) => html`
-                              <temba-thumbnail
-                                attachment=${attachmentAsString(a)}
-                              ></temba-thumbnail>
-                            `
-                          )}
-                        </div>`
-                      : null}
-                    ${broadcast.quick_replies?.length
-                      ? html`<div class="detail-pills">
-                          ${broadcast.quick_replies.map(
-                            (reply) =>
-                              html`<temba-label type="neutral"
-                                >${typeof reply === 'string'
-                                  ? reply
-                                  : (reply.text ?? reply.type)}</temba-label
-                              >`
-                          )}
-                        </div>`
-                      : null}
-                    ${this.renderContentPills(broadcast)}
-                  </div>
-
-                  ${pills.length ||
-                  broadcast.exclusions?.length ||
-                  broadcast.msg_count != null
-                    ? html`
-                        <div class="detail-section-row">
-                          <div class="detail-section-title">
-                            ${msg('Recipients')}
-                          </div>
-                          ${this.renderDetailCount(broadcast)}
-                        </div>
-                        <div class="detail-pills">${pills}</div>
-                        ${broadcast.exclusions?.length
-                          ? html`<div class="detail-exclusions">
-                              ${broadcast.exclusions.map(
-                                (line) => html`<div>${line}</div>`
-                              )}
-                            </div>`
-                          : null}
-                      `
-                    : null}
-                </div>
+              <div class="detail-section-row">
+                <div class="detail-section-title">${msg('Recipients')}</div>
+                ${this.renderDetailCount(broadcast)}
               </div>
+              <div class="detail-pills">${pills}</div>
+              ${broadcast.exclusions?.length
+                ? html`<div class="detail-exclusions">
+                    ${broadcast.exclusions.map(
+                      (line) => html`<div>${line}</div>`
+                    )}
+                  </div>`
+                : null}
             `
           : null}
-      </temba-dialog>
-    `;
-  }
-
-  public render(): TemplateResult {
-    return html`${super.render()}${this.renderDetail()}`;
+      `
+    };
   }
 }

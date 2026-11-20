@@ -39,16 +39,6 @@ export class ContactList extends ContentList<Contact> {
   static get styles() {
     return css`
       ${ContentList.styles}
-      /* The contact name is the one cell that carries a slightly
-         heavier weight — every other cell stays at the regular
-         table weight so values don't read as emphasised. */
-      .contact-name {
-        color: inherit;
-        font-weight: var(--w-medium);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
       .contact-urn {
         color: var(--text-3);
         font-size: 12.5px;
@@ -391,7 +381,7 @@ export class ContactList extends ContentList<Contact> {
     }
     switch (column.key) {
       case 'name':
-        return html`<span class="contact-name" title=${item.name || ''}
+        return html`<span class="item-name" title=${item.name || ''}
           >${item.name || EMPTY}</span
         >`;
       case 'urn':

@@ -63,7 +63,7 @@ describe('temba-shortcut-list', () => {
 
     expect(dialog.open).to.be.true;
     expect(dialog.getAttribute('variant')).to.equal('flat');
-    expect(list.shadowRoot.querySelector('.detail-title').textContent).to.equal(
+    expect(list.shadowRoot.querySelector('.detail-name').textContent).to.equal(
       'Greeting'
     );
     // the text is rendered pre-wrap, so it must not pick up the template's
