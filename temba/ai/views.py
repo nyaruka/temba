@@ -223,9 +223,6 @@ class LLMCRUDL(SmartCRUDL):
         def derive_list_query(self) -> str:
             return ""  # the endpoint has no folders
 
-        def derive_queryset(self, **kwargs):
-            return super().derive_queryset(**kwargs).filter(is_system=False)
-
         def build_context_menu(self, menu):
             if self.has_org_perm("ai.llm_connect") and not self.is_limit_reached:
                 if any(t.is_available_to(self.request.org, self.request.user) for t in LLM.get_types()):
