@@ -3067,6 +3067,22 @@
   <source>Reopen</source>
   <target>Reabrir</target>
 </trans-unit>
+<trans-unit id="s5fef70747e3bb978">
+  <source>No models</source>
+  <target>No hay modelos</target>
+</trans-unit>
+<trans-unit id="sc630ac44b30e00a1">
+  <source>Usages</source>
+  <target>Usos</target>
+</trans-unit>
+<trans-unit id="s765b1489d4d2c442">
+  <source><x id="0" equiv-text="${count}"/> use</source>
+  <target><x id="0" equiv-text="${count}"/> uso</target>
+</trans-unit>
+<trans-unit id="sef881734a2235f43">
+  <source><x id="0" equiv-text="${count}"/> uses</source>
+  <target><x id="0" equiv-text="${count}"/> usos</target>
+</trans-unit>
 </body>
 </file>
 </xliff>
