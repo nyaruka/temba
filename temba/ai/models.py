@@ -139,6 +139,21 @@ class LLM(OrgAsset, DependencyMixin):
 
         return TYPES[self.llm_type]
 
+    def as_json(self, context=None) -> dict:
+        """
+        Internal API shape, consumed by the temba-llm-list component. Expects `usage_count` to have been annotated by
+        annotate_usage.
+        """
+
+        return {
+            "uuid": str(self.uuid),
+            "name": self.name,
+            "type": self.llm_type,
+            "icon": self.type.icon,
+            "model": self.model,
+            "usages": self.usage_count,
+        }
+
     def translate(self, source: str, target: str, items: dict[str, list[str]]) -> dict[str, list[str]]:
         return mailroom.get_client().llm_translate(self, source, target, items)
 

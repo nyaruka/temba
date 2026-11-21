@@ -3,7 +3,6 @@ import json
 from smartmin.views import SmartCRUDL
 
 from django import forms
-from django.db.models.functions import Lower
 from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
 from django.utils.crypto import salted_hmac
@@ -11,10 +10,10 @@ from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt
 
 from temba import mailroom
-from temba.orgs.views.base import BaseDependencyDeleteModal, BaseListView, BaseReadView
+from temba.orgs.views.base import BaseDependencyDeleteModal, BaseListComponentView, BaseReadView, BaseUsagesModal
 from temba.orgs.views.mixins import OrgObjPermsMixin, OrgPermsMixin
 from temba.utils.fields import InputWidget, NameValidator, SelectWidget
-from temba.utils.views.mixins import ContextMenuMixin, PostOnlyMixin, SpaMixin
+from temba.utils.views.mixins import PostOnlyMixin
 from temba.utils.views.wizard import SmartWizardUpdateView, SmartWizardView
 
 from .models import LLM, LLMCredentialsError
@@ -211,15 +210,18 @@ class ModelWizardMixin:
 
 class LLMCRUDL(SmartCRUDL):
     model = LLM
-    actions = ("list", "connect", "update", "translate", "delete")
+    actions = ("list", "connect", "update", "translate", "usages", "delete")
 
-    class List(SpaMixin, ContextMenuMixin, BaseListView):
+    class List(BaseListComponentView):
         title = _("Artificial Intelligence")
+        subtitle = _("Add Large Language Models (LLMs) to your workspace to unlock AI assisted features.")
         menu_path = "settings/ai"
-        default_order = (Lower("name"),)
+        list_endpoint = "api.internal.ai_models"
+        bulk_actions = ()
+        allow_search = False
 
-        def derive_queryset(self, **kwargs):
-            return super().derive_queryset(**kwargs).filter(is_system=False)
+        def derive_list_query(self) -> str:
+            return ""  # the endpoint has no folders
 
         def build_context_menu(self, menu):
             if self.has_org_perm("ai.llm_connect") and not self.is_limit_reached:
@@ -254,6 +256,9 @@ class LLMCRUDL(SmartCRUDL):
                 return JsonResponse({"error": str(e)}, status=400)
 
             return JsonResponse({"items": items})
+
+    class Usages(BaseUsagesModal):
+        permission = "ai.llm_read"
 
     class Delete(BaseDependencyDeleteModal):
         cancel_url = "@ai.llm_list"

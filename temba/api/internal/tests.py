@@ -81,6 +81,58 @@ class EndpointsTest(APITestMixin, TembaTest):
         self.assertGet(endpoint_url + "?level=hood", [self.agent], results=[])
         self.assertGet(endpoint_url, [self.agent], results=[])
 
+    def test_ai_models(self):
+        endpoint_url = reverse("api.internal.ai_models") + ".json"
+
+        self.assertGetNotPermitted(endpoint_url, [None, self.agent])
+        self.assertPostNotAllowed(endpoint_url)
+        self.assertDeleteNotAllowed(endpoint_url)
+
+        openai = LLM.create(self.org, self.admin, OpenAIType(), "gpt-5.4-mini", "GPT-4", {})
+        azure = LLM.create(self.org, self.admin, OpenAIAzureType(), "gpt-35-turbo", "azure GPT", {})
+        deleted = LLM.create(self.org, self.admin, OpenAIAzureType(), "gpt-35-turbo", "Deleted", {})
+        deleted.release(self.admin)
+        system = LLM.create(self.org, self.admin, OpenAIType(), "gpt-5.4-mini", "System", {})
+        system.is_system = True
+        system.save(update_fields=("is_system",))
+        LLM.create(self.org2, self.admin2, OpenAIType(), "gpt-5.4-mini", "Other Org", {})
+
+        flow1 = self.create_flow("Flow 1")
+        flow2 = self.create_flow("Flow 2")
+        flow1.llm_dependencies.add(openai)
+        flow2.llm_dependencies.add(openai)
+
+        # deleted, system and other org models are excluded, and they're ordered by name
+        self.assertGet(
+            endpoint_url,
+            [self.editor, self.admin],
+            results=[
+                {
+                    "uuid": str(azure.uuid),
+                    "name": "azure GPT",
+                    "type": "openai_azure",
+                    "icon": "ai_microsoft",
+                    "model": "gpt-35-turbo",
+                    "usages": 0,
+                },
+                {
+                    "uuid": str(openai.uuid),
+                    "name": "GPT-4",
+                    "type": "openai",
+                    "icon": "ai_openai",
+                    "model": "gpt-5.4-mini",
+                    "usages": 2,
+                },
+            ],
+            num_queries=NUM_BASE_QUERIES + 2,
+        )
+
+        # sortable by name and usages in both directions, and an unknown sort falls back to name
+        self.assertGet(endpoint_url + "?sort=-name", [self.admin], results=[openai, azure])
+        self.assertGet(endpoint_url + "?sort=usages", [self.admin], results=[azure, openai])
+        self.assertGet(endpoint_url + "?sort=-usages", [self.admin], results=[openai, azure])
+        self.assertGet(endpoint_url + "?sort=nope", [self.admin], results=[azure, openai])
+
     def test_calls(self):
         endpoint_url = reverse("api.internal.calls") + ".json"
 

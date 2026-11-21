@@ -24,21 +24,30 @@ class LLMCRUDLTest(TembaTest, CRUDLTestMixin):
     def test_list(self):
         list_url = reverse("ai.llm_list")
 
-        # system LLMs should be hidden from the list
-        system = LLM.create(self.org, self.admin, OpenAIType(), "gpt-5.4-mini", "System", {})
-        system.is_system = True
-        system.save(update_fields=("is_system",))
-
         self.assertRequestDisallowed(list_url, [None, self.agent])
 
-        response = self.assertListFetch(list_url, [self.editor, self.admin], context_objects=[self.azure, self.openai])
+        response = self.assertListFetch(list_url, [self.editor, self.admin])
         self.assertEqual("settings/ai", response.headers[TEMBA_MENU_SELECTION])
+
+        # the temba-llm-list component fetches the models itself from the internal API
+        self.assertContains(response, "temba-llm-list")
+        self.assertEqual(f"{reverse('api.internal.ai_models')}.json", response.context["list_url"])
+        self.assertEqual([], list(response.context["object_list"]))
+        self.assertNotContains(response, "Model limit reached")
+
+        # only admins can edit and delete models
+        self.assertContains(response, "editable")
+        self.assertContains(response, "deletable")
+        response = self.requestView(list_url, self.editor)
+        self.assertNotContains(response, "editable")
+        self.assertNotContains(response, "deletable")
+
         self.assertContentMenu(list_url, self.admin, ["New Model"])
         self.assertContentMenu(list_url, self.editor, [])
 
         with override_settings(ORG_LIMIT_DEFAULTS={"llms": 2}):
-            response = self.assertListFetch(list_url, [self.editor, self.admin], context_object_count=2)
-            self.assertContains(response, "You have reached the per-workspace limit")
+            response = self.assertListFetch(list_url, [self.editor, self.admin])
+            self.assertContains(response, "Model limit reached")
             self.assertContentMenu(list_url, self.admin, [])
 
         # types that aren't available to the user are hidden from provider selection
@@ -232,6 +241,17 @@ class LLMCRUDLTest(TembaTest, CRUDLTestMixin):
         )
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json(), {"error": "rate limit exceeded"})
+
+    def test_usages(self):
+        usages_url = reverse("ai.llm_usages", args=[self.openai.uuid])
+
+        flow = self.create_flow("Color Flow")
+        flow.llm_dependencies.add(self.openai)
+
+        self.assertRequestDisallowed(usages_url, [None, self.agent, self.admin2])
+        response = self.assertReadFetch(usages_url, [self.editor, self.admin], context_object=self.openai)
+
+        self.assertEqual({"flow": [flow]}, {t: list(qs) for t, qs in response.context["dependents"].items()})
 
     def test_delete(self):
         list_url = reverse("ai.llm_list")

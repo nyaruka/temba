@@ -51,6 +51,9 @@ msgstr ""
 msgid "Artificial Intelligence"
 msgstr ""
 
+msgid "Add Large Language Models (LLMs) to your workspace to unlock AI assisted features."
+msgstr ""
+
 msgid "New Model"
 msgstr ""
 
@@ -4000,22 +4003,19 @@ msgstr ""
 msgid "If you haven't received the email, check your spam folder or contact support for assistance."
 msgstr ""
 
+msgid "Model limit reached"
+msgstr ""
+
+msgid "Remove a model before adding another one."
+msgstr ""
+
+msgid "No models yet"
+msgstr ""
+
 msgid "Update Model"
 msgstr ""
 
 msgid "Delete Model"
-msgstr ""
-
-msgid "Add Large Language Models (LLMs) to your workspace to unlock AI assisted features."
-msgstr ""
-
-#, python-format
-msgid "%(counter)s use"
-msgid_plural "%(counter)s uses"
-msgstr[0] ""
-msgstr[1] ""
-
-msgid "No models yet"
 msgstr ""
 
 msgid "Contact"
@@ -5136,6 +5136,12 @@ msgstr ""
 
 msgid "Globals are variables you can use across all of your flows but manage the value for in one place. For example, you might use them to store API keys you need to access external services or product names that might change later."
 msgstr ""
+
+#, python-format
+msgid "%(counter)s use"
+msgid_plural "%(counter)s uses"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "No globals"
 msgstr ""
