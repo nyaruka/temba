@@ -722,7 +722,7 @@ class KnowledgeSource(OrgAsset):
     MAX_MAX_PAGES = 5_000
     MAX_URL_LEN = 2048
 
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="sources", db_index=False)
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="sources")
     source_type = models.CharField(max_length=16, choices=TYPE_CHOICES)
 
     # type specific settings, e.g. for website: url, max_depth, max_pages, refresh. Empty for other types.
