@@ -1,3 +1,8 @@
+## v26.3.222 (2026-11-23)
+ * Make being flagged a reason for a workspace to be restricted, keeping contact imports blocked and verifying and moving flagged incidents at the same scope as the flag
+ * Test that foreign keys are indexed and drop large indexes made redundant by composites
+ * Drop unused flows_flowstarts_org_created index
+
 ## v26.3.221 (2026-11-20)
  * Run CI against PostgreSQL 18
 
