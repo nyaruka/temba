@@ -305,6 +305,23 @@ export class Select<T extends SelectOption> extends FieldElement {
         overflow: visible;
       }
 
+      /* Single-mode selected value shrinks with the widget and ends in
+         an ellipsis rather than being cut off at .left-side. The
+         padding / negative margin pair gives the clipping box room for
+         descenders without moving the text. */
+      .single .selected-item > * {
+        min-width: 0;
+      }
+
+      .single .selected-item .option-name > span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        padding: 0.2em 0;
+        margin: -0.2em 0;
+      }
+
       .multi .selected-item .option-name {
         flex: 0 1 auto;
         font-size: inherit;
