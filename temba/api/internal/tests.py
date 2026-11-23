@@ -20,6 +20,7 @@ from temba.globals.models import Global
 from temba.ivr.models import Call
 from temba.knowledge.models import Article, KnowledgeSource
 from temba.msgs.models import Broadcast, Msg
+from temba.notifications.incidents.builtin import ChannelDisconnectedIncidentType
 from temba.notifications.types import ExportFinishedNotificationType
 from temba.orgs.models import Org, OrgRole
 from temba.request_logs.models import HTTPLog
@@ -952,12 +953,12 @@ class EndpointsTest(APITestMixin, TembaTest):
         export2 = TicketExport.create(self.org, self.editor, start_date=timezone.now(), end_date=timezone.now())
         ExportFinishedNotificationType.create(export2)
 
-        # and org being flagged
-        self.org.flag()
+        # and a channel incident
+        ChannelDisconnectedIncidentType.get_or_create(self.channel)
 
         export1_notification = export1.notifications.get()
         export2_notification = export2.notifications.get()
-        flagged_notification = self.admin.notifications.get(notification_type="incident:started")
+        incident_notification = self.admin.notifications.get(notification_type="incident:started")
 
         self.assertGet(
             endpoint_url,
@@ -966,10 +967,10 @@ class EndpointsTest(APITestMixin, TembaTest):
                 {
                     "type": "incident:started",
                     "created_on": matchers.ISODatetime(),
-                    "url": f"/notification/read/{flagged_notification.id}/",
+                    "url": f"/notification/read/{incident_notification.id}/",
                     "is_seen": False,
                     "incident": {
-                        "type": "org:flagged",
+                        "type": "channel:disconnected",
                         "started_on": matchers.ISODatetime(),
                         "ended_on": None,
                     },

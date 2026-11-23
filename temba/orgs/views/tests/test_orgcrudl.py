@@ -11,6 +11,7 @@ from django.urls import reverse
 
 from temba.channels.models import Channel
 from temba.contacts.models import URN
+from temba.notifications.incidents.builtin import ChannelDisconnectedIncidentType
 from temba.orgs.models import Invitation, Org, OrgRole
 from temba.tests import CRUDLTestMixin, TembaTest
 from temba.users.models import User
@@ -142,8 +143,8 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         menu = self.client.get(menu_url).json()["results"]
         self.assertEqual(None, menu[8].get("bubble"))
 
-        # flag our org to create a notification
-        self.org.flag()
+        # create an incident and so a notification
+        ChannelDisconnectedIncidentType.get_or_create(self.channel)
         menu = self.client.get(menu_url).json()["results"]
         self.assertEqual("tomato", menu[8]["bubble"])
 

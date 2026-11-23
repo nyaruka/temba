@@ -2975,12 +2975,6 @@ msgstr "Canal déconnecté"
 msgid "Channel Android App Outdated"
 msgstr "Application Android du canal obsolète"
 
-msgid "Workspace Flagged"
-msgstr "Espace de travail signalé"
-
-msgid "Your workspace has been flagged"
-msgstr "Votre espace de travail a été signalé"
-
 msgid "Webhooks Unhealthy"
 msgstr "Webhooks défaillants"
 
@@ -5580,9 +5574,6 @@ msgstr "Votre <a href=\"%(url)s\">canal WhatsApp</a> rencontre actuellement des 
 #, python-format
 msgid "Your WhatsApp channel (%(url)s) is currently having problems fetching templates."
 msgstr "Votre canal WhatsApp (%(url)s) rencontre actuellement des problèmes de récupération des modèles."
-
-msgid "Your workspace has been flagged because of suspicious activity. To re-enable starting flows and sending messages, please contact support."
-msgstr "Votre espace de travail a été signalé en raison d'une activité suspecte. Pour réactiver le démarrage de flux et l'envoi de messages, veuillez contacter le support."
 
 #, python-format
 msgid "User <b>%(email)s</b> accepted an invitation to join your workspace."

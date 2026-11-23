@@ -579,8 +579,6 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             self._set_status(Org.STATUS_ACTIVE)
 
     def _set_status(self, status: str, *, reason: str = None, suspends_on=None):
-        from temba.notifications.incidents.builtin import OrgFlaggedIncidentType
-
         now = timezone.now()
         changes = dict(
             status=status,
@@ -595,11 +593,6 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         self.save(update_fields=changes.keys())
 
         self.children.filter(is_active=True).update(**changes)
-
-        if self.is_flagged:
-            OrgFlaggedIncidentType.get_or_create(self)  # create incident which will notify admins
-        else:
-            OrgFlaggedIncidentType.end_ongoing(self)
 
         org_status_changed.send(sender=Org, org=self, status=status)
 

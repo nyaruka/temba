@@ -146,7 +146,6 @@
 's2a02d2a7e41d6700': `Occupé`,
 's2a46c7c5730014aa': `15 minutes`,
 's2abc882faee7cc32': `4 minutes`,
-'s2b8c3c32964c67ac': `Votre espace de travail a été signalé, veuillez contacter l'assistance pour obtenir de l'aide.`,
 's2b9c3ab3a2193878': `Vu pour la dernière fois`,
 's2c613f55190525c2': `Type de fichier non pris en charge`,
 's2cc7cd11d9b856cd': `Catégories`,
