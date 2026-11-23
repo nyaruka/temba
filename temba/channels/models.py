@@ -5,6 +5,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from enum import Enum
+from typing import NamedTuple
 
 import iso8601
 import phonenumbers
@@ -294,6 +295,10 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
     FAILURE_RATE_MIN_SENT = 20
     FAILURE_RATE_MIN_FAILED = 3
     FAILURE_RATE_RECENT_DAYS = 7  # how far back is read for every channel at once, and further only for those short
+
+    # a failing channel which has sent at least this many messages today, failing fewer of them than the degraded rate,
+    # is recovering, as failures follow their sends within minutes rather than days
+    RECOVERING_MIN_SENT = 20
 
     # speed only matters when sending to a lot of contacts, so it's only flagged for workspaces with more than this
     SPEED_MIN_CONTACTS = 50_000
@@ -688,10 +693,10 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
             self.__dict__["_has_received"] = bool(self._get_received([self]))
         return self.__dict__["_has_received"]
 
-    def get_recent_failures(self) -> tuple[int, int, date] | None:
+    def get_recent_failures(self) -> "RecentFailures | None":
         """
-        How many of its most recent text messages this channel has failed to send, as failed and sent counts and the day
-        the earliest of them was sent, or None if it hasn't sent enough to judge
+        How many of its most recent text messages this channel has failed to send, and how many of today's, or None if
+        it hasn't sent enough to judge
         """
         return self._get_recent_failures([self]).get(self.id)
 
@@ -741,7 +746,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         if self.is_sync_delayed():
             return H("warn", _("Not syncing"), _("The phone hasn't synced for over an hour."), H.CAUSE_SYNC)
         if self.ROLE_SEND in self.role and (failures := get_recent_failures()):
-            failed, sent, since = failures
+            failed, sent, since = failures.failed, failures.sent, failures.since
             if failed / sent >= self.FAILURE_RATE_DEGRADED:
                 unhealthy = failed / sent >= self.FAILURE_RATE_UNHEALTHY
                 # when they were sent, as a channel that's sent nothing since is judged by sends however old
@@ -750,6 +755,33 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
                     "count": intcomma(sent),
                     "date": date_format(since, "MONTH_DAY_FORMAT"),
                 }
+                # unless what it's sent today is going through, when it's on the mend but still worth a look
+                if (
+                    failures.sent_today >= self.RECOVERING_MIN_SENT
+                    and failures.failed_today / failures.sent_today < self.FAILURE_RATE_DEGRADED
+                ):
+                    # saying how today's went, as some can still fail, in whole percents of at least one so a few
+                    # failures don't read as none, and rounded down so it's always below the rate it recovered from
+                    args = {
+                        "today_count": intcomma(failures.sent_today),
+                        "today_percent": max(1, failures.failed_today * 100 // failures.sent_today),
+                        "percent": round(failed / sent * 100),
+                        "count": intcomma(sent),
+                        "date": date_format(since, "MONTH_DAY_FORMAT"),
+                    }
+                    if failures.failed_today:
+                        note = _(
+                            "%(today_percent)d%% of the %(today_count)s messages sent today have failed, down from "
+                            "%(percent)d%% of the %(count)s sent since %(date)s."
+                        )
+                    else:
+                        note = _(
+                            "None of the %(today_count)s messages sent today have failed, after %(percent)d%% of the "
+                            "%(count)s sent since %(date)s did."
+                        )
+                    note = note % args
+                    return H("warn", _("Recovering"), note, H.CAUSE_FAILING, since)
+
                 # either is a problem with its health, so is red - the word says how bad
                 return H("bad", _("Unhealthy") if unhealthy else _("Degraded"), note, H.CAUSE_FAILING, since)
         if self._can_wait() and not has_received():
@@ -810,13 +842,12 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         return received | {channel_id for (channel_id, _day, _scope), count in totals.items() if count > 0}
 
     @classmethod
-    def _get_recent_failures(cls, channels) -> dict[int, tuple[int, int, date]]:
+    def _get_recent_failures(cls, channels) -> dict[int, "RecentFailures"]:
         """
-        How many of their most recent text messages the given channels have failed to send, as failed and sent counts
-        and the day the earliest of them was sent, by channel id, omitting those which haven't sent, or failed, enough to
-        judge. Today's are left out, as they haven't all had time to fail yet, so a big send queued today would hide
-        failures. Starts with yesterday's and goes back a day at a time until enough were sent, so a channel stays
-        judged by what it last sent.
+        How many of their most recent text messages the given channels have failed to send, by channel id, omitting
+        those which haven't sent, or failed, enough to judge. Today's are judged apart, as they haven't all had time to
+        fail yet, so a big send queued today would hide failures. Starts with yesterday's and goes back a day at a time
+        until enough were sent, so a channel stays judged by what it last sent.
         """
         if not channels:
             return {}
@@ -833,7 +864,8 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
 
         # most channels will have sent enough in the last week, so only those which haven't need reading further back
         recent_since = today - timedelta(days=cls.FAILURE_RATE_RECENT_DAYS - 1)
-        read(channels, recent_since, today)
+        read(channels, recent_since, today + timedelta(days=1))
+        todays = {c.id: by_day[c.id].pop(today, [0, 0]) for c in channels}
 
         short = [c for c in channels if sum(s for _, s in by_day[c.id].values()) < cls.FAILURE_RATE_MIN_SENT]
         if short:
@@ -851,7 +883,10 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
                 since = day
 
             if sent >= cls.FAILURE_RATE_MIN_SENT or (sent and failed >= cls.FAILURE_RATE_MIN_FAILED):
-                failures[c.id] = (min(failed, sent), sent, since)
+                failed_today, sent_today = todays[c.id]
+                failures[c.id] = RecentFailures(
+                    min(failed, sent), sent, since, min(failed_today, sent_today), sent_today
+                )
 
         return failures
 
@@ -1086,6 +1121,19 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
             ),
         ]
         constraints = [models.CheckConstraint(condition=Q(tps__gt=0), name="channel_tps_positive")]
+
+
+class RecentFailures(NamedTuple):
+    """
+    How many of a channel's most recent text messages before today it failed to send, and the day the earliest of them
+    was sent, and how many of today's
+    """
+
+    failed: int
+    sent: int
+    since: date
+    failed_today: int
+    sent_today: int
 
 
 @dataclass(frozen=True)

@@ -51,6 +51,9 @@ msgstr ""
 msgid "Artificial Intelligence"
 msgstr ""
 
+msgid "Add Large Language Models (LLMs) to your workspace to unlock AI assisted features."
+msgstr ""
+
 msgid "New Model"
 msgstr ""
 
@@ -58,6 +61,12 @@ msgid "Create"
 msgstr ""
 
 msgid "Save"
+msgstr ""
+
+msgid "Delete model"
+msgstr ""
+
+msgid "Delete Model"
 msgstr ""
 
 msgid "Your LLM model has been deleted."
@@ -362,6 +371,17 @@ msgstr ""
 
 #, python-format
 msgid "%(percent)d%% of the %(count)s messages sent since %(date)s have failed."
+msgstr ""
+
+#, python-format
+msgid "%(today_percent)d%% of the %(today_count)s messages sent today have failed, down from %(percent)d%% of the %(count)s sent since %(date)s."
+msgstr ""
+
+#, python-format
+msgid "None of the %(today_count)s messages sent today have failed, after %(percent)d%% of the %(count)s sent since %(date)s did."
+msgstr ""
+
+msgid "Recovering"
 msgstr ""
 
 msgid "Unhealthy"
@@ -2952,12 +2972,6 @@ msgstr ""
 msgid "Channel Android App Outdated"
 msgstr ""
 
-msgid "Workspace Flagged"
-msgstr ""
-
-msgid "Your workspace has been flagged"
-msgstr ""
-
 msgid "Webhooks Unhealthy"
 msgstr ""
 
@@ -3065,9 +3079,6 @@ msgid "This slug is not available"
 msgstr ""
 
 msgid "Whether this organization anonymizes the phone numbers of contacts within it"
-msgstr ""
-
-msgid "Whether this organization is currently flagged."
 msgstr ""
 
 #, python-format
@@ -3462,16 +3473,13 @@ msgstr ""
 msgid "Edit Workspace"
 msgstr ""
 
-msgid "Flag"
-msgstr ""
-
-msgid "Unflag"
-msgstr ""
-
 msgid "Restrict"
 msgstr ""
 
 msgid "Suspend"
+msgstr ""
+
+msgid "Unflag"
 msgstr ""
 
 msgid "Verify"
@@ -4000,22 +4008,16 @@ msgstr ""
 msgid "If you haven't received the email, check your spam folder or contact support for assistance."
 msgstr ""
 
-msgid "Update Model"
+msgid "Model limit reached"
 msgstr ""
 
-msgid "Delete Model"
+msgid "Remove a model before adding another one."
 msgstr ""
-
-msgid "Add Large Language Models (LLMs) to your workspace to unlock AI assisted features."
-msgstr ""
-
-#, python-format
-msgid "%(counter)s use"
-msgid_plural "%(counter)s uses"
-msgstr[0] ""
-msgstr[1] ""
 
 msgid "No models yet"
+msgstr ""
+
+msgid "Update Model"
 msgstr ""
 
 msgid "Contact"
@@ -5137,6 +5139,12 @@ msgstr ""
 msgid "Globals are variables you can use across all of your flows but manage the value for in one place. For example, you might use them to store API keys you need to access external services or product names that might change later."
 msgstr ""
 
+#, python-format
+msgid "%(counter)s use"
+msgid_plural "%(counter)s uses"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "No globals"
 msgstr ""
 
@@ -5547,9 +5555,6 @@ msgstr ""
 
 #, python-format
 msgid "Your WhatsApp channel (%(url)s) is currently having problems fetching templates."
-msgstr ""
-
-msgid "Your workspace has been flagged because of suspicious activity. To re-enable starting flows and sending messages, please contact support."
 msgstr ""
 
 #, python-format
@@ -6086,6 +6091,10 @@ msgid "Service Account"
 msgstr ""
 
 msgid "Invalid org, servicing not available."
+msgstr ""
+
+#, python-format
+msgid "Suspending <b>%(name)s</b> will cancel any messages waiting to be sent on its channels, and on those of any child workspaces suspended with it. There is no way to undo this. Are you sure?"
 msgstr ""
 
 msgid "Deleting this user will also delete the following workspaces owned by this user."

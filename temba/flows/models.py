@@ -1150,7 +1150,7 @@ class FlowRun(models.Model):
     id = models.BigAutoField(primary_key=True)
     uuid = models.UUIDField(unique=True, default=uuid4)
     org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="runs", db_index=False)
-    flow = models.ForeignKey(Flow, on_delete=models.PROTECT, related_name="runs")
+    flow = models.ForeignKey(Flow, on_delete=models.PROTECT, related_name="runs", db_index=False)
     status = models.CharField(max_length=1, choices=STATUS_CHOICES)
     session_uuid = models.UUIDField()
 
@@ -1722,7 +1722,7 @@ class FlowStart(LegacyIDMixin, CreatedByMixin, ModifiedByMixin):
     )
 
     uuid = models.UUIDField(unique=True, default=uuid4)
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="flow_starts")
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="flow_starts", db_index=False)
     flow = models.ForeignKey(Flow, on_delete=models.PROTECT, related_name="starts")
     start_type = models.CharField(max_length=1, choices=TYPE_CHOICES)
     status = models.CharField(max_length=1, choices=STATUS_CHOICES, default=STATUS_PENDING)
@@ -1814,12 +1814,6 @@ class FlowStart(LegacyIDMixin, CreatedByMixin, ModifiedByMixin):
 
     class Meta:
         indexes = [
-            # used for the flow start log page
-            models.Index(
-                name="flows_flowstarts_org_created",
-                fields=["org", "-created_on"],
-                condition=Q(created_by__isnull=False),
-            ),
             # used by the flow_starts API endpoint
             models.Index(
                 name="flows_flowstarts_org_modified",

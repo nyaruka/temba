@@ -1824,4 +1824,53 @@ describe('temba-contact-chat', () => {
 
     await assertScreenshot('contacts/chat-ticket-status-area', getClip(chat));
   });
+
+  it('keeps ticket controls the same width whatever the topic', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    const controls = () =>
+      chat.shadowRoot.querySelector('.ticket-controls') as HTMLElement;
+
+    chat.currentTicket = {
+      uuid: 'ticket-1',
+      topic: { uuid: 'topic-1', name: 'General' },
+      assignee: null,
+      closed_on: null
+    } as any;
+    await chat.updateComplete;
+    const shortWidth = chat.getBoundingClientRect().width;
+
+    chat.currentTicket = {
+      uuid: 'ticket-2',
+      topic: {
+        uuid: 'topic-2',
+        name: 'Billing and payment questions from customers with a very long topic name'
+      },
+      assignee: null,
+      closed_on: null
+    } as any;
+    await chat.updateComplete;
+
+    // a long topic doesn't widen the chat or overflow the row
+    expect(chat.getBoundingClientRect().width).to.equal(shortWidth);
+    expect(controls().scrollWidth).to.be.at.most(controls().clientWidth);
+
+    // and close stays fully in view, even when the chat is narrow
+    chat.style.width = '260px';
+    chat.style.flexGrow = '0';
+    await chat.updateComplete;
+    const rowRect = controls().getBoundingClientRect();
+    const closeRect = controls()
+      .querySelector('temba-button')
+      .getBoundingClientRect();
+    expect(closeRect.right).to.be.at.most(rowRect.right);
+
+    chat.style.width = '';
+    chat.style.flexGrow = '';
+    await chat.updateComplete;
+    await assertScreenshot('contacts/chat-ticket-long-topic', getClip(chat));
+  });
 });

@@ -343,6 +343,20 @@ export interface ObjectReference {
   url?: string;
 }
 
+/** A row in the AI model CRUDL list (`ai/llm_list.html`). */
+export interface LLM {
+  uuid: string;
+  name: string;
+  /** the provider's type slug, e.g. `openai` */
+  type: string;
+  /** the provider's icon name */
+  icon: string;
+  /** the provider's model, e.g. `gpt-5.4-mini` */
+  model: string;
+  /** how many flows use it */
+  usages: number;
+}
+
 export interface Shortcut {
   uuid: string;
   name: string;
@@ -580,6 +594,8 @@ export enum CustomEventType {
   ArticleAddRequested = 'temba-article-add-requested',
   ShortcutEdit = 'temba-shortcut-edit',
   ShortcutDelete = 'temba-shortcut-delete',
+  /** An AI model's usages link was clicked - detail carries the item. */
+  LLMUsages = 'temba-llm-usages',
   SelectionChange = 'temba-selection-change',
   BulkAction = 'temba-bulk-action',
   /** The label dropdown's "New Label…" row was clicked — detail

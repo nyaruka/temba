@@ -196,6 +196,7 @@ class EndpointsTest(APITest):
         child_token = APIToken.create(child, self.admin)
         APIToken.get_used_keys()  # clear any recorded use
 
+        self.org.restrict(Org.RESTRICTED_BILLING)
         self.org.suspend()
 
         response = request_by_token(contacts_url, token1.key)
@@ -205,7 +206,7 @@ class EndpointsTest(APITest):
         response = request_by_session(contacts_url, self.admin)
         self.assertEqual(200, response.status_code)
 
-        # children are suspended with their parent
+        # children are suspended with their parent for billing
         response = request_by_token(contacts_url, child_token.key)
         self.assertResponseError(response, None, "Workspace is suspended", status_code=403)
 

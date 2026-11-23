@@ -61,6 +61,9 @@ msgstr "Deve ser único."
 msgid "Artificial Intelligence"
 msgstr "Inteligência artificial"
 
+msgid "Add Large Language Models (LLMs) to your workspace to unlock AI assisted features."
+msgstr "Adicione modelos de linguagem de grande porte (LLMs) à sua área de trabalho para desbloquear recursos assistidos por IA."
+
 msgid "New Model"
 msgstr "Novo modelo"
 
@@ -69,6 +72,12 @@ msgstr "Criar"
 
 msgid "Save"
 msgstr "Salvar"
+
+msgid "Delete model"
+msgstr "Deletar modelo"
+
+msgid "Delete Model"
+msgstr "Deletar modelo"
 
 msgid "Your LLM model has been deleted."
 msgstr "Seu modelo de LLM foi deletado."
@@ -381,6 +390,17 @@ msgstr "O telefone não sincroniza há mais de uma hora."
 #, python-format
 msgid "%(percent)d%% of the %(count)s messages sent since %(date)s have failed."
 msgstr "%(percent)d%% das %(count)s mensagens enviadas desde %(date)s falharam."
+
+#, python-format
+msgid "%(today_percent)d%% of the %(today_count)s messages sent today have failed, down from %(percent)d%% of the %(count)s sent since %(date)s."
+msgstr "%(today_percent)d%% das %(today_count)s mensagens enviadas hoje falharam, abaixo de %(percent)d%% das %(count)s enviadas desde %(date)s."
+
+#, python-format
+msgid "None of the %(today_count)s messages sent today have failed, after %(percent)d%% of the %(count)s sent since %(date)s did."
+msgstr "Nenhuma das %(today_count)s mensagens enviadas hoje falhou, depois que %(percent)d%% das %(count)s enviadas desde %(date)s falharam."
+
+msgid "Recovering"
+msgstr "Recuperando"
 
 msgid "Unhealthy"
 msgstr "Com problemas"
@@ -2979,12 +2999,6 @@ msgstr "Canal desconectado"
 msgid "Channel Android App Outdated"
 msgstr "Aplicativo Android do canal desatualizado"
 
-msgid "Workspace Flagged"
-msgstr "Área de trabalho sinalizada"
-
-msgid "Your workspace has been flagged"
-msgstr "Sua área de trabalho foi sinalizada"
-
 msgid "Webhooks Unhealthy"
 msgstr "Webhooks com problemas"
 
@@ -3093,9 +3107,6 @@ msgstr "Essa medida não está disponível"
 
 msgid "Whether this organization anonymizes the phone numbers of contacts within it"
 msgstr "Se essa organização anonimiza o número de telefone dos contatos"
-
-msgid "Whether this organization is currently flagged."
-msgstr "Se esta organização está sinalizada atualmente."
 
 #, python-format
 msgid "[%(name)s] Invitation to join workspace"
@@ -3489,17 +3500,14 @@ msgstr "Crie visualmente aplicações móveis escaláveis em escala nacional em 
 msgid "Edit Workspace"
 msgstr "Editar área de trabalho"
 
-msgid "Flag"
-msgstr "Sinalizar"
-
-msgid "Unflag"
-msgstr "Não sinalizar"
-
 msgid "Restrict"
 msgstr "Restringir"
 
 msgid "Suspend"
 msgstr "Suspender"
+
+msgid "Unflag"
+msgstr "Não sinalizar"
 
 msgid "Verify"
 msgstr "Verificar"
@@ -4028,24 +4036,17 @@ msgstr "Seu e-mail precisa ser verificado antes de continuar. Enviamos a você u
 msgid "If you haven't received the email, check your spam folder or contact support for assistance."
 msgstr "Se você não recebeu o e-mail, verifique sua pasta de spam ou entre em contato com o suporte para obter ajuda."
 
-msgid "Update Model"
-msgstr "Atualizar modelo"
+msgid "Model limit reached"
+msgstr "Limite de modelos atingido"
 
-msgid "Delete Model"
-msgstr "Deletar modelo"
-
-msgid "Add Large Language Models (LLMs) to your workspace to unlock AI assisted features."
-msgstr "Adicione modelos de linguagem de grande porte (LLMs) à sua área de trabalho para desbloquear recursos assistidos por IA."
-
-#, python-format
-msgid "%(counter)s use"
-msgid_plural "%(counter)s uses"
-msgstr[0] "%(counter)s uso"
-msgstr[1] "%(counter)s usos"
-msgstr[2] "%(counter)s usos"
+msgid "Remove a model before adding another one."
+msgstr "Remova um modelo antes de adicionar outro."
 
 msgid "No models yet"
 msgstr "Ainda sem modelos"
+
+msgid "Update Model"
+msgstr "Atualizar modelo"
 
 msgid "Contact"
 msgstr "Contato"
@@ -5172,6 +5173,13 @@ msgstr "Deletar global"
 msgid "Globals are variables you can use across all of your flows but manage the value for in one place. For example, you might use them to store API keys you need to access external services or product names that might change later."
 msgstr "Globais são variáveis que você pode usar em todos os seus fluxos, mas cujo valor é gerenciado em um só lugar. Por exemplo, você pode usá-las para armazenar chaves de API necessárias para acessar serviços externos ou nomes de produtos que podem mudar depois."
 
+#, python-format
+msgid "%(counter)s use"
+msgid_plural "%(counter)s uses"
+msgstr[0] "%(counter)s uso"
+msgstr[1] "%(counter)s usos"
+msgstr[2] "%(counter)s usos"
+
 msgid "No globals"
 msgstr "Nenhuma global"
 
@@ -5590,9 +5598,6 @@ msgstr "Seu <a href=\"%(url)s\">canal do WhatsApp</a> está tendo problemas para
 #, python-format
 msgid "Your WhatsApp channel (%(url)s) is currently having problems fetching templates."
 msgstr "Seu canal do WhatsApp (%(url)s) está tendo problemas para buscar templates no momento."
-
-msgid "Your workspace has been flagged because of suspicious activity. To re-enable starting flows and sending messages, please contact support."
-msgstr "Sua área de trabalho foi sinalizada devido a atividade suspeita. Para voltar a iniciar fluxos e enviar mensagens, por favor entre em contato com o suporte."
 
 #, python-format
 msgid "User <b>%(email)s</b> accepted an invitation to join your workspace."
@@ -6129,6 +6134,10 @@ msgstr "Atender conta"
 
 msgid "Invalid org, servicing not available."
 msgstr "Organização inválida, atendimento não disponível."
+
+#, python-format
+msgid "Suspending <b>%(name)s</b> will cancel any messages waiting to be sent on its channels, and on those of any child workspaces suspended with it. There is no way to undo this. Are you sure?"
+msgstr "Suspender <b>%(name)s</b> cancelará as mensagens aguardando envio em seus canais e nos de quaisquer áreas de trabalho filhas suspensas junto com ela. Não há como desfazer isso. Tem certeza?"
 
 msgid "Deleting this user will also delete the following workspaces owned by this user."
 msgstr "Deletar este usuário também deletará as seguintes áreas de trabalho pertencentes a ele."

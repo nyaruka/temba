@@ -1,90 +1,126 @@
-{% extends "orgs/base/list.html" %}
-{% load smartmin temba i18n %}
+{% extends "smartmin/list.html" %}
+{% load i18n %}
 
-{% block modaxes %}
-  <temba-modax header='{{ _("Update Model")|escapejs }}' id="update-llm"> </temba-modax>
-  <temba-modax header='{{ _("Delete Model")|escapejs }}' id="delete-llm"> </temba-modax>
-  <temba-modax header='{{ _("Usages")|escapejs }}' id="usages-llm"> </temba-modax>
-{% endblock modaxes %}
-{% block pre-table %}
-  <div class="mb-4">
-    {% blocktrans trimmed %}
-      Add Large Language Models (LLMs) to your workspace to unlock AI assisted features.
-    {% endblocktrans %}
-  </div>
-{% endblock pre-table %}
-{% block table %}
-  <table class="list lined scrolled">
-    <tbody>
-      {% for obj in object_list %}
-        <tr {% if org_perms.ai.llm_update and not obj.is_system %}onclick="showUpdateLLMModal('{{ obj.uuid }}')" class="hover-linked update"{% endif %}>
-          <td style="width: 32px">
-            <temba-icon class="inline-block mr-1 align-middle" name="{{ obj.type.icon }}"> </temba-icon>
-          </td>
-          <td style="min-width: 50px">{{ obj.name }}</td>
-          <td>{{ obj.model }}</td>
-          <td class="w-12">
-            <div class="flex text-center">
-              {% with usage_count=obj.usage_count %}
-                {% if usage_count %}
-                  <div onclick="event.stopPropagation() ; showLLMUsagesModal('{{ obj.uuid }}')" class="uses">
-                    <div class="lbl linked">
-                      {% blocktrans trimmed with counter=usage_count|intcomma count num=usage_count %}
-                        {{ counter }} use
-                      {% plural %}
-                        {{ counter }} uses
-                      {% endblocktrans %}
-                    </div>
-                  </div>
-                {% endif %}
-              {% endwith %}
-            </div>
-          </td>
-          {% if org_perms.ai.llm_delete %}
-            <td class="w-10">
-              {% if not obj.is_system %}
-                <temba-icon name="delete" clickable="true" style="--icon-color: #bbb" onclick="event.stopPropagation(); showDeleteLLMModal('{{ obj.uuid }}')"> </temba-icon>
-              {% endif %}
-            </td>
-          {% endif %}
-        </tr>
-      {% empty %}
-        <tr class="empty_list">
-          <td colspan="99" class="text-center">{% trans "No models yet" %}</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-{% endblock table %}
-{% block extra-script %}
+{% block alert-messages %}
   {{ block.super }}
-  <script>
-    function showUpdateLLMModal(uuid) {
-      var modax = document.querySelector('#update-llm');
-      modax.endpoint = `/llm/update/${uuid}/`;
-      modax.open = true;
-    }
-
-    function showDeleteLLMModal(uuid) {
-      var modax = document.querySelector('#delete-llm');
-      modax.endpoint = `/llm/delete/${uuid}/`;
-      modax.open = true;
-    }
-
-    function showLLMUsagesModal(uuid) {
-      var modax = document.querySelector('#usages-llm');
-      modax.endpoint = `/llm/usages/${uuid}/`
-      modax.open = true;
-    }
-  </script>
-{% endblock extra-script %}
+  {% if limit_reached %}
+    <div class="workspace-alerts">
+      {% trans "Model limit reached" as title %}
+      {% trans "Remove a model before adding another one." as message %}
+      {% include "includes/workspace_alert.html" with level="warning" icon="ai" %}
+    </div>
+  {% endif %}
+{% endblock alert-messages %}
+{% block page-header %}
+  {# the temba-llm-list renders its own header (title + content menu); #}
+  {# keep the csrf token and a hidden title for the SPA document.title hook #}
+  {% csrf_token %}
+  <div id="title-text" class="hide">{{ title }}</div>
+{% endblock page-header %}
 {% block extra-style %}
   {{ block.super }}
   <style>
-    td.dependencies {
-      width: 3em;
-      text-align: right;
-      white-space: nowrap;
+    /* The list component fills its container edge to edge and brings
+       its own surface, so drop the SPA content padding (and the grey
+       page background it would otherwise reveal around the list). */
+    .spa-content {
+      padding: 0 !important;
     }
   </style>
 {% endblock extra-style %}
+{% block content %}
+  <temba-llm-list
+    id="llm-list"
+    fill-window
+    history-state-key="llms"
+    list-title="{{ title }}"
+    {% if list_subtitle %}subtitle="{{ list_subtitle }}"{% endif %}
+    {% if org_perms.ai.llm_update %}editable{% endif %}
+    endpoint="{{ list_url }}"
+    content-menu-endpoint="{{ request.path }}?{{ request.GET.urlencode }}"
+    empty-message='{% trans "No models yet" %}'
+  >
+  </temba-llm-list>
+{% endblock content %}
+{% block extra-script %}
+  {{ block.super }}
+  <script>
+    onSpload(function() {
+      var list = document.querySelector("#llm-list");
+
+      // clicking a row opens the model's update modal (models have no
+      // read page of their own)
+      {% if org_perms.ai.llm_update %}
+      list.addEventListener("temba-row-click", function(event) {
+        var llm = event.detail.item;
+        if (llm && llm.uuid) {
+          showModax("{{ _("Update Model")|escapejs }}", "/llm/update/" + llm.uuid + "/", {
+            onSubmit: "handleLLMChanged()"
+          });
+        }
+      });
+      {% endif %}
+
+      list.addEventListener("temba-llm-usages", function(event) {
+        showModax("{{ _("Usages")|escapejs }}", "/llm/usages/" + event.detail.item.uuid + "/");
+      });
+
+      // the embedded content menu fires temba-selection - dispatch it the
+      // same way the page chrome's content menu (includes/page_header_menu.html) does
+      list.addEventListener("temba-selection", function(event) {
+        var item = event.detail.item;
+        var click = event.detail.event;
+        if (item.type === "link") {
+          if (click) {
+            click.preventDefault();
+            click.stopPropagation();
+            if (click.metaKey && item.url) {
+              window.open(item.url, "_blank");
+              return;
+            }
+          }
+          spaGet(item.url);
+        } else if (item.type === "modax") {
+          showModax(item.title, item.url, {
+            disabled: item.disabled,
+            onSubmit: item.on_submit,
+            onRedirect: item.on_redirect,
+            id: item.modal_id
+          });
+        } else if (item.type === "url_post") {
+          posterize(item.url);
+        } else if (item.type === "js") {
+          if (window[item.id]) {
+            window[item.id]();
+          }
+        }
+        refreshMenu();
+      });
+
+      // See msgs/msg_list.html for the full rationale: stash the list's
+      // restorable state (page, sort, cursor url) on the current history
+      // entry so a navigation away and back lands on the same page.
+      list.addEventListener("temba-history-change", function(event) {
+        var current = history.state || {};
+        var next = Object.assign({}, current);
+        next[event.detail.key] = event.detail.state;
+        if (!next.url) {
+          next.url = location.href;
+        }
+        if (event.detail.replace) {
+          history.replaceState(next, "", event.detail.url || null);
+        } else {
+          history.pushState(next, "", event.detail.url || null);
+        }
+      });
+    });
+
+    // After the update modal submits - re-pull the current page
+    function handleLLMChanged() {
+      var list = document.querySelector("#llm-list");
+      if (list) {
+        list.refresh();
+      }
+    }
+  </script>
+{% endblock extra-script %}

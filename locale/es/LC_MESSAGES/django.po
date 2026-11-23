@@ -57,6 +57,9 @@ msgstr "Debe ser único."
 msgid "Artificial Intelligence"
 msgstr "Inteligencia artificial"
 
+msgid "Add Large Language Models (LLMs) to your workspace to unlock AI assisted features."
+msgstr "Añada modelos de lenguaje grandes (LLM) a su workspace para desbloquear funciones asistidas por IA."
+
 msgid "New Model"
 msgstr "Nuevo modelo"
 
@@ -65,6 +68,12 @@ msgstr "Crear"
 
 msgid "Save"
 msgstr "Guardar"
+
+msgid "Delete model"
+msgstr "Eliminar modelo"
+
+msgid "Delete Model"
+msgstr "Eliminar modelo"
 
 msgid "Your LLM model has been deleted."
 msgstr "Su modelo LLM ha sido eliminado."
@@ -377,6 +386,17 @@ msgstr "El teléfono no se ha sincronizado desde hace más de una hora."
 #, python-format
 msgid "%(percent)d%% of the %(count)s messages sent since %(date)s have failed."
 msgstr "El %(percent)d%% de los %(count)s mensajes enviados desde el %(date)s han fallado."
+
+#, python-format
+msgid "%(today_percent)d%% of the %(today_count)s messages sent today have failed, down from %(percent)d%% of the %(count)s sent since %(date)s."
+msgstr "El %(today_percent)d%% de los %(today_count)s mensajes enviados hoy ha fallado, frente al %(percent)d%% de los %(count)s enviados desde el %(date)s."
+
+#, python-format
+msgid "None of the %(today_count)s messages sent today have failed, after %(percent)d%% of the %(count)s sent since %(date)s did."
+msgstr "Ninguno de los %(today_count)s mensajes enviados hoy ha fallado, después de que fallara el %(percent)d%% de los %(count)s enviados desde el %(date)s."
+
+msgid "Recovering"
+msgstr "Recuperándose"
 
 msgid "Unhealthy"
 msgstr "Con problemas"
@@ -2975,12 +2995,6 @@ msgstr "Canal desconectado"
 msgid "Channel Android App Outdated"
 msgstr "Aplicación Android del canal desactualizada"
 
-msgid "Workspace Flagged"
-msgstr "Workspace marcado"
-
-msgid "Your workspace has been flagged"
-msgstr "Su workspace ha sido marcado"
-
 msgid "Webhooks Unhealthy"
 msgstr "Webhooks con problemas"
 
@@ -3089,9 +3103,6 @@ msgstr "Este slug no está disponible"
 
 msgid "Whether this organization anonymizes the phone numbers of contacts within it"
 msgstr "Si esta organización anonimiza los números de teléfonos de sus contactos "
-
-msgid "Whether this organization is currently flagged."
-msgstr "Si esta organización está marcada actualmente."
 
 #, python-format
 msgid "[%(name)s] Invitation to join workspace"
@@ -3485,17 +3496,14 @@ msgstr "Cree visualmente aplicaciones móviles escalables a nivel nacional en cu
 msgid "Edit Workspace"
 msgstr "Editar Workspace"
 
-msgid "Flag"
-msgstr "Bandera"
-
-msgid "Unflag"
-msgstr "Desmarcar"
-
 msgid "Restrict"
 msgstr "Restringir"
 
 msgid "Suspend"
 msgstr "Suspender"
+
+msgid "Unflag"
+msgstr "Desmarcar"
 
 msgid "Verify"
 msgstr "Verificar"
@@ -4024,24 +4032,17 @@ msgstr "Debe verificar su correo electrónico antes de continuar. Le hemos envia
 msgid "If you haven't received the email, check your spam folder or contact support for assistance."
 msgstr "Si no ha recibido el correo electrónico, revise su carpeta de spam o póngase en contacto con el soporte para obtener ayuda."
 
-msgid "Update Model"
-msgstr "Actualizar modelo"
+msgid "Model limit reached"
+msgstr "Límite de modelos alcanzado"
 
-msgid "Delete Model"
-msgstr "Eliminar modelo"
-
-msgid "Add Large Language Models (LLMs) to your workspace to unlock AI assisted features."
-msgstr "Añada modelos de lenguaje grandes (LLM) a su workspace para desbloquear funciones asistidas por IA."
-
-#, python-format
-msgid "%(counter)s use"
-msgid_plural "%(counter)s uses"
-msgstr[0] "%(counter)s uso"
-msgstr[1] "%(counter)s usos"
-msgstr[2] "%(counter)s usos"
+msgid "Remove a model before adding another one."
+msgstr "Elimine un modelo antes de agregar otro."
 
 msgid "No models yet"
 msgstr "Aún no hay modelos"
+
+msgid "Update Model"
+msgstr "Actualizar modelo"
 
 msgid "Contact"
 msgstr "Contacto"
@@ -5168,6 +5169,13 @@ msgstr "Eliminar Global"
 msgid "Globals are variables you can use across all of your flows but manage the value for in one place. For example, you might use them to store API keys you need to access external services or product names that might change later."
 msgstr "Las variables globales son variables que puede utilizar en todos sus flujos pero cuyo valor gestiona en un solo lugar. Por ejemplo, puede utilizarlas para almacenar claves de API que necesita para acceder a servicios externos o nombres de productos que podrían cambiar más adelante."
 
+#, python-format
+msgid "%(counter)s use"
+msgid_plural "%(counter)s uses"
+msgstr[0] "%(counter)s uso"
+msgstr[1] "%(counter)s usos"
+msgstr[2] "%(counter)s usos"
+
 msgid "No globals"
 msgstr "No hay globales"
 
@@ -5586,9 +5594,6 @@ msgstr "Su <a href=\"%(url)s\">canal de WhatsApp</a> tiene problemas actualmente
 #, python-format
 msgid "Your WhatsApp channel (%(url)s) is currently having problems fetching templates."
 msgstr "Su canal de WhatsApp (%(url)s) tiene problemas actualmente para obtener las plantillas."
-
-msgid "Your workspace has been flagged because of suspicious activity. To re-enable starting flows and sending messages, please contact support."
-msgstr "Su workspace ha sido marcado debido a actividad sospechosa. Para volver a habilitar el inicio de flujos y el envío de mensajes, póngase en contacto con el soporte."
 
 #, python-format
 msgid "User <b>%(email)s</b> accepted an invitation to join your workspace."
@@ -6125,6 +6130,10 @@ msgstr "Dar servicio a la cuenta"
 
 msgid "Invalid org, servicing not available."
 msgstr "Org no válida, el servicio no está disponible."
+
+#, python-format
+msgid "Suspending <b>%(name)s</b> will cancel any messages waiting to be sent on its channels, and on those of any child workspaces suspended with it. There is no way to undo this. Are you sure?"
+msgstr "La suspensión de <b>%(name)s</b> cancelará los mensajes pendientes de envío en sus canales y en los de cualquier espacio de trabajo secundario suspendido con él. No hay forma de deshacerlo. ¿Está seguro?"
 
 msgid "Deleting this user will also delete the following workspaces owned by this user."
 msgstr "Al eliminar este usuario también se eliminarán los siguientes workspaces cuyo propietario es este usuario."
