@@ -6131,6 +6131,10 @@ msgstr "Dar servicio a la cuenta"
 msgid "Invalid org, servicing not available."
 msgstr "Org no válida, el servicio no está disponible."
 
+#, python-format
+msgid "Suspending <b>%(name)s</b> will cancel any messages waiting to be sent on its channels, and on those of any child workspaces suspended with it. There is no way to undo this. Are you sure?"
+msgstr "La suspensión de <b>%(name)s</b> cancelará los mensajes pendientes de envío en sus canales y en los de cualquier espacio de trabajo secundario suspendido con él. No hay forma de deshacerlo. ¿Está seguro?"
+
 msgid "Deleting this user will also delete the following workspaces owned by this user."
 msgstr "Al eliminar este usuario también se eliminarán los siguientes workspaces cuyo propietario es este usuario."
 

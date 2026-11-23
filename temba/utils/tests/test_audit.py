@@ -237,7 +237,7 @@ class AuditTest(TembaTest):
         org_update_url = reverse("staff.org_update", args=[self.org.id])
         self.assertAudited(
             [("workspace.suspend", {"workspace": {"uuid": str(self.org.uuid), "name": "Nyaruka"}})],
-            lambda: self.client.post(org_update_url, {"action": "suspend"}),
+            lambda: self.client.post(reverse("staff.org_suspend", args=[self.org.id]), {}),
         )
 
         # an unknown action is refused, and nothing recorded

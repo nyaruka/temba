@@ -6093,6 +6093,10 @@ msgstr ""
 msgid "Invalid org, servicing not available."
 msgstr ""
 
+#, python-format
+msgid "Suspending <b>%(name)s</b> will cancel any messages waiting to be sent on its channels, and on those of any child workspaces suspended with it. There is no way to undo this. Are you sure?"
+msgstr ""
+
 msgid "Deleting this user will also delete the following workspaces owned by this user."
 msgstr ""
 

@@ -24,7 +24,7 @@ from temba.utils.views.mixins import ComponentFormMixin, ContextMenuMixin, Modal
 
 class OrgCRUDL(SmartCRUDL):
     model = Org
-    actions = ("read", "update", "list", "service")
+    actions = ("read", "update", "suspend", "list", "service")
 
     class Read(StaffOnlyMixin, SpaMixin, ContextMenuMixin, SmartReadView):
         def build_context_menu(self, menu):
@@ -45,7 +45,9 @@ class OrgCRUDL(SmartCRUDL):
             if obj.status == Org.STATUS_ACTIVE:
                 menu.add_url_post(_("Restrict"), f"{reverse('staff.org_update', args=[obj.id])}?action=restrict")
             if obj.status != Org.STATUS_SUSPENDED:
-                menu.add_url_post(_("Suspend"), f"{reverse('staff.org_update', args=[obj.id])}?action=suspend")
+                menu.add_modax(
+                    _("Suspend"), "suspend-workspace", reverse("staff.org_suspend", args=[obj.id]), title=_("Suspend")
+                )
             if obj.is_flagged:
                 menu.add_url_post(_("Unflag"), f"{reverse('staff.org_update', args=[obj.id])}?action=unflag")
             elif obj.status != Org.STATUS_ACTIVE:
@@ -74,6 +76,23 @@ class OrgCRUDL(SmartCRUDL):
             context["users_roles"] = users_roles
             context["children"] = Org.objects.filter(parent=org, is_active=True).order_by("-created_on", "name")
             return context
+
+    class Suspend(StaffOnlyMixin, ModalFormMixin, SmartUpdateView):
+        """
+        Suspends a workspace, after warning that it cancels the messages waiting to be sent on its channels
+        """
+
+        fields = ()
+        success_url = "id@staff.org_read"
+        submit_button_name = _("Suspend")
+
+        def derive_title(self):
+            return None
+
+        def save(self, obj):
+            obj.suspend(Org.RESTRICTED_STAFF)
+            audit.record("workspace.suspend", org=obj)
+            return obj
 
     class List(StaffOnlyMixin, SpaMixin, SmartListView):
         fields = ("name", "owner", "timezone", "created_on")
@@ -149,7 +168,6 @@ class OrgCRUDL(SmartCRUDL):
     class Update(StaffOnlyMixin, ModalFormMixin, ComponentFormMixin, SmartUpdateView):
         ACTION_UNFLAG = "unflag"
         ACTION_RESTRICT = "restrict"
-        ACTION_SUSPEND = "suspend"
         ACTION_REACTIVATE = "reactivate"
         ACTION_VERIFY = "verify"
 
@@ -234,8 +252,6 @@ class OrgCRUDL(SmartCRUDL):
                     obj.unflag()
                 elif action == self.ACTION_RESTRICT:
                     obj.restrict(Org.RESTRICTED_STAFF)
-                elif action == self.ACTION_SUSPEND:
-                    obj.suspend(Org.RESTRICTED_STAFF)
                 elif action == self.ACTION_REACTIVATE:
                     obj.reactivate()
                 elif action == self.ACTION_VERIFY:

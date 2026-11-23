@@ -250,11 +250,11 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         self.org.refresh_from_db()
         self.assertEqual(Org.STATUS_RESTRICTED, self.org.status)
 
-        # suspend org
-        self.client.post(update_url, {"action": "suspend"})
-        self.org.refresh_from_db()
-        self.assertEqual(Org.STATUS_SUSPENDED, self.org.status)
-        self.assertEqual(Org.RESTRICTED_STAFF, self.org.status_reason)
+        # suspending isn't an update action
+        response = self.client.post(update_url, {"action": "suspend"})
+        self.assertEqual(400, response.status_code)
+
+        self.org.suspend(Org.RESTRICTED_STAFF)
 
         # reactivate org
         self.client.post(update_url, {"action": "reactivate"})
@@ -265,6 +265,22 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         self.client.post(update_url, {"action": "verify"})
         self.org.refresh_from_db()
         self.assertTrue(self.org.is_verified)
+
+    def test_suspend(self):
+        suspend_url = reverse("staff.org_suspend", args=[self.org.id])
+
+        self.assertStaffOnly(suspend_url)
+
+        # staff are warned that queued messages will be cancelled
+        response = self.requestView(suspend_url, self.customer_support)
+        self.assertContains(response, "will cancel any messages waiting to be sent")
+
+        response = self.requestView(suspend_url, self.customer_support, post_data={})
+        self.assertRedirect(response, reverse("staff.org_read", args=[self.org.id]))
+
+        self.org.refresh_from_db()
+        self.assertEqual(Org.STATUS_SUSPENDED, self.org.status)
+        self.assertEqual(Org.RESTRICTED_STAFF, self.org.status_reason)
 
     def test_service(self):
         service_url = reverse("staff.org_service")
