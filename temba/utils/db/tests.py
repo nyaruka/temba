@@ -1,3 +1,6 @@
+import io
+from contextlib import redirect_stdout
+
 from django.db import connection
 from django.db.models import F, Value
 
@@ -38,6 +41,13 @@ class OperationsTest(TembaTest):
             op.code(None, editor)
 
         self.assertEqual(before - {"ivr_call_org_id"}, indexes())
+
+        # running it again finds nothing to drop, which it says
+        out = io.StringIO()
+        with connection.schema_editor() as editor, redirect_stdout(out):
+            op.code(None, editor)
+
+        self.assertEqual("No index found on ivr_call.org_id to drop\n", out.getvalue())
 
         with connection.schema_editor() as editor:
             op.reverse_code(None, editor)

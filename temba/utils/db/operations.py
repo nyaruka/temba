@@ -26,8 +26,13 @@ def drop_column_index(table: str, column: str, name: str) -> migrations.RunPytho
 
         with conn.cursor() as cursor:
             cursor.execute(COLUMN_INDEXES_SQL, [table, column])
-            for (index,) in cursor.fetchall():
+            indexes = [r[0] for r in cursor.fetchall()]
+
+            for index in indexes:
                 cursor.execute(f"DROP INDEX{concurrently} IF EXISTS {schema_editor.quote_name(index)}")
+
+        if not indexes:
+            print(f"No index found on {table}.{column} to drop")
 
     def reverse(apps, schema_editor):
         q = schema_editor.quote_name
