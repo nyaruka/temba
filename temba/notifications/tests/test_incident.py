@@ -1,6 +1,6 @@
 from datetime import datetime, timezone as tzone
 
-from temba.notifications.incidents.builtin import ChannelDisconnectedIncidentType, OrgFlaggedIncidentType
+from temba.notifications.incidents.builtin import ChannelDisconnectedIncidentType, WebhooksUnhealthyIncidentType
 from temba.notifications.models import Incident, Notification
 from temba.tests import TembaTest, matchers
 
@@ -9,13 +9,13 @@ class IncidentTest(TembaTest):
     def test_create(self):
         # we use a unique constraint to enforce uniqueness on org+type+scope for ongoing incidents which allows use of
         # INSERT .. ON CONFLICT DO NOTHING
-        incident1 = Incident.get_or_create(self.org, "org:flagged", scope="scope1")
+        incident1 = Incident.get_or_create(self.org, "webhooks:unhealthy", scope="scope1")
 
         # try to create another for the same scope
-        incident2 = Incident.get_or_create(self.org, "org:flagged", scope="scope1")
+        incident2 = Incident.get_or_create(self.org, "webhooks:unhealthy", scope="scope1")
 
         # different scope
-        incident3 = Incident.get_or_create(self.org, "org:flagged", scope="scope2")
+        incident3 = Incident.get_or_create(self.org, "webhooks:unhealthy", scope="scope2")
 
         self.assertEqual(incident1, incident2)
         self.assertNotEqual(incident1, incident3)
@@ -28,18 +28,18 @@ class IncidentTest(TembaTest):
         # check that once incident 1 ends, new incidents can be created for same scope
         incident1.end()
 
-        incident4 = Incident.get_or_create(self.org, "org:flagged", scope="scope1")
+        incident4 = Incident.get_or_create(self.org, "webhooks:unhealthy", scope="scope1")
 
         self.assertNotEqual(incident1, incident4)
         self.assertEqual(3, Notification.objects.count())
         self.assertEqual(1, incident4.notifications.count())
 
     def test_end_ongoing(self):
-        incident1 = OrgFlaggedIncidentType.get_or_create(self.org)
-        incident2 = OrgFlaggedIncidentType.get_or_create(self.org2)
+        incident1 = Incident.get_or_create(self.org, "webhooks:unhealthy", scope="")
+        incident2 = Incident.get_or_create(self.org2, "webhooks:unhealthy", scope="")
         incident3 = ChannelDisconnectedIncidentType.get_or_create(self.channel)
 
-        OrgFlaggedIncidentType.end_ongoing(self.org)
+        WebhooksUnhealthyIncidentType.end_ongoing(self.org)
 
         incident1.refresh_from_db()
         incident2.refresh_from_db()
@@ -47,23 +47,6 @@ class IncidentTest(TembaTest):
         self.assertIsNotNone(incident1.ended_on)
         self.assertIsNone(incident2.ended_on)  # other org
         self.assertIsNone(incident3.ended_on)  # other type
-
-    def test_org_flagged(self):
-        self.org.flag()
-
-        incident = Incident.objects.get()
-        self.assertEqual("org:flagged", incident.incident_type)
-        self.assertEqual({self.admin}, set(n.user for n in incident.notifications.all()))
-
-        self.assertEqual(
-            {"type": "org:flagged", "started_on": matchers.ISODatetime(), "ended_on": None}, incident.as_json()
-        )
-
-        self.org.unflag()
-
-        incident = Incident.objects.get()  # still only have 1 incident, but now it has ended
-        self.assertEqual("org:flagged", incident.incident_type)
-        self.assertIsNotNone(incident.ended_on)
 
     def test_webhooks_unhealthy(self):
         incident = Incident.objects.create(  # mailroom will create these

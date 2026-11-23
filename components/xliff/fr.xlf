@@ -986,10 +986,6 @@
   <source>No notifications</source>
   <target>Aucune notification</target>
 </trans-unit>
-<trans-unit id="s2b8c3c32964c67ac">
-  <source>Your workspace was flagged, please contact support for assistance.</source>
-  <target>Votre espace de travail a été signalé, veuillez contacter l'assistance pour obtenir de l'aide.</target>
-</trans-unit>
 <trans-unit id="sd78bda51c42187f3">
   <source>Your workspace was suspended, please contact support for assistance.</source>
   <target>Votre espace de travail a été suspendu, veuillez contacter l'assistance pour obtenir de l'aide.</target>

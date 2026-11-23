@@ -272,11 +272,6 @@ class OrgTest(TembaTest):
         assert_org(self.org, Org.STATUS_ACTIVE)
         assert_signalled((self.org, Org.STATUS_RESTRICTED), (self.org, Org.STATUS_ACTIVE))
 
-        def assert_flagged_incidents(ongoing: int, total: int):
-            incidents = self.org.incidents.filter(incident_type="org:flagged")
-            self.assertEqual(ongoing, incidents.filter(ended_on=None).count())
-            self.assertEqual(total, incidents.count())
-
         # flagging a child restricts its parent and so all of its children
         org1_child1.flag()
 
@@ -284,7 +279,6 @@ class OrgTest(TembaTest):
         assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
         assert_org(org1_child2, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
         assert_signalled((self.org, Org.STATUS_RESTRICTED))
-        assert_flagged_incidents(ongoing=1, total=1)
         self.assertTrue(self.org.is_flagged)
         self.assertTrue(org1_child1.is_flagged)
         self.assertEqual(Org.BLOCKER_FLAGGED, self.org.send_blocker)
@@ -296,7 +290,6 @@ class OrgTest(TembaTest):
 
         assert_org(self.org, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
         assert_signalled()
-        assert_flagged_incidents(ongoing=1, total=1)
 
         # unflagging a child lifts its parent's restriction
         org1_child2.unflag()
@@ -304,7 +297,6 @@ class OrgTest(TembaTest):
         assert_org(self.org, Org.STATUS_ACTIVE)
         assert_org(org1_child1, Org.STATUS_ACTIVE)
         assert_signalled((self.org, Org.STATUS_ACTIVE))
-        assert_flagged_incidents(ongoing=0, total=1)
 
         self.org.unflag()  # noop as not flagged
         assert_signalled()
@@ -320,8 +312,6 @@ class OrgTest(TembaTest):
             self.org.unflag()
             assert_org(self.org, Org.STATUS_ACTIVE)
 
-        assert_flagged_incidents(ongoing=0, total=3)
-
         # but not a staff restriction
         self.org.restrict(Org.RESTRICTED_STAFF)
         self.org.flag()
@@ -335,17 +325,15 @@ class OrgTest(TembaTest):
         self.org.flag()
         org1_child1.verify()
         assert_org(self.org, Org.STATUS_ACTIVE)
-        assert_flagged_incidents(ongoing=0, total=4)
         self.assertTrue(self.org.is_verified)
         self.assertTrue(Org.objects.get(id=org1_child2.id).is_verified)
         self.assertFalse(self.org2.is_verified)
 
-        # suspending a flagged org ends its flagged incident
+        # a flagged org can still be suspended
         self.org.flag()
         self.org.suspend(Org.RESTRICTED_STAFF)
 
         assert_org(self.org, Org.STATUS_SUSPENDED, Org.RESTRICTED_STAFF)
-        assert_flagged_incidents(ongoing=0, total=5)
         self.assertEqual(Org.BLOCKER_SUSPENDED, self.org.write_blocker)
         signalled.clear()
 

@@ -11,7 +11,6 @@ from temba.msgs.models import MessageExport, MsgFolder
 from temba.notifications.incidents.builtin import (
     ChannelDisconnectedIncidentType,
     ChannelTemplatesFailedIncidentType,
-    OrgFlaggedIncidentType,
 )
 from temba.notifications.models import Incident, Notification
 from temba.notifications.tasks import send_notification_emails, trim_notifications
@@ -367,10 +366,11 @@ class NotificationTest(TembaTest):
             set(mail.outbox[0].recipients()).union(mail.outbox[1].recipients()),
         )
 
+    @patch.object(ChannelTemplatesFailedIncidentType, "email_required", True)
     def test_incident_started(self):
         self.org.add_user(self.editor, OrgRole.ADMINISTRATOR)  # upgrade editor to administrator
 
-        OrgFlaggedIncidentType.get_or_create(self.org)
+        ChannelTemplatesFailedIncidentType.get_or_create(self.channel)
 
         self.assert_notifications(
             expected_json={
@@ -378,12 +378,12 @@ class NotificationTest(TembaTest):
                 "created_on": matchers.ISODatetime(),
                 "is_seen": False,
                 "incident": {
-                    "type": "org:flagged",
+                    "type": "channel:templates_failed",
                     "started_on": matchers.ISODatetime(),
                     "ended_on": None,
                 },
             },
-            expected_target="/incident/",
+            expected_target=f"/channels/channel/read/{self.channel.uuid}/",
             expected_users={self.editor, self.admin},
             email=True,
         )
@@ -391,16 +391,14 @@ class NotificationTest(TembaTest):
         send_notification_emails()
 
         self.assertEqual(2, len(mail.outbox))
-        self.assertEqual("[Nyaruka] Your workspace has been flagged", mail.outbox[0].subject)
-        self.assertEqual("[Nyaruka] Your workspace has been flagged", mail.outbox[1].subject)
-        self.assertIn(
-            "flagged because of suspicious activity. To re-enable starting flows and sending messages, please contact",
-            mail.outbox[0].body,
-        )
+        self.assertEqual("[Nyaruka] Incident: WhatsApp Templates Sync Failed", mail.outbox[0].subject)
+        self.assertEqual("[Nyaruka] Incident: WhatsApp Templates Sync Failed", mail.outbox[1].subject)
+        self.assertIn("is currently having problems fetching templates", mail.outbox[0].body)
 
         recipients = set(mail.outbox[0].recipients()).union(mail.outbox[1].recipients())
         self.assertEqual({self.admin.email, self.editor.email}, recipients)
 
+    @patch.object(ChannelTemplatesFailedIncidentType, "email_required", True)
     def test_email_notifications_disabled(self):
         self.org.add_user(self.editor, OrgRole.ADMINISTRATOR)  # upgrade editor to administrator
         OrgMembership.objects.filter(org=self.org, user=self.admin).update(email_notifications=False)
@@ -421,9 +419,9 @@ class NotificationTest(TembaTest):
         self.assertEqual(1, len(mail.outbox))
         self.assertEqual(["editor@textit.com"], mail.outbox[0].recipients())
 
-        # but does about their workspace being flagged
+        # but does about incidents whose emails are required
         mail.outbox.clear()
-        OrgFlaggedIncidentType.get_or_create(self.org)
+        ChannelTemplatesFailedIncidentType.get_or_create(self.channel)
 
         send_notification_emails()
 
@@ -445,12 +443,13 @@ class NotificationTest(TembaTest):
             Notification.EMAIL_STATUS_PENDING, self.customer_support.notifications.get(export=export3).email_status
         )
 
+    @patch.object(ChannelTemplatesFailedIncidentType, "email_required", True)
     def test_incident_started_unverified_user(self):
         self.org.add_user(self.editor, OrgRole.ADMINISTRATOR)  # upgrade editor to administrator
         self.editor.set_verified(False)
 
         # an unverified admin isn't emailed about an incident, even one whose emails are required...
-        OrgFlaggedIncidentType.get_or_create(self.org)
+        ChannelTemplatesFailedIncidentType.get_or_create(self.channel)
 
         self.assertEqual(
             Notification.EMAIL_STATUS_UNVERIFIED, self.editor.notifications.get(incident__ended_on=None).email_status
@@ -462,10 +461,10 @@ class NotificationTest(TembaTest):
 
         # unless its type opts into emailing unverified addresses
         mail.outbox.clear()
-        OrgFlaggedIncidentType.end_ongoing(self.org)
+        ChannelTemplatesFailedIncidentType.end_ongoing(self.org)
 
-        with patch.object(OrgFlaggedIncidentType, "email_unverified", True):
-            OrgFlaggedIncidentType.get_or_create(self.org)
+        with patch.object(ChannelTemplatesFailedIncidentType, "email_unverified", True):
+            ChannelTemplatesFailedIncidentType.get_or_create(self.channel)
 
         send_notification_emails()
 
@@ -482,6 +481,7 @@ class NotificationTest(TembaTest):
 
         self.assertEqual([["admin@textit.com"]], [m.recipients() for m in mail.outbox])
 
+    @patch.object(ChannelTemplatesFailedIncidentType, "email_required", True)
     def test_unsubscribe_link(self):
         self.org.add_user(self.editor, OrgRole.ADMINISTRATOR)  # upgrade editor to administrator
 
@@ -516,7 +516,7 @@ class NotificationTest(TembaTest):
 
         # emails they'd get anyway don't offer it
         mail.outbox.clear()
-        OrgFlaggedIncidentType.get_or_create(self.org)
+        ChannelTemplatesFailedIncidentType.get_or_create(self.channel)
 
         send_notification_emails()
 
@@ -784,13 +784,11 @@ class NotificationTest(TembaTest):
         assert_count(self.org2, self.editor, 1)
 
     def test_trim_task(self):
-        self.org.flag()
-        self.org.unflag()
+        ChannelDisconnectedIncidentType.get_or_create(self.channel).end()
 
         notification1 = self.admin.notifications.order_by("id").last()
 
-        self.org.flag()
-        self.org.unflag()
+        ChannelDisconnectedIncidentType.get_or_create(self.channel).end()
 
         notification2 = self.admin.notifications.order_by("id").last()
 

@@ -2952,12 +2952,6 @@ msgstr ""
 msgid "Channel Android App Outdated"
 msgstr ""
 
-msgid "Workspace Flagged"
-msgstr ""
-
-msgid "Your workspace has been flagged"
-msgstr ""
-
 msgid "Webhooks Unhealthy"
 msgstr ""
 
@@ -5541,9 +5535,6 @@ msgstr ""
 
 #, python-format
 msgid "Your WhatsApp channel (%(url)s) is currently having problems fetching templates."
-msgstr ""
-
-msgid "Your workspace has been flagged because of suspicious activity. To re-enable starting flows and sending messages, please contact support."
 msgstr ""
 
 #, python-format

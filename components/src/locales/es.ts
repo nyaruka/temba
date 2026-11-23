@@ -146,7 +146,6 @@
 's2a02d2a7e41d6700': `Ocupado`,
 's2a46c7c5730014aa': `15 minutos`,
 's2abc882faee7cc32': `4 minutos`,
-'s2b8c3c32964c67ac': `Tu workspace fue marcado, por favor contacta a soporte para recibir ayuda.`,
 's2b9c3ab3a2193878': `Visto por última vez`,
 's2c613f55190525c2': `Tipo de archivo no admitido`,
 's2cc7cd11d9b856cd': `Categorías`,

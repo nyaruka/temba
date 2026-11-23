@@ -32,26 +32,6 @@ class ChannelOutdatedAppIncidentType(IncidentType):
     title = _("Channel Android App Outdated")
 
 
-class OrgFlaggedIncidentType(IncidentType):
-    """
-    Org has been flagged because of suspicious activity.
-    """
-
-    slug = "org:flagged"
-    title = _("Workspace Flagged")
-    email_required = True
-
-    @classmethod
-    def get_or_create(cls, org):
-        """
-        Creates a flagged incident if one is not already ongoing
-        """
-        return Incident.get_or_create(org, cls.slug, scope="")
-
-    def get_email_subject(self, incident) -> str:
-        return _("Your workspace has been flagged")
-
-
 class WebhooksUnhealthyIncidentType(IncidentType):
     """
     Webhook calls from flows have been taking too long to respond for a period of time - created by mailroom.
