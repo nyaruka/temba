@@ -57,6 +57,9 @@ msgstr "Doit être unique."
 msgid "Artificial Intelligence"
 msgstr "Intelligence artificielle"
 
+msgid "Add Large Language Models (LLMs) to your workspace to unlock AI assisted features."
+msgstr "Ajoutez des grands modèles de langage (LLM) à votre espace de travail pour débloquer les fonctionnalités assistées par IA."
+
 msgid "New Model"
 msgstr "Nouveau modèle"
 
@@ -65,6 +68,12 @@ msgstr "Créer"
 
 msgid "Save"
 msgstr "sauver"
+
+msgid "Delete model"
+msgstr "Supprimer le modèle"
+
+msgid "Delete Model"
+msgstr "Supprimer le modèle"
 
 msgid "Your LLM model has been deleted."
 msgstr "Votre modèle LLM a été supprimé."
@@ -4023,24 +4032,17 @@ msgstr "Votre adresse e-mail doit être vérifiée avant de continuer. Nous vous
 msgid "If you haven't received the email, check your spam folder or contact support for assistance."
 msgstr "Si vous n'avez pas reçu l'e-mail, vérifiez votre dossier de courrier indésirable ou contactez le support pour obtenir de l'aide."
 
-msgid "Update Model"
-msgstr "Mettre à jour le modèle"
+msgid "Model limit reached"
+msgstr "Limite de modèles atteinte"
 
-msgid "Delete Model"
-msgstr "Supprimer le modèle"
-
-msgid "Add Large Language Models (LLMs) to your workspace to unlock AI assisted features."
-msgstr "Ajoutez des grands modèles de langage (LLM) à votre espace de travail pour débloquer les fonctionnalités assistées par IA."
-
-#, python-format
-msgid "%(counter)s use"
-msgid_plural "%(counter)s uses"
-msgstr[0] "%(counter)s utilisation"
-msgstr[1] "%(counter)s utilisations"
-msgstr[2] "%(counter)s utilisations"
+msgid "Remove a model before adding another one."
+msgstr "Supprimez un modèle avant d'en ajouter un autre."
 
 msgid "No models yet"
 msgstr "Pas encore de modèles"
+
+msgid "Update Model"
+msgstr "Mettre à jour le modèle"
 
 msgid "Contact"
 msgstr "Contact"
@@ -5166,6 +5168,13 @@ msgstr "Supprimer la variable globale"
 
 msgid "Globals are variables you can use across all of your flows but manage the value for in one place. For example, you might use them to store API keys you need to access external services or product names that might change later."
 msgstr "Les variables globales sont des variables que vous pouvez utiliser dans tous vos flux tout en gérant leur valeur à un seul endroit. Par exemple, vous pouvez les utiliser pour stocker les clés d'API nécessaires à l'accès à des services externes ou des noms de produits susceptibles de changer par la suite."
+
+#, python-format
+msgid "%(counter)s use"
+msgid_plural "%(counter)s uses"
+msgstr[0] "%(counter)s utilisation"
+msgstr[1] "%(counter)s utilisations"
+msgstr[2] "%(counter)s utilisations"
 
 msgid "No globals"
 msgstr "Pas de variables globales"

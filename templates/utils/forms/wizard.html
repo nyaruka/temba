@@ -16,7 +16,15 @@
   <div class="pre-form">
     {% block pre-form %} {% endblock pre-form %}
   </div>
-  <form id="wizard-form" action="" method="post" data-completed="{{ completed }}" data-step="{{ wizard.steps.step1 }}" data-steps="{{ wizard.steps.count }}">
+  <form
+    id="wizard-form"
+    action=""
+    method="post"
+    data-completed="{{ completed }}"
+    data-step="{{ wizard.steps.step1 }}"
+    data-steps="{{ wizard.steps.count }}"
+    {% if not show_steps %}data-hide-steps{% endif %}
+  >
     {% csrf_token %}
     <table>
       {{ wizard.management_form }}
@@ -38,4 +46,7 @@
       <button type="submit" value="{{ submit_button_name }}"></button>
     {% endif %}
   </form>
+  {% if delete_url %}
+    {% include "includes/modax_delete.html" %}
+  {% endif %}
 {% endblock content %}

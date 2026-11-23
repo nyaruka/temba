@@ -284,7 +284,11 @@ export class Modax extends RapidElement {
     ) as HTMLDivElement;
     if (wizard) {
       this.wizardStep = parseInt(wizard.dataset.step);
-      this.wizardStepCount = parseInt(wizard.dataset.steps);
+      // a wizard can opt out of the step indicator, e.g. when editing
+      this.wizardStepCount =
+        wizard.dataset.hideSteps !== undefined
+          ? 0
+          : parseInt(wizard.dataset.steps);
     }
 
     if (!this.noSubmit) {
@@ -573,8 +577,8 @@ export class Modax extends RapidElement {
         </div>
         <div class="scripts"></div>
         <div slot="gutter" class="gutter">
-          <div class="wizard-steps">${wizardStepBalls}</div>
           <div class="body-gutter"></div>
+          <div class="wizard-steps">${wizardStepBalls}</div>
           <slot name="gutter"></slot>
         </div>
       </temba-dialog>
