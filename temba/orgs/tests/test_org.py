@@ -272,18 +272,24 @@ class OrgTest(TembaTest):
         assert_org(self.org, Org.STATUS_ACTIVE)
         assert_signalled((self.org, Org.STATUS_RESTRICTED), (self.org, Org.STATUS_ACTIVE))
 
-        # flagging a child restricts its parent and so all of its children
+        # flagging a child only restricts that child
         org1_child1.flag()
 
-        assert_org(self.org, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
+        assert_org(self.org, Org.STATUS_ACTIVE)
         assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
-        assert_org(org1_child2, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
-        assert_signalled((self.org, Org.STATUS_RESTRICTED))
-        self.assertTrue(self.org.is_flagged)
+        assert_org(org1_child2, Org.STATUS_ACTIVE)
+        assert_signalled((org1_child1, Org.STATUS_RESTRICTED))
         self.assertTrue(org1_child1.is_flagged)
-        self.assertEqual(Org.BLOCKER_FLAGGED, self.org.send_blocker)
-        self.assertIsNone(self.org.write_blocker)
-        self.assertEqual(Org.BLOCKER_FLAGGED, self.org.import_blocker)
+        self.assertEqual(Org.BLOCKER_FLAGGED, org1_child1.send_blocker)
+        self.assertIsNone(org1_child1.write_blocker)
+        self.assertEqual(Org.BLOCKER_FLAGGED, org1_child1.import_blocker)
+
+        # as does flagging a parent
+        self.org.flag()
+
+        assert_org(self.org, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
+        assert_org(org1_child2, Org.STATUS_ACTIVE)
+        assert_signalled((self.org, Org.STATUS_RESTRICTED))
 
         self.org.flag()  # noop as already flagged
         self.org.restrict(Org.RESTRICTED_BILLING, suspends_on=suspends_on)  # noop as billing doesn't replace a flag
@@ -291,26 +297,40 @@ class OrgTest(TembaTest):
         assert_org(self.org, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
         assert_signalled()
 
-        # unflagging a child lifts its parent's restriction
-        org1_child2.unflag()
+        # unflagging the parent leaves its flagged child alone
+        self.org.unflag()
 
         assert_org(self.org, Org.STATUS_ACTIVE)
-        assert_org(org1_child1, Org.STATUS_ACTIVE)
+        assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
         assert_signalled((self.org, Org.STATUS_ACTIVE))
 
         self.org.unflag()  # noop as not flagged
         assert_signalled()
 
-        # flagging replaces a billing or limits restriction
-        for reason in (Org.RESTRICTED_BILLING, Org.RESTRICTED_LIMITS):
-            self.org.restrict(reason, suspends_on=suspends_on)
-            self.org.flag()
+        # a billing restriction of the parent doesn't replace the flag of a child
+        self.org.restrict(Org.RESTRICTED_BILLING, suspends_on=suspends_on)
 
-            assert_org(self.org, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
-            assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
+        assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
+        assert_org(org1_child2, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
 
-            self.org.unflag()
-            assert_org(self.org, Org.STATUS_ACTIVE)
+        # and when the flag is lifted, the child goes back to sharing its parent's restriction
+        org1_child1.unflag()
+        assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
+
+        # flagging replaces a billing or limits restriction, which children no longer share
+        self.org.flag()
+
+        assert_org(self.org, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
+        assert_org(org1_child1, Org.STATUS_ACTIVE)
+        assert_org(org1_child2, Org.STATUS_ACTIVE)
+
+        self.org.unflag()
+        self.org.restrict(Org.RESTRICTED_LIMITS, suspends_on=suspends_on)
+        org1_child1.flag()  # replaces the limits restriction it shared with its parent
+        assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
+        self.org.reactivate()
+        org1_child1.unflag()
+        assert_org(org1_child1, Org.STATUS_ACTIVE)
 
         # but not a staff restriction
         self.org.restrict(Org.RESTRICTED_STAFF)
@@ -321,13 +341,29 @@ class OrgTest(TembaTest):
         assert_org(self.org, Org.STATUS_RESTRICTED, Org.RESTRICTED_STAFF)
         self.org.reactivate()
 
-        # verifying a child unflags and verifies its parent, and so all of its children
-        self.org.flag()
-        org1_child1.verify()
+        # staff restrictions and suspensions only apply to the workspace they're made on
+        signalled.clear()
+        self.org.restrict(Org.RESTRICTED_STAFF)
+        assert_org(org1_child1, Org.STATUS_ACTIVE)
+        self.org.reactivate()
+        self.org.suspend(Org.RESTRICTED_STAFF)
+        assert_org(org1_child1, Org.STATUS_ACTIVE)
+        self.org.reactivate()
+
+        org1_child2.restrict(Org.RESTRICTED_STAFF)
+        org1_child2.suspend(Org.RESTRICTED_STAFF)
         assert_org(self.org, Org.STATUS_ACTIVE)
-        self.assertTrue(self.org.is_verified)
-        self.assertTrue(Org.objects.get(id=org1_child2.id).is_verified)
-        self.assertFalse(self.org2.is_verified)
+        assert_org(org1_child2, Org.STATUS_SUSPENDED, Org.RESTRICTED_STAFF)
+        org1_child2.reactivate()
+        assert_org(org1_child2, Org.STATUS_ACTIVE)
+
+        # verifying unflags and verifies only that workspace
+        org1_child1.flag()
+        org1_child1.verify()
+        assert_org(org1_child1, Org.STATUS_ACTIVE)
+        self.assertTrue(org1_child1.is_verified)
+        self.assertFalse(Org.objects.get(id=self.org.id).is_verified)
+        self.assertFalse(Org.objects.get(id=org1_child2.id).is_verified)
 
         # a flagged org can still be suspended
         self.org.flag()
