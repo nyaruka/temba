@@ -564,12 +564,30 @@ export class ContactChat extends ContactStoreElement {
         }
       }
 
+      /* The row's width never comes from what it holds: inline-size
+         containment keeps a long topic or assignee name from widening
+         the chat, so the view is the same size whichever ticket is
+         open. The assignee and topic split the space from a zero basis
+         and ellipsize as the row narrows, and the Close / Reopen button
+         never shrinks, so it can't be pushed out of view. */
       .ticket-controls {
         padding: 8px;
-        text-align: center;
+        gap: 0.5em;
         align-items: center;
         display: flex;
         border-top: 1px solid #ddd;
+        contain: inline-size;
+      }
+
+      .ticket-controls temba-user-picker,
+      .ticket-controls temba-select {
+        flex: 1 1 0;
+        width: 0;
+        min-width: 3em;
+      }
+
+      .ticket-controls temba-button {
+        flex-shrink: 0;
       }
 
       /* the row's controls all stand 32px tall, the height the assignee
@@ -583,8 +601,7 @@ export class ContactChat extends ContactStoreElement {
          down to the strip - a 22px avatar (its 26px circle at 0.85) and the
          row's own type - and boxed like the topic select beside it */
       .ticket-controls temba-user-picker {
-        width: 220px;
-        flex-shrink: 0;
+        max-width: 220px;
         --user-picker-font-size: 13px;
         --user-picker-font-weight: var(--w-medium, 500);
         --user-picker-avatar-size: 22px;
@@ -2272,7 +2289,6 @@ export class ContactChat extends ContactStoreElement {
                           ></temba-user-picker>
 
                           <temba-select
-                            style="margin:0 0.5em; flex-grow:1"
                             endpoint="/api/v2/topics.json"
                             searchable
                             valuekey="uuid"
