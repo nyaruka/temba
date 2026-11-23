@@ -60,7 +60,7 @@ class LLM(OrgAsset, DependencyMixin):
     ROLE_NAMES = {ROLE_TRANSLATE: "translate", ROLE_GENERATE: "generate", ROLE_CLASSIFY: "classify"}
     ALL_ROLES = ROLE_TRANSLATE + ROLE_GENERATE + ROLE_CLASSIFY
 
-    org = models.ForeignKey(Org, related_name="llms", on_delete=models.PROTECT)
+    org = models.ForeignKey(Org, related_name="llms", on_delete=models.PROTECT, db_index=False)
     llm_type = models.CharField(max_length=16)
     model = models.CharField(max_length=64)
     max_output_tokens = models.PositiveIntegerField(default=4_096)

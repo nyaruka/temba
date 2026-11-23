@@ -158,7 +158,7 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         TYPE_SURVEY: 0,
     }
 
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="flows")
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="flows", db_index=False)
     labels = models.ManyToManyField("FlowLabel", related_name="flows")
     is_archived = models.BooleanField(default=False)
     flow_type = models.CharField(max_length=1, choices=TYPE_CHOICES, default=TYPE_MESSAGE)
@@ -1150,7 +1150,7 @@ class FlowRun(models.Model):
     id = models.BigAutoField(primary_key=True)
     uuid = models.UUIDField(unique=True, default=uuid4)
     org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="runs", db_index=False)
-    flow = models.ForeignKey(Flow, on_delete=models.PROTECT, related_name="runs")
+    flow = models.ForeignKey(Flow, on_delete=models.PROTECT, related_name="runs", db_index=False)
     status = models.CharField(max_length=1, choices=STATUS_CHOICES)
     session_uuid = models.UUIDField()
 
@@ -1722,7 +1722,7 @@ class FlowStart(LegacyIDMixin, CreatedByMixin, ModifiedByMixin):
     )
 
     uuid = models.UUIDField(unique=True, default=uuid4)
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="flow_starts")
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="flow_starts", db_index=False)
     flow = models.ForeignKey(Flow, on_delete=models.PROTECT, related_name="starts")
     start_type = models.CharField(max_length=1, choices=TYPE_CHOICES)
     status = models.CharField(max_length=1, choices=STATUS_CHOICES, default=STATUS_PENDING)
@@ -1875,7 +1875,7 @@ class FlowLabel(DeletedOnMixin, OrgAsset):
     A label applied to a flow rather than a message
     """
 
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="flow_labels")
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="flow_labels", db_index=False)
     is_active = None
 
     @classmethod

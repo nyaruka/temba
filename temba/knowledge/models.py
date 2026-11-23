@@ -722,7 +722,7 @@ class KnowledgeSource(OrgAsset):
     MAX_MAX_PAGES = 5_000
     MAX_URL_LEN = 2048
 
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="sources")
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="sources", db_index=False)
     source_type = models.CharField(max_length=16, choices=TYPE_CHOICES)
 
     # type specific settings, e.g. for website: url, max_depth, max_pages, refresh. Empty for other types.
@@ -927,7 +927,7 @@ class Article(CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     MAX_ARTICLES = 1000  # per helpdesk
 
     uuid = models.UUIDField(unique=True, default=uuid4)
-    source = models.ForeignKey(KnowledgeSource, on_delete=models.PROTECT, related_name="articles")
+    source = models.ForeignKey(KnowledgeSource, on_delete=models.PROTECT, related_name="articles", db_index=False)
 
     # the tree - a plain self-FK, not mptt (that dep exists only for locations and buys nothing at help-centre depth).
     # Depth is capped at MAX_DEPTH and cycles are rejected server-side.
@@ -1840,7 +1840,7 @@ class HelpdeskImport(CreatedByMixin):
 
     uuid = models.UUIDField(unique=True, default=uuid4)
     org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="helpdesk_imports")
-    source = models.ForeignKey(KnowledgeSource, on_delete=models.PROTECT, related_name="imports")
+    source = models.ForeignKey(KnowledgeSource, on_delete=models.PROTECT, related_name="imports", db_index=False)
     import_type = models.CharField(max_length=16)  # the slug of a registered HelpdeskImportType
 
     # what the type needs to get in and bring the site over - its secrets are dropped once the import is over
@@ -1999,7 +1999,7 @@ class KnowledgeItem(CreatedByMixin):
     )
 
     uuid = models.UUIDField(unique=True, default=uuid4)
-    source = models.ForeignKey(KnowledgeSource, on_delete=models.PROTECT, related_name="items")
+    source = models.ForeignKey(KnowledgeSource, on_delete=models.PROTECT, related_name="items", db_index=False)
     name = models.CharField(max_length=255)  # page title, or the cleaned original filename
 
     # null for uploads; the normalised page URL for crawled pages, and their identity within the source
@@ -2087,7 +2087,7 @@ class KnowledgeChunk(models.Model):
 
     EMBEDDING_DIMENSIONS = 384  # intfloat/multilingual-e5-small
 
-    source = models.ForeignKey(KnowledgeSource, on_delete=models.PROTECT, related_name="chunks")
+    source = models.ForeignKey(KnowledgeSource, on_delete=models.PROTECT, related_name="chunks", db_index=False)
 
     # the owning item's uuid. Not an FK, because the item lives in a different table per source type: KnowledgeItem
     # for pages/documents, Shortcut for shortcuts, Article for helpdesk. One mechanism spanning all four beats an FK

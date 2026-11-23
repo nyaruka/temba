@@ -37,7 +37,7 @@ class Template(OrgAsset, DependencyMixin):
     are currently only used for WhatsApp channels.
     """
 
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="templates")
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="templates", db_index=False)
     name = models.CharField(max_length=512)  # overridden to be longer
     is_active = None  # templates are deleted rather than deactivated
     base_translation = models.OneToOneField(
