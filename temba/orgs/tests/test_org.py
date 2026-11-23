@@ -386,6 +386,49 @@ class OrgTest(TembaTest):
         self.org.suspend(Org.RESTRICTED_STAFF)
         assert_org(self.org, Org.STATUS_SUSPENDED, Org.RESTRICTED_STAFF)
 
+    @mock_mailroom
+    def test_suspend_interrupts_channels(self, mr_mocks):
+        self.org.features += [Org.FEATURE_CHILD_ORGS]
+        self.org.save(update_fields=("features",))
+        child = self.org.create_new(self.admin, "Child", tzone.utc, as_child=True)
+
+        child_channel = self.create_channel("T", "Child Twilio", "+250785551313", org=child)
+        released = self.create_channel("T", "Old Twilio", "+250785551314")
+        released.is_active = False
+        released.save(update_fields=("is_active",))
+        self.create_channel("T", "Org2 Twilio", "+250785551315", org=self.org2)
+
+        org_channels = set(self.org.channels.filter(is_active=True).values_list("id", flat=True))
+
+        def interrupted():
+            calls = mr_mocks.calls["channel_interrupt"]
+            self.assertTrue(all(c.kwargs == {"reason": "S"} for c in calls))
+            ids = {c.args[1].id for c in calls}
+            mr_mocks.calls["channel_interrupt"].clear()
+            return ids
+
+        # channels are only interrupted once the suspension is committed
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            self.org.suspend(Org.RESTRICTED_STAFF)
+        self.assertEqual(set(), interrupted())
+
+        # a suspension which isn't for billing or limits doesn't apply to children, so neither do the interruptions
+        for callback in callbacks:
+            callback()
+        self.assertEqual(org_channels, interrupted())
+
+        # suspending again doesn't interrupt them again
+        with self.captureOnCommitCallbacks(execute=True):
+            self.org.suspend(Org.RESTRICTED_STAFF)
+        self.assertEqual(set(), interrupted())
+
+        # but a billing suspension cascades, so the children's channels are interrupted too
+        self.org.reactivate()
+        self.org.restrict(Org.RESTRICTED_BILLING)
+        with self.captureOnCommitCallbacks(execute=True):
+            self.org.suspend()
+        self.assertEqual(org_channels | {child_channel.id}, interrupted())
+
     def test_suspend_restricted_orgs(self):
         self.org.features += [Org.FEATURE_CHILD_ORGS]
         self.org.save(update_fields=("features",))

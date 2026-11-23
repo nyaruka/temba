@@ -6131,6 +6131,10 @@ msgstr "Compte d'assistance"
 msgid "Invalid org, servicing not available."
 msgstr "Organisation non valide, l'accès en mode assistance n'est pas disponible."
 
+#, python-format
+msgid "Suspending <b>%(name)s</b> will cancel any messages waiting to be sent on its channels, and on those of any child workspaces suspended with it. There is no way to undo this. Are you sure?"
+msgstr "La suspension de <b>%(name)s</b> annulera les messages en attente d’envoi sur ses canaux, ainsi que sur ceux des espaces de travail enfants suspendus avec lui. Cette action est irréversible. Êtes-vous sûr ?"
+
 msgid "Deleting this user will also delete the following workspaces owned by this user."
 msgstr "La suppression de cet utilisateur entraînera également la suppression des espaces de travail suivants dont il est propriétaire."
 

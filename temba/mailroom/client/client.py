@@ -51,8 +51,12 @@ class MailroomClient:
     def campaign_schedule(self, org, event):
         self._request("campaign/schedule", {"org_id": org.id, "point_id": event.id})
 
-    def channel_interrupt(self, org, channel):
-        self._request("channel/interrupt", {"org_id": org.id, "channel_id": channel.id})
+    def channel_interrupt(self, org, channel, *, reason: str = None):
+        payload = {"org_id": org.id, "channel_id": channel.id}
+        if reason:
+            payload["reason"] = reason
+
+        self._request("channel/interrupt", payload)
 
     def contact_create(self, org, user, contact: ContactSpec, via: str) -> Contact:
         resp = self._request(
