@@ -1,3 +1,6 @@
+## v26.3.223 (2026-11-23)
+ * Remove the flagged incident type, since being flagged is a restriction, and test its migration and the default incident link
+
 ## v26.3.222 (2026-11-23)
  * Make being flagged a reason for a workspace to be restricted, keeping contact imports blocked and verifying and moving flagged incidents at the same scope as the flag
  * Test that foreign keys are indexed and drop large indexes made redundant by composites
