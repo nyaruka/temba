@@ -71,7 +71,7 @@ class Call(models.Model):
     RETRY_CHOICES = ((-1, _("Never")), (30, _("After 30 minutes")), (60, _("After 1 hour")), (1440, _("After 1 day")))
 
     uuid = models.UUIDField(unique=True)
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="calls")
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="calls", db_index=False)
     direction = models.CharField(max_length=1, choices=DIRECTION_CHOICES)
     status = models.CharField(max_length=1, choices=STATUS_CHOICES)
     session_uuid = models.UUIDField(null=True)
