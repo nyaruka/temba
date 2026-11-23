@@ -226,7 +226,7 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(0, channel1.template_translations.count())
 
         # check that we called mailroom to interrupt sessions tied to this channel
-        self.assertEqual([call(self.org, channel1)], mr_mocks.calls["channel_interrupt"])
+        self.assertEqual([call(self.org, channel1, reason=None)], mr_mocks.calls["channel_interrupt"])
 
         # other channel should be unaffected
         self.assertEqual(1, channel2.msgs.filter(status="E").count())

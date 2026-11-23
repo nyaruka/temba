@@ -401,7 +401,9 @@ class OrgTest(TembaTest):
         org_channels = set(self.org.channels.filter(is_active=True).values_list("id", flat=True))
 
         def interrupted():
-            ids = {call.args[1].id for call in mr_mocks.calls["channel_interrupt"]}
+            calls = mr_mocks.calls["channel_interrupt"]
+            self.assertTrue(all(c.kwargs == {"reason": "S"} for c in calls))
+            ids = {c.args[1].id for c in calls}
             mr_mocks.calls["channel_interrupt"].clear()
             return ids
 
