@@ -330,11 +330,14 @@ class OrgTest(TembaTest):
         assert_org(self.org, Org.STATUS_RESTRICTED, Org.RESTRICTED_STAFF)
         self.org.reactivate()
 
-        # verifying unflags
+        # verifying a child unflags and verifies its parent, and so all of its children
         self.org.flag()
         org1_child1.verify()
         assert_org(self.org, Org.STATUS_ACTIVE)
         assert_flagged_incidents(ongoing=0, total=4)
+        self.assertTrue(self.org.is_verified)
+        self.assertTrue(Org.objects.get(id=org1_child2.id).is_verified)
+        self.assertFalse(self.org2.is_verified)
 
         # suspending a flagged org ends its flagged incident
         self.org.flag()

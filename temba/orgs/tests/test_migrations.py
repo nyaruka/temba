@@ -276,7 +276,8 @@ class FlaggedStatusReasonTest(MigrationTest):
         assert_org(self.org6, "A")
 
         assert_ended(self.org_incident, False)
-        assert_ended(self.child2_incident, True)
+        assert_ended(self.child2_incident, False)
+        self.assertEqual(self.org2.id, self.child2_incident.org_id)
         assert_ended(self.org3_restricted, True)
         assert_ended(self.org3_flagged, False)
         assert_ended(self.org4_flagged, True)

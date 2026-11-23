@@ -479,9 +479,12 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     @property
     def is_verified(self):
         """
-        A verified org is not subject to automatic flagging for suspicious activity
+        A verified org is not subject to automatic flagging for suspicious activity, and since a flag applies to a
+        top-level org and its children, neither are the children of a verified org
         """
-        return self.config.get(Org.CONFIG_VERIFIED, False)
+        return self.config.get(Org.CONFIG_VERIFIED, False) or (
+            self.is_child and self.parent.config.get(Org.CONFIG_VERIFIED, False)
+        )
 
     @cached_property
     def branding(self):
@@ -606,11 +609,13 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
     def verify(self):
         """
-        Unflags org and marks as verified so it won't be flagged automatically in future
+        Unflags this org, or its parent if it's a child, and marks it as verified so it won't be flagged automatically
+        in future
         """
-        self.unflag()
-        self.config[Org.CONFIG_VERIFIED] = True
-        self.save(update_fields=("config", "modified_on"))
+        org = self.parent or self
+        org.unflag()
+        org.config[Org.CONFIG_VERIFIED] = True
+        org.save(update_fields=("config", "modified_on"))
 
     def import_app(self, export_json, user, site=None):
         """

@@ -1,7 +1,7 @@
 from django.db import migrations, models
 
 # a flag becomes a restriction of the top-level workspace (applied to its children), so a flag on a child moves to its
-# parent, and it replaces a billing or limits restriction but not a staff one or a suspension
+# parent along with its incident, and it replaces a billing or limits restriction but not a staff one or a suspension
 BACKFILL_SQL = """
 CREATE TEMPORARY TABLE flagged_orgs ON COMMIT DROP AS
 SELECT o.id FROM orgs_org o
@@ -33,6 +33,21 @@ UPDATE orgs_org c SET
 FROM orgs_org p
 WHERE c.parent_id = p.id AND c.is_active AND p.status = 'R' AND p.status_reason = 'F'
 AND c.status_reason IS DISTINCT FROM 'F';
+
+UPDATE notifications_incident SET org_id = m.parent_id
+FROM (
+    SELECT DISTINCT ON (c.parent_id) i.id, c.parent_id
+    FROM notifications_incident i
+    JOIN orgs_org c ON c.id = i.org_id
+    JOIN orgs_org p ON p.id = c.parent_id
+    WHERE i.incident_type = 'org:flagged' AND i.ended_on IS NULL AND p.status = 'R' AND p.status_reason = 'F'
+    AND NOT EXISTS (
+        SELECT 1 FROM notifications_incident pi
+        WHERE pi.org_id = p.id AND pi.incident_type = 'org:flagged' AND pi.ended_on IS NULL
+    )
+    ORDER BY c.parent_id, i.started_on
+) m
+WHERE notifications_incident.id = m.id;
 
 UPDATE notifications_incident i SET ended_on = NOW()
 FROM orgs_org o
