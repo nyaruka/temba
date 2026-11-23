@@ -564,10 +564,19 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         """
         Suspends this org and any children. Unless given a reason, it keeps the reason it was restricted for.
         """
+        from temba.channels.models import Channel
+        from temba.channels.tasks import interrupt_channel_task
+
         assert not self.is_child
 
         if self.status != Org.STATUS_SUSPENDED:
             self._set_status(Org.STATUS_SUSPENDED, reason=reason or self.status_reason)
+
+            # interrupt every channel so that messages waiting to be sent are failed rather than left in the outbox,
+            # delayed so that mailroom's assets cache sees the suspension
+            channels = Channel.objects.filter(Q(org=self) | Q(org__parent=self), is_active=True)
+            for channel_id in channels.values_list("id", flat=True):
+                interrupt_channel_task.apply_async((channel_id,), countdown=5)
 
     def reactivate(self):
         """

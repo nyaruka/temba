@@ -347,6 +347,33 @@ class OrgTest(TembaTest):
         self.org.suspend(Org.RESTRICTED_STAFF)
         assert_org(self.org, Org.STATUS_SUSPENDED, Org.RESTRICTED_STAFF)
 
+    @mock_mailroom
+    def test_suspend_interrupts_channels(self, mr_mocks):
+        self.org.features += [Org.FEATURE_CHILD_ORGS]
+        self.org.save(update_fields=("features",))
+        child = self.org.create_new(self.admin, "Child", tzone.utc, as_child=True)
+
+        child_channel = self.create_channel("T", "Child Twilio", "+250785551313", org=child)
+        released = self.create_channel("T", "Old Twilio", "+250785551314")
+        released.is_active = False
+        released.save(update_fields=("is_active",))
+        org2_channel = self.create_channel("T", "Org2 Twilio", "+250785551315", org=self.org2)
+
+        self.org.suspend()
+
+        # every active channel of the workspace and its children is interrupted
+        interrupted = {c.id for _, c in (call.args for call in mr_mocks.calls["channel_interrupt"])}
+        self.assertEqual(
+            set(self.org.channels.filter(is_active=True).values_list("id", flat=True)) | {child_channel.id}, interrupted
+        )
+        self.assertNotIn(released.id, interrupted)
+        self.assertNotIn(org2_channel.id, interrupted)
+
+        # suspending again doesn't interrupt them again
+        mr_mocks.calls["channel_interrupt"].clear()
+        self.org.suspend()
+        self.assertEqual([], mr_mocks.calls["channel_interrupt"])
+
     def test_suspend_restricted_orgs(self):
         self.org.features += [Org.FEATURE_CHILD_ORGS]
         self.org.save(update_fields=("features",))
