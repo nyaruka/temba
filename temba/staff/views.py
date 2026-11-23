@@ -42,17 +42,14 @@ class OrgCRUDL(SmartCRUDL):
             )
 
             # flagging is only done by automated checks, and only unflagging lifts it
-            if not obj.is_child:
-                if obj.status == Org.STATUS_ACTIVE:
-                    menu.add_url_post(_("Restrict"), f"{reverse('staff.org_update', args=[obj.id])}?action=restrict")
-                if obj.status != Org.STATUS_SUSPENDED:
-                    menu.add_url_post(_("Suspend"), f"{reverse('staff.org_update', args=[obj.id])}?action=suspend")
-                if obj.is_flagged:
-                    menu.add_url_post(_("Unflag"), f"{reverse('staff.org_update', args=[obj.id])}?action=unflag")
-                elif obj.status != Org.STATUS_ACTIVE:
-                    menu.add_url_post(
-                        _("Reactivate"), f"{reverse('staff.org_update', args=[obj.id])}?action=reactivate"
-                    )
+            if obj.status == Org.STATUS_ACTIVE:
+                menu.add_url_post(_("Restrict"), f"{reverse('staff.org_update', args=[obj.id])}?action=restrict")
+            if obj.status != Org.STATUS_SUSPENDED:
+                menu.add_url_post(_("Suspend"), f"{reverse('staff.org_update', args=[obj.id])}?action=suspend")
+            if obj.is_flagged:
+                menu.add_url_post(_("Unflag"), f"{reverse('staff.org_update', args=[obj.id])}?action=unflag")
+            elif obj.status != Org.STATUS_ACTIVE:
+                menu.add_url_post(_("Reactivate"), f"{reverse('staff.org_update', args=[obj.id])}?action=reactivate")
 
             if not obj.is_verified:
                 menu.add_url_post(_("Verify"), f"{reverse('staff.org_update', args=[obj.id])}?action=verify")

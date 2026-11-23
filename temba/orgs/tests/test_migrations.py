@@ -2,6 +2,7 @@ from datetime import datetime, time, timedelta, timezone as tz
 from importlib import import_module
 from unittest.mock import patch
 
+from django.db import connection
 from django.utils import timezone
 
 from temba.contacts.models import Contact
@@ -281,3 +282,92 @@ class FlaggedStatusReasonTest(MigrationTest):
         assert_ended(self.org3_restricted, True)
         assert_ended(self.org3_flagged, False)
         assert_ended(self.org4_flagged, True)
+
+
+class PerWorkspaceStatusTest(MigrationTest):
+    app = "orgs"
+    migrate_from = "0215_flagged_status_reason"
+    migrate_to = "0216_per_workspace_status"
+
+    def setUpBeforeMigration(self, apps):
+        OldOrg = apps.get_model("orgs", "Org")
+
+        self.t1 = datetime(2026, 11, 1, 12, 0, 0, tzinfo=tz.utc)
+        self.t2 = datetime(2026, 11, 2, 12, 0, 0, tzinfo=tz.utc)
+        self.suspends_on = datetime(2026, 12, 1, 12, 0, 0, tzinfo=tz.utc)
+
+        def create(name, status, reason, *, parent=None, is_flagged=False, suspends_on=None):
+            org = OldOrg.objects.create(
+                name=name,
+                timezone="UTC",
+                parent_id=parent.id if parent else None,
+                status=status,
+                status_reason=reason,
+                status_changed_on=self.t1,
+                suspends_on=suspends_on,
+                created_by_id=self.admin.id,
+                modified_by_id=self.admin.id,
+            )
+            with connection.cursor() as cursor:
+                cursor.execute("UPDATE orgs_org SET is_flagged = %s WHERE id = %s", [is_flagged, org.id])
+            return org
+
+        def incident(org, started_on, ended_on=None):
+            return Incident.objects.create(
+                org_id=org.id, incident_type="org:restricted", scope="", started_on=started_on, ended_on=ended_on
+            )
+
+        # flagged by 0215 only because of its flagged children, one of whose incidents it took
+        self.root1 = create("Root 1", "R", "F")
+        self.root1_incident = incident(self.root1, self.t1)
+        self.child1a = create("Child 1A", "R", "F", parent=self.root1, is_flagged=True)
+        self.child1a_incident = incident(self.child1a, self.t2, ended_on=self.t2)
+        self.child1b = create("Child 1B", "R", "F", parent=self.root1, is_flagged=True)
+        self.child1c = create("Child 1C", "R", "F", parent=self.root1)
+
+        # flagged itself, so it stays flagged, but its child doesn't
+        self.root2 = create("Root 2", "R", "F", is_flagged=True)
+        self.root2_incident = incident(self.root2, self.t1)
+        self.child2 = create("Child 2", "R", "F", parent=self.root2)
+
+        # flagged since 0215, by itself or a child which can't be told apart, so it stays flagged
+        self.root3 = create("Root 3", "R", "F")
+        self.child3 = create("Child 3", "R", "F", parent=self.root3)
+
+        # restricted for billing, which its child shares again
+        self.root4 = create("Root 4", "R", "B", suspends_on=self.suspends_on)
+        self.child4 = create("Child 4", "R", "F", parent=self.root4)
+
+        # suspended by staff, which is left alone
+        self.root5 = create("Root 5", "S", "S")
+        self.child5 = create("Child 5", "S", "S", parent=self.root5)
+
+    def test_migration(self):
+        def assert_org(org, status, reason=None, suspends_on=None):
+            org = Org.objects.get(id=org.id)
+            self.assertEqual((status, reason, suspends_on), (org.status, org.status_reason, org.suspends_on))
+
+        def assert_incident(incident, org, ended: bool):
+            incident.refresh_from_db()
+            self.assertEqual(org.id, incident.org_id)
+            self.assertEqual(ended, incident.ended_on is not None)
+
+        assert_org(self.root1, "A")
+        assert_org(self.child1a, "R", "F")
+        assert_org(self.child1b, "R", "F")
+        assert_org(self.child1c, "A")
+        assert_incident(self.child1a_incident, self.child1a, ended=False)
+        assert_incident(self.root1_incident, self.child1b, ended=False)
+
+        assert_org(self.root2, "R", "F")
+        assert_org(self.child2, "A")
+        assert_incident(self.root2_incident, self.root2, ended=False)
+
+        assert_org(self.root3, "R", "F")
+        assert_org(self.child3, "A")
+
+        assert_org(self.root4, "R", "B", self.suspends_on)
+        assert_org(self.child4, "R", "B", self.suspends_on)
+
+        assert_org(self.root5, "S", "S")
+        assert_org(self.child5, "S", "S")

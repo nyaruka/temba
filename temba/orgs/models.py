@@ -301,6 +301,9 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         (RESTRICTED_FLAGGED, "Flagged"),
     )
 
+    # restrictions for these reasons are about the account, which children share with their parent
+    CASCADING_REASONS = (RESTRICTED_BILLING, RESTRICTED_LIMITS)
+
     DELETE_DELAY_DAYS = 7  # how many days after releasing that an org is deleted
     OUTBOX_WARNING_THRESHOLD = 10_000
 
@@ -479,12 +482,9 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     @property
     def is_verified(self):
         """
-        A verified org is not subject to automatic flagging for suspicious activity, and since a flag applies to a
-        top-level org and its children, neither are the children of a verified org
+        A verified org is not subject to automatic flagging for suspicious activity
         """
-        return self.config.get(Org.CONFIG_VERIFIED, False) or (
-            self.is_child and self.parent.config.get(Org.CONFIG_VERIFIED, False)
-        )
+        return self.config.get(Org.CONFIG_VERIFIED, False)
 
     @cached_property
     def branding(self):
@@ -545,16 +545,16 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
     def restrict(self, reason: str, *, suspends_on=None):
         """
-        Restricts this org and any children, unless already restricted or suspended - except that being flagged
-        replaces a billing or limits restriction, which can be worked out again once the flag is lifted. If given a
-        time, it will be suspended then unless the restriction is lifted first.
+        Restricts this org, unless already restricted or suspended - except that being flagged replaces a billing or
+        limits restriction, which can be worked out again once the flag is lifted. If given a time, it will be
+        suspended then unless the restriction is lifted first.
         """
-        assert not self.is_child
+        assert not (self.is_child and reason in Org.CASCADING_REASONS), "children share their parent's account"
 
         replaces = (
             reason == Org.RESTRICTED_FLAGGED
             and self.status == Org.STATUS_RESTRICTED
-            and self.status_reason in (Org.RESTRICTED_BILLING, Org.RESTRICTED_LIMITS)
+            and self.status_reason in Org.CASCADING_REASONS
         )
 
         if self.status == Org.STATUS_ACTIVE or replaces:
@@ -562,30 +562,36 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
     def suspend(self, reason: str = None):
         """
-        Suspends this org and any children. Unless given a reason, it keeps the reason it was restricted for.
+        Suspends this org. Unless given a reason, it keeps the reason it was restricted for.
         """
         from temba.channels.models import Channel
         from temba.channels.tasks import interrupt_channel_task
 
-        assert not self.is_child
-
         if self.status != Org.STATUS_SUSPENDED:
             self._set_status(Org.STATUS_SUSPENDED, reason=reason or self.status_reason)
 
-            # interrupt every channel so that messages waiting to be sent are failed rather than left in the outbox,
-            # delayed so that mailroom's assets cache sees the suspension
-            channels = Channel.objects.filter(Q(org=self) | Q(org__parent=self), is_active=True)
+            # interrupt the channels of this org and any children suspended with it, so that messages waiting to be sent
+            # are failed rather than left in the outbox, delayed so that mailroom's assets cache sees the suspension
+            suspended_children = Q(org__parent=self, org__status=Org.STATUS_SUSPENDED)
+            channels = Channel.objects.filter(Q(org=self) | suspended_children, is_active=True)
             for channel_id in channels.values_list("id", flat=True):
                 interrupt_channel_task.apply_async((channel_id,), countdown=5)
 
     def reactivate(self):
         """
-        Lifts any restriction or suspension of this org and any children.
+        Lifts any restriction or suspension of this org, except that a child goes back to sharing any billing or limits
+        restriction or suspension of its parent.
         """
-        assert not self.is_child
+        status, reason, suspends_on = Org.STATUS_ACTIVE, None, None
+        if self.is_child and self.parent.status_cascades:
+            status, reason, suspends_on = self.parent.status, self.parent.status_reason, self.parent.suspends_on
 
-        if self.status != Org.STATUS_ACTIVE:
-            self._set_status(Org.STATUS_ACTIVE)
+        if (self.status, self.status_reason) != (status, reason):
+            self._set_status(status, reason=reason, suspends_on=suspends_on)
+
+    @property
+    def status_cascades(self) -> bool:
+        return self.status != Org.STATUS_ACTIVE and self.status_reason in Org.CASCADING_REASONS
 
     def _set_status(self, status: str, *, reason: str = None, suspends_on=None):
         now = timezone.now()
@@ -601,33 +607,35 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             setattr(self, name, value)
         self.save(update_fields=changes.keys())
 
-        self.children.filter(is_active=True).update(**changes)
+        # children share a billing or limits restriction or suspension, and only lose it once this org is active
+        # again, but anything else applies to them individually and is left alone
+        if self.status_cascades or status == Org.STATUS_ACTIVE:
+            inheriting = Q(status=Org.STATUS_ACTIVE) | Q(status_reason__in=Org.CASCADING_REASONS)
+            unchanged = Q(status=status, status_reason=reason)
+            self.children.filter(inheriting, is_active=True).exclude(unchanged).update(**changes)
 
         org_status_changed.send(sender=Org, org=self, status=status)
 
     def flag(self):
         """
-        Restricts this org, or its parent if it's a child, for suspicious activity
+        Restricts this org for suspicious activity
         """
-        (self.parent or self).restrict(Org.RESTRICTED_FLAGGED)
+        self.restrict(Org.RESTRICTED_FLAGGED)
 
     def unflag(self):
         """
-        Lifts a restriction of this org, or its parent if it's a child, for suspicious activity
+        Lifts a restriction of this org for suspicious activity
         """
-        org = self.parent or self
-        if org.is_flagged:
-            org.reactivate()
+        if self.is_flagged:
+            self.reactivate()
 
     def verify(self):
         """
-        Unflags this org, or its parent if it's a child, and marks it as verified so it won't be flagged automatically
-        in future
+        Unflags this org and marks it as verified so it won't be flagged automatically in future
         """
-        org = self.parent or self
-        org.unflag()
-        org.config[Org.CONFIG_VERIFIED] = True
-        org.save(update_fields=("config", "modified_on"))
+        self.unflag()
+        self.config[Org.CONFIG_VERIFIED] = True
+        self.save(update_fields=("config", "modified_on"))
 
     def import_app(self, export_json, user, site=None):
         """
