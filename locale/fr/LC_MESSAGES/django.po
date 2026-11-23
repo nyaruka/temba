@@ -3090,9 +3090,6 @@ msgstr "Ce bloc n'est pas disponible"
 msgid "Whether this organization anonymizes the phone numbers of contacts within it"
 msgstr "Si cette organisation anonymise les numéros de téléphone de contacts en son sein"
 
-msgid "Whether this organization is currently flagged."
-msgstr "Si cette organisation est actuellement signalée."
-
 #, python-format
 msgid "[%(name)s] Invitation to join workspace"
 msgstr "[%(name)s] Invitation à rejoindre l'espace de travail"
@@ -3485,17 +3482,14 @@ msgstr "Créez visuellement des applications mobiles déployables à l'échelle 
 msgid "Edit Workspace"
 msgstr "Modifier l'espace de travail"
 
-msgid "Flag"
-msgstr "Marquer"
-
-msgid "Unflag"
-msgstr "Ne pas marquer"
-
 msgid "Restrict"
 msgstr "Restreindre"
 
 msgid "Suspend"
 msgstr "Suspendre"
+
+msgid "Unflag"
+msgstr "Ne pas marquer"
 
 msgid "Verify"
 msgstr "Vérifier"

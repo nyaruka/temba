@@ -5,6 +5,7 @@ from unittest.mock import patch
 from django.utils import timezone
 
 from temba.contacts.models import Contact
+from temba.notifications.models import Incident
 from temba.orgs.models import Org
 from temba.tests import MigrationTest
 
@@ -198,3 +199,85 @@ class RestrictWithoutSuspensionTest(MigrationTest):
         self.assertEqual(
             ("R", "B", self.suspends_on), (self.org2.status, self.org2.status_reason, self.org2.suspends_on)
         )
+
+
+class FlaggedStatusReasonTest(MigrationTest):
+    app = "orgs"
+    migrate_from = "0214_restrict_without_suspension"
+    migrate_to = "0215_flagged_status_reason"
+
+    def setUpBeforeMigration(self, apps):
+        OldOrg = apps.get_model("orgs", "Org")
+
+        self.t1 = datetime(2026, 11, 1, 12, 0, 0, tzinfo=tz.utc)
+        self.t2 = datetime(2026, 11, 2, 12, 0, 0, tzinfo=tz.utc)
+        self.suspends_on = datetime(2026, 12, 1, 12, 0, 0, tzinfo=tz.utc)
+
+        def create(name, **kwargs):
+            return OldOrg.objects.create(
+                name=name, timezone="UTC", created_by_id=self.admin.id, modified_by_id=self.admin.id, **kwargs
+            )
+
+        def set_status(org, status, reason, suspends_on=None):
+            OldOrg.objects.filter(id=org.id).update(
+                status=status, status_reason=reason, status_changed_on=self.t1, suspends_on=suspends_on
+            )
+
+        def incident(org, incident_type, started_on):
+            return Incident.objects.create(org_id=org.id, incident_type=incident_type, scope="", started_on=started_on)
+
+        # flagged with an ongoing incident, and a child which wasn't flagged itself
+        OldOrg.objects.filter(id=self.org.id).update(is_flagged=True)
+        self.org_incident = incident(self.org, "org:flagged", self.t1)
+        self.child1 = create("Child 1", parent_id=self.org.id)
+
+        # not flagged itself but has a flagged child
+        self.child2 = create("Child 2", parent_id=self.org2.id, is_flagged=True)
+        self.child2_incident = incident(self.child2, "org:flagged", self.t2)
+
+        # flagged while restricted for billing, which the flag replaces
+        self.org3 = create("Org 3", is_flagged=True)
+        set_status(self.org3, "R", "B", self.suspends_on)
+        self.org3_restricted = incident(self.org3, "org:restricted", self.t1)
+        self.org3_flagged = incident(self.org3, "org:flagged", self.t2)
+
+        # flagged while restricted by staff, which stays
+        self.org4 = create("Org 4", is_flagged=True)
+        set_status(self.org4, "R", "S")
+        self.org4_flagged = incident(self.org4, "org:flagged", self.t2)
+
+        # flagged while suspended, which stays
+        self.org5 = create("Org 5", is_flagged=True)
+        set_status(self.org5, "S", "B")
+
+        # neither flagged nor restricted
+        self.org6 = create("Org 6")
+
+    def test_migration(self):
+        def assert_org(org, status, reason=None, suspends_on=None, changed_on=None):
+            org = Org.objects.get(id=org.id)
+            self.assertEqual(status, org.status)
+            self.assertEqual(reason, org.status_reason)
+            self.assertEqual(suspends_on, org.suspends_on)
+            if changed_on:
+                self.assertEqual(changed_on, org.status_changed_on)
+
+        def assert_ended(incident, ended: bool):
+            incident.refresh_from_db()
+            self.assertEqual(ended, incident.ended_on is not None)
+
+        assert_org(self.org, "R", "F", changed_on=self.t1)
+        assert_org(self.child1, "R", "F", changed_on=self.t1)
+        assert_org(self.org2, "R", "F", changed_on=self.t2)
+        assert_org(self.child2, "R", "F", changed_on=self.t2)
+        assert_org(self.org3, "R", "F")
+        assert_org(self.org4, "R", "S")
+        assert_org(self.org5, "S", "B")
+        assert_org(self.org6, "A")
+
+        assert_ended(self.org_incident, False)
+        assert_ended(self.child2_incident, False)
+        self.assertEqual(self.org2.id, self.child2_incident.org_id)
+        assert_ended(self.org3_restricted, True)
+        assert_ended(self.org3_flagged, False)
+        assert_ended(self.org4_flagged, True)

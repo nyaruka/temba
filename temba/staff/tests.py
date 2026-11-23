@@ -23,25 +23,28 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         # we should have a child in our context
         self.assertEqual(1, len(response.context["children"]))
 
-        # we should have options to flag, restrict and suspend
+        # we should have options to restrict and suspend, but not to flag
         self.assertContentMenu(
-            read_url, self.customer_support, ["Edit", "Flag", "Restrict", "Suspend", "Verify", "-", "Service"]
+            read_url, self.customer_support, ["Edit", "Restrict", "Suspend", "Verify", "-", "Service"]
         )
 
-        # flag and content menu option should be inverted
+        # a flagged org can only be unflagged, not reactivated
         self.org.flag()
+
+        self.assertContentMenu(read_url, self.customer_support, ["Edit", "Suspend", "Unflag", "Verify", "-", "Service"])
+        self.assertContains(self.client.get(read_url), "Flagged")
+
+        self.org.unflag()
         self.org.restrict(Org.RESTRICTED_STAFF)
 
         self.assertContentMenu(
-            read_url, self.customer_support, ["Edit", "Unflag", "Suspend", "Reactivate", "Verify", "-", "Service"]
+            read_url, self.customer_support, ["Edit", "Suspend", "Reactivate", "Verify", "-", "Service"]
         )
         self.assertContains(self.client.get(read_url), "Restricted")
 
         self.org.suspend()
 
-        self.assertContentMenu(
-            read_url, self.customer_support, ["Edit", "Unflag", "Reactivate", "Verify", "-", "Service"]
-        )
+        self.assertContentMenu(read_url, self.customer_support, ["Edit", "Reactivate", "Verify", "-", "Service"])
         self.assertContains(self.client.get(read_url), "Suspended")
 
         # no menu for inactive orgs
@@ -81,10 +84,13 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
 
         assertOrgFilter("?filter=verified", [self.org2])
 
+        assertOrgFilter("?filter=restricted", [self.org])
+
+        self.org.unflag()
         self.org.restrict(Org.RESTRICTED_STAFF)
 
         assertOrgFilter("", [self.org2, self.org])
-        assertOrgFilter("?filter=flagged", [self.org])
+        assertOrgFilter("?filter=flagged", [])
         assertOrgFilter("?filter=restricted", [self.org])
         assertOrgFilter("?filter=suspended", [])
 
@@ -96,7 +102,6 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         assertOrgFilter("?filter=restricted", [])
         assertOrgFilter("?filter=suspended", [self.org])
 
-        self.org.unflag()
         self.org.reactivate()
 
         # and can go to our org
@@ -224,12 +229,12 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual({"channels": 20, "fields": 300, "groups": 400}, self.org.limits)
         self.assertEqual(self.org.get_limit(Org.LIMIT_CONTACTS), 10_000_000)
 
-        # flag org
-        self.client.post(update_url, {"action": "flag"})
-        self.org.refresh_from_db()
-        self.assertTrue(self.org.is_flagged)
+        # staff can't flag an org
+        response = self.client.post(update_url, {"action": "flag"})
+        self.assertEqual(400, response.status_code)
 
-        # unflag org
+        # but can unflag one
+        self.org.flag()
         self.client.post(update_url, {"action": "unflag"})
         self.org.refresh_from_db()
         self.assertFalse(self.org.is_flagged)

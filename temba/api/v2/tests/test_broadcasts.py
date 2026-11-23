@@ -288,8 +288,8 @@ class BroadcastsEndpointTest(APITest):
 
         labels_url = reverse("api.v2.labels") + ".json"
 
-        # flagged orgs can't make other writes either
-        self.assertPost(labels_url, self.admin, {"name": "Spam"}, errors={"non_field_errors": Org.BLOCKER_FLAGGED})
+        # but like other restricted orgs can make other writes
+        self.assertPost(labels_url, self.admin, {"name": "Eggs"}, status=201)
 
         # restricted orgs can't send but can make other writes
         self.org.unflag()

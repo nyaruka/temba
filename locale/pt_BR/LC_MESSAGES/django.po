@@ -3094,9 +3094,6 @@ msgstr "Essa medida não está disponível"
 msgid "Whether this organization anonymizes the phone numbers of contacts within it"
 msgstr "Se essa organização anonimiza o número de telefone dos contatos"
 
-msgid "Whether this organization is currently flagged."
-msgstr "Se esta organização está sinalizada atualmente."
-
 #, python-format
 msgid "[%(name)s] Invitation to join workspace"
 msgstr "[%(name)s] Convite para entrar na área de trabalho"
@@ -3489,17 +3486,14 @@ msgstr "Crie visualmente aplicações móveis escaláveis em escala nacional em 
 msgid "Edit Workspace"
 msgstr "Editar área de trabalho"
 
-msgid "Flag"
-msgstr "Sinalizar"
-
-msgid "Unflag"
-msgstr "Não sinalizar"
-
 msgid "Restrict"
 msgstr "Restringir"
 
 msgid "Suspend"
 msgstr "Suspender"
+
+msgid "Unflag"
+msgstr "Não sinalizar"
 
 msgid "Verify"
 msgstr "Verificar"

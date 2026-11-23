@@ -272,21 +272,82 @@ class OrgTest(TembaTest):
         assert_org(self.org, Org.STATUS_ACTIVE)
         assert_signalled((self.org, Org.STATUS_RESTRICTED), (self.org, Org.STATUS_ACTIVE))
 
-        # flagging blocks sending but restriction takes precedence
-        self.org.flag()
+        def assert_flagged_incidents(ongoing: int, total: int):
+            incidents = self.org.incidents.filter(incident_type="org:flagged")
+            self.assertEqual(ongoing, incidents.filter(ended_on=None).count())
+            self.assertEqual(total, incidents.count())
+
+        # flagging a child restricts its parent and so all of its children
+        org1_child1.flag()
+
+        assert_org(self.org, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
+        assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
+        assert_org(org1_child2, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
+        assert_signalled((self.org, Org.STATUS_RESTRICTED))
+        assert_flagged_incidents(ongoing=1, total=1)
+        self.assertTrue(self.org.is_flagged)
+        self.assertTrue(org1_child1.is_flagged)
         self.assertEqual(Org.BLOCKER_FLAGGED, self.org.send_blocker)
-        self.assertEqual(Org.BLOCKER_FLAGGED, self.org.write_blocker)
-
-        self.org.restrict(Org.RESTRICTED_STAFF)
-        self.assertEqual(Org.BLOCKER_RESTRICTED, self.org.send_blocker)
-        self.assertEqual(Org.BLOCKER_FLAGGED, self.org.write_blocker)
-
-        # restriction alone doesn't block other changes, but suspension does
-        self.org.unflag()
         self.assertIsNone(self.org.write_blocker)
+        self.assertEqual(Org.BLOCKER_FLAGGED, self.org.import_blocker)
 
-        self.org.suspend()
+        self.org.flag()  # noop as already flagged
+        self.org.restrict(Org.RESTRICTED_BILLING, suspends_on=suspends_on)  # noop as billing doesn't replace a flag
+
+        assert_org(self.org, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
+        assert_signalled()
+        assert_flagged_incidents(ongoing=1, total=1)
+
+        # unflagging a child lifts its parent's restriction
+        org1_child2.unflag()
+
+        assert_org(self.org, Org.STATUS_ACTIVE)
+        assert_org(org1_child1, Org.STATUS_ACTIVE)
+        assert_signalled((self.org, Org.STATUS_ACTIVE))
+        assert_flagged_incidents(ongoing=0, total=1)
+
+        self.org.unflag()  # noop as not flagged
+        assert_signalled()
+
+        # flagging replaces a billing or limits restriction
+        for reason in (Org.RESTRICTED_BILLING, Org.RESTRICTED_LIMITS):
+            self.org.restrict(reason, suspends_on=suspends_on)
+            self.org.flag()
+
+            assert_org(self.org, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
+            assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
+
+            self.org.unflag()
+            assert_org(self.org, Org.STATUS_ACTIVE)
+
+        assert_flagged_incidents(ongoing=0, total=3)
+
+        # but not a staff restriction
+        self.org.restrict(Org.RESTRICTED_STAFF)
+        self.org.flag()
+
+        assert_org(self.org, Org.STATUS_RESTRICTED, Org.RESTRICTED_STAFF)
+        self.org.unflag()  # noop as not flagged
+        assert_org(self.org, Org.STATUS_RESTRICTED, Org.RESTRICTED_STAFF)
+        self.org.reactivate()
+
+        # verifying a child unflags and verifies its parent, and so all of its children
+        self.org.flag()
+        org1_child1.verify()
+        assert_org(self.org, Org.STATUS_ACTIVE)
+        assert_flagged_incidents(ongoing=0, total=4)
+        self.assertTrue(self.org.is_verified)
+        self.assertTrue(Org.objects.get(id=org1_child2.id).is_verified)
+        self.assertFalse(self.org2.is_verified)
+
+        # suspending a flagged org ends its flagged incident
+        self.org.flag()
+        self.org.suspend(Org.RESTRICTED_STAFF)
+
+        assert_org(self.org, Org.STATUS_SUSPENDED, Org.RESTRICTED_STAFF)
+        assert_flagged_incidents(ongoing=0, total=5)
         self.assertEqual(Org.BLOCKER_SUSPENDED, self.org.write_blocker)
+        signalled.clear()
 
         # a suspension can be given its own reason
         self.org2.suspend(Org.RESTRICTED_STAFF)
