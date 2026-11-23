@@ -47,6 +47,12 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertContentMenu(read_url, self.customer_support, ["Edit", "Reactivate", "Verify", "-", "Service"])
         self.assertContains(self.client.get(read_url), "Suspended")
 
+        # a child can have its own status, unaffected by its parent's suspension by staff
+        child_url = reverse("staff.org_read", args=[self.org2.id])
+        self.assertContentMenu(
+            child_url, self.customer_support, ["Edit", "Restrict", "Suspend", "Verify", "-", "Service"]
+        )
+
         # no menu for inactive orgs
         self.org.is_active = False
         self.org.save()
