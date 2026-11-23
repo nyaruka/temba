@@ -3067,9 +3067,6 @@ msgstr ""
 msgid "Whether this organization anonymizes the phone numbers of contacts within it"
 msgstr ""
 
-msgid "Whether this organization is currently flagged."
-msgstr ""
-
 #, python-format
 msgid "[%(name)s] Invitation to join workspace"
 msgstr ""
@@ -3462,16 +3459,13 @@ msgstr ""
 msgid "Edit Workspace"
 msgstr ""
 
-msgid "Flag"
-msgstr ""
-
-msgid "Unflag"
-msgstr ""
-
 msgid "Restrict"
 msgstr ""
 
 msgid "Suspend"
+msgstr ""
+
+msgid "Unflag"
 msgstr ""
 
 msgid "Verify"

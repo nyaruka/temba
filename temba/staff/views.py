@@ -41,17 +41,15 @@ class OrgCRUDL(SmartCRUDL):
                 on_submit="handleWorkspaceUpdated()",
             )
 
-            if not obj.is_flagged:
-                menu.add_url_post(_("Flag"), f"{reverse('staff.org_update', args=[obj.id])}?action=flag")
-            else:
-                menu.add_url_post(_("Unflag"), f"{reverse('staff.org_update', args=[obj.id])}?action=unflag")
-
+            # flagging is only done by automated checks, and only unflagging lifts it
             if not obj.is_child:
                 if obj.status == Org.STATUS_ACTIVE:
                     menu.add_url_post(_("Restrict"), f"{reverse('staff.org_update', args=[obj.id])}?action=restrict")
                 if obj.status != Org.STATUS_SUSPENDED:
                     menu.add_url_post(_("Suspend"), f"{reverse('staff.org_update', args=[obj.id])}?action=suspend")
-                if obj.status != Org.STATUS_ACTIVE:
+                if obj.is_flagged:
+                    menu.add_url_post(_("Unflag"), f"{reverse('staff.org_update', args=[obj.id])}?action=unflag")
+                elif obj.status != Org.STATUS_ACTIVE:
                     menu.add_url_post(
                         _("Reactivate"), f"{reverse('staff.org_update', args=[obj.id])}?action=reactivate"
                     )
@@ -91,7 +89,7 @@ class OrgCRUDL(SmartCRUDL):
             ("all", _("All"), dict(), ("-created_on",)),
             ("anon", _("Anonymous"), dict(is_anon=True, status__in=UNSUSPENDED), None),
             ("internal", _("Internal"), dict(is_internal=True), None),
-            ("flagged", _("Flagged"), dict(is_flagged=True, status__in=UNSUSPENDED), None),
+            ("flagged", _("Flagged"), dict(status=Org.STATUS_RESTRICTED, status_reason=Org.RESTRICTED_FLAGGED), None),
             ("restricted", _("Restricted"), dict(status=Org.STATUS_RESTRICTED), None),
             ("suspended", _("Suspended"), dict(status=Org.STATUS_SUSPENDED), None),
             ("verified", _("Verified"), dict(config__verified=True, status__in=UNSUSPENDED), None),
@@ -152,7 +150,6 @@ class OrgCRUDL(SmartCRUDL):
             return super().lookup_field_link(context, field, obj)
 
     class Update(StaffOnlyMixin, ModalFormMixin, ComponentFormMixin, SmartUpdateView):
-        ACTION_FLAG = "flag"
         ACTION_UNFLAG = "unflag"
         ACTION_RESTRICT = "restrict"
         ACTION_SUSPEND = "suspend"
@@ -236,9 +233,7 @@ class OrgCRUDL(SmartCRUDL):
                 action = request.POST["action"]
                 obj = self.get_object()
 
-                if action == self.ACTION_FLAG:
-                    obj.flag()
-                elif action == self.ACTION_UNFLAG:
+                if action == self.ACTION_UNFLAG:
                     obj.unflag()
                 elif action == self.ACTION_RESTRICT:
                     obj.restrict(Org.RESTRICTED_STAFF)

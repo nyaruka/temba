@@ -3090,9 +3090,6 @@ msgstr "Este slug no está disponible"
 msgid "Whether this organization anonymizes the phone numbers of contacts within it"
 msgstr "Si esta organización anonimiza los números de teléfonos de sus contactos "
 
-msgid "Whether this organization is currently flagged."
-msgstr "Si esta organización está marcada actualmente."
-
 #, python-format
 msgid "[%(name)s] Invitation to join workspace"
 msgstr "[%(name)s] Invitación para unirse al workspace"
@@ -3485,17 +3482,14 @@ msgstr "Cree visualmente aplicaciones móviles escalables a nivel nacional en cu
 msgid "Edit Workspace"
 msgstr "Editar Workspace"
 
-msgid "Flag"
-msgstr "Bandera"
-
-msgid "Unflag"
-msgstr "Desmarcar"
-
 msgid "Restrict"
 msgstr "Restringir"
 
 msgid "Suspend"
 msgstr "Suspender"
+
+msgid "Unflag"
+msgstr "Desmarcar"
 
 msgid "Verify"
 msgstr "Verificar"

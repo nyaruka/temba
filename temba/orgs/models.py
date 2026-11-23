@@ -293,7 +293,13 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     RESTRICTED_BILLING = "B"
     RESTRICTED_LIMITS = "L"
     RESTRICTED_STAFF = "S"
-    RESTRICTED_CHOICES = ((RESTRICTED_BILLING, "Billing"), (RESTRICTED_LIMITS, "Limits"), (RESTRICTED_STAFF, "Staff"))
+    RESTRICTED_FLAGGED = "F"
+    RESTRICTED_CHOICES = (
+        (RESTRICTED_BILLING, "Billing"),
+        (RESTRICTED_LIMITS, "Limits"),
+        (RESTRICTED_STAFF, "Staff"),
+        (RESTRICTED_FLAGGED, "Flagged"),
+    )
 
     DELETE_DELAY_DAYS = 7  # how many days after releasing that an org is deleted
     OUTBOX_WARNING_THRESHOLD = 10_000
@@ -367,7 +373,6 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     status_reason = models.CharField(max_length=1, choices=RESTRICTED_CHOICES, null=True)
     status_changed_on = models.DateTimeField(null=True)
     suspends_on = models.DateTimeField(null=True)  # when a restricted org will be suspended
-    is_flagged = models.BooleanField(default=False, help_text=_("Whether this organization is currently flagged."))
     is_internal = models.BooleanField(default=False)
 
     released_on = models.DateTimeField(null=True)
@@ -505,10 +510,10 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         """
         if self.status == Org.STATUS_SUSPENDED:
             return Org.BLOCKER_SUSPENDED
-        elif self.status == Org.STATUS_RESTRICTED:
-            return Org.BLOCKER_RESTRICTED
         elif self.is_flagged:
             return Org.BLOCKER_FLAGGED
+        elif self.status == Org.STATUS_RESTRICTED:
+            return Org.BLOCKER_RESTRICTED
         return None
 
     @property
@@ -519,18 +524,27 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         """
         if self.status == Org.STATUS_SUSPENDED:
             return Org.BLOCKER_SUSPENDED
-        elif self.is_flagged:
-            return Org.BLOCKER_FLAGGED
         return None
+
+    @property
+    def is_flagged(self) -> bool:
+        return self.status == Org.STATUS_RESTRICTED and self.status_reason == Org.RESTRICTED_FLAGGED
 
     def restrict(self, reason: str, *, suspends_on=None):
         """
-        Restricts this org and any children, unless already restricted or suspended. If given a time, it will be
-        suspended then unless the restriction is lifted first.
+        Restricts this org and any children, unless already restricted or suspended - except that being flagged
+        replaces a billing or limits restriction, which can be worked out again once the flag is lifted. If given a
+        time, it will be suspended then unless the restriction is lifted first.
         """
         assert not self.is_child
 
-        if self.status == Org.STATUS_ACTIVE:
+        replaces = (
+            reason == Org.RESTRICTED_FLAGGED
+            and self.status == Org.STATUS_RESTRICTED
+            and self.status_reason in (Org.RESTRICTED_BILLING, Org.RESTRICTED_LIMITS)
+        )
+
+        if self.status == Org.STATUS_ACTIVE or replaces:
             self._set_status(Org.STATUS_RESTRICTED, reason=reason, suspends_on=suspends_on)
 
     def suspend(self, reason: str = None):
@@ -552,6 +566,8 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             self._set_status(Org.STATUS_ACTIVE)
 
     def _set_status(self, status: str, *, reason: str = None, suspends_on=None):
+        from temba.notifications.incidents.builtin import OrgFlaggedIncidentType
+
         now = timezone.now()
         changes = dict(
             status=status,
@@ -567,31 +583,26 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
         self.children.filter(is_active=True).update(**changes)
 
+        if self.is_flagged:
+            OrgFlaggedIncidentType.get_or_create(self)  # create incident which will notify admins
+        else:
+            OrgFlaggedIncidentType.end_ongoing(self)
+
         org_status_changed.send(sender=Org, org=self, status=status)
 
     def flag(self):
         """
-        Flags this org for suspicious activity
+        Restricts this org, or its parent if it's a child, for suspicious activity
         """
-        from temba.notifications.incidents.builtin import OrgFlaggedIncidentType
-
-        if not self.is_flagged:
-            self.is_flagged = True
-            self.save(update_fields=("is_flagged", "modified_on"))
-
-            OrgFlaggedIncidentType.get_or_create(self)  # create incident which will notify admins
+        (self.parent or self).restrict(Org.RESTRICTED_FLAGGED)
 
     def unflag(self):
         """
-        Unflags this org if they previously were flagged
+        Lifts a restriction of this org, or its parent if it's a child, for suspicious activity
         """
-        from temba.notifications.incidents.builtin import OrgFlaggedIncidentType
-
-        if self.is_flagged:
-            self.is_flagged = False
-            self.save(update_fields=("is_flagged", "modified_on"))
-
-            OrgFlaggedIncidentType.get_or_create(self).end()
+        org = self.parent or self
+        if org.is_flagged:
+            org.reactivate()
 
     def verify(self):
         """
