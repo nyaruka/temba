@@ -1013,7 +1013,7 @@ class Label(OrgAsset, DependencyMixin):
 
     org_limit_key = Org.LIMIT_LABELS
 
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="msgs_labels", db_index=False)
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="msgs_labels")
 
     @classmethod
     def create(cls, org, user, name: str):

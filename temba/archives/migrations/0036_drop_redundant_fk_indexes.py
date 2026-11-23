@@ -1,23 +1,21 @@
 import django.db.models.deletion
 from django.db import migrations, models
 
+from temba.utils.db.operations import drop_column_index
+
 
 class Migration(migrations.Migration):
-    # each foreign key leads a composite index which serves its lookups, and the drops are concurrent so as not to
-    # block writes while waiting for their locks. The reverses aren't, as migration tests run them in a transaction.
+    # each foreign key leads a composite index which serves its lookups
     atomic = False
 
     dependencies = [
         ("archives", "0035_alter_archive_id"),
-        ("orgs", "0215_drop_redundant_fk_indexes"),
+        ("orgs", "0214_restrict_without_suspension"),
     ]
 
     operations = [
-        migrations.RunSQL(
-            sql='DROP INDEX CONCURRENTLY IF EXISTS "archives_archive_org_id_d19c8f63"',
-            reverse_sql=(
-                'CREATE INDEX IF NOT EXISTS "archives_archive_org_id_d19c8f63" ON "archives_archive" ("org_id")'
-            ),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[drop_column_index("archives_archive", "org_id", "archives_archive_org_id_d19c8f63")],
             state_operations=[
                 migrations.AlterField(
                     model_name="archive",

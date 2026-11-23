@@ -158,7 +158,7 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         TYPE_SURVEY: 0,
     }
 
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="flows", db_index=False)
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="flows")
     labels = models.ManyToManyField("FlowLabel", related_name="flows")
     is_archived = models.BooleanField(default=False)
     flow_type = models.CharField(max_length=1, choices=TYPE_CHOICES, default=TYPE_MESSAGE)
@@ -1875,7 +1875,7 @@ class FlowLabel(DeletedOnMixin, OrgAsset):
     A label applied to a flow rather than a message
     """
 
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="flow_labels", db_index=False)
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="flow_labels")
     is_active = None
 
     @classmethod

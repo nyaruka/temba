@@ -4,6 +4,7 @@ from django.db.models import F, Value
 from temba.tests import TembaTest
 
 from .functions import SplitPart
+from .operations import drop_column_index
 
 
 class FunctionsTest(TembaTest):
@@ -16,6 +17,32 @@ class FunctionsTest(TembaTest):
 
         self.assertEqual(count1.part1, "foo")
         self.assertEqual(count1.part2, "bar")
+
+
+class OperationsTest(TembaTest):
+    def test_drop_column_index(self):
+        def indexes() -> set[str]:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT indexname FROM pg_indexes WHERE tablename = 'ivr_call'")
+                return {r[0] for r in cursor.fetchall()}
+
+        # an index named as older migrations named them, and a partial one on the same column which should be kept
+        with connection.cursor() as cursor:
+            cursor.execute('CREATE INDEX "ivr_call_org_id" ON ivr_call (org_id)')
+            cursor.execute("""CREATE INDEX "calls_queued" ON ivr_call (org_id) WHERE status = 'Q'""")
+
+        before = indexes()
+        op = drop_column_index("ivr_call", "org_id", "ivr_call_org_id_f05ab39d")
+
+        with connection.schema_editor() as editor:
+            op.code(None, editor)
+
+        self.assertEqual(before - {"ivr_call_org_id"}, indexes())
+
+        with connection.schema_editor() as editor:
+            op.reverse_code(None, editor)
+
+        self.assertEqual(before - {"ivr_call_org_id"} | {"ivr_call_org_id_f05ab39d"}, indexes())
 
 
 class SchemaTest(TembaTest):

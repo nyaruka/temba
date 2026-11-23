@@ -1583,7 +1583,7 @@ class ContactGroup(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin
 
     MAX_QUERY_LEN = 10_000
 
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="groups", db_index=False)
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="groups")
     group_type = models.CharField(max_length=1, choices=TYPE_CHOICES, default=TYPE_MANUAL)
     status = models.CharField(max_length=1, choices=STATUS_CHOICES, default=STATUS_INITIALIZING)
     contacts = models.ManyToManyField(Contact, related_name="groups")

@@ -1382,7 +1382,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
 
 class OrgMembership(models.Model):
-    org = models.ForeignKey(Org, on_delete=models.CASCADE, db_index=False)
+    org = models.ForeignKey(Org, on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     role_code = models.CharField(max_length=1)
     team = models.ForeignKey("tickets.Team", on_delete=models.PROTECT, null=True)

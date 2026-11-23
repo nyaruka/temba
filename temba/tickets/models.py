@@ -32,7 +32,7 @@ class Shortcut(OrgAsset):
     A canned response available from the ticketing interface.
     """
 
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="shortcuts", db_index=False)
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="shortcuts")
     text = models.TextField(max_length=10_000)
 
     @classmethod
@@ -75,7 +75,7 @@ class Topic(OrgAsset, DependencyMixin):
     The topic of a ticket which controls who can access that ticket.
     """
 
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="topics", db_index=False)
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="topics")
     is_default = models.BooleanField(default=False)
 
     org_limit_key = Org.LIMIT_TOPICS
@@ -163,7 +163,7 @@ class Team(DeletedOnMixin, OrgAsset):
     Agent users are assigned to a team which controls which topics they can access.
     """
 
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="teams", db_index=False)
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="teams")
     topics = models.ManyToManyField(Topic, related_name="teams")
     all_topics = models.BooleanField(default=False)
     is_default = models.BooleanField(default=False)
