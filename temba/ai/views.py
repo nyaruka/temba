@@ -237,9 +237,20 @@ class LLMCRUDL(SmartCRUDL):
         slug_field = "uuid"
         slug_url_kwarg = "uuid"
         submit_button_name = _("Save")
+        show_steps = False
 
         def get_queryset(self):
             return LLM.objects.filter(org=self.request.org, is_active=True, is_system=False)
+
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+
+            # the model is deleted from here rather than from the list
+            if self.has_org_perm("ai.llm_delete"):
+                context["delete_url"] = reverse("ai.llm_delete", args=[self.object.uuid])
+                context["delete_label"] = _("Delete model")
+                context["delete_title"] = _("Delete Model")
+            return context
 
     class Translate(PostOnlyMixin, BaseReadView):
         @csrf_exempt

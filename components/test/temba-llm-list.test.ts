@@ -47,21 +47,12 @@ describe('temba-llm-list', () => {
     expect((list as any).getRowIcon(llm({ icon: '' }))).to.equal('stars-02');
   });
 
-  it('only has a delete column when deletable', async () => {
+  it('has name, model and usages columns', async () => {
     const list: LLMList = await getLLMList();
     expect(list.columns.map((c) => c.key)).to.deep.equal([
       'name',
       'model',
       'usages'
-    ]);
-
-    list.deletable = true;
-    await list.updateComplete;
-    expect(list.columns.map((c) => c.key)).to.deep.equal([
-      'name',
-      'model',
-      'usages',
-      'delete'
     ]);
   });
 
@@ -99,8 +90,8 @@ describe('temba-llm-list', () => {
     expect(row.classList.contains('clickable')).to.be.true;
   });
 
-  it('fires events for the usages link and delete icon without opening the row', async () => {
-    const list: LLMList = await getLLMList({ deletable: true });
+  it('fires an event for the usages link without opening the row', async () => {
+    const list: LLMList = await getLLMList();
     await renderRows(list, [llm()]);
 
     const fired: string[] = [];
@@ -108,16 +99,12 @@ describe('temba-llm-list', () => {
     list.addEventListener(CustomEventType.LLMUsages, (e: any) =>
       fired.push(`usages:${e.detail.item.uuid}`)
     );
-    list.addEventListener(CustomEventType.LLMDelete, (e: any) =>
-      fired.push(`delete:${e.detail.item.uuid}`)
-    );
 
     click(list.shadowRoot.querySelector('.usages'));
-    click(list.shadowRoot.querySelector('.delete'));
-    expect(fired).to.deep.equal(['usages:llm-1', 'delete:llm-1']);
+    expect(fired).to.deep.equal(['usages:llm-1']);
 
     click(list.shadowRoot.querySelector('tr.row'));
-    expect(fired).to.deep.equal(['usages:llm-1', 'delete:llm-1', 'row']);
+    expect(fired).to.deep.equal(['usages:llm-1', 'row']);
   });
 
   it('renders the models list (screenshot)', async () => {
@@ -129,8 +116,7 @@ describe('temba-llm-list', () => {
         'list-title': 'Artificial Intelligence',
         subtitle:
           'Add Large Language Models (LLMs) to your workspace to unlock AI assisted features.',
-        editable: true,
-        deletable: true
+        editable: true
       },
       '',
       900

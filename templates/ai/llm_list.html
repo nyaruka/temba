@@ -36,7 +36,6 @@
     list-title="{{ title }}"
     {% if list_subtitle %}subtitle="{{ list_subtitle }}"{% endif %}
     {% if org_perms.ai.llm_update %}editable{% endif %}
-    {% if org_perms.ai.llm_delete %}deletable{% endif %}
     endpoint="{{ list_url }}"
     content-menu-endpoint="{{ request.path }}?{{ request.GET.urlencode }}"
     empty-message='{% trans "No models yet" %}'
@@ -64,12 +63,6 @@
 
       list.addEventListener("temba-llm-usages", function(event) {
         showModax("{{ _("Usages")|escapejs }}", "/llm/usages/" + event.detail.item.uuid + "/");
-      });
-
-      list.addEventListener("temba-llm-delete", function(event) {
-        showModax("{{ _("Delete Model")|escapejs }}", "/llm/delete/" + event.detail.item.uuid + "/", {
-          onSubmit: "handleLLMChanged()"
-        });
       });
 
       // the embedded content menu fires temba-selection - dispatch it the
@@ -124,7 +117,7 @@
       });
     });
 
-    // After the update or delete modal submits - re-pull the current page
+    // After the update modal submits - re-pull the current page
     function handleLLMChanged() {
       var list = document.querySelector("#llm-list");
       if (list) {

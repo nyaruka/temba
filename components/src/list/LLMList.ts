@@ -1,4 +1,4 @@
-import { css, html, PropertyValues, TemplateResult } from 'lit';
+import { css, html, TemplateResult } from 'lit';
 import { msg, str } from '@lit/localize';
 import { property } from 'lit/decorators.js';
 import { ContentList, ContentListColumn } from './ContentList';
@@ -13,7 +13,7 @@ import { formatCount } from '../utils';
  * Models open in an update modal rather than a page of their own, so
  * rows carry no href — the host listens for `temba-row-click` and
  * opens the modal itself, and likewise for the usages link
- * (`temba-llm-usages`) and the delete icon (`temba-llm-delete`).
+ * (`temba-llm-usages`). Deleting a model is done from its update modal.
  */
 export class LLMList extends ContentList<LLM> {
   static get styles() {
@@ -40,22 +40,12 @@ export class LLMList extends ContentList<LLM> {
       .usages:hover {
         text-decoration: underline;
       }
-      .delete {
-        --icon-color: var(--text-3);
-      }
-      .delete:hover {
-        --icon-color: var(--danger);
-      }
     `;
   }
 
   /** whether rows open the update modal */
   @property({ type: Boolean })
   editable = false;
-
-  /** whether rows offer a delete icon */
-  @property({ type: Boolean })
-  deletable = false;
 
   protected defaultEmptyMessage(): string {
     return msg('No models');
@@ -68,16 +58,8 @@ export class LLMList extends ContentList<LLM> {
     this.minTableWidth = '480px';
   }
 
-  protected willUpdate(changes: PropertyValues): void {
-    // the delete column comes and goes with the permission
-    if (changes.has('deletable')) {
-      this.refreshColumns();
-    }
-    super.willUpdate(changes);
-  }
-
   protected buildColumns(): ContentListColumn[] {
-    const columns: ContentListColumn[] = [
+    return [
       {
         key: 'name',
         label: msg('Name'),
@@ -95,10 +77,6 @@ export class LLMList extends ContentList<LLM> {
         align: 'right'
       }
     ];
-    if (this.deletable) {
-      columns.push({ key: 'delete', label: '', width: '40px', align: 'right' });
-    }
-    return columns;
   }
 
   protected getRowIcon(item: LLM): string | null {
@@ -113,11 +91,6 @@ export class LLMList extends ContentList<LLM> {
     // keep the click from also opening the update modal
     event.stopPropagation();
     this.fireCustomEvent(CustomEventType.LLMUsages, { item });
-  }
-
-  private handleDeleteClick(item: LLM, event: MouseEvent): void {
-    event.stopPropagation();
-    this.fireCustomEvent(CustomEventType.LLMDelete, { item });
   }
 
   protected renderCell(
@@ -144,14 +117,6 @@ export class LLMList extends ContentList<LLM> {
             : msg(str`${count} uses`)}</span
         >`;
       }
-      case 'delete':
-        return html`<temba-icon
-          class="delete"
-          name=${Icon.delete}
-          clickable
-          title=${msg('Delete')}
-          @click=${(e: MouseEvent) => this.handleDeleteClick(item, e)}
-        ></temba-icon>`;
       default:
         return super.renderCell(item, column);
     }

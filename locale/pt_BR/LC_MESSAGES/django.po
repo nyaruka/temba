@@ -73,6 +73,12 @@ msgstr "Criar"
 msgid "Save"
 msgstr "Salvar"
 
+msgid "Delete model"
+msgstr "Deletar modelo"
+
+msgid "Delete Model"
+msgstr "Deletar modelo"
+
 msgid "Your LLM model has been deleted."
 msgstr "Seu modelo de LLM foi deletado."
 
@@ -4042,9 +4048,6 @@ msgstr "Ainda sem modelos"
 
 msgid "Update Model"
 msgstr "Atualizar modelo"
-
-msgid "Delete Model"
-msgstr "Deletar modelo"
 
 msgid "Contact"
 msgstr "Contato"

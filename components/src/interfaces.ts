@@ -596,8 +596,6 @@ export enum CustomEventType {
   ShortcutDelete = 'temba-shortcut-delete',
   /** An AI model's usages link was clicked - detail carries the item. */
   LLMUsages = 'temba-llm-usages',
-  /** An AI model's delete icon was clicked - detail carries the item. */
-  LLMDelete = 'temba-llm-delete',
   SelectionChange = 'temba-selection-change',
   BulkAction = 'temba-bulk-action',
   /** The label dropdown's "New Label…" row was clicked — detail

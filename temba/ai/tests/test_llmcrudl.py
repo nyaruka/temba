@@ -35,12 +35,10 @@ class LLMCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual([], list(response.context["object_list"]))
         self.assertNotContains(response, "Model limit reached")
 
-        # only admins can edit and delete models
+        # only admins can edit models
         self.assertContains(response, "editable")
-        self.assertContains(response, "deletable")
         response = self.requestView(list_url, self.editor)
         self.assertNotContains(response, "editable")
-        self.assertNotContains(response, "deletable")
 
         self.assertContentMenu(list_url, self.admin, ["New Model"])
         self.assertContentMenu(list_url, self.editor, [])
@@ -68,6 +66,7 @@ class LLMCRUDLTest(TembaTest, CRUDLTestMixin):
         self.login(self.admin)
 
         response = self.process_wizard("connect", connect_url, {"provider": {"provider": "openai"}})
+        self.assertNotContains(response, "data-hide-steps")  # creating a model shows the wizard's steps
         self.assertFalse(response.context["form"].fields["api_key"].required)
         self.assertEqual("••••••••", response.context["form"].fields["api_key"].widget.attrs["placeholder"])
         self.assertContains(response, "Leave blank to use the existing API key for this provider.")
@@ -122,6 +121,11 @@ class LLMCRUDLTest(TembaTest, CRUDLTestMixin):
         providers = dict(response.context["form"].fields["provider"].choices)
         self.assertEqual("OpenAI", providers["openai"])
         self.assertEqual("Azure OpenAI", providers["openai_azure"])
+
+        # the model is deleted from its update modal, which doesn't show the wizard's steps
+        self.assertContains(response, reverse("ai.llm_delete", args=[self.openai.uuid]))
+        self.assertContains(response, "Delete model")
+        self.assertContains(response, "data-hide-steps")
 
         # existing keys are never sent to the browser and can be preserved by leaving the field blank
         response = self.process_wizard("update", update_url, {"provider": {"provider": "openai"}})
