@@ -65,6 +65,9 @@ class IncidentTest(TembaTest):
             incident.as_json(),
         )
 
+        # incidents without anything more specific to link to link to the incident list
+        self.assertEqual("/incident/", incident.type.get_notification_target_url(incident))
+
     def test_channel_disconnected(self):
         ChannelDisconnectedIncidentType.get_or_create(self.channel)
         incident = Incident.objects.get()
