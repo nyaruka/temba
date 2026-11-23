@@ -259,21 +259,14 @@ export class PageHeader extends RapidElement {
     }
   }
 
-  /** Fire `temba-selection` with the clicked item and the click
-   * origin — same payload the standalone content menu emits, so the
-   * host's existing menu handling keeps working. */
+  /** Fire `temba-selection` with the clicked item — same payload the
+   * standalone content menu emits, so the host's existing menu handling
+   * keeps working. */
   private handleItemClicked(item: ContentMenuItem, event: MouseEvent): void {
     // note: item.disabled does NOT make the item inert — in the content
     // menu contract it means the opened modal starts with its submit
     // disabled (hosts pass it through to showModax)
-    const el = event.currentTarget as Element;
-    const rect = el?.getBoundingClientRect();
-    this.fireCustomEvent(CustomEventType.Selection, {
-      item,
-      event,
-      originX: rect ? rect.left + rect.width / 2 : event.clientX,
-      originY: rect ? rect.top : event.clientY
-    });
+    this.fireCustomEvent(CustomEventType.Selection, { item, event });
   }
 
   private renderContentMenu(): TemplateResult {

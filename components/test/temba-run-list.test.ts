@@ -55,7 +55,6 @@ describe('temba-run-list', () => {
     const runList: RunList = await getRunList();
     assert.instanceOf(runList, RunList);
     expect(runList.responses).to.equal(true);
-    expect(runList.allowDelete).to.equal(false);
     expect(runList.valueKey).to.equal('uuid');
     expect(runList.hideShadow).to.equal(true);
     expect(runList.reverseRefresh).to.equal(false);
@@ -64,7 +63,6 @@ describe('temba-run-list', () => {
   it('initializes with correct default properties', async () => {
     const runList: RunList = await getRunList();
     expect(runList.responses).to.equal(true);
-    expect(runList.allowDelete).to.equal(false);
     expect(runList.resultPreview).to.be.undefined;
     expect(runList.selectedRun).to.be.undefined;
     expect(runList.results).to.be.undefined;
@@ -285,38 +283,6 @@ describe('temba-run-list', () => {
     expect(result).to.be.null;
   });
 
-  it('removeRun removes item and updates cursor', async () => {
-    const runList: RunList = await getRunList({
-      flow: 'test-flow-uuid'
-    });
-
-    const initialCount = runList.items.length;
-    expect(initialCount).to.equal(5);
-
-    runList.cursorIndex = 2;
-    runList.removeRun(2);
-
-    expect(runList.items.length).to.equal(4);
-    expect(runList.items.find((item) => item.id === 2)).to.be.undefined;
-    expect(runList.cursorIndex).to.equal(2);
-  });
-
-  it('removeRun adjusts cursor when removing last item', async () => {
-    const runList: RunList = await getRunList();
-
-    // set up items manually
-    runList.items = [
-      { id: 1, uuid: 'uuid-1' },
-      { id: 2, uuid: 'uuid-2' }
-    ];
-    runList.cursorIndex = 1;
-
-    runList.removeRun(2);
-
-    expect(runList.items.length).to.equal(1);
-    expect(runList.cursorIndex).to.equal(1);
-  });
-
   it('getRefreshEndpoint returns endpoint with after parameter when items exist', async () => {
     const runList: RunList = await getRunList({
       flow: 'test-flow-uuid'
@@ -501,38 +467,6 @@ describe('temba-run-list', () => {
     const footer = runList.renderFooter();
     expect(footer).to.not.be.null;
     expect(footer.strings[0]).to.contain('temba-contact-name');
-  });
-
-  it('renderFooter shows delete icon when allowDelete is true', async () => {
-    const runList: RunList = await getRunList();
-
-    // mock temba-select element for the results
-    const mockSelect = document.createElement('div') as any;
-    mockSelect.setOptions = sinon.spy();
-    sinon.stub(runList.shadowRoot, 'querySelector').returns(mockSelect);
-
-    // set results to populate resultKeys
-    runList.results = [];
-    await runList.updateComplete;
-
-    runList.allowDelete = true;
-    runList.selectedRun = {
-      id: 1,
-      contact: {
-        uuid: 'contact-uuid',
-        name: 'John Doe',
-        urn: 'tel:+1234567890'
-      },
-      created_on: '2023-12-01T10:00:00.000Z',
-      values: {}
-    };
-
-    const footer = runList.renderFooter();
-    expect(footer).to.not.be.null;
-
-    // verify the conditions that would show the delete icon
-    expect(runList.allowDelete).to.be.true;
-    expect(runList.selectedRun.id).to.equal(1);
   });
 
   it('renderFooter shows active run status', async () => {

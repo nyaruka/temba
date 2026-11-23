@@ -2655,8 +2655,4 @@ export class Select<T extends SelectOption> extends FieldElement {
     }
     `;
   }
-
-  public render(): TemplateResult {
-    return this.renderField();
-  }
 }

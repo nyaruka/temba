@@ -6,21 +6,6 @@ export interface ListItem {
   [key: string]: any;
 }
 
-export interface ListEditorConfig {
-  // Determines if empty items should be automatically maintained
-  maintainEmptyItem?: boolean;
-  // Function to check if an item is considered empty
-  isEmptyItem?: (item: ListItem) => boolean;
-  // Function to create a new empty item
-  createEmptyItem?: () => ListItem;
-  // Function to clean items before emitting (e.g., filter out empty items)
-  cleanItems?: (items: ListItem[]) => ListItem[];
-  // Minimum number of items to maintain
-  minItems?: number;
-  // Maximum number of items allowed
-  maxItems?: number;
-}
-
 export abstract class BaseListEditor<
   T extends ListItem = ListItem
 > extends FieldElement {
@@ -225,10 +210,5 @@ export abstract class BaseListEditor<
         bubbles: true
       })
     );
-  }
-
-  // Utility method for subclasses to check if two items are equal
-  protected itemsEqual(item1: T, item2: T): boolean {
-    return JSON.stringify(item1) === JSON.stringify(item2);
   }
 }

@@ -515,8 +515,6 @@ function showModax(header, endpoint, modaxOptions) {
     modax.headers = { 'X-Temba-Spa': 1 };
     modax.header = header;
     modax.endpoint = endpoint;
-    modax.originX = options.originX != null ? options.originX : null;
-    modax.originY = options.originY != null ? options.originY : null;
 
     // take our focus from the thing that invocked us
     if (lastElement) {

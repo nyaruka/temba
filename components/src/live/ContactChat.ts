@@ -18,11 +18,9 @@ import {
 } from '../interfaces';
 import {
   formatCount,
-  fetchResults,
   generateUUIDv7,
   getUrl,
   postJSON,
-  postUrl,
   WebResponse
 } from '../utils';
 import { ContactStoreElement } from './ContactStoreElement';
@@ -183,14 +181,6 @@ export class ContactChat extends ContactStoreElement {
 
       temba-button {
         margin: 0.1em 0.25em;
-      }
-
-      temba-completion {
-        --widget-box-shadow: none;
-        --color-widget-border: transparent;
-        --widget-box-shadow-focused: none;
-        --color-focus: transparent;
-        --color-widget-bg-focused: transparent;
       }
 
       .error-gutter {
@@ -2358,22 +2348,6 @@ export class ContactChat extends ContactStoreElement {
       </div>`;
   }
 }
-export const closeTicket = (uuid: string): Promise<WebResponse> => {
-  const formData = new FormData();
-  formData.append('status', 'C');
-  return postUrl(`/ticket/update/${uuid}/?_format=json`, formData);
-};
-export const fetchContact = (endpoint: string): Promise<Contact> => {
-  return new Promise<Contact>((resolve, reject) => {
-    fetchResults(endpoint).then((contacts: Contact[]) => {
-      if (contacts && contacts.length === 1) {
-        resolve(contacts[0]);
-      } else {
-        reject('No contact found');
-      }
-    });
-  });
-};
 export const fetchContactHistory = (
   endpoint: string,
   ticket: string = undefined,

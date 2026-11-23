@@ -724,10 +724,6 @@ export class Compose extends FieldElement {
     this.variables = [...evt.detail.variables];
   }
 
-  public render(): TemplateResult {
-    return this.renderField();
-  }
-
   protected renderWidget(): TemplateResult {
     const showTemplates = this.templates && this.isBaseLanguage();
     const hasAccordionSections = this.quickReplies || showTemplates;

@@ -53,7 +53,6 @@ export class LLMList extends ContentList<LLM> {
 
   constructor() {
     super();
-    this.valueKey = 'uuid';
     this.searchable = false;
     this.minTableWidth = '480px';
   }

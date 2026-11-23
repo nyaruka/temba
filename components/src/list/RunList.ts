@@ -4,7 +4,6 @@ import { property } from 'lit/decorators.js';
 import { Checkbox } from '../form/Checkbox';
 import { Select } from '../form/select/Select';
 import { capitalize } from '../utils';
-import { Icon } from '../Icons';
 import { TembaList } from './TembaList';
 
 const FLOW_COLOR = 'rgb(223, 65, 159)';
@@ -24,9 +23,6 @@ export class RunList extends TembaList {
 
   @property({ type: Object })
   selectedRun: any;
-
-  @property({ type: Boolean })
-  allowDelete = false;
 
   private resultKeys = {};
 
@@ -109,12 +105,6 @@ export class RunList extends TembaList {
       }
     }
     return null;
-  }
-
-  public removeRun(id: number) {
-    this.items = this.items.filter((run) => run.id !== id);
-    this.cursorIndex = Math.min(this.cursorIndex, this.items.length);
-    this.requestUpdate('cursorIndex');
   }
 
   public getIcon(run: any): TemplateResult {
@@ -329,14 +319,6 @@ export class RunList extends TembaList {
               Started
             </div>
           </div>
-          ${this.allowDelete
-            ? html` <temba-icon
-                clickable
-                style="margin-left:0.75em;"
-                name=${Icon.delete}
-                onclick="deleteRun(${this.selectedRun.id});"
-              ></temba-icon>`
-            : null}
         </div>
 
         ${resultKeys.length > 0

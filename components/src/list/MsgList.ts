@@ -88,7 +88,6 @@ export class MsgList extends ContentList<Msg> {
 
   constructor() {
     super();
-    this.valueKey = 'uuid';
     // Messages page 100 at a time, matching rapidpro's msg list.
     this.pageSize = 100;
     // Auto layout so the Contact / Sent columns size to their content

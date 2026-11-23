@@ -14,8 +14,7 @@ Some of the components:
 - `<temba-textinput/>` - Standard text field with baked in support for date picking
 - `<temba-charcount/>` - SMS segment counter attachable to elements for monitoring
 - `<temba-store/>` - In page cache for RP core data types
-- `<temba-options/>` - Generic option list with configurable rendering, remote list paging, and keyboard support. Used by temba-select, temba-completion, and temba-list
-- `<temba-list/>` - Block rendered option list
+- `<temba-options/>` - Generic option list with configurable rendering, remote list paging, and keyboard support. Used by temba-select, temba-completion, and the sidebar lists
 - `<temba-dialog/>` - Basic modal
 - `<temba-modax/>` - Fancier modal that fetches and submits html rendered forms and is triggered by a slot element
 - .. and many more

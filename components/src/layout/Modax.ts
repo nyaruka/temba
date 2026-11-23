@@ -181,36 +181,18 @@ export class Modax extends RapidElement {
   @property({ type: Boolean })
   suspendSubmit = false;
 
-  @property({ type: Number })
-  originX: number | null = null;
-
-  @property({ type: Number })
-  originY: number | null = null;
-
   // private cancelToken: CancelTokenSource;
 
-  private handleSlotClicked(event: MouseEvent): void {
-    const el = event.currentTarget as Element;
-    if (el) {
-      const rect = el.getBoundingClientRect();
-      this.originX = rect.left + rect.width / 2;
-      this.originY = rect.top;
-    }
+  private handleSlotClicked(): void {
     this.open = true;
   }
 
   public willUpdate(changes: PropertyValues) {
     super.willUpdate(changes);
 
-    if (changes.has('open')) {
-      if (this.open) {
-        this.fetching = true;
-        this.body = this.getLoading();
-      } else if (changes.get('open') !== undefined) {
-        // open can get reflected into undefined, make sure we've been open before
-        this.originX = null;
-        this.originY = null;
-      }
+    if (changes.has('open') && this.open) {
+      this.fetching = true;
+      this.body = this.getLoading();
     }
   }
 
@@ -564,8 +546,6 @@ export class Modax extends RapidElement {
         ?destructive=${this.isDestructive()}
         ?noFocus=${true}
         ?disabled=${this.disabled}
-        .originX=${this.originX}
-        .originY=${this.originY}
         @temba-button-clicked=${this.handleDialogClick.bind(this)}
         @temba-dialog-hidden=${this.handleDialogHidden.bind(this)}
       >

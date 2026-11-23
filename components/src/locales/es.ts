@@ -757,7 +757,6 @@
 'sf993bb199fefbe04': `Todos`,
 'sf9aee319a006c9b4': `Agregar`,
 'sfa45eb738eca18ec': `Agregar una grabación`,
-'sfa7fe0d8c2046111': `Todo lo demás`,
 'sfa847f22cbd9bff5': `Traducir`,
 'sfa8636a926e6a68f': `Acciones que activan otros comportamientos`,
 'sfa99679af4c07130': `El archivo es demasiado grande`,
