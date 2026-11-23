@@ -530,6 +530,16 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         return None
 
     @property
+    def import_blocker(self):
+        """
+        Gets the reason, if any, that users can't import contacts into this org. Like other changes they're allowed in
+        restricted orgs, except flagged ones, since imports are how suspicious activity gets an org flagged.
+        """
+        if self.is_flagged:
+            return Org.BLOCKER_FLAGGED
+        return self.write_blocker
+
+    @property
     def is_flagged(self) -> bool:
         return self.status == Org.STATUS_RESTRICTED and self.status_reason == Org.RESTRICTED_FLAGGED
 

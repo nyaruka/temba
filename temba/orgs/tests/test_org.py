@@ -289,6 +289,7 @@ class OrgTest(TembaTest):
         self.assertTrue(org1_child1.is_flagged)
         self.assertEqual(Org.BLOCKER_FLAGGED, self.org.send_blocker)
         self.assertIsNone(self.org.write_blocker)
+        self.assertEqual(Org.BLOCKER_FLAGGED, self.org.import_blocker)
 
         self.org.flag()  # noop as already flagged
         self.org.restrict(Org.RESTRICTED_BILLING, suspends_on=suspends_on)  # noop as billing doesn't replace a flag
