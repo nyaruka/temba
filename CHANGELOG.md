@@ -1,3 +1,12 @@
+## v26.3.224 (2026-11-23)
+ * Cancel a workspace's queued messages when it's suspended
+ * Only cascade billing and limits restrictions to child workspaces
+ * Ignore a repeat posterize while the same POST is in flight or the page it led to is loading
+ * Delete AI models from their update modal rather than the list
+ * Render the AI models list like other component list pages
+ * Keep ticket controls a fixed width, ellipsizing the assignee and topic, and test it with a long topic
+ * Show failing channels whose sends today are going through as recovering, with today's failure rate in whole percents
+
 ## v26.3.223 (2026-11-23)
  * Remove the flagged incident type, since being flagged is a restriction, and test its migration and the default incident link
 
