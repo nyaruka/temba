@@ -1814,12 +1814,6 @@ class FlowStart(LegacyIDMixin, CreatedByMixin, ModifiedByMixin):
 
     class Meta:
         indexes = [
-            # used for the flow start log page
-            models.Index(
-                name="flows_flowstarts_org_created",
-                fields=["org", "-created_on"],
-                condition=Q(created_by__isnull=False),
-            ),
             # used by the flow_starts API endpoint
             models.Index(
                 name="flows_flowstarts_org_modified",
