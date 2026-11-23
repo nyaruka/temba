@@ -407,18 +407,26 @@ class OrgTest(TembaTest):
             mr_mocks.calls["channel_interrupt"].clear()
             return ids
 
+        # channels are only interrupted once the suspension is committed
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            self.org.suspend(Org.RESTRICTED_STAFF)
+        self.assertEqual(set(), interrupted())
+
         # a suspension which isn't for billing or limits doesn't apply to children, so neither do the interruptions
-        self.org.suspend(Org.RESTRICTED_STAFF)
+        for callback in callbacks:
+            callback()
         self.assertEqual(org_channels, interrupted())
 
         # suspending again doesn't interrupt them again
-        self.org.suspend(Org.RESTRICTED_STAFF)
+        with self.captureOnCommitCallbacks(execute=True):
+            self.org.suspend(Org.RESTRICTED_STAFF)
         self.assertEqual(set(), interrupted())
 
         # but a billing suspension cascades, so the children's channels are interrupted too
         self.org.reactivate()
         self.org.restrict(Org.RESTRICTED_BILLING)
-        self.org.suspend()
+        with self.captureOnCommitCallbacks(execute=True):
+            self.org.suspend()
         self.assertEqual(org_channels | {child_channel.id}, interrupted())
 
     def test_suspend_restricted_orgs(self):
