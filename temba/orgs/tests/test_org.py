@@ -317,14 +317,17 @@ class OrgTest(TembaTest):
         org1_child1.unflag()
         assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
 
-        # flagging replaces a billing or limits restriction, which children no longer share
+        # flagging replaces a billing or limits restriction, but children keep it until their parent is active again
         self.org.flag()
 
         assert_org(self.org, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
+        assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
+        assert_org(org1_child2, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
+
+        self.org.unflag()
         assert_org(org1_child1, Org.STATUS_ACTIVE)
         assert_org(org1_child2, Org.STATUS_ACTIVE)
 
-        self.org.unflag()
         self.org.restrict(Org.RESTRICTED_LIMITS, suspends_on=suspends_on)
         org1_child1.flag()  # replaces the limits restriction it shared with its parent
         assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)

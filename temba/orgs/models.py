@@ -597,14 +597,12 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             setattr(self, name, value)
         self.save(update_fields=changes.keys())
 
-        # children share a billing or limits restriction or suspension, and lose it with this one, but anything else
-        # applies to them individually and is left alone
-        if not self.status_cascades:
-            changes.update(status=Org.STATUS_ACTIVE, status_reason=None, suspends_on=None)
-
-        inheriting = Q(status=Org.STATUS_ACTIVE) | Q(status_reason__in=Org.CASCADING_REASONS)
-        unchanged = Q(status=changes["status"], status_reason=changes["status_reason"])
-        self.children.filter(inheriting, is_active=True).exclude(unchanged).update(**changes)
+        # children share a billing or limits restriction or suspension, and only lose it once this org is active
+        # again, but anything else applies to them individually and is left alone
+        if self.status_cascades or status == Org.STATUS_ACTIVE:
+            inheriting = Q(status=Org.STATUS_ACTIVE) | Q(status_reason__in=Org.CASCADING_REASONS)
+            unchanged = Q(status=status, status_reason=reason)
+            self.children.filter(inheriting, is_active=True).exclude(unchanged).update(**changes)
 
         org_status_changed.send(sender=Org, org=self, status=status)
 
