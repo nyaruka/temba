@@ -620,9 +620,22 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
+// a repeat click while the first POST is in flight would otherwise post it again, e.g. copying a flow twice
+var postsInFlight = new Set();
+
 function posterize(href) {
   var url = new URL(href, window.location.origin);
-  spaPost(url.pathname, { queryString: url.searchParams, fullPage: true });
+  var key = url.pathname + url.search;
+  if (postsInFlight.has(key)) {
+    return;
+  }
+
+  postsInFlight.add(key);
+  Promise.resolve(
+    spaPost(url.pathname, { queryString: url.searchParams, fullPage: true })
+  ).finally(function () {
+    postsInFlight.delete(key);
+  });
 }
 
 function handlePosterize(ele) {
