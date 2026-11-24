@@ -160,6 +160,7 @@ class ContextMenuMixin:
             primary: bool = False,
             as_button: bool = False,
             disabled: bool = False,
+            destructive: bool = False,
         ):
             self.groups[-1].append(
                 {
@@ -173,6 +174,7 @@ class ContextMenuMixin:
                     "primary": primary,
                     "as_button": as_button,
                     "disabled": disabled,
+                    "destructive": destructive,
                 }
             )
 

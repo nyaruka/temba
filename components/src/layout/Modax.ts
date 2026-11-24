@@ -169,6 +169,11 @@ export class Modax extends RapidElement {
   @property({ type: Boolean })
   disabled = false;
 
+  /** gives the primary button the destructive style, for an action that can't be undone - delete and interrupt
+   * endpoints get it without asking */
+  @property({ type: Boolean })
+  destructive = false;
+
   @property({ type: Array })
   buttons: DialogButton[] = [];
 
@@ -491,9 +496,10 @@ export class Modax extends RapidElement {
 
   private isDestructive(): boolean {
     return (
-      this.endpoint &&
-      (this.endpoint.indexOf('delete') > -1 ||
-        this.endpoint.indexOf('interrupt') > -1)
+      this.destructive ||
+      (this.endpoint &&
+        (this.endpoint.indexOf('delete') > -1 ||
+          this.endpoint.indexOf('interrupt') > -1))
     );
   }
 

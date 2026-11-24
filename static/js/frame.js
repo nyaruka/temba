@@ -492,6 +492,7 @@ function showModax(header, endpoint, modaxOptions) {
     modax['-temba-loaded'] = undefined;
 
     modax.disabled = options.disabled == 'True';
+    modax.destructive = !!options.destructive;
     var itemOnSubmit;
     if (options.onSubmit == 'None') {
       onSubmit = undefined;
@@ -522,6 +523,38 @@ function showModax(header, endpoint, modaxOptions) {
     }
     modax.open = true;
   }
+}
+
+// handles an item chosen from a content menu, whichever header or list it was in
+function dispatchContentMenuItem(item, click) {
+  if (item.type === 'link') {
+    if (click) {
+      click.preventDefault();
+      click.stopPropagation();
+      if (click.metaKey && item.url) {
+        window.open(item.url, '_blank');
+        return;
+      }
+    }
+    spaGet(item.url);
+  } else if (item.type === 'modax') {
+    showModax(item.title, item.url, {
+      disabled: item.disabled,
+      destructive: item.destructive,
+      onSubmit: item.on_submit,
+      onRedirect: item.on_redirect,
+      id: item.modal_id
+    });
+  } else if (item.type === 'url_post') {
+    posterize(item.url);
+  } else if (item.type === 'js') {
+    if (window[item.id]) {
+      window[item.id]();
+    }
+  }
+
+  // items need to be refreshed in the top left sidebar menu
+  refreshMenu();
 }
 
 function handleWorkspaceChanged(orgId) {

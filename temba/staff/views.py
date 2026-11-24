@@ -46,7 +46,11 @@ class OrgCRUDL(SmartCRUDL):
                 menu.add_url_post(_("Restrict"), f"{reverse('staff.org_update', args=[obj.id])}?action=restrict")
             if obj.status != Org.STATUS_SUSPENDED:
                 menu.add_modax(
-                    _("Suspend"), "suspend-workspace", reverse("staff.org_suspend", args=[obj.id]), title=_("Suspend")
+                    _("Suspend"),
+                    "suspend-workspace",
+                    reverse("staff.org_suspend", args=[obj.id]),
+                    title=_("Suspend"),
+                    destructive=True,
                 )
             if obj.is_flagged:
                 menu.add_url_post(_("Unflag"), f"{reverse('staff.org_update', args=[obj.id])}?action=unflag")
