@@ -2,12 +2,10 @@
 {% load i18n contacts temba humanize %}
 
 {% block content %}
-  {% if is_sheet %}
-    {# the header a sheet takes when whatever opened it leaves that to the view, e.g. a message's log link #}
-    <template data-sheet-chrome data-header="{% blocktrans trimmed with channel=object.name %}{{ channel }} Log{% endblocktrans %}" data-subtitle="{% trans "Logs are kept for 7 days." %}">
-      <temba-channel-logo type="{{ object.channel_type }}" name="{{ object.type.name }}" size="28"></temba-channel-logo>
-    </template>
-  {% endif %}
+  {# the header a sheet takes when whatever opened it leaves that to the view, e.g. a message's log link #}
+  <template data-sheet-chrome data-header="{% blocktrans trimmed with channel=object.name %}{{ channel }} Log{% endblocktrans %}" data-subtitle="{% trans "Logs are kept for 7 days." %}">
+    <temba-channel-logo type="{{ object.channel_type }}" name="{{ object.type.name }}" size="28"></temba-channel-logo>
+  </template>
   <div class="log-view" data-log-root>
     {% if can_break %}
       <div class="log-owner">
@@ -89,7 +87,7 @@
       </div>
     {% endfor %}
   </div>
-  {% if can_break and is_sheet %}
+  {% if can_break %}
     {# shown over a page, the toggle swaps the logs in place rather than leaving for a page of their own #}
     <script>
       (function() {

@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 from django.conf import settings
 from django.urls import reverse
 
@@ -8,6 +10,12 @@ from ..models import ChannelLog
 
 
 class ChannelLogCRUDLTest(CRUDLTestMixin, TembaTest):
+    def setUp(self):
+        super().setUp()
+
+        # logs show in a sheet
+        self.client.defaults["HTTP_X_TEMBA_SHEET"] = "1"
+
     def assertRedacted(self, response, values: tuple):
         for value in values:
             self.assertNotContains(response, value)
@@ -64,22 +72,24 @@ class ChannelLogCRUDLTest(CRUDLTestMixin, TembaTest):
             self.assertTrue(response.context["unredacted"])
             self.assertContains(response, f'href="{read_url}"')  # to redact them again
 
-            # which staff are given a toggle for, that works in place when the log is shown in a sheet
+            # which staff are given a toggle for, that works in place
             response = self.client.get(read_url)
             self.assertTrue(response.context["can_break"])
             self.assertFalse(response.context["unredacted"])
-            self.assertContains(response, f'href="{read_url}?break=1"')
-            self.assertNotContains(response, "document.currentScript")
-
-            response = self.client.get(read_url, headers={"X-Temba-Spa": "1", "X-Temba-Sheet": "1"})
             self.assertRedacted(response, ("3527065", "Nic", "Pottier"))
             self.assertContains(response, f'href="{read_url}?break=1"')
             self.assertContains(response, "data-log-root")
             self.assertContains(response, "document.currentScript")
 
-            response = self.client.get(read_url + "?break=1", headers={"X-Temba-Spa": "1", "X-Temba-Sheet": "1"})
-            self.assertNotRedacted(response, ("3527065", "Nic", "Pottier"))
-            self.assertContains(response, f'href="{read_url}"')
+            # requested as a page, the choice is kept in the redirect to the channel's page
+            del self.client.defaults["HTTP_X_TEMBA_SHEET"]
+            response = self.client.get(read_url + "?break=1")
+            self.client.defaults["HTTP_X_TEMBA_SHEET"] = "1"
+            self.assertEqual(
+                f"{reverse('channels.channel_read', args=[channel.uuid])}?"
+                + urlencode({"sheet": "logs", "item": f"{read_url}?break=1"}),
+                response.url,
+            )
 
             # nobody else is, or can break out of it
             self.login(self.admin)

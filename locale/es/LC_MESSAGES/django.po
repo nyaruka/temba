@@ -1904,9 +1904,6 @@ msgstr "Eliminar canal"
 msgid "Delete Channel"
 msgstr "Eliminar canal"
 
-msgid "Channel Log"
-msgstr "Registro de Canales"
-
 msgid "In use by another contact."
 msgstr "En uso por otro contacto."
 
