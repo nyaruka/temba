@@ -631,7 +631,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             children = self.children.filter(inheriting, is_active=True).exclude(unchanged)
 
             # locked so that a child flagged or restricted by staff meanwhile isn't overwritten
-            with transaction.atomic():
+            with transaction.atomic(savepoint=False):
                 changed_children = list(children.select_for_update().order_by("id"))
                 if changed_children:
                     Org.objects.filter(id__in=[c.id for c in changed_children]).update(**child_changes)
