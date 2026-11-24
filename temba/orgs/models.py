@@ -294,14 +294,17 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     RESTRICTED_LIMITS = "L"
     RESTRICTED_STAFF = "S"
     RESTRICTED_FLAGGED = "F"
+    RESTRICTED_PARENT = "P"
     RESTRICTED_CHOICES = (
         (RESTRICTED_BILLING, "Billing"),
         (RESTRICTED_LIMITS, "Limits"),
         (RESTRICTED_STAFF, "Staff"),
         (RESTRICTED_FLAGGED, "Flagged"),
+        (RESTRICTED_PARENT, "Parent"),
     )
 
-    # restrictions for these reasons are about the account, which children share with their parent
+    # restrictions for these reasons are about the account, which children share with their parent, getting the parent
+    # reason instead
     CASCADING_REASONS = (RESTRICTED_BILLING, RESTRICTED_LIMITS)
 
     DELETE_DELAY_DAYS = 7  # how many days after releasing that an org is deleted
@@ -444,7 +447,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         # children share their parent's status so they can't be used to get around a restriction or suspension
         status = dict(
             status=self.status,
-            status_reason=self.status_reason,
+            status_reason=Org.RESTRICTED_PARENT if self.status_cascades else self.status_reason,
             status_changed_on=self.status_changed_on,
             suspends_on=self.suspends_on,
         )
@@ -550,11 +553,12 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         suspended then unless the restriction is lifted first.
         """
         assert not (self.is_child and reason in Org.CASCADING_REASONS), "children share their parent's account"
+        assert reason != Org.RESTRICTED_PARENT, "only given to children by their parent"
 
         replaces = (
             reason == Org.RESTRICTED_FLAGGED
             and self.status == Org.STATUS_RESTRICTED
-            and self.status_reason in Org.CASCADING_REASONS
+            and self.status_reason in (*Org.CASCADING_REASONS, Org.RESTRICTED_PARENT)
         )
 
         if self.status == Org.STATUS_ACTIVE or replaces:
@@ -574,7 +578,9 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             # interrupt the channels of this org and any children suspended with it, so that messages waiting to be sent
             # are failed rather than left in the outbox - once the suspension is committed, and delayed so that
             # mailroom's assets cache sees it
-            suspended_children = Q(org__parent=self, org__status=Org.STATUS_SUSPENDED)
+            suspended_children = Q(
+                org__parent=self, org__status=Org.STATUS_SUSPENDED, org__status_reason=Org.RESTRICTED_PARENT
+            )
             channel_ids = list(
                 Channel.objects.filter(Q(org=self) | suspended_children, is_active=True).values_list("id", flat=True)
             )
@@ -592,7 +598,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         """
         status, reason, suspends_on = Org.STATUS_ACTIVE, None, None
         if self.is_child and self.parent.status_cascades:
-            status, reason, suspends_on = self.parent.status, self.parent.status_reason, self.parent.suspends_on
+            status, reason, suspends_on = self.parent.status, Org.RESTRICTED_PARENT, self.parent.suspends_on
 
         if (self.status, self.status_reason) != (status, reason):
             self._set_status(status, reason=reason, suspends_on=suspends_on)
@@ -615,14 +621,28 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             setattr(self, name, value)
         self.save(update_fields=changes.keys())
 
-        # children share a billing or limits restriction or suspension, and only lose it once this org is active
-        # again, but anything else applies to them individually and is left alone
+        # children share a billing or limits restriction or suspension, with the parent reason, and only lose it once
+        # this org is active again, but anything else applies to them individually and is left alone
+        changed_children = []
         if self.status_cascades or status == Org.STATUS_ACTIVE:
-            inheriting = Q(status=Org.STATUS_ACTIVE) | Q(status_reason__in=Org.CASCADING_REASONS)
-            unchanged = Q(status=status, status_reason=reason)
-            self.children.filter(inheriting, is_active=True).exclude(unchanged).update(**changes)
+            child_changes = changes | dict(status_reason=Org.RESTRICTED_PARENT if self.status_cascades else None)
+            inheriting = Q(status=Org.STATUS_ACTIVE) | Q(status_reason=Org.RESTRICTED_PARENT)
+            unchanged = Q(status=status, status_reason=child_changes["status_reason"])
+            children = self.children.filter(inheriting, is_active=True).exclude(unchanged)
+
+            # locked so that a child flagged or restricted by staff meanwhile isn't overwritten
+            with transaction.atomic(savepoint=False):
+                changed_children = list(children.select_for_update().order_by("id"))
+                if changed_children:
+                    Org.objects.filter(id__in=[c.id for c in changed_children]).update(**child_changes)
 
         org_status_changed.send(sender=Org, org=self, status=status)
+
+        for child in changed_children:
+            for name, value in child_changes.items():
+                setattr(child, name, value)
+            child.parent = self
+            org_status_changed.send(sender=Org, org=child, status=status)
 
     def flag(self):
         """
