@@ -97,7 +97,7 @@ jobs:
         ports:
           - 6379:6379
       postgres:
-        image: pgvector/pgvector:0.8.3-pg15
+        image: pgvector/pgvector:0.8.3-pg18
         env:
           POSTGRES_DB: temba
           POSTGRES_USER: temba

@@ -23,26 +23,35 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         # we should have a child in our context
         self.assertEqual(1, len(response.context["children"]))
 
-        # we should have options to flag, restrict and suspend
+        # we should have options to restrict and suspend, but not to flag
         self.assertContentMenu(
-            read_url, self.customer_support, ["Edit", "Flag", "Restrict", "Suspend", "Verify", "-", "Service"]
+            read_url, self.customer_support, ["Edit", "Restrict", "Suspend", "Verify", "-", "Service"]
         )
 
-        # flag and content menu option should be inverted
+        # a flagged org can only be unflagged, not reactivated
         self.org.flag()
+
+        self.assertContentMenu(read_url, self.customer_support, ["Edit", "Suspend", "Unflag", "Verify", "-", "Service"])
+        self.assertContains(self.client.get(read_url), "Flagged")
+
+        self.org.unflag()
         self.org.restrict(Org.RESTRICTED_STAFF)
 
         self.assertContentMenu(
-            read_url, self.customer_support, ["Edit", "Unflag", "Suspend", "Reactivate", "Verify", "-", "Service"]
+            read_url, self.customer_support, ["Edit", "Suspend", "Reactivate", "Verify", "-", "Service"]
         )
         self.assertContains(self.client.get(read_url), "Restricted")
 
         self.org.suspend()
 
-        self.assertContentMenu(
-            read_url, self.customer_support, ["Edit", "Unflag", "Reactivate", "Verify", "-", "Service"]
-        )
+        self.assertContentMenu(read_url, self.customer_support, ["Edit", "Reactivate", "Verify", "-", "Service"])
         self.assertContains(self.client.get(read_url), "Suspended")
+
+        # a child can have its own status, unaffected by its parent's suspension by staff
+        child_url = reverse("staff.org_read", args=[self.org2.id])
+        self.assertContentMenu(
+            child_url, self.customer_support, ["Edit", "Restrict", "Suspend", "Verify", "-", "Service"]
+        )
 
         # no menu for inactive orgs
         self.org.is_active = False
@@ -81,10 +90,13 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
 
         assertOrgFilter("?filter=verified", [self.org2])
 
+        assertOrgFilter("?filter=restricted", [self.org])
+
+        self.org.unflag()
         self.org.restrict(Org.RESTRICTED_STAFF)
 
         assertOrgFilter("", [self.org2, self.org])
-        assertOrgFilter("?filter=flagged", [self.org])
+        assertOrgFilter("?filter=flagged", [])
         assertOrgFilter("?filter=restricted", [self.org])
         assertOrgFilter("?filter=suspended", [])
 
@@ -96,7 +108,6 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         assertOrgFilter("?filter=restricted", [])
         assertOrgFilter("?filter=suspended", [self.org])
 
-        self.org.unflag()
         self.org.reactivate()
 
         # and can go to our org
@@ -224,12 +235,12 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual({"channels": 20, "fields": 300, "groups": 400}, self.org.limits)
         self.assertEqual(self.org.get_limit(Org.LIMIT_CONTACTS), 10_000_000)
 
-        # flag org
-        self.client.post(update_url, {"action": "flag"})
-        self.org.refresh_from_db()
-        self.assertTrue(self.org.is_flagged)
+        # staff can't flag an org
+        response = self.client.post(update_url, {"action": "flag"})
+        self.assertEqual(400, response.status_code)
 
-        # unflag org
+        # but can unflag one
+        self.org.flag()
         self.client.post(update_url, {"action": "unflag"})
         self.org.refresh_from_db()
         self.assertFalse(self.org.is_flagged)
@@ -239,11 +250,11 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         self.org.refresh_from_db()
         self.assertEqual(Org.STATUS_RESTRICTED, self.org.status)
 
-        # suspend org
-        self.client.post(update_url, {"action": "suspend"})
-        self.org.refresh_from_db()
-        self.assertEqual(Org.STATUS_SUSPENDED, self.org.status)
-        self.assertEqual(Org.RESTRICTED_STAFF, self.org.status_reason)
+        # suspending isn't an update action
+        response = self.client.post(update_url, {"action": "suspend"})
+        self.assertEqual(400, response.status_code)
+
+        self.org.suspend(Org.RESTRICTED_STAFF)
 
         # reactivate org
         self.client.post(update_url, {"action": "reactivate"})
@@ -254,6 +265,22 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         self.client.post(update_url, {"action": "verify"})
         self.org.refresh_from_db()
         self.assertTrue(self.org.is_verified)
+
+    def test_suspend(self):
+        suspend_url = reverse("staff.org_suspend", args=[self.org.id])
+
+        self.assertStaffOnly(suspend_url)
+
+        # staff are warned that queued messages will be cancelled
+        response = self.requestView(suspend_url, self.customer_support)
+        self.assertContains(response, "will cancel any messages waiting to be sent")
+
+        response = self.requestView(suspend_url, self.customer_support, post_data={})
+        self.assertRedirect(response, reverse("staff.org_read", args=[self.org.id]))
+
+        self.org.refresh_from_db()
+        self.assertEqual(Org.STATUS_SUSPENDED, self.org.status)
+        self.assertEqual(Org.RESTRICTED_STAFF, self.org.status_reason)
 
     def test_service(self):
         service_url = reverse("staff.org_service")

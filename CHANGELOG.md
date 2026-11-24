@@ -1,3 +1,26 @@
+## v26.3.224 (2026-11-23)
+ * Cancel a workspace's queued messages when it's suspended
+ * Only cascade billing and limits restrictions to child workspaces
+ * Ignore a repeat posterize while the same POST is in flight or the page it led to is loading
+ * Delete AI models from their update modal rather than the list
+ * Render the AI models list like other component list pages
+ * Keep ticket controls a fixed width, ellipsizing the assignee and topic, and test it with a long topic
+ * Show failing channels whose sends today are going through as recovering, with today's failure rate in whole percents
+
+## v26.3.223 (2026-11-23)
+ * Remove the flagged incident type, since being flagged is a restriction, and test its migration and the default incident link
+
+## v26.3.222 (2026-11-23)
+ * Make being flagged a reason for a workspace to be restricted, keeping contact imports blocked and verifying and moving flagged incidents at the same scope as the flag
+ * Test that foreign keys are indexed and drop large indexes made redundant by composites
+ * Drop unused flows_flowstarts_org_created index
+
+## v26.3.221 (2026-11-20)
+ * Run CI against PostgreSQL 18
+
+## v26.3.220 (2026-11-20)
+ * Add index for looking up calls by channel and external ID
+
 ## v26.3.219 (2026-11-19)
  * Let incident types set their own email subject
  * Move Channels to second in the settings menu

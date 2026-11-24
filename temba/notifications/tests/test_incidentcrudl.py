@@ -1,7 +1,7 @@
 from django.urls import reverse
 from django.utils import timezone
 
-from temba.notifications.incidents.builtin import OrgFlaggedIncidentType
+from temba.notifications.incidents.builtin import ChannelDisconnectedIncidentType
 from temba.notifications.models import Incident
 from temba.tests import CRUDLTestMixin, TembaTest
 
@@ -10,10 +10,10 @@ class IncidentCRUDLTest(TembaTest, CRUDLTestMixin):
     def test_list(self):
         list_url = reverse("notifications.incident_list")
 
-        # create 2 org flagged incidents (1 ended, 1 ongoing)
-        incident1 = OrgFlaggedIncidentType.get_or_create(self.org)
-        OrgFlaggedIncidentType.get_or_create(self.org).end()
-        incident2 = OrgFlaggedIncidentType.get_or_create(self.org)
+        # create 2 channel disconnected incidents (1 ended, 1 ongoing)
+        incident1 = ChannelDisconnectedIncidentType.get_or_create(self.channel)
+        incident1.end()
+        incident2 = ChannelDisconnectedIncidentType.get_or_create(self.channel)
 
         # create 2 flow webhook incidents (1 ended, 1 ongoing)
         incident3 = Incident.objects.create(

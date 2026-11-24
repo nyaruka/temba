@@ -370,7 +370,7 @@ class TestClient(MailroomClient):
         pass
 
     @_client_method
-    def channel_interrupt(self, org, channel):
+    def channel_interrupt(self, org, channel, *, reason: str = None):
         pass
 
     @_client_method
