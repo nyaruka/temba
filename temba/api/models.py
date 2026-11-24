@@ -10,7 +10,7 @@ from django.utils.translation import gettext_lazy as _
 
 from temba.orgs.models import Org, OrgRole
 from temba.utils import audit
-from temba.utils.models import CreatedByMixin, JSONAsTextField, ModifiedByMixin, SoftDeleteMixin
+from temba.utils.models import CreatedByMixin, DeletedOnMixin, JSONAsTextField, ModifiedByMixin, SoftDeleteMixin
 from temba.utils.text import generate_secret
 
 logger = logging.getLogger(__name__)
@@ -203,7 +203,7 @@ class WebHookEvent(models.Model):
     created_on = models.DateTimeField(default=timezone.now)
 
 
-class APIToken(models.Model):
+class APIToken(DeletedOnMixin):
     """
     An org+user specific access token for the API
     """
@@ -215,8 +215,7 @@ class APIToken(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="api_tokens")
     created = models.DateTimeField(default=timezone.now)
     last_used_on = models.DateTimeField(null=True)
-    is_active = models.BooleanField(default=True)
-    deleted_on = models.DateTimeField(null=True)
+    is_active = models.BooleanField(default=True)  # still written for the previous release, which reads it
 
     @classmethod
     def create(cls, org, user):
