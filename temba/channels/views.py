@@ -1293,17 +1293,11 @@ class ChannelCRUDL(SmartCRUDL):
                 raise Http404()
             return channel
 
-        def get_sheet_item(self) -> str | None:
-            """
-            The URL of the log to open the sheet on, if not the list of them all
-            """
-            return None
-
         def get(self, request, *args, **kwargs):
             if not self.is_sheet():
                 channel = self.get_object()
                 params = {"sheet": "logs"}
-                if item := self.get_sheet_item():
+                if item := self.get_sheet_item():  # the log to open it on, if not the list of them all
                     params["item"] = item
                 read_url = reverse("channels.channel_read", args=[channel.uuid])
                 return HttpResponseRedirect(f"{read_url}?{urlencode(params)}")
