@@ -97,6 +97,9 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         channel = Channel.create(self.org, self.admin, "KE", "AT", None, "+254788123123")
         self.assertEqual(10, channel.tps)
 
+        channel.refresh_from_db()
+        self.assertEqual({}, channel.sync_state)
+
         channel = Channel.create(self.org, self.admin, None, "KWA", None, "1234")
         self.assertEqual(45, channel.tps)
 
