@@ -1,3 +1,6 @@
+## v26.3.229 (2026-11-24)
+ * Read APIToken.deleted_on instead of is_active (#7276)
+
 ## v26.3.228 (2026-11-24)
  * Read an Android channel's sync history from DynamoDB
  * Add APIToken.deleted_on, written alongside is_active and backfilled
