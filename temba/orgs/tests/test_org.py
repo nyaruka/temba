@@ -151,7 +151,7 @@ class OrgTest(TembaTest):
 
     def test_format_datetime(self):
         self.org.timezone = ZoneInfo("America/Mexico_City")
-        self.org.save()
+        self.org.save(update_fields=("timezone",))
 
         date1 = datetime(2000, 1, 1, tzinfo=tzone.utc)
 
@@ -180,7 +180,7 @@ class OrgTest(TembaTest):
 
     def test_get_unique_slug(self):
         self.org.slug = "allo"
-        self.org.save()
+        self.org.save(update_fields=("slug",))
 
         self.assertEqual(Org.get_unique_slug("foo"), "foo")
         self.assertEqual(Org.get_unique_slug("Which part?"), "which-part")
@@ -820,7 +820,7 @@ class OrgTest(TembaTest):
         self.assertEqual(self.org.get_limit(Org.LIMIT_FLOWS), 10_000)
 
         self.org.limits = dict(fields=500, groups=500, contacts=100_000)
-        self.org.save()
+        self.org.save(update_fields=("limits",))
 
         self.assertEqual(self.org.get_limit(Org.LIMIT_FIELDS), 500)
         self.assertEqual(self.org.get_limit(Org.LIMIT_GROUPS), 500)
@@ -832,7 +832,7 @@ class OrgTest(TembaTest):
         self.assertEqual(self.org.api_rates, {})
 
         self.org.api_rates = {"v2.contacts": "10000/hour"}
-        self.org.save()
+        self.org.save(update_fields=("api_rates",))
 
         self.assertEqual(self.org.api_rates, {"v2.contacts": "10000/hour"})
 
@@ -1375,7 +1375,7 @@ class AnonOrgTest(TembaTest):
         super().setUp()
 
         self.org.is_anon = True
-        self.org.save()
+        self.org.save(update_fields=("is_anon",))
 
     def test_contacts(self):
         contact = self.create_contact(None, phone="+250788123123")

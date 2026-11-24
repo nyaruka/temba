@@ -19,7 +19,14 @@ from temba.orgs.views import switch_to_org
 from temba.users.models import User
 from temba.utils import audit
 from temba.utils.fields import SelectMultipleWidget
-from temba.utils.views.mixins import ComponentFormMixin, ContextMenuMixin, ModalFormMixin, SpaMixin, StaffOnlyMixin
+from temba.utils.views.mixins import (
+    ComponentFormMixin,
+    ContextMenuMixin,
+    ModalFormMixin,
+    ScopedUpdateMixin,
+    SpaMixin,
+    StaffOnlyMixin,
+)
 
 
 class OrgCRUDL(SmartCRUDL):
@@ -81,7 +88,7 @@ class OrgCRUDL(SmartCRUDL):
             context["children"] = Org.objects.filter(parent=org, is_active=True).order_by("-created_on", "name")
             return context
 
-    class Suspend(StaffOnlyMixin, ModalFormMixin, SmartUpdateView):
+    class Suspend(StaffOnlyMixin, ModalFormMixin, ScopedUpdateMixin, SmartUpdateView):
         """
         Suspends a workspace, after warning that it cancels the messages waiting to be sent on its channels
         """
@@ -169,7 +176,7 @@ class OrgCRUDL(SmartCRUDL):
                 return reverse("staff.user_update", args=[owner.pk])
             return super().lookup_field_link(context, field, obj)
 
-    class Update(StaffOnlyMixin, ModalFormMixin, ComponentFormMixin, SmartUpdateView):
+    class Update(StaffOnlyMixin, ModalFormMixin, ComponentFormMixin, ScopedUpdateMixin, SmartUpdateView):
         ACTION_UNFLAG = "unflag"
         ACTION_RESTRICT = "restrict"
         ACTION_REACTIVATE = "reactivate"
@@ -358,7 +365,9 @@ class UserCRUDL(SmartCRUDL):
                 _("Delete"), "user-delete", reverse("staff.user_delete", args=[obj.id]), title=_("Delete User")
             )
 
-    class Update(StaffOnlyMixin, ModalFormMixin, ComponentFormMixin, ContextMenuMixin, SmartUpdateView):
+    class Update(
+        StaffOnlyMixin, ModalFormMixin, ComponentFormMixin, ContextMenuMixin, ScopedUpdateMixin, SmartUpdateView
+    ):
         ACTION_VERIFY = "verify"
         ACTION_UNVERIFY = "unverify"
         ACTION_DISABLE_MFA = "disable-mfa"

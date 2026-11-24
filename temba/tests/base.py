@@ -223,7 +223,6 @@ class TembaTest(SmartminTest):
     @classmethod
     def create_user(cls, email, group_names=(), **kwargs):
         user = User.objects.create_user(email=email, password=cls.default_password, **kwargs)
-        user.save()
 
         for group in group_names:
             user.groups.add(Group.objects.get(name=group))
@@ -568,7 +567,7 @@ class TembaTest(SmartminTest):
         }
 
         flow.version_number = definition["spec_version"]
-        flow.save()
+        flow.save(update_fields=("version_number",))
         flow.save_revision(self.admin, definition)
 
         return flow

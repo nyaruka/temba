@@ -71,7 +71,7 @@ class Campaign(OrgAsset):
                 campaign = Campaign.objects.filter(org=org, uuid=campaign_def["uuid"]).first()
                 if campaign:  # pragma: needs cover
                     campaign.name = Campaign.get_unique_name(org, name, ignore=campaign)
-                    campaign.save()
+                    campaign.save(update_fields=("name",))
 
             # fall back to lookups by name
             if not group:
@@ -85,7 +85,7 @@ class Campaign(OrgAsset):
                 campaign = Campaign.create(org, user, campaign_name, group)
             else:
                 campaign.group = group
-                campaign.save()
+                campaign.save(update_fields=("group",))
 
             # deactivate all of our events, we'll recreate these
             for event in campaign.events.all():

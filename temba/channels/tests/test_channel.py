@@ -62,7 +62,7 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
     def test_deactivate(self):
         self.login(self.admin)
         self.tel_channel.is_active = False
-        self.tel_channel.save()
+        self.tel_channel.save(update_fields=("is_active",))
         response = self.client.get(reverse("channels.channel_read", args=[self.tel_channel.uuid]))
         self.assertEqual(404, response.status_code)
 
@@ -481,12 +481,12 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         two_hours_ago = test_date - timedelta(hours=2)
         # make sure our channel is old enough to trigger alerts
         self.tel_channel.created_on = two_hours_ago
-        self.tel_channel.save()
+        self.tel_channel.save(update_fields=("created_on",))
 
         # delayed sync status
         for sync in SyncEvent.objects.all():
             sync.created_on = two_hours_ago
-            sync.save()
+            sync.save(update_fields=("created_on",))
 
         self.create_channel_tally(self.tel_channel, "text:out", date(2020, 1, 19), 1)
         self.create_channel_tally(self.tel_channel, "text:in", date(2020, 1, 20), 2)

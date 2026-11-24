@@ -184,7 +184,12 @@ class TwilioTypeTest(TembaTest):
                 channel = Channel.objects.get(channel_type="T", org=self.org)
                 channel.channel_type = "WAC"
                 channel.schemes = [URN.WHATSAPP_SCHEME]
-                channel.save()
+                channel.save(
+                    update_fields=(
+                        "channel_type",
+                        "schemes",
+                    )
+                )
 
                 # now we can clain the number already used for Twilio WhatsApp
                 response = self.client.post(claim_twilio, dict(country="US", phone_number="12062345678"))
@@ -280,7 +285,7 @@ class TwilioTypeTest(TembaTest):
                     Channel.objects.all().delete()
 
                     self.org.timezone = "America/New_York"
-                    self.org.save()
+                    self.org.save(update_fields=("timezone",))
 
                     response = self.client.get(claim_twilio)
                     self.assertContains(response, "8080")
@@ -301,7 +306,7 @@ class TwilioTypeTest(TembaTest):
         twilio_channel = self.org.channels.all().first()
         # make channel support both sms and voice to check we clear both applications
         twilio_channel.role = Channel.ROLE_SEND + Channel.ROLE_RECEIVE + Channel.ROLE_ANSWER + Channel.ROLE_CALL
-        twilio_channel.save()
+        twilio_channel.save(update_fields=("role",))
         self.assertEqual("T", twilio_channel.channel_type)
 
         with patch("temba.tests.twilio.MockTwilioClient.MockPhoneNumber.update") as mock_numbers:
@@ -334,7 +339,12 @@ class TwilioTypeTest(TembaTest):
         twilio_channel = self.org.channels.all().first()
         twilio_channel.config = config
         twilio_channel.channel_type = "T"
-        twilio_channel.save()
+        twilio_channel.save(
+            update_fields=(
+                "config",
+                "channel_type",
+            )
+        )
 
         update_url = reverse("channels.channel_update", args=[twilio_channel.id])
 
@@ -388,7 +398,12 @@ class TwilioTypeTest(TembaTest):
         twilio_channel = self.org.channels.all().first()
         twilio_channel.config = config
         twilio_channel.channel_type = "T"
-        twilio_channel.save()
+        twilio_channel.save(
+            update_fields=(
+                "config",
+                "channel_type",
+            )
+        )
 
         # mock an authentication failure during the release process
         with patch("temba.tests.twilio.MockTwilioClient.MockPhoneNumbers.update") as mock_numbers:

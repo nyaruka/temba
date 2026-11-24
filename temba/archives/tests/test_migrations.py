@@ -92,7 +92,12 @@ class ClearEmptyUploadsTest(MigrationTest):
         self.d240503 = self.create_archive(Archive.TYPE_MSG, "D", date(2024, 5, 3), [])
         self.d240503.location = f"{settings.BUCKET_PREFIX}-archives:some/key/for/archive.zip"
         self.d240503.hash = "somehashvalue"
-        self.d240503.save()
+        self.d240503.save(
+            update_fields=(
+                "location",
+                "hash",
+            )
+        )
 
     def test_migration(self):
         def assert_upload(archive, exists: bool):

@@ -2416,7 +2416,7 @@ class ContactImport(CreatedByMixin):
 
     def delete(self):
         # delete our source import file
-        self.file.delete()
+        self.file.delete(save=False)
 
         # delete any batches associated with this import
         ContactImportBatch.objects.filter(contact_import=self).delete()

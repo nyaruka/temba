@@ -392,7 +392,7 @@ class TriggerCRUDLTest(TembaTest, CRUDLTestMixin):
     def test_create_missed_call(self):
         # make our channel support ivr
         self.channel.role += Channel.ROLE_CALL + Channel.ROLE_ANSWER
-        self.channel.save()
+        self.channel.save(update_fields=("role",))
 
         flow1 = self.create_flow("Flow 1", flow_type=Flow.TYPE_MESSAGE)
         flow2 = self.create_flow("Flow 2", flow_type=Flow.TYPE_BACKGROUND)

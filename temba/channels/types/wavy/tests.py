@@ -16,7 +16,7 @@ class WavyTypeTest(TembaTest):
         self.assertChannelTypeNotOffered(url)
 
         self.org.timezone = "America/Sao_Paulo"
-        self.org.save()
+        self.org.save(update_fields=("timezone",))
 
         # the new channel picker offers it
         self.assertChannelTypeOffered(url)

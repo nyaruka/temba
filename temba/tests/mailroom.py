@@ -1031,13 +1031,13 @@ def update_urns_locally(contact, urns: list[str]):
         elif not urn.contact or urn.contact != contact:
             urn.contact = contact
             urn.priority = priority
-            urn.save()
+            urn.save(update_fields=("contact", "priority"))
             urns_attached.append(urn)
 
         else:
             if urn.priority != priority:
                 urn.priority = priority
-                urn.save()
+                urn.save(update_fields=("priority",))
             urns_retained.append(urn)
 
         # step down our priority

@@ -35,7 +35,7 @@ from temba.orgs.views.base import BaseDependencyDeleteModal, BaseListComponentVi
 from temba.orgs.views.mixins import OrgObjPermsMixin, OrgPermsMixin
 from temba.utils import audit, countries
 from temba.utils.fields import SelectWidget
-from temba.utils.views.mixins import ComponentFormMixin, ContextMenuMixin, ModalFormMixin, SpaMixin
+from temba.utils.views.mixins import ComponentFormMixin, ContextMenuMixin, ModalFormMixin, ScopedUpdateMixin, SpaMixin
 
 from .models import Channel, ChannelHealth, ChannelLog
 
@@ -1151,7 +1151,7 @@ class ChannelCRUDL(SmartCRUDL):
             response["X-Temba-Success"] = self.get_success_url()
             return response
 
-    class Update(ComponentFormMixin, ModalFormMixin, OrgObjPermsMixin, SmartUpdateView):
+    class Update(ComponentFormMixin, ModalFormMixin, OrgObjPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         submit_button_name = _("Save")
         field_config = {
             "is_enabled": {

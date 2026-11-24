@@ -39,7 +39,7 @@ class ContactExportTest(TembaTest):
 
         # make third a datetime
         self.contactfield_3.value_type = ContactField.TYPE_DATETIME
-        self.contactfield_3.save()
+        self.contactfield_3.save(update_fields=("value_type",))
 
         # start one of our contacts down it
         contact = self.create_contact(
@@ -74,7 +74,7 @@ class ContactExportTest(TembaTest):
         group1 = self.create_group("Poppin Tags", [contact, contact2])
         group2 = self.create_group("Dynamic", query="tel is 1234")
         group2.status = ContactGroup.STATUS_EVALUATING
-        group2.save()
+        group2.save(update_fields=("status",))
 
         # create orphaned URN in scheme that no contacts have a URN for
         ContactURN.objects.create(org=self.org, identity="line:12345", scheme="line", path="12345")
@@ -157,7 +157,7 @@ class ContactExportTest(TembaTest):
 
         # change the order of the fields
         self.contactfield_2.priority = 15
-        self.contactfield_2.save()
+        self.contactfield_2.save(update_fields=("priority",))
 
         with self.assertNumQueries(23):
             sheets, export = self._export(self.org.active_contacts_group, with_groups=[group1])

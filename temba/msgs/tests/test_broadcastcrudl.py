@@ -405,7 +405,7 @@ class BroadcastCRUDLTest(TembaTest, CRUDLTestMixin):
         update_url = reverse("msgs.broadcast_update", args=[broadcast.uuid])
 
         self.org.flow_languages = ["eng", "esp"]
-        self.org.save()
+        self.org.save(update_fields=("flow_languages",))
         update_url = reverse("msgs.broadcast_update", args=[broadcast.uuid])
 
         def get_languages(response):
@@ -449,9 +449,10 @@ class BroadcastCRUDLTest(TembaTest, CRUDLTestMixin):
         # and our base language should now be last
         self.assertEqual("und", languages[-1]["iso"])
 
-        # now mark our secondary language as the base language
+        # now make our secondary language the base language, with no value for the primary language
+        broadcast.translations = {"esp": {"text": "hola"}}
         broadcast.base_language = "esp"
-        broadcast.save()
+        broadcast.save(update_fields=("translations", "base_language"))
 
         # with a secondary language as the base language, it should come first
         response = self.process_wizard(

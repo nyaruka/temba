@@ -96,4 +96,4 @@ class ZenviaWhatsAppType(ChannelType):
 
         channel.config[ZENVIA_STATUS_SUBSCRIPTION_ID] = statusSubscriptionId
 
-        channel.save()
+        channel.save(update_fields=("config",))

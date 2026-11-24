@@ -190,7 +190,7 @@ class TwilioWhatsappTypeTest(TembaTest):
         twilio_channel = self.org.channels.all().first()
         # make channel support both sms and voice to check we clear both applications
         twilio_channel.role = Channel.ROLE_SEND + Channel.ROLE_RECEIVE + Channel.ROLE_ANSWER + Channel.ROLE_CALL
-        twilio_channel.save()
+        twilio_channel.save(update_fields=("role",))
         self.assertEqual("TWA", twilio_channel.channel_type)
         self.assertEqual("TWA", twilio_channel.type.code)
         self.assertEqual("twilio", twilio_channel.template_type.slug)
@@ -290,7 +290,12 @@ class TwilioWhatsappTypeTest(TembaTest):
         twilio_whatsapp = self.org.channels.all().first()
         twilio_whatsapp.config = config
         twilio_whatsapp.channel_type = "TWA"
-        twilio_whatsapp.save()
+        twilio_whatsapp.save(
+            update_fields=(
+                "config",
+                "channel_type",
+            )
+        )
 
         update_url = reverse("channels.channel_update", args=[twilio_whatsapp.id])
 
@@ -336,7 +341,12 @@ class TwilioWhatsappTypeTest(TembaTest):
         channel = self.org.channels.all().first()
         channel.config = config
         channel.channel_type = "TWA"
-        channel.save()
+        channel.save(
+            update_fields=(
+                "config",
+                "channel_type",
+            )
+        )
 
         mock_get.side_effect = [
             RequestException("Network is unreachable", response=MockResponse(100, "")),

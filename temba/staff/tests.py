@@ -16,7 +16,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # make our second org a child
         self.org2.parent = self.org
-        self.org2.save()
+        self.org2.save(update_fields=("parent",))
 
         response = self.assertStaffOnly(read_url)
 
@@ -55,7 +55,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # no menu for inactive orgs
         self.org.is_active = False
-        self.org.save()
+        self.org.save(update_fields=("is_active",))
         self.assertContentMenu(read_url, self.customer_support, [])
 
     def test_list_and_update(self):

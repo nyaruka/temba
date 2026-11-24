@@ -40,6 +40,7 @@ from temba.utils.views.mixins import (
     ComponentFormMixin,
     ContextMenuMixin,
     ModalFormMixin,
+    ScopedUpdateMixin,
     SpaMixin,
 )
 
@@ -809,7 +810,7 @@ class TicketCRUDL(SmartCRUDL):
 
             return JsonResponse({"results": results})
 
-    class Update(ComponentFormMixin, ModalFormMixin, OrgObjPermsMixin, SmartUpdateView):
+    class Update(ComponentFormMixin, ModalFormMixin, OrgObjPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         class Form(forms.ModelForm):
             def __init__(self, **kwargs):
                 super().__init__(**kwargs)
@@ -828,7 +829,7 @@ class TicketCRUDL(SmartCRUDL):
         success_url = "hide"
         submit_button_name = _("Save")
 
-    class Note(ModalFormMixin, ComponentFormMixin, OrgObjPermsMixin, SmartUpdateView):
+    class Note(ModalFormMixin, ComponentFormMixin, OrgObjPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         """
         Creates a note for this contact
         """
