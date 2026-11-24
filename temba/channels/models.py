@@ -655,7 +655,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         """
         Gets the latest sync of this Android channel's phone
         """
-        state = self.sync_state.get("android")
+        state = (self.sync_state or {}).get("android")
         return AndroidSync.from_json(state) if state else None
 
     def is_new(self):
