@@ -42,6 +42,6 @@ def backfill_android_sync_state(apps, schema_editor):
 class Migration(migrations.Migration):
     atomic = False
 
-    dependencies = [("channels", "0229_channel_sync_state_not_null")]
+    dependencies = [("channels", "0230_channel_sync_state_not_null")]
 
     operations = [migrations.RunPython(backfill_android_sync_state, migrations.RunPython.noop)]

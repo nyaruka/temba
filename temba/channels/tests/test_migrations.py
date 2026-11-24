@@ -7,8 +7,8 @@ from temba.tests import MigrationTest
 
 class BackfillAndroidSyncStateTest(MigrationTest):
     app = "channels"
-    migrate_from = "0229_channel_sync_state_not_null"
-    migrate_to = "0230_backfill_android_sync_state"
+    migrate_from = "0230_channel_sync_state_not_null"
+    migrate_to = "0231_backfill_android_sync_state"
 
     def setUpBeforeMigration(self, apps):
         Channel = apps.get_model("channels", "Channel")

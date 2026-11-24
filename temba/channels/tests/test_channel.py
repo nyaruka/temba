@@ -78,6 +78,27 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("very_slow", speed(1))
         self.assertIsNone(speed(1, is_enabled=False))
 
+    def test_last_sync(self):
+        android = Channel.objects.get(id=self.tel_channel.id)
+        self.assertIsNone(android.last_sync)
+
+        # keys we don't know are ignored, and missing or null ones defaulted
+        Channel.objects.filter(id=self.tel_channel.id).update(
+            sync_state={
+                "android": {
+                    "synced_on": "2026-11-24T12:00:00Z",
+                    "power_level": 40,
+                    "retry_message_count": None,
+                    "foo": 1,
+                }
+            }
+        )
+        android = Channel.objects.get(id=self.tel_channel.id)
+        self.assertEqual(datetime(2026, 11, 24, 12, 0, tzinfo=tzone.utc), android.last_sync.synced_on)
+        self.assertEqual(40, android.last_sync.power_level)
+        self.assertEqual(0, android.last_sync.retry_message_count)
+        self.assertEqual("", android.last_sync.network_type)
+
     def test_get_address_display(self):
         self.assertEqual("+250 785 551 212", self.tel_channel.get_address_display())
         self.assertEqual("+250785551212", self.tel_channel.get_address_display(e164=True))

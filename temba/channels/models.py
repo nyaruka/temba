@@ -1430,19 +1430,20 @@ class AndroidSync:
     """
 
     synced_on: datetime
-    power_source: str
-    power_status: str
-    power_level: int
-    network_type: str
-    pending_message_count: int
-    retry_message_count: int
-    incoming_command_count: int
-    outgoing_command_count: int
+    power_source: str = ""
+    power_status: str = ""
+    power_level: int = 0
+    network_type: str = ""
+    pending_message_count: int = 0
+    retry_message_count: int = 0
+    incoming_command_count: int = 0
+    outgoing_command_count: int = 0
 
     @classmethod
     def from_json(cls, data: dict):
-        # anything mailroom has started recording that we don't read yet is ignored
-        values = {f.name: data[f.name] for f in fields(cls) if f.name != "synced_on"}
+        # anything mailroom has started recording that we don't read yet is ignored, and anything missing defaulted, so
+        # one odd state can't break every page that shows channel health
+        values = {f.name: data[f.name] for f in fields(cls) if f.name != "synced_on" and data.get(f.name) is not None}
         return cls(synced_on=iso8601.parse_date(data["synced_on"]), **values)
 
 
