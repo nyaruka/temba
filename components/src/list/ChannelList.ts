@@ -61,12 +61,6 @@ export class ChannelList extends ContentList<ChannelItem> {
       .cell-inner:has(> .channel-name) {
         overflow: visible;
       }
-      .channel-name .name {
-        font-weight: var(--w-medium);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
       tr.row.disabled .cell {
         color: var(--text-3);
       }
@@ -77,10 +71,6 @@ export class ChannelList extends ContentList<ChannelItem> {
       .address {
         color: var(--text-2);
         font-variant-numeric: tabular-nums;
-      }
-      .num {
-        font-variant-numeric: tabular-nums;
-        color: inherit;
       }
       /* the period tip around a sparkline hugs it, so only the sparkline shows it */
       td temba-tip {
@@ -275,7 +265,7 @@ export class ChannelList extends ContentList<ChannelItem> {
       case 'name':
         return html`<span class="channel-name"
           >${renderChannelLogo(item.type, item.name, 24)}<span
-            class="name"
+            class="item-name"
             title=${item.name || ''}
             >${item.name || ''}</span
           ></span

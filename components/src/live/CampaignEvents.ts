@@ -9,13 +9,12 @@ import { EndpointMonitorElement } from '../store/EndpointMonitorElement';
 import { Icon } from '../Icons';
 import { designTokens } from '../styles/designTokens';
 import { formatCount } from '../utils';
+import { headerPanelStyles, panelStyles } from '../styles/pageChrome';
 import {
-  buttonChrome,
-  buttonChromeActive,
-  buttonChromeDestructive,
-  buttonChromeDestructiveHover,
-  buttonChromeHover
-} from '../styles/buttonChrome';
+  detailDialogStyles,
+  renderDetailButton,
+  renderDetailDialog
+} from '../list/detailDialog';
 
 interface CampaignEventsResponse {
   events: CampaignScheduleEvent[];
@@ -141,23 +140,16 @@ export class CampaignEvents extends EndpointMonitorElement {
       }
 
       /* The header is the same flush surface bar the fill-window lists
-         render — full width, the lists' 12px inset, no card chrome —
-         so a list page and this read page share one header treatment. */
-      .header-panel {
-        background: var(--surface);
-        padding: 0 12px;
-        border-bottom: 1px solid var(--border);
-      }
+         render, so a list page and this read page share one header
+         treatment. */
+      ${headerPanelStyles}
 
       /* Card panel — the same surface treatment as the content lists so
          the read page reads as part of the same family. The anchor dots
          and tint mixes paint with the widget background, so inside a
          card that must be the card surface. */
+      ${panelStyles}
       .panel {
-        background: var(--surface);
-        border-radius: var(--r);
-        overflow: hidden;
-        box-shadow: var(--shadow-1);
         --color-widget-bg: var(--surface);
       }
 
@@ -382,49 +374,8 @@ export class CampaignEvents extends EndpointMonitorElement {
         overflow: hidden;
       }
 
-      /* the detail modal stands in for an event read page - page-like, no
-         colored header bar. The header and gutter pin to the top and bottom
-         with full-bleed rules; the body between them scrolls when needed. */
-      .detail {
-        display: flex;
-        flex-direction: column;
-      }
-
-      .detail-body {
-        display: flex;
-        flex-direction: column;
-        gap: 1.25em;
-        overflow-y: auto;
-        max-height: calc(100vh - 300px);
-        padding: 1.25em 1.75em;
-      }
-
-      /* header and gutter share uniform padding on all sides, with the
-         title vertically centered against the action buttons */
-      .detail-header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 1em;
-        border-bottom: 1px solid var(--border, #e4e7ec);
-      }
-
-      .detail-title {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-
-      .detail-campaign {
-        font-size: 15.5px;
-        font-weight: var(--w-semibold, 600);
-        color: var(--text-1);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
+      /* the detail modal stands in for an event read page */
+      ${detailDialogStyles}
 
       /* the schedule line leads the body - the offset, anchor field and
          delivery hour on the left, the labeled scheduled count on the right */
@@ -453,34 +404,6 @@ export class CampaignEvents extends EndpointMonitorElement {
         --icon-color: var(--text-3, #7b8593);
       }
 
-      .detail-actions {
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      /* match the page header's content-menu buttons so the modal's actions
-         read like page actions */
-      .menu-button {
-        ${buttonChrome}
-      }
-
-      .menu-button:hover {
-        ${buttonChromeHover}
-      }
-      .menu-button:active {
-        ${buttonChromeActive}
-      }
-
-      .menu-button.destructive {
-        ${buttonChromeDestructive}
-      }
-
-      .menu-button.destructive:hover {
-        ${buttonChromeDestructiveHover}
-      }
-
       /* the event's action, contained with a leading type label. Children
          hug their content so a flow pill doesn't stretch the box's width. */
       .detail-action {
@@ -506,37 +429,8 @@ export class CampaignEvents extends EndpointMonitorElement {
         }
       }
 
-      /* the close (✕) in the header's upper right - the square
-         hover-wash button treatment (the pager buttons'), sitting
-         just outboard of the action buttons */
-      .detail-close {
-        flex-shrink: 0;
-        margin-left: -4px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 28px;
-        height: 28px;
-        border-radius: var(--r-sm);
-        color: var(--text-3, #7b8593);
-        cursor: pointer;
-        user-select: none;
-      }
-      .detail-close:hover {
-        background: var(--sunken);
-        color: var(--text-1);
-      }
-      .detail-close temba-icon {
-        --icon-color: currentColor;
-      }
-
       .detail-section-title {
         margin-top: 0.25em;
-        font-size: 0.75em;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--text-3, #7b8593);
       }
 
       /* recent contacts - a simple name/time table */
@@ -1015,122 +909,78 @@ export class CampaignEvents extends EndpointMonitorElement {
   // and delete actions, the content, and the recent contacts
   private renderDetail(): TemplateResult {
     const event = this.detailEvent;
+    if (!event) {
+      return renderDetailDialog(null, this.handleDetailClosed);
+    }
 
-    return html`
-      <temba-dialog
-        size="xlarge"
-        variant="flat"
-        primaryButtonName=""
-        cancelButtonName=""
-        hideOnClick
-        ?open=${!!event}
-        @temba-dialog-hidden=${this.handleDetailClosed}
-        @keyup=${(e: KeyboardEvent) => {
-          if (e.key === 'Escape') {
-            this.handleDetailClosed();
-          }
-        }}
-      >
-        ${event
-          ? html`
-              <div class="detail">
-                <div class="detail-header">
-                  <div class="detail-title">
-                    <div class="detail-campaign">
-                      ${this.data?.campaign?.name || this.headerTitle}
-                    </div>
-                  </div>
-                  ${this.canEdit(event) || this.canDelete()
-                    ? html`<div class="detail-actions">
-                        ${this.canEdit(event)
-                          ? html`<button
-                              class="menu-button"
-                              @click=${this.handleEditClicked}
-                            >
-                              ${this.lang_edit}
-                            </button>`
-                          : null}
-                        ${this.canDelete()
-                          ? html`<button
-                              class="menu-button destructive"
-                              @click=${this.handleDeleteClicked}
-                            >
-                              ${this.lang_delete}
-                            </button>`
-                          : null}
-                      </div>`
-                    : null}
-                  <div
-                    class="detail-close"
-                    role="button"
-                    tabindex="0"
-                    aria-label="Close"
-                    @click=${this.handleDetailClosed}
-                    @keydown=${(e: KeyboardEvent) =>
-                      this.handleActivationKey(e, this.handleDetailClosed)}
-                  >
-                    <temba-icon name=${Icon.close} size="1.4"></temba-icon>
-                  </div>
-                </div>
+    return renderDetailDialog(
+      {
+        title: this.data?.campaign?.name || this.headerTitle,
+        actions:
+          this.canEdit(event) || this.canDelete()
+            ? html`${this.canEdit(event)
+                ? renderDetailButton(this.lang_edit, () =>
+                    this.handleEditClicked()
+                  )
+                : null}${this.canDelete()
+                ? renderDetailButton(
+                    this.lang_delete,
+                    () => this.handleDeleteClicked(),
+                    true
+                  )
+                : null}`
+            : null,
+        body: html`
+          <div class="detail-schedule-row">
+            <div class="detail-schedule">
+              <span
+                >${event.offset === 0
+                  ? capitalize(event.offset_display)
+                  : event.offset_display}</span
+              >
+              ${this.renderFieldPill(event.relative_to)}
+              ${event.delivery_hour_display
+                ? html`<span>${event.delivery_hour_display}</span>`
+                : null}
+            </div>
+            <div
+              class="detail-count"
+              title=${event.status === 'scheduling'
+                ? ''
+                : this.lang_scheduled_contacts}
+            >
+              ${event.status === 'scheduling'
+                ? html`${this.lang_scheduling}`
+                : html`<temba-icon name=${Icon.contact} size="0.9"></temba-icon>
+                    ${formatCount(event.count || 0)} ${this.lang_scheduled}`}
+            </div>
+          </div>
 
-                <div class="detail-body">
-                  <div class="detail-schedule-row">
-                    <div class="detail-schedule">
-                      <span
-                        >${event.offset === 0
-                          ? capitalize(event.offset_display)
-                          : event.offset_display}</span
-                      >
-                      ${this.renderFieldPill(event.relative_to)}
-                      ${event.delivery_hour_display
-                        ? html`<span>${event.delivery_hour_display}</span>`
-                        : null}
-                    </div>
-                    <div
-                      class="detail-count"
-                      title=${event.status === 'scheduling'
-                        ? ''
-                        : this.lang_scheduled_contacts}
-                    >
-                      ${event.status === 'scheduling'
-                        ? html`${this.lang_scheduling}`
-                        : html`<temba-icon
-                              name=${Icon.contact}
-                              size="0.9"
-                            ></temba-icon>
-                            ${formatCount(event.count || 0)}
-                            ${this.lang_scheduled}`}
-                    </div>
-                  </div>
+          <div class="detail-action">
+            <div class="detail-section-title">
+              ${event.type === 'message'
+                ? this.lang_send_message
+                : this.lang_start_flow}
+            </div>
+            ${event.type === 'message'
+              ? html`<temba-expression-highlight
+                  >${event.message}</temba-expression-highlight
+                >`
+              : event.flow
+                ? html`<temba-label
+                    type="flow"
+                    clickable
+                    @click=${(e: Event) => this.handlePillClicked(e, event)}
+                    >${event.flow.name}</temba-label
+                  >`
+                : null}
+          </div>
 
-                  <div class="detail-action">
-                    <div class="detail-section-title">
-                      ${event.type === 'message'
-                        ? this.lang_send_message
-                        : this.lang_start_flow}
-                    </div>
-                    ${event.type === 'message'
-                      ? html`<temba-expression-highlight
-                          >${event.message}</temba-expression-highlight
-                        >`
-                      : event.flow
-                        ? html`<temba-label
-                            type="flow"
-                            clickable
-                            @click=${(e: Event) =>
-                              this.handlePillClicked(e, event)}
-                            >${event.flow.name}</temba-label
-                          >`
-                        : null}
-                  </div>
-
-                  ${this.renderFires()}
-                </div>
-              </div>
-            `
-          : null}
-      </temba-dialog>
-    `;
+          ${this.renderFires()}
+        `
+      },
+      this.handleDetailClosed
+    );
   }
 
   public render(): TemplateResult {
