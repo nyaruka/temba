@@ -371,3 +371,45 @@ class PerWorkspaceStatusTest(MigrationTest):
 
         assert_org(self.root5, "S", "S")
         assert_org(self.child5, "S", "S")
+
+
+class ParentStatusReasonTest(MigrationTest):
+    app = "orgs"
+    migrate_from = "0216_per_workspace_status"
+    migrate_to = "0217_parent_status_reason"
+
+    def setUpBeforeMigration(self, apps):
+        OldOrg = apps.get_model("orgs", "Org")
+
+        def create(name, status, reason, *, parent=None):
+            return OldOrg.objects.create(
+                name=name,
+                timezone="UTC",
+                parent_id=parent.id if parent else None,
+                status=status,
+                status_reason=reason,
+                status_changed_on=timezone.now(),
+                created_by_id=self.admin.id,
+                modified_by_id=self.admin.id,
+            )
+
+        self.root1 = create("Root 1", "R", "B")
+        self.child1a = create("Child 1A", "R", "B", parent=self.root1)
+        self.child1b = create("Child 1B", "R", "F", parent=self.root1)
+        self.root2 = create("Root 2", "S", "L")
+        self.child2 = create("Child 2", "S", "L", parent=self.root2)
+        self.root3 = create("Root 3", "S", "S")
+        self.child3 = create("Child 3", "S", "S", parent=self.root3)
+
+    def test_migration(self):
+        def assert_org(org, status, reason):
+            org = Org.objects.get(id=org.id)
+            self.assertEqual((status, reason), (org.status, org.status_reason))
+
+        assert_org(self.root1, "R", "B")
+        assert_org(self.child1a, "R", "P")
+        assert_org(self.child1b, "R", "F")
+        assert_org(self.root2, "S", "L")
+        assert_org(self.child2, "S", "P")
+        assert_org(self.root3, "S", "S")
+        assert_org(self.child3, "S", "S")

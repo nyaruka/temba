@@ -215,11 +215,15 @@ class OrgTest(TembaTest):
 
         self.assertIsNone(self.org.send_blocker)
 
+        # the parent reason is only given to children by their parent
+        with self.assertRaises(AssertionError):
+            org1_child1.restrict(Org.RESTRICTED_PARENT)
+
         self.org.restrict(Org.RESTRICTED_BILLING, suspends_on=suspends_on)
 
         assert_org(self.org, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
-        assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
-        assert_org(org1_child2, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
+        assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_PARENT, suspends_on)
+        assert_org(org1_child2, Org.STATUS_RESTRICTED, Org.RESTRICTED_PARENT, suspends_on)
         assert_org(self.org2, Org.STATUS_ACTIVE, changed=False)
         assert_signalled(
             (self.org, Org.STATUS_RESTRICTED),
@@ -230,7 +234,7 @@ class OrgTest(TembaTest):
 
         # new children get their parent's status
         org1_child3 = self.org.create_new(self.admin, "Child 3", tzone.utc, as_child=True)
-        assert_org(org1_child3, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
+        assert_org(org1_child3, Org.STATUS_RESTRICTED, Org.RESTRICTED_PARENT, suspends_on)
 
         self.org.restrict(Org.RESTRICTED_STAFF)  # noop as already restricted
 
@@ -241,12 +245,12 @@ class OrgTest(TembaTest):
         self.org.suspend()
 
         assert_org(self.org, Org.STATUS_SUSPENDED, Org.RESTRICTED_BILLING)
-        assert_org(org1_child1, Org.STATUS_SUSPENDED, Org.RESTRICTED_BILLING)
-        assert_org(org1_child2, Org.STATUS_SUSPENDED, Org.RESTRICTED_BILLING)
+        assert_org(org1_child1, Org.STATUS_SUSPENDED, Org.RESTRICTED_PARENT)
+        assert_org(org1_child2, Org.STATUS_SUSPENDED, Org.RESTRICTED_PARENT)
         assert_org(self.org2, Org.STATUS_ACTIVE, changed=False)
 
         org1_child4 = self.org.create_new(self.admin, "Child 4", tzone.utc, as_child=True)
-        assert_org(org1_child4, Org.STATUS_SUSPENDED, Org.RESTRICTED_BILLING)
+        assert_org(org1_child4, Org.STATUS_SUSPENDED, Org.RESTRICTED_PARENT)
         assert_signalled(
             (self.org, Org.STATUS_SUSPENDED),
             (org1_child1, Org.STATUS_SUSPENDED),
@@ -326,7 +330,7 @@ class OrgTest(TembaTest):
         self.org.restrict(Org.RESTRICTED_BILLING, suspends_on=suspends_on)
 
         assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
-        assert_org(org1_child2, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
+        assert_org(org1_child2, Org.STATUS_RESTRICTED, Org.RESTRICTED_PARENT, suspends_on)
         assert_signalled(
             (self.org, Org.STATUS_RESTRICTED),
             (org1_child2, Org.STATUS_RESTRICTED),
@@ -336,15 +340,15 @@ class OrgTest(TembaTest):
 
         # and when the flag is lifted, the child goes back to sharing its parent's restriction
         org1_child1.unflag()
-        assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
+        assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_PARENT, suspends_on)
         assert_signalled((org1_child1, Org.STATUS_RESTRICTED))
 
         # flagging replaces a billing or limits restriction, but children keep it until their parent is active again
         self.org.flag()
 
         assert_org(self.org, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
-        assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
-        assert_org(org1_child2, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
+        assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_PARENT, suspends_on)
+        assert_org(org1_child2, Org.STATUS_RESTRICTED, Org.RESTRICTED_PARENT, suspends_on)
 
         assert_signalled((self.org, Org.STATUS_RESTRICTED))
 
@@ -453,8 +457,15 @@ class OrgTest(TembaTest):
             self.org.suspend(Org.RESTRICTED_STAFF)
         self.assertEqual(set(), interrupted())
 
-        # but a billing suspension cascades, so the children's channels are interrupted too
+        # but a billing suspension cascades, so the children's channels are interrupted too, except those of a child
+        # already suspended by staff
         self.org.reactivate()
+        suspended_child = self.org.create_new(self.admin, "Suspended", tzone.utc, as_child=True)
+        self.create_channel("T", "Suspended Twilio", "+250785551316", org=suspended_child)
+        with self.captureOnCommitCallbacks(execute=True):
+            suspended_child.suspend(Org.RESTRICTED_STAFF)
+        interrupted()
+
         self.org.restrict(Org.RESTRICTED_BILLING)
         with self.captureOnCommitCallbacks(execute=True):
             self.org.suspend()
