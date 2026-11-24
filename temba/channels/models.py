@@ -658,6 +658,23 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         state = self.sync_state.get("android")
         return AndroidSync.from_json(state) if state else None
 
+    def get_sync_history(self, limit: int = 20) -> list["AndroidSync"]:
+        """
+        Gets the latest syncs of this Android channel's phone, newest first, from the history mailroom keeps of them
+        """
+        syncs, after_sk = [], None
+
+        # a channel can be moved between workspaces, and its syncs in another workspace aren't this one's business, so
+        # we keep paging past those until we have enough of this one's
+        while True:
+            items, _, after_sk = dynamo.merged_page_query(
+                dynamo.MAIN, [f"cha#{self.uuid}"], desc=True, limit=limit, after_sk=after_sk
+            )
+            syncs.extend(AndroidSync.from_json(i["Data"]) for i in items if i["OrgID"] == self.org_id)
+
+            if len(syncs) >= limit or not after_sk:
+                return syncs[:limit]
+
     def is_new(self):
         # is this channel newer than an hour
         return self.created_on > timezone.now() - timedelta(hours=1) or not self.last_sync

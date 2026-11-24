@@ -1,6 +1,6 @@
 import copy
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from functools import wraps
 from io import BytesIO
 from pathlib import Path
@@ -767,6 +767,33 @@ class TembaTest(SmartminTest):
 
         channel.refresh_from_db(fields=("sync_state",))
         channel.__dict__.pop("last_sync", None)
+
+    def add_android_sync_history(self, channel, *, synced_on=None, **kwargs):
+        """
+        Adds a sync to the history of an Android channel's phone, as mailroom writes it to DynamoDB
+        """
+        synced_on = synced_on or timezone.now()
+        data = {
+            "synced_on": synced_on.isoformat(),
+            "power_source": "AC",
+            "power_status": "FUL",
+            "power_level": 100,
+            "network_type": "WIFI",
+            "pending_message_count": 0,
+            "retry_message_count": 0,
+            "incoming_command_count": 0,
+            "outgoing_command_count": 0,
+            **kwargs,
+        }
+        dynamo.MAIN.put_item(
+            Item={
+                "PK": f"cha#{channel.uuid}",
+                "SK": f"syn#{uuid7(synced_on)}",
+                "OrgID": channel.org_id,
+                "TTL": int((synced_on + timedelta(days=7)).timestamp()),
+                "Data": data,
+            }
+        )
 
     def create_channel_log(self, channel, log_type: str, *, http_logs=(), errors=()) -> dict:
         def is_error():

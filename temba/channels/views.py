@@ -1084,7 +1084,7 @@ class ChannelCRUDL(SmartCRUDL):
 
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
-            context["sync_events"] = self.object.sync_events.order_by("-created_on")[:20]
+            context["syncs"] = self.object.get_sync_history()
             return context
 
     class FacebookWhitelist(ComponentFormMixin, ModalFormMixin, OrgObjPermsMixin, SmartModelActionView):

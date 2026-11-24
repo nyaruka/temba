@@ -764,11 +764,30 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
 
         self.assertRequestDisallowed(syncs_url, [None, self.agent, self.admin2])
 
-        SyncEvent.create(
-            self.tel_channel, dict(p_sts="CHA", p_src="BAT", p_lvl="60", net="UMTS", pending=[], retry=[]), []
-        )
         response = self.assertReadFetch(syncs_url, [self.editor, self.admin])
-        self.assertEqual(1, len(response.context["sync_events"]))
+        self.assertEqual([], response.context["syncs"])
+        self.assertContains(response, "The phone hasn't synced yet.")
+
+        # added out of order, but shown newest first
+        now = timezone.now()
+        self.add_android_sync_history(
+            self.tel_channel, synced_on=now - timedelta(minutes=10), power_level=70, power_status="CHA"
+        )
+        self.add_android_sync_history(self.tel_channel, synced_on=now - timedelta(minutes=20), power_level=60)
+        self.add_android_sync_history(self.tel_channel, synced_on=now - timedelta(minutes=5), power_level=80)
+
+        # syncs of the same phone in another workspace aren't shown
+        self.tel_channel.org = self.org2
+        self.add_android_sync_history(self.tel_channel, synced_on=now - timedelta(minutes=1), power_level=90)
+        self.tel_channel.org = self.org
+
+        response = self.assertReadFetch(syncs_url, [self.editor, self.admin])
+        self.assertEqual([80, 70, 60], [s.power_level for s in response.context["syncs"]])
+
+        # and newer syncs from another workspace don't crowd out older ones from this one
+        self.assertEqual([80, 70], [s.power_level for s in self.tel_channel.get_sync_history(limit=2)])
+        self.assertContains(response, "70%")
+        self.assertContains(response, "charging")
 
         # only Android channels sync with a phone
         self.assertRequestDisallowed(reverse("channels.channel_syncs", args=[self.facebook_channel.uuid]), [self.admin])
