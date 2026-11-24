@@ -78,6 +78,27 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("very_slow", speed(1))
         self.assertIsNone(speed(1, is_enabled=False))
 
+    def test_last_sync(self):
+        android = Channel.objects.get(id=self.tel_channel.id)
+        self.assertIsNone(android.last_sync)
+
+        # keys we don't know are ignored, and missing or null ones defaulted
+        Channel.objects.filter(id=self.tel_channel.id).update(
+            sync_state={
+                "android": {
+                    "synced_on": "2026-11-24T12:00:00Z",
+                    "power_level": 40,
+                    "retry_message_count": None,
+                    "foo": 1,
+                }
+            }
+        )
+        android = Channel.objects.get(id=self.tel_channel.id)
+        self.assertEqual(datetime(2026, 11, 24, 12, 0, tzinfo=tzone.utc), android.last_sync.synced_on)
+        self.assertEqual(40, android.last_sync.power_level)
+        self.assertEqual(0, android.last_sync.retry_message_count)
+        self.assertEqual("", android.last_sync.network_type)
+
     def test_get_address_display(self):
         self.assertEqual("+250 785 551 212", self.tel_channel.get_address_display())
         self.assertEqual("+250785551212", self.tel_channel.get_address_display(e164=True))
@@ -444,17 +465,10 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
             self.assertFalse(self.tel_channel.is_send_paused())
 
     def test_read(self):
-        SyncEvent.create(
-            self.tel_channel,
-            dict(p_sts="CHA", p_src="BAT", p_lvl="60", net="UMTS", pending=[], retry=[]),
-            [],
+        self.set_android_sync(
+            self.tel_channel, power_status="CHA", power_source="BAT", power_level=60, network_type="UMTS"
         )
-        SyncEvent.create(
-            self.tel_channel,
-            dict(p_sts="FUL", p_src="AC", p_lvl="100", net="WIFI", pending=[], retry=[]),
-            [],
-        )
-        self.assertEqual(2, SyncEvent.objects.all().count())
+        self.set_android_sync(self.tel_channel, power_level=100, pending_message_count=2)
 
         # non-org users can't view our channels
         self.login(self.non_org_user)
@@ -474,6 +488,7 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
 
         # an Android channel shows its phone and can open its syncs, but has no logs, setup or templates
         self.assertEqual(100, response.context["last_sync"].power_level)
+        self.assertContains(response, "2 messages waiting to send")
         self.assertEqual({"activity", "syncs"}, set(response.context["sheets"]))
 
         # it hasn't sent anything to have failed, so has no failures card, just the messages card
@@ -487,9 +502,7 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.tel_channel.save(update_fields=("created_on",))
 
         # delayed sync status
-        for sync in SyncEvent.objects.all():
-            sync.created_on = two_hours_ago
-            sync.save(update_fields=("created_on",))
+        self.set_android_sync(self.tel_channel, synced_on=two_hours_ago)
 
         self.create_channel_tally(self.tel_channel, "text:out", date(2020, 1, 19), 1)
         self.create_channel_tally(self.tel_channel, "text:in", date(2020, 1, 20), 2)

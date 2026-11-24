@@ -717,16 +717,24 @@ class EndpointsTest(APITestMixin, TembaTest):
         self.create_channel_tally(recovering, "text:out", today, 100)
         self.create_channel_tally(recovering, "text:failed", today, 1)
 
+        # and a phone that's stopped syncing, which needs no read beyond the channel itself
+        phone = self.create_channel("A", "Phone", "+250788123123")
+        phone.created_on = timezone.now() - timedelta(days=1)
+        phone.save(update_fields=("created_on",))
+        self.set_android_sync(phone, synced_on=timezone.now() - timedelta(hours=2))
+
         # prefetched health is the same as each channel's own, and takes the same few reads however many channels
         channels = list(Channel.objects.filter(org=self.org, is_active=True))
-        with self.assertNumQueries(6):
+        with self.assertNumQueries(5):
             Channel.prefetch_health(channels)
         with self.assertNumQueries(0):
             prefetched = [c.health for c in channels]
 
         self.assertEqual([Channel.objects.get(id=c.id).health for c in channels], prefetched)
-        self.assertEqual({"Ready", "Unhealthy", "Recovering", "Disabled"}, {str(h.value) for h in prefetched})
-        Channel.objects.filter(id=recovering.id).update(is_active=False)  # only needed here
+        self.assertEqual(
+            {"Ready", "Unhealthy", "Recovering", "Disabled", "Not syncing"}, {str(h.value) for h in prefetched}
+        )
+        Channel.objects.filter(id__in=(recovering.id, phone.id)).update(is_active=False)  # only needed here
 
         # an empty page has nothing to prefetch
         with self.assertNumQueries(0):

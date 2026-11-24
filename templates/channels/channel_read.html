@@ -36,7 +36,7 @@
         <temba-icon name="alert_warning" size="1.1"></temba-icon>
         <div class="dash-banner-text">
           <div class="dash-banner-title">
-            {% blocktrans trimmed with since=last_sync.created_on|timesince %}
+            {% blocktrans trimmed with since=last_sync.synced_on|timesince %}
               The phone hasn't synced for {{ since }}
             {% endblocktrans %}
           </div>
@@ -137,7 +137,7 @@
               <small>{% trans "battery" %}</small>
             </span>
             <span class="dash-card-note">
-              {% blocktrans trimmed with since=last_sync.created_on|timesince network=last_sync.network_type %}
+              {% blocktrans trimmed with since=last_sync.synced_on|timesince network=last_sync.network_type %}
                 On {{ network }}, synced {{ since }} ago
               {% endblocktrans %}
             </span>
