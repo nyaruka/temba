@@ -1,4 +1,4 @@
-import { TemplateResult, html, css } from 'lit';
+import { html, css } from 'lit';
 import { property } from 'lit/decorators.js';
 import { ifDefined } from 'lit-html/directives/if-defined.js';
 import { styleMap } from 'lit-html/directives/style-map.js';
@@ -413,11 +413,6 @@ export class TextInput extends FieldElement {
   public focus(): void {
     super.focus();
     this.handleContainerFocus();
-  }
-
-  // TODO make this a formelement and have contactsearch set the root
-  public render(): TemplateResult {
-    return this.renderField();
   }
 
   protected renderWidget() {

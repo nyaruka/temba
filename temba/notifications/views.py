@@ -24,7 +24,7 @@ class NotificationCRUDL(SmartCRUDL):
             return self.request.user.is_authenticated
 
         def derive_queryset(self, **kwargs):
-            return self.request.user.notifications.filter(org=self.request.org)
+            return self.request.user.notifications.filter(org=self.request.org).registered()
 
         def render_to_response(self, context, **response_kwargs):
             obj = self.get_object()
@@ -43,12 +43,13 @@ class IncidentCRUDL(SmartCRUDL):
         menu_path = "/settings/incidents"
 
         def get_queryset(self, **kwargs):
-            return super().get_queryset(**kwargs).filter(org=self.request.org).exclude(ended_on=None)
+            return super().get_queryset(**kwargs).registered().filter(org=self.request.org).exclude(ended_on=None)
 
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
             context["ongoing"] = (
-                Incident.objects.filter(org=self.request.org, ended_on=None)
+                Incident.objects.registered()
+                .filter(org=self.request.org, ended_on=None)
                 .select_related("org", "channel")
                 .order_by("-started_on")
             )

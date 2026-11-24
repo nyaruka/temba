@@ -1,5 +1,5 @@
 import { css, html, PropertyValues, TemplateResult } from 'lit';
-import { property } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { Contact, CustomEventType } from '../interfaces';
 import { Events } from '../events/eventRenderers';
@@ -29,6 +29,16 @@ export class ContactName extends RapidElement {
   @property({ type: Number, attribute: 'icon-size' })
   size = 20;
 
+  // leads with the contact's avatar, with the URN's scheme inset on it,
+  // rather than the scheme on its own
+  @property({ type: Boolean })
+  avatar = false;
+
+  // the contact's own name for their avatar's initials - a watched contact
+  // without one shows its ref or URN as its name, which has no initials
+  @state()
+  private avatarName: string = null;
+
   private watch: RealtimeSubscription = null;
   private watchedContact: string = null;
 
@@ -50,6 +60,10 @@ export class ContactName extends RapidElement {
 
       temba-urn {
         margin-right: 0.2em;
+      }
+
+      temba-contact-avatar {
+        margin-right: 0.6em;
       }
 
       .name {
@@ -110,6 +124,7 @@ export class ContactName extends RapidElement {
     ) {
       this.name = null;
       this.urn = null;
+      this.avatarName = null;
       this.displayedContact = null;
     }
     this.watchedContact = target;
@@ -129,6 +144,7 @@ export class ContactName extends RapidElement {
       // this delivery is an event or an initial value. Anon workspaces have
       // no names, show the contact's ref instead
       this.name = contact.name || contact.ref || null;
+      this.avatarName = contact.name || null;
 
       // show the URN that will be used when messaging the contact, falling
       // back to their highest priority URN if none are sendable
@@ -139,6 +155,7 @@ export class ContactName extends RapidElement {
     } else if (event && event.type === Events.CONTACT_NAME_CHANGED) {
       // a live event can outrun the initial fetch - show the name we have
       this.name = event.name || null;
+      this.avatarName = this.name;
       this.displayedContact = this.watchedContact;
     }
   }
@@ -157,9 +174,17 @@ export class ContactName extends RapidElement {
   }
 
   public render(): TemplateResult {
-    const urn = this.urn
-      ? html`<temba-urn size=${this.size} urn=${this.urn}></temba-urn>`
-      : null;
+    // a contact we're watching names its avatar once it's arrived, one set
+    // explicitly goes by the name it was given
+    const avatarName = this.contact ? this.avatarName : this.name;
+    const urn = this.avatar
+      ? html`<temba-contact-avatar
+          name=${avatarName || ''}
+          scheme=${this.urn ? this.urn.split(':')[0] : ''}
+        ></temba-contact-avatar>`
+      : this.urn
+        ? html`<temba-urn size=${this.size} urn=${this.urn}></temba-urn>`
+        : null;
     return html`
       ${urn}
       <div class="name">

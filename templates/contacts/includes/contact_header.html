@@ -1,0 +1,26 @@
+{% comment %}
+  A contact's avatar and name, with the page's content menu, heading their chat card - goes in a
+  temba-card-layout's header slot so the name and chat read as one card.
+
+  contact_uuid: the contact's uuid, or leave it off for a page that points the name at its contact itself
+  back: adds a back button, shown on mobile, that calls the page's handleContactChanged()
+  name_link: makes the name clickable, calling the page's handleNameClicked()
+{% endcomment %}
+<div slot="header" class="contact-header">
+  {% if back %}
+    {# outside the page header so the hover ring isn't clipped by its title's text truncation #}
+    <temba-icon size="1.2" class="back-button" name="arrow_left" clickable onclick="handleContactChanged()"> </temba-icon>
+  {% endif %}
+  <temba-page-header id="page-header" content-menu-endpoint="{{ request.path }}" -temba-selection="handleContentMenuSelected(event)">
+    <div slot="title" class="flex" style="align-items: center">
+      <temba-contact-name
+        {% if contact_uuid %}contact="{{ contact_uuid }}"{% endif %}
+        -temba-refreshed="handleContactRefreshed"
+        avatar
+        icon-size="16"
+        {% if name_link and org_perms.contacts.contact_read %}onclick="handleNameClicked()" class="clickable"{% endif %}
+      >
+      </temba-contact-name>
+    </div>
+  </temba-page-header>
+</div>

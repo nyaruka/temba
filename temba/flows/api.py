@@ -22,7 +22,7 @@ class FlowsEndpoint(SearchLengthMixin, ListAPIMixin, BaseEndpoint):
     serializer_class = ModelAsJsonSerializer
     pagination_class = ListPagination
 
-    # the run statuses summed for each sortable count column ("status:" scopes on FlowActivityCount)
+    # the run statuses summed for each sortable count column ("status:" scopes on FlowTally)
     SORT_STATUSES = {
         "runs": None,  # all statuses
         "ongoing": (FlowRun.STATUS_ACTIVE, FlowRun.STATUS_WAITING),
@@ -65,14 +65,15 @@ class FlowsEndpoint(SearchLengthMixin, ListAPIMixin, BaseEndpoint):
         if key == "name":
             order = Lower("name").desc() if desc else Lower("name").asc()
         elif key in self.SORT_STATUSES:
-            # runs/ongoing are sums of the per-status run counts — annotate so the database can order by them
+            # runs/ongoing are sums of the per-status run tallies — annotate so the database can order by them. This
+            # only sees flushed tallies, not what's still buffered in Valkey, but that lags by seconds.
             statuses = self.SORT_STATUSES[key]
             scopes = (
-                Q(counts__scope__in=[f"status:{s}" for s in statuses])
+                Q(tallies__scope__in=[f"status:{s}" for s in statuses])
                 if statuses
-                else Q(counts__scope__startswith="status:")
+                else Q(tallies__scope__startswith="status:")
             )
-            qs = qs.annotate(sort_count=Coalesce(Sum("counts__count", filter=scopes), Value(0)))
+            qs = qs.annotate(sort_count=Coalesce(Sum("tallies__count", filter=scopes), Value(0)))
             order = "-sort_count" if desc else "sort_count"
         else:
             order = default_order

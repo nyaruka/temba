@@ -10,7 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 from temba.locations.models import AdminBoundary, BoundaryAlias
 from temba.orgs.views.mixins import OrgPermsMixin
 from temba.utils import json
-from temba.utils.views.mixins import ContextMenuMixin, SpaMixin
+from temba.utils.views.mixins import ContextMenuMixin, ScopedUpdateMixin, SpaMixin
 
 
 class BoundaryCRUDL(SmartCRUDL):
@@ -56,7 +56,7 @@ class BoundaryCRUDL(SmartCRUDL):
                 return HttpResponse(self.object.get_children_geojson(), content_type="application/json")
             return HttpResponse(self.object.get_geojson(), content_type="application/json")
 
-    class Boundaries(OrgPermsMixin, SmartUpdateView):
+    class Boundaries(OrgPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         @csrf_exempt
         def dispatch(self, *args, **kwargs):
             return super().dispatch(*args, **kwargs)

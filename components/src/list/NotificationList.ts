@@ -70,12 +70,7 @@ export class NotificationList extends TembaList {
       const color = '#333';
 
       if (notification.type === 'incident:started') {
-        if (notification.incident.type === 'org:flagged') {
-          icon = Icon.incidents;
-          body = msg(
-            'Your workspace was flagged, please contact support for assistance.'
-          );
-        } else if (notification.incident.type === 'org:restricted') {
+        if (notification.incident.type === 'org:restricted') {
           icon = Icon.incidents;
           body = msg(
             'Your workspace was restricted, please contact support for assistance.'

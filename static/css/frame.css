@@ -462,3 +462,31 @@ temba-menu.servicing {
   font-size: 12.5px;
   --icon-color: var(--text-3);
 }
+
+/* a contact's name heading their chat card, see contacts/includes/contact_header.html - it also
+   heads the tabs once the cards turn into tabs */
+.contact-header {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 8px 0 12px;
+}
+
+.contact-header temba-page-header {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.contact-header .back-button {
+  display: none;
+  flex: 0 0 auto;
+  margin-right: 0.25em;
+}
+
+.contact-header .back-button:hover {
+  color: var(--color-primary-dark);
+}
+
+.mobile .contact-header .back-button {
+  display: block;
+}

@@ -56,10 +56,6 @@ export class FlowList extends ContentList<Flow> {
         flex: none;
         --icon-color: var(--warning);
       }
-      .num {
-        font-variant-numeric: tabular-nums;
-        color: inherit;
-      }
       .completion-bar {
         display: inline-flex;
         align-items: center;
@@ -97,7 +93,6 @@ export class FlowList extends ContentList<Flow> {
 
   constructor() {
     super();
-    this.valueKey = 'uuid';
     // The name column is a `grow` column — it pools the table's
     // leftover width so long names (and their label chips) get all
     // available space before truncating, instead of clipping against
@@ -108,12 +103,26 @@ export class FlowList extends ContentList<Flow> {
     this.bulkActions = [
       {
         key: 'label',
-        label: 'Label',
+        get label() {
+          return msg('Label');
+        },
         icon: Icon.label,
         labelsEndpoint: '/api/v2/flow-labels.json'
       },
-      { key: 'export', label: 'Export results', icon: Icon.export },
-      { key: 'archive', label: 'Archive', icon: Icon.archive }
+      {
+        key: 'export',
+        get label() {
+          return msg('Export results');
+        },
+        icon: Icon.export
+      },
+      {
+        key: 'archive',
+        get label() {
+          return msg('Archive');
+        },
+        icon: Icon.archive
+      }
     ];
   }
 

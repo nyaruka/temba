@@ -606,8 +606,11 @@ class Contact(LegacyIDMixin, LegacyUUIDMixin, CreatedByMixin, ModifiedByMixin, S
     email = models.EmailField(null=True)
     email_verified_on = models.DateTimeField(null=True)
 
+    # native copy of uuid kept in sync by a trigger, which will replace the varchar column
+    uuid2 = models.UUIDField(null=True)
+
     current_session_uuid = models.UUIDField(null=True)  # waiting session if any
-    current_flow = models.ForeignKey("flows.Flow", on_delete=models.PROTECT, null=True, db_index=False)
+    current_flow_uuid = models.UUIDField(null=True)  # not a foreign key so deleting flows doesn't scan contacts
     last_seen_on = models.DateTimeField(null=True)
 
     created_by = models.ForeignKey(
@@ -1165,7 +1168,7 @@ class Contact(LegacyIDMixin, LegacyUUIDMixin, CreatedByMixin, ModifiedByMixin, S
         """
         Interrupts this contact's current flow
         """
-        if self.current_flow:
+        if self.current_flow_uuid:
             mailroom.get_client().contact_interrupt(self.org, user, [self])
 
     def block(self, user):
@@ -1349,6 +1352,36 @@ class Contact(LegacyIDMixin, LegacyUUIDMixin, CreatedByMixin, ModifiedByMixin, S
         """
         types = (ContactGroup.TYPE_MANUAL,) if manual_only else (ContactGroup.TYPE_MANUAL, ContactGroup.TYPE_SMART)
         return self.groups.filter(group_type__in=types, is_active=True)
+
+    @classmethod
+    def bulk_current_flow_cache_initialize(cls, org, contacts, *, using: str = "default"):
+        """
+        Initializes the current flow caches on the given contacts.
+        """
+        flow_uuids = {c.current_flow_uuid for c in contacts if c.current_flow_uuid}
+        flows_by_uuid = {}
+        if flow_uuids:
+            flows = org.flows.filter(uuid__in=flow_uuids, is_active=True).only("uuid", "name").using(using)
+            flows_by_uuid = {f.uuid: f for f in flows}
+
+        for contact in contacts:
+            contact._current_flow_cache = flows_by_uuid.get(contact.current_flow_uuid)
+
+    def get_current_flow(self):
+        """
+        Gets the flow this contact is currently in, if any
+        """
+        cache_attr = "_current_flow_cache"
+        if hasattr(self, cache_attr):
+            return getattr(self, cache_attr)
+
+        # a soft reference so the flow may no longer exist
+        flow = None
+        if self.current_flow_uuid:
+            flow = self.org.flows.filter(uuid=self.current_flow_uuid, is_active=True).first()
+
+        setattr(self, cache_attr, flow)
+        return flow
 
     def get_urns(self):
         """
@@ -2383,7 +2416,7 @@ class ContactImport(CreatedByMixin):
 
     def delete(self):
         # delete our source import file
-        self.file.delete()
+        self.file.delete(save=False)
 
         # delete any batches associated with this import
         ContactImportBatch.objects.filter(contact_import=self).delete()

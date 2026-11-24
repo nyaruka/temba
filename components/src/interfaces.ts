@@ -129,7 +129,8 @@ export interface Ticket {
   status: string;
   contact: ObjectReference;
   topic: ObjectReference;
-  assignee?: { email: string; name: string; avatar?: string };
+  // from the api an assignee has an email, from a socket event a uuid
+  assignee?: { uuid?: string; email?: string; name: string; avatar?: string };
 }
 
 export interface FlowResult {
@@ -325,6 +326,8 @@ export interface Msg {
   flow?: ObjectReference;
   /** When the message was created. */
   created_on?: string;
+  /** The user who sent it, for outgoing messages a user sent. */
+  sender?: User;
   unsendable_reason?:
     | 'no_route'
     | 'contact_blocked'
@@ -338,6 +341,20 @@ export interface ObjectReference {
   uuid: string;
   name: string;
   url?: string;
+}
+
+/** A row in the AI model CRUDL list (`ai/llm_list.html`). */
+export interface LLM {
+  uuid: string;
+  name: string;
+  /** the provider's type slug, e.g. `openai` */
+  type: string;
+  /** the provider's icon name */
+  icon: string;
+  /** the provider's model, e.g. `gpt-5.4-mini` */
+  model: string;
+  /** how many flows use it */
+  usages: number;
 }
 
 export interface Shortcut {
@@ -433,6 +450,8 @@ export interface Contact {
   status: string;
 
   ref?: string; // only returned for anon workspaces
+  first_name?: string; // only returned for ticket lists, when the contact has a name
+  scheme?: string; // only returned for ticket lists, the scheme of the contact's top URN
   flow?: ObjectReference;
   last_msg?: Msg;
   direction?: string;
@@ -513,6 +532,7 @@ export enum CustomEventType {
   Loading = 'temba-loading',
   Canceled = 'temba-canceled',
   CursorChanged = 'temba-cursor-changed',
+  CountChanged = 'temba-count-changed',
   Refreshed = 'temba-refreshed',
   WorkspaceAccessLost = 'temba-workspace-access-lost',
   Selection = 'temba-selection',
@@ -574,6 +594,8 @@ export enum CustomEventType {
   ArticleAddRequested = 'temba-article-add-requested',
   ShortcutEdit = 'temba-shortcut-edit',
   ShortcutDelete = 'temba-shortcut-delete',
+  /** An AI model's usages link was clicked - detail carries the item. */
+  LLMUsages = 'temba-llm-usages',
   SelectionChange = 'temba-selection-change',
   BulkAction = 'temba-bulk-action',
   /** The label dropdown's "New Label…" row was clicked — detail

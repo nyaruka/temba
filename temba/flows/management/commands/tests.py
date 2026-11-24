@@ -20,7 +20,12 @@ class MigrateFlowsTest(TembaTest):
             rev = flow.get_current_revision()
             rev.definition["spec_version"] = "13.0.0"
             rev.spec_version = "13.0.0"
-            rev.save()
+            rev.save(
+                update_fields=(
+                    "definition",
+                    "spec_version",
+                )
+            )
 
         self.assertIn("All flows up to date", call())
 

@@ -19,12 +19,19 @@ from temba.orgs.views import switch_to_org
 from temba.users.models import User
 from temba.utils import audit
 from temba.utils.fields import SelectMultipleWidget
-from temba.utils.views.mixins import ComponentFormMixin, ContextMenuMixin, ModalFormMixin, SpaMixin, StaffOnlyMixin
+from temba.utils.views.mixins import (
+    ComponentFormMixin,
+    ContextMenuMixin,
+    ModalFormMixin,
+    ScopedUpdateMixin,
+    SpaMixin,
+    StaffOnlyMixin,
+)
 
 
 class OrgCRUDL(SmartCRUDL):
     model = Org
-    actions = ("read", "update", "list", "service")
+    actions = ("read", "update", "suspend", "list", "service")
 
     class Read(StaffOnlyMixin, SpaMixin, ContextMenuMixin, SmartReadView):
         def build_context_menu(self, menu):
@@ -41,20 +48,21 @@ class OrgCRUDL(SmartCRUDL):
                 on_submit="handleWorkspaceUpdated()",
             )
 
-            if not obj.is_flagged:
-                menu.add_url_post(_("Flag"), f"{reverse('staff.org_update', args=[obj.id])}?action=flag")
-            else:
+            # flagging is only done by automated checks, and only unflagging lifts it
+            if obj.status == Org.STATUS_ACTIVE:
+                menu.add_url_post(_("Restrict"), f"{reverse('staff.org_update', args=[obj.id])}?action=restrict")
+            if obj.status != Org.STATUS_SUSPENDED:
+                menu.add_modax(
+                    _("Suspend"),
+                    "suspend-workspace",
+                    reverse("staff.org_suspend", args=[obj.id]),
+                    title=_("Suspend"),
+                    destructive=True,
+                )
+            if obj.is_flagged:
                 menu.add_url_post(_("Unflag"), f"{reverse('staff.org_update', args=[obj.id])}?action=unflag")
-
-            if not obj.is_child:
-                if obj.status == Org.STATUS_ACTIVE:
-                    menu.add_url_post(_("Restrict"), f"{reverse('staff.org_update', args=[obj.id])}?action=restrict")
-                if obj.status != Org.STATUS_SUSPENDED:
-                    menu.add_url_post(_("Suspend"), f"{reverse('staff.org_update', args=[obj.id])}?action=suspend")
-                if obj.status != Org.STATUS_ACTIVE:
-                    menu.add_url_post(
-                        _("Reactivate"), f"{reverse('staff.org_update', args=[obj.id])}?action=reactivate"
-                    )
+            elif obj.status != Org.STATUS_ACTIVE:
+                menu.add_url_post(_("Reactivate"), f"{reverse('staff.org_update', args=[obj.id])}?action=reactivate")
 
             if not obj.is_verified:
                 menu.add_url_post(_("Verify"), f"{reverse('staff.org_update', args=[obj.id])}?action=verify")
@@ -80,6 +88,23 @@ class OrgCRUDL(SmartCRUDL):
             context["children"] = Org.objects.filter(parent=org, is_active=True).order_by("-created_on", "name")
             return context
 
+    class Suspend(StaffOnlyMixin, ModalFormMixin, ScopedUpdateMixin, SmartUpdateView):
+        """
+        Suspends a workspace, after warning that it cancels the messages waiting to be sent on its channels
+        """
+
+        fields = ()
+        success_url = "id@staff.org_read"
+        submit_button_name = _("Suspend")
+
+        def derive_title(self):
+            return None
+
+        def save(self, obj):
+            obj.suspend(Org.RESTRICTED_STAFF)
+            audit.record("workspace.suspend", org=obj)
+            return obj
+
     class List(StaffOnlyMixin, SpaMixin, SmartListView):
         fields = ("name", "owner", "timezone", "created_on")
         default_order = ("-created_on",)
@@ -91,7 +116,7 @@ class OrgCRUDL(SmartCRUDL):
             ("all", _("All"), dict(), ("-created_on",)),
             ("anon", _("Anonymous"), dict(is_anon=True, status__in=UNSUSPENDED), None),
             ("internal", _("Internal"), dict(is_internal=True), None),
-            ("flagged", _("Flagged"), dict(is_flagged=True, status__in=UNSUSPENDED), None),
+            ("flagged", _("Flagged"), dict(status=Org.STATUS_RESTRICTED, status_reason=Org.RESTRICTED_FLAGGED), None),
             ("restricted", _("Restricted"), dict(status=Org.STATUS_RESTRICTED), None),
             ("suspended", _("Suspended"), dict(status=Org.STATUS_SUSPENDED), None),
             ("verified", _("Verified"), dict(config__verified=True, status__in=UNSUSPENDED), None),
@@ -151,11 +176,9 @@ class OrgCRUDL(SmartCRUDL):
                 return reverse("staff.user_update", args=[owner.pk])
             return super().lookup_field_link(context, field, obj)
 
-    class Update(StaffOnlyMixin, ModalFormMixin, ComponentFormMixin, SmartUpdateView):
-        ACTION_FLAG = "flag"
+    class Update(StaffOnlyMixin, ModalFormMixin, ComponentFormMixin, ScopedUpdateMixin, SmartUpdateView):
         ACTION_UNFLAG = "unflag"
         ACTION_RESTRICT = "restrict"
-        ACTION_SUSPEND = "suspend"
         ACTION_REACTIVATE = "reactivate"
         ACTION_VERIFY = "verify"
 
@@ -236,14 +259,10 @@ class OrgCRUDL(SmartCRUDL):
                 action = request.POST["action"]
                 obj = self.get_object()
 
-                if action == self.ACTION_FLAG:
-                    obj.flag()
-                elif action == self.ACTION_UNFLAG:
+                if action == self.ACTION_UNFLAG:
                     obj.unflag()
                 elif action == self.ACTION_RESTRICT:
                     obj.restrict(Org.RESTRICTED_STAFF)
-                elif action == self.ACTION_SUSPEND:
-                    obj.suspend()
                 elif action == self.ACTION_REACTIVATE:
                     obj.reactivate()
                 elif action == self.ACTION_VERIFY:
@@ -346,7 +365,9 @@ class UserCRUDL(SmartCRUDL):
                 _("Delete"), "user-delete", reverse("staff.user_delete", args=[obj.id]), title=_("Delete User")
             )
 
-    class Update(StaffOnlyMixin, ModalFormMixin, ComponentFormMixin, ContextMenuMixin, SmartUpdateView):
+    class Update(
+        StaffOnlyMixin, ModalFormMixin, ComponentFormMixin, ContextMenuMixin, ScopedUpdateMixin, SmartUpdateView
+    ):
         ACTION_VERIFY = "verify"
         ACTION_UNVERIFY = "unverify"
         ACTION_DISABLE_MFA = "disable-mfa"

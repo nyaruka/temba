@@ -364,7 +364,7 @@ class Trigger(UUIDMixin, OrgLimitMixin, CreatedByMixin, ModifiedByMixin, SoftDel
 
             if not group.is_active:  # pragma: needs cover
                 group.is_active = True
-                group.save()
+                group.save(update_fields=("is_active", "modified_on"))
 
             groups.append(group)
 

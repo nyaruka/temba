@@ -8,8 +8,8 @@ from django.test.utils import override_settings
 
 from temba.knowledge.models import (
     Article,
-    ArticleCount,
     ArticleImage,
+    ArticleTally,
     ColumnStylesProcessor,
     HelpSite,
     KnowledgeChunk,
@@ -147,22 +147,14 @@ class KnowledgeSourceTest(TembaTest):
         self.assertIsNone(docs.error)
         self.assertEqual([call(self.org, docs)], mr_mocks.calls["knowledge_index"])
 
-    @mock_mailroom
-    def test_request_indexing(self, mr_mocks):
-        shortcuts = self.org.sources.get(source_type=KnowledgeSource.TYPE_SHORTCUTS)
-
-        shortcuts.request_indexing()
-
-        self.assertEqual([call(self.org, shortcuts)], mr_mocks.calls["knowledge_index"])
-
-        # a failed request is logged rather than failing whatever made the change
+        # a failed request is logged rather than failing whatever made the change, which the flag still records
         mr_mocks.exception(RequestException("knowledge/index", {}, MockJsonResponse(500, {"error": "boom"})))
 
         with patch("temba.knowledge.models.logger.exception") as mock_log:
-            shortcuts.request_indexing()
+            docs.mark_pending()
 
         mock_log.assert_called_once_with(
-            "error requesting knowledge indexing from mailroom", extra={"source_id": shortcuts.id}
+            "error requesting knowledge indexing from mailroom", extra={"source_id": docs.id}
         )
 
     @cleanup(s3=True)
@@ -211,7 +203,7 @@ class KnowledgeSourceTest(TembaTest):
             size=3,
             created_by=self.admin,
         )
-        ArticleCount.record_view(parent)
+        parent.tallies.create(scope="views@2026-11-01", count=1)
         site = HelpSite.get_or_create(helpdesk, self.admin)
 
         helpdesk.delete()
@@ -219,7 +211,7 @@ class KnowledgeSourceTest(TembaTest):
         self.assertFalse(KnowledgeSource.objects.filter(id=helpdesk.id).exists())
         self.assertFalse(Article.objects.filter(id__in=(parent.id, child.id)).exists())
         self.assertEqual(0, ArticleImage.objects.count())
-        self.assertEqual(0, ArticleCount.objects.count())
+        self.assertEqual(0, ArticleTally.objects.count())
         self.assertFalse(HelpSite.objects.filter(id=site.id).exists())
         self.assertEqual(0, KnowledgeChunk.objects.count())
         self.assertFalse(public_file_storage.exists(image_path))
@@ -930,7 +922,7 @@ class ArticleTest(TembaTest):
         # and so does saving it once it's published, however it's saved - keeping a column's palette index as a
         # class and an uploaded image as its storage key, so that nothing in it changes when the palette or storage do
         article.body = "# Steps\n\n![shot](orgs/1/knowledge/shot.png)\n\n| background: 1 |\n| - |\n| one |"
-        article.save()
+        article.save(update_fields=("body",))
         article.refresh_from_db()
         self.assertEqual(
             '<h1 id="steps">Steps</h1>\n<p><img alt="shot" src="storage:orgs/1/knowledge/shot.png"></p>\n'
@@ -969,6 +961,9 @@ class ArticleTest(TembaTest):
         section.refresh_from_db()
         self.assertTrue(section.is_active)
 
+        self.helpdesk.status = KnowledgeSource.STATUS_READY
+        self.helpdesk.save(update_fields=("status",))
+
         article.release(self.admin)
 
         # soft deleted, back to draft, and modified_on bumped so mailroom's next index sees the tombstone
@@ -983,6 +978,8 @@ class ArticleTest(TembaTest):
         self.assertFalse(public_file_storage.exists(path))
 
         # and mailroom is asked to drop its chunks
+        self.helpdesk.refresh_from_db()
+        self.assertEqual(KnowledgeSource.STATUS_PENDING, self.helpdesk.status)
         self.assertEqual([call(self.org, self.helpdesk)], mr_mocks.calls["knowledge_index"])
 
         # but a draft was never indexed, so releasing one doesn't need it

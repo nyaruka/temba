@@ -53,7 +53,8 @@ class UserSettingsView(LoginRequiredMixin, View):
     """
 
     # the settings keys the UI is allowed to write
-    ALLOWED_KEYS = {"contact_cards", "list_columns"}
+    ALLOWED_KEYS = {"contact_cards", "list_columns", "ticket_order"}
+    TICKET_ORDERS = {"newest", "oldest"}
     RESIZABLE_LISTS = {"contacts", "msgs"}
 
     # column names aren't validated against each list's real columns (custom fields make those
@@ -74,6 +75,9 @@ class UserSettingsView(LoginRequiredMixin, View):
 
         if not set(posted) <= self.ALLOWED_KEYS:
             return JsonResponse({"error": "unsupported settings keys"}, status=400)
+
+        if "ticket_order" in posted and posted["ticket_order"] not in self.TICKET_ORDERS:
+            return JsonResponse({"error": "invalid ticket order"}, status=400)
 
         if "list_columns" in posted:
             list_columns = posted["list_columns"]

@@ -1,6 +1,6 @@
 from smartmin.views import SmartCreateView, SmartCRUDL, SmartListView, SmartUpdateView
 
-from temba.utils.views.mixins import StaffOnlyMixin
+from temba.utils.views.mixins import ScopedUpdateMixin, StaffOnlyMixin
 
 from .models import Apk
 
@@ -13,7 +13,7 @@ class ApkCRUDL(SmartCRUDL):
     class Create(StaffOnlyMixin, SmartCreateView):
         fields = ("apk_type", "version", "pack", "apk_file", "description")
 
-    class Update(StaffOnlyMixin, SmartUpdateView):
+    class Update(StaffOnlyMixin, ScopedUpdateMixin, SmartUpdateView):
         pass
 
     class List(StaffOnlyMixin, SmartListView):

@@ -47,10 +47,12 @@ from temba.utils.models import (
     UUIDMixin,
     delete_in_batches,
 )
-from temba.utils.models.counts import BaseDailyCount, BaseScopedCount
+from temba.utils.models.counts import BaseScopedCount
 from temba.utils.text import generate_secret
 from temba.utils.timezones import timezone_to_country_code
 from temba.utils.uuid import uuid4
+
+from .signals import org_status_changed
 
 logger = logging.getLogger(__name__)
 
@@ -291,9 +293,19 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     RESTRICTED_BILLING = "B"
     RESTRICTED_LIMITS = "L"
     RESTRICTED_STAFF = "S"
-    RESTRICTED_CHOICES = ((RESTRICTED_BILLING, "Billing"), (RESTRICTED_LIMITS, "Limits"), (RESTRICTED_STAFF, "Staff"))
+    RESTRICTED_FLAGGED = "F"
+    RESTRICTED_PARENT = "P"
+    RESTRICTED_CHOICES = (
+        (RESTRICTED_BILLING, "Billing"),
+        (RESTRICTED_LIMITS, "Limits"),
+        (RESTRICTED_STAFF, "Staff"),
+        (RESTRICTED_FLAGGED, "Flagged"),
+        (RESTRICTED_PARENT, "Parent"),
+    )
 
-    RESTRICTION_PERIOD = timedelta(days=14)  # default time between being restricted and being suspended
+    # restrictions for these reasons are about the account, which children share with their parent, getting the parent
+    # reason instead
+    CASCADING_REASONS = (RESTRICTED_BILLING, RESTRICTED_LIMITS)
 
     DELETE_DELAY_DAYS = 7  # how many days after releasing that an org is deleted
     OUTBOX_WARNING_THRESHOLD = 10_000
@@ -364,13 +376,11 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         default=False, help_text=_("Whether this organization anonymizes the phone numbers of contacts within it")
     )
     status = models.CharField(max_length=1, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
-    restricted_reason = models.CharField(max_length=1, choices=RESTRICTED_CHOICES, null=True)
-    suspends_on = models.DateTimeField(null=True)  # when a restricted org will be suspended, if ever
-    is_flagged = models.BooleanField(default=False, help_text=_("Whether this organization is currently flagged."))
-    is_suspended = models.BooleanField(default=False, help_text=_("Whether this organization is currently suspended."))
+    status_reason = models.CharField(max_length=1, choices=RESTRICTED_CHOICES, null=True)
+    status_changed_on = models.DateTimeField(null=True)
+    suspends_on = models.DateTimeField(null=True)  # when a restricted org will be suspended
     is_internal = models.BooleanField(default=False)
 
-    suspended_on = models.DateTimeField(null=True)
     released_on = models.DateTimeField(null=True)
     deleted_on = models.DateTimeField(null=True)
 
@@ -431,17 +441,9 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         if as_child:
             assert Org.FEATURE_CHILD_ORGS in self.features, "only orgs with this feature enabled can create child orgs"
             assert not self.is_child, "child orgs can't create children"
+            assert self.status == Org.STATUS_ACTIVE, "restricted or suspended orgs can't create children"
         else:
             assert Org.FEATURE_NEW_ORGS in self.features, "only orgs with this feature enabled can create new orgs"
-
-        # children share their parent's status so they can't be used to get around a restriction or suspension
-        status = dict(
-            status=self.status,
-            restricted_reason=self.restricted_reason,
-            suspends_on=self.suspends_on,
-            is_suspended=self.is_suspended,
-            suspended_on=self.suspended_on,
-        )
 
         org = Org.objects.create(
             name=name,
@@ -453,7 +455,6 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             slug=self.get_unique_slug(name),
             created_by=user,
             modified_by=user,
-            **(status if as_child else {}),
         )
 
         org.add_user(user, OrgRole.ADMINISTRATOR)
@@ -507,10 +508,10 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         """
         if self.status == Org.STATUS_SUSPENDED:
             return Org.BLOCKER_SUSPENDED
-        elif self.status == Org.STATUS_RESTRICTED:
-            return Org.BLOCKER_RESTRICTED
         elif self.is_flagged:
             return Org.BLOCKER_FLAGGED
+        elif self.status == Org.STATUS_RESTRICTED:
+            return Org.BLOCKER_RESTRICTED
         return None
 
     @property
@@ -521,101 +522,136 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         """
         if self.status == Org.STATUS_SUSPENDED:
             return Org.BLOCKER_SUSPENDED
-        elif self.is_flagged:
-            return Org.BLOCKER_FLAGGED
         return None
+
+    @property
+    def import_blocker(self):
+        """
+        Gets the reason, if any, that users can't import contacts into this org. Like other changes they're allowed in
+        restricted orgs, except flagged ones, since imports are how suspicious activity gets an org flagged.
+        """
+        if self.is_flagged:
+            return Org.BLOCKER_FLAGGED
+        return self.write_blocker
+
+    @property
+    def is_flagged(self) -> bool:
+        return self.status == Org.STATUS_RESTRICTED and self.status_reason == Org.RESTRICTED_FLAGGED
 
     def restrict(self, reason: str, *, suspends_on=None):
         """
-        Restricts this org and any children, unless already restricted or suspended. Unless given a time to be
-        suspended, it will be suspended once the default restriction period is up.
+        Restricts this org, unless already restricted or suspended - except that being flagged replaces a billing or
+        limits restriction, which can be worked out again once the flag is lifted. If given a time, it will be
+        suspended then unless the restriction is lifted first.
         """
-        from temba.notifications.incidents.builtin import OrgRestrictedIncidentType
+        assert not (self.is_child and reason in Org.CASCADING_REASONS), "children share their parent's account"
+        assert reason != Org.RESTRICTED_PARENT, "only given to children by their parent"
 
-        assert not self.is_child
+        replaces = (
+            reason == Org.RESTRICTED_FLAGGED
+            and self.status == Org.STATUS_RESTRICTED
+            and self.status_reason in (*Org.CASCADING_REASONS, Org.RESTRICTED_PARENT)
+        )
 
-        if self.status == Org.STATUS_ACTIVE:
-            self._set_status(
-                Org.STATUS_RESTRICTED,
-                restricted_reason=reason,
-                suspends_on=suspends_on or timezone.now() + Org.RESTRICTION_PERIOD,
-            )
+        if self.status == Org.STATUS_ACTIVE or replaces:
+            self._set_status(Org.STATUS_RESTRICTED, reason=reason, suspends_on=suspends_on)
 
-            OrgRestrictedIncidentType.get_or_create(self)  # create incident which will notify admins
-
-    def suspend(self):
+    def suspend(self, reason: str = None):
         """
-        Suspends this org and any children.
+        Suspends this org. Unless given a reason, it keeps the reason it was restricted for.
         """
-        from temba.notifications.incidents.builtin import OrgRestrictedIncidentType, OrgSuspendedIncidentType
-
-        assert not self.is_child
+        from temba.channels.models import Channel
+        from temba.channels.tasks import interrupt_channel_task
+        from temba.msgs.models import Msg
 
         if self.status != Org.STATUS_SUSPENDED:
-            self._set_status(Org.STATUS_SUSPENDED)
+            self._set_status(Org.STATUS_SUSPENDED, reason=reason or self.status_reason)
 
-            OrgRestrictedIncidentType.end_ongoing(self)
-            OrgSuspendedIncidentType.get_or_create(self)  # create incident which will notify admins
+            # interrupt the channels of this org and any children suspended with it, so that messages waiting to be sent
+            # are failed rather than left in the outbox - once the suspension is committed, and delayed so that
+            # mailroom's assets cache sees it
+            suspended_children = Q(
+                org__parent=self, org__status=Org.STATUS_SUSPENDED, org__status_reason=Org.RESTRICTED_PARENT
+            )
+            channel_ids = list(
+                Channel.objects.filter(Q(org=self) | suspended_children, is_active=True).values_list("id", flat=True)
+            )
+
+            def interrupt_channels():
+                for channel_id in channel_ids:
+                    interrupt_channel_task.apply_async((channel_id,), {"reason": Msg.FAILED_SUSPENDED}, countdown=5)
+
+            transaction.on_commit(interrupt_channels)
 
     def reactivate(self):
         """
-        Lifts any restriction or suspension of this org and any children.
+        Lifts any restriction or suspension of this org, except that a child goes back to sharing any billing or limits
+        restriction or suspension of its parent.
         """
-        from temba.notifications.incidents.builtin import OrgRestrictedIncidentType, OrgSuspendedIncidentType
+        status, reason, suspends_on = Org.STATUS_ACTIVE, None, None
+        if self.is_child and self.parent.status_cascades:
+            status, reason, suspends_on = self.parent.status, Org.RESTRICTED_PARENT, self.parent.suspends_on
 
-        assert not self.is_child
+        if (self.status, self.status_reason) != (status, reason):
+            self._set_status(status, reason=reason, suspends_on=suspends_on)
 
-        if self.status != Org.STATUS_ACTIVE:
-            self._set_status(Org.STATUS_ACTIVE)
+    @property
+    def status_cascades(self) -> bool:
+        return self.status != Org.STATUS_ACTIVE and self.status_reason in Org.CASCADING_REASONS
 
-            OrgRestrictedIncidentType.end_ongoing(self)
-            OrgSuspendedIncidentType.end_ongoing(self)
-
-    def _set_status(self, status: str, *, restricted_reason: str = None, suspends_on=None):
-        # is_suspended is kept in sync for anything that hasn't yet switched to reading status
-        is_suspended = status == Org.STATUS_SUSPENDED
+    def _set_status(self, status: str, *, reason: str = None, suspends_on=None):
+        now = timezone.now()
         changes = dict(
             status=status,
-            restricted_reason=restricted_reason,
+            status_reason=reason,
+            status_changed_on=now,
             suspends_on=suspends_on,
-            is_suspended=is_suspended,
-            suspended_on=timezone.now() if is_suspended else None,
-            modified_on=timezone.now(),
+            modified_on=now,
         )
 
         for name, value in changes.items():
             setattr(self, name, value)
         self.save(update_fields=changes.keys())
 
-        self.children.filter(is_active=True).update(**changes)
+        # children share a billing or limits restriction or suspension, with the parent reason, and only lose it once
+        # this org is active again, but anything else applies to them individually and is left alone
+        changed_children = []
+        if self.status_cascades or status == Org.STATUS_ACTIVE:
+            child_changes = changes | dict(status_reason=Org.RESTRICTED_PARENT if self.status_cascades else None)
+            inheriting = Q(status=Org.STATUS_ACTIVE) | Q(status_reason=Org.RESTRICTED_PARENT)
+            unchanged = Q(status=status, status_reason=child_changes["status_reason"])
+            children = self.children.filter(inheriting, is_active=True).exclude(unchanged)
+
+            # locked so that a child flagged or restricted by staff meanwhile isn't overwritten
+            with transaction.atomic(savepoint=False):
+                changed_children = list(children.select_for_update().order_by("id"))
+                if changed_children:
+                    Org.objects.filter(id__in=[c.id for c in changed_children]).update(**child_changes)
+
+        org_status_changed.send(sender=Org, org=self, status=status)
+
+        for child in changed_children:
+            for name, value in child_changes.items():
+                setattr(child, name, value)
+            child.parent = self
+            org_status_changed.send(sender=Org, org=child, status=status)
 
     def flag(self):
         """
-        Flags this org for suspicious activity
+        Restricts this org for suspicious activity
         """
-        from temba.notifications.incidents.builtin import OrgFlaggedIncidentType
-
-        if not self.is_flagged:
-            self.is_flagged = True
-            self.save(update_fields=("is_flagged", "modified_on"))
-
-            OrgFlaggedIncidentType.get_or_create(self)  # create incident which will notify admins
+        self.restrict(Org.RESTRICTED_FLAGGED)
 
     def unflag(self):
         """
-        Unflags this org if they previously were flagged
+        Lifts a restriction of this org for suspicious activity
         """
-        from temba.notifications.incidents.builtin import OrgFlaggedIncidentType
-
         if self.is_flagged:
-            self.is_flagged = False
-            self.save(update_fields=("is_flagged", "modified_on"))
-
-            OrgFlaggedIncidentType.get_or_create(self).end()
+            self.reactivate()
 
     def verify(self):
         """
-        Unflags org and marks as verified so it won't be flagged automatically in future
+        Unflags this org and marks it as verified so it won't be flagged automatically in future
         """
         self.unflag()
         self.config[Org.CONFIG_VERIFIED] = True
@@ -1369,7 +1405,6 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
         # needs to come after deletion of other things as those insert new negative counts
         delete_in_batches(self.counts.all())
-        delete_in_batches(self.daily_counts.all())
 
         delete_in_batches(self.org_tallies.all(), pk="pk")
 
@@ -1380,7 +1415,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         self.modified_on = timezone.now()
         self.deleted_on = timezone.now()
         self.config = {}
-        self.save()
+        self.save(update_fields=("modified_on", "deleted_on", "config"))
 
         return counts
 
@@ -1392,11 +1427,12 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
     class Meta:
         constraints = [
-            # suspended_on must be set if and only if org is suspended
+            # a restricted org always has a reason, and a suspended org keeps any reason
             models.CheckConstraint(
-                condition=Q(is_suspended=True, suspended_on__isnull=False)
-                | Q(is_suspended=False, suspended_on__isnull=True),
-                name="orgs_org_suspended_on_consistent",
+                condition=Q(status="A", status_reason__isnull=True, suspends_on__isnull=True)
+                | Q(status="R", status_reason__isnull=False, status_changed_on__isnull=False)
+                | Q(status="S", suspends_on__isnull=True, status_changed_on__isnull=False),
+                name="orgs_org_status_consistent",
             )
         ]
 
@@ -1854,30 +1890,6 @@ class ItemCount(BaseScopedCount):
         ]
         constraints = [
             models.UniqueConstraint(name="orgcount_squashed", fields=("org", "scope"), condition=Q(is_squashed=True))
-        ]
-
-
-class DailyCount(BaseDailyCount):
-    """
-    Org-level daily counts of things.
-    """
-
-    squash_over = ("org_id", "day", "scope")
-
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="daily_counts", db_index=False)  # indexed below
-
-    class Meta:
-        indexes = [
-            models.Index("org", "day", OpClass("scope", name="varchar_pattern_ops"), name="orgdailycount_org_scope"),
-            # for squashing task
-            models.Index(
-                name="orgdailycount_unsquashed", fields=("org", "day", "scope"), condition=Q(is_squashed=False)
-            ),
-        ]
-        constraints = [
-            models.UniqueConstraint(
-                name="orgdailycount_squashed", fields=("org", "day", "scope"), condition=Q(is_squashed=True)
-            )
         ]
 
 

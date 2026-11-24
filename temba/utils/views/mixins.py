@@ -24,6 +24,7 @@ from temba.utils.fields import (
     SelectMultipleWidget,
     SelectWidget,
 )
+from temba.utils.models import changed_fields, field_values
 
 logger = logging.getLogger(__name__)
 
@@ -160,6 +161,7 @@ class ContextMenuMixin:
             primary: bool = False,
             as_button: bool = False,
             disabled: bool = False,
+            destructive: bool = False,
         ):
             self.groups[-1].append(
                 {
@@ -173,6 +175,7 @@ class ContextMenuMixin:
                     "primary": primary,
                     "as_button": as_button,
                     "disabled": disabled,
+                    "destructive": destructive,
                 }
             )
 
@@ -402,3 +405,24 @@ class ChartViewMixin:
                 "data": {"labels": labels, "datasets": datasets},
             }
         )
+
+
+class ScopedUpdateMixin:
+    """
+    Mixin for update views to only save the fields that the request changed, so they don't overwrite fields written
+    elsewhere
+    """
+
+    def get_form_kwargs(self):
+        self.original_values = field_values(self.object)
+        return super().get_form_kwargs()
+
+    def get_update_fields(self, obj) -> list[str]:
+        fields = changed_fields(obj, self.original_values)
+        if fields and hasattr(obj, "modified_on") and "modified_on" not in fields:
+            fields.append("modified_on")
+        return fields
+
+    def save(self, obj):
+        obj.save(update_fields=self.get_update_fields(obj))
+        self.save_m2m()

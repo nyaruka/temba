@@ -1143,11 +1143,6 @@ export class CanvasNode extends RapidElement {
     this.requestUpdate();
   }
 
-  private getTopCenter(el: Element): { x: number; y: number } {
-    const rect = el.getBoundingClientRect();
-    return { x: rect.left + rect.width / 2, y: rect.top };
-  }
-
   /**
    * Returns true if the click target is inside a `.linked-name` or
    * `.linked-pill` whose containing action/node has no issues. Active
@@ -1229,18 +1224,10 @@ export class CanvasNode extends RapidElement {
       // Only fire the action edit event if we haven't dragged beyond the threshold
       // AND either there's no Editor parent (test case) or the Editor didn't drag the node
       if (distance <= DRAG_THRESHOLD && (!editor || !editorWasDragging)) {
-        // Use top-center of the action element as the dialog origin
-        const actionEl = event.currentTarget as Element;
-        const origin = actionEl
-          ? this.getTopCenter(actionEl)
-          : { x: event.clientX, y: event.clientY };
-
         // Fire event to request action editing
         this.fireCustomEvent(CustomEventType.ActionEditRequested, {
           action,
-          nodeUuid: this.node.uuid,
-          originX: origin.x,
-          originY: origin.y
+          nodeUuid: this.node.uuid
         });
       }
     }
@@ -1300,16 +1287,9 @@ export class CanvasNode extends RapidElement {
       const editorWasDragging = editor?.dragging;
 
       if (distance <= DRAG_THRESHOLD && (!editor || !editorWasDragging)) {
-        const actionEl = event.currentTarget as Element;
-        const origin = actionEl
-          ? this.getTopCenter(actionEl)
-          : { x: touch.clientX, y: touch.clientY };
-
         this.fireCustomEvent(CustomEventType.ActionEditRequested, {
           action,
-          nodeUuid: this.node.uuid,
-          originX: origin.x,
-          originY: origin.y
+          nodeUuid: this.node.uuid
         });
       }
     }
@@ -1433,24 +1413,17 @@ export class CanvasNode extends RapidElement {
         // Using literal 5 instead of DRAG_THRESHOLD since it's not imported
         // Fire event to request node editing if the node has a router
         if (this.node.router) {
-          // Use top-center of the node as the dialog origin
-          const origin = this.getTopCenter(this);
-
           // If router node has exactly one action, open the action editor directly
           if (this.node.actions && this.node.actions.length === 1) {
             this.fireCustomEvent(CustomEventType.ActionEditRequested, {
               action: this.node.actions[0],
-              nodeUuid: this.node.uuid,
-              originX: origin.x,
-              originY: origin.y
+              nodeUuid: this.node.uuid
             });
           } else {
             // Otherwise open the node editor as before
             this.fireCustomEvent(CustomEventType.NodeEditRequested, {
               node: this.node,
-              nodeUI: this.ui,
-              originX: origin.x,
-              originY: origin.y
+              nodeUI: this.ui
             });
           }
         }
@@ -1514,21 +1487,15 @@ export class CanvasNode extends RapidElement {
 
       if (distance <= 5 && (!editor || !editorWasDragging)) {
         if (this.node.router) {
-          const origin = this.getTopCenter(this);
-
           if (this.node.actions && this.node.actions.length === 1) {
             this.fireCustomEvent(CustomEventType.ActionEditRequested, {
               action: this.node.actions[0],
-              nodeUuid: this.node.uuid,
-              originX: origin.x,
-              originY: origin.y
+              nodeUuid: this.node.uuid
             });
           } else {
             this.fireCustomEvent(CustomEventType.NodeEditRequested, {
               node: this.node,
-              nodeUI: this.ui,
-              originX: origin.x,
-              originY: origin.y
+              nodeUI: this.ui
             });
           }
         }

@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from temba.orgs.views.base import BaseCreateModal, BaseDependencyDeleteModal, BaseListView, BaseUsagesModal
 from temba.orgs.views.mixins import OrgObjPermsMixin, UniqueNameMixin
 from temba.utils.fields import InputWidget
-from temba.utils.views.mixins import ContextMenuMixin, ModalFormMixin, SpaMixin
+from temba.utils.views.mixins import ContextMenuMixin, ModalFormMixin, ScopedUpdateMixin, SpaMixin
 
 from .models import Global
 
@@ -73,7 +73,7 @@ class GlobalCRUDL(SmartCRUDL):
 
             return self.render_modal_response(form)
 
-    class Update(ModalFormMixin, OrgObjPermsMixin, SmartUpdateView):
+    class Update(ModalFormMixin, OrgObjPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         form_class = UpdateGlobalForm
         submit_button_name = _("Update")
 

@@ -39,16 +39,6 @@ export class ContactList extends ContentList<Contact> {
   static get styles() {
     return css`
       ${ContentList.styles}
-      /* The contact name is the one cell that carries a slightly
-         heavier weight — every other cell stays at the regular
-         table weight so values don't read as emphasised. */
-      .contact-name {
-        color: inherit;
-        font-weight: var(--w-medium);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
       .contact-urn {
         color: var(--text-3);
         font-size: 12.5px;
@@ -97,24 +87,50 @@ export class ContactList extends ContentList<Contact> {
 
   constructor() {
     super();
-    this.valueKey = 'uuid';
     this.bulkActions = [
-      { key: 'send', label: 'Send', icon: Icon.compose },
-      { key: 'flow', label: 'Start flow', icon: Icon.flow },
+      {
+        key: 'send',
+        get label() {
+          return msg('Send');
+        },
+        icon: Icon.compose
+      },
+      {
+        key: 'flow',
+        get label() {
+          return msg('Start flow');
+        },
+        icon: Icon.flow
+      },
       // Group toggle — a dropdown of the workspace's static (manual)
       // groups to add/remove the selection to/from, like the message
       // list's label dropdown.
       {
         key: 'label',
-        label: 'Group',
+        get label() {
+          return msg('Group');
+        },
         icon: Icon.group,
         labelsEndpoint: '/api/v2/groups.json?manual_only=1',
         labelsKey: 'groups'
       },
       // Archive trails the reversible actions; Delete, when offered,
       // always goes last.
-      { key: 'archive', label: 'Archive', icon: Icon.archive },
-      { key: 'delete', label: 'Delete', icon: Icon.delete, destructive: true }
+      {
+        key: 'archive',
+        get label() {
+          return msg('Archive');
+        },
+        icon: Icon.archive
+      },
+      {
+        key: 'delete',
+        get label() {
+          return msg('Delete');
+        },
+        icon: Icon.delete,
+        destructive: true
+      }
     ];
   }
 
@@ -365,7 +381,7 @@ export class ContactList extends ContentList<Contact> {
     }
     switch (column.key) {
       case 'name':
-        return html`<span class="contact-name" title=${item.name || ''}
+        return html`<span class="item-name" title=${item.name || ''}
           >${item.name || EMPTY}</span
         >`;
       case 'urn':

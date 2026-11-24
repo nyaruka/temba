@@ -521,6 +521,12 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
         self.assertContains(response, "temba-card-layout")
         self.assertContains(response, "temba-page-header")
         self.assertContains(response, '-temba-button-clicked="handleFieldSearch"')
+
+        # the contact's name heads their chat card, the same header as on the tickets page
+        self.assertContains(response, '<div slot="header" class="contact-header">')
+        self.assertContains(response, f'contact="{joe.uuid}"')
+        self.assertNotContains(response, "temba-header-bar")
+        self.assertNotContains(response, "back-button")
         self.assertContains(response, "evt.detail.key === undefined")
         self.assertNotContains(response, "temba-tabs")
 
@@ -1613,7 +1619,7 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
             schedule=Schedule.create(self.org, timezone.now() + timedelta(days=4), Schedule.REPEAT_NEVER),
         )
         paused_bcast.schedule.is_paused = True
-        paused_bcast.schedule.save()
+        paused_bcast.schedule.save(update_fields=("is_paused",))
 
         # a paused scheduled trigger - should be excluded
         paused_trigger = Trigger.create(
@@ -1625,7 +1631,7 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
         )
         paused_trigger.contacts.add(contact)
         paused_trigger.schedule.is_paused = True
-        paused_trigger.schedule.save()
+        paused_trigger.schedule.save(update_fields=("is_paused",))
 
         future = self.requestView(timeline_url, self.admin).json()["future"]
         messages = [e.get("message") for e in future if e["type"] == "scheduled_broadcast"]
@@ -1861,7 +1867,7 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
         self.assertEqual(302, response.status_code)
 
         contact.refresh_from_db()
-        self.assertIsNone(contact.current_flow)
+        self.assertIsNone(contact.current_flow_uuid)
 
         # can't interrupt contact in other org
         other_contact_interrupt = reverse("contacts.contact_interrupt", args=[other_org_contact.uuid])
@@ -1870,7 +1876,7 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
 
         # contact should be unchanged
         other_org_contact.refresh_from_db()
-        self.assertIsNotNone(other_org_contact.current_flow)
+        self.assertIsNotNone(other_org_contact.current_flow_uuid)
 
     @mock_mailroom
     def test_delete(self, mr_mocks):

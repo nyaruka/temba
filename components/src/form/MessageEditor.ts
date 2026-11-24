@@ -9,7 +9,7 @@ import { getClasses } from '../utils';
 import { Icon } from '../Icons';
 
 /**
- * MessageEditor is a composed component that combines temba-completion and temba-media-picker
+ * MessageEditor is a composed component that combines temba-rich-edit and temba-media-picker
  * for editing messages with text completion and file attachments
  */
 export class MessageEditor extends FieldElement {
@@ -435,10 +435,6 @@ export class MessageEditor extends FieldElement {
     }
   }
 
-  public render(): TemplateResult {
-    return this.renderField();
-  }
-
   protected renderWidget(): TemplateResult {
     const hasAttachments = this.hasStaticAttachments();
 
@@ -460,12 +456,9 @@ export class MessageEditor extends FieldElement {
             .value=${this.value}
             placeholder=${this.placeholder}
             ?textarea=${this.textarea}
-            ?autogrow=${this.autogrow}
             ?session=${this.session}
             ?submitOnEnter=${this.submitOnEnter}
-            ?gsm=${this.gsm}
             ?disableCompletion=${this.disableCompletion}
-            maxlength=${ifDefined(this.maxLength)}
             minHeight=${ifDefined(this.minHeight)}
             widgetOnly
             @change=${this.handleCompletionChange}

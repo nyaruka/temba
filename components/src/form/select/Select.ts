@@ -305,6 +305,23 @@ export class Select<T extends SelectOption> extends FieldElement {
         overflow: visible;
       }
 
+      /* Single-mode selected value shrinks with the widget and ends in
+         an ellipsis rather than being cut off at .left-side. The
+         padding / negative margin pair gives the clipping box room for
+         descenders without moving the text. */
+      .single .selected-item > * {
+        min-width: 0;
+      }
+
+      .single .selected-item .option-name > span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        padding: 0.2em 0;
+        margin: -0.2em 0;
+      }
+
       .multi .selected-item .option-name {
         flex: 0 1 auto;
         font-size: inherit;
@@ -506,6 +523,15 @@ export class Select<T extends SelectOption> extends FieldElement {
       .multi .placeholder {
         display: block;
         align-self: center;
+      }
+
+      .current-fn {
+        padding: 10px;
+        margin: 5px;
+        background: var(--color-primary-light);
+        color: rgba(0, 0, 0, 0.5);
+        border-radius: var(--curvature-widget);
+        font-size: 90%;
       }
 
       .footer {
@@ -1703,6 +1729,7 @@ export class Select<T extends SelectOption> extends FieldElement {
       );
       this.query = result.query;
       this.completionOptions = result.options;
+      this.currentFunction = result.currentFunction;
       this.visibleOptions = [];
       this.anchorPosition = result.anchorPosition;
       this.fireCustomEvent(CustomEventType.FetchComplete);
@@ -2637,9 +2664,5 @@ export class Select<T extends SelectOption> extends FieldElement {
         : null
     }
     `;
-  }
-
-  public render(): TemplateResult {
-    return this.renderField();
   }
 }

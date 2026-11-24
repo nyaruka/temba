@@ -1,13 +1,14 @@
 import itertools
 import logging
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 from datetime import date
+from typing import Any
 
 import openpyxl
 
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.db.models import F, Q, Sum, Value
 from django.db.models.functions import Cast, Lower
 from django.utils import timezone
@@ -15,7 +16,7 @@ from django.utils.translation import gettext_lazy as _
 
 from temba import mailroom
 from temba.contacts.models import Contact
-from temba.orgs.models import DependencyMixin, Export, ExportType, Org, OrgMembership
+from temba.orgs.models import DependencyMixin, Export, ExportType, Org, OrgMembership, OrgTally
 from temba.users.models import User
 from temba.utils.dates import date_range
 from temba.utils.db.functions import SplitPart
@@ -39,27 +40,30 @@ class Shortcut(OrgAsset):
         assert cls.is_valid_name(name), f"'{name}' is not a valid shortcut name"
         assert not org.shortcuts.filter(name__iexact=name).exists(), f"shortcut with name '{name}' already exists"
 
-        shortcut = org.shortcuts.create(name=name, text=text, created_by=user, modified_by=user)
-        shortcut.request_indexing()
+        # the flag has to commit with the change, as it's all that records it if mailroom's request is lost
+        with transaction.atomic():
+            shortcut = org.shortcuts.create(name=name, text=text, created_by=user, modified_by=user)
+            shortcut.mark_knowledge_pending()
         return shortcut
 
-    def request_indexing(self):
+    def mark_knowledge_pending(self):
         """
-        Asks mailroom to index the org's shortcuts knowledge, which is derived from its shortcuts.
+        Flags the org's shortcuts knowledge, which is derived from its shortcuts, as needing reindexing.
         """
         from temba.knowledge.models import KnowledgeSource
 
         source = KnowledgeSource.get_system(self.org, KnowledgeSource.TYPE_SHORTCUTS)
         if source:
-            source.request_indexing()
+            source.mark_pending()
 
     def release(self, user):
         self.is_active = False
         self.name = self._deleted_name()
         self.modified_by = user
-        self.save(update_fields=("name", "is_active", "modified_by", "modified_on"))
 
-        self.request_indexing()
+        with transaction.atomic():
+            self.save(update_fields=("name", "is_active", "modified_by", "modified_on"))
+            self.mark_knowledge_pending()
 
     class Meta:
         constraints = [models.UniqueConstraint("org", Lower("name"), name="unique_shortcut_names")]
@@ -391,10 +395,20 @@ class TicketFolder(metaclass=ABCMeta):
     def get_icon(self, count) -> str:
         return self.icon
 
-    def get_queryset(self, org, user, *, ordered: bool):
+    @abstractmethod
+    def get_open_count(self, org, user, topics) -> int:  # pragma: no cover
+        """
+        Gets the count of open tickets in this folder for the given user, across the given topics they can access.
+        """
+
+    def get_queryset(self, org, user, *, ordered: bool, oldest_first: bool = False):
         qs = Ticket.get_accessible(org, user) if self.restrict_topics else org.tickets.all()
 
-        if ordered:
+        if ordered and oldest_first:
+            # the ticket UI's oldest first order: only open tickets, least recent activity first - with status fixed
+            # this reads the same indexes as the default order, backwards
+            qs = qs.filter(status=Ticket.STATUS_OPEN).order_by("last_activity_on", "id")
+        elif ordered:
             # the ticket UI's display order: open ('O' > 'C') before closed, then most recent activity - for
             # status filtered fetches the leading term is constant so this is just most recent activity
             qs = qs.order_by("-status", "-last_activity_on", "-id")
@@ -428,8 +442,11 @@ class MineFolder(TicketFolder):
     def get_icon(self, count) -> str:
         return self.icon if count else "tickets_mine_done"
 
-    def get_queryset(self, org, user, *, ordered: bool):
-        return super().get_queryset(org, user, ordered=ordered).filter(assignee=user)
+    def get_open_count(self, org, user, topics) -> int:
+        return Ticket.get_assignee_count(org, user, topics, Ticket.STATUS_OPEN)
+
+    def get_queryset(self, org, user, *, ordered: bool, oldest_first: bool = False):
+        return super().get_queryset(org, user, ordered=ordered, oldest_first=oldest_first).filter(assignee=user)
 
 
 class UnassignedFolder(TicketFolder):
@@ -443,8 +460,11 @@ class UnassignedFolder(TicketFolder):
     icon = "tickets_unassigned"
     restrict_topics = True
 
-    def get_queryset(self, org, user, *, ordered: bool):
-        return super().get_queryset(org, user, ordered=ordered).filter(assignee=None)
+    def get_open_count(self, org, user, topics) -> int:
+        return Ticket.get_assignee_count(org, None, topics, Ticket.STATUS_OPEN)
+
+    def get_queryset(self, org, user, *, ordered: bool, oldest_first: bool = False):
+        return super().get_queryset(org, user, ordered=ordered, oldest_first=oldest_first).filter(assignee=None)
 
 
 class AllFolder(TicketFolder):
@@ -457,6 +477,12 @@ class AllFolder(TicketFolder):
     verbose_name = _("All Tickets")
     icon = "tickets_all"
     restrict_topics = True
+
+    def get_open_count(self, org, user, topics, assignee=None) -> int:
+        # filtered to one agent's tickets, it's their count
+        if assignee:
+            return Ticket.get_assignee_count(org, assignee, topics, Ticket.STATUS_OPEN)
+        return Ticket.get_status_count(org, topics, Ticket.STATUS_OPEN)
 
 
 FOLDERS = {f.slug: f() for f in TicketFolder.__subclasses__()}
@@ -473,8 +499,21 @@ class TopicFolder(TicketFolder):
         self.topic = topic
         self.restrict_topics = False  # already filtered by a single topic
 
-    def get_queryset(self, org, user, *, ordered: bool):
-        return super().get_queryset(org, user, ordered=ordered).filter(topic=self.topic)
+    def get_open_count(self, org, user, topics) -> int:
+        return Ticket.get_topic_counts(org, [self.topic], Ticket.STATUS_OPEN)[self.topic]
+
+    def get_queryset(self, org, user, *, ordered: bool, oldest_first: bool = False):
+        return super().get_queryset(org, user, ordered=ordered, oldest_first=oldest_first).filter(topic=self.topic)
+
+
+def get_daily_tallies(org: Org, keys_by_scope: dict, since: date, until: date) -> dict[tuple[date, Any], int]:
+    """
+    Gets the daily totals of the given ticket tally scopes, e.g. opened:<topic>, over days from since up to until, by
+    day and the key given for each scope, omitting those with no total.
+    """
+    full_scopes = {f"tickets/{s}": k for s, k in keys_by_scope.items()}
+    totals = OrgTally.get_daily_totals(org, list(full_scopes), since, until)
+    return {(day, full_scopes[scope]): count for (day, scope), count in totals.items()}
 
 
 def export_ticket_stats(org: Org, since: date, until: date) -> openpyxl.Workbook:
@@ -501,29 +540,40 @@ def export_ticket_stats(org: Org, since: date, until: date) -> openpyxl.Workbook
         sheet.cell(row=2, column=user_col + 1, value="Replies")
         user_col += 2
 
-    org_openings = org.daily_counts.period(since, until).prefix("tickets:opened:").day_totals(scoped=False)
-    all_replies = org.daily_counts.period(since, until).prefix("msgs:ticketreplies:").day_totals(scoped=True)
-    all_assignments = org.daily_counts.period(since, until).prefix("tickets:assigned:").day_totals(scoped=True)
-    all_resptimes = org.daily_counts.period(since, until).prefix("ticketresptime:").day_totals(scoped=True)
+    topic_ids = [0] + list(org.topics.values_list("id", flat=True))  # 0 is no topic
+    team_ids = [0] + list(org.teams.values_list("id", flat=True))  # 0 is no team
 
-    user_assignments = defaultdict(dict)
-    for (day, scope), count in all_assignments.items():
-        user_id = int(scope.split(":")[-1])
-        user_assignments[user_id][day] = count
+    totals = get_daily_tallies(
+        org,
+        {
+            **{f"opened:{t}": ("opened", t) for t in topic_ids},
+            **{f"teamreplies:{t}": ("teamreplies", t) for t in team_ids},
+            **{f"assigned:{u.id}": ("assigned", u.id) for u in users},
+            **{f"userreplies:{u.id}": ("userreplies", u.id) for u in users},
+            "resptime:total": ("resptime", "total"),
+            "resptime:count": ("resptime", "count"),
+        },
+        since,
+        until,
+    )
 
-    org_replies = defaultdict(int)
-    user_replies = defaultdict(dict)
-    for (day, scope), count in all_replies.items():
-        user_id = int(scope.split(":")[-1])
-        user_replies[user_id][day] = count
-        org_replies[day] += count
+    org_openings, org_replies = defaultdict(int), defaultdict(int)
+    org_resptimes, org_respcounts = {}, {}
+    user_assignments, user_replies = defaultdict(dict), defaultdict(dict)
 
-    org_resptimes, org_respcounts = defaultdict(int), defaultdict(int)
-    for (day, scope), count in all_resptimes.items():
-        if scope.endswith(":total"):
-            org_resptimes[day] += count
-        elif scope.endswith(":count"):
-            org_respcounts[day] += count
+    for (day, (kind, key)), count in totals.items():
+        if kind == "opened":
+            org_openings[day] += count
+        elif kind == "teamreplies":
+            org_replies[day] += count
+        elif kind == "assigned":
+            user_assignments[key][day] = count
+        elif kind == "userreplies":
+            user_replies[key][day] = count
+        elif key == "total":
+            org_resptimes[day] = count
+        else:
+            org_respcounts[day] = count
 
     org_respavgs = {}
     for day, total in org_resptimes.items():

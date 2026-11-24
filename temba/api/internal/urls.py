@@ -2,6 +2,7 @@ from rest_framework.urlpatterns import format_suffix_patterns
 
 from django.urls import re_path
 
+from temba.ai.api import AIModelsEndpoint
 from temba.campaigns.api import CampaignsEndpoint
 from temba.channels.api import ChannelHTTPLogsEndpoint, ChannelLogsEndpoint, ChannelsEndpoint
 from temba.contacts.api import ContactsEndpoint
@@ -23,6 +24,7 @@ from .views import (
 
 urlpatterns = [
     # ========== endpoints A-Z ===========
+    re_path(r"^ai_models$", AIModelsEndpoint.as_view(), name="api.internal.ai_models"),
     re_path(r"^articles$", ArticlesEndpoint.as_view(), name="api.internal.articles"),
     re_path(r"^assets$", AssetsEndpoint.as_view(), name="api.internal.assets"),
     re_path(r"^broadcasts$", BroadcastsEndpoint.as_view(), name="api.internal.broadcasts"),

@@ -18,7 +18,7 @@ from temba.orgs.views.base import BaseListComponentView, BaseMenuView
 from temba.orgs.views.mixins import OrgObjPermsMixin, OrgPermsMixin
 from temba.schedules.models import Schedule
 from temba.utils.fields import SelectMultipleWidget, SelectWidget, TembaChoiceField, TembaMultipleChoiceField
-from temba.utils.views.mixins import ComponentFormMixin, ModalFormMixin, SpaMixin
+from temba.utils.views.mixins import ComponentFormMixin, ModalFormMixin, ScopedUpdateMixin, SpaMixin
 
 from .models import Trigger
 
@@ -354,7 +354,7 @@ class TriggerCRUDL(SmartCRUDL):
     class CreateClosedTicket(BaseCreate):
         trigger_type = Trigger.TYPE_CLOSED_TICKET
 
-    class Update(ModalFormMixin, ComponentFormMixin, OrgObjPermsMixin, SmartUpdateView):
+    class Update(ModalFormMixin, ComponentFormMixin, OrgObjPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         slug_url_kwarg = "uuid"
         submit_button_name = _("Save")
 

@@ -5,6 +5,7 @@ from django_valkey import get_valkey_connection
 
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import date_format
 
 from temba import mailroom
 from temba.ai.models import LLM
@@ -19,6 +20,7 @@ from temba.globals.models import Global
 from temba.ivr.models import Call
 from temba.knowledge.models import Article, KnowledgeSource
 from temba.msgs.models import Broadcast, Msg
+from temba.notifications.incidents.builtin import ChannelDisconnectedIncidentType
 from temba.notifications.types import ExportFinishedNotificationType
 from temba.orgs.models import Org, OrgRole
 from temba.request_logs.models import HTTPLog
@@ -79,6 +81,58 @@ class EndpointsTest(APITestMixin, TembaTest):
         # missing or invalid level, no results
         self.assertGet(endpoint_url + "?level=hood", [self.agent], results=[])
         self.assertGet(endpoint_url, [self.agent], results=[])
+
+    def test_ai_models(self):
+        endpoint_url = reverse("api.internal.ai_models") + ".json"
+
+        self.assertGetNotPermitted(endpoint_url, [None, self.agent])
+        self.assertPostNotAllowed(endpoint_url)
+        self.assertDeleteNotAllowed(endpoint_url)
+
+        openai = LLM.create(self.org, self.admin, OpenAIType(), "gpt-5.4-mini", "GPT-4", {})
+        azure = LLM.create(self.org, self.admin, OpenAIAzureType(), "gpt-35-turbo", "azure GPT", {})
+        deleted = LLM.create(self.org, self.admin, OpenAIAzureType(), "gpt-35-turbo", "Deleted", {})
+        deleted.release(self.admin)
+        system = LLM.create(self.org, self.admin, OpenAIType(), "gpt-5.4-mini", "System", {})
+        system.is_system = True
+        system.save(update_fields=("is_system",))
+        LLM.create(self.org2, self.admin2, OpenAIType(), "gpt-5.4-mini", "Other Org", {})
+
+        flow1 = self.create_flow("Flow 1")
+        flow2 = self.create_flow("Flow 2")
+        flow1.llm_dependencies.add(openai)
+        flow2.llm_dependencies.add(openai)
+
+        # deleted, system and other org models are excluded, and they're ordered by name
+        self.assertGet(
+            endpoint_url,
+            [self.editor, self.admin],
+            results=[
+                {
+                    "uuid": str(azure.uuid),
+                    "name": "azure GPT",
+                    "type": "openai_azure",
+                    "icon": "ai_microsoft",
+                    "model": "gpt-35-turbo",
+                    "usages": 0,
+                },
+                {
+                    "uuid": str(openai.uuid),
+                    "name": "GPT-4",
+                    "type": "openai",
+                    "icon": "ai_openai",
+                    "model": "gpt-5.4-mini",
+                    "usages": 2,
+                },
+            ],
+            num_queries=NUM_BASE_QUERIES + 2,
+        )
+
+        # sortable by name and usages in both directions, and an unknown sort falls back to name
+        self.assertGet(endpoint_url + "?sort=-name", [self.admin], results=[openai, azure])
+        self.assertGet(endpoint_url + "?sort=usages", [self.admin], results=[azure, openai])
+        self.assertGet(endpoint_url + "?sort=-usages", [self.admin], results=[openai, azure])
+        self.assertGet(endpoint_url + "?sort=nope", [self.admin], results=[azure, openai])
 
     def test_calls(self):
         endpoint_url = reverse("api.internal.calls") + ".json"
@@ -652,8 +706,44 @@ class EndpointsTest(APITestMixin, TembaTest):
         self.create_channel_tally(twilio, "voice:in", yesterday, 1)
         self.create_channel_tally(twilio, "text:out", today - timedelta(days=30), 100)
 
+        # and a channel failing most of what it sends
+        self.create_channel_tally(vonage, "text:out", yesterday, 30)
+        self.create_channel_tally(vonage, "text:failed", yesterday, 20)
+
+        # and one that was, but whose sends today are going through
+        recovering = self.create_channel("NX", "Recovering", "+12065551414", country="US")
+        self.create_channel_tally(recovering, "text:out", yesterday, 30)
+        self.create_channel_tally(recovering, "text:failed", yesterday, 20)
+        self.create_channel_tally(recovering, "text:out", today, 100)
+        self.create_channel_tally(recovering, "text:failed", today, 1)
+
+        # and a phone that's stopped syncing, which needs no read beyond the channel itself
+        phone = self.create_channel("A", "Phone", "+250788123123")
+        phone.created_on = timezone.now() - timedelta(days=1)
+        phone.save(update_fields=("created_on",))
+        self.set_android_sync(phone, synced_on=timezone.now() - timedelta(hours=2))
+
+        # prefetched health is the same as each channel's own, and takes the same few reads however many channels
+        channels = list(Channel.objects.filter(org=self.org, is_active=True))
+        with self.assertNumQueries(5):
+            Channel.prefetch_health(channels)
+        with self.assertNumQueries(0):
+            prefetched = [c.health for c in channels]
+
+        self.assertEqual([Channel.objects.get(id=c.id).health for c in channels], prefetched)
+        self.assertEqual(
+            {"Ready", "Unhealthy", "Recovering", "Disabled", "Not syncing"}, {str(h.value) for h in prefetched}
+        )
+        Channel.objects.filter(id__in=(recovering.id, phone.id)).update(is_active=False)  # only needed here
+
+        # an empty page has nothing to prefetch
+        with self.assertNumQueries(0):
+            Channel.prefetch_health([])
+
         # without the endpoint's bulk prefetch, the series reads the tallies directly
-        self.assertEqual({"in": [0] * 12 + [3, 0], "out": [0] * 12 + [10, 0]}, twilio.get_activity_series())
+        self.assertEqual(
+            {"in": [0] * 12 + [3, 0], "out": [0] * 12 + [10, 0], "failed": [0] * 14}, twilio.get_activity_series()
+        )
 
         # an empty page has nothing to prefetch
         with self.assertNumQueries(0):
@@ -678,18 +768,39 @@ class EndpointsTest(APITestMixin, TembaTest):
                     "address": "+1 206-555-1212",
                     "is_enabled": True,
                     "speed": "very_slow",
+                    "health": {
+                        "tone": "good",
+                        "value": "Ready",
+                        "note": "Sending and receiving messages.",
+                        "cause": None,
+                    },
                     "received": 3,
                     "sent": 10,
-                    "activity": {"in": [0] * 12 + [3, 0], "out": [0] * 12 + [10, 0]},
+                    "activity": {"in": [0] * 12 + [3, 0], "out": [0] * 12 + [10, 0], "failed": [0] * 14},
                     "created_on": matchers.ISODatetime(),
                 },
                 rows[str(twilio.uuid)],
             )
             self.assertEqual("slow", rows[str(vonage.uuid)]["speed"])
+            self.assertEqual(
+                {
+                    "tone": "bad",
+                    "value": "Unhealthy",
+                    "note": f"67% of the 30 messages sent since {date_format(yesterday, 'MONTH_DAY_FORMAT')} have failed.",
+                    "cause": "failing",
+                },
+                rows[str(vonage.uuid)]["health"],
+            )
+            self.assertEqual("disabled", rows[str(old.uuid)]["health"]["cause"])
             self.assertIsNone(rows[str(android.uuid)]["speed"])  # no limit of its own, so the default
             self.assertIsNone(rows[str(old.uuid)]["speed"])  # disabled
             self.assertFalse(rows[str(old.uuid)]["is_enabled"])
-            self.assertEqual({"in": [0] * 14, "out": [0] * 14}, rows[str(telegram.uuid)]["activity"])
+            self.assertEqual(
+                {"in": [0] * 14, "out": [0] * 14, "failed": [0] * 14}, rows[str(telegram.uuid)]["activity"]
+            )
+
+            # the share of what a channel sent each day which failed, for its sparkline when it's failing
+            self.assertEqual([0] * 12 + [66.7, 0], rows[str(vonage.uuid)]["activity"]["failed"])
             return True
 
         # slow channels are only pointed out to workspaces big enough for it to matter
@@ -813,8 +924,8 @@ class EndpointsTest(APITestMixin, TembaTest):
 
         # give flow1 some runs (3 completed, 1 waiting, 1 active, 1 expired) and flow2 some waiting runs
         for scope, count in (("status:C", 3), ("status:W", 1), ("status:A", 1), ("status:X", 1)):
-            flow1.counts.create(scope=scope, count=count)
-        flow2.counts.create(scope="status:W", count=5)
+            flow1.tallies.create(scope=scope, count=count)
+        flow2.tallies.create(scope="status:W", count=5)
 
         # and some recent engagement for the sparkline
         today = timezone.now().date()
@@ -910,12 +1021,12 @@ class EndpointsTest(APITestMixin, TembaTest):
         export2 = TicketExport.create(self.org, self.editor, start_date=timezone.now(), end_date=timezone.now())
         ExportFinishedNotificationType.create(export2)
 
-        # and org being suspended
-        self.org.suspend()
+        # and a channel incident
+        ChannelDisconnectedIncidentType.get_or_create(self.channel)
 
         export1_notification = export1.notifications.get()
         export2_notification = export2.notifications.get()
-        suspended_notification = self.admin.notifications.get(notification_type="incident:started")
+        incident_notification = self.admin.notifications.get(notification_type="incident:started")
 
         self.assertGet(
             endpoint_url,
@@ -924,10 +1035,10 @@ class EndpointsTest(APITestMixin, TembaTest):
                 {
                     "type": "incident:started",
                     "created_on": matchers.ISODatetime(),
-                    "url": f"/notification/read/{suspended_notification.id}/",
+                    "url": f"/notification/read/{incident_notification.id}/",
                     "is_seen": False,
                     "incident": {
-                        "type": "org:suspended",
+                        "type": "channel:disconnected",
                         "started_on": matchers.ISODatetime(),
                         "ended_on": None,
                     },

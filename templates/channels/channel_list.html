@@ -89,43 +89,18 @@
         }
       });
 
-      // the embedded content menu fires temba-selection - dispatch it the
-      // same way the page chrome's content menu (spa_page_menu.html) does
       list.addEventListener("temba-selection", function(event) {
         var item = event.detail.item;
         var click = event.detail.event;
-        if (item.type === "link") {
-          // help links go to another site, so open them in a tab of their own
-          if (/^https?:\/\//.test(item.url)) {
-            if (click) {
-              click.preventDefault();
-            }
-            window.open(item.url, "_blank");
-            return;
-          }
+        // help links go to another site, so open them in a tab of their own
+        if (item.type === "link" && /^https?:\/\//.test(item.url)) {
           if (click) {
             click.preventDefault();
-            click.stopPropagation();
-            if (click.metaKey && item.url) {
-              window.open(item.url, "_blank");
-              return;
-            }
           }
-          spaGet(item.url);
-        } else if (item.type === "modax") {
-          showModax(item.title, item.url, {
-            disabled: item.disabled,
-            onSubmit: item.on_submit,
-            onRedirect: item.on_redirect,
-            id: item.modal_id,
-            originX: event.detail.originX,
-            originY: event.detail.originY
-          });
-        } else if (item.type === "js") {
-          if (window[item.id]) {
-            window[item.id]();
-          }
+          window.open(item.url, "_blank");
+          return;
         }
+        dispatchContentMenuItem(item, click);
       });
 
       // See msgs/msg_list.html for the full rationale: stash the list's

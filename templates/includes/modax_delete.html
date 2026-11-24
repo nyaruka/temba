@@ -1,0 +1,28 @@
+{% load i18n %}
+{% comment %}
+  The delete link in an edit dialog's footer, beside its buttons. Clicking it swaps the dialog for the one that
+  confirms the delete. Takes delete_url, delete_label (the link text) and delete_title (the confirm dialog's title),
+  which an update view sets in its context.
+{% endcomment %}
+<div data-modax-gutter>
+  <a
+    href="{{ delete_url }}"
+    class="modax-delete"
+    style="color: var(--danger); font-size: 13px; font-weight: 500; text-decoration: none; padding: 0 4px"
+    data-title="{{ delete_title }}"
+    onclick="event.preventDefault(); openModaxDelete(this.getAttribute('href'), this.dataset.title)"
+  >{{ delete_label }}</a>
+</div>
+<script>
+  function openModaxDelete(url, title) {
+    var modax = document.querySelector("temba-modax#shared-modax");
+    if (modax) {
+      modax.open = false;
+    }
+    setTimeout(function() {
+      showModax(title, url, {
+        id: "modax-delete"
+      });
+    }, 250);
+  }
+</script>
