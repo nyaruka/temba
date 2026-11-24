@@ -1,13 +1,8 @@
-import logging
-
-import requests
 from celery import shared_task
 
 from temba.channels.models import Channel
 from temba.orgs.models import Org
 from temba.utils.crons import cron_task
-
-logger = logging.getLogger(__name__)
 
 
 @cron_task()
@@ -42,9 +37,4 @@ def refresh_channel_templates(channel_id):
     if not channel:
         return
 
-    try:
-        channel.refresh_templates()
-    except requests.RequestException:
-        pass  # logged to channel's HTTP logs by the channel type
-    except Exception as e:
-        logger.error(f"Error refreshing whatsapp templates: {str(e)}", exc_info=True)
+    channel.refresh_templates()
