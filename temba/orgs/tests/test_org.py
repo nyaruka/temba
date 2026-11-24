@@ -221,7 +221,11 @@ class OrgTest(TembaTest):
         assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
         assert_org(org1_child2, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
         assert_org(self.org2, Org.STATUS_ACTIVE, changed=False)
-        assert_signalled((self.org, Org.STATUS_RESTRICTED))
+        assert_signalled(
+            (self.org, Org.STATUS_RESTRICTED),
+            (org1_child1, Org.STATUS_RESTRICTED),
+            (org1_child2, Org.STATUS_RESTRICTED),
+        )
         self.assertEqual(Org.BLOCKER_RESTRICTED, self.org.send_blocker)
 
         # new children get their parent's status
@@ -243,7 +247,12 @@ class OrgTest(TembaTest):
 
         org1_child4 = self.org.create_new(self.admin, "Child 4", tzone.utc, as_child=True)
         assert_org(org1_child4, Org.STATUS_SUSPENDED, Org.RESTRICTED_BILLING)
-        assert_signalled((self.org, Org.STATUS_SUSPENDED))
+        assert_signalled(
+            (self.org, Org.STATUS_SUSPENDED),
+            (org1_child1, Org.STATUS_SUSPENDED),
+            (org1_child2, Org.STATUS_SUSPENDED),
+            (org1_child3, Org.STATUS_SUSPENDED),
+        )
         self.assertEqual(Org.BLOCKER_SUSPENDED, self.org.send_blocker)
 
         self.org.suspend()  # noop
@@ -257,7 +266,13 @@ class OrgTest(TembaTest):
         assert_org(self.org, Org.STATUS_ACTIVE)
         assert_org(org1_child1, Org.STATUS_ACTIVE)
         assert_org(self.org2, Org.STATUS_ACTIVE, changed=False)
-        assert_signalled((self.org, Org.STATUS_ACTIVE))
+        assert_signalled(
+            (self.org, Org.STATUS_ACTIVE),
+            (org1_child1, Org.STATUS_ACTIVE),
+            (org1_child2, Org.STATUS_ACTIVE),
+            (org1_child3, Org.STATUS_ACTIVE),
+            (org1_child4, Org.STATUS_ACTIVE),
+        )
         self.assertIsNone(self.org.send_blocker)
 
         self.org.reactivate()  # noop
@@ -312,10 +327,17 @@ class OrgTest(TembaTest):
 
         assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_FLAGGED)
         assert_org(org1_child2, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
+        assert_signalled(
+            (self.org, Org.STATUS_RESTRICTED),
+            (org1_child2, Org.STATUS_RESTRICTED),
+            (org1_child3, Org.STATUS_RESTRICTED),
+            (org1_child4, Org.STATUS_RESTRICTED),
+        )
 
         # and when the flag is lifted, the child goes back to sharing its parent's restriction
         org1_child1.unflag()
         assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
+        assert_signalled((org1_child1, Org.STATUS_RESTRICTED))
 
         # flagging replaces a billing or limits restriction, but children keep it until their parent is active again
         self.org.flag()
@@ -324,9 +346,18 @@ class OrgTest(TembaTest):
         assert_org(org1_child1, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
         assert_org(org1_child2, Org.STATUS_RESTRICTED, Org.RESTRICTED_BILLING, suspends_on)
 
+        assert_signalled((self.org, Org.STATUS_RESTRICTED))
+
         self.org.unflag()
         assert_org(org1_child1, Org.STATUS_ACTIVE)
         assert_org(org1_child2, Org.STATUS_ACTIVE)
+        assert_signalled(
+            (self.org, Org.STATUS_ACTIVE),
+            (org1_child1, Org.STATUS_ACTIVE),
+            (org1_child2, Org.STATUS_ACTIVE),
+            (org1_child3, Org.STATUS_ACTIVE),
+            (org1_child4, Org.STATUS_ACTIVE),
+        )
 
         self.org.restrict(Org.RESTRICTED_LIMITS, suspends_on=suspends_on)
         org1_child1.flag()  # replaces the limits restriction it shared with its parent

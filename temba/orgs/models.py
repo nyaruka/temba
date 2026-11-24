@@ -617,12 +617,20 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
         # children share a billing or limits restriction or suspension, and only lose it once this org is active
         # again, but anything else applies to them individually and is left alone
+        changed_children = []
         if self.status_cascades or status == Org.STATUS_ACTIVE:
             inheriting = Q(status=Org.STATUS_ACTIVE) | Q(status_reason__in=Org.CASCADING_REASONS)
             unchanged = Q(status=status, status_reason=reason)
-            self.children.filter(inheriting, is_active=True).exclude(unchanged).update(**changes)
+            changed_children = list(self.children.filter(inheriting, is_active=True).exclude(unchanged).order_by("id"))
+            Org.objects.filter(id__in=[c.id for c in changed_children]).update(**changes)
 
         org_status_changed.send(sender=Org, org=self, status=status)
+
+        for child in changed_children:
+            for name, value in changes.items():
+                setattr(child, name, value)
+            child.parent = self
+            org_status_changed.send(sender=Org, org=child, status=status)
 
     def flag(self):
         """
