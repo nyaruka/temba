@@ -308,9 +308,14 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
         # a draft isn't indexed so its edits needn't be, but a published article's are
         self.assertEqual([], mr_mocks.calls["knowledge_index"])
 
+        self.helpdesk.status = KnowledgeSource.STATUS_READY
+        self.helpdesk.save(update_fields=("status",))
+
         article.publish(self.admin)
         self.assertUpdateSubmit(update_url, self.admin, {"title": "All About Flows", "body": "# Flows!"})
 
+        self.helpdesk.refresh_from_db()
+        self.assertEqual(KnowledgeSource.STATUS_PENDING, self.helpdesk.status)
         self.assertEqual([call(self.org, self.helpdesk)], mr_mocks.calls["knowledge_index"])
 
         # a section is described rather than written: no editor, and the dialog isn't held open to the window's
@@ -356,8 +361,13 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
             return self.client.post(publish_url, json.dumps(payload), content_type="application/json")
 
         # publishing happens from the article's row, so it needs nothing but the article and the state wanted
+        self.helpdesk.status = KnowledgeSource.STATUS_READY
+        self.helpdesk.save(update_fields=("status",))
         response = publish({"uuid": str(article.uuid), "status": "published"})
         self.assertEqual({"status": "ok"}, response.json())
+
+        self.helpdesk.refresh_from_db()
+        self.assertEqual(KnowledgeSource.STATUS_PENDING, self.helpdesk.status)
 
         article.refresh_from_db()
         self.assertEqual(Article.STATUS_PUBLISHED, article.status)
@@ -365,8 +375,13 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
 
         modified_on = article.modified_on
 
+        self.helpdesk.status = KnowledgeSource.STATUS_READY
+        self.helpdesk.save(update_fields=("status",))
         response = publish({"uuid": str(article.uuid), "status": "draft"})
         self.assertEqual({"status": "ok"}, response.json())
+
+        self.helpdesk.refresh_from_db()
+        self.assertEqual(KnowledgeSource.STATUS_PENDING, self.helpdesk.status)
 
         article.refresh_from_db()
         self.assertEqual(Article.STATUS_DRAFT, article.status)

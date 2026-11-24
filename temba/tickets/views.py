@@ -104,7 +104,7 @@ class ShortcutCRUDL(SmartCRUDL):
 
         def post_save(self, obj):
             obj = super().post_save(obj)
-            obj.request_indexing()
+            obj.mark_knowledge_pending()
             return obj
 
         def get_success_url(self):

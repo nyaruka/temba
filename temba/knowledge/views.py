@@ -213,8 +213,6 @@ class KnowledgeSourceCRUDL(SmartCRUDL):
                 }
                 # anything that changes what gets crawled means it needs reindexing
                 if new_config != obj.config:
-                    obj.status = KnowledgeSource.STATUS_PENDING
-                    obj.error = None
                     self.needs_indexing = True
                 obj.config = new_config
 
@@ -224,7 +222,7 @@ class KnowledgeSourceCRUDL(SmartCRUDL):
             obj = super().post_save(obj)
 
             if self.needs_indexing:
-                obj.request_indexing()
+                obj.mark_pending()
             return obj
 
         def get_success_url(self):
@@ -550,7 +548,7 @@ class ArticleCRUDL(SmartCRUDL):
 
             # a draft isn't indexed so only a published article's edits need to be
             if obj.status == Article.STATUS_PUBLISHED:
-                obj.source.request_indexing()
+                obj.source.mark_pending()
             return obj
 
     class Publish(HelpdeskMixin, PostOnlyMixin, OrgPermsMixin, SmartTemplateView):
@@ -585,7 +583,7 @@ class ArticleCRUDL(SmartCRUDL):
                 article.unpublish(request.user)
 
             # here rather than in publish/unpublish so that imports, which call those per article, request it once
-            self.helpdesk.request_indexing()
+            self.helpdesk.mark_pending()
 
             return JsonResponse({"status": "ok"})
 
