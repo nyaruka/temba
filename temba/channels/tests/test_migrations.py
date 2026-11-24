@@ -7,8 +7,8 @@ from temba.tests import MigrationTest
 
 class BackfillAndroidSyncStateTest(MigrationTest):
     app = "channels"
-    migrate_from = "0228_channel_sync_state"
-    migrate_to = "0229_backfill_android_sync_state"
+    migrate_from = "0229_channel_sync_state_not_null"
+    migrate_to = "0230_backfill_android_sync_state"
 
     def setUpBeforeMigration(self, apps):
         Channel = apps.get_model("channels", "Channel")
@@ -67,4 +67,4 @@ class BackfillAndroidSyncStateTest(MigrationTest):
         self.assertTrue(timezone.now() - self.stopped.last_sync.synced_on > timedelta(hours=2, minutes=59))
 
         self.assertEqual(90, android(self.syncing)["android"]["power_level"])
-        self.assertIsNone(android(self.never))
+        self.assertEqual({}, android(self.never))
