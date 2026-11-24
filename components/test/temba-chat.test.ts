@@ -359,3 +359,37 @@ describe('temba-chat channel logs', () => {
     assert.isNotNull(chat.shadowRoot.querySelector('.message-deleted'));
   });
 });
+
+describe('temba-chat failed messages', () => {
+  const failed = (uuid: string, reason: string): ContactEvent => {
+    const event = sent(uuid, 'hi there') as MsgEvent;
+    event._status = {
+      created_on: new Date().toISOString(),
+      status: 'failed',
+      reason: reason as MsgEvent['_status']['reason']
+    };
+    return event;
+  };
+
+  const getError = async (chat: Chat): Promise<string> => {
+    await chat.updateComplete;
+    return chat.shadowRoot
+      .querySelector('.popup div[style*="--color-error"]')
+      ?.textContent.trim();
+  };
+
+  it('describes why a message failed', async () => {
+    const tests = [
+      ['channel_removed', 'Channel was removed'],
+      ['no_destination', 'No channel available to send message'],
+      ['org_suspended', 'Workspace was suspended'],
+      ['unknown', 'Message failed to send']
+    ];
+
+    for (const [reason, expected] of tests) {
+      const chat = await createChat();
+      chat.loadMessages([failed('msg-1', reason)]);
+      assert.equal(await getError(chat), expected, reason);
+    }
+  });
+});

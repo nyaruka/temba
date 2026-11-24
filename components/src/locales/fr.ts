@@ -629,6 +629,7 @@
 'sd0296e1a808e721b': `12e résultat`,
 'sd149dff460c8dc41': `Ignorer les contacts actuellement dans un flux`,
 'sd1f44f1a8bc20e67': `E-mail`,
+'sd21b0a03a40c6d96': `L'espace de travail a été suspendu`,
 'sd25df37df7cb7738': str`Demander ${0}`,
 'sd266428256b0620e': `correspond à`,
 'sd2cd7ff1d59abcb1': `p. ex. https://example.com/webhook`,

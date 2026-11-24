@@ -3091,6 +3091,10 @@
   <source><x id="0" equiv-text="${count}"/> uses</source>
   <target><x id="0" equiv-text="${count}"/> utilisations</target>
 </trans-unit>
+<trans-unit id="sd21b0a03a40c6d96">
+  <source>Workspace was suspended</source>
+  <target>L'espace de travail a été suspendu</target>
+</trans-unit>
 </body>
 </file>
 </xliff>

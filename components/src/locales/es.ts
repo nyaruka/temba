@@ -629,6 +629,7 @@
 'sd0296e1a808e721b': `12.º resultado`,
 'sd149dff460c8dc41': `Omitir contactos que están en un flujo`,
 'sd1f44f1a8bc20e67': `Correo electrónico`,
+'sd21b0a03a40c6d96': `El espacio de trabajo fue suspendido`,
 'sd25df37df7cb7738': str`Solicitar ${0}`,
 'sd266428256b0620e': `coincide con`,
 'sd2cd7ff1d59abcb1': `p. ej. https://example.com/webhook`,

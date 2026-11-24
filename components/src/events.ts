@@ -51,7 +51,12 @@ export interface MsgEvent extends ContactEvent {
   _status?: {
     created_on: string;
     status: 'wired' | 'sent' | 'delivered' | 'read' | 'errored' | 'failed';
-    reason: 'error_limit' | 'too_old' | 'channel_removed';
+    reason:
+      | 'error_limit'
+      | 'too_old'
+      | 'channel_removed'
+      | 'no_destination'
+      | 'org_suspended';
   };
   _deleted?: {
     created_on: string;
