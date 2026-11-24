@@ -761,7 +761,7 @@ class TembaTest(SmartminTest):
         }
         with connection.cursor() as cursor:
             cursor.execute(
-                "UPDATE channels_channel SET sync_state = COALESCE(sync_state, '{}') || jsonb_build_object('android', %s::jsonb) WHERE id = %s",
+                "UPDATE channels_channel SET sync_state = sync_state || jsonb_build_object('android', %s::jsonb) WHERE id = %s",
                 [json.dumps(state), channel.id],
             )
 

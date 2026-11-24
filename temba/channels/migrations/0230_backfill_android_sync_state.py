@@ -7,7 +7,7 @@ BATCH_SIZE = 500
 # have android state are skipped, including any that sync while this runs.
 BACKFILL_SQL = r"""
 UPDATE channels_channel c
-   SET sync_state = COALESCE(c.sync_state, '{}') || jsonb_build_object('android', jsonb_build_object(
+   SET sync_state = c.sync_state || jsonb_build_object('android', jsonb_build_object(
            'synced_on', e.created_on,
            'power_source', e.power_source,
            'power_status', e.power_status,
@@ -24,7 +24,7 @@ UPDATE channels_channel c
        WHERE channel_id = ANY(%(channel_ids)s)
     ORDER BY channel_id, id DESC
   ) e
- WHERE c.id = e.channel_id AND (c.sync_state IS NULL OR NOT c.sync_state ? 'android')"""
+ WHERE c.id = e.channel_id AND NOT c.sync_state ? 'android'"""
 
 
 def backfill_android_sync_state(apps, schema_editor):
@@ -42,6 +42,6 @@ def backfill_android_sync_state(apps, schema_editor):
 class Migration(migrations.Migration):
     atomic = False
 
-    dependencies = [("channels", "0229_channel_sync_state_default")]
+    dependencies = [("channels", "0229_channel_sync_state_not_null")]
 
     operations = [migrations.RunPython(backfill_android_sync_state, migrations.RunPython.noop)]
