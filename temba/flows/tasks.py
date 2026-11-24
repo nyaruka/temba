@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from temba.utils.crons import cron_task
 
-from .models import FlowActivityCount, FlowResultCount, FlowRevision, FlowSession, FlowStartCount
+from .models import FlowResultCount, FlowRevision, FlowSession, FlowStartCount
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,6 @@ TRIM_SESSIONS_BATCH_SIZE = 1000
 
 @cron_task(lock_timeout=7200)
 def squash_flow_counts():
-    FlowActivityCount.squash()
     FlowResultCount.squash()
     FlowStartCount.squash()
 

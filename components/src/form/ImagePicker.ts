@@ -312,8 +312,4 @@ export class ImagePicker extends FieldElement {
       </div>
     `;
   }
-
-  public render() {
-    return this.renderField();
-  }
 }

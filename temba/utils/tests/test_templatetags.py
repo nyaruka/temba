@@ -25,7 +25,7 @@ class TembaTagLibraryTest(TembaTest):
     def test_format_datetime(self):
         with patch.object(timezone, "now", return_value=datetime(2015, 9, 15, 0, 0, 0, 0, tzone.utc)):
             self.org.date_format = "D"
-            self.org.save()
+            self.org.save(update_fields=("date_format",))
 
             # date without timezone and no user org in context
             test_date = datetime(2012, 7, 20, 17, 5, 30, 0)
@@ -47,7 +47,7 @@ class TembaTagLibraryTest(TembaTest):
 
             # the org has month first configured
             self.org.date_format = "M"
-            self.org.save()
+            self.org.save(update_fields=("date_format",))
 
             # date without timezone
             test_date = datetime(2012, 7, 20, 17, 5, 0, 0)
@@ -58,7 +58,7 @@ class TembaTagLibraryTest(TembaTest):
 
             # the org has year first configured
             self.org.date_format = "Y"
-            self.org.save()
+            self.org.save(update_fields=("date_format",))
 
             # date without timezone
             test_date = datetime(2012, 7, 20, 17, 5, 0, 0)
@@ -269,3 +269,4 @@ class TembaTagLibraryTest(TembaTest):
         self.assertEqual("", tags.sparkline([3]))
 
         self.assertIn("<svg", tags.sparkline([1, 4, 2]))
+        self.assertIn('<path class="end" d="M160.0 15.0h0.01"></path>', tags.sparkline([1, 4, 2]))

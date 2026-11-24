@@ -36,6 +36,7 @@ class FlowsEndpointTest(APITest):
             status=FlowRun.STATUS_COMPLETED,
             exited_on=timezone.now(),
         )
+        color.tallies.create(scope=f"status:{FlowRun.STATUS_COMPLETED}", count=1)
 
         # flow belong to other org
         other_org = self.create_flow("Other", org=self.org2)
@@ -163,6 +164,6 @@ class FlowsEndpointTest(APITest):
 
         # inactive flows are never returned
         archived.is_active = False
-        archived.save()
+        archived.save(update_fields=("is_active",))
 
         self.assertGet(endpoint_url, [self.editor], results=[color, survey])

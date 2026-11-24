@@ -158,9 +158,11 @@ export class TembaUser extends RapidElement {
               >
                 <div>${this.initials}</div>
               </div>`
-            : html`<temba-icon
+            : // the icon takes its own color, not one a selected row or
+              // hovered menu passes down to icons through --icon-color
+              html`<temba-icon
                 name="${Icon.contact}"
-                style="display:flex;flex-grow:1;justify-content:center;color:rgba(0,0,0,0.35)"
+                style="display:flex;flex-grow:1;justify-content:center;--icon-color:rgba(0,0,0,0.35)"
               ></temba-icon>`}
       </div>
       ${this.showName

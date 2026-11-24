@@ -339,15 +339,15 @@ function fetchAjax(url, options, fullPage = false) {
         orgUUID != window.workspace?.uuid
       ) {
         if (response.redirected) {
-          document.location.href = response.url;
+          leavePage(response.url);
         } else {
-          document.location.href = toFetch;
+          leavePage(toFetch);
         }
         return response;
       }
 
       if (version && tembaVersion != version) {
-        document.location.href = toFetch;
+        leavePage(toFetch);
         return response;
       }
 
@@ -364,7 +364,7 @@ function fetchAjax(url, options, fullPage = false) {
           container === '.spa-content' &&
           response.headers.get('X-Temba-Content-Only') != 1
         ) {
-          document.location.href = response.url;
+          leavePage(response.url);
           return;
         }
 
@@ -376,7 +376,7 @@ function fetchAjax(url, options, fullPage = false) {
           }
 
           if (body.startsWith('<!DOCTYPE HTML>')) {
-            document.location.href = response.url;
+            leavePage(response.url);
             return;
           }
 
@@ -492,6 +492,7 @@ function showModax(header, endpoint, modaxOptions) {
     modax['-temba-loaded'] = undefined;
 
     modax.disabled = options.disabled == 'True';
+    modax.destructive = !!options.destructive;
     var itemOnSubmit;
     if (options.onSubmit == 'None') {
       onSubmit = undefined;
@@ -515,8 +516,6 @@ function showModax(header, endpoint, modaxOptions) {
     modax.headers = { 'X-Temba-Spa': 1 };
     modax.header = header;
     modax.endpoint = endpoint;
-    modax.originX = options.originX != null ? options.originX : null;
-    modax.originY = options.originY != null ? options.originY : null;
 
     // take our focus from the thing that invocked us
     if (lastElement) {
@@ -524,6 +523,38 @@ function showModax(header, endpoint, modaxOptions) {
     }
     modax.open = true;
   }
+}
+
+// handles an item chosen from a content menu, whichever header or list it was in
+function dispatchContentMenuItem(item, click) {
+  if (item.type === 'link') {
+    if (click) {
+      click.preventDefault();
+      click.stopPropagation();
+      if (click.metaKey && item.url) {
+        window.open(item.url, '_blank');
+        return;
+      }
+    }
+    spaGet(item.url);
+  } else if (item.type === 'modax') {
+    showModax(item.title, item.url, {
+      disabled: item.disabled,
+      destructive: item.destructive,
+      onSubmit: item.on_submit,
+      onRedirect: item.on_redirect,
+      id: item.modal_id
+    });
+  } else if (item.type === 'url_post') {
+    posterize(item.url);
+  } else if (item.type === 'js') {
+    if (window[item.id]) {
+      window[item.id]();
+    }
+  }
+
+  // items need to be refreshed in the top left sidebar menu
+  refreshMenu();
 }
 
 function handleWorkspaceChanged(orgId) {
@@ -620,9 +651,39 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
+// a repeat click while the first POST is in flight, or while the page it led to is loading, would otherwise post it
+// again, e.g. copying a flow twice
+var postsInFlight = new Set();
+var leavingPage = false;
+
+function leavePage(href) {
+  leavingPage = true;
+  document.location.href = href;
+}
+
+// a page restored from the back/forward cache keeps its state but isn't leaving any more
+window.addEventListener('pageshow', function (event) {
+  if (event.persisted) {
+    leavingPage = false;
+    postsInFlight.clear();
+  }
+});
+
 function posterize(href) {
   var url = new URL(href, window.location.origin);
-  spaPost(url.pathname, { queryString: url.searchParams, fullPage: true });
+  var key = url.pathname + url.search;
+  if (postsInFlight.has(key)) {
+    return;
+  }
+
+  postsInFlight.add(key);
+  Promise.resolve(
+    spaPost(url.pathname, { queryString: url.searchParams, fullPage: true })
+  ).finally(function () {
+    if (!leavingPage) {
+      postsInFlight.delete(key);
+    }
+  });
 }
 
 function handlePosterize(ele) {

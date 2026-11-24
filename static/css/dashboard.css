@@ -336,7 +336,11 @@ a.dash-card:focus-visible,
 }
 
 .dash-spark .end {
-  fill: var(--tone, var(--accent));
+  fill: none;
+  stroke: var(--tone, var(--accent));
+  stroke-width: 4.8;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
 }
 
 @media (prefers-reduced-motion: reduce) {

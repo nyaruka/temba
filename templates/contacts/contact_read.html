@@ -24,9 +24,8 @@
       padding: 0 !important;
     }
 
-    /* Same header treatment as the preview list pages — inset 12px with a
-       full-bleed rule under it — but on the pane's own background so the
-       chat and cards pop as surfaces. */
+    /* the contact's name heads their chat card, as on the tickets page,
+       with the chat and cards as surfaces on the pane's own background */
     .read-page {
       display: flex;
       flex-grow: 1;
@@ -46,12 +45,8 @@
 {% endblock extra-style %}
 {% block content %}
   <div class="read-page">
-    <temba-header-bar>
-      <temba-page-header content-menu-endpoint="{{ request.path }}" -temba-selection="handleContentMenuSelected(event)">
-        <temba-contact-name slot="title" contact="{{ object.uuid }}" icon-size="16" -temba-refreshed="handleContactRefreshed"> </temba-contact-name>
-      </temba-page-header>
-    </temba-header-bar>
     <temba-card-layout id="card-layout" main-name='{{ _("Chat")|escapejs }}' main-icon="message" settings-endpoint="{% url 'users.user_settings' %}" settings="{{ card_settings }}">
+      {% include "contacts/includes/contact_header.html" with contact_uuid=object.uuid %}
       <temba-contact-chat
         slot="main"
         contact="{{ object.uuid }}"

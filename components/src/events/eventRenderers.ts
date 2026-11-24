@@ -1157,10 +1157,3 @@ export const renderEvent = (
   }
   return html`<div style="font-size: ${fontSize}">${content}</div>`;
 };
-
-/**
- * @deprecated Use renderEvent(event, true) instead
- */
-export const renderSimulatorEvent = (event: any): TemplateResult | null => {
-  return renderEvent(event, true);
-};

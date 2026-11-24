@@ -79,6 +79,6 @@ class ClaimView(ClaimViewMixin, SmartFormView):
             config[Channel.CONFIG_PASSWORD] = str(uuid4())
 
         self.object.config = config
-        self.object.save()
+        self.object.save(update_fields=("config", "modified_on"))
 
         return super().form_valid(form)

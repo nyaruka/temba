@@ -96,7 +96,6 @@ class Schedule(models.Model):
             self.repeat_days_of_week = None
 
             self.next_fire = start_time
-            self.save()
 
         else:
             # our start time needs to be in the org timezone so that we always fire at the
@@ -120,7 +119,19 @@ class Schedule(models.Model):
             else:
                 self.next_fire = start_time
 
+        if self._state.adding:
             self.save()
+        else:
+            self.save(
+                update_fields=(
+                    "repeat_period",
+                    "repeat_hour_of_day",
+                    "repeat_minute_of_hour",
+                    "repeat_days_of_week",
+                    "repeat_day_of_month",
+                    "next_fire",
+                )
+            )
 
     def project_fires(self, horizon) -> list:
         """

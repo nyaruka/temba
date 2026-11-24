@@ -12,6 +12,7 @@ from django.conf import settings
 from django.http import HttpResponse, HttpResponseServerError
 from django.utils import timezone
 
+from temba.orgs.models import Org
 from temba.users.models import User
 from temba.utils import str_to_bool
 
@@ -61,6 +62,15 @@ class RequestAttributesMixin:
         return result
 
 
+def check_token_org(token):
+    """
+    Suspended workspaces can't use the API with tokens, so integrations stop acting on a workspace that has stopped
+    processing.
+    """
+    if token.org.status == Org.STATUS_SUSPENDED:
+        raise exceptions.PermissionDenied("Workspace is suspended")
+
+
 class APITokenAuthentication(RequestAttributesMixin, TokenAuthentication):
     """
     Simple token based authentication.
@@ -81,6 +91,7 @@ class APITokenAuthentication(RequestAttributesMixin, TokenAuthentication):
             raise exceptions.AuthenticationFailed("Invalid token")
 
         if token.user.is_active:
+            check_token_org(token)
             token.record_used()
             return token.user, token
 
@@ -98,7 +109,7 @@ class APIBasicAuthentication(RequestAttributesMixin, BasicAuthentication):
 
     def authenticate_credentials(self, userid, password, request=None):
         try:
-            token = APIToken.objects.get(deleted_on=None, key=password)
+            token = APIToken.objects.select_related("user", "org").get(deleted_on=None, key=password)
         except APIToken.DoesNotExist:
             raise exceptions.AuthenticationFailed("Invalid token or email")
 
@@ -106,6 +117,7 @@ class APIBasicAuthentication(RequestAttributesMixin, BasicAuthentication):
             raise exceptions.AuthenticationFailed("Invalid token or email")
 
         if token.user.is_active:
+            check_token_org(token)
             return token.user, token
 
         raise exceptions.AuthenticationFailed("Invalid token or email")

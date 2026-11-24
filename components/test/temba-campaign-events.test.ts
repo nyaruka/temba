@@ -261,7 +261,7 @@ describe(TAG, () => {
     const detail = events.shadowRoot.querySelector('.detail');
     // the campaign is the title so the modal carries context on any page,
     // with the schedule as the subtitle
-    expect(detail.querySelector('.detail-campaign').textContent).to.contain(
+    expect(detail.querySelector('.detail-name').textContent).to.contain(
       'Prenatal Care'
     );
     // the schedule leads the body with the labeled count on its right

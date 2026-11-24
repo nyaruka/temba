@@ -2,7 +2,6 @@ import { css, html, TemplateResult } from 'lit';
 import { msg } from '@lit/localize';
 import { property } from 'lit/decorators.js';
 import { ContentList, ContentListColumn } from './ContentList';
-import { Icon } from '../Icons';
 import { formatCount } from '../utils';
 import { renderSparkline, sparklineStyles } from './sparkline';
 import { channelLogoStyles, renderChannelLogo } from '../channels/ChannelLogo';
@@ -17,27 +16,34 @@ export interface ChannelItem {
   is_enabled: boolean;
   /** whether the channel sends slowly - null when it doesn't */
   speed: 'slow' | 'very_slow' | null;
+  /** whether the channel is working, as its read page's status card shows it */
+  health: ChannelHealth;
   received: number;
   sent: number;
-  /** daily incoming and outgoing counts, oldest first */
-  activity: { in: number[]; out: number[] };
+  /** daily incoming and outgoing counts, and the percentage of text messages sent which failed, oldest first */
+  activity: { in: number[]; out: number[]; failed: number[] };
+}
+
+/** A channel's health - its tone is empty when the channel is disabled */
+export interface ChannelHealth {
+  tone: 'good' | 'warn' | 'bad' | '';
+  value: string;
+  note: string;
+  cause: string | null;
 }
 
 /**
  * Channel CRUDL list. Each row leads with the channel type's full color
- * logo, then name, a badge for a channel that sends slowly, address,
- * received / sent counts and an activity sparkline of sent (with the fill)
- * and received messages. The badge column is only there when a channel on
- * the page has a badge, so the badges line up without reserving space for
- * nothing.
+ * logo, then name, status, address, received / sent counts and an activity
+ * sparkline of all messages, or for a channel whose status is down to its
+ * failures, of the share that failed, in red. The status is the
+ * channel's health as a light and a word, like its read page's status card,
+ * except that a healthy channel which sends slowly says so instead.
  */
 export class ChannelList extends ContentList<ChannelItem> {
   /** help URLs keyed by topic (see get_channel_help_links) */
   @property({ type: Object, attribute: false })
   helpLinks: Record<string, string> = {};
-
-  /** whether any channel on the current page has a speed badge */
-  private hasSpeedBadges = false;
 
   static get styles() {
     return css`
@@ -55,21 +61,6 @@ export class ChannelList extends ContentList<ChannelItem> {
       .cell-inner:has(> .channel-name) {
         overflow: visible;
       }
-      .channel-name .name {
-        font-weight: var(--w-medium);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .channel-name .disabled {
-        color: var(--text-3);
-        font-size: 12px;
-        text-decoration: none;
-        flex: none;
-      }
-      a.disabled:hover {
-        text-decoration: underline;
-      }
       tr.row.disabled .cell {
         color: var(--text-3);
       }
@@ -81,38 +72,60 @@ export class ChannelList extends ContentList<ChannelItem> {
         color: var(--text-2);
         font-variant-numeric: tabular-nums;
       }
-      .num {
-        font-variant-numeric: tabular-nums;
-        color: inherit;
+      /* the period tip around a sparkline hugs it, so only the sparkline shows it */
+      td temba-tip {
+        display: inline-block;
+        vertical-align: middle;
       }
-      .speed {
+      .failing .sparkline .line {
+        stroke: var(--danger);
+      }
+      .failing .sparkline .area {
+        fill: var(--danger-bg);
+      }
+      .status {
         display: inline-flex;
         align-items: center;
-        gap: 4px;
-        height: 20px;
-        padding: 0 7px;
-        border-radius: 999px;
-        border: 1px solid;
-        font-size: 11.5px;
+        gap: 7px;
         font-weight: var(--w-medium);
         text-decoration: none;
         white-space: nowrap;
       }
-      .speed temba-icon {
-        --icon-color: currentColor;
-        /* the snail is wide and short, so it can be drawn bigger without making the pill taller */
-        margin: -3px 0;
+      a.status:hover {
+        text-decoration: underline;
       }
-      .speed.slow {
+      /* the tone shows as a light beside the word, as on the dashboard's status card */
+      .status::before {
+        content: '';
+        flex: none;
+        width: 7px;
+        height: 7px;
+        /* the cell clips what overflows it, so the halo needs room of its own */
+        margin-left: 3px;
+        border-radius: 999px;
+        background: var(--tone);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--tone) 20%, transparent);
+      }
+      .status.good {
+        --tone: var(--success);
+        color: var(--success);
+      }
+      /* the light takes the dashboard card's brighter amber, as warning text reads as brown at that size */
+      .status.warn {
+        --tone: #dd8a0c;
         color: var(--warning);
-        background: var(--warning-bg);
-        border-color: var(--warning-border);
       }
-      .speed.very_slow {
+      .status.bad {
+        --tone: var(--danger);
         color: var(--danger);
-        background: var(--danger-bg);
-        border-color: var(--danger-border);
-        font-weight: var(--w-semibold);
+      }
+      .status.off {
+        --tone: var(--text-3);
+        color: var(--text-3);
+        font-weight: normal;
+      }
+      .status.off::before {
+        box-shadow: none;
       }
     `;
   }
@@ -127,8 +140,12 @@ export class ChannelList extends ContentList<ChannelItem> {
 
   constructor() {
     super();
-    this.valueKey = 'uuid';
     this.minTableWidth = '640px';
+  }
+
+  /** The counts and sparkline are of the last 14 days, which hovering them says */
+  private get periodTip(): string {
+    return msg('Last 14 days');
   }
 
   protected buildColumns(): ContentListColumn[] {
@@ -142,36 +159,32 @@ export class ChannelList extends ContentList<ChannelItem> {
       }
     ];
 
-    if (this.hasSpeedBadges) {
-      columns.push({ key: 'speed', label: '', minWidth: '24px' });
-    }
-
     columns.push(
+      { key: 'status', label: msg('Status'), minWidth: '110px' },
       { key: 'address', label: msg('Address'), minWidth: '120px', grow: true },
       {
         key: 'received',
         label: msg('Received'),
         minWidth: '72px',
-        align: 'right'
+        align: 'right',
+        tip: this.periodTip
       },
-      { key: 'sent', label: msg('Sent'), minWidth: '72px', align: 'right' },
+      {
+        key: 'sent',
+        label: msg('Sent'),
+        minWidth: '72px',
+        align: 'right',
+        tip: this.periodTip
+      },
       {
         key: 'activity',
         label: msg('Activity'),
         width: '120px',
-        align: 'right'
+        align: 'right',
+        tip: this.periodTip
       }
     );
     return columns;
-  }
-
-  protected prepareItems(items: ChannelItem[]): ChannelItem[] {
-    const hasSpeedBadges = items.some((item) => !!item.speed);
-    if (hasSpeedBadges !== this.hasSpeedBadges) {
-      this.hasSpeedBadges = hasSpeedBadges;
-      this.refreshColumns();
-    }
-    return items;
   }
 
   protected getRowHref(item: ChannelItem): string | null {
@@ -207,25 +220,41 @@ export class ChannelList extends ContentList<ChannelItem> {
     >`;
   }
 
-  private renderSpeed(item: ChannelItem): TemplateResult | string {
-    if (!item.speed) {
-      return '';
+  private renderPeriodTip(content: TemplateResult): TemplateResult {
+    return html`<temba-tip text=${this.periodTip} position="top"
+      >${content}</temba-tip
+    >`;
+  }
+
+  private renderStatus(item: ChannelItem): TemplateResult {
+    if (!item.is_enabled) {
+      return this.renderHelpLink(
+        this.helpLinks?.['channels.disabling'],
+        'status off',
+        item.health?.value || msg('Disabled'),
+        item.health?.note || ''
+      );
     }
-    const url =
-      this.helpLinks?.['channels.throughput'] || this.helpLinks?.['channels'];
-    const verySlow = item.speed === 'very_slow';
-    return this.renderHelpLink(
-      url,
-      `speed ${item.speed}`,
-      html`<temba-icon
-          name=${verySlow ? Icon.channel_very_slow : Icon.channel_slow}
-          size=${verySlow ? '1.4' : '1.05'}
-        ></temba-icon
-        >${verySlow ? msg('Very slow') : msg('Slow')}`,
-      verySlow
-        ? msg('Sends very slowly, so large broadcasts can take hours.')
-        : msg('Sends slowly, so large broadcasts take longer.')
-    );
+
+    // slowness is only worth pointing out when nothing else is wrong, and in amber however slow, as red is kept for
+    // problems with its health
+    if (item.health?.tone === 'good' && item.speed) {
+      const verySlow = item.speed === 'very_slow';
+      return this.renderHelpLink(
+        this.helpLinks?.['channels.throughput'] || this.helpLinks?.['channels'],
+        'status warn',
+        verySlow ? msg('Very slow') : msg('Slow'),
+        verySlow
+          ? msg('Sends very slowly, so large broadcasts can take hours.')
+          : msg('Sends slowly, so large broadcasts take longer.')
+      );
+    }
+
+    return html`<span
+      class="status ${item.health?.tone || ''}"
+      title=${item.health?.note || ''}
+      >${item.health?.value || ''}</span
+    >`;
   }
 
   protected renderCell(
@@ -236,20 +265,13 @@ export class ChannelList extends ContentList<ChannelItem> {
       case 'name':
         return html`<span class="channel-name"
           >${renderChannelLogo(item.type, item.name, 24)}<span
-            class="name"
+            class="item-name"
             title=${item.name || ''}
             >${item.name || ''}</span
-          >${item.is_enabled
-            ? null
-            : this.renderHelpLink(
-                this.helpLinks?.['channels.disabling'],
-                'disabled',
-                msg('Disabled'),
-                ''
-              )}</span
+          ></span
         >`;
-      case 'speed':
-        return this.renderSpeed(item);
+      case 'status':
+        return this.renderStatus(item);
       case 'address':
         return html`<span class="address">${item.address || ''}</span>`;
       case 'received':
@@ -259,13 +281,22 @@ export class ChannelList extends ContentList<ChannelItem> {
       case 'sent':
         return html`<span class="num">${formatCount(item.sent ?? 0)}</span>`;
       case 'activity': {
-        // like flows, a channel with nothing in the window shows no sparkline
+        // a channel whose status is down to its failures shows how much of what it sent failed
+        const failed = item.activity?.failed || [];
+        if (item.health?.cause === 'failing' && failed.some((v) => v > 0)) {
+          return this.renderPeriodTip(
+            html`<span class="failing">${renderSparkline(failed)}</span>`
+          );
+        }
+
+        // and otherwise all its messages - like flows, a channel with nothing in the window shows no sparkline
         const sent = item.activity?.out || [];
         const received = item.activity?.in || [];
-        if (![...sent, ...received].some((v) => v > 0)) {
+        const total = sent.map((v, i) => v + (received[i] || 0));
+        if (!total.some((v) => v > 0)) {
           return '';
         }
-        return renderSparkline(sent, received);
+        return this.renderPeriodTip(renderSparkline(total));
       }
       default:
         return super.renderCell(item, column);

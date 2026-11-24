@@ -54,6 +54,20 @@ export interface AssetChangedEvent extends RealtimeEvent {
 export type OrganizationEvent = AssetChangedEvent;
 
 /**
+ * org:<org-uuid>:tickets - some of the workspace's tickets changed: they were
+ * opened, closed, reopened, reassigned or moved topic, or had new activity.
+ * Only the tickets page subscribes, so nothing is published while no one has
+ * it open. It names the tickets only by uuid, since not everyone on the
+ * workspace can see every ticket: a ticket list reads them again over http,
+ * which says which of them are in its folder.
+ */
+export interface TicketsChangedEvent extends RealtimeEvent {
+  type: 'tickets_changed';
+  // the tickets that changed, left off when there were too many to name
+  tickets?: string[];
+}
+
+/**
  * flow:<flow-uuid> - published once per committed sprint batch while a flow
  * is running. It carries no counts, it just says they moved: the editor reads
  * the current numbers over http when it sees one.
@@ -381,6 +395,20 @@ export const subscribeToOrganization = (
   return subscribeWhenReady(
     (ctx) => `org:${ctx.org}`,
     (data) => onEvent(data as OrganizationEvent),
+    onSubscribed
+  );
+};
+
+/**
+ * Changes to the workspace's tickets, for the tickets page.
+ */
+export const subscribeToOrganizationTickets = (
+  onEvent: (event: TicketsChangedEvent) => void,
+  onSubscribed?: () => void
+): RealtimeSubscription => {
+  return subscribeWhenReady(
+    (ctx) => `org:${ctx.org}:tickets`,
+    (data) => onEvent(data as TicketsChangedEvent),
     onSubscribed
   );
 };

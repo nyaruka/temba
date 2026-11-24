@@ -77,10 +77,6 @@ export class Dialog extends ResizeElement {
         flex-grow: 3;
       }
 
-      .bottom-padding {
-        padding: 3rem;
-      }
-
       .dialog-mask {
         width: 100%;
         height: 100%;
@@ -466,20 +462,11 @@ export class Dialog extends ResizeElement {
   @property({ type: Array })
   buttons: DialogButton[] = [];
 
-  @property({ attribute: false })
-  onButtonClicked: (button: Button) => void;
-
   // when set, consulted instead of the built-in edit tracking to decide
   // whether escape should confirm before dismissing — for owners that can
   // compare actual values (and so ignore edits that were reverted)
   @property({ attribute: false })
   checkForChanges?: () => boolean;
-
-  @property({ type: Number })
-  originX: number | null = null;
-
-  @property({ type: Number })
-  originY: number | null = null;
 
   // whether any input/change has bubbled from our content since opening;
   // the default signal that escape would discard the user's edits
@@ -577,8 +564,6 @@ export class Dialog extends ResizeElement {
       const body = document.querySelector('body');
 
       if (this.open) {
-        this.originX = null;
-        this.originY = null;
         window.setTimeout(() => {
           this.ready = true;
           this.animationEnd = false;
@@ -927,18 +912,6 @@ export class Dialog extends ResizeElement {
         this.open = false;
       }
     }
-  }
-
-  private getDocumentHeight(): number {
-    const body = document.body;
-    const html = document.documentElement;
-    return Math.max(
-      body.scrollHeight,
-      body.offsetHeight,
-      html.clientHeight,
-      html.scrollHeight,
-      html.offsetHeight
-    );
   }
 
   private clickCancel() {

@@ -61,6 +61,45 @@ class ChannelLogCRUDLTest(CRUDLTestMixin, TembaTest):
             response = self.client.get(read_url + "?break=1")
             self.assertNotRedacted(response, ("3527065", "Nic", "Pottier"))
 
+            self.assertTrue(response.context["unredacted"])
+            self.assertContains(response, f'href="{read_url}"')  # to redact them again
+
+            # which staff are given a toggle for, that works in place when the log is shown in a sheet
+            response = self.client.get(read_url)
+            self.assertTrue(response.context["can_break"])
+            self.assertFalse(response.context["unredacted"])
+            self.assertContains(response, f'href="{read_url}?break=1"')
+            self.assertNotContains(response, "document.currentScript")
+
+            response = self.client.get(read_url, headers={"X-Temba-Spa": "1", "X-Temba-Sheet": "1"})
+            self.assertRedacted(response, ("3527065", "Nic", "Pottier"))
+            self.assertContains(response, f'href="{read_url}?break=1"')
+            self.assertContains(response, "data-log-root")
+            self.assertContains(response, "document.currentScript")
+
+            response = self.client.get(read_url + "?break=1", headers={"X-Temba-Spa": "1", "X-Temba-Sheet": "1"})
+            self.assertNotRedacted(response, ("3527065", "Nic", "Pottier"))
+            self.assertContains(response, f'href="{read_url}"')
+
+            # nobody else is, or can break out of it
+            self.login(self.admin)
+
+            response = self.client.get(read_url)
+            self.assertFalse(response.context["can_break"])
+            self.assertNotContains(response, "data-log-break")
+
+            response = self.client.get(read_url + "?break=1")
+            self.assertRedacted(response, ("3527065", "Nic", "Pottier"))
+            self.assertFalse(response.context["unredacted"])
+            self.assertNotContains(response, "data-log-break")
+
+        # and there's nothing to break out of in a workspace that isn't anonymous
+        self.login(self.customer_support, choose_org=self.org)
+
+        response = self.client.get(read_url)
+        self.assertFalse(response.context["can_break"])
+        self.assertNotContains(response, "data-log-break")
+
     def test_redaction_for_telegram_with_invalid_json(self):
         urn = "telegram:3527065"
         contact = self.create_contact("Fred Jones", urns=[urn])

@@ -247,8 +247,4 @@ export class DatePicker extends FieldElement {
       </div>
     `;
   }
-
-  public render(): TemplateResult {
-    return this.renderField();
-  }
 }

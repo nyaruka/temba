@@ -1227,6 +1227,79 @@ describe('temba-contact-chat', () => {
     expect(mismatched).to.be.empty;
   });
 
+  it('keeps the current ticket in step with its socket events', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    chat.currentTicket = {
+      uuid: 'ticket-1',
+      topic: { uuid: 'topic-1', name: 'General' },
+      assignee: null,
+      closed_on: null,
+      status: 'open'
+    } as any;
+    await chat.updateComplete;
+
+    const updates: any[] = [];
+    chat.addEventListener(CustomEventType.TicketUpdated, (evt: CustomEvent) =>
+      updates.push(evt.detail)
+    );
+
+    const contactChannel = `history:${chat.currentContact.uuid}`;
+    const ticketChannel = `${contactChannel}:ticket-1`;
+
+    // someone else assigns it, which arrives on the ticket's channel
+    const assigned = {
+      uuid: '01998888-0000-7000-8000-000000000010',
+      type: 'ticket_assignee_changed',
+      created_on: '2025-09-25T12:00:00.000000+00:00',
+      ticket_uuid: 'ticket-1',
+      assignee: { uuid: 'user-bob', name: 'Bob McFlow' }
+    };
+    mockSocket.publish(ticketChannel, assigned);
+    await chat.updateComplete;
+
+    expect(chat.currentTicket.assignee).to.deep.equal({
+      uuid: 'user-bob',
+      name: 'Bob McFlow'
+    });
+    expect(updates.length).to.equal(1);
+    expect(updates[0].previous.assignee).to.be.null;
+    expect(updates[0].ticket.assignee.uuid).to.equal('user-bob');
+
+    // hearing the same change again changes nothing
+    mockSocket.publish(ticketChannel, assigned);
+    await chat.updateComplete;
+    expect(updates.length).to.equal(1);
+
+    // events for other tickets of the contact are ignored
+    mockSocket.publish(contactChannel, {
+      uuid: '01998888-0000-7000-8000-000000000011',
+      type: 'ticket_closed',
+      created_on: '2025-09-25T12:01:00.000000+00:00',
+      ticket_uuid: 'ticket-2'
+    });
+    await chat.updateComplete;
+    expect(chat.currentTicket.closed_on).to.be.null;
+    expect(updates.length).to.equal(1);
+
+    // closing it arrives on the contact's channel
+    mockSocket.publish(contactChannel, {
+      uuid: '01998888-0000-7000-8000-000000000012',
+      type: 'ticket_closed',
+      created_on: '2025-09-25T12:02:00.000000+00:00',
+      ticket_uuid: 'ticket-1'
+    });
+    await chat.updateComplete;
+    expect(chat.currentTicket.closed_on).to.equal(
+      '2025-09-25T12:02:00.000000+00:00'
+    );
+    expect(chat.currentTicket.status).to.equal('closed');
+    expect(updates.length).to.equal(2);
+  });
+
   it('fills in missing user avatars from the store cache', async () => {
     await loadStore();
     const chat: ContactChat = await getContactChat({
@@ -1750,5 +1823,54 @@ describe('temba-contact-chat', () => {
     expect(Math.abs(closeRect.right - interruptRect.right)).to.be.at.most(1);
 
     await assertScreenshot('contacts/chat-ticket-status-area', getClip(chat));
+  });
+
+  it('keeps ticket controls the same width whatever the topic', async () => {
+    await loadStore();
+    const chat: ContactChat = await getContactChat({
+      contact: 'contact-dave-active'
+    });
+
+    const controls = () =>
+      chat.shadowRoot.querySelector('.ticket-controls') as HTMLElement;
+
+    chat.currentTicket = {
+      uuid: 'ticket-1',
+      topic: { uuid: 'topic-1', name: 'General' },
+      assignee: null,
+      closed_on: null
+    } as any;
+    await chat.updateComplete;
+    const shortWidth = chat.getBoundingClientRect().width;
+
+    chat.currentTicket = {
+      uuid: 'ticket-2',
+      topic: {
+        uuid: 'topic-2',
+        name: 'Billing and payment questions from customers with a very long topic name'
+      },
+      assignee: null,
+      closed_on: null
+    } as any;
+    await chat.updateComplete;
+
+    // a long topic doesn't widen the chat or overflow the row
+    expect(chat.getBoundingClientRect().width).to.equal(shortWidth);
+    expect(controls().scrollWidth).to.be.at.most(controls().clientWidth);
+
+    // and close stays fully in view, even when the chat is narrow
+    chat.style.width = '260px';
+    chat.style.flexGrow = '0';
+    await chat.updateComplete;
+    const rowRect = controls().getBoundingClientRect();
+    const closeRect = controls()
+      .querySelector('temba-button')
+      .getBoundingClientRect();
+    expect(closeRect.right).to.be.at.most(rowRect.right);
+
+    chat.style.width = '';
+    chat.style.flexGrow = '';
+    await chat.updateComplete;
+    await assertScreenshot('contacts/chat-ticket-long-topic', getClip(chat));
   });
 });

@@ -629,7 +629,7 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # reactivate
         self.ex_channel.is_active = True
-        self.ex_channel.save()
+        self.ex_channel.save(update_fields=("is_active",))
 
         # add a dependency and try again
         flow = self.create_flow("Color Flow")

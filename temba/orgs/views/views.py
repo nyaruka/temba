@@ -55,6 +55,7 @@ from temba.utils.views.mixins import (
     ModalFormMixin,
     NonAtomicMixin,
     NoNavMixin,
+    ScopedUpdateMixin,
     SpaMixin,
 )
 
@@ -212,7 +213,7 @@ class UserCRUDL(SmartCRUDL):
             context["team_topics"] = self.team.topics.order_by(Lower("name"))
             return context
 
-    class Update(RequireFeatureMixin, ModalFormMixin, OrgObjPermsMixin, SmartUpdateView):
+    class Update(RequireFeatureMixin, ModalFormMixin, OrgObjPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         class Form(forms.ModelForm):
             role = forms.ChoiceField(choices=OrgRole.choices(), required=True, label=_("Role"), widget=SelectWidget())
             team = forms.ModelChoiceField(queryset=Team.objects.none(), required=False, widget=SelectWidget())
@@ -328,7 +329,7 @@ class UserCRUDL(SmartCRUDL):
             # if current user no longer belongs to this org, redirect to org chooser
             return reverse("orgs.user_list") if still_in_org else reverse("orgs.org_choose")
 
-    class Edit(ComponentFormMixin, InferUserMixin, SmartUpdateView):
+    class Edit(ComponentFormMixin, InferUserMixin, ScopedUpdateMixin, SmartUpdateView):
         class Form(forms.ModelForm):
             first_name = forms.CharField(label=_("First Name"), widget=InputWidget())
             last_name = forms.CharField(label=_("Last Name"), widget=InputWidget())
@@ -440,6 +441,17 @@ class OrgCRUDL(SmartCRUDL):
                     )
                 ]
 
+                if self.has_org_perm("channels.channel_list"):
+                    menu.append(
+                        self.create_menu_item(
+                            menu_id="channels",
+                            name=_("Channels"),
+                            icon="channel",
+                            href="channels.channel_list",
+                            count=org.channels.filter(is_active=True).count(),
+                        )
+                    )
+
                 menu.append(self.create_menu_item(name=_("API Tokens"), icon="user_token", href="api.apitoken_list"))
                 menu.append(self.create_menu_item(name=_("Resthooks"), icon="resthooks", href="orgs.org_resthooks"))
 
@@ -505,18 +517,6 @@ class OrgCRUDL(SmartCRUDL):
 
                 if self.has_org_perm("orgs.orgimport_create"):
                     menu.append(self.create_menu_item(name=_("Import"), icon="import", href="orgs.orgimport_create"))
-
-                if self.has_org_perm("channels.channel_list"):
-                    menu.append(self.create_divider())
-                    menu.append(
-                        self.create_menu_item(
-                            menu_id="channels",
-                            name=_("Channels"),
-                            icon="channel",
-                            href="channels.channel_list",
-                            count=org.channels.filter(is_active=True).count(),
-                        )
-                    )
 
                 if self.has_org_perm("archives.archive_message"):
                     items = [
@@ -902,7 +902,7 @@ class OrgCRUDL(SmartCRUDL):
             context["has_children"] = bool(from_email_custom) and org.children.filter(is_active=True).exists()
             return context
 
-    class Update(ModalFormMixin, OrgObjPermsMixin, SmartUpdateView):
+    class Update(ModalFormMixin, OrgObjPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         class Form(forms.ModelForm):
             name = forms.CharField(max_length=128, label=_("Name"), widget=InputWidget())
             timezone = TimeZoneFormField(label=_("Timezone"), widget=SelectWidget(attrs={"searchable": True}))
@@ -982,8 +982,25 @@ class OrgCRUDL(SmartCRUDL):
             def __init__(self, org, *args, **kwargs):
                 super().__init__(*args, **kwargs)
 
+                self.org = org
                 self.fields["type"].choices = self.TYPE_CHOICES
                 self.fields["timezone"].initial = org.timezone
+
+            @property
+            def default_type(self):
+                return self.TYPE_CHILD if Org.FEATURE_CHILD_ORGS in self.org.features else self.TYPE_NEW
+
+            def clean(self):
+                cleaned_data = super().clean()
+                cleaned_data["as_child"] = (cleaned_data.get("type") or self.default_type) == self.TYPE_CHILD
+
+                # otherwise a child would be a way to get around the restriction or suspension
+                if cleaned_data["as_child"] and self.org.status != Org.STATUS_ACTIVE:
+                    raise forms.ValidationError(
+                        _("Child workspaces can't be created while this workspace is restricted or suspended.")
+                    )
+
+                return cleaned_data
 
             class Meta:
                 model = Org
@@ -1014,13 +1031,11 @@ class OrgCRUDL(SmartCRUDL):
             return reverse("orgs.org_start")
 
         def form_valid(self, form):
-            default_type = form.TYPE_CHILD if Org.FEATURE_CHILD_ORGS in self.request.org.features else form.TYPE_NEW
-
             self.object = self.request.org.create_new(
                 self.request.user,
                 form.cleaned_data["name"],
                 tz=form.cleaned_data["timezone"],
-                as_child=form.cleaned_data.get("type", default_type) == form.TYPE_CHILD,
+                as_child=form.cleaned_data["as_child"],
             )
 
             if "HTTP_X_PJAX" not in self.request.META:
@@ -1205,7 +1220,7 @@ class OrgCRUDL(SmartCRUDL):
             else:
                 return HttpResponseRedirect(f"{reverse('account_signup')}?invite={secret}")
 
-    class JoinAccept(NoNavMixin, InvitationMixin, SmartUpdateView):
+    class JoinAccept(NoNavMixin, InvitationMixin, ScopedUpdateMixin, SmartUpdateView):
         """
         Simple join button for existing and logged in users to accept a workspace invitation.
         """
@@ -1303,7 +1318,7 @@ class OrgCRUDL(SmartCRUDL):
             self.object.add_user(user, OrgRole.ADMINISTRATOR)
             return self.object
 
-    class Resthooks(SpaMixin, ComponentFormMixin, InferOrgMixin, OrgPermsMixin, SmartUpdateView):
+    class Resthooks(SpaMixin, ComponentFormMixin, InferOrgMixin, OrgPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         class ResthookForm(forms.ModelForm):
             new_slug = forms.SlugField(
                 required=False,
@@ -1366,7 +1381,9 @@ class OrgCRUDL(SmartCRUDL):
 
             return super().pre_save(obj)
 
-    class Prometheus(RequireFeatureMixin, FormaxSectionMixin, InferOrgMixin, OrgPermsMixin, SmartUpdateView):
+    class Prometheus(
+        RequireFeatureMixin, FormaxSectionMixin, InferOrgMixin, OrgPermsMixin, ScopedUpdateMixin, SmartUpdateView
+    ):
         class Form(forms.ModelForm):
             class Meta:
                 model = Org
@@ -1418,7 +1435,7 @@ class OrgCRUDL(SmartCRUDL):
                     if integration.is_available_to(self.request.user):
                         integration.management_ui(self.object, formax)
 
-    class Edit(FormaxSectionMixin, InferOrgMixin, OrgPermsMixin, SmartUpdateView):
+    class Edit(FormaxSectionMixin, InferOrgMixin, OrgPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         class Form(forms.ModelForm):
             name = forms.CharField(max_length=128, label=_("Name"), widget=InputWidget())
             timezone = TimeZoneFormField(label=_("Timezone"), widget=SelectWidget(attrs={"searchable": True}))
@@ -1433,7 +1450,7 @@ class OrgCRUDL(SmartCRUDL):
         def derive_exclude(self):
             return ["language"] if len(settings.LANGUAGES) == 1 else []
 
-    class Locations(FormaxSectionMixin, InferOrgMixin, OrgPermsMixin, SmartUpdateView):
+    class Locations(FormaxSectionMixin, InferOrgMixin, OrgPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         class CountryForm(forms.ModelForm):
             root_location = forms.ModelChoiceField(
                 Org.get_possible_countries(),
@@ -1449,7 +1466,7 @@ class OrgCRUDL(SmartCRUDL):
 
         form_class = CountryForm
 
-    class Languages(FormaxSectionMixin, InferOrgMixin, OrgPermsMixin, SmartUpdateView):
+    class Languages(FormaxSectionMixin, InferOrgMixin, OrgPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         class LanguageForm(forms.ModelForm):
             primary_lang = ArbitraryJsonChoiceField(
                 required=True,

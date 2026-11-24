@@ -1,3 +1,104 @@
+## v26.3.227 (2026-11-24)
+ * Read an Android channel's latest sync from its sync state
+ * Show why a message failed when its workspace was suspended or it had no destination
+ * Share the detail dialog, page chrome and cell helpers across the lists
+
+## v26.3.226 (2026-11-24)
+ * Make Channel.sync_state non-null and default it to an empty object
+ * Don't let restricted or suspended workspaces create child workspaces
+ * Drop orgs_org.is_flagged now that being flagged is a status reason
+ * Require update_fields when saving an existing model
+
+## v26.3.225 (2026-11-24)
+ * Flag knowledge sources pending on every shortcut and article change
+ * Add Channel.sync_state for the latest state of each kind of sync
+ * Give child workspaces a parent reason for a restriction or suspension they share, and signal their changes
+ * Let a modax be marked destructive and use it for suspending a workspace
+ * Dispatch content menu items from one shared function
+ * Fix small bugs in the web components and remove dead code
+
+## v26.3.224 (2026-11-23)
+ * Cancel a workspace's queued messages when it's suspended
+ * Only cascade billing and limits restrictions to child workspaces
+ * Ignore a repeat posterize while the same POST is in flight or the page it led to is loading
+ * Delete AI models from their update modal rather than the list
+ * Render the AI models list like other component list pages
+ * Keep ticket controls a fixed width, ellipsizing the assignee and topic, and test it with a long topic
+ * Show failing channels whose sends today are going through as recovering, with today's failure rate in whole percents
+
+## v26.3.223 (2026-11-23)
+ * Remove the flagged incident type, since being flagged is a restriction, and test its migration and the default incident link
+
+## v26.3.222 (2026-11-23)
+ * Make being flagged a reason for a workspace to be restricted, keeping contact imports blocked and verifying and moving flagged incidents at the same scope as the flag
+ * Test that foreign keys are indexed and drop large indexes made redundant by composites
+ * Drop unused flows_flowstarts_org_created index
+
+## v26.3.221 (2026-11-20)
+ * Run CI against PostgreSQL 18
+
+## v26.3.220 (2026-11-20)
+ * Add index for looking up calls by channel and external ID
+
+## v26.3.219 (2026-11-19)
+ * Let incident types set their own email subject
+ * Move Channels to second in the settings menu
+
+## v26.3.218 (2026-11-19)
+ * Show channel health from failure rates on channel read and list pages
+ * Don't allow contact imports for suspended or flagged workspaces
+ * Add an org_restricted icon and use it for the restricted workspace alert
+ * Add Contact.uuid2 kept in sync with uuid by a trigger
+
+## v26.3.217 (2026-11-19)
+ * Don't allow API token use for suspended workspaces
+ * Only suspend restricted workspaces when given a time to suspend them
+ * Refresh tickets from socket events instead of polling
+ * Drop ArticleCount
+ * Give staff a toggle to see an anonymous workspace's channel logs unredacted
+
+## v26.3.216 (2026-11-19)
+ * Drop contacts_contact.current_flow_id
+ * Let incident types email admins whose address isn't verified
+ * Move help site article views to tallies
+
+## v26.3.215 (2026-11-19)
+ * Remove Contact.current_flow and drop its foreign key constraint
+ * Drop DailyCount
+
+## v26.3.214 (2026-11-19)
+ * Read ticket analytics from tallies
+ * Ignore incidents and notifications whose types aren't registered
+ * Move restriction and suspension incidents to an org status signal
+ * Drop FlowActivityCount
+
+## v26.3.213 (2026-11-18)
+ * Say in suspension emails and incidents that flows started by triggers and campaigns will be stopped
+ * Read the contact's current flow from current_flow_uuid
+ * Stop writing run status counts to flow activity counts
+
+## v26.3.212 (2026-11-18)
+ * Backfill Contact.current_flow_uuid
+ * Read flow run status counts from tallies, including those still buffered in Valkey
+ * Drop the org status columns that status, status_reason and status_changed_on replaced
+
+## v26.3.211 (2026-11-18)
+ * Switch org status to Org.status_reason and Org.status_changed_on
+ * Read status tally totals once per batch of flows
+ * Add Contact.current_flow_uuid
+ * Backfill flow run status tallies from activity counts
+
+## v26.3.210 (2026-11-18)
+ * Rework the ticket list for working through a backlog: keep its width as different tickets open, word the open count on the server, and guard blank contact names
+ * Mark closed tickets with a filled or dashed check and expired tickets with a clock switched off
+ * Assign tickets from the ticket view with the user picker
+ * Keep the chat's search bar off the edges of a framed card
+ * Add Org.status_reason and Org.status_changed_on, written alongside the fields they replace, and backfill them
+ * Add tests for closed links and restricted counts in the ticket list
+
+## v26.3.209 (2026-11-18)
+ * Remove Org.is_suspended and constrain each org status to its own fields
+
 ## v26.3.208 (2026-11-18)
  * Lock each restricted org while deciding whether to suspend it
 

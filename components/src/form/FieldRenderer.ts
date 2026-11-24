@@ -148,7 +148,7 @@ export class FieldRenderer {
         ? config.placeholder(context.formData || {})
         : config.placeholder || '';
 
-    // If field supports expression evaluation, use temba-completion
+    // If field supports expression evaluation, use temba-rich-edit
     if (config.evaluated) {
       return html`<temba-rich-edit
         name="${fieldName}"

@@ -9,7 +9,14 @@ from temba.contacts.models import Contact
 from temba.tests import TembaTest
 from temba.tickets.models import Team, Ticket
 
-from .base import delete_in_batches, exclude_deleted, patch_queryset_count, update_if_changed
+from .base import (
+    changed_fields,
+    delete_in_batches,
+    exclude_deleted,
+    field_values,
+    patch_queryset_count,
+    update_if_changed,
+)
 from .es import SearchSliceQuerySet
 from .fields import JSONAsTextField
 
@@ -86,12 +93,7 @@ class ModelsTest(TembaTest):
         group = self.create_group("Testers", contacts=[])
         modified_on = group.modified_on
 
-        # saving all fields bumps modified_on
-        group.save()
-        self.assertGreater(group.modified_on, modified_on)
-        modified_on = group.modified_on
-
-        # as does saving specific fields that include it
+        # saving specific fields that include it bumps modified_on
         group.name = "Testers 2"
         group.save(update_fields=("name", "modified_on"))
         self.assertGreater(group.modified_on, modified_on)
@@ -101,6 +103,21 @@ class ModelsTest(TembaTest):
         group.name = "Testers 3"
         group.save(update_fields=("name",))
         self.assertEqual(modified_on, group.modified_on)
+
+    def test_require_update_fields(self):
+        group = self.create_group("Testers", contacts=[])
+        group.name = "Testers 2"
+
+        with self.assertRaises(AssertionError):
+            group.save()
+
+        # unless the model allows it
+        self.admin.first_name = "Andy"
+        self.admin.save()
+
+        before = field_values(group)
+        group.name = "Testers 3"
+        self.assertEqual(["name"], changed_fields(group, before))
 
     def test_exclude_deleted(self):
         team1 = Team.create(self.org, self.admin, "Sales")
@@ -363,7 +380,7 @@ class TestJSONAsTextField(TestCase):
             self.assertEqual({"foo": "bar"}, obj.field)
 
             obj.field = {"zed": "doh"}
-            obj.save()
+            obj.save(update_fields=("field",))
 
             self.assertEqual({"zed": "doh"}, JsonModelTestDefault.objects.first().field)
 

@@ -254,13 +254,13 @@ class RunsEndpointTest(APITest):
 
         # doesn't work if flow is inactive
         flow1.is_active = False
-        flow1.save()
+        flow1.save(update_fields=("is_active",))
 
         self.assertGet(endpoint_url + f"?flow={flow1.uuid}", [self.admin], results=[])
 
         # restore to active
         flow1.is_active = True
-        flow1.save()
+        flow1.save(update_fields=("is_active",))
 
         # filter by invalid flow
         self.assertGet(

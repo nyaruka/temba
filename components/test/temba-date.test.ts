@@ -50,6 +50,48 @@ describe('temba-date', () => {
     expect(dateString).to.equal('44 years ago');
   });
 
+  it('renders age', async () => {
+    const age = async (value: string) => {
+      const date = await getDate({ value, display: 'age' });
+      const shown = date.shadowRoot.querySelector('.age');
+      return [
+        shown.querySelector('.value')?.textContent,
+        shown.querySelector('.unit')?.textContent
+      ];
+    };
+
+    // the time since, in its largest whole unit
+    expect(await age('2022-12-02T20:59:30.000000')).to.deep.equal([
+      undefined,
+      'now'
+    ]);
+    expect(await age('2022-12-02T20:59:00.000000')).to.deep.equal(['1', 'min']);
+    expect(await age('2022-12-02T20:07:00.000000')).to.deep.equal([
+      '53',
+      'mins'
+    ]);
+    expect(await age('2022-12-02T20:00:00.000000')).to.deep.equal([
+      '1',
+      'hour'
+    ]);
+    expect(await age('2022-11-27T20:00:00.000000')).to.deep.equal([
+      '5',
+      'days'
+    ]);
+    expect(await age('2022-08-01T00:00:00.000000')).to.deep.equal([
+      '4',
+      'months'
+    ]);
+  });
+
+  it('renders age as a number over its unit', async () => {
+    const date = await getDate({
+      value: '2022-11-27T20:00:00.000000',
+      display: 'age'
+    });
+    await assertScreenshot('date/age', getClip(date));
+  });
+
   it('renders datetime', async () => {
     const date = await getDate({
       value: '1978-11-18T02:22:00.000000',

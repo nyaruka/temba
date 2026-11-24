@@ -65,7 +65,11 @@ class TopicCRUDLTest(TembaTest, CRUDLTestMixin):
 
         self.assertRequestDisallowed(update_url, [None, self.agent, self.admin2])
 
-        self.assertUpdateFetch(update_url, [self.editor, self.admin], form_fields=["name"])
+        response = self.assertUpdateFetch(update_url, [self.editor, self.admin], form_fields=["name"])
+
+        # the edit dialog is where the topic is deleted from
+        self.assertEqual(reverse("tickets.topic_delete", args=[topic.uuid]), response.context["delete_url"])
+        self.assertContains(response, "Delete topic")
 
         # names must be unique (case-insensitive)
         self.assertUpdateSubmit(

@@ -46,6 +46,9 @@ class UserManager(AuthUserManager):
 class User(LegacyIDMixin, UUIDMixin, AbstractBaseUser, PermissionsMixin):
     SYSTEM = {"email": "system", "first_name": "System"}
 
+    # Django auth and allauth save users whole, e.g. on setting a password, and only this app writes them
+    allow_unscoped_save = True
+
     EMAIL_FIELD = "email"
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
@@ -223,7 +226,7 @@ class User(LegacyIDMixin, UUIDMixin, AbstractBaseUser, PermissionsMixin):
         self.email = f"{str(uuid4())}@temba.io"
         self.password = ""
         self.is_active = False
-        self.save()
+        self.save(update_fields=("first_name", "last_name", "email", "password", "is_active"))
 
         # cleanup allauth stuff
         self.socialaccount_set.all().delete()

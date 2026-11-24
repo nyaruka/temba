@@ -219,7 +219,7 @@ class RootView(BaseEndpoint):
                 resources.
      * **400**: The request failed due to invalid parameters. Do not retry with the same values, and the body of the
                 response will contain details.
-     * **403**: You do not have permission to access this resource.
+     * **403**: You do not have permission to access this resource, or your workspace is suspended.
      * **404**: The resource was not found (returned by `POST` and `DELETE` methods).
      * **429**: You have exceeded the rate limit for this endpoint (see below).
 
@@ -1261,7 +1261,6 @@ class ContactsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseEndpoint
                 queryset=ContactGroup.get_groups(org).only("uuid", "name", "org").order_by("id"),
                 to_attr="prefetched_groups",
             ),
-            Prefetch("current_flow"),
             Prefetch("notes", queryset=ContactNote.objects.order_by("id")),
             Prefetch("notes__created_by"),
         )
@@ -1270,6 +1269,7 @@ class ContactsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseEndpoint
 
     def prepare_for_serialization(self, object_list, using: str):
         Contact.bulk_urn_cache_initialize(object_list, using=using)
+        Contact.bulk_current_flow_cache_initialize(self.request.org, object_list, using=using)
 
         if str_to_bool(self.request.query_params.get("expand_urns")):
             contact_info = Contact.bulk_inspect(object_list)

@@ -85,4 +85,4 @@ class MtnType(ChannelType):
             raise ValidationError(_("Unable to add subscription callbacks: %s") % response.content)
 
         channel.config["mtn_subscription_id"] = response.json()["data"]["id"]
-        channel.save()
+        channel.save(update_fields=("config", "modified_on"))

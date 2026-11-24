@@ -242,7 +242,7 @@ class ScheduleTest(TembaTest):
 
     def test_update_near_day_boundary(self):
         self.org.timezone = ZoneInfo("US/Eastern")
-        self.org.save()
+        self.org.save(update_fields=("timezone",))
         tz = self.org.timezone
 
         text = "A broadcast to Joe"

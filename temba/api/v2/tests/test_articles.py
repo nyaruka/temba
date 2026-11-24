@@ -160,6 +160,8 @@ class ArticlesEndpointTest(APITest):
             errors={"status": '"live" is not a valid choice.'},
         )
 
+        self.helpdesk.status = KnowledgeSource.STATUS_READY
+        self.helpdesk.save(update_fields=("status",))
         mr_mocks.calls["knowledge_index"].clear()
 
         # create a section
@@ -188,6 +190,8 @@ class ArticlesEndpointTest(APITest):
         self.assertEqual(2, ticketing.sort_order)  # after the other sections
 
         # a draft isn't indexed
+        self.helpdesk.refresh_from_db()
+        self.assertEqual(KnowledgeSource.STATUS_READY, self.helpdesk.status)
         self.assertEqual([], mr_mocks.calls["knowledge_index"])
 
         # create a published article in it, with its body's whitespace kept
@@ -214,6 +218,8 @@ class ArticlesEndpointTest(APITest):
         self.assertEqual("published", response.json()["status"])
         self.assertEqual({"uuid": str(ticketing.uuid), "title": "Ticketing"}, response.json()["section"])
 
+        self.helpdesk.refresh_from_db()
+        self.assertEqual(KnowledgeSource.STATUS_PENDING, self.helpdesk.status)
         self.assertEqual([call(self.org, self.helpdesk)], mr_mocks.calls["knowledge_index"])
 
         # update an article - its slug follows its title

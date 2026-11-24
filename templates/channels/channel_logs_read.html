@@ -8,7 +8,25 @@
       <temba-channel-logo type="{{ object.channel_type }}" name="{{ object.type.name }}" size="28"></temba-channel-logo>
     </template>
   {% endif %}
-  <div class="log-view">
+  <div class="log-view" data-log-root>
+    {% if can_break %}
+      <div class="log-owner">
+        <span>
+          {% if unredacted %}
+            {% trans "Showing these logs unredacted." %}
+          {% else %}
+            {% trans "These logs are redacted as this workspace is anonymous." %}
+          {% endif %}
+        </span>
+        <a href="{{ request.path }}{% if not unredacted %}?break=1{% endif %}" class="dash-link" data-log-break>
+          {% if unredacted %}
+            {% trans "Redact" context "button to hide contact details in logs again" %}
+          {% else %}
+            {% trans "Show unredacted" %}
+          {% endif %}
+        </a>
+      </div>
+    {% endif %}
     {% if msg or call %}
       {# the message or call these are the logs of #}
       <div class="log-owner">
@@ -71,4 +89,65 @@
       </div>
     {% endfor %}
   </div>
+  {% if can_break and is_sheet %}
+    {# shown over a page, the toggle swaps the logs in place rather than leaving for a page of their own #}
+    <script>
+      (function() {
+        var wire = function(root) {
+          var toggle = root && root.querySelector("[data-log-break]");
+          if (!toggle) {
+            return;
+          }
+          toggle.addEventListener("click", function(event) {
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) {
+              return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+
+            var url = toggle.getAttribute("href");
+            var headers = {
+              "X-Temba-Spa": "1",
+              "X-Temba-Sheet": "1",
+              "X-Requested-With": "XMLHttpRequest"
+            };
+            if (window.workspace && window.workspace.uuid) {
+              headers["X-Temba-Workspace"] = window.workspace.uuid;
+            }
+
+            fetch(url, {
+              headers: headers
+            }).then(function(response) {
+              return response.ok ? response.text() : Promise.reject(response);
+            }).then(function(body) {
+              // whatever is showing the logs may have moved on to something else by now
+              if (!root.isConnected) {
+                return;
+              }
+              var fresh = new DOMParser().parseFromString(body, "text/html").querySelector("[data-log-root]");
+              if (!fresh) {
+                return Promise.reject();
+              }
+              fresh = document.importNode(fresh, true);
+              root.replaceWith(fresh);
+              wire(fresh);
+
+              // the toggle that had focus is gone, so give it to the one replacing it
+              var replacement = fresh.querySelector("[data-log-break]");
+              if (replacement) {
+                replacement.focus();
+              }
+            }).catch(function() {
+              if (root.isConnected) {
+                document.location = url;
+              }
+            });
+          });
+        };
+
+        // the logs are the element just before this script
+        wire(document.currentScript.previousElementSibling);
+      })();
+    </script>
+  {% endif %}
 {% endblock content %}
