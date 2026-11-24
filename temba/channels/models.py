@@ -2,7 +2,7 @@ import json
 import logging
 from abc import ABCMeta
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from datetime import date, datetime, timedelta
 from enum import Enum
 from typing import NamedTuple
@@ -651,11 +651,12 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         return self.address
 
     @cached_property
-    def last_sync(self):
+    def last_sync(self) -> "AndroidSync | None":
         """
-        Gets the last sync event for this channel (only applies to Android channels)
+        Gets the latest sync of this Android channel's phone
         """
-        return self.sync_events.order_by("id").last()
+        state = (self.sync_state or {}).get("android")
+        return AndroidSync.from_json(state) if state else None
 
     def is_new(self):
         # is this channel newer than an hour
@@ -667,7 +668,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         reporting ones it got
         """
         last_sync = self.last_sync if self.is_android else None
-        return bool(last_sync) and not self.is_new() and timezone.now() - last_sync.created_on > timedelta(hours=1)
+        return bool(last_sync) and not self.is_new() and timezone.now() - last_sync.synced_on > timedelta(hours=1)
 
     WAITING_NOTE = _("Nothing has been received from the provider yet.")
 
@@ -721,14 +722,6 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         paused = cls._get_send_paused(enabled)
         failures = cls._get_recent_failures([c for c in enabled if cls.ROLE_SEND in c.role])
         received = cls._get_received([c for c in enabled if c.type.config_ui and cls.ROLE_RECEIVE in c.role])
-
-        # the latest sync of each Android channel, which is_sync_delayed reads
-        android = [c for c in enabled if c.is_android]
-        if android:
-            latest = SyncEvent.objects.filter(channel__in=android).order_by("channel_id", "-id").distinct("channel_id")
-            by_channel = {e.channel_id: e for e in latest}
-            for c in android:
-                c.__dict__["last_sync"] = by_channel.get(c.id)
 
         for c in channels:
             c.__dict__["health"] = c._judge_health(
@@ -1428,6 +1421,29 @@ class ChannelLog:
 
     def __repr__(self):  # pragma: no cover
         return f"<ChannelLog: uuid={self.uuid} type={self.log_type}>"
+
+
+@dataclass(frozen=True)
+class AndroidSync:
+    """
+    The latest sync of an Android channel's phone, as mailroom records it under the android key of its sync state
+    """
+
+    synced_on: datetime
+    power_source: str
+    power_status: str
+    power_level: int
+    network_type: str
+    pending_message_count: int
+    retry_message_count: int
+    incoming_command_count: int
+    outgoing_command_count: int
+
+    @classmethod
+    def from_json(cls, data: dict):
+        # anything mailroom has started recording that we don't read yet is ignored
+        values = {f.name: data[f.name] for f in fields(cls) if f.name != "synced_on"}
+        return cls(synced_on=iso8601.parse_date(data["synced_on"]), **values)
 
 
 class SyncEvent(models.Model):

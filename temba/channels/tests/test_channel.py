@@ -444,17 +444,10 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
             self.assertFalse(self.tel_channel.is_send_paused())
 
     def test_read(self):
-        SyncEvent.create(
-            self.tel_channel,
-            dict(p_sts="CHA", p_src="BAT", p_lvl="60", net="UMTS", pending=[], retry=[]),
-            [],
+        self.set_android_sync(
+            self.tel_channel, power_status="CHA", power_source="BAT", power_level=60, network_type="UMTS"
         )
-        SyncEvent.create(
-            self.tel_channel,
-            dict(p_sts="FUL", p_src="AC", p_lvl="100", net="WIFI", pending=[], retry=[]),
-            [],
-        )
-        self.assertEqual(2, SyncEvent.objects.all().count())
+        self.set_android_sync(self.tel_channel, power_level=100, pending_message_count=2)
 
         # non-org users can't view our channels
         self.login(self.non_org_user)
@@ -474,6 +467,7 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
 
         # an Android channel shows its phone and can open its syncs, but has no logs, setup or templates
         self.assertEqual(100, response.context["last_sync"].power_level)
+        self.assertContains(response, "2 messages waiting to send")
         self.assertEqual({"activity", "syncs"}, set(response.context["sheets"]))
 
         # it hasn't sent anything to have failed, so has no failures card, just the messages card
@@ -487,9 +481,7 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.tel_channel.save(update_fields=("created_on",))
 
         # delayed sync status
-        for sync in SyncEvent.objects.all():
-            sync.created_on = two_hours_ago
-            sync.save(update_fields=("created_on",))
+        self.set_android_sync(self.tel_channel, synced_on=two_hours_ago)
 
         self.create_channel_tally(self.tel_channel, "text:out", date(2020, 1, 19), 1)
         self.create_channel_tally(self.tel_channel, "text:in", date(2020, 1, 20), 2)

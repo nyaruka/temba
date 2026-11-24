@@ -743,6 +743,31 @@ class TembaTest(SmartminTest):
         """
         channel.tallies.create(scope=f"{scope}@{day.isoformat()}", count=count)
 
+    def set_android_sync(self, channel, *, synced_on=None, **kwargs):
+        """
+        Records the latest sync of an Android channel's phone, merged into its sync state as mailroom does it
+        """
+        state = {
+            "synced_on": (synced_on or timezone.now()).isoformat(),
+            "power_source": "AC",
+            "power_status": "FUL",
+            "power_level": 100,
+            "network_type": "WIFI",
+            "pending_message_count": 0,
+            "retry_message_count": 0,
+            "incoming_command_count": 0,
+            "outgoing_command_count": 0,
+            **kwargs,
+        }
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE channels_channel SET sync_state = COALESCE(sync_state, '{}') || jsonb_build_object('android', %s::jsonb) WHERE id = %s",
+                [json.dumps(state), channel.id],
+            )
+
+        channel.refresh_from_db(fields=("sync_state",))
+        channel.__dict__.pop("last_sync", None)
+
     def create_channel_log(self, channel, log_type: str, *, http_logs=(), errors=()) -> dict:
         def is_error():
             if len(errors) > 0:
