@@ -872,7 +872,7 @@ class TicketCRUDL(SmartCRUDL):
             else:
                 topic_ids = [0] + list(org.topics.values_list("id", flat=True))  # 0 is no topic
 
-            counts = get_daily_tallies(org, {f"opened:{t}": t for t in topic_ids}, since, until)
+            counts = get_daily_tallies(org, {f"opened:{t}": t for t in topic_ids}, since, until, using="readonly")
 
             # collect all dates and values by topic
             dates_set = set()
@@ -897,7 +897,9 @@ class TicketCRUDL(SmartCRUDL):
             if self.team:  # response times are only tracked workspace-wide
                 raise Http404()
 
-            counts = get_daily_tallies(org, {"resptime:total": "total", "resptime:count": "count"}, since, until)
+            counts = get_daily_tallies(
+                org, {"resptime:total": "total", "resptime:count": "count"}, since, until, using="readonly"
+            )
             totals_by_date, counts_by_date = {}, {}
             for (day, key), count in counts.items():
                 if key == "total":
@@ -922,7 +924,7 @@ class TicketCRUDL(SmartCRUDL):
         def get_replies_chart(self, org, since, until) -> tuple:
             # agents only see replies from their own team
             if self.team:
-                counts = get_daily_tallies(org, {f"teamreplies:{self.team.id}": None}, since, until)
+                counts = get_daily_tallies(org, {f"teamreplies:{self.team.id}": None}, since, until, using="readonly")
                 labels = sorted(day for day, _key in counts.keys())
                 return [d.strftime("%Y-%m-%d") for d in labels], [
                     {"label": self.team.name, "data": [counts[(d, None)] for d in labels]}
@@ -932,7 +934,7 @@ class TicketCRUDL(SmartCRUDL):
             teams_by_id[0] = _("No Team")  # for users not on a team
 
             team_ids = [0] + list(org.teams.values_list("id", flat=True))  # including deleted teams
-            counts = get_daily_tallies(org, {f"teamreplies:{t}": t for t in team_ids}, since, until)
+            counts = get_daily_tallies(org, {f"teamreplies:{t}": t for t in team_ids}, since, until, using="readonly")
 
             # collect all dates and values by team
             dates_set = set()
@@ -976,7 +978,9 @@ class TicketCRUDL(SmartCRUDL):
                 users = users.filter(orgmembership__org=org, orgmembership__team=self.team)
             users_by_id = {u.id: u for u in users}
 
-            counts = get_daily_tallies(org, {f"userreplies:{u}": u for u in users_by_id}, since, until)
+            counts = get_daily_tallies(
+                org, {f"userreplies:{u}": u for u in users_by_id}, since, until, using="readonly"
+            )
 
             replies_by_user = defaultdict(int)
             for (_day, user_id), count in counts.items():

@@ -1012,18 +1012,21 @@ class MockReadOnly:
         self.actual_models = set()
 
     def __enter__(self):
-        self.patch_using = patch("django.db.models.query.QuerySet.using", autospec=True)
-        mock_using = self.patch_using.start()
-
         def using(qs, alias):
             if alias == "readonly":
                 self.actual_models.add(qs.model)
             return qs
 
-        mock_using.side_effect = using
+        self.patches = [
+            patch("django.db.models.query.QuerySet.using", autospec=True),
+            patch("temba.utils.models.es.SearchSliceQuerySet.using", autospec=True),
+        ]
+        for p in self.patches:
+            p.start().side_effect = using
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.patch_using.stop()
+        for p in self.patches:
+            p.stop()
 
         if self.assert_models:
             self.test_class.assertEqual(self.assert_models, self.actual_models)

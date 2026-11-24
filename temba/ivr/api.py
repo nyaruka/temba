@@ -27,7 +27,7 @@ class CallsEndpoint(ListAPIMixin, BaseEndpoint):
         max_page_size = 500
 
         def paginate_queryset(self, queryset, request, view=None):
-            self._count = MsgFolder.get_counts(request.org)["calls"]
+            self._count = MsgFolder.get_counts(request.org, using="readonly")["calls"]
             return super().paginate_queryset(queryset, request, view)
 
         def get_paginated_response(self, data):

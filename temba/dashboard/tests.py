@@ -1,7 +1,9 @@
 from datetime import timedelta, timezone as tzone
+from unittest.mock import patch
 
 from django_valkey import get_valkey_connection
 
+from django.db import connection
 from django.urls import reverse
 from django.utils import timezone
 
@@ -134,6 +136,8 @@ class DashboardTest(TembaTest):
         self.assertEqual([], data["datasets"][1]["data"])  # no outgoing data
 
     @cleanup(valkey=True)
+    # tally reads of earlier days go to the readonly database, which is outside the test's transaction
+    @patch("temba.orgs.models.connections", {"default": connection, "readonly": connection})
     def test_child_workspaces(self):
         history_url = reverse("dashboard.dashboard_message_history")
         stats_url = reverse("dashboard.dashboard_workspace_stats")

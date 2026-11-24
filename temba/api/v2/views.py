@@ -588,7 +588,7 @@ class BroadcastsEndpoint(ListAPIMixin, WriteAPIMixin, BaseEndpoint):
         return self.filter_before_after(queryset, "created_on")
 
     def prepare_for_serialization(self, object_list, using: str):
-        BroadcastMsgCount.bulk_annotate(object_list)
+        BroadcastMsgCount.bulk_annotate(object_list, using=using)
 
     @classmethod
     def get_read_explorer(cls):
@@ -879,7 +879,7 @@ class CampaignEventsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseEn
             campaign_filter = Q(name=campaign_ref)
             if is_uuid(campaign_ref):
                 campaign_filter |= Q(uuid=campaign_ref)
-            campaign = org.campaigns.filter(campaign_filter).first()
+            campaign = Campaign.objects.filter(org=org).filter(campaign_filter).using("readonly").first()
             if campaign:
                 queryset = queryset.filter(campaign=campaign)
             else:
@@ -1071,7 +1071,7 @@ class ChannelEventsEndpoint(ListAPIMixin, BaseEndpoint):
         # filter by contact (optional)
         contact_uuid = params.get("contact")
         if contact_uuid:
-            contact = Contact.objects.filter(org=org, is_active=True, uuid=contact_uuid).first()
+            contact = Contact.objects.filter(org=org, is_active=True, uuid=contact_uuid).using("readonly").first()
             if contact:
                 queryset = queryset.filter(contact=contact)
             else:
@@ -1247,7 +1247,7 @@ class ContactsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseEndpoint
             group_filter = Q(name=group_ref)
             if is_uuid(group_ref):
                 group_filter |= Q(uuid=group_ref)
-            group = ContactGroup.get_groups(org).filter(group_filter).first()
+            group = ContactGroup.get_groups(org).filter(group_filter).using("readonly").first()
             if group:
                 queryset = queryset.filter(groups=group)
             else:
@@ -1992,7 +1992,7 @@ class GroupsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseEndpoint):
         return queryset.filter(is_active=True).exclude(status=ContactGroup.STATUS_INITIALIZING)
 
     def prepare_for_serialization(self, object_list, using: str):
-        group_counts = ContactGroup.get_member_counts(object_list)
+        group_counts = ContactGroup.get_member_counts(object_list, using=using)
         for group in object_list:
             group.count = group_counts[group]
 
@@ -2146,7 +2146,7 @@ class LabelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseEndpoint):
         return queryset.filter(is_active=True)
 
     def prepare_for_serialization(self, object_list, using: str):
-        label_counts = LabelCount.get_totals(object_list)
+        label_counts = LabelCount.get_totals(object_list, using=using)
         for label in object_list:
             label.count = label_counts[label]
 
@@ -2382,7 +2382,7 @@ class MessagesEndpoint(ListAPIMixin, WriteAPIMixin, BaseEndpoint):
         if is_uuid(label_ref):
             label_filter |= Q(uuid=label_ref)
 
-        return Label.get_for_org(self.request.org).filter(label_filter).first()
+        return Label.get_for_org(self.request.org).filter(label_filter).using("readonly").first()
 
     def derive_queryset(self):
         org = self.request.org
@@ -2428,7 +2428,7 @@ class MessagesEndpoint(ListAPIMixin, WriteAPIMixin, BaseEndpoint):
 
         # filter by contact (optional)
         if contact_uuid := params.get("contact"):
-            contact = Contact.objects.filter(org=org, is_active=True, uuid=contact_uuid).first()
+            contact = Contact.objects.filter(org=org, is_active=True, uuid=contact_uuid).using("readonly").first()
             if contact:
                 queryset = queryset.filter(contact=contact)
             else:
@@ -2681,7 +2681,7 @@ class ResthookSubscribersEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, B
     pagination_class = CreatedOnCursorPagination
     lookup_params = {"id": "id"}
 
-    def get_queryset(self):
+    def derive_queryset(self):
         return self.model.objects.filter(resthook__org=self.request.org, is_active=True)
 
     def filter_queryset(self, queryset):
@@ -2923,7 +2923,7 @@ class RunsEndpoint(ListAPIMixin, BaseEndpoint):
 
         # filter by flow (optional)
         if flow_uuid := self.get_uuid_param("flow"):
-            if flow := org.flows.filter(uuid=flow_uuid, is_active=True).first():
+            if flow := Flow.objects.filter(org=org, uuid=flow_uuid, is_active=True).using("readonly").first():
                 queryset = queryset.filter(flow=flow)
             else:
                 queryset = queryset.none()
@@ -2931,7 +2931,7 @@ class RunsEndpoint(ListAPIMixin, BaseEndpoint):
         # filter by contact (optional, deprecated)
         if contact_uuid := params.get("contact"):
             record_deprecated(org, "runs#filter:contact")
-            if contact := org.contacts.filter(is_active=True, uuid=contact_uuid).first():
+            if contact := Contact.objects.filter(org=org, is_active=True, uuid=contact_uuid).using("readonly").first():
                 queryset = queryset.filter(contact=contact)
             else:
                 queryset = queryset.none()
@@ -3112,7 +3112,7 @@ class FlowStartsEndpoint(ListAPIMixin, WriteAPIMixin, BaseEndpoint):
         return context
 
     def prepare_for_serialization(self, object_list, using: str):
-        FlowStartCount.bulk_annotate(object_list)
+        FlowStartCount.bulk_annotate(object_list, using=using)
 
     @classmethod
     def get_read_explorer(cls):
@@ -3213,7 +3213,7 @@ class TicketsEndpoint(ListAPIMixin, BaseEndpoint):
         # filter by contact (optional)
         contact_uuid = params.get("contact")
         if contact_uuid:
-            contact = org.contacts.filter(is_active=True, uuid=contact_uuid).first()
+            contact = Contact.objects.filter(org=org, is_active=True, uuid=contact_uuid).using("readonly").first()
             if contact:
                 queryset = queryset.filter(contact=contact)
             else:
@@ -3355,8 +3355,8 @@ class TopicsEndpoint(ListAPIMixin, WriteAPIMixin, BaseEndpoint):
         return super().get_queryset().filter(is_active=True)
 
     def prepare_for_serialization(self, object_list, using: str):
-        open_counts = Ticket.get_topic_counts(self.request.org, object_list, Ticket.STATUS_OPEN)
-        closed_counts = Ticket.get_topic_counts(self.request.org, object_list, Ticket.STATUS_CLOSED)
+        open_counts = Ticket.get_topic_counts(self.request.org, object_list, Ticket.STATUS_OPEN, using=using)
+        closed_counts = Ticket.get_topic_counts(self.request.org, object_list, Ticket.STATUS_CLOSED, using=using)
         for topic in object_list:
             topic.open_count = open_counts[topic]
             topic.closed_count = closed_counts[topic]
@@ -3448,7 +3448,7 @@ class UsersEndpoint(ListAPIMixin, BaseEndpoint):
 
         # build a map of users to memberships
         memberships = {}
-        for m in OrgMembership.objects.filter(org=self.request.org).select_related("user", "team"):
+        for m in OrgMembership.objects.filter(org=self.request.org).select_related("user", "team").using("readonly"):
             memberships[m.user] = m
 
         context["memberships"] = memberships

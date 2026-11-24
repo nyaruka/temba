@@ -51,7 +51,7 @@ class ChannelsEndpoint(SearchLengthMixin, ListAPIMixin, BaseEndpoint):
 
     def prepare_for_serialization(self, page, using: str):
         # bulk-load the daily counts and health for the page so as_json doesn't N+1
-        Channel.prefetch_activity_series(page)
+        Channel.prefetch_activity_series(page, using=using)
         Channel.prefetch_health(page)
 
 
@@ -88,7 +88,7 @@ class ChannelLogsEndpoint(BaseEndpoint):
         except ValueError:
             raise Http404()
 
-        channel = Channel.objects.filter(org=self.request.org, uuid=uuid, is_active=True).first()
+        channel = Channel.objects.filter(org=self.request.org, uuid=uuid, is_active=True).using("readonly").first()
         if not channel or not channel.type.has_logs:
             raise Http404()
         return channel
@@ -138,7 +138,7 @@ class ChannelHTTPLogsEndpoint(BaseEndpoint):
         channel = self.get_channel()
         before = self.get_before()
 
-        logs = HTTPLog.objects.filter(channel=channel).order_by("-id")
+        logs = HTTPLog.objects.filter(channel=channel).order_by("-id").using("readonly")
         if before:
             logs = logs.filter(id__lt=before)
         page = list(logs.only("id", "log_type", "is_error", "request_time", "created_on")[: self.page_size + 1])
@@ -160,7 +160,7 @@ class ChannelHTTPLogsEndpoint(BaseEndpoint):
         except ValueError:
             raise Http404()
 
-        channel = Channel.objects.filter(org=self.request.org, uuid=uuid, is_active=True).first()
+        channel = Channel.objects.filter(org=self.request.org, uuid=uuid, is_active=True).using("readonly").first()
         if not channel or not channel.type.template_type:
             raise Http404()
         return channel

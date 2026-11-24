@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 from unittest.mock import call, patch
 
+from django.db import connection
 from django.urls import reverse
 from django.utils import timezone
 
@@ -1113,6 +1114,8 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
             update_url, self.admin, {"note": "I have a bad feeling about this."}, success_status=200
         )
 
+    # tally reads of earlier days go to the readonly database, which is outside the test's transaction
+    @patch("temba.orgs.models.connections", {"default": connection, "readonly": connection})
     def test_opened_chart(self):
         opened_url = reverse("tickets.ticket_chart", args=["opened"])
 
@@ -1190,6 +1193,8 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
             response.json(),
         )
 
+    # tally reads of earlier days go to the readonly database, which is outside the test's transaction
+    @patch("temba.orgs.models.connections", {"default": connection, "readonly": connection})
     def test_resptime_chart(self):
         opened_url = reverse("tickets.ticket_chart", args=["resptime"])
 
@@ -1228,6 +1233,8 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
             response.json(),
         )
 
+    # tally reads of earlier days go to the readonly database, which is outside the test's transaction
+    @patch("temba.orgs.models.connections", {"default": connection, "readonly": connection})
     def test_replies_chart(self):
         replies_url = reverse("tickets.ticket_chart", args=["replies"])
 
@@ -1289,6 +1296,8 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
             response.json(),
         )
 
+    # tally reads of earlier days go to the readonly database, which is outside the test's transaction
+    @patch("temba.orgs.models.connections", {"default": connection, "readonly": connection})
     def test_leaderboard(self):
         leaderboard_url = reverse("tickets.ticket_leaderboard")
 

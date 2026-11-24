@@ -274,7 +274,7 @@ class OrgsEndpoint(ListAPIMixin, BaseEndpoint):
     serializer_class = serializers.OrgReadSerializer
     pagination_class = ModifiedOnCursorPagination
 
-    def get_queryset(self):
+    def derive_queryset(self):
         return self.request.user.get_orgs(self.request)
 
 

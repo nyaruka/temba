@@ -1,7 +1,7 @@
 from datetime import date
-from unittest.mock import call
+from unittest.mock import call, patch
 
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 from django.utils import timezone
 
 from temba.orgs.models import Org, OrgRole
@@ -276,6 +276,8 @@ class TicketTest(TembaTest):
             {c["scope"]: c["count"] for c in self.org.counts.order_by("scope").values("scope", "count")},
         )
 
+    # tally reads of earlier days go to the readonly database, which is outside the test's transaction
+    @patch("temba.orgs.models.connections", {"default": connection, "readonly": connection})
     def test_export_ticket_stats(self):
         sales = Team.create(self.org, self.admin, "Sales")
         self.org.add_user(self.agent, OrgRole.AGENT, team=sales)

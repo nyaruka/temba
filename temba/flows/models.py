@@ -1845,9 +1845,10 @@ class FlowStartCount(BaseSquashableCount):
         return start.counts.all().sum()
 
     @classmethod
-    def bulk_annotate(cls, starts):
+    def bulk_annotate(cls, starts, *, using: str = "default"):
         counts = (
-            cls.objects.filter(start_id__in=[s.id for s in starts])
+            cls.objects.using(using)
+            .filter(start_id__in=[s.id for s in starts])
             .values("start_id")
             .order_by("start_id")
             .annotate(count=Sum("count"))

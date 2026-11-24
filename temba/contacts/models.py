@@ -1774,19 +1774,24 @@ class ContactGroup(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin
             on_transaction_commit(lambda: mailroom.get_client().contact_populate_group(self.org, self))
 
     @classmethod
-    def get_member_counts(cls, groups) -> dict:
+    def get_member_counts(cls, groups, *, using: str = "default") -> dict:
         """
         Gets contact counts for the given groups
         """
-        counts = ContactGroupCount.objects.filter(group__in=groups).values("group_id").annotate(count_sum=Sum("count"))
+        counts = (
+            ContactGroupCount.objects.using(using)
+            .filter(group__in=groups)
+            .values("group_id")
+            .annotate(count_sum=Sum("count"))
+        )
         by_group_id = {c["group_id"]: c["count_sum"] for c in counts}
         return {g: by_group_id.get(g.id, 0) for g in groups}
 
-    def get_member_count(self):
+    def get_member_count(self, *, using: str = "default"):
         """
         Returns the number of contacts in the group
         """
-        return ContactGroup.get_member_counts([self])[self]
+        return ContactGroup.get_member_counts([self], using=using)[self]
 
     def get_dependents(self):
         dependents = super().get_dependents()

@@ -328,7 +328,7 @@ class Ticket(models.Model):
         return org.counts.prefix([f"tickets:{status}:{t.id}:" for t in topics]).sum()
 
     @classmethod
-    def get_topic_counts(cls, org, topics, status: str) -> dict[Topic, int]:
+    def get_topic_counts(cls, org, topics, status: str, *, using: str = "default") -> dict[Topic, int]:
         """
         Gets the count for each topic and the given status.
         """
@@ -336,7 +336,8 @@ class Ticket(models.Model):
         # count scopes are stored as 'tickets:<status>:<topic-id>:<assignee-id>' so get all counts with the prefix
         # 'tickets:<status>:' and group by topic-id extracted as the 3rd split part.
         counts = (
-            org.counts.prefix(f"tickets:{status}:")
+            org.counts.using(using)
+            .prefix(f"tickets:{status}:")
             .annotate(topic_id=Cast(SplitPart(F("scope"), Value(":"), Value(3)), output_field=models.IntegerField()))
             .values_list("topic_id")
             .annotate(count_sum=Sum("count"))
@@ -503,13 +504,15 @@ class TopicFolder(TicketFolder):
         return super().get_queryset(org, user, ordered=ordered, oldest_first=oldest_first).filter(topic=self.topic)
 
 
-def get_daily_tallies(org: Org, keys_by_scope: dict, since: date, until: date) -> dict[tuple[date, Any], int]:
+def get_daily_tallies(
+    org: Org, keys_by_scope: dict, since: date, until: date, *, using: str = "default"
+) -> dict[tuple[date, Any], int]:
     """
     Gets the daily totals of the given ticket tally scopes, e.g. opened:<topic>, over days from since up to until, by
-    day and the key given for each scope, omitting those with no total.
+    day and the key given for each scope, omitting those with no total. See BaseTally._get_daily_totals for using.
     """
     full_scopes = {f"tickets/{s}": k for s, k in keys_by_scope.items()}
-    totals = OrgTally.get_daily_totals(org, list(full_scopes), since, until)
+    totals = OrgTally.get_daily_totals(org, list(full_scopes), since, until, using=using)
     return {(day, full_scopes[scope]): count for (day, scope), count in totals.items()}
 
 
@@ -552,6 +555,7 @@ def export_ticket_stats(org: Org, since: date, until: date) -> openpyxl.Workbook
         },
         since,
         until,
+        using="readonly",
     )
 
     org_openings, org_replies = defaultdict(int), defaultdict(int)

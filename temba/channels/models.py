@@ -1002,7 +1002,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         return None
 
     @classmethod
-    def prefetch_activity_series(cls, channels):
+    def prefetch_activity_series(cls, channels, *, using: str = "default"):
         """
         Prefetches the daily counts required by get_activity_series, in one read for channels of the same workspace
         """
@@ -1012,7 +1012,9 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
             return
 
         since, until = cls._get_activity_period()
-        totals = ChannelTally.get_daily_totals_by_channel(channels, cls._get_activity_scopes(), since, until)
+        totals = ChannelTally.get_daily_totals_by_channel(
+            channels, cls._get_activity_scopes(), since, until, using=using
+        )
 
         by_channel = defaultdict(dict)
         for (channel_id, day, scope), count in totals.items():
@@ -1171,13 +1173,13 @@ class ChannelTally(BaseTally):
 
     @classmethod
     def get_daily_totals_by_channel(
-        cls, channels, scopes: list[str], since: date, until: date
+        cls, channels, scopes: list[str], since: date, until: date, using: str = "default"
     ) -> dict[tuple[int, date, str], int]:
         """
         Gets totals by channel id, day and scope for the given undated scopes of each of the given channels over days
-        from since up to until, omitting those with no total.
+        from since up to until, omitting those with no total. See BaseTally._get_daily_totals for using.
         """
-        return cls._get_daily_totals([c.id for c in channels], scopes, since, until)
+        return cls._get_daily_totals([c.id for c in channels], scopes, since, until, using=using)
 
     class Meta:
         indexes = [
