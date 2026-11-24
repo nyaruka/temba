@@ -644,7 +644,7 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
                 }
             ],
         )
-        self.create_incoming_call(flow, contact, logs=[log3])
+        call2 = self.create_incoming_call(flow, contact, logs=[log3])
 
         logs_url = reverse("channels.channel_logs_read", args=[self.channel.uuid, "call", call1.uuid])
 
@@ -653,6 +653,22 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(2, len(response.context["logs"]))
         self.assertEqual("https://foo.bar/call1", response.context["logs"][0]["http_logs"][0]["url"])
         self.assertEqual("https://foo.bar/call2", response.context["logs"][1]["http_logs"][0]["url"])
+
+        # can't view the logs of a call in a different workspace
+        call2.org = self.org2
+        call2.save(update_fields=("org",))
+        call2_logs_url = reverse("channels.channel_logs_read", args=[self.channel.uuid, "call", call2.uuid])
+        self.assertRequestDisallowed(call2_logs_url, [None, self.editor, self.agent, self.admin, self.admin2])
+
+        # requested as a page, the call's logs redirect to the channel's page with the logs sheet open on them
+        del self.client.defaults["HTTP_X_TEMBA_SHEET"]
+        self.login(self.admin)
+        read_url = reverse("channels.channel_read", args=[self.channel.uuid])
+        response = self.client.get(logs_url)
+        self.assertEqual(f"{read_url}?{urlencode({'sheet': 'logs', 'item': logs_url})}", response.url)
+
+        # unless the call is in a different workspace
+        self.assertRequestDisallowed(call2_logs_url, [None, self.editor, self.agent, self.admin, self.admin2])
 
     def test_delete(self):
         delete_url = reverse("channels.channel_delete", args=[self.ex_channel.uuid])
