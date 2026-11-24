@@ -232,6 +232,21 @@ class SearchSliceQuerySetTest(TembaTest):
         contacts = SearchSliceQuerySet(Contact, [str(ann.uuid)], offset=0, total=1)
         self.assertIs(contacts, contacts.all())
 
+    def test_using(self):
+        ann = self.create_contact("Ann", urns=["tel:+12340000001"])
+
+        contacts = SearchSliceQuerySet(Contact, [str(ann.uuid)], offset=10, total=100)
+        self.assertEqual("default", contacts.db)
+
+        # a slice of the same shape, on the other database
+        readonly = contacts.using("readonly")
+        self.assertIsInstance(readonly, SearchSliceQuerySet)
+        self.assertEqual("readonly", readonly.db)
+        self.assertEqual([str(ann.uuid)], readonly.uuids)
+        self.assertEqual(10, readonly.offset)
+        self.assertEqual(100, readonly.count())
+        self.assertEqual("default", contacts.db)
+
     def test_prefetch_related(self):
         ann = self.create_contact("Ann", urns=["tel:+12340000001"])
         bob = self.create_contact("Bob", urns=["tel:+12340000002"])
