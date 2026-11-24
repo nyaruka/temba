@@ -492,6 +492,7 @@ function showModax(header, endpoint, modaxOptions) {
     modax['-temba-loaded'] = undefined;
 
     modax.disabled = options.disabled == 'True';
+    modax.destructive = !!options.destructive;
     var itemOnSubmit;
     if (options.onSubmit == 'None') {
       onSubmit = undefined;
