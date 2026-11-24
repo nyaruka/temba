@@ -387,7 +387,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
     tps = models.PositiveIntegerField(default=DEFAULT_TPS)
     is_enabled = models.BooleanField(default=True)
 
-    # the latest state of each kind of sync, keyed by kind, e.g. "templates", which only mailroom writes (see save)
+    # the latest state of each kind of sync, keyed by kind, e.g. "templates", which only mailroom writes
     sync_state = models.JSONField(null=True)
 
     # Android relayer specific fields
@@ -895,15 +895,6 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
 
     def check_credentials(self) -> bool:
         return self.type.check_credentials(self.config)
-
-    def save(self, *args, **kwargs):
-        # mailroom merges into sync_state while an instance loaded here may be stale, so an update never writes it
-        if self.pk and not kwargs.get("force_insert") and kwargs.get("update_fields") is None:
-            kwargs["update_fields"] = [
-                f.name for f in self._meta.concrete_fields if not f.primary_key and f.name != "sync_state"
-            ]
-
-        return super().save(*args, **kwargs)
 
     def release(self, user, *, trigger_sync: bool = True, interrupt: bool = True):
         """
