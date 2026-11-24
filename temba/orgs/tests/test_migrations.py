@@ -413,3 +413,17 @@ class ParentStatusReasonTest(MigrationTest):
         assert_org(self.child2, "S", "P")
         assert_org(self.root3, "S", "S")
         assert_org(self.child3, "S", "S")
+
+
+class DropIsFlaggedTest(MigrationTest):
+    app = "orgs"
+    migrate_from = "0217_parent_status_reason"
+    migrate_to = "0218_drop_org_is_flagged"
+
+    def test_migration(self):
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT count(*) FROM information_schema.columns "
+                "WHERE table_name = 'orgs_org' AND column_name = 'is_flagged'"
+            )
+            self.assertEqual(0, cursor.fetchone()[0])

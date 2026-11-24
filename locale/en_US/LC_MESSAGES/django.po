@@ -3272,6 +3272,9 @@ msgstr ""
 msgid "As separate workspace"
 msgstr ""
 
+msgid "Child workspaces can't be created while this workspace is restricted or suspended."
+msgstr ""
+
 msgid "Switch Workspaces"
 msgstr ""
 
