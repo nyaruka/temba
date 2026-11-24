@@ -1,3 +1,5 @@
+from datetime import datetime, timezone as tzone
+
 from allauth.mfa.models import Authenticator
 
 from django.contrib.auth.models import Permission
@@ -179,6 +181,12 @@ class UserTest(TembaTest):
 
     def test_release(self):
         token = APIToken.create(self.org, self.admin)
+
+        # a token revoked only by deleted_on isn't revoked again
+        revoked_on = datetime(2026, 11, 1, 12, 0, tzinfo=tzone.utc)
+        revoked = APIToken.create(self.org, self.admin)
+        revoked.deleted_on = revoked_on
+        revoked.save(update_fields=("deleted_on",))
         self.create_admin_group("Global Admins", users=[self.admin])
 
         # admin doesn't "own" any orgs
@@ -202,6 +210,8 @@ class UserTest(TembaTest):
 
         token.refresh_from_db()
         self.assertIsNotNone(token.deleted_on)
+        revoked.refresh_from_db()
+        self.assertEqual(revoked_on, revoked.deleted_on)
         self.assertEqual(0, self.admin.groups.count())
 
     def test_last_seen(self):

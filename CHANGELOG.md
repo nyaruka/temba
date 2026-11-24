@@ -1,3 +1,7 @@
+## v26.3.228 (2026-11-24)
+ * Read an Android channel's sync history from DynamoDB
+ * Add APIToken.deleted_on, written alongside is_active and backfilled
+
 ## v26.3.227 (2026-11-24)
  * Read an Android channel's latest sync from its sync state
  * Show why a message failed when its workspace was suspended or it had no destination
