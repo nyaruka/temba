@@ -788,7 +788,7 @@ class TembaTest(SmartminTest):
         dynamo.MAIN.put_item(
             Item={
                 "PK": f"cha#{channel.uuid}",
-                "SK": f"syn#{uuid7()}",
+                "SK": f"syn#{uuid7(synced_on)}",
                 "OrgID": channel.org_id,
                 "TTL": int((synced_on + timedelta(days=7)).timestamp()),
                 "Data": data,
