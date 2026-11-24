@@ -65,36 +65,8 @@
         showModax("{{ _("Usages")|escapejs }}", "/llm/usages/" + event.detail.item.uuid + "/");
       });
 
-      // the embedded content menu fires temba-selection - dispatch it the
-      // same way the page chrome's content menu (includes/page_header_menu.html) does
       list.addEventListener("temba-selection", function(event) {
-        var item = event.detail.item;
-        var click = event.detail.event;
-        if (item.type === "link") {
-          if (click) {
-            click.preventDefault();
-            click.stopPropagation();
-            if (click.metaKey && item.url) {
-              window.open(item.url, "_blank");
-              return;
-            }
-          }
-          spaGet(item.url);
-        } else if (item.type === "modax") {
-          showModax(item.title, item.url, {
-            disabled: item.disabled,
-            onSubmit: item.on_submit,
-            onRedirect: item.on_redirect,
-            id: item.modal_id
-          });
-        } else if (item.type === "url_post") {
-          posterize(item.url);
-        } else if (item.type === "js") {
-          if (window[item.id]) {
-            window[item.id]();
-          }
-        }
-        refreshMenu();
+        dispatchContentMenuItem(event.detail.item, event.detail.event);
       });
 
       // See msgs/msg_list.html for the full rationale: stash the list's

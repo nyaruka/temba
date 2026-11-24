@@ -65,38 +65,9 @@
           return;
         }
 
-        // a content-menu item - dispatch it the same way the page
-        // chrome's content menu (includes/page_header_menu.html) does
-        var item = detail.item;
-        if (!item) {
-          return;
+        if (detail.item) {
+          dispatchContentMenuItem(detail.item, detail.event);
         }
-        var click = detail.event;
-        if (item.type === "link") {
-          if (click) {
-            click.preventDefault();
-            click.stopPropagation();
-            if (click.metaKey && item.url) {
-              window.open(item.url, "_blank");
-              return;
-            }
-          }
-          spaGet(item.url);
-        } else if (item.type === "modax") {
-          showModax(item.title, item.url, {
-            disabled: item.disabled,
-            onSubmit: item.on_submit,
-            onRedirect: item.on_redirect,
-            id: item.modal_id
-          });
-        } else if (item.type === "url_post") {
-          posterize(item.url);
-        } else if (item.type === "js") {
-          if (window[item.id]) {
-            window[item.id]();
-          }
-        }
-        refreshMenu();
       });
 
       // See msgs/msg_list.html for the full rationale: stash the list's
