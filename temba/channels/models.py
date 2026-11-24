@@ -662,7 +662,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         """
         Gets the latest syncs of this Android channel's phone, newest first, from the history mailroom keeps of them
         """
-        items, _, _ = dynamo.merged_page_query(dynamo.MAIN, [f"chs#{self.uuid}"], desc=True, limit=limit)
+        items, _, _ = dynamo.merged_page_query(dynamo.MAIN, [f"cha#{self.uuid}"], desc=True, limit=limit)
 
         # a channel can be moved between workspaces, and its syncs in another workspace aren't this one's business
         return [AndroidSync.from_json(i["Data"]) for i in items if i["OrgID"] == self.org_id]
