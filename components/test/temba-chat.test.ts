@@ -382,7 +382,7 @@ describe('temba-chat failed messages', () => {
     const tests = [
       ['channel_removed', 'Channel was removed'],
       ['no_destination', 'No channel available to send message'],
-      ['org_suspended', 'Workspace was suspended'],
+      ['org_suspended', 'Workspace is suspended'],
       ['unknown', 'Message failed to send']
     ];
 

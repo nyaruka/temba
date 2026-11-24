@@ -48,7 +48,7 @@ const getStatusReasonMessage = (reason: string): string => {
     case 'no_destination':
       return msg('No channel available to send message');
     case 'org_suspended':
-      return msg('Workspace was suspended');
+      return msg('Workspace is suspended');
     default:
       return msg('Message failed to send');
   }
