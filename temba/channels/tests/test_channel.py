@@ -66,6 +66,26 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         response = self.client.get(reverse("channels.channel_read", args=[self.tel_channel.uuid]))
         self.assertEqual(404, response.status_code)
 
+    def test_save_keeps_sync_state(self):
+        channel = Channel.objects.get(id=self.tel_channel.id)
+
+        # mailroom records a sync after the instance was loaded
+        Channel.objects.filter(id=channel.id).update(sync_state={"templates": {"failures": 0}})
+
+        channel.name = "Renamed"
+        channel.save()
+
+        channel.refresh_from_db()
+        self.assertEqual("Renamed", channel.name)
+        self.assertEqual({"templates": {"failures": 0}}, channel.sync_state)
+
+        # unless it's asked for explicitly
+        channel.sync_state = {"templates": {"failures": 1}}
+        channel.save(update_fields=("sync_state",))
+
+        channel.refresh_from_db()
+        self.assertEqual({"templates": {"failures": 1}}, channel.sync_state)
+
     def test_get_speed(self):
         def speed(tps, is_enabled=True):
             self.channel.tps = tps
