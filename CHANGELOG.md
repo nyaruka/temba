@@ -1,3 +1,6 @@
+## v26.3.230 (2026-11-24)
+ * Drop SyncEvent now that Android sync history is in DynamoDB (#7348)
+
 ## v26.3.229 (2026-11-24)
  * Read APIToken.deleted_on instead of is_active (#7276)
 
