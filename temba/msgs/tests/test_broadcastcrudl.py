@@ -450,7 +450,7 @@ class BroadcastCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("und", languages[-1]["iso"])
 
         # now make our secondary language the base language, with no value for the primary language
-        broadcast.translations = {"esp": {"text": "hola"}}
+        broadcast.translations = {"und": {"text": "undefined"}, "esp": {"text": "hola"}}
         broadcast.base_language = "esp"
         broadcast.save(update_fields=("translations", "base_language"))
 
