@@ -3295,6 +3295,9 @@ msgstr "Comme espace de travail enfant"
 msgid "As separate workspace"
 msgstr "Comme espace de travail distinct"
 
+msgid "Child workspaces can't be created while this workspace is restricted or suspended."
+msgstr "Impossible de créer des espaces de travail enfants tant que cet espace de travail est restreint ou suspendu."
+
 msgid "Switch Workspaces"
 msgstr "Changer d'espace de travail"
 

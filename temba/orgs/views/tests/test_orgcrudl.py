@@ -780,6 +780,18 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         # should have been redirected to child management page
         self.assertRedirect(response, "/org/")
 
+        # a restricted or suspended workspace can't create children
+        self.org.restrict(Org.RESTRICTED_STAFF)
+
+        self.assertCreateSubmit(
+            create_url,
+            self.admin,
+            {"name": "Another Child", "timezone": "Africa/Nairobi"},
+            form_errors={
+                "__all__": "Child workspaces can't be created while this workspace is restricted or suspended."
+            },
+        )
+
     def test_create_child_or_new(self):
         create_url = reverse("orgs.org_create")
 
@@ -810,6 +822,25 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
             self.admin,
             {"type": "child", "name": "Child Org", "timezone": "Africa/Nairobi"},
             new_obj_query=Org.objects.filter(name="Child Org", parent=self.org),
+        )
+
+        # once suspended, only separate workspaces can be created
+        self.org.restrict(Org.RESTRICTED_STAFF)
+        self.org.suspend()
+
+        self.assertCreateSubmit(
+            create_url,
+            self.admin,
+            {"type": "child", "name": "Another Child", "timezone": "Africa/Nairobi"},
+            form_errors={
+                "__all__": "Child workspaces can't be created while this workspace is restricted or suspended."
+            },
+        )
+        self.assertCreateSubmit(
+            create_url,
+            self.admin,
+            {"type": "new", "name": "Another Org", "timezone": "Africa/Nairobi"},
+            new_obj_query=Org.objects.filter(name="Another Org", parent=None),
         )
 
     def test_create_child_spa(self):
