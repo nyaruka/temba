@@ -1175,13 +1175,13 @@ class Article(CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             self.modified_by = user
             self.save(update_fields=("is_active", "status", "published_on", "modified_by", "modified_on"))
 
+            # a draft was never indexed so there's nothing to drop
+            if was_published:
+                self.source.mark_pending()
+
         # ATOMIC_REQUESTS means the atomic block above is only a savepoint, so the storage objects can't go until the
         # request's transaction commits - otherwise a later failure restores the article without its screenshots
         on_transaction_commit(lambda: [public_file_storage.delete(p) for p in image_paths])
-
-        # a draft was never indexed so there's nothing to drop
-        if was_published:
-            self.source.mark_pending()
 
     def __str__(self):
         return self.title

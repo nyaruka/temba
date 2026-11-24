@@ -961,6 +961,9 @@ class ArticleTest(TembaTest):
         section.refresh_from_db()
         self.assertTrue(section.is_active)
 
+        self.helpdesk.status = KnowledgeSource.STATUS_READY
+        self.helpdesk.save(update_fields=("status",))
+
         article.release(self.admin)
 
         # soft deleted, back to draft, and modified_on bumped so mailroom's next index sees the tombstone

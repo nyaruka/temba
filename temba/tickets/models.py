@@ -8,7 +8,7 @@ from typing import Any
 import openpyxl
 
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.db.models import F, Q, Sum, Value
 from django.db.models.functions import Cast, Lower
 from django.utils import timezone
@@ -40,11 +40,13 @@ class Shortcut(OrgAsset):
         assert cls.is_valid_name(name), f"'{name}' is not a valid shortcut name"
         assert not org.shortcuts.filter(name__iexact=name).exists(), f"shortcut with name '{name}' already exists"
 
-        shortcut = org.shortcuts.create(name=name, text=text, created_by=user, modified_by=user)
-        shortcut.request_indexing()
+        # the flag has to commit with the change, as it's all that records it if mailroom's request is lost
+        with transaction.atomic():
+            shortcut = org.shortcuts.create(name=name, text=text, created_by=user, modified_by=user)
+            shortcut.mark_knowledge_pending()
         return shortcut
 
-    def request_indexing(self):
+    def mark_knowledge_pending(self):
         """
         Flags the org's shortcuts knowledge, which is derived from its shortcuts, as needing reindexing.
         """
@@ -58,9 +60,10 @@ class Shortcut(OrgAsset):
         self.is_active = False
         self.name = self._deleted_name()
         self.modified_by = user
-        self.save(update_fields=("name", "is_active", "modified_by", "modified_on"))
 
-        self.request_indexing()
+        with transaction.atomic():
+            self.save(update_fields=("name", "is_active", "modified_by", "modified_on"))
+            self.mark_knowledge_pending()
 
     class Meta:
         constraints = [models.UniqueConstraint("org", Lower("name"), name="unique_shortcut_names")]

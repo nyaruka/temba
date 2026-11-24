@@ -56,6 +56,9 @@ class ShortcutCRUDLTest(TembaTest, CRUDLTestMixin):
             form_errors={"name": "Ensure this value has at most 64 characters (it has 65)."},
         )
 
+        source.status = KnowledgeSource.STATUS_READY
+        source.save(update_fields=("status",))
+
         response = self.assertCreateSubmit(
             create_url,
             self.admin,
@@ -66,7 +69,7 @@ class ShortcutCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(reverse("tickets.shortcut_list"), response.url)
 
         # the org's shortcuts flagged for indexing and mailroom asked to do it, once for the one created above and
-        # once for this one
+        # once for this one (it was ready before this one)
         source.refresh_from_db()
         self.assertEqual(KnowledgeSource.STATUS_PENDING, source.status)
         self.assertEqual([call(self.org, source)] * 2, mr_mocks.calls["knowledge_index"])
@@ -88,6 +91,8 @@ class ShortcutCRUDLTest(TembaTest, CRUDLTestMixin):
         source = KnowledgeSource.get_system(self.org, KnowledgeSource.TYPE_SHORTCUTS)
         shortcut = Shortcut.create(self.org, self.admin, "Planes", "Planes are...")
         Shortcut.create(self.org, self.admin, "Trains", "Trains are...")
+        source.status = KnowledgeSource.STATUS_READY
+        source.save(update_fields=("status",))
         mr_mocks.calls["knowledge_index"].clear()
 
         update_url = reverse("tickets.shortcut_update", args=[shortcut.uuid])
@@ -114,7 +119,9 @@ class ShortcutCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(shortcut.name, "Cars")
         self.assertEqual(shortcut.text, "Cars are...")
 
-        # only the successful edit asks mailroom to index
+        # only the successful edit flags the org's shortcuts for indexing and asks mailroom to do it
+        source.refresh_from_db()
+        self.assertEqual(KnowledgeSource.STATUS_PENDING, source.status)
         self.assertEqual([call(self.org, source)], mr_mocks.calls["knowledge_index"])
 
         # for orgs with the agents feature we redirect to the fixed shortcuts page
