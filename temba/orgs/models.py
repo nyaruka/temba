@@ -628,9 +628,13 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             child_changes = changes | dict(status_reason=Org.RESTRICTED_PARENT if self.status_cascades else None)
             inheriting = Q(status=Org.STATUS_ACTIVE) | Q(status_reason=Org.RESTRICTED_PARENT)
             unchanged = Q(status=status, status_reason=child_changes["status_reason"])
-            changed_children = list(self.children.filter(inheriting, is_active=True).exclude(unchanged).order_by("id"))
-            if changed_children:
-                Org.objects.filter(id__in=[c.id for c in changed_children]).update(**child_changes)
+            children = self.children.filter(inheriting, is_active=True).exclude(unchanged)
+
+            # locked so that a child flagged or restricted by staff meanwhile isn't overwritten
+            with transaction.atomic():
+                changed_children = list(children.select_for_update().order_by("id"))
+                if changed_children:
+                    Org.objects.filter(id__in=[c.id for c in changed_children]).update(**child_changes)
 
         org_status_changed.send(sender=Org, org=self, status=status)
 
