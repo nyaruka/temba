@@ -226,8 +226,9 @@ class DefinitionExportTest(TembaTest, CRUDLTestMixin):
         new_campaign = Campaign.objects.filter(is_active=True).last()
         new_event = campaign.events.filter(is_active=True).last()
 
-        # same campaign, but new event
+        # same campaign, modified by the import, but new event
         self.assertEqual(campaign.id, new_campaign.id)
+        self.assertGreater(new_campaign.modified_on, campaign.modified_on)
         self.assertNotEqual(event.id, new_event.id)
 
     def test_import_flow_dependency_graph(self):

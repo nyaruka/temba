@@ -91,4 +91,4 @@ def claim_channel(org, channel, phone: str):
     channel.is_active = True
     channel.claim_code = None
     channel.address = phone
-    channel.save(update_fields=("country", "org", "is_active", "claim_code", "address"))
+    channel.save(update_fields=("country", "org", "is_active", "claim_code", "address", "modified_on"))

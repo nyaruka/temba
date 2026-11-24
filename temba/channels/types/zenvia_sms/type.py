@@ -96,4 +96,4 @@ class ZenviaSMSType(ChannelType):
 
         channel.config[ZENVIA_STATUS_SUBSCRIPTION_ID] = statusSubscriptionId
 
-        channel.save(update_fields=("config",))
+        channel.save(update_fields=("config", "modified_on"))

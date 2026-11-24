@@ -627,6 +627,7 @@ class CampaignEventWriteSerializer(WriteSerializer):
                     "unit",
                     "delivery_hour",
                     "relative_to",
+                    "modified_on",
                 )
             )
 
