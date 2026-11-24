@@ -1,3 +1,11 @@
+## v26.3.225 (2026-11-24)
+ * Flag knowledge sources pending on every shortcut and article change
+ * Add Channel.sync_state for the latest state of each kind of sync
+ * Give child workspaces a parent reason for a restriction or suspension they share, and signal their changes
+ * Let a modax be marked destructive and use it for suspending a workspace
+ * Dispatch content menu items from one shared function
+ * Fix small bugs in the web components and remove dead code
+
 ## v26.3.224 (2026-11-23)
  * Cancel a workspace's queued messages when it's suspended
  * Only cascade billing and limits restrictions to child workspaces
