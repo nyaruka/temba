@@ -289,7 +289,7 @@ class ArticleWriteSerializer(WriteSerializer):
 
         # a draft isn't indexed, so only changes to what is or was published need to be
         if was_published or article.status == Article.STATUS_PUBLISHED:
-            helpdesk.request_indexing()
+            helpdesk.mark_pending()
 
         return article
 

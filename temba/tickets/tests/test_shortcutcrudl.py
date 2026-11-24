@@ -65,7 +65,10 @@ class ShortcutCRUDLTest(TembaTest, CRUDLTestMixin):
         )
         self.assertEqual(reverse("tickets.shortcut_list"), response.url)
 
-        # mailroom asked to index the org's shortcuts, once for the one created above and once for this one
+        # the org's shortcuts flagged for indexing and mailroom asked to do it, once for the one created above and
+        # once for this one
+        source.refresh_from_db()
+        self.assertEqual(KnowledgeSource.STATUS_PENDING, source.status)
         self.assertEqual([call(self.org, source)] * 2, mr_mocks.calls["knowledge_index"])
 
         # for orgs with the agents feature we redirect to the fixed shortcuts page
@@ -127,6 +130,8 @@ class ShortcutCRUDLTest(TembaTest, CRUDLTestMixin):
         source = KnowledgeSource.get_system(self.org, KnowledgeSource.TYPE_SHORTCUTS)
         shortcut1 = Shortcut.create(self.org, self.admin, "Planes", "Planes are...")
         shortcut2 = Shortcut.create(self.org, self.admin, "Trains", "Trains are...")
+        source.status = KnowledgeSource.STATUS_READY
+        source.save(update_fields=("status",))
         mr_mocks.calls["knowledge_index"].clear()
 
         delete_url = reverse("tickets.shortcut_delete", args=[shortcut1.uuid])
@@ -147,6 +152,8 @@ class ShortcutCRUDLTest(TembaTest, CRUDLTestMixin):
         shortcut2.refresh_from_db()
         self.assertTrue(shortcut2.is_active)
 
+        source.refresh_from_db()
+        self.assertEqual(KnowledgeSource.STATUS_PENDING, source.status)
         self.assertEqual([call(self.org, source)], mr_mocks.calls["knowledge_index"])
 
         # for orgs with the agents feature we redirect to the fixed shortcuts page

@@ -147,22 +147,14 @@ class KnowledgeSourceTest(TembaTest):
         self.assertIsNone(docs.error)
         self.assertEqual([call(self.org, docs)], mr_mocks.calls["knowledge_index"])
 
-    @mock_mailroom
-    def test_request_indexing(self, mr_mocks):
-        shortcuts = self.org.sources.get(source_type=KnowledgeSource.TYPE_SHORTCUTS)
-
-        shortcuts.request_indexing()
-
-        self.assertEqual([call(self.org, shortcuts)], mr_mocks.calls["knowledge_index"])
-
-        # a failed request is logged rather than failing whatever made the change
+        # a failed request is logged rather than failing whatever made the change, which the flag still records
         mr_mocks.exception(RequestException("knowledge/index", {}, MockJsonResponse(500, {"error": "boom"})))
 
         with patch("temba.knowledge.models.logger.exception") as mock_log:
-            shortcuts.request_indexing()
+            docs.mark_pending()
 
         mock_log.assert_called_once_with(
-            "error requesting knowledge indexing from mailroom", extra={"source_id": shortcuts.id}
+            "error requesting knowledge indexing from mailroom", extra={"source_id": docs.id}
         )
 
     @cleanup(s3=True)
@@ -983,6 +975,8 @@ class ArticleTest(TembaTest):
         self.assertFalse(public_file_storage.exists(path))
 
         # and mailroom is asked to drop its chunks
+        self.helpdesk.refresh_from_db()
+        self.assertEqual(KnowledgeSource.STATUS_PENDING, self.helpdesk.status)
         self.assertEqual([call(self.org, self.helpdesk)], mr_mocks.calls["knowledge_index"])
 
         # but a draft was never indexed, so releasing one doesn't need it

@@ -311,6 +311,8 @@ class ArticleCRUDLTest(TembaTest, CRUDLTestMixin):
         article.publish(self.admin)
         self.assertUpdateSubmit(update_url, self.admin, {"title": "All About Flows", "body": "# Flows!"})
 
+        self.helpdesk.refresh_from_db()
+        self.assertEqual(KnowledgeSource.STATUS_PENDING, self.helpdesk.status)
         self.assertEqual([call(self.org, self.helpdesk)], mr_mocks.calls["knowledge_index"])
 
         # a section is described rather than written: no editor, and the dialog isn't held open to the window's

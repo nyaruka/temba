@@ -46,13 +46,13 @@ class Shortcut(OrgAsset):
 
     def request_indexing(self):
         """
-        Asks mailroom to index the org's shortcuts knowledge, which is derived from its shortcuts.
+        Flags the org's shortcuts knowledge, which is derived from its shortcuts, as needing reindexing.
         """
         from temba.knowledge.models import KnowledgeSource
 
         source = KnowledgeSource.get_system(self.org, KnowledgeSource.TYPE_SHORTCUTS)
         if source:
-            source.request_indexing()
+            source.mark_pending()
 
     def release(self, user):
         self.is_active = False

@@ -776,7 +776,7 @@ class KnowledgeSource(OrgAsset):
             created_by=user,
             modified_by=user,
         )
-        source.request_indexing()
+        source.mark_pending()
         return source
 
     @classmethod
@@ -821,20 +821,17 @@ class KnowledgeSource(OrgAsset):
     def mark_pending(self):
         """
         Flags this source as needing (re)indexing and asks mailroom to do it. Called whenever this app changes
-        something mailroom's index is derived from - website config, uploaded files, imported articles.
+        something mailroom's index is derived from - website config, uploaded files, shortcuts, articles. The flag is
+        written in the same transaction as the change, so it's what mailroom's sweep finds if the request is lost.
+
+        The request waits for the commit because mailroom indexes whatever has changed since it last indexed and then
+        moves that watermark on - so if it ran first, it would skip the change. Mailroom collapses repeated requests for
+        a source, but bulk changes should still make only one.
         """
         self.status = self.STATUS_PENDING
         self.error = None
         self.save(update_fields=("status", "error"))
 
-        self.request_indexing()
-
-    def request_indexing(self):
-        """
-        Asks mailroom to index this source's changes. That waits for the commit because mailroom indexes whatever has
-        changed since it last indexed and then moves that watermark on - so if it ran first, it would skip the change.
-        Mailroom collapses repeated requests for a source, but bulk changes should still make only one.
-        """
         on_transaction_commit(self._request_indexing)
 
     def _request_indexing(self):
@@ -900,8 +897,10 @@ class KnowledgeSource(OrgAsset):
     class Meta:
         constraints = [models.UniqueConstraint("org", Lower("name"), name="unique_knowledgesource_names")]
         indexes = [
-            # mailroom's indexing sweep's worklist
-            models.Index(name="knowledgesource_pending", fields=("id",), condition=Q(is_active=True, status="P")),
+            # mailroom's indexing sweep's worklist - pending, failed or indexing sources, so never most of them
+            models.Index(
+                name="knowledgesource_unready", fields=("id",), condition=Q(is_active=True, status__in=("P", "F", "I"))
+            ),
         ]
 
 
@@ -1182,7 +1181,7 @@ class Article(CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
         # a draft was never indexed so there's nothing to drop
         if was_published:
-            self.source.request_indexing()
+            self.source.mark_pending()
 
     def __str__(self):
         return self.title
