@@ -2,9 +2,10 @@ import json
 import logging
 from abc import ABCMeta
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from datetime import date, datetime, timedelta
 from enum import Enum
+from typing import NamedTuple
 
 import iso8601
 import phonenumbers
@@ -15,12 +16,14 @@ from phonenumbers import NumberParseException
 from twilio.base.exceptions import TwilioRestException
 
 from django.conf import settings
+from django.contrib.humanize.templatetags.humanize import intcomma
 from django.contrib.postgres.fields import ArrayField
-from django.db import models
+from django.db import connection, models
 from django.db.models import Q
 from django.template import Engine
 from django.urls import re_path
 from django.utils import timezone
+from django.utils.formats import date_format
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
@@ -284,6 +287,19 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
     SLOW_TPS = 10
     VERY_SLOW_TPS = 1
 
+    # channels failing at least this fraction of their most recent messages are degraded, and at least the unhealthy
+    # rate unhealthy, judging by at least the minimum number of messages so that the rate means something - or fewer
+    # once enough of them have failed, so that a new channel failing everything isn't left looking like it's waiting
+    FAILURE_RATE_DEGRADED = 0.1
+    FAILURE_RATE_UNHEALTHY = 0.5
+    FAILURE_RATE_MIN_SENT = 20
+    FAILURE_RATE_MIN_FAILED = 3
+    FAILURE_RATE_RECENT_DAYS = 7  # how far back is read for every channel at once, and further only for those short
+
+    # a failing channel which has sent at least this many messages today, failing fewer of them than the degraded rate,
+    # is recovering, as failures follow their sends within minutes rather than days
+    RECOVERING_MIN_SENT = 20
+
     # speed only matters when sending to a lot of contacts, so it's only flagged for workspaces with more than this
     SPEED_MIN_CONTACTS = 50_000
     CONFIG_ENCODING = "encoding"
@@ -319,6 +335,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
     TALLY_VOICE_IN = "voice:in"
     TALLY_VOICE_OUT = "voice:out"
     TALLY_MSG_SCOPES = (TALLY_TEXT_IN, TALLY_TEXT_OUT, TALLY_VOICE_IN, TALLY_VOICE_OUT)
+    TALLY_TEXT_FAILED = "text:failed"  # the text:out which failed, counted on the day they were created
     TALLY_RETENTION_DAYS = 365  # daily tallies are trimmed after a while, so how far back they can be relied on
 
     # scopes of the daily channel call tallies, which aren't messages so aren't in TALLY_MSG_SCOPES
@@ -369,6 +386,9 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
     role = models.CharField(max_length=4, default=DEFAULT_ROLE)
     tps = models.PositiveIntegerField(default=DEFAULT_TPS)
     is_enabled = models.BooleanField(default=True)
+
+    # the latest state of each kind of sync, keyed by kind, e.g. "templates", which only mailroom writes
+    sync_state = models.JSONField(default=dict)
 
     # Android relayer specific fields
     claim_code = models.CharField(max_length=16, blank=True, null=True, unique=True)
@@ -631,25 +651,257 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         return self.address
 
     @cached_property
-    def last_sync(self):
+    def last_sync(self) -> "AndroidSync | None":
         """
-        Gets the last sync event for this channel (only applies to Android channels)
+        Gets the latest sync of this Android channel's phone
         """
-        return self.sync_events.order_by("id").last()
+        state = self.sync_state.get("android")
+        return AndroidSync.from_json(state) if state else None
+
+    def get_sync_history(self, limit: int = 20) -> list["AndroidSync"]:
+        """
+        Gets the latest syncs of this Android channel's phone, newest first, from the history mailroom keeps of them
+        """
+        syncs, after_sk = [], None
+
+        # a channel can be moved between workspaces, and its syncs in another workspace aren't this one's business, so
+        # we keep paging past those until we have enough of this one's
+        while True:
+            items, _, after_sk = dynamo.merged_page_query(
+                dynamo.MAIN, [f"cha#{self.uuid}"], desc=True, limit=limit, after_sk=after_sk
+            )
+            syncs.extend(AndroidSync.from_json(i["Data"]) for i in items if i["OrgID"] == self.org_id)
+
+            if len(syncs) >= limit or not after_sk:
+                return syncs[:limit]
 
     def is_new(self):
         # is this channel newer than an hour
         return self.created_on > timezone.now() - timedelta(hours=1) or not self.last_sync
 
+    def is_sync_delayed(self) -> bool:
+        """
+        Whether this Android channel's phone hasn't synced for over an hour, so isn't getting messages to send or
+        reporting ones it got
+        """
+        last_sync = self.last_sync if self.is_android else None
+        return bool(last_sync) and not self.is_new() and timezone.now() - last_sync.synced_on > timedelta(hours=1)
+
+    WAITING_NOTE = _("Nothing has been received from the provider yet.")
+
+    def _can_wait(self) -> bool:
+        # only a channel set up on the provider's side can be waiting for that to work
+        return bool(self.type.config_ui) and self.ROLE_RECEIVE in self.role
+
+    def is_waiting(self) -> bool:
+        """
+        Whether this channel is set up on the provider's side but hasn't received anything yet, whatever else is wrong
+        """
+        return self._can_wait() and not self.has_received()
+
     def is_send_paused(self) -> bool:
         """
-        Whether courier has paused sending on this channel because its provider can't take more messages. Pauses are
-        short and renewed by the next send that fails, so one that ended in the last minute still counts.
+        Whether courier has paused sending on this channel because its provider can't take more messages
         """
-        r = get_valkey_connection()
-        paused_until = r.hget(COURIER_QUEUE_STATE_KEY % self.uuid, COURIER_QUEUE_PAUSED_FIELD)
+        return bool(self._get_send_paused([self]))
 
-        return paused_until is not None and float(paused_until) > (timezone.now() - timedelta(minutes=1)).timestamp()
+    def has_received(self) -> bool:
+        """
+        Whether this channel has received any messages since it was added, i.e. whether its setup on the provider's side
+        is working - remembered, as both judging its health and saying it's waiting can ask
+        """
+        if "_has_received" not in self.__dict__:
+            self.__dict__["_has_received"] = bool(self._get_received([self]))
+        return self.__dict__["_has_received"]
+
+    def get_recent_failures(self) -> "RecentFailures | None":
+        """
+        How many of its most recent text messages this channel has failed to send, and how many of today's, or None if
+        it hasn't sent enough to judge
+        """
+        return self._get_recent_failures([self]).get(self.id)
+
+    @cached_property
+    def health(self) -> "ChannelHealth":
+        """
+        Whether this channel is working, judged by the first thing found wrong with it
+        """
+        return self._judge_health(self.is_send_paused, self.get_recent_failures, self.has_received)
+
+    @classmethod
+    def prefetch_health(cls, channels):
+        """
+        Prefetches the health of the given channels with a few reads for all of them, rather than a few for each
+        """
+        channels = [c for c in channels if "health" not in c.__dict__]
+        enabled = [c for c in channels if c.is_enabled]
+
+        paused = cls._get_send_paused(enabled)
+        failures = cls._get_recent_failures([c for c in enabled if cls.ROLE_SEND in c.role])
+        received = cls._get_received([c for c in enabled if c.type.config_ui and cls.ROLE_RECEIVE in c.role])
+
+        for c in channels:
+            c.__dict__["health"] = c._judge_health(
+                lambda c=c: c.id in paused, lambda c=c: failures.get(c.id), lambda c=c: c.id in received
+            )
+
+    def _judge_health(self, is_send_paused, get_recent_failures, has_received) -> "ChannelHealth":
+        """
+        Judges this channel's health from the given lookups of its inputs, called only as each is needed
+        """
+        H = ChannelHealth
+
+        # a disabled channel isn't sending anyway, so whether it's paused doesn't matter
+        if not self.is_enabled:
+            return H("", _("Disabled"), _("Won't send or receive messages until it's enabled."), H.CAUSE_DISABLED)
+        if is_send_paused():
+            return H("bad", _("Paused"), _("The provider isn't accepting messages."), H.CAUSE_PAUSED)
+        if self.is_sync_delayed():
+            return H("warn", _("Not syncing"), _("The phone hasn't synced for over an hour."), H.CAUSE_SYNC)
+        if self.ROLE_SEND in self.role and (failures := get_recent_failures()):
+            failed, sent, since = failures.failed, failures.sent, failures.since
+            if failed / sent >= self.FAILURE_RATE_DEGRADED:
+                unhealthy = failed / sent >= self.FAILURE_RATE_UNHEALTHY
+                # when they were sent, as a channel that's sent nothing since is judged by sends however old
+                note = _("%(percent)d%% of the %(count)s messages sent since %(date)s have failed.") % {
+                    "percent": round(failed / sent * 100),
+                    "count": intcomma(sent),
+                    "date": date_format(since, "MONTH_DAY_FORMAT"),
+                }
+                # unless what it's sent today is going through, when it's on the mend but still worth a look
+                if (
+                    failures.sent_today >= self.RECOVERING_MIN_SENT
+                    and failures.failed_today / failures.sent_today < self.FAILURE_RATE_DEGRADED
+                ):
+                    # saying how today's went, as some can still fail, in whole percents of at least one so a few
+                    # failures don't read as none, and rounded down so it's always below the rate it recovered from
+                    args = {
+                        "today_count": intcomma(failures.sent_today),
+                        "today_percent": max(1, failures.failed_today * 100 // failures.sent_today),
+                        "percent": round(failed / sent * 100),
+                        "count": intcomma(sent),
+                        "date": date_format(since, "MONTH_DAY_FORMAT"),
+                    }
+                    if failures.failed_today:
+                        note = _(
+                            "%(today_percent)d%% of the %(today_count)s messages sent today have failed, down from "
+                            "%(percent)d%% of the %(count)s sent since %(date)s."
+                        )
+                    else:
+                        note = _(
+                            "None of the %(today_count)s messages sent today have failed, after %(percent)d%% of the "
+                            "%(count)s sent since %(date)s did."
+                        )
+                    note = note % args
+                    return H("warn", _("Recovering"), note, H.CAUSE_FAILING, since)
+
+                # either is a problem with its health, so is red - the word says how bad
+                return H("bad", _("Unhealthy") if unhealthy else _("Degraded"), note, H.CAUSE_FAILING, since)
+        if self._can_wait() and not has_received():
+            return H("warn", _("Waiting"), self.WAITING_NOTE, H.CAUSE_WAITING)
+        return H("good", _("Ready"), _("Sending and receiving messages."), None)
+
+    @classmethod
+    def _get_send_paused(cls, channels) -> set[int]:
+        """
+        The ids of those of the given channels which courier has paused sending on. Pauses are short and renewed by the
+        next send that fails, so one that ended in the last minute still counts.
+        """
+        if not channels:
+            return set()
+
+        r = get_valkey_connection()
+        with r.pipeline(transaction=False) as pipe:
+            for c in channels:
+                pipe.hget(COURIER_QUEUE_STATE_KEY % c.uuid, COURIER_QUEUE_PAUSED_FIELD)
+            values = pipe.execute()
+
+        cutoff = (timezone.now() - timedelta(minutes=1)).timestamp()
+        return {c.id for c, until in zip(channels, values) if until is not None and float(until) > cutoff}
+
+    @classmethod
+    def _get_received(cls, channels) -> set[int]:
+        """
+        The ids of those of the given channels which have received any messages since they were added. Daily counts are
+        only kept for so long, so channels older than that are taken to have.
+        """
+        today = timezone.now().date()
+        oldest = today - timedelta(days=cls.TALLY_RETENTION_DAYS)
+
+        # from the day before it was added, as counts and the workspace's timezone needn't agree on what day that was
+        received = {c.id for c in channels if c.created_on.date() - timedelta(days=1) < oldest}
+        rest = [c for c in channels if c.id not in received]
+        if not rest:
+            return received
+
+        # there can't be counts from before a channel was added, so any incoming count at all will do
+        scopes = [cls.TALLY_TEXT_IN, cls.TALLY_VOICE_IN]
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"""
+                SELECT c.id FROM unnest(%s::int[]) c(id)
+                 WHERE EXISTS (
+                    SELECT 1 FROM {ChannelTally._meta.db_table} t
+                     WHERE t.channel_id = c.id AND ({" OR ".join(["(t.scope > %s AND t.scope < %s)"] * len(scopes))})
+                 )
+                """,
+                [[c.id for c in rest], *[b for s in scopes for b in (f"{s}@", f"{s}@~")]],
+            )
+            received |= {row[0] for row in cursor.fetchall()}
+
+        # and today's may only be counted in Valkey so far
+        rest = [c for c in rest if c.id not in received]
+        totals = ChannelTally.get_daily_totals_by_channel(rest, scopes, today, today + timedelta(days=1))
+        return received | {channel_id for (channel_id, _day, _scope), count in totals.items() if count > 0}
+
+    @classmethod
+    def _get_recent_failures(cls, channels) -> dict[int, "RecentFailures"]:
+        """
+        How many of their most recent text messages the given channels have failed to send, by channel id, omitting
+        those which haven't sent, or failed, enough to judge. Today's are judged apart, as they haven't all had time to
+        fail yet, so a big send queued today would hide failures. Starts with yesterday's and goes back a day at a time
+        until enough were sent, so a channel stays judged by what it last sent.
+        """
+        if not channels:
+            return {}
+
+        today = timezone.now().date()
+        scopes = [cls.TALLY_TEXT_OUT, cls.TALLY_TEXT_FAILED]
+        by_day = defaultdict(lambda: defaultdict(lambda: [0, 0]))  # failed and sent by channel id and day
+
+        def read(channels, since, until):
+            for (channel_id, day, scope), count in ChannelTally.get_daily_totals_by_channel(
+                channels, scopes, since, until
+            ).items():
+                by_day[channel_id][day][0 if scope == cls.TALLY_TEXT_FAILED else 1] += count
+
+        # most channels will have sent enough in the last week, so only those which haven't need reading further back
+        recent_since = today - timedelta(days=cls.FAILURE_RATE_RECENT_DAYS - 1)
+        read(channels, recent_since, today + timedelta(days=1))
+        todays = {c.id: by_day[c.id].pop(today, [0, 0]) for c in channels}
+
+        short = [c for c in channels if sum(s for _, s in by_day[c.id].values()) < cls.FAILURE_RATE_MIN_SENT]
+        if short:
+            read(short, today - timedelta(days=cls.TALLY_RETENTION_DAYS), recent_since)
+
+        failures = {}
+        for c in channels:
+            failed = sent = 0
+            since = None
+            for day in sorted(by_day[c.id], reverse=True):
+                if sent >= cls.FAILURE_RATE_MIN_SENT:
+                    break
+                failed += by_day[c.id][day][0]
+                sent += by_day[c.id][day][1]
+                since = day
+
+            if sent >= cls.FAILURE_RATE_MIN_SENT or (sent and failed >= cls.FAILURE_RATE_MIN_FAILED):
+                failed_today, sent_today = todays[c.id]
+                failures[c.id] = RecentFailures(
+                    min(failed, sent), sent, since, min(failed_today, sent_today), sent_today
+                )
+
+        return failures
 
     def check_credentials(self) -> bool:
         return self.type.check_credentials(self.config)
@@ -725,21 +977,29 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         totals = ChannelTally.get_daily_totals_by_channel([self], list(scopes), since, until)
         return {(day, scope): count for (_, day, scope), count in totals.items()}
 
-    def has_received(self) -> bool:
+    @classmethod
+    def shows_speed(cls, org) -> bool:
         """
-        Whether this channel has received any messages since it was added, i.e. whether its setup on the provider's side
-        is working. Daily counts are only kept for so long, so a channel older than that is taken to have.
+        Whether slow channels are pointed out to the given workspace, which only happens when it's big enough for them
+        to hold up its broadcasts
         """
-        # from the day before it was added, as counts and the workspace's timezone needn't agree on what day that was
-        # (and there can't be counts from before then anyway)
-        today = timezone.now().date()
-        since = self.created_on.date() - timedelta(days=1)
-        if since < today - timedelta(days=self.TALLY_RETENTION_DAYS):
-            return True
+        return org.get_contact_count() > cls.SPEED_MIN_CONTACTS
 
-        until = today + timedelta(days=1)
-        counts = self.get_daily_counts(since, until)
-        return any(count > 0 for (_, scope), count in counts.items() if scope.endswith(":in"))
+    def get_daily_failures(self, num_days: int) -> dict:
+        """
+        Text messages sent each day over the last num_days including today, and how many of them failed, oldest first,
+        as lists of days, sent counts and failed counts
+        """
+        today = timezone.now().date()
+        since = today - timedelta(days=num_days - 1)
+        counts = self.get_daily_counts(since, today + timedelta(days=1), (self.TALLY_TEXT_OUT, self.TALLY_TEXT_FAILED))
+
+        days = [since + timedelta(days=d) for d in range(num_days)]
+        return {
+            "days": days,
+            "sent": [counts.get((d, self.TALLY_TEXT_OUT), 0) for d in days],
+            "failed": [counts.get((d, self.TALLY_TEXT_FAILED), 0) for d in days],
+        }
 
     def get_speed(self) -> str | None:
         """
@@ -765,7 +1025,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
             return
 
         since, until = cls._get_activity_period()
-        totals = ChannelTally.get_daily_totals_by_channel(channels, list(cls.TALLY_MSG_SCOPES), since, until)
+        totals = ChannelTally.get_daily_totals_by_channel(channels, cls._get_activity_scopes(), since, until)
 
         by_channel = defaultdict(dict)
         for (channel_id, day, scope), count in totals.items():
@@ -773,6 +1033,11 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
 
         for channel in channels:
             channel._activity_counts = by_channel.get(channel.id, {})
+
+    @classmethod
+    def _get_activity_scopes(cls) -> list[str]:
+        # the failures are for the share of text messages that failed, shown instead for a channel failing
+        return [*cls.TALLY_MSG_SCOPES, cls.TALLY_TEXT_FAILED]
 
     @classmethod
     def _get_activity_period(cls) -> tuple[date, date]:
@@ -813,14 +1078,15 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
     def get_activity_series(self) -> dict:
         """
         Daily counts of incoming and outgoing messages (text and voice) for the last ACTIVITY_SERIES_DAYS days (oldest
-        first) - drives the list view sparkline.
+        first), and the percentage of the text messages sent each day which failed - drives the list view sparkline.
         """
 
         since, until = self._get_activity_period()
         if hasattr(self, "_activity_counts"):
             counts = self._activity_counts
         else:
-            counts = self.get_daily_counts(since, until)
+            totals = ChannelTally.get_daily_totals_by_channel([self], self._get_activity_scopes(), since, until)
+            counts = {(day, scope): count for (_channel_id, day, scope), count in totals.items()}
 
         days = [since + timedelta(days=d) for d in range(self.ACTIVITY_SERIES_DAYS)]
 
@@ -828,12 +1094,17 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
             scopes = [s for s in self.TALLY_MSG_SCOPES if s.endswith(f":{direction}")]
             return [sum(counts.get((day, s), 0) for s in scopes) for day in days]
 
-        return {"in": series("in"), "out": series("out")}
+        def failure_rate(day) -> float:
+            sent = counts.get((day, self.TALLY_TEXT_OUT), 0)
+            return round(min(counts.get((day, self.TALLY_TEXT_FAILED), 0) / sent, 1) * 100, 1) if sent else 0
+
+        return {"in": series("in"), "out": series("out"), "failed": [failure_rate(d) for d in days]}
 
     def as_json(self, context=None) -> dict:
         """
         Internal API shape, consumed by the temba-channel-list component. The activity series and its totals come
-        from the daily counts (bulk-loaded by the list endpoint via prefetch_activity_series).
+        from the daily counts, and the health from its inputs, which the list endpoint bulk-loads for a page via
+        prefetch_activity_series and prefetch_health.
         """
 
         activity = self.get_activity_series()
@@ -845,6 +1116,7 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
             "address": self.get_address_display(),
             "is_enabled": self.is_enabled,
             "speed": self.get_speed() if (context or {}).get("show_speed") else None,
+            "health": self.health.as_json(),
             "received": sum(activity["in"]),
             "sent": sum(activity["out"]),
             "activity": activity,
@@ -862,6 +1134,41 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
             ),
         ]
         constraints = [models.CheckConstraint(condition=Q(tps__gt=0), name="channel_tps_positive")]
+
+
+class RecentFailures(NamedTuple):
+    """
+    How many of a channel's most recent text messages before today it failed to send, and the day the earliest of them
+    was sent, and how many of today's
+    """
+
+    failed: int
+    sent: int
+    since: date
+    failed_today: int
+    sent_today: int
+
+
+@dataclass(frozen=True)
+class ChannelHealth:
+    """
+    Whether a channel is working, as a value and note in a tone, and the cause when it isn't
+    """
+
+    CAUSE_DISABLED = "disabled"
+    CAUSE_PAUSED = "paused"
+    CAUSE_SYNC = "sync"
+    CAUSE_FAILING = "failing"
+    CAUSE_WAITING = "waiting"
+
+    tone: str  # good, warn or bad, or empty when the channel is off
+    value: str
+    note: str
+    cause: str | None
+    since: date | None = None  # when failing, the day the earliest of the sends it's judged by was sent
+
+    def as_json(self) -> dict:
+        return {"tone": self.tone, "value": str(self.value), "note": str(self.note), "cause": self.cause}
 
 
 class ChannelTally(BaseTally):
@@ -1131,6 +1438,30 @@ class ChannelLog:
 
     def __repr__(self):  # pragma: no cover
         return f"<ChannelLog: uuid={self.uuid} type={self.log_type}>"
+
+
+@dataclass(frozen=True)
+class AndroidSync:
+    """
+    The latest sync of an Android channel's phone, as mailroom records it under the android key of its sync state
+    """
+
+    synced_on: datetime
+    power_source: str = ""
+    power_status: str = ""
+    power_level: int = 0
+    network_type: str = ""
+    pending_message_count: int = 0
+    retry_message_count: int = 0
+    incoming_command_count: int = 0
+    outgoing_command_count: int = 0
+
+    @classmethod
+    def from_json(cls, data: dict):
+        # anything mailroom has started recording that we don't read yet is ignored, and anything missing defaulted, so
+        # one odd state can't break every page that shows channel health
+        values = {f.name: data[f.name] for f in fields(cls) if f.name != "synced_on" and data.get(f.name) is not None}
+        return cls(synced_on=iso8601.parse_date(data["synced_on"]), **values)
 
 
 class SyncEvent(models.Model):

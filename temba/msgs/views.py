@@ -37,6 +37,7 @@ from temba.utils.views.mixins import (
     ModalFormMixin,
     ModalHeaderMixin,
     PostOnlyMixin,
+    ScopedUpdateMixin,
     SpaMixin,
     StaffOnlyMixin,
 )
@@ -375,7 +376,17 @@ class BroadcastCRUDL(SmartCRUDL):
             broadcast.template = template
             broadcast.template_variables = template_variables
             broadcast.modified_by = self.request.user
-            broadcast.save()
+            broadcast.save(
+                update_fields=(
+                    "translations",
+                    "query",
+                    "exclusions",
+                    "template",
+                    "template_variables",
+                    "modified_by",
+                    "modified_on",
+                )
+            )
 
             broadcast.update_recipients(groups=groups, contacts=contacts)
 
@@ -385,7 +396,6 @@ class BroadcastCRUDL(SmartCRUDL):
             repeat_period = schedule_form.cleaned_data["repeat_period"]
             repeat_days_of_week = schedule_form.cleaned_data["repeat_days_of_week"]
             schedule.update_schedule(start_time, repeat_period, repeat_days_of_week=repeat_days_of_week)
-            broadcast.save()
 
             return HttpResponseRedirect(self.get_success_url())
 
@@ -459,7 +469,7 @@ class BroadcastCRUDL(SmartCRUDL):
                 }
             )
 
-    class Interrupt(ModalFormMixin, OrgObjPermsMixin, SmartUpdateView):
+    class Interrupt(ModalFormMixin, OrgObjPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         default_template = "smartmin/delete_confirm.html"
         slug_url_kwarg = "uuid"
         permission = "msgs.broadcast_update"
@@ -795,7 +805,7 @@ class LabelCRUDL(SmartCRUDL):
 
             return obj
 
-    class Update(ModalFormMixin, OrgObjPermsMixin, SmartUpdateView):
+    class Update(ModalFormMixin, OrgObjPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         form_class = LabelForm
         success_url = "uuid@msgs.msg_filter"
         title = _("Update Label")

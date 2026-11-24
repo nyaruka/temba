@@ -33,7 +33,7 @@ class MtnTypeTest(TembaTest):
             self.assertChannelTypeNotOffered(url)
 
             self.org.timezone = "Africa/Brazzaville"
-            self.org.save()
+            self.org.save(update_fields=("timezone",))
 
             # should be offered by the new channel picker
             self.assertChannelTypeOffered(url)

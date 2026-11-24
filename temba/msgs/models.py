@@ -1106,7 +1106,7 @@ class MsgLabel(models.Model):
     """
 
     id = models.BigAutoField(primary_key=True)
-    msg = models.ForeignKey(Msg, on_delete=models.CASCADE)
+    msg = models.ForeignKey(Msg, on_delete=models.CASCADE, db_index=False)
     msg_uuid = models.UUIDField()
     label = models.ForeignKey(Label, on_delete=models.CASCADE, db_index=False)  # msgs_by_label serves lookups by label
 

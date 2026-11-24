@@ -19,7 +19,7 @@ class PlayMobileTypeTest(TembaTest):
 
         # but if we are in the proper time zone
         self.org.timezone = ZoneInfo("Asia/Tashkent")
-        self.org.save()
+        self.org.save(update_fields=("timezone",))
 
         response = self.client.get(reverse("channels.channel_list"))
         self.assertContains(response, "Play Mobile")

@@ -370,7 +370,7 @@ class TestClient(MailroomClient):
         pass
 
     @_client_method
-    def channel_interrupt(self, org, channel):
+    def channel_interrupt(self, org, channel, *, reason: str = None):
         pass
 
     @_client_method
@@ -862,6 +862,7 @@ def create_contact_locally(
         last_seen_on=last_seen_on,
         **kwargs,
     )
+    contact.refresh_from_db(fields=("uuid2",))  # set by a trigger
     update_urns_locally(contact, urns)
     update_fields_locally(user, contact, fields)
     update_groups_locally(contact, group_uuids, add=True)
@@ -1030,13 +1031,13 @@ def update_urns_locally(contact, urns: list[str]):
         elif not urn.contact or urn.contact != contact:
             urn.contact = contact
             urn.priority = priority
-            urn.save()
+            urn.save(update_fields=("contact", "priority"))
             urns_attached.append(urn)
 
         else:
             if urn.priority != priority:
                 urn.priority = priority
-                urn.save()
+                urn.save(update_fields=("priority",))
             urns_retained.append(urn)
 
         # step down our priority
@@ -1197,7 +1198,7 @@ def exit_sessions(session_uuids: list, status: str):
 
     Contact.objects.filter(uuid__in=contact_uuids).update(
         current_session_uuid=None,
-        current_flow=None,
+        current_flow_uuid=None,
         modified_on=timezone.now(),
     )
 

@@ -324,10 +324,10 @@ class MockSessionWriter:
 
             runs.append(FlowRun.objects.get(uuid=run["uuid"]))
 
-        self.contact.current_flow = current_flow
+        self.contact.current_flow_uuid = current_flow.uuid if current_flow else None
         self.contact.current_session_uuid = self.session.uuid
         self.contact.modified_on = timezone.now()
-        self.contact.save(update_fields=("current_flow", "current_session_uuid", "modified_on"))
+        self.contact.save(update_fields=("current_flow_uuid", "current_session_uuid", "modified_on"))
 
         self._handle_events()
         return runs

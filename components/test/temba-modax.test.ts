@@ -292,6 +292,26 @@ describe('temba-modax', () => {
     expect(dialogWidth()).to.equal('min(60rem, 92vw)');
   });
 
+  it('makes its dialog destructive when told to or for a delete', async () => {
+    const modax: Modax = await fixture(
+      getModaxHTML('/test/assets/modax/form.html')
+    );
+    const dialog = () =>
+      modax.shadowRoot.querySelector('temba-dialog') as Dialog;
+
+    await open(modax);
+    expect(dialog().destructive).to.not.be.ok;
+
+    modax.destructive = true;
+    await modax.updateComplete;
+    expect(dialog().destructive).to.be.ok;
+
+    modax.destructive = false;
+    modax.endpoint = '/contact/delete/1234/';
+    await modax.updateComplete;
+    expect(dialog().destructive).to.be.ok;
+  });
+
   it('renders page level gutter content in the dialog footer', async () => {
     const modax: Modax = await fixture(`
       <temba-modax header="Hello Modax" endpoint="/test/assets/modax/form.html">

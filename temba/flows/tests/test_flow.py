@@ -222,7 +222,12 @@ class FlowTest(TembaTest, CRUDLTestMixin):
         rev = flow.revisions.get()
         rev.definition["spec_version"] = "13.0.0"
         rev.spec_version = "13.0.0"
-        rev.save()
+        rev.save(
+            update_fields=(
+                "definition",
+                "spec_version",
+            )
+        )
 
         old_modified_on = flow.modified_on
         old_saved_on = flow.saved_on
@@ -258,7 +263,7 @@ class FlowTest(TembaTest, CRUDLTestMixin):
         self.assertFalse(flow.is_archived)
 
         campaign.is_archived = True
-        campaign.save()
+        campaign.save(update_fields=("is_archived",))
 
         # can archive if the campaign is archived
         Flow.apply_action_archive(self.admin, Flow.objects.filter(pk=flow.pk))
@@ -267,13 +272,13 @@ class FlowTest(TembaTest, CRUDLTestMixin):
         self.assertTrue(flow.is_archived)
 
         campaign.is_archived = False
-        campaign.save()
+        campaign.save(update_fields=("is_archived",))
 
         flow.is_archived = False
-        flow.save()
+        flow.save(update_fields=("is_archived",))
 
         campaign_event.is_active = False
-        campaign_event.save()
+        campaign_event.save(update_fields=("is_active",))
 
         # can archive if the campaign is not archived with no active event
         Flow.apply_action_archive(self.admin, Flow.objects.filter(pk=flow.pk))
@@ -286,7 +291,7 @@ class FlowTest(TembaTest, CRUDLTestMixin):
         flow = self.create_flow("Test Flow")
 
         # add ongoing runs
-        flow.counts.create(scope=f"status:{FlowRun.STATUS_WAITING}", count=10)
+        flow.tallies.create(scope=f"status:{FlowRun.STATUS_WAITING}", count=10)
 
         # do not archive if flow has ongoing runs
         Flow.apply_action_archive(self.admin, Flow.objects.filter(pk=flow.pk))
@@ -295,8 +300,8 @@ class FlowTest(TembaTest, CRUDLTestMixin):
         self.assertFalse(flow.is_archived)
 
         # clear the waiting runs and add only completed
-        flow.counts.all().delete()
-        flow.counts.create(scope=f"status:{FlowRun.STATUS_COMPLETED}", count=10)
+        flow.tallies.all().delete()
+        flow.tallies.create(scope=f"status:{FlowRun.STATUS_COMPLETED}", count=10)
 
         # can archive if no ongoing runs
         Flow.apply_action_archive(self.admin, Flow.objects.filter(pk=flow.pk))
@@ -468,6 +473,32 @@ class FlowTest(TembaTest, CRUDLTestMixin):
         flow2 = self.create_flow("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabc efghijkl")
         copy2 = flow2.clone(self.admin)
         self.assertEqual("Copy of abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabc", copy2.name)
+
+    @cleanup(valkey=True)
+    def test_get_run_counts(self):
+        flow1 = self.create_flow("Test 1")
+        flow2 = self.create_flow("Test 2")
+
+        # a flushed status has its buffered amount added, and one only buffered in Valkey is still counted
+        flow1.tallies.create(scope="status:C", count=3)
+        flow1.tallies.create(scope="segment:a:b", count=7)
+        flow2.tallies.create(scope="status:W", count=2)
+        r = get_valkey_connection()
+        r.hset(
+            "{tallies}:live",
+            mapping={f"F{flow1.id}|status:C": 1, f"F{flow1.id}|status:A": 2, f"F{flow2.id}|status:W": -2},
+        )
+
+        self.assertEqual({"C": 4, "A": 2}, flow1.get_run_counts())
+        self.assertEqual({}, flow2.get_run_counts())
+        self.assertEqual(0, flow1.get_run_counts()[FlowRun.STATUS_WAITING])
+
+        flow1, flow2 = Flow.objects.filter(id__in=[flow1.id, flow2.id]).order_by("id")
+        Flow.prefetch_run_counts([flow1, flow2])
+
+        with self.assertNumQueries(0):
+            self.assertEqual({"C": 4, "A": 2}, flow1.get_run_counts())
+            self.assertEqual({}, flow2.get_run_counts())
 
     @cleanup(valkey=True)
     def test_get_activity(self):
@@ -663,7 +694,7 @@ class FlowTest(TembaTest, CRUDLTestMixin):
         self.login(self.admin)
         flow = Flow.create(self.org, self.admin, "Flow")
         flow.flow_type = Flow.TYPE_SURVEY
-        flow.save()
+        flow.save(update_fields=("flow_type",))
 
         # keywords aren't an option for survey flows
         response = self.client.get(reverse("flows.flow_update", args=[flow.uuid]))

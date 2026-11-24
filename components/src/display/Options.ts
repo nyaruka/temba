@@ -44,6 +44,10 @@ export class Options extends RapidElement {
         flex-grow: 1;
         height: 100%;
         border: none;
+        border-radius: var(
+          --temba-options-block-radius,
+          var(--curvature-widget)
+        );
         /* Block-mode is inline (ticket sidebar, etc.) — drop the
            z-index so floating popups (selects, dropdowns) opened over
            the block list always stack above its options. */
@@ -59,7 +63,7 @@ export class Options extends RapidElement {
       }
 
       :host([block]) {
-        border-radius: var(--curvature);
+        border-radius: var(--temba-options-block-radius, var(--curvature));
         display: block;
         height: 100%;
       }
@@ -161,15 +165,16 @@ export class Options extends RapidElement {
          radius so the focused/active wash reads as a rounded pill
          instead of a stripe. Rich custom renderOption content
          (multi-line ticket cards, etc.) also wants more vertical
-         padding than the dropdown's compact rows. */
+         padding than the dropdown's compact rows. A host can zero the
+         inset, gap and radius for a full-bleed list of flat rows. */
       :host([block]) .options-scroll {
-        padding: 4px;
-        gap: 4px;
+        padding: var(--temba-options-block-padding, 4px);
+        gap: var(--temba-options-block-gap, 4px);
       }
       :host([block]) .option {
         margin: 0;
         padding: 8px var(--pad);
-        border-radius: var(--r-sm);
+        border-radius: var(--temba-options-block-option-radius, var(--r-sm));
         position: relative;
       }
 
@@ -180,14 +185,16 @@ export class Options extends RapidElement {
       :host([block]) .option + .option::before {
         content: '';
         position: absolute;
-        left: var(--pad);
-        right: var(--pad);
+        left: var(--temba-options-row-separator-inset, var(--pad));
+        right: var(--temba-options-row-separator-inset, var(--pad));
         top: 0;
         border-top: var(--temba-options-row-separator, none);
         pointer-events: none;
       }
+      /* square, full-bleed rows have no corners for it to jut out under,
+         so a list of them can keep it */
       :host([block]) .option.focused + .option::before {
-        display: none;
+        display: var(--temba-options-focused-separator-display, none);
       }
 
       .option * {

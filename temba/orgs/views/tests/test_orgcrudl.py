@@ -11,6 +11,7 @@ from django.urls import reverse
 
 from temba.channels.models import Channel
 from temba.contacts.models import URN
+from temba.notifications.incidents.builtin import ChannelDisconnectedIncidentType
 from temba.orgs.models import Invitation, Org, OrgRole
 from temba.tests import CRUDLTestMixin, TembaTest
 from temba.users.models import User
@@ -53,13 +54,13 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
             self.admin,
             [
                 "Nyaruka",
+                "Channels (1)",
                 "API Tokens",
                 "Resthooks",
                 "Incidents",
                 "AI",
                 "Export",
                 "Import",
-                "Channels (1)",
                 ("Archives", ["Messages", "Flow Runs"]),
             ],
             choose_org=self.org,
@@ -118,7 +119,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # if our org has new orgs but not child orgs, we should have a New Workspace button in the menu
         self.org.features = [Org.FEATURE_NEW_ORGS]
-        self.org.save()
+        self.org.save(update_fields=("features",))
 
         self.assertPageMenu(
             menu_url,
@@ -142,8 +143,8 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         menu = self.client.get(menu_url).json()["results"]
         self.assertEqual(None, menu[8].get("bubble"))
 
-        # flag our org to create a notification
-        self.org.flag()
+        # create an incident and so a notification
+        ChannelDisconnectedIncidentType.get_or_create(self.channel)
         menu = self.client.get(menu_url).json()["results"]
         self.assertEqual("tomato", menu[8]["bubble"])
 
@@ -161,13 +162,13 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
             self.admin,
             [
                 "Nyaruka",
+                "Channels (1)",
                 "API Tokens",
                 "Resthooks",
                 "Incidents",
                 "AI",
                 "Export",
                 "Import",
-                "Channels (1)",
                 ("Archives", ["Messages", "Flow Runs"]),
             ],
         )
@@ -196,6 +197,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
             self.admin,
             [
                 "Nyaruka",
+                "Channels (1)",
                 "API Tokens",
                 "Resthooks",
                 "Incidents",
@@ -207,7 +209,6 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
                 "Teams (1)",
                 "Export",
                 "Import",
-                "Channels (1)",
                 ("Archives", ["Messages", "Flow Runs"]),
             ],
         )
@@ -779,6 +780,18 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         # should have been redirected to child management page
         self.assertRedirect(response, "/org/")
 
+        # a restricted or suspended workspace can't create children
+        self.org.restrict(Org.RESTRICTED_STAFF)
+
+        self.assertCreateSubmit(
+            create_url,
+            self.admin,
+            {"name": "Another Child", "timezone": "Africa/Nairobi"},
+            form_errors={
+                "__all__": "Child workspaces can't be created while this workspace is restricted or suspended."
+            },
+        )
+
     def test_create_child_or_new(self):
         create_url = reverse("orgs.org_create")
 
@@ -809,6 +822,25 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
             self.admin,
             {"type": "child", "name": "Child Org", "timezone": "Africa/Nairobi"},
             new_obj_query=Org.objects.filter(name="Child Org", parent=self.org),
+        )
+
+        # once suspended, only separate workspaces can be created
+        self.org.restrict(Org.RESTRICTED_STAFF)
+        self.org.suspend()
+
+        self.assertCreateSubmit(
+            create_url,
+            self.admin,
+            {"type": "child", "name": "Another Child", "timezone": "Africa/Nairobi"},
+            form_errors={
+                "__all__": "Child workspaces can't be created while this workspace is restricted or suspended."
+            },
+        )
+        self.assertCreateSubmit(
+            create_url,
+            self.admin,
+            {"type": "new", "name": "Another Org", "timezone": "Africa/Nairobi"},
+            new_obj_query=Org.objects.filter(name="Another Org", parent=None),
         )
 
     def test_create_child_spa(self):

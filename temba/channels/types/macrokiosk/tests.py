@@ -17,7 +17,7 @@ class MacrokioskTypeTest(TembaTest):
         self.assertChannelTypeNotOffered(url)
 
         self.org.timezone = "Asia/Kuala_Lumpur"
-        self.org.save()
+        self.org.save(update_fields=("timezone",))
 
         self.assertChannelTypeOffered(url)
 

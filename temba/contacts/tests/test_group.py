@@ -109,7 +109,7 @@ class ContactGroupTest(TembaTest):
         manual = ContactGroup.create_manual(self.org, self.admin, "Static")
         deleted = ContactGroup.create_manual(self.org, self.admin, "Deleted")
         deleted.is_active = False
-        deleted.save()
+        deleted.save(update_fields=("is_active",))
 
         open_tickets = self.org.groups.get(name="Open Tickets")
         females = ContactGroup.create_smart(self.org, self.admin, "Females", "gender=F")
@@ -357,7 +357,7 @@ class ContactGroupTest(TembaTest):
             base_language="eng",
         )
         campaign.is_archived = True
-        campaign.save()
+        campaign.save(update_fields=("is_archived",))
 
         # create scheduled and regular broadcasts which send to both groups
         schedule = Schedule.create(self.org, timezone.now(), Schedule.REPEAT_DAILY)

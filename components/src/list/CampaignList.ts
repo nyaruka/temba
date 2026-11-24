@@ -1,4 +1,4 @@
-import { css, html, TemplateResult } from 'lit';
+import { html, TemplateResult } from 'lit';
 import { msg } from '@lit/localize';
 import { ContentList, ContentListColumn } from './ContentList';
 import { Icon } from '../Icons';
@@ -13,23 +13,6 @@ import { formatCount } from '../utils';
  * event counts, and the last-updated date.
  */
 export class CampaignList extends ContentList<Campaign> {
-  static get styles() {
-    return css`
-      ${ContentList.styles}
-      .campaign-name {
-        color: inherit;
-        font-weight: var(--w-medium);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .num {
-        font-variant-numeric: tabular-nums;
-        color: inherit;
-      }
-    `;
-  }
-
   protected defaultEmptyMessage(): string {
     return msg('No campaigns');
   }
@@ -40,9 +23,14 @@ export class CampaignList extends ContentList<Campaign> {
 
   constructor() {
     super();
-    this.valueKey = 'uuid';
     this.bulkActions = [
-      { key: 'archive', label: 'Archive', icon: Icon.archive }
+      {
+        key: 'archive',
+        get label() {
+          return msg('Archive');
+        },
+        icon: Icon.archive
+      }
     ];
   }
 
@@ -120,7 +108,7 @@ export class CampaignList extends ContentList<Campaign> {
   ): TemplateResult | string {
     switch (column.key) {
       case 'name':
-        return html`<span class="campaign-name" title=${item.name || ''}
+        return html`<span class="item-name" title=${item.name || ''}
           >${item.name || ''}</span
         >`;
       case 'group':

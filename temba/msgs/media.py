@@ -4,6 +4,7 @@ import os
 import subprocess
 from tempfile import NamedTemporaryFile
 
+from temba.utils.models import changed_fields, field_values
 from temba.utils.s3 import public_file_storage
 
 from .models import Media
@@ -15,6 +16,7 @@ PROCESSING_TIMEOUT = 120  # seconds to allow ffmpeg/ffprobe to process an upload
 
 def process_upload(media: Media):
     media_type, sub_type = media.content_type.split("/")
+    before = field_values(media)
 
     try:
         with public_file_storage.open(media.path, mode="rb") as stream:
@@ -39,7 +41,7 @@ def process_upload(media: Media):
         media.status = Media.STATUS_FAILED
         logger.error("Error processing media upload: %s", e, exc_info=True)
 
-    media.save()
+    media.save(update_fields=changed_fields(media, before))
 
 
 def _process_image_upload(media: Media, sub_type: str, file):

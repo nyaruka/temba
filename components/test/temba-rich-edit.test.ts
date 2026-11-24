@@ -1,5 +1,6 @@
 import '../temba-modules';
 import { fixture, html, expect } from '@open-wc/testing';
+import { serialize } from '../src/utils';
 
 describe('temba-rich-edit', () => {
   it('emits input when selecting a completion option', async () => {
@@ -424,5 +425,26 @@ describe('temba-rich-edit', () => {
     // Enter should reach the editor and insert a newline rather than being
     // swallowed by the hidden popup.
     expect(editor.value).to.equal('hello\n');
+  });
+
+  it('submits its value once in a form', async () => {
+    const form = (await fixture(html`
+      <form><temba-rich-edit name="text" value="hello"></temba-rich-edit></form>
+    `)) as HTMLFormElement;
+    const editor = form.querySelector('temba-rich-edit') as any;
+    await editor.updateComplete;
+
+    expect([...new FormData(form).entries()]).to.deep.equal([
+      ['text', 'hello']
+    ]);
+    expect(serialize(form)).to.equal('text=hello');
+
+    editor.value = 'changed';
+    await editor.updateComplete;
+
+    expect([...new FormData(form).entries()]).to.deep.equal([
+      ['text', 'changed']
+    ]);
+    expect(serialize(form)).to.equal('text=changed');
   });
 });

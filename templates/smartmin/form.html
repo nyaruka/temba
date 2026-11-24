@@ -35,6 +35,9 @@
                 <div class="form-actions mt-4">
                   <input type="submit" class="button-primary" value="{{ submit_button_name }}">
                 </div>
+                {% if delete_url %}
+                  {% include "includes/modax_delete.html" %}
+                {% endif %}
               {% endblock form-buttons %}
             </form>
           {% endblock form %}

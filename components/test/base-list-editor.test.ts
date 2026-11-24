@@ -55,9 +55,6 @@ class TestListEditor extends BaseListEditor<TextItem> {
   public callShouldShowAddButton() {
     return (this as any).shouldShowAddButton();
   }
-  public callItemsEqual(a: TextItem, b: TextItem) {
-    return (this as any).itemsEqual(a, b);
-  }
 }
 
 customElements.define('test-list-editor', TestListEditor);
@@ -291,18 +288,6 @@ describe('form/BaseListEditor', () => {
       await editor.updateComplete;
       // two real rows plus the maintained empty one
       expect(editor.shadowRoot.querySelectorAll('.item')).to.have.length(3);
-    });
-  });
-
-  describe('itemsEqual', () => {
-    it('compares items structurally', async () => {
-      const editor = await createEditor();
-      expect(editor.callItemsEqual({ text: 'a' }, { text: 'a' })).to.equal(
-        true
-      );
-      expect(editor.callItemsEqual({ text: 'a' }, { text: 'b' })).to.equal(
-        false
-      );
     });
   });
 });

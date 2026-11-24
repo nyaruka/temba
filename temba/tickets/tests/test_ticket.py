@@ -281,35 +281,33 @@ class TicketTest(TembaTest):
         self.org.add_user(self.agent, OrgRole.AGENT, team=sales)
         self.org.add_user(self.editor, OrgRole.AGENT, team=sales)
 
-        self.org.daily_counts.create(day=date(2022, 4, 30), scope="tickets:opened:0", count=1)
-        self.org.daily_counts.create(day=date(2022, 5, 3), scope="tickets:opened:1", count=1)
-        self.org.daily_counts.create(day=date(2022, 5, 3), scope=f"tickets:assigned:0:{self.admin.id}", count=1)
-        self.org.daily_counts.create(day=date(2022, 5, 3), scope=f"msgs:ticketreplies:0:{self.admin.id}", count=1)
+        def tally(scope: str, d: date, count: int):
+            self.org.org_tallies.create(scope=f"tickets/{scope}@{d}", count=count)
 
-        self.org.daily_counts.create(
-            day=date(2022, 5, 4), scope=f"msgs:ticketreplies:{sales.id}:{self.editor.id}", count=1
-        )
-        self.org.daily_counts.create(
-            day=date(2022, 5, 4), scope=f"msgs:ticketreplies:{sales.id}:{self.agent.id}", count=1
-        )
+        tally("opened:0", date(2022, 4, 30), 1)
+        tally(f"opened:{self.org.default_topic.id}", date(2022, 5, 3), 1)
+        tally(f"assigned:{self.admin.id}", date(2022, 5, 3), 1)
+        tally("teamreplies:0", date(2022, 5, 3), 1)
+        tally(f"userreplies:{self.admin.id}", date(2022, 5, 3), 1)
 
-        self.org.daily_counts.create(day=date(2022, 5, 5), scope=f"msgs:ticketreplies:0:{self.admin.id}", count=1)
-        self.org.daily_counts.create(day=date(2022, 5, 5), scope=f"msgs:ticketreplies:0:{self.admin.id}", count=1)
-        self.org.daily_counts.create(day=date(2022, 5, 5), scope="tickets:opened:0", count=1)
-        self.org.daily_counts.create(
-            day=date(2022, 5, 5), scope=f"msgs:ticketreplies:{sales.id}:{self.agent.id}", count=1
-        )
+        tally(f"teamreplies:{sales.id}", date(2022, 5, 4), 2)
+        tally(f"userreplies:{self.editor.id}", date(2022, 5, 4), 1)
+        tally(f"userreplies:{self.agent.id}", date(2022, 5, 4), 1)
 
-        def _record_first_reply(org, user, d: date, seconds: int):
-            org.daily_counts.create(day=d, scope=f"ticketresptime:0:{user.id}:total", count=seconds)
-            org.daily_counts.create(day=d, scope=f"ticketresptime:0:{user.id}:count", count=1)
+        tally("teamreplies:0", date(2022, 5, 5), 2)
+        tally(f"userreplies:{self.admin.id}", date(2022, 5, 5), 2)
+        tally("opened:0", date(2022, 5, 5), 1)
+        tally(f"teamreplies:{sales.id}", date(2022, 5, 5), 1)
+        tally(f"userreplies:{self.agent.id}", date(2022, 5, 5), 1)
 
-        _record_first_reply(self.org, self.admin, date(2022, 4, 30), 60)
-        _record_first_reply(self.org, self.admin, date(2022, 5, 1), 60)
-        _record_first_reply(self.org, self.admin, date(2022, 5, 1), 120)
-        _record_first_reply(self.org, self.admin, date(2022, 5, 1), 180)
-        _record_first_reply(self.org, self.admin, date(2022, 5, 2), 11)
-        _record_first_reply(self.org, self.admin, date(2022, 5, 2), 70)
+        # first reply times, by the day the ticket was opened
+        for d, seconds in (
+            (date(2022, 4, 30), [60]),
+            (date(2022, 5, 1), [60, 120, 180]),
+            (date(2022, 5, 2), [11, 70]),
+        ):
+            tally("resptime:total", d, sum(seconds))
+            tally("resptime:count", d, len(seconds))
 
         workbook = export_ticket_stats(self.org, date(2022, 4, 30), date(2022, 5, 6))
         self.assertEqual(["Tickets"], workbook.sheetnames)

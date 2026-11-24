@@ -31,7 +31,7 @@ class MessagebirdTypeTest(TembaTest):
 
         # Switch to supported timezone
         self.org.timezone = "America/New_York"
-        self.org.save()
+        self.org.save(update_fields=("timezone",))
 
         # the new channel picker offers it
         self.assertChannelTypeOffered(url)

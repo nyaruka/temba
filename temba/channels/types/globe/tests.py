@@ -16,7 +16,7 @@ class GlobeTypeTest(TembaTest):
         self.assertChannelTypeNotOffered(claim_url)
 
         self.org.timezone = "Asia/Manila"
-        self.org.save()
+        self.org.save(update_fields=("timezone",))
 
         # the new channel picker offers it
         self.assertChannelTypeOffered(claim_url)

@@ -40,7 +40,7 @@ from temba.users.models import User
 from temba.utils import json, on_transaction_commit
 from temba.utils.fields import CheckboxWidget, InputWidget, SelectWidget, TembaChoiceField
 from temba.utils.models.es import SearchSliceQuerySet
-from temba.utils.views.mixins import ContextMenuMixin, ModalFormMixin, NonAtomicMixin, SpaMixin
+from temba.utils.views.mixins import ContextMenuMixin, ModalFormMixin, NonAtomicMixin, ScopedUpdateMixin, SpaMixin
 
 from .forms import ContactGroupForm, CreateContactForm, UpdateContactForm
 from .models import URN, Contact, ContactExport, ContactField, ContactGroup, ContactImport
@@ -284,7 +284,6 @@ class ContactCRUDL(SmartCRUDL):
 
     class Read(SpaMixin, ContextMenuMixin, BaseReadView):
         fields = ("name",)
-        select_related = ("current_flow",)
 
         def derive_menu_path(self):
             return f"/contact/{self.object.get_status_display().lower()}"
@@ -780,7 +779,7 @@ class ContactCRUDL(SmartCRUDL):
         def get_success_url(self):
             return f"{reverse('tickets.ticket_list')}all/{self.ticket.uuid}/"
 
-    class Interrupt(ModalFormMixin, OrgObjPermsMixin, SmartUpdateView):
+    class Interrupt(ModalFormMixin, OrgObjPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         """
         Interrupt this contact
         """
@@ -1113,6 +1112,10 @@ class ContactImportCRUDL(SmartCRUDL):
                 super().__init__(*args, **kwargs)
 
             def clean_file(self):
+                # checked here rather than in clean() so we don't parse a file we're going to refuse
+                if self.org.import_blocker:
+                    raise ValidationError(self.org.import_blocker)
+
                 file = self.cleaned_data["file"]
 
                 # try to parse the file saving the mappings so we don't have to repeat parsing when saving the import
@@ -1153,7 +1156,7 @@ class ContactImportCRUDL(SmartCRUDL):
             obj.num_records = self.form.num_records
             return obj
 
-    class Preview(SpaMixin, OrgObjPermsMixin, SmartUpdateView):
+    class Preview(SpaMixin, OrgObjPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         menu_path = "/contact/import"
 
         class Form(forms.ModelForm):
@@ -1268,6 +1271,10 @@ class ContactImportCRUDL(SmartCRUDL):
                 return data
 
             def clean(self):
+                # an import created before the workspace was blocked still can't be started
+                if self.org.import_blocker:
+                    raise ValidationError(self.org.import_blocker)
+
                 org_fields = self.org.fields.filter(is_system=False, is_active=True)
                 existing_field_keys = {f.key for f in org_fields}
                 used_field_keys = set()

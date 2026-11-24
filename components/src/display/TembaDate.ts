@@ -3,6 +3,7 @@ import { property } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { Store } from '../store/Store';
 import { DateTime } from 'luxon';
+import { msg } from '@lit/localize';
 
 export const Display = {
   date: DateTime.DATE_SHORT,
@@ -12,6 +13,7 @@ export const Display = {
   duration: 'duration',
   relative: 'relative',
   countdown: 'countdown',
+  age: 'age',
   day: 'LLL d'
 };
 
@@ -20,6 +22,26 @@ export class TembaDate extends RapidElement {
     return css`
       .date {
         display: inline;
+      }
+
+      /* how long ago, as a number stacked over its unit, e.g. 5 over days -
+         it takes its color and weight from where it's placed */
+      .age {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        line-height: 1.05;
+      }
+      .age .value {
+        font-size: var(--temba-date-age-size, 17px);
+        font-variant-numeric: tabular-nums;
+      }
+      .age .unit {
+        font-size: 10px;
+        font-weight: 400;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--text-3);
       }
     `;
   }
@@ -97,6 +119,8 @@ export class TembaDate extends RapidElement {
           >`;
         }
         formatted = this.store.getShortDuration(this.datetime);
+      } else if (this.display === Display.age) {
+        return this.renderAge();
       } else if (this.display === Display.countdown) {
         formatted = this.store.getCountdown(this.datetime);
       } else if (this.display === 'day') {
@@ -120,5 +144,64 @@ export class TembaDate extends RapidElement {
         >${formatted}</span
       >`;
     }
+  }
+
+  /**
+   * The time since our date in its largest whole unit, as a number over a
+   * localized unit name - 5 over days, 53 over mins. Under a minute shows
+   * just now, as a quiet label where the unit would be.
+   */
+  private renderAge(): TemplateResult {
+    const seconds = Math.max(
+      0,
+      Math.floor(-this.datetime.diffNow().milliseconds / 1000)
+    );
+    const title = this.datetime.toLocaleString(Display.datetime);
+    if (seconds < 60) {
+      // nothing to count yet, so just the quiet label where a unit would be
+      return html`<span class="date age" title="${title}"
+        ><span class="unit">${msg('now')}</span></span
+      >`;
+    }
+
+    const minutes = seconds / 60;
+    const hours = minutes / 60;
+    const days = hours / 24;
+    const [value, unit] =
+      minutes < 60
+        ? [minutes, 'minute']
+        : hours < 24
+          ? [hours, 'hour']
+          : days < 30
+            ? [days, 'day']
+            : days < 365
+              ? [days / 30, 'month']
+              : [days / 365, 'year'];
+
+    const parts = new Intl.NumberFormat(this.store.getLocale(), {
+      style: 'unit',
+      unit,
+      unitDisplay: 'long',
+      maximumFractionDigits: 0
+    }).formatToParts(Math.floor(value));
+    const number = parts
+      .filter((part) => part.type === 'integer' || part.type === 'group')
+      .map((part) => part.value)
+      .join('');
+    // minutes are shortened, to sit under the number like the other units
+    const name =
+      unit === 'minute'
+        ? Math.floor(value) === 1
+          ? msg('min')
+          : msg('mins')
+        : parts
+            .filter((part) => part.type === 'unit')
+            .map((part) => part.value)
+            .join('');
+
+    return html`<span class="date age" title="${title}"
+      ><span class="value">${number}</span
+      ><span class="unit">${name}</span></span
+    >`;
   }
 }

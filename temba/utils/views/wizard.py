@@ -8,6 +8,7 @@ from django.views.generic.detail import SingleObjectMixin
 
 class SmartWizardView(SmartView, SessionWizardView):
     submit_button_name = _("Submit")
+    show_steps = True  # whether the modal shows a step indicator
 
     def __init__(self, *args, **kwargs):
         self.initial_dict = kwargs.get("initial_dict", {})
@@ -52,6 +53,7 @@ class SmartWizardView(SmartView, SessionWizardView):
             [step for step in self.steps.all if self.storage.data.get("step_data").get(step) is not None]
         )
         context["submit_button_name"] = self.derive_submit_button_name()
+        context["show_steps"] = self.show_steps
         return context
 
     def process_step(self, form):

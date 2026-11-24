@@ -54,7 +54,7 @@ class ChannelEndpointTest(APITest):
                     "created_on": format_datetime(self.channel.created_on),
                 },
             ],
-            num_queries=self.BASE_SESSION_QUERIES + 2,
+            num_queries=self.BASE_SESSION_QUERIES + 1,
         )
 
         # filter by UUID
@@ -62,3 +62,17 @@ class ChannelEndpointTest(APITest):
 
         # filter by address
         self.assertGet(endpoint_url + "?address=billy_bob", [self.admin], results=[facebook])
+
+        # an Android channel reports its phone as of its latest sync
+        self.set_android_sync(self.channel, power_source="BAT", power_status="DIS", power_level=75, network_type="UMTS")
+        response = self.assertGet(endpoint_url + f"?uuid={self.channel.uuid}", [self.admin], results=[self.channel])
+        self.assertEqual(
+            {
+                "name": "Nexus 5X",
+                "network_type": "UMTS",
+                "power_level": 75,
+                "power_source": "BAT",
+                "power_status": "DIS",
+            },
+            response.json()["results"][0]["device"],
+        )

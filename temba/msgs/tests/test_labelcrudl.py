@@ -84,7 +84,7 @@ class LabelCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # reactivate
         label.is_active = True
-        label.save()
+        label.save(update_fields=("is_active",))
 
         # add a dependency and try again
         flow = self.create_flow("Color Flow")
