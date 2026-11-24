@@ -1,3 +1,9 @@
+## v26.3.226 (2026-11-24)
+ * Make Channel.sync_state non-null and default it to an empty object
+ * Don't let restricted or suspended workspaces create child workspaces
+ * Drop orgs_org.is_flagged now that being flagged is a status reason
+ * Require update_fields when saving an existing model
+
 ## v26.3.225 (2026-11-24)
  * Flag knowledge sources pending on every shortcut and article change
  * Add Channel.sync_state for the latest state of each kind of sync
