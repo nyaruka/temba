@@ -387,6 +387,9 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
     tps = models.PositiveIntegerField(default=DEFAULT_TPS)
     is_enabled = models.BooleanField(default=True)
 
+    # the latest state of each kind of sync, keyed by kind, e.g. "templates", which only mailroom writes
+    sync_state = models.JSONField(null=True)
+
     # Android relayer specific fields
     claim_code = models.CharField(max_length=16, blank=True, null=True, unique=True)
     secret = models.CharField(max_length=64, blank=True, null=True, unique=True)
