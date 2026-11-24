@@ -9,6 +9,7 @@ from typing import NamedTuple
 
 import iso8601
 import phonenumbers
+import requests
 from django_countries.fields import CountryField
 from django_valkey import get_valkey_connection
 from phonenumbers import NumberParseException
@@ -500,9 +501,12 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
         except mailroom.RequestException as e:
             if e.response.status_code == 409:
                 return True
-            if e.response.status_code == 422:
-                return False
-            raise
+            if e.response.status_code != 422:
+                logger.warning(f"error syncing templates for channel #{self.id}: {e}")
+            return False
+        except requests.RequestException as e:
+            logger.warning(f"error syncing templates for channel #{self.id}: {e}")
+            return False
         return True
 
     @classmethod

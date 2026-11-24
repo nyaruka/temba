@@ -1,6 +1,8 @@
 from unittest.mock import call, patch
 from zoneinfo import ZoneInfo
 
+import requests
+
 from django.urls import reverse
 
 from temba import mailroom
@@ -316,12 +318,21 @@ class TemplateTest(TembaTest):
         mr_mocks.exception(mailroom.RequestException("", "", MockResponse(409, '{"error": "already syncing"}')))
         refresh_channel_templates(d3c_channel.id)
 
-        # but other errors aren't
+        # other errors, e.g. mailroom being down, are logged as warnings rather than failing the task
         mr_mocks.exception(mailroom.RequestException("", "", MockResponse(500, '{"error": "boom"}')))
-        with self.assertRaises(mailroom.RequestException):
+        mr_mocks.exception(requests.ConnectionError("connection refused"))
+        with patch("logging.Logger.warning") as mock_warning:
+            refresh_channel_templates(d3c_channel.id)
             refresh_channel_templates(d3c_channel.id)
 
-        self.assertEqual(4, len(mr_mocks.calls["channel_sync_templates"]))
+        self.assertEqual(
+            [
+                call(f"error syncing templates for channel #{d3c_channel.id}: boom"),
+                call(f"error syncing templates for channel #{d3c_channel.id}: connection refused"),
+            ],
+            mock_warning.call_args_list,
+        )
+        self.assertEqual(5, len(mr_mocks.calls["channel_sync_templates"]))
 
         # channel that has been released since being queued is skipped
         d3c_channel.release(self.admin)
@@ -331,7 +342,7 @@ class TemplateTest(TembaTest):
         # as is a channel that no longer exists
         refresh_channel_templates(d3c_channel.id + 1000)
 
-        self.assertEqual(4, len(mr_mocks.calls["channel_sync_templates"]))
+        self.assertEqual(5, len(mr_mocks.calls["channel_sync_templates"]))
 
 
 class TemplateCRUDLTest(CRUDLTestMixin, TembaTest):
@@ -496,13 +507,19 @@ class TemplateCRUDLTest(CRUDLTestMixin, TembaTest):
             [call(self.org, d3c_channel), call(self.org, twa_channel)], mr_mocks.calls["channel_sync_templates"]
         )
 
-        # if one channel fails, others continue
-        mr_mocks.exception(mailroom.RequestException("", "", MockResponse(422, '{"error": "boom"}')))
+        # if one channel fails, others continue, whether it's the provider, mailroom or the connection to it
+        for exception in (
+            mailroom.RequestException("", "", MockResponse(422, '{"error": "boom"}')),
+            mailroom.RequestException("", "", MockResponse(500, '{"error": "boom"}')),
+            requests.ConnectionError("connection refused"),
+        ):
+            mr_mocks.exception(exception)
+            num_calls = len(mr_mocks.calls["channel_sync_templates"])
 
-        response = self.client.post(sync_templates_url, {}, follow=True)
-        self.assertEqual(200, response.status_code)
-        self.assertToast(response, "error", "Unable to refresh all templates. See the log for details.")
-        self.assertEqual(4, len(mr_mocks.calls["channel_sync_templates"]))
+            response = self.client.post(sync_templates_url, {}, follow=True)
+            self.assertEqual(200, response.status_code)
+            self.assertToast(response, "error", "Unable to refresh all templates. See the log for details.")
+            self.assertEqual(num_calls + 2, len(mr_mocks.calls["channel_sync_templates"]))
 
 
 class TemplateTagsTest(TembaTest):
