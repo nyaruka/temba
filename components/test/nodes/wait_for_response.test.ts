@@ -3,6 +3,7 @@ import { wait_for_response } from '../../src/flow/nodes/wait_for_response';
 import { Node } from '../../src/store/flow-definition';
 import { NodeTest } from '../NodeHelper';
 import { createOperatorOption } from '../../src/flow/operators';
+import { getTranslatableCategoriesForNode } from '../../src/flow/categoryLocalization';
 
 /**
  * Test suite for the wait_for_response node configuration.
@@ -1490,6 +1491,23 @@ describe('wait_for_response node config', () => {
       // Change to has_text (0 operands) - category should update to fixed name
       const result = onItemChange(0, 'operator', 'has_text', items);
       expect(result[0].category).to.equal('Has Text');
+    });
+  });
+
+  describe('category localization', () => {
+    const category = (name: string) => ({
+      uuid: `${name}-uuid`,
+      name,
+      exit_uuid: `${name}-exit`
+    });
+
+    it('offers the timeout category for translation but not legacy Timeout', () => {
+      const translatable = getTranslatableCategoriesForNode(
+        'wait_for_response',
+        ['Red', 'Other', 'No Response', 'Timeout'].map(category)
+      ).map((cat) => cat.name);
+
+      expect(translatable).to.deep.equal(['Red', 'Other', 'No Response']);
     });
   });
 });

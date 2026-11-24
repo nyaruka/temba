@@ -1076,7 +1076,7 @@ export class Store extends RapidElement {
 
   public makeRequest(
     url: string,
-    options?: { force?: boolean; prepareData?: (data: any) => any }
+    options: { force?: boolean; prepareData?: (data: any) => any } = {}
   ) {
     const previousRequest = this.fetching[url];
     const now = new Date().getTime();
@@ -1093,7 +1093,6 @@ export class Store extends RapidElement {
       cached = options.prepareData ? options.prepareData(cached) : cached;
       this.fireCustomEvent(CustomEventType.StoreUpdated, { url, data: cached });
     } else {
-      options = options || {};
       this.fetching[url] = now;
       fetchResults(url).then((data) => {
         if (!data) {

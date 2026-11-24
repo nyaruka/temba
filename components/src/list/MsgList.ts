@@ -101,14 +101,29 @@ export class MsgList extends ContentList<Msg> {
     this.bulkActions = [
       {
         key: 'label',
-        label: 'Label',
+        get label() {
+          return msg('Label');
+        },
         icon: Icon.label,
         labelsEndpoint: '/api/v2/labels.json'
       },
       // Archive trails the reversible actions; Delete, when offered,
       // always goes last.
-      { key: 'archive', label: 'Archive', icon: Icon.archive },
-      { key: 'delete', label: 'Delete', icon: Icon.delete, destructive: true }
+      {
+        key: 'archive',
+        get label() {
+          return msg('Archive');
+        },
+        icon: Icon.archive
+      },
+      {
+        key: 'delete',
+        get label() {
+          return msg('Delete');
+        },
+        icon: Icon.delete,
+        destructive: true
+      }
     ];
   }
 
