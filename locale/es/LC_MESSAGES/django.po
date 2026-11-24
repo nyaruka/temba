@@ -3295,6 +3295,9 @@ msgstr "Como workspace secundario"
 msgid "As separate workspace"
 msgstr "Como workspace independiente"
 
+msgid "Child workspaces can't be created while this workspace is restricted or suspended."
+msgstr "No se pueden crear espacios de trabajo secundarios mientras este espacio de trabajo esté restringido o suspendido."
+
 msgid "Switch Workspaces"
 msgstr "Cambiar de workspace"
 
