@@ -56,6 +56,22 @@ class ContactTest(TembaTest):
         self.assertEqual("NVQ26R", Contact(id=1_073_741_823).ref)
         self.assertEqual("GQENS3N", Contact(id=1_073_741_824).ref)
 
+    def test_uuid2(self):
+        # set from uuid on insert
+        contact = self.create_contact("Jim")
+        contact.refresh_from_db()
+        self.assertEqual(UUID(contact.uuid), contact.uuid2)
+
+        # and kept in step when uuid changes
+        Contact.objects.filter(id=contact.id).update(uuid="93fe7ac3-9a30-4f5c-9c5e-8f1dd3f1c3b0")
+        contact.refresh_from_db()
+        self.assertEqual(UUID("93fe7ac3-9a30-4f5c-9c5e-8f1dd3f1c3b0"), contact.uuid2)
+
+        # but not by writes that only touch uuid2
+        Contact.objects.filter(id=contact.id).update(uuid2=None)
+        contact.refresh_from_db()
+        self.assertIsNone(contact.uuid2)
+
     def test_email(self):
         # any number of contacts can claim an address
         self.joe.email = "joe@nyaruka.com"
@@ -161,9 +177,29 @@ class ContactTest(TembaTest):
         # noop when contact not in a flow
         self.joe.interrupt(self.admin)
 
-        self.joe.current_flow = self.create_flow("Test Flow")
+        self.joe.current_flow_uuid = self.create_flow("Test Flow").uuid
 
         self.joe.interrupt(self.admin)
+
+    def test_get_current_flow(self):
+        flow = self.create_flow("Test Flow")
+
+        self.assertIsNone(self.joe.get_current_flow())
+
+        self.joe.current_flow_uuid = flow.uuid
+        self.joe.save(update_fields=("current_flow_uuid",))
+
+        joe = Contact.objects.get(id=self.joe.id)
+        self.assertEqual(flow, joe.get_current_flow())
+
+        with self.assertNumQueries(0):
+            self.assertEqual(flow, joe.get_current_flow())
+
+        # a soft reference so might be to a flow that's been released
+        flow.release(self.admin)
+
+        joe = Contact.objects.get(id=self.joe.id)
+        self.assertIsNone(joe.get_current_flow())
 
     @cleanup(dynamodb=True)
     def test_release(self):
@@ -344,8 +380,6 @@ class ContactTest(TembaTest):
 
         MockSessionWriter(contact, flow).wait().save()
 
-        self.assertEqual({"status:W": 1}, flow.counts.prefix("status:").scope_totals())
-
         with patch("temba.contacts.models.Contact._full_release"):
             contact.release(self.admin)
 
@@ -353,14 +387,11 @@ class ContactTest(TembaTest):
 
         # run is now interrupted rather than still waiting
         self.assertEqual({FlowRun.STATUS_INTERRUPTED}, {r.status for r in flow.runs.all()})
-        self.assertEqual({"status:W": 0, "status:I": 1}, flow.counts.prefix("status:").scope_totals())
 
-        # and deleting it leaves that as the historical record
         contact.refresh_from_db()
         contact._full_release()
 
         self.assertEqual(0, flow.runs.count())
-        self.assertEqual({"status:W": 0, "status:I": 1}, flow.counts.prefix("status:").scope_totals())
 
     @mock_mailroom
     def test_release_without_interrupt(self, mr_mocks):
@@ -376,11 +407,10 @@ class ContactTest(TembaTest):
         self.assertEqual([], mr_mocks.calls["contact_interrupt"])
         self.assertEqual({FlowRun.STATUS_WAITING}, {r.status for r in flow.runs.all()})
 
-        # so the db trigger is left to decrement the waiting count when the run is deleted
         contact.refresh_from_db()
         contact._full_release()
 
-        self.assertEqual({"status:W": 0}, flow.counts.prefix("status:").scope_totals())
+        self.assertEqual(0, flow.runs.count())
 
     def test_status_changes_and_release(self):
         flow = self.create_flow("Test")

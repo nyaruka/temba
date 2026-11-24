@@ -1,29 +1,22 @@
-from temba.contacts.models import ContactGroup
+from uuid import UUID
+
+from temba.contacts.models import Contact
 from temba.tests import MigrationTest
 
 
-class UpdateOpenTicketsQueryTest(MigrationTest):
+class AddContactUUID2Test(MigrationTest):
     app = "contacts"
-    migrate_from = "0225_squashed_counts_unique"
-    migrate_to = "0226_update_open_tickets_query"
+    migrate_from = "0232_drop_contact_current_flow_id"
+    migrate_to = "0233_contact_uuid2"
 
     def setUpBeforeMigration(self, apps):
-        ContactGroup.objects.filter(is_system=True, group_type=ContactGroup.TYPE_SMART).update(query="tickets > 0")
+        Contact = apps.get_model("contacts", "Contact")
 
-        self.group1 = self.org.groups.create(
-            name="Has Tickets",
-            group_type=ContactGroup.TYPE_SMART,
-            query="tickets > 0",
-            status=ContactGroup.STATUS_READY,
-            created_by=self.admin,
-            modified_by=self.admin,
-        )
+        self.contact1 = Contact.objects.create(org_id=self.org.id, name="Ann", created_by_id=self.admin.id)
 
     def test_migration(self):
-        for org in (self.org, self.org2):
-            open_tickets = org.groups.get(name="Open Tickets")
-            self.assertEqual('ticket = "open"', open_tickets.query)
-            self.assertEqual(ContactGroup.STATUS_READY, open_tickets.status)
+        # existing contacts are left for the backfill
+        self.assertIsNone(Contact.objects.get(id=self.contact1.id).uuid2)
 
-        self.group1.refresh_from_db()
-        self.assertEqual("tickets > 0", self.group1.query)  # user smart groups untouched
+        contact2 = self.create_contact("Bob")
+        self.assertEqual(UUID(contact2.uuid), Contact.objects.get(id=contact2.id).uuid2)

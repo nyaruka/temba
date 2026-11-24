@@ -51,6 +51,9 @@ msgstr ""
 msgid "Artificial Intelligence"
 msgstr ""
 
+msgid "Add Large Language Models (LLMs) to your workspace to unlock AI assisted features."
+msgstr ""
+
 msgid "New Model"
 msgstr ""
 
@@ -58,6 +61,12 @@ msgid "Create"
 msgstr ""
 
 msgid "Save"
+msgstr ""
+
+msgid "Delete model"
+msgstr ""
+
+msgid "Delete Model"
 msgstr ""
 
 msgid "Your LLM model has been deleted."
@@ -337,6 +346,54 @@ msgid "Address"
 msgstr ""
 
 msgid "Country"
+msgstr ""
+
+msgid "Nothing has been received from the provider yet."
+msgstr ""
+
+msgid "Disabled"
+msgstr ""
+
+msgid "Won't send or receive messages until it's enabled."
+msgstr ""
+
+msgid "Paused"
+msgstr ""
+
+msgid "The provider isn't accepting messages."
+msgstr ""
+
+msgid "Not syncing"
+msgstr ""
+
+msgid "The phone hasn't synced for over an hour."
+msgstr ""
+
+#, python-format
+msgid "%(percent)d%% of the %(count)s messages sent since %(date)s have failed."
+msgstr ""
+
+#, python-format
+msgid "%(today_percent)d%% of the %(today_count)s messages sent today have failed, down from %(percent)d%% of the %(count)s sent since %(date)s."
+msgstr ""
+
+#, python-format
+msgid "None of the %(today_count)s messages sent today have failed, after %(percent)d%% of the %(count)s sent since %(date)s did."
+msgstr ""
+
+msgid "Recovering"
+msgstr ""
+
+msgid "Unhealthy"
+msgstr ""
+
+msgid "Degraded"
+msgstr ""
+
+msgid "Waiting"
+msgstr ""
+
+msgid "Sending and receiving messages."
 msgstr ""
 
 msgid "Outgoing"
@@ -1777,6 +1834,18 @@ msgid_plural "%(count)d in appeal"
 msgstr[0] ""
 msgstr[1] ""
 
+msgid "Very slow"
+msgstr ""
+
+msgid "Slow"
+msgstr ""
+
+#, python-format
+msgid "Sends %(count)d message a second, so a broadcast to 100k contacts takes about %(duration)s."
+msgid_plural "Sends %(count)d messages a second, so a broadcast to 100k contacts takes about %(duration)s."
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "View setup"
 msgstr ""
 
@@ -1787,33 +1856,6 @@ msgid "View syncs"
 msgstr ""
 
 msgid "See activity"
-msgstr ""
-
-msgid "Disabled"
-msgstr ""
-
-msgid "Won't send or receive messages until it's enabled."
-msgstr ""
-
-msgid "Paused"
-msgstr ""
-
-msgid "The provider isn't accepting messages."
-msgstr ""
-
-msgid "Not syncing"
-msgstr ""
-
-msgid "The phone hasn't synced for over an hour."
-msgstr ""
-
-msgid "Waiting"
-msgstr ""
-
-msgid "Nothing has been received from the provider yet."
-msgstr ""
-
-msgid "Sending and receiving messages."
 msgstr ""
 
 msgid "Allows Messenger extensions on this domain, e.g. https://example.com."
@@ -1831,6 +1873,12 @@ msgstr ""
 
 #, python-format
 msgid "%s Channel"
+msgstr ""
+
+msgid "Delete channel"
+msgstr ""
+
+msgid "Delete Channel"
 msgstr ""
 
 msgid "Channel Log"
@@ -2924,29 +2972,17 @@ msgstr ""
 msgid "Channel Android App Outdated"
 msgstr ""
 
-msgid "Workspace Flagged"
-msgstr ""
-
-msgid "Workspace Restricted"
-msgstr ""
-
-msgid "Workspace Suspended"
-msgstr ""
-
 msgid "Webhooks Unhealthy"
 msgstr ""
 
 msgid "WhatsApp Templates Sync Failed"
 msgstr ""
 
-#, python-format
-msgid "Your %s export is ready"
-msgstr ""
-
 msgid "Incident"
 msgstr ""
 
-msgid "Reminder"
+#, python-format
+msgid "Your %s export is ready"
 msgstr ""
 
 msgid "New user joined your workspace"
@@ -3043,12 +3079,6 @@ msgid "This slug is not available"
 msgstr ""
 
 msgid "Whether this organization anonymizes the phone numbers of contacts within it"
-msgstr ""
-
-msgid "Whether this organization is currently flagged."
-msgstr ""
-
-msgid "Whether this organization is currently suspended."
 msgstr ""
 
 #, python-format
@@ -3240,6 +3270,9 @@ msgid "As child workspace"
 msgstr ""
 
 msgid "As separate workspace"
+msgstr ""
+
+msgid "Child workspaces can't be created while this workspace is restricted or suspended."
 msgstr ""
 
 msgid "Switch Workspaces"
@@ -3443,16 +3476,13 @@ msgstr ""
 msgid "Edit Workspace"
 msgstr ""
 
-msgid "Flag"
-msgstr ""
-
-msgid "Unflag"
-msgstr ""
-
 msgid "Restrict"
 msgstr ""
 
 msgid "Suspend"
+msgstr ""
+
+msgid "Unflag"
 msgstr ""
 
 msgid "Verify"
@@ -3555,6 +3585,12 @@ msgstr ""
 msgid "All Tickets"
 msgstr ""
 
+msgid "Delete topic"
+msgstr ""
+
+msgid "Delete Topic"
+msgstr ""
+
 msgid "New Team"
 msgstr ""
 
@@ -3576,11 +3612,11 @@ msgstr ""
 msgid "Add Note"
 msgstr ""
 
-msgid "Edit Topic"
-msgstr ""
-
-msgid "Delete Topic"
-msgstr ""
+#, python-format
+msgid "%(count)s open ticket"
+msgid_plural "%(count)s open tickets"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "Notes are never shown to the contact."
 msgstr ""
@@ -3975,22 +4011,16 @@ msgstr ""
 msgid "If you haven't received the email, check your spam folder or contact support for assistance."
 msgstr ""
 
-msgid "Update Model"
+msgid "Model limit reached"
 msgstr ""
 
-msgid "Delete Model"
+msgid "Remove a model before adding another one."
 msgstr ""
-
-msgid "Add Large Language Models (LLMs) to your workspace to unlock AI assisted features."
-msgstr ""
-
-#, python-format
-msgid "%(counter)s use"
-msgid_plural "%(counter)s uses"
-msgstr[0] ""
-msgstr[1] ""
 
 msgid "No models yet"
+msgstr ""
+
+msgid "Update Model"
 msgstr ""
 
 msgid "Contact"
@@ -4248,6 +4278,19 @@ msgstr ""
 msgid "No logs in the last 7 days."
 msgstr ""
 
+msgid "Showing these logs unredacted."
+msgstr ""
+
+msgid "These logs are redacted as this workspace is anonymous."
+msgstr ""
+
+msgctxt "button to hide contact details in logs again"
+msgid "Redact"
+msgstr ""
+
+msgid "Show unredacted"
+msgstr ""
+
 msgid "Incoming message from"
 msgstr ""
 
@@ -4274,6 +4317,17 @@ msgid "The phone hasn't synced for %(since)s"
 msgstr ""
 
 msgid "Messages won't be sent or received until it does. Check that it's on and connected to the internet."
+msgstr ""
+
+#, python-format
+msgid "Failures · %(days)s days"
+msgstr ""
+
+msgid "failed"
+msgstr ""
+
+#, python-format
+msgid "%(failed)s of %(sent)s sent"
 msgstr ""
 
 #, python-format
@@ -4318,19 +4372,6 @@ msgid "Not synced"
 msgstr ""
 
 msgid "The phone hasn't connected yet."
-msgstr ""
-
-msgid "Speed"
-msgstr ""
-
-msgid "msg/sec"
-msgstr ""
-
-#, python-format
-msgid "A broadcast to 100k contacts takes about %(duration)s"
-msgstr ""
-
-msgid "About speed"
 msgstr ""
 
 msgid "Recent logs"
@@ -4389,12 +4430,6 @@ msgid "No templates have been synced for this channel."
 msgstr ""
 
 msgid "Cancel"
-msgstr ""
-
-msgid "Delete channel"
-msgstr ""
-
-msgid "Delete Channel"
 msgstr ""
 
 msgid "To get started, you'll need your short code along with your Africa's Talking username and an API key, which you can generate under Settings in your Africa's Talking app."
@@ -5107,6 +5142,12 @@ msgstr ""
 msgid "Globals are variables you can use across all of your flows but manage the value for in one place. For example, you might use them to store API keys you need to access external services or product names that might change later."
 msgstr ""
 
+#, python-format
+msgid "%(counter)s use"
+msgid_plural "%(counter)s uses"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "No globals"
 msgstr ""
 
@@ -5460,7 +5501,7 @@ msgstr ""
 msgid "Hi"
 msgstr ""
 
-msgid "If you have any questions we are always here to help."
+msgid "If you have any questions, we are always here to help."
 msgstr ""
 
 #, python-format
@@ -5519,42 +5560,6 @@ msgstr ""
 msgid "Your WhatsApp channel (%(url)s) is currently having problems fetching templates."
 msgstr ""
 
-msgid "Your workspace has been flagged due to suspicious activity. To re-enable starting flows and sending messages, please contact support."
-msgstr ""
-
-msgid ""
-"\n"
-"Your workspace has been flagged due to suspicious activity. To re-enable starting flows and sending messages, please\n"
-"contact support.\n"
-msgstr ""
-
-msgid "Your workspace has been restricted because of a problem with billing."
-msgstr ""
-
-msgid "Your workspace has been restricted because it has exceeded the limits of its plan."
-msgstr ""
-
-msgid "Your workspace has been restricted."
-msgstr ""
-
-msgid "Starting flows and sending messages are disabled, but your flows will keep handling incoming messages."
-msgstr ""
-
-#, python-format
-msgid "Unless this is resolved, your workspace will be suspended on %(date)s. Please contact support."
-msgstr ""
-
-msgid "Please contact support."
-msgstr ""
-
-msgid "Your workspace has been suspended. To re-enable starting flows and sending messages, please contact support."
-msgstr ""
-
-msgid ""
-"\n"
-"Your workspace has been suspended. To re-enable starting flows and sending messages, please contact support.\n"
-msgstr ""
-
 #, python-format
 msgid "User <b>%(email)s</b> accepted an invitation to join your workspace."
 msgstr ""
@@ -5576,9 +5581,6 @@ msgstr ""
 
 #, python-format
 msgid "Your <a href=\"%(read_url)s\">WhatsApp channel</a> appears to not be syncing templates."
-msgstr ""
-
-msgid "Your workspace has been restricted. Starting flows and sending messages are disabled until this is resolved, but your flows will keep handling incoming messages."
 msgstr ""
 
 #, python-format
@@ -6094,6 +6096,10 @@ msgstr ""
 msgid "Invalid org, servicing not available."
 msgstr ""
 
+#, python-format
+msgid "Suspending <b>%(name)s</b> will cancel any messages waiting to be sent on its channels, and on those of any child workspaces suspended with it. There is no way to undo this. Are you sure?"
+msgstr ""
+
 msgid "Deleting this user will also delete the following workspaces owned by this user."
 msgstr ""
 
@@ -6183,7 +6189,16 @@ msgstr ""
 msgid "Any tickets opened within the selected date range will be included. You may optionally include additional columns for fields for each contact."
 msgstr ""
 
-msgid "All Agents"
+msgid "Edit Topic"
+msgstr ""
+
+msgid "All agents"
+msgstr ""
+
+msgid "Oldest"
+msgstr ""
+
+msgid "Most recent"
 msgstr ""
 
 msgid "See more tickets"

@@ -465,7 +465,7 @@ class ResultsExportTest(TembaTest):
 
         # test we can export archived flows
         flow.is_archived = True
-        flow.save()
+        flow.save(update_fields=("is_archived",))
 
         workbook = self._export(flow, start_date=today - timedelta(days=7), end_date=today)
 

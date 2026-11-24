@@ -200,7 +200,9 @@ def sparkline(values) -> str:
         f'<svg class="dash-spark" viewBox="0 0 {width} {height}" preserveAspectRatio="none" aria-hidden="true">'
         f'<path class="area" d="{line} L{width} {height} L0 {height} Z"></path>'
         f'<path class="line" d="{line}"></path>'
-        f'<circle class="end" cx="{last_x:.1f}" cy="{last_y:.1f}" r="2.4"></circle>'
+        # the dot is the round cap of a stroke too short to see rather than a circle, which would stretch with the rest
+        # of the drawing - a stroke that doesn't scale stays round
+        f'<path class="end" d="M{last_x:.1f} {last_y:.1f}h0.01"></path>'
         "</svg>"
     )
 

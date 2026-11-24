@@ -1,0 +1,8 @@
+{% extends "includes/modax.html" %}
+{% load i18n %}
+
+{% block fields %}
+  {% blocktrans trimmed with name=object.name %}
+    Suspending <b>{{ name }}</b> will cancel any messages waiting to be sent on its channels, and on those of any child workspaces suspended with it. There is no way to undo this. Are you sure?
+  {% endblocktrans %}
+{% endblock fields %}

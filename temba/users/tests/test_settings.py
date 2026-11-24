@@ -122,3 +122,24 @@ class UserSettingsTest(TembaTest):
         self.assertEqual(20, len(saved))
         self.assertEqual(240, saved["name"])
         self.assertNotIn("field:f0", saved)
+
+    def test_ticket_order(self):
+        settings_url = reverse("users.user_settings")
+        self.login(self.admin)
+
+        response = self.client.post(settings_url, {"ticket_order": "oldest"}, content_type="application/json")
+        self.assertEqual(200, response.status_code)
+
+        self.admin.refresh_from_db()
+        self.assertEqual("oldest", self.admin.settings["ticket_order"])
+
+        # only known orders are accepted
+        for order in ("sideways", 1, None):
+            response = self.client.post(settings_url, {"ticket_order": order}, content_type="application/json")
+            self.assertEqual(400, response.status_code)
+
+        response = self.client.post(settings_url, {"ticket_order": "newest"}, content_type="application/json")
+        self.assertEqual(200, response.status_code)
+
+        self.admin.refresh_from_db()
+        self.assertEqual("newest", self.admin.settings["ticket_order"])

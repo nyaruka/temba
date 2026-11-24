@@ -7,13 +7,17 @@ import { Icon } from '../Icons';
 import { designTokens } from '../styles/designTokens';
 import { formatCount, postJSON } from '../utils';
 import {
-  buttonChrome,
-  buttonChromeCompact,
-  buttonChromeActive,
-  buttonChromeDestructive,
-  buttonChromeDestructiveHover,
-  buttonChromeHover
-} from '../styles/buttonChrome';
+  headerActionsStyles,
+  headerPanelStyles,
+  panelStyles,
+  searchbarStyles
+} from '../styles/pageChrome';
+import {
+  detailDialogStyles,
+  renderDetailButton,
+  renderDetailDialog
+} from './detailDialog';
+import { renderSearchAction, renderSearchbar } from './pageChrome';
 
 // resolved per call rather than held in a module-level map so the names
 // reflect the locale, which is only known once the store has loaded
@@ -127,66 +131,12 @@ export class FieldList extends EndpointMonitorElement {
       }
 
       /* The header is the same flush surface bar the fill-window lists
-         render — full width, the lists' 12px inset, no card chrome —
-         so this page and the list pages share one header treatment. */
-      .header-panel {
-        background: var(--surface);
-        padding: 0 12px;
-        border-bottom: 1px solid var(--border);
-      }
-
-      .header-actions {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        color: var(--text-2);
-        font-size: 13px;
-      }
-
-      .action {
-        ${buttonChrome}
-        ${buttonChromeCompact}
-      }
-      .action:hover {
-        ${buttonChromeHover}
-      }
-      .action:active {
-        ${buttonChromeActive}
-      }
-      .action temba-icon {
-        --icon-color: currentColor;
-      }
-
-      /* Inline search bar — same treatment as the content lists, but
-         filtering is live so there's no run/commit affordance. */
-      .searchbar {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 12px;
-        margin: -6px 0 12px 0;
-        background: var(--sunken);
-        border-radius: var(--r-sm);
-        color: var(--text-3);
-      }
-      .searchbar input {
-        flex: 1 1 auto;
-        border: 0;
-        background: transparent;
-        outline: 0;
-        font: inherit;
-        color: var(--text-1);
-        min-width: 0;
-      }
-      .searchbar input::placeholder {
-        color: var(--text-3);
-      }
-      .searchbar .search-cancel {
-        flex: 0 0 auto;
-        margin-left: 5px;
-        --icon-color: var(--text-3);
-        --icon-color-circle-hover: rgba(15, 22, 36, 0.1);
-      }
+         render, so this page and the list pages share one header
+         treatment. Search filters live, so its bar has no run/commit
+         affordance. */
+      ${headerPanelStyles}
+      ${headerActionsStyles}
+      ${searchbarStyles}
 
       .content {
         display: flex;
@@ -196,12 +146,7 @@ export class FieldList extends EndpointMonitorElement {
       }
 
       /* Card panel — the same surface treatment as the content lists */
-      .panel {
-        background: var(--surface);
-        border-radius: var(--r);
-        overflow: hidden;
-        box-shadow: var(--shadow-1);
-      }
+      ${panelStyles}
 
       .section-header {
         display: flex;
@@ -292,94 +237,12 @@ export class FieldList extends EndpointMonitorElement {
         font-size: 0.9em;
       }
 
-      /* the detail modal stands in for a field read page - page-like,
-         no colored header bar (same shape as the campaign event modal) */
-      .detail {
-        display: flex;
-        flex-direction: column;
-      }
-
-      .detail-header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 1em;
-        border-bottom: 1px solid var(--border, #e4e7ec);
-      }
-
-      .detail-title {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 15.5px;
-        font-weight: var(--w-semibold, 600);
-        color: var(--text-1);
-      }
-
-      .detail-actions {
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
+      /* the detail modal stands in for a field read page (same shape as
+         the campaign event modal) */
+      ${detailDialogStyles}
 
       .detail-actions .star {
         margin-right: 4px;
-      }
-
-      /* the way out - a quiet ✕ at the header's far right, same as the
-         campaign event modal */
-      .detail-close {
-        flex-shrink: 0;
-        margin-left: -4px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 28px;
-        height: 28px;
-        border-radius: var(--r-sm);
-        color: var(--text-3, #7b8593);
-        cursor: pointer;
-        user-select: none;
-      }
-      .detail-close:hover {
-        background: var(--sunken);
-        color: var(--text-1);
-      }
-      .detail-close temba-icon {
-        --icon-color: currentColor;
-      }
-
-      /* match the page header's content-menu buttons so the modal's
-         actions read like page actions */
-      .menu-button {
-        ${buttonChrome}
-      }
-
-      .menu-button:hover {
-        ${buttonChromeHover}
-      }
-      .menu-button:active {
-        ${buttonChromeActive}
-      }
-
-      .menu-button.destructive {
-        ${buttonChromeDestructive}
-      }
-
-      .menu-button.destructive:hover {
-        ${buttonChromeDestructiveHover}
-      }
-
-      .detail-body {
-        display: flex;
-        flex-direction: column;
-        gap: 1.25em;
-        overflow-y: auto;
-        max-height: calc(100vh - 300px);
-        padding: 1.25em 1.75em;
       }
 
       .detail-meta {
@@ -397,11 +260,6 @@ export class FieldList extends EndpointMonitorElement {
 
       .detail-section-title {
         margin-top: 0.25em;
-        font-size: 0.75em;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--text-3, #7b8593);
       }
 
       .usage-rows {
@@ -679,40 +537,22 @@ export class FieldList extends EndpointMonitorElement {
           <slot name="title" slot="title">${this.headerTitle}</slot>
           <div slot="actions" class="header-actions">
             ${!this.searchOpen
-              ? html`
-                  <span class="action" @click=${() => this.toggleSearch()}>
-                    <temba-icon name=${Icon.search} size="0.95"></temba-icon>
-                    Search
-                  </span>
-                `
+              ? renderSearchAction(() => this.toggleSearch())
               : null}
           </div>
         </temba-page-header>
         ${this.searchOpen
-          ? html`
-              <div class="searchbar">
-                <input
-                  type="text"
-                  placeholder=${msg('Search fields')}
-                  .value=${this.query}
-                  @input=${this.handleSearchInput}
-                  @keydown=${(e: KeyboardEvent) => {
-                    if (e.key === 'Escape') {
-                      this.toggleSearch();
-                    }
-                  }}
-                />
-                <temba-icon
-                  class="search-cancel"
-                  name=${Icon.close}
-                  size="1.1"
-                  clickable
-                  title=${msg('Cancel search')}
-                  aria-label=${msg('Cancel search')}
-                  @click=${() => this.toggleSearch()}
-                ></temba-icon>
-              </div>
-            `
+          ? renderSearchbar({
+              placeholder: msg('Search fields'),
+              value: this.query,
+              onInput: (e) => this.handleSearchInput(e),
+              onKeydown: (e) => {
+                if (e.key === 'Escape') {
+                  this.toggleSearch();
+                }
+              },
+              onCancel: () => this.toggleSearch()
+            })
           : null}
       </div>
     `;
@@ -946,98 +786,53 @@ export class FieldList extends EndpointMonitorElement {
   // the feature toggle, edit and delete actions, and the field's usages
   private renderDetail(): TemplateResult {
     const field = this.detailField;
-    const featured = field ? this.isFeatured(field.key) : false;
+    if (!field) {
+      return renderDetailDialog(null, this.handleDetailClosed);
+    }
+    const featured = this.isFeatured(field.key);
 
-    return html`
-      <temba-dialog
-        size="xlarge"
-        variant="flat"
-        primaryButtonName=""
-        cancelButtonName=""
-        hideOnClick
-        ?open=${!!field}
-        @temba-dialog-hidden=${this.handleDetailClosed}
-        @keyup=${(e: KeyboardEvent) => {
-          if (e.key === 'Escape') {
-            this.handleDetailClosed();
-          }
-        }}
-      >
-        ${field
-          ? html`
-              <div class="detail">
-                <div class="detail-header">
-                  <div class="detail-title">${field.label}</div>
-                  ${this.detail
-                    ? html`<div class="detail-actions">
-                        ${this.detail.can_edit
-                          ? html`<temba-icon
-                              class="star featured-toggle ${featured
-                                ? 'featured'
-                                : ''}"
-                              name=${featured
-                                ? Icon.featured_filled
-                                : Icon.featured}
-                              size="1.3"
-                              clickable
-                              role="button"
-                              tabindex="0"
-                              title=${featured
-                                ? msg('Featured')
-                                : msg('Not featured')}
-                              aria-label=${featured
-                                ? msg(str`Unfeature ${field.label}`)
-                                : msg(str`Feature ${field.label}`)}
-                              @click=${this.handleToggleFeatured}
-                              @keydown=${(e: KeyboardEvent) =>
-                                this.handleActivationKey(e, () =>
-                                  this.handleToggleFeatured()
-                                )}
-                            ></temba-icon>`
-                          : null}
-                        ${this.detail.can_edit
-                          ? html`<button
-                              class="menu-button"
-                              @click=${this.handleEditClicked}
-                            >
-                              Edit
-                            </button>`
-                          : null}
-                        ${this.detail.can_delete
-                          ? html`<button
-                              class="menu-button destructive"
-                              @click=${this.handleDeleteClicked}
-                            >
-                              Delete
-                            </button>`
-                          : null}
-                      </div>`
-                    : null}
-                  <div
-                    class="detail-close"
-                    role="button"
-                    tabindex="0"
-                    aria-label=${msg('Close')}
-                    @click=${this.handleDetailClosed}
-                    @keydown=${(e: KeyboardEvent) =>
-                      this.handleActivationKey(e, this.handleDetailClosed)}
-                  >
-                    <temba-icon name=${Icon.close} size="1.4"></temba-icon>
-                  </div>
-                </div>
-
-                <div class="detail-body">
-                  <div class="detail-meta">
-                    <div class="expression">@fields.${field.key}</div>
-                    <div>${typeName(field)}</div>
-                  </div>
-                  ${this.renderUsages()}
-                </div>
-              </div>
-            `
-          : null}
-      </temba-dialog>
-    `;
+    return renderDetailDialog(
+      {
+        title: field.label,
+        actions: this.detail
+          ? html`${this.detail.can_edit
+              ? html`<temba-icon
+                  class="star featured-toggle ${featured ? 'featured' : ''}"
+                  name=${featured ? Icon.featured_filled : Icon.featured}
+                  size="1.3"
+                  clickable
+                  role="button"
+                  tabindex="0"
+                  title=${featured ? msg('Featured') : msg('Not featured')}
+                  aria-label=${featured
+                    ? msg(str`Unfeature ${field.label}`)
+                    : msg(str`Feature ${field.label}`)}
+                  @click=${this.handleToggleFeatured}
+                  @keydown=${(e: KeyboardEvent) =>
+                    this.handleActivationKey(e, () =>
+                      this.handleToggleFeatured()
+                    )}
+                ></temba-icon>`
+              : null}${this.detail.can_edit
+              ? renderDetailButton('Edit', () => this.handleEditClicked())
+              : null}${this.detail.can_delete
+              ? renderDetailButton(
+                  'Delete',
+                  () => this.handleDeleteClicked(),
+                  true
+                )
+              : null}`
+          : null,
+        body: html`
+          <div class="detail-meta">
+            <div class="expression">@fields.${field.key}</div>
+            <div>${typeName(field)}</div>
+          </div>
+          ${this.renderUsages()}
+        `
+      },
+      this.handleDetailClosed
+    );
   }
 
   public render(): TemplateResult {

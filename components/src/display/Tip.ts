@@ -26,6 +26,15 @@ export class Tip extends RapidElement {
         z-index: 2147483647;
         color: #333;
         white-space: nowrap;
+        /* a tip reads the same wherever it's anchored, rather than taking on
+           the text styles of whatever it's in, e.g. an uppercase heading */
+        font-weight: normal;
+        font-style: normal;
+        text-transform: none;
+        letter-spacing: normal;
+        line-height: normal;
+        text-align: left;
+        text-decoration: none;
       }
 
       .tip kbd {

@@ -1049,13 +1049,20 @@ export class Store extends RapidElement {
                       break;
                     }
                   }
-                  if (value && value.email === user.email) {
-                    // only care about avatars for now
+                  // users from the api have an email, from socket events
+                  // a uuid - either identifies them
+                  if (
+                    value &&
+                    ((value.email && value.email === user.email) ||
+                      (value.uuid && value.uuid === user.uuid))
+                  ) {
                     const orginalUser = last[parts[parts.length - 1]];
                     orginalUser.avatar = user.avatar;
                     orginalUser.name = getFullName(user);
                     orginalUser.uuid = user.uuid;
-                    last[parts[parts.length - 1]].avatar = user.avatar;
+                    orginalUser.email = user.email;
+                    orginalUser.first_name = user.first_name;
+                    orginalUser.last_name = user.last_name;
                   }
                 });
               });
@@ -1069,7 +1076,7 @@ export class Store extends RapidElement {
 
   public makeRequest(
     url: string,
-    options?: { force?: boolean; prepareData?: (data: any) => any }
+    options: { force?: boolean; prepareData?: (data: any) => any } = {}
   ) {
     const previousRequest = this.fetching[url];
     const now = new Date().getTime();
@@ -1086,7 +1093,6 @@ export class Store extends RapidElement {
       cached = options.prepareData ? options.prepareData(cached) : cached;
       this.fireCustomEvent(CustomEventType.StoreUpdated, { url, data: cached });
     } else {
-      options = options || {};
       this.fetching[url] = now;
       fetchResults(url).then((data) => {
         if (!data) {
@@ -1107,8 +1113,6 @@ export class Store extends RapidElement {
 
   public set(key: string, value: string) {
     this.settings[key] = value;
-    // not sure yet if we really want to perist these
-    // setCookie(COOKIE_KEYS.SETTINGS, JSON.stringify(this.settings), '/');
   }
 
   public render() {

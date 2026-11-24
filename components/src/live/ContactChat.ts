@@ -18,11 +18,9 @@ import {
 } from '../interfaces';
 import {
   formatCount,
-  fetchResults,
   generateUUIDv7,
   getUrl,
   postJSON,
-  postUrl,
   WebResponse
 } from '../utils';
 import { ContactStoreElement } from './ContactStoreElement';
@@ -36,7 +34,7 @@ import {
   TypingEvent as RenderedTypingEvent
 } from '../display/Chat';
 import { DEFAULT_AVATAR } from '../webchat/assets';
-import { UserSelect } from '../form/select/UserSelect';
+import { UserPicker } from '../form/UserPicker';
 import { Select } from '../form/select/Select';
 import {
   Events,
@@ -106,9 +104,10 @@ export class ContactChat extends ContactStoreElement {
         flex-direction: column;
         min-height: 0;
         background: var(--surface);
-        border: 1px solid var(--border-strong);
-        border-radius: var(--r-sm);
-        box-shadow: var(--shadow-2);
+        /* inside a card layout's header frame, the frame draws these */
+        border: var(--framed-border, 1px solid var(--border-strong));
+        border-radius: var(--framed-radius, var(--r-lg));
+        box-shadow: var(--framed-shadow, var(--shadow-2));
         overflow: hidden;
       }
 
@@ -182,14 +181,6 @@ export class ContactChat extends ContactStoreElement {
 
       temba-button {
         margin: 0.1em 0.25em;
-      }
-
-      temba-completion {
-        --widget-box-shadow: none;
-        --color-widget-border: transparent;
-        --widget-box-shadow-focused: none;
-        --color-focus: transparent;
-        --color-widget-bg-focused: transparent;
       }
 
       .error-gutter {
@@ -278,10 +269,13 @@ export class ContactChat extends ContactStoreElement {
         align-items: center;
         gap: 6px;
         padding: 4px 12px;
-        margin-bottom: var(--layout-spacing, 8px);
+        /* inside a framed card it keeps off the frame's edges - outside one
+           it sits flush above the chat card */
+        margin: var(--framed-inset, 0) var(--framed-inset, 0)
+          var(--layout-spacing, 8px);
         background: var(--surface);
         border: 1px solid var(--border-strong);
-        border-radius: var(--r-sm);
+        border-radius: var(--r-lg);
         box-shadow: var(--shadow-2);
         color: var(--text-3);
         font-family: var(--font);
@@ -560,24 +554,54 @@ export class ContactChat extends ContactStoreElement {
         }
       }
 
+      /* The row's width never comes from what it holds: inline-size
+         containment keeps a long topic or assignee name from widening
+         the chat, so the view is the same size whichever ticket is
+         open. The assignee and topic split the space from a zero basis
+         and ellipsize as the row narrows, and the Close / Reopen button
+         never shrinks, so it can't be pushed out of view. */
       .ticket-controls {
         padding: 8px;
-        text-align: center;
+        gap: 0.5em;
         align-items: center;
         display: flex;
         border-top: 1px solid #ddd;
+        contain: inline-size;
       }
 
-      /* Keep the assignment + topic controls the same height as the
-         Close button so the row reads as one strip. Shrink the user
-         avatars (--temba-scale) so they fit in the smaller box. */
-      .ticket-controls temba-user-select,
+      .ticket-controls temba-user-picker,
       .ticket-controls temba-select {
-        --temba-select-min-height: 28px;
+        flex: 1 1 0;
+        width: 0;
+        min-width: 3em;
       }
 
-      .ticket-controls temba-user-select {
-        --temba-scale: 0.75;
+      .ticket-controls temba-button {
+        flex-shrink: 0;
+      }
+
+      /* the row's controls all stand 32px tall, the height the assignee
+         picker's avatar needs, so it reads as one strip - the select's
+         height doesn't count its 1px border */
+      .ticket-controls temba-select {
+        --temba-select-min-height: 30px;
+      }
+
+      /* the assignee picker, the same one that heads the ticket list, sized
+         down to the strip - a 22px avatar (its 26px circle at 0.85) and the
+         row's own type - and boxed like the topic select beside it */
+      .ticket-controls temba-user-picker {
+        max-width: 220px;
+        --user-picker-font-size: 13px;
+        --user-picker-font-weight: var(--w-medium, 500);
+        --user-picker-avatar-size: 22px;
+        --user-picker-avatar-scale: 0.85;
+        --user-picker-gap: 6px;
+        --user-picker-inset: 4px;
+        --user-picker-min-height: 32px;
+        --user-picker-bg: var(--color-widget-bg, #fff);
+        --user-picker-hover-bg: var(--color-widget-bg-focused, #fff);
+        --user-picker-border: 1px solid var(--color-widget-border);
       }
 
       temba-user {
@@ -599,12 +623,19 @@ export class ContactChat extends ContactStoreElement {
         margin: 0.25em;
       }
 
-      temba-user-select {
-        width: 250px;
-      }
-
       temba-button {
         --button-border: 1px solid #ddd;
+      }
+
+      /* close and reopen sit at the height, type and corners of the row's
+         other controls */
+      .ticket-controls temba-button {
+        /* a button's edge is a 1px ring outside its box, so 30px reads as
+           32px beside the bordered select */
+        --button-small-height: 30px;
+        --button-small-x-pad: 12px;
+        --button-small-font-size: 13px;
+        --button-small-radius: var(--r, 8px);
       }
     `;
   }
@@ -865,6 +896,8 @@ export class ContactChat extends ContactStoreElement {
     if (!this.currentContact) {
       return;
     }
+
+    this.applyTicketEvents([event]);
 
     // ephemeral contact state updates - they don't touch the history view
     // so they apply even while searching
@@ -1779,6 +1812,9 @@ export class ContactChat extends ContactStoreElement {
             return;
           }
 
+          // pages come newest first, ticket changes apply oldest first
+          this.applyTicketEvents([...(page.events || [])].reverse());
+
           const messages = this.createMessages(page);
           messages.reverse();
           chat.addMessages(messages, null, true);
@@ -1915,11 +1951,7 @@ export class ContactChat extends ContactStoreElement {
       } else {
         if (!this.currentTicket.closed_on) {
           // hide compose if agent can't reply to unassigned tickets
-          if (
-            this.disableReply &&
-            (!this.currentTicket.assignee ||
-              this.currentTicket.assignee.email !== this.agent)
-          ) {
+          if (this.disableReply && !this.isAgent(this.currentTicket.assignee)) {
             return null;
           }
           //chatbox for active contacts with an open ticket
@@ -1966,11 +1998,8 @@ export class ContactChat extends ContactStoreElement {
   }
 
   private handleAssignmentChanged(evt: CustomEvent) {
-    const users = evt.currentTarget as UserSelect;
-    const assignee = users.values[0];
-
-    this.assignTicket(assignee ? assignee.email : null);
-    users.blur();
+    const picker = evt.currentTarget as UserPicker;
+    this.assignTicket(picker.selected ? picker.selected.email : null);
   }
 
   private handleTopicChanged(evt: CustomEvent) {
@@ -1982,13 +2011,9 @@ export class ContactChat extends ContactStoreElement {
         tickets: [this.currentTicket.uuid],
         action: 'change_topic',
         topic: topic.uuid
-      })
-        .then(() => {
-          this.refreshTicket();
-        })
-        .catch((response: any) => {
-          console.error(response);
-        });
+      }).catch((response: any) => {
+        console.error(response);
+      });
     }
   }
 
@@ -2000,7 +2025,9 @@ export class ContactChat extends ContactStoreElement {
     // if its already assigned to use, it's a noop
     if (
       (this.currentTicket.assignee &&
-        this.currentTicket.assignee.email === email) ||
+        (this.currentTicket.assignee.email === email ||
+          (email === this.agent &&
+            this.isAgent(this.currentTicket.assignee)))) ||
       (this.currentTicket.assignee === null && email === null)
     ) {
       return;
@@ -2010,29 +2037,94 @@ export class ContactChat extends ContactStoreElement {
       tickets: [this.currentTicket.uuid],
       action: 'assign',
       assignee: email
-    })
-      .then(() => {
-        this.refreshTicket();
-      })
-      .catch((response: any) => {
-        console.error(response);
-      });
+    }).catch((response: any) => {
+      console.error(response);
+    });
     return true;
   }
 
-  public refreshTicket() {
-    if (this.currentTicket) {
-      fetchResults(`/api/v2/tickets.json?uuid=${this.currentTicket.uuid}`).then(
-        (values) => {
-          if (values.length > 0) {
-            this.fireCustomEvent(CustomEventType.TicketUpdated, {
-              ticket: values[0],
-              previous: this.currentTicket
-            });
-            this.currentTicket = values[0];
+  // whether the given user is us
+  private isAgent(user: { uuid?: string; email?: string }): boolean {
+    return (
+      !!user &&
+      ((!!user.uuid && user.uuid === this.userUuid) ||
+        (!!user.email && user.email === this.agent))
+    );
+  }
+
+  /**
+   * Keeps the current ticket in step with changes made to it, by us or by
+   * anyone else, as they arrive over its sockets - or in the history fetched
+   * to catch up after a dropped connection. Our own ticket actions rely on
+   * this too, rather than re-reading the ticket after making them.
+   */
+  private applyTicketEvents(events: any[]) {
+    const previous = this.currentTicket;
+    if (!previous || !events?.length) {
+      return;
+    }
+
+    let ticket = previous;
+    let changed = false;
+
+    for (const event of events) {
+      if ((event.ticket_uuid || event.ticket?.uuid) !== ticket.uuid) {
+        continue;
+      }
+
+      switch (event.type) {
+        case Events.TICKET_ASSIGNEE_CHANGED: {
+          const assignee = event.assignee || null;
+          const current = ticket.assignee || null;
+          if (assignee?.uuid !== current?.uuid || (!assignee && current)) {
+            // a socket event names a user by uuid, which our copy may not
+            // have yet if it came from the api - keep what we know of them
+            const same = current && assignee && current.uuid === assignee.uuid;
+            ticket = {
+              ...ticket,
+              assignee: assignee
+                ? {
+                    ...(same ? current : {}),
+                    uuid: assignee.uuid,
+                    name: assignee.name
+                  }
+                : null
+            };
+            changed = true;
           }
+          break;
         }
-      );
+        case Events.TICKET_TOPIC_CHANGED:
+          if (event.topic && event.topic.uuid !== ticket.topic?.uuid) {
+            ticket = { ...ticket, topic: event.topic };
+            changed = true;
+          }
+          break;
+        case Events.TICKET_CLOSED:
+          if (!ticket.closed_on) {
+            ticket = {
+              ...ticket,
+              status: 'closed',
+              closed_on: event.created_on
+            };
+            changed = true;
+          }
+          break;
+        case Events.TICKET_REOPENED:
+          if (ticket.closed_on) {
+            ticket = { ...ticket, status: 'open', closed_on: null };
+            changed = true;
+          }
+          break;
+      }
+    }
+
+    if (changed) {
+      this.currentTicket = ticket;
+      this.fireCustomEvent(CustomEventType.TicketUpdated, {
+        ticket,
+        previous
+      });
     }
   }
 
@@ -2041,13 +2133,9 @@ export class ContactChat extends ContactStoreElement {
     postJSON(`/api/v2/ticket_actions.json`, {
       tickets: [uuid],
       action: 'reopen'
-    })
-      .then(() => {
-        this.refreshTicket();
-      })
-      .catch((response: any) => {
-        console.error(response);
-      });
+    }).catch((response: any) => {
+      console.error(response);
+    });
   }
 
   private handleClose() {
@@ -2055,13 +2143,9 @@ export class ContactChat extends ContactStoreElement {
     postJSON(`/api/v2/ticket_actions.json`, {
       tickets: [uuid],
       action: 'close'
-    })
-      .then(() => {
-        this.refreshTicket();
-      })
-      .catch((response: any) => {
-        console.error(response);
-      });
+    }).catch((response: any) => {
+      console.error(response);
+    });
   }
 
   /** The search bar rendered above the chat card while searching —
@@ -2183,20 +2267,18 @@ export class ContactChat extends ContactStoreElement {
                 ? html`<div class="status-area">
                     ${inTicket
                       ? html`<div class="ticket-controls">
-                          <temba-user-select
-                            placeholder="Assign to.."
-                            searchable
-                            searchOnFocus
-                            clearable
-                            .values=${this.currentTicket.assignee
-                              ? [this.currentTicket.assignee]
-                              : []}
+                          <temba-user-picker
+                            all-label=${msg('Unassigned')}
+                            all-icon=${Icon.contact}
+                            up
+                            value=${this.currentTicket.assignee?.uuid ||
+                            this.currentTicket.assignee?.email ||
+                            ''}
                             @change=${this.handleAssignmentChanged}
                             ?disabled=${ticketClosed || this.disableAssign}
-                          ></temba-user-select>
+                          ></temba-user-picker>
 
                           <temba-select
-                            style="margin:0 0.5em; flex-grow:1"
                             endpoint="/api/v2/topics.json"
                             searchable
                             valuekey="uuid"
@@ -2208,14 +2290,16 @@ export class ContactChat extends ContactStoreElement {
                           ${this.currentTicket.closed_on
                             ? html`
                                 <temba-button
-                                  name="Reopen"
+                                  name=${msg('Reopen')}
+                                  small
                                   @click=${this.handleReopen}
                                 ></temba-button>
                               `
                             : html`
                                 <temba-button
-                                  name="Close"
+                                  name=${msg('Close')}
                                   destructive
+                                  small
                                   @click=${this.handleClose}
                                 ></temba-button>
                               `}
@@ -2264,22 +2348,6 @@ export class ContactChat extends ContactStoreElement {
       </div>`;
   }
 }
-export const closeTicket = (uuid: string): Promise<WebResponse> => {
-  const formData = new FormData();
-  formData.append('status', 'C');
-  return postUrl(`/ticket/update/${uuid}/?_format=json`, formData);
-};
-export const fetchContact = (endpoint: string): Promise<Contact> => {
-  return new Promise<Contact>((resolve, reject) => {
-    fetchResults(endpoint).then((contacts: Contact[]) => {
-      if (contacts && contacts.length === 1) {
-        resolve(contacts[0]);
-      } else {
-        reject('No contact found');
-      }
-    });
-  });
-};
 export const fetchContactHistory = (
   endpoint: string,
   ticket: string = undefined,

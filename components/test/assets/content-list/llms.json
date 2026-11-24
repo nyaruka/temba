@@ -1,0 +1,32 @@
+{
+  "paged_by": "page",
+  "count": 3,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "uuid": "a7f2b2c1-6a3e-4d5f-9b1e-1c3d5e7f9a01",
+      "name": "Flow Assistant",
+      "type": "openai",
+      "icon": "ai_openai",
+      "model": "gpt-5.4-mini",
+      "usages": 12
+    },
+    {
+      "uuid": "b8e3c3d2-7b4f-4e6a-8c2f-2d4e6f8a0b02",
+      "name": "Support Classifier",
+      "type": "openai_azure",
+      "icon": "ai_microsoft",
+      "model": "gpt-35-turbo",
+      "usages": 1
+    },
+    {
+      "uuid": "c9f4d4e3-8c5a-4f7b-9d3a-3e5f7a9b1c03",
+      "name": "Translation Assistant",
+      "type": "openai",
+      "icon": "ai_openai",
+      "model": "gpt-5.4",
+      "usages": 0
+    }
+  ]
+}

@@ -383,7 +383,7 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # test ivr flow creation
         self.channel.role = "SRCA"
-        self.channel.save()
+        self.channel.save(update_fields=("role",))
 
         response = self.client.post(
             create_url,
@@ -669,7 +669,7 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # create a flow with ongoing runs
         flow4 = self.create_flow("Flow 4")
-        flow4.counts.create(scope=f"status:{FlowRun.STATUS_WAITING}", count=10)
+        flow4.tallies.create(scope=f"status:{FlowRun.STATUS_WAITING}", count=10)
 
         # try to archive flow with ongoing runs
         response = self.client.post(list_url, {"action": "archive", "objects": str(flow4.uuid)})
@@ -1366,12 +1366,12 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # change our channel to use a whatsapp scheme
         self.channel.schemes = [URN.WHATSAPP_SCHEME]
-        self.channel.save()
+        self.channel.save(update_fields=("schemes",))
         assert_features({"auto_translate", "messaging", "whatsapp", "airtime", "resthook"})
 
         # change our channel to use a facebook scheme
         self.channel.schemes = [URN.FACEBOOK_SCHEME]
-        self.channel.save()
+        self.channel.save(update_fields=("schemes",))
         assert_features({"auto_translate", "messaging", "airtime", "resthook"})
 
         self.setUpLocations()
@@ -1381,12 +1381,17 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         # make our channel one that can also make and answer calls
         self.channel.schemes = [URN.TEL_SCHEME]
         self.channel.role = "SRCA"
-        self.channel.save()
+        self.channel.save(
+            update_fields=(
+                "schemes",
+                "role",
+            )
+        )
         assert_features({"auto_translate", "messaging", "ivr", "airtime", "resthook", "locations"})
 
         # or make it receive only
         self.channel.role = "R"
-        self.channel.save()
+        self.channel.save(update_fields=("role",))
         assert_features({"auto_translate", "airtime", "resthook", "locations"})
 
         # configure SMTP for flow emails
@@ -1437,7 +1442,12 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         # change our channel to use a whatsapp scheme
         self.channel.schemes = [URN.WHATSAPP_SCHEME]
         self.channel.channel_type = "TWA"
-        self.channel.save()
+        self.channel.save(
+            update_fields=(
+                "schemes",
+                "channel_type",
+            )
+        )
 
         mr_mocks.flow_start_preview(query="age > 30", total=2)
         response = self.client.post(
@@ -1452,7 +1462,7 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(response.json()["warnings"], [])
 
         self.channel.channel_type = "WAC"
-        self.channel.save()
+        self.channel.save(update_fields=("channel_type",))
 
         # clear dependencies, this will cause our flow to look like it isn't using templates
         flow.info["dependencies"] = []
@@ -1717,8 +1727,8 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertNotIn("current_flow", attrs)
 
         # if the contact is in a flow, that's passed to the widget so it can ask for confirmation
-        contact.current_flow = current
-        contact.save(update_fields=("current_flow",))
+        contact.current_flow_uuid = current.uuid
+        contact.save(update_fields=("current_flow_uuid",))
 
         response = self.assertUpdateFetch(start_url, [self.admin], form_fields=["flow", "contact_search"])
         attrs = response.context["form"].fields["contact_search"].widget.attrs
@@ -1989,18 +1999,18 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         # with run data
         from temba.flows.models import FlowRun
 
-        flow1.counts.create(scope=f"status:{FlowRun.STATUS_ACTIVE}", count=5)
-        flow1.counts.create(scope=f"status:{FlowRun.STATUS_COMPLETED}", count=3)
-        flow1.counts.create(scope=f"status:{FlowRun.STATUS_EXPIRED}", count=1)
+        flow1.tallies.create(scope=f"status:{FlowRun.STATUS_ACTIVE}", count=5)
+        flow1.tallies.create(scope=f"status:{FlowRun.STATUS_COMPLETED}", count=3)
+        flow1.tallies.create(scope=f"status:{FlowRun.STATUS_EXPIRED}", count=1)
 
         response = self.requestView(progress_url, self.admin)
         resp_data = response.json()["data"]
         self.assertEqual([5, 3, 1, 0], resp_data["datasets"][0]["data"])
 
         # test additional status types for complete coverage
-        flow1.counts.create(scope=f"status:{FlowRun.STATUS_WAITING}", count=2)
-        flow1.counts.create(scope=f"status:{FlowRun.STATUS_FAILED}", count=1)
-        flow1.counts.create(scope=f"status:{FlowRun.STATUS_INTERRUPTED}", count=3)
+        flow1.tallies.create(scope=f"status:{FlowRun.STATUS_WAITING}", count=2)
+        flow1.tallies.create(scope=f"status:{FlowRun.STATUS_FAILED}", count=1)
+        flow1.tallies.create(scope=f"status:{FlowRun.STATUS_INTERRUPTED}", count=3)
 
         response = self.requestView(progress_url, self.admin)
         resp_data = response.json()["data"]
@@ -2578,7 +2588,7 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertNotContains(response, '<input type="submit"')
 
         # add some waiting contacts
-        flow.counts.create(scope=f"status:{FlowRun.STATUS_WAITING}", count=15)
+        flow.tallies.create(scope=f"status:{FlowRun.STATUS_WAITING}", count=15)
 
         # fetch should now show the count
         response = self.assertUpdateFetch(interrupt_url, [self.admin], form_fields=("archive",))
@@ -2611,7 +2621,7 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # create a new flow used by a campaign
         campaign_flow = self.create_flow("Campaign Flow")
-        campaign_flow.counts.create(scope=f"status:{FlowRun.STATUS_WAITING}", count=10)
+        campaign_flow.tallies.create(scope=f"status:{FlowRun.STATUS_WAITING}", count=10)
         group = self.create_group("Reporters", contacts=[])
         campaign = Campaign.create(self.org, self.admin, "Reminders", group)
         registered = self.create_field("registered", "Registered", value_type="D")
@@ -2639,7 +2649,7 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         # test blocking when an interruption is already in progress
         r = get_valkey_connection()
         in_progress_flow = self.create_flow("In Progress Flow")
-        in_progress_flow.counts.create(scope=f"status:{FlowRun.STATUS_WAITING}", count=5)
+        in_progress_flow.tallies.create(scope=f"status:{FlowRun.STATUS_WAITING}", count=5)
         in_progress_url = reverse("flows.flow_interrupt", args=[in_progress_flow.uuid])
 
         # set the redis key to indicate an interruption is in progress

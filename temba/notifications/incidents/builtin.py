@@ -1,5 +1,3 @@
-from datetime import timedelta
-
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
@@ -32,61 +30,6 @@ class ChannelOutdatedAppIncidentType(IncidentType):
 
     slug = "channel:outdated_app"
     title = _("Channel Android App Outdated")
-
-
-class OrgFlaggedIncidentType(IncidentType):
-    """
-    Org has been flagged due to suspicious activity.
-    """
-
-    slug = "org:flagged"
-    title = _("Workspace Flagged")
-    email_required = True
-
-    @classmethod
-    def get_or_create(cls, org):
-        """
-        Creates a flagged incident if one is not already ongoing
-        """
-        return Incident.get_or_create(org, cls.slug, scope="")
-
-
-class OrgRestrictedIncidentType(IncidentType):
-    """
-    Org has been restricted and will be suspended unless the restriction is lifted.
-    """
-
-    slug = "org:restricted"
-    title = _("Workspace Restricted")
-    email_required = True
-    reminders = (timedelta(days=7), timedelta(days=2))
-
-    @classmethod
-    def get_or_create(cls, org):
-        """
-        Creates a restricted incident if one is not already ongoing
-        """
-        return Incident.get_or_create(org, cls.slug, scope="")
-
-    def get_deadline(self, incident):
-        return incident.org.suspends_on
-
-
-class OrgSuspendedIncidentType(IncidentType):
-    """
-    Org has been suspended.
-    """
-
-    slug = "org:suspended"
-    title = _("Workspace Suspended")
-    email_required = True
-
-    @classmethod
-    def get_or_create(cls, org):
-        """
-        Creates a suspended incident if one is not already ongoing
-        """
-        return Incident.get_or_create(org, cls.slug, scope="")
 
 
 class WebhooksUnhealthyIncidentType(IncidentType):

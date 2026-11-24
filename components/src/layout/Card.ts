@@ -38,9 +38,12 @@ export class Card extends RapidElement {
          border-color) can't override it. */
       .frame {
         background: var(--card-bg, var(--surface));
-        border: 1px solid var(--card-border, var(--border-strong));
-        border-radius: var(--r-sm);
-        box-shadow: var(--shadow-2);
+        border: var(
+          --framed-border,
+          1px solid var(--card-border, var(--border-strong))
+        );
+        border-radius: var(--framed-radius, var(--r-lg));
+        box-shadow: var(--framed-shadow, var(--shadow-2));
       }
 
       /* note variant — the sticky-note surface, header included */
@@ -55,7 +58,7 @@ export class Card extends RapidElement {
         padding: 8px 10px;
         cursor: pointer;
         user-select: none;
-        border-radius: var(--r-sm);
+        border-radius: var(--r-lg);
       }
 
       .card-header temba-icon {
@@ -179,7 +182,7 @@ export class Card extends RapidElement {
 
       :host([bleed]) .body:not(.collapsed):not(.animating) .inner {
         overflow: hidden;
-        border-radius: 0 0 var(--r-sm) var(--r-sm);
+        border-radius: 0 0 var(--r-lg) var(--r-lg);
       }
 
       /* plain mode: headerless and non-collapsible — the wrapper (e.g. a
@@ -206,7 +209,7 @@ export class Card extends RapidElement {
       }
 
       :host([plain]) .inner {
-        border-radius: var(--r-sm);
+        border-radius: var(--framed-radius, var(--r-lg));
       }
 
       :host([plain]) .content {

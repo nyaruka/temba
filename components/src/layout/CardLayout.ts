@@ -1,5 +1,5 @@
 import { css, html, TemplateResult } from 'lit';
-import { property } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import { RapidElement } from '../RapidElement';
 import { CustomEventType } from '../interfaces';
 import { getClasses, postJSON } from '../utils';
@@ -21,7 +21,9 @@ export interface CardSettings {
  * never disconnect, so their state (sockets, fetched data) survives switches.
  *
  * Panels are declared as slotted temba-cards with an id; the main view goes
- * in slot="main".
+ * in slot="main". Anything in slot="header" heads the main view: the two
+ * share one card, and in tab view that card takes in the tab strip and
+ * every tab's content too, so the header stays put whichever tab is open.
  *
  * The layout can persist card order, collapsed state and the chosen main
  * width itself: seed it with `settings` and point `settings-endpoint` at a
@@ -153,6 +155,49 @@ export class CardLayout extends RapidElement {
         margin-top: var(--layout-spacing, 8px);
         flex-grow: 1;
         min-height: 0;
+      }
+
+      /* without a header the frame stays out of the layout entirely */
+      .frame {
+        display: contents;
+      }
+
+      /* with one, it's the card the header and the main view (or, in tab
+         view, the tabs) share - what it holds drops its own chrome */
+      .frame.framed {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        min-height: 0;
+        background: var(--surface);
+        border: 1px solid var(--border-strong);
+        border-radius: var(--r-lg);
+        box-shadow: var(--shadow-2);
+        overflow: hidden;
+        --framed-border: none;
+        --framed-radius: 0;
+        --framed-shadow: none;
+        /* room for anything floating inside the frame, e.g. the chat's
+           search bar, to keep off its edges */
+        --framed-inset: 8px;
+      }
+
+      :host([narrow]) .frame.framed {
+        margin: var(--layout-spacing, 8px) 0;
+      }
+
+      .framed .frame-header {
+        flex-shrink: 0;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .framed temba-tabs {
+        margin-top: 0;
+      }
+
+      :host([narrow]) .framed slot::slotted(*) {
+        margin-top: 0;
+        margin-bottom: 0;
       }
     `;
   }
@@ -306,6 +351,10 @@ export class CardLayout extends RapidElement {
 
   @property({ type: Boolean, reflect: true })
   narrow = false;
+
+  // whether anything is slotted into the header
+  @state()
+  private hasHeader = false;
 
   // in tab view, drop tab labels (icons only, selected keeps its name)
   // once the pane is too tight to show them all
@@ -643,6 +692,22 @@ export class CardLayout extends RapidElement {
     });
   }
 
+  private handleHeaderSlotChange(event: Event) {
+    this.hasHeader =
+      (event.target as HTMLSlotElement).assignedElements().length > 0;
+  }
+
+  private renderFrame(content: TemplateResult): TemplateResult {
+    return html`
+      <div class=${getClasses({ frame: true, framed: this.hasHeader })}>
+        <div class="frame-header">
+          <slot name="header" @slotchange=${this.handleHeaderSlotChange}></slot>
+        </div>
+        ${content}
+      </div>
+    `;
+  }
+
   private handleSlotChange() {
     this.applyProjection();
     this.applyOrder();
@@ -792,23 +857,25 @@ export class CardLayout extends RapidElement {
   public render(): TemplateResult {
     if (this.narrow) {
       return html`
-        <temba-tabs .focusedName=${this.compactTabs}>
-          <temba-tab name=${this.mainName} icon=${this.mainIcon}>
-            <slot name="main"></slot>
-          </temba-tab>
-          ${this.getCards().map(
-            (card) => html`
-              <temba-tab
-                name=${card.label}
-                icon=${card.icon}
-                count=${card.count}
-                ?activity=${card.activity}
-              >
-                <slot name="panel-${card.id}"></slot>
-              </temba-tab>
-            `
-          )}
-        </temba-tabs>
+        ${this.renderFrame(
+          html`<temba-tabs .focusedName=${this.compactTabs}>
+            <temba-tab name=${this.mainName} icon=${this.mainIcon}>
+              <slot name="main"></slot>
+            </temba-tab>
+            ${this.getCards().map(
+              (card) => html`
+                <temba-tab
+                  name=${card.label}
+                  icon=${card.icon}
+                  count=${card.count}
+                  ?activity=${card.activity}
+                >
+                  <slot name="panel-${card.id}"></slot>
+                </temba-tab>
+              `
+            )}
+          </temba-tabs>`
+        )}
         ${this.renderResizeHandle(true)}
       `;
     }
@@ -816,7 +883,7 @@ export class CardLayout extends RapidElement {
     return html`
       <div class="body">
         <div class="main">
-          <slot name="main"></slot>
+          ${this.renderFrame(html`<slot name="main"></slot>`)}
           ${this.renderResizeHandle()}
         </div>
         <div class="column">

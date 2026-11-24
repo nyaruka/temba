@@ -29,7 +29,7 @@ class ResthooksEndpointTest(APITest):
         resthook2 = Resthook.get_or_create(self.org, "new-father", self.admin)
         resthook3 = Resthook.get_or_create(self.org, "not-active", self.admin)
         resthook3.is_active = False
-        resthook3.save()
+        resthook3.save(update_fields=("is_active",))
 
         # create a resthook for another org
         other_org_resthook = Resthook.get_or_create(self.org2, "spam", self.admin2)

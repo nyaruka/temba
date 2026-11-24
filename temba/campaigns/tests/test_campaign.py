@@ -260,7 +260,7 @@ class CampaignTest(TembaTest):
 
         flow.archive(self.admin)
         campaign.is_archived = True
-        campaign.save()
+        campaign.save(update_fields=("is_archived",))
 
         self.assertTrue(campaign.is_archived)
         self.assertTrue(Flow.objects.filter(is_archived=True))

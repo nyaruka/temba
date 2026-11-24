@@ -13,7 +13,6 @@ from packaging.version import Version
 
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
-from django.contrib.postgres.indexes import OpClass
 from django.db import models, transaction
 from django.db.models import Prefetch, Q, Sum
 from django.db.models.functions import Lower
@@ -41,7 +40,7 @@ from temba.utils.models import (
     OrgAsset,
     delete_in_batches,
 )
-from temba.utils.models.counts import BaseScopedCount, BaseSquashableCount
+from temba.utils.models.counts import BaseSquashableCount
 from temba.utils.uuid import uuid4
 
 from . import legacy
@@ -562,12 +561,23 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         self.save(update_fields=("is_archived", "modified_by", "modified_on"))
 
     @classmethod
+    def _run_count_scopes(cls) -> list[str]:
+        return [f"status:{s}" for s, _ in FlowRun.STATUS_CHOICES]
+
+    @classmethod
     def prefetch_run_counts(cls, flows, *, using="default"):
         """
-        Prefetches the counts required by get_run_counts
+        Prefetches the counts required by get_run_counts. The using argument is ignored as tallies must be read from
+        the default database at the same moment as Valkey.
         """
 
-        FlowActivityCount.prefetch_by_scope(flows, prefix="status:", to_attr="_status_counts", using=using)
+        totals = FlowTally.get_totals_by_flow(flows, cls._run_count_scopes())
+        by_flow = defaultdict(dict)
+        for (flow_id, scope), count in totals.items():
+            by_flow[flow_id][scope] = count
+
+        for flow in flows:
+            flow._status_counts = by_flow[flow.id]
 
     def get_run_counts(self) -> dict[str, int]:
         """
@@ -577,7 +587,7 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         if hasattr(self, "_status_counts"):
             counts = self._status_counts
         else:
-            counts = self.counts.prefix("status:").scope_totals()
+            counts = FlowTally.get_totals(self, self._run_count_scopes())
 
         return defaultdict(int, {scope[7:]: count for scope, count in counts.items()})
 
@@ -1021,7 +1031,6 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
         self.topic_dependencies.clear()
         self.user_dependencies.clear()
 
-        self.counts.all().delete()
         self.tallies.all().delete()
 
         # call mailroom to interrupt sessions where contact is currently in this flow
@@ -1045,7 +1054,6 @@ class Flow(PublishedAssetMixin, LegacyIDMixin, OrgAsset, DependencyMixin):
 
         self.labels.clear()
 
-        delete_in_batches(self.counts.all())
         delete_in_batches(self.result_counts.all())
         delete_in_batches(self.tallies.all(), pk="pk")
 
@@ -1142,7 +1150,7 @@ class FlowRun(models.Model):
     id = models.BigAutoField(primary_key=True)
     uuid = models.UUIDField(unique=True, default=uuid4)
     org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="runs", db_index=False)
-    flow = models.ForeignKey(Flow, on_delete=models.PROTECT, related_name="runs")
+    flow = models.ForeignKey(Flow, on_delete=models.PROTECT, related_name="runs", db_index=False)
     status = models.CharField(max_length=1, choices=STATUS_CHOICES)
     session_uuid = models.UUIDField()
 
@@ -1358,44 +1366,6 @@ class FlowRevision(LegacyIDMixin, CreatedByMixin):
             "revision": self.revision,
             "changes": self.changes or {},
         }
-
-
-class FlowActivityCount(BaseScopedCount):
-    """
-    Flow-level counts of activity.
-    """
-
-    squash_over = ("flow_id", "scope")
-
-    flow = models.ForeignKey(Flow, on_delete=models.PROTECT, related_name="counts", db_index=False)  # indexed below
-
-    @classmethod
-    def prefetch_by_scope(cls, flows, *, prefix: str, to_attr: str, using: str):
-        counts = (
-            cls.objects.using(using)
-            .filter(flow__in=flows)
-            .prefix(prefix)
-            .values_list("flow_id", "scope")
-            .annotate(total=Sum("count"))
-        )
-        by_flow = defaultdict(dict)
-        for count in counts:
-            by_flow[count[0]][count[1]] = count[2]
-
-        for flow in flows:
-            setattr(flow, to_attr, by_flow[flow.id])
-
-    class Meta:
-        indexes = [
-            models.Index("flow", OpClass("scope", name="varchar_pattern_ops"), name="flowactivitycount_flow_scope"),
-            # for squashing task
-            models.Index(name="flowactivitycount_unsquashed", fields=("flow", "scope"), condition=Q(is_squashed=False)),
-        ]
-        constraints = [
-            models.UniqueConstraint(
-                name="flowactivitycount_squashed", fields=("flow", "scope"), condition=Q(is_squashed=True)
-            )
-        ]
 
 
 class FlowResultCount(BaseSquashableCount):
@@ -1752,7 +1722,7 @@ class FlowStart(LegacyIDMixin, CreatedByMixin, ModifiedByMixin):
     )
 
     uuid = models.UUIDField(unique=True, default=uuid4)
-    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="flow_starts")
+    org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="flow_starts", db_index=False)
     flow = models.ForeignKey(Flow, on_delete=models.PROTECT, related_name="starts")
     start_type = models.CharField(max_length=1, choices=TYPE_CHOICES)
     status = models.CharField(max_length=1, choices=STATUS_CHOICES, default=STATUS_PENDING)
@@ -1844,12 +1814,6 @@ class FlowStart(LegacyIDMixin, CreatedByMixin, ModifiedByMixin):
 
     class Meta:
         indexes = [
-            # used for the flow start log page
-            models.Index(
-                name="flows_flowstarts_org_created",
-                fields=["org", "-created_on"],
-                condition=Q(created_by__isnull=False),
-            ),
             # used by the flow_starts API endpoint
             models.Index(
                 name="flows_flowstarts_org_modified",

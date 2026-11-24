@@ -124,13 +124,13 @@ class ExternalTypeTest(TembaTest):
 
         # raw content type should be loaded on setting page as is
         channel.config[ExternalType.CONFIG_CONTENT_TYPE] = "application/x-www-form-urlencoded; charset=utf-8"
-        channel.save()
+        channel.save(update_fields=("config",))
 
         response = self.client.get(config_url)
         self.assertEqual(response.status_code, 200)
 
         channel.config[ExternalType.CONFIG_CONTENT_TYPE] = Channel.CONTENT_TYPE_XML
-        channel.save()
+        channel.save(update_fields=("config",))
 
         response = self.client.get(config_url)
         self.assertEqual(response.status_code, 200)

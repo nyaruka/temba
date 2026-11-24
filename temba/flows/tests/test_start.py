@@ -46,7 +46,7 @@ class FlowStartTest(TembaTest):
 
         start2 = FlowStart.create(flow, self.admin, contacts=[contact])
         start2.created_on = timezone.now() - timedelta(days=8)
-        start2.save()
+        start2.save(update_fields=("created_on",))
 
         self.assertEqual(f'<FlowStart: id={start2.id} flow="{start2.flow.uuid}">', repr(start2))
         self.assertEqual(FlowStart.STATUS_PENDING, start2.status)

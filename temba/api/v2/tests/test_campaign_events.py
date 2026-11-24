@@ -275,6 +275,8 @@ class CampaignEventsEndpointTest(APITest):
         )
 
         CampaignEvent.objects.filter(campaign=campaign1).update(status=CampaignEvent.STATUS_READY)
+        event1.refresh_from_db()
+        modified_on = event1.modified_on
 
         # update the message event to be a flow event (don't change scheduling)
         self.assertPost(
@@ -296,6 +298,7 @@ class CampaignEventsEndpointTest(APITest):
         self.assertEqual(event1.flow, flow)
         self.assertEqual(event1.status, "R")  # unchanged
         self.assertEqual(event1.fire_version, 1)  # unchanged
+        self.assertGreater(event1.modified_on, modified_on)
 
         # and update the flow event to be a message event (do change scheduling)
         self.assertPost(

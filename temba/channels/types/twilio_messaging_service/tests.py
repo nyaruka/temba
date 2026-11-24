@@ -126,7 +126,12 @@ class TwilioMessagingServiceTypeTest(TembaTest):
         tms_channel = self.org.channels.all().first()
         tms_channel.config = config
         tms_channel.channel_type = "TMS"
-        tms_channel.save()
+        tms_channel.save(
+            update_fields=(
+                "config",
+                "channel_type",
+            )
+        )
 
         update_url = reverse("channels.channel_update", args=[tms_channel.id])
 

@@ -169,6 +169,11 @@ export class Modax extends RapidElement {
   @property({ type: Boolean })
   disabled = false;
 
+  /** gives the primary button the destructive style, for an action that can't be undone - delete and interrupt
+   * endpoints get it without asking */
+  @property({ type: Boolean })
+  destructive = false;
+
   @property({ type: Array })
   buttons: DialogButton[] = [];
 
@@ -181,36 +186,18 @@ export class Modax extends RapidElement {
   @property({ type: Boolean })
   suspendSubmit = false;
 
-  @property({ type: Number })
-  originX: number | null = null;
-
-  @property({ type: Number })
-  originY: number | null = null;
-
   // private cancelToken: CancelTokenSource;
 
-  private handleSlotClicked(event: MouseEvent): void {
-    const el = event.currentTarget as Element;
-    if (el) {
-      const rect = el.getBoundingClientRect();
-      this.originX = rect.left + rect.width / 2;
-      this.originY = rect.top;
-    }
+  private handleSlotClicked(): void {
     this.open = true;
   }
 
   public willUpdate(changes: PropertyValues) {
     super.willUpdate(changes);
 
-    if (changes.has('open')) {
-      if (this.open) {
-        this.fetching = true;
-        this.body = this.getLoading();
-      } else if (changes.get('open') !== undefined) {
-        // open can get reflected into undefined, make sure we've been open before
-        this.originX = null;
-        this.originY = null;
-      }
+    if (changes.has('open') && this.open) {
+      this.fetching = true;
+      this.body = this.getLoading();
     }
   }
 
@@ -284,7 +271,11 @@ export class Modax extends RapidElement {
     ) as HTMLDivElement;
     if (wizard) {
       this.wizardStep = parseInt(wizard.dataset.step);
-      this.wizardStepCount = parseInt(wizard.dataset.steps);
+      // a wizard can opt out of the step indicator, e.g. when editing
+      this.wizardStepCount =
+        wizard.dataset.hideSteps !== undefined
+          ? 0
+          : parseInt(wizard.dataset.steps);
     }
 
     if (!this.noSubmit) {
@@ -505,9 +496,10 @@ export class Modax extends RapidElement {
 
   private isDestructive(): boolean {
     return (
-      this.endpoint &&
-      (this.endpoint.indexOf('delete') > -1 ||
-        this.endpoint.indexOf('interrupt') > -1)
+      this.destructive ||
+      (this.endpoint &&
+        (this.endpoint.indexOf('delete') > -1 ||
+          this.endpoint.indexOf('interrupt') > -1))
     );
   }
 
@@ -560,8 +552,6 @@ export class Modax extends RapidElement {
         ?destructive=${this.isDestructive()}
         ?noFocus=${true}
         ?disabled=${this.disabled}
-        .originX=${this.originX}
-        .originY=${this.originY}
         @temba-button-clicked=${this.handleDialogClick.bind(this)}
         @temba-dialog-hidden=${this.handleDialogHidden.bind(this)}
       >
@@ -573,8 +563,8 @@ export class Modax extends RapidElement {
         </div>
         <div class="scripts"></div>
         <div slot="gutter" class="gutter">
-          <div class="wizard-steps">${wizardStepBalls}</div>
           <div class="body-gutter"></div>
+          <div class="wizard-steps">${wizardStepBalls}</div>
           <slot name="gutter"></slot>
         </div>
       </temba-dialog>

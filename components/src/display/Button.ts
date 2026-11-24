@@ -74,7 +74,7 @@ export class Button extends LitElement {
         height: var(--button-small-height, 24px);
         padding: 0 var(--button-small-x-pad, 8px);
         font-size: var(--button-small-font-size, 12px);
-        border-radius: var(--r-sm, 6px);
+        border-radius: var(--button-small-radius, var(--r-sm, 6px));
       }
 
       /* solid accent fill with a faint top highlight, a darker ring and

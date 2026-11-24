@@ -54,10 +54,6 @@
   <source>Last seen <x id="0" equiv-text="${lastSeen.duration}"/></source>
   <target>Visto pela última vez <x id="0" equiv-text="${lastSeen.duration}"/></target>
 </trans-unit>
-<trans-unit id="s6dbbe2646b239ca5">
-  <source>Closed</source>
-  <target>Fechado</target>
-</trans-unit>
 <trans-unit id="sf7c0eba7c822e3d6">
   <source>Bold</source>
   <target>Negrito</target>
@@ -692,10 +688,6 @@
   <source>Featured</source>
   <target>Destacados</target>
 </trans-unit>
-<trans-unit id="sfa7fe0d8c2046111">
-  <source>Everything Else</source>
-  <target>Todo o resto</target>
-</trans-unit>
 <trans-unit id="scd576e61f93828d0">
   <source>Search tickets</source>
   <target>Pesquisar tickets</target>
@@ -989,10 +981,6 @@
 <trans-unit id="s88f171391e8d15c2">
   <source>No notifications</source>
   <target>Nenhuma notificação</target>
-</trans-unit>
-<trans-unit id="s2b8c3c32964c67ac">
-  <source>Your workspace was flagged, please contact support for assistance.</source>
-  <target>Sua área de trabalho foi sinalizada, entre em contato com o suporte para obter ajuda.</target>
 </trans-unit>
 <trans-unit id="sd78bda51c42187f3">
   <source>Your workspace was suspended, please contact support for assistance.</source>
@@ -2987,6 +2975,10 @@
   <source>Received</source>
   <target>Recebido</target>
 </trans-unit>
+<trans-unit id="s7c0f70928e0e1281">
+  <source>Last 14 days</source>
+  <target>Últimos 14 dias</target>
+</trans-unit>
 <trans-unit id="s77dede2335388812">
   <source>Very slow</source>
   <target>Muito lento</target>
@@ -3027,6 +3019,22 @@
   <source>Took <x id="0" equiv-text="${ms}"/> ms</source>
   <target>Levou <x id="0" equiv-text="${ms}"/> ms</target>
 </trans-unit>
+<trans-unit id="s215ad519258e9d97">
+  <source>now</source>
+  <target>agora</target>
+</trans-unit>
+<trans-unit id="scb6a9c1a1757adbc">
+  <source>You</source>
+  <target>Você</target>
+</trans-unit>
+<trans-unit id="s07f4431917564077">
+  <source>min</source>
+  <target>min</target>
+</trans-unit>
+<trans-unit id="sda4e07a2a78ec6cc">
+  <source>mins</source>
+  <target>min</target>
+</trans-unit>
 <trans-unit id="s90de00f3ed97da8e">
   <source>Channel log</source>
   <target>Registro do canal</target>
@@ -3042,6 +3050,46 @@
 <trans-unit id="s6f0051e23edafc17">
   <source>Your workspace was restricted, please contact support for assistance.</source>
   <target>Sua área de trabalho foi restrita, entre em contato com o suporte para obter ajuda.</target>
+</trans-unit>
+<trans-unit id="s8a49b21a2c9c0022">
+  <source>Unassigned</source>
+  <target>Sem responsável</target>
+</trans-unit>
+<trans-unit id="sd92f50233df5a438">
+  <source>Reopen</source>
+  <target>Reabrir</target>
+</trans-unit>
+<trans-unit id="s3a399d7ab592163d">
+  <source>Start flow</source>
+  <target>Iniciar fluxo</target>
+</trans-unit>
+<trans-unit id="sec75f123a54362a1">
+  <source>Export results</source>
+  <target>Exportar resultados</target>
+</trans-unit>
+<trans-unit id="s5590dbf7e425789d">
+  <source>Label</source>
+  <target>Rotular</target>
+</trans-unit>
+<trans-unit id="sa0ca791d0f13f0e5">
+  <source>Archive</source>
+  <target>Arquivar</target>
+</trans-unit>
+<trans-unit id="s5fef70747e3bb978">
+  <source>No models</source>
+  <target>Nenhum modelo</target>
+</trans-unit>
+<trans-unit id="sc630ac44b30e00a1">
+  <source>Usages</source>
+  <target>Usos</target>
+</trans-unit>
+<trans-unit id="s765b1489d4d2c442">
+  <source><x id="0" equiv-text="${count}"/> use</source>
+  <target><x id="0" equiv-text="${count}"/> uso</target>
+</trans-unit>
+<trans-unit id="sef881734a2235f43">
+  <source><x id="0" equiv-text="${count}"/> uses</source>
+  <target><x id="0" equiv-text="${count}"/> usos</target>
 </trans-unit>
 </body>
 </file>

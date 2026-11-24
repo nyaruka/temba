@@ -57,6 +57,9 @@ msgstr "Debe ser único."
 msgid "Artificial Intelligence"
 msgstr "Inteligencia artificial"
 
+msgid "Add Large Language Models (LLMs) to your workspace to unlock AI assisted features."
+msgstr "Añada modelos de lenguaje grandes (LLM) a su workspace para desbloquear funciones asistidas por IA."
+
 msgid "New Model"
 msgstr "Nuevo modelo"
 
@@ -65,6 +68,12 @@ msgstr "Crear"
 
 msgid "Save"
 msgstr "Guardar"
+
+msgid "Delete model"
+msgstr "Eliminar modelo"
+
+msgid "Delete Model"
+msgstr "Eliminar modelo"
 
 msgid "Your LLM model has been deleted."
 msgstr "Su modelo LLM ha sido eliminado."
@@ -352,6 +361,54 @@ msgstr "Dirección"
 
 msgid "Country"
 msgstr "País"
+
+msgid "Nothing has been received from the provider yet."
+msgstr "Aún no se ha recibido nada del proveedor."
+
+msgid "Disabled"
+msgstr "Deshabilitado"
+
+msgid "Won't send or receive messages until it's enabled."
+msgstr "No enviará ni recibirá mensajes hasta que se habilite."
+
+msgid "Paused"
+msgstr "Pausado"
+
+msgid "The provider isn't accepting messages."
+msgstr "El proveedor no está aceptando mensajes."
+
+msgid "Not syncing"
+msgstr "Sin sincronización"
+
+msgid "The phone hasn't synced for over an hour."
+msgstr "El teléfono no se ha sincronizado desde hace más de una hora."
+
+#, python-format
+msgid "%(percent)d%% of the %(count)s messages sent since %(date)s have failed."
+msgstr "El %(percent)d%% de los %(count)s mensajes enviados desde el %(date)s han fallado."
+
+#, python-format
+msgid "%(today_percent)d%% of the %(today_count)s messages sent today have failed, down from %(percent)d%% of the %(count)s sent since %(date)s."
+msgstr "El %(today_percent)d%% de los %(today_count)s mensajes enviados hoy ha fallado, frente al %(percent)d%% de los %(count)s enviados desde el %(date)s."
+
+#, python-format
+msgid "None of the %(today_count)s messages sent today have failed, after %(percent)d%% of the %(count)s sent since %(date)s did."
+msgstr "Ninguno de los %(today_count)s mensajes enviados hoy ha fallado, después de que fallara el %(percent)d%% de los %(count)s enviados desde el %(date)s."
+
+msgid "Recovering"
+msgstr "Recuperándose"
+
+msgid "Unhealthy"
+msgstr "Con problemas"
+
+msgid "Degraded"
+msgstr "Degradado"
+
+msgid "Waiting"
+msgstr "Esperando"
+
+msgid "Sending and receiving messages."
+msgstr "Enviando y recibiendo mensajes."
 
 msgid "Outgoing"
 msgstr "Saliente"
@@ -1799,6 +1856,19 @@ msgstr[0] "%(count)d en apelación"
 msgstr[1] "%(count)d en apelación"
 msgstr[2] "%(count)d en apelación"
 
+msgid "Very slow"
+msgstr "Muy lento"
+
+msgid "Slow"
+msgstr "Lento"
+
+#, python-format
+msgid "Sends %(count)d message a second, so a broadcast to 100k contacts takes about %(duration)s."
+msgid_plural "Sends %(count)d messages a second, so a broadcast to 100k contacts takes about %(duration)s."
+msgstr[0] "Envía %(count)d mensaje por segundo, así que una difusión a 100 mil contactos tarda aproximadamente %(duration)s."
+msgstr[1] "Envía %(count)d mensajes por segundo, así que una difusión a 100 mil contactos tarda aproximadamente %(duration)s."
+msgstr[2] "Envía %(count)d mensajes por segundo, así que una difusión a 100 mil contactos tarda aproximadamente %(duration)s."
+
 msgid "View setup"
 msgstr "Ver configuración"
 
@@ -1810,33 +1880,6 @@ msgstr "Ver sincronizaciones"
 
 msgid "See activity"
 msgstr "Ver actividad"
-
-msgid "Disabled"
-msgstr "Deshabilitado"
-
-msgid "Won't send or receive messages until it's enabled."
-msgstr "No enviará ni recibirá mensajes hasta que se habilite."
-
-msgid "Paused"
-msgstr "Pausado"
-
-msgid "The provider isn't accepting messages."
-msgstr "El proveedor no está aceptando mensajes."
-
-msgid "Not syncing"
-msgstr "Sin sincronización"
-
-msgid "The phone hasn't synced for over an hour."
-msgstr "El teléfono no se ha sincronizado desde hace más de una hora."
-
-msgid "Waiting"
-msgstr "Esperando"
-
-msgid "Nothing has been received from the provider yet."
-msgstr "Aún no se ha recibido nada del proveedor."
-
-msgid "Sending and receiving messages."
-msgstr "Enviando y recibiendo mensajes."
 
 msgid "Allows Messenger extensions on this domain, e.g. https://example.com."
 msgstr "Permite las extensiones de Messenger en este dominio, p. ej. https://example.com."
@@ -1854,6 +1897,12 @@ msgstr "Hace que el canal esté disponible para el envío. Los mensajes entrante
 #, python-format
 msgid "%s Channel"
 msgstr "%s Canal"
+
+msgid "Delete channel"
+msgstr "Eliminar canal"
+
+msgid "Delete Channel"
+msgstr "Eliminar canal"
 
 msgid "Channel Log"
 msgstr "Registro de Canales"
@@ -2946,30 +2995,18 @@ msgstr "Canal desconectado"
 msgid "Channel Android App Outdated"
 msgstr "Aplicación Android del canal desactualizada"
 
-msgid "Workspace Flagged"
-msgstr "Workspace marcado"
-
-msgid "Workspace Restricted"
-msgstr "Workspace restringido"
-
-msgid "Workspace Suspended"
-msgstr "Workspace suspendido"
-
 msgid "Webhooks Unhealthy"
 msgstr "Webhooks con problemas"
 
 msgid "WhatsApp Templates Sync Failed"
 msgstr "Error al sincronizar las plantillas de WhatsApp"
 
-#, python-format
-msgid "Your %s export is ready"
-msgstr "Su exportación de %s está lista"
-
 msgid "Incident"
 msgstr "Incidente"
 
-msgid "Reminder"
-msgstr "Recordatorio"
+#, python-format
+msgid "Your %s export is ready"
+msgstr "Su exportación de %s está lista"
 
 msgid "New user joined your workspace"
 msgstr "Un nuevo usuario se ha unido a su workspace"
@@ -3066,12 +3103,6 @@ msgstr "Este slug no está disponible"
 
 msgid "Whether this organization anonymizes the phone numbers of contacts within it"
 msgstr "Si esta organización anonimiza los números de teléfonos de sus contactos "
-
-msgid "Whether this organization is currently flagged."
-msgstr "Si esta organización está marcada actualmente."
-
-msgid "Whether this organization is currently suspended."
-msgstr "Si esta organización está actualmente suspendida."
 
 #, python-format
 msgid "[%(name)s] Invitation to join workspace"
@@ -3263,6 +3294,9 @@ msgstr "Como workspace secundario"
 
 msgid "As separate workspace"
 msgstr "Como workspace independiente"
+
+msgid "Child workspaces can't be created while this workspace is restricted or suspended."
+msgstr "No se pueden crear espacios de trabajo secundarios mientras este espacio de trabajo esté restringido o suspendido."
 
 msgid "Switch Workspaces"
 msgstr "Cambiar de workspace"
@@ -3465,17 +3499,14 @@ msgstr "Cree visualmente aplicaciones móviles escalables a nivel nacional en cu
 msgid "Edit Workspace"
 msgstr "Editar Workspace"
 
-msgid "Flag"
-msgstr "Bandera"
-
-msgid "Unflag"
-msgstr "Desmarcar"
-
 msgid "Restrict"
 msgstr "Restringir"
 
 msgid "Suspend"
 msgstr "Suspender"
+
+msgid "Unflag"
+msgstr "Desmarcar"
 
 msgid "Verify"
 msgstr "Verificar"
@@ -3577,6 +3608,12 @@ msgstr "Tickets sin asignar"
 msgid "All Tickets"
 msgstr "Todos los tickets"
 
+msgid "Delete topic"
+msgstr "Eliminar tema"
+
+msgid "Delete Topic"
+msgstr "Eliminar tema"
+
 msgid "New Team"
 msgstr "Nuevo equipo"
 
@@ -3598,11 +3635,12 @@ msgstr "Exportar sin procesar"
 msgid "Add Note"
 msgstr "Añadir nota"
 
-msgid "Edit Topic"
-msgstr "Editar tema"
-
-msgid "Delete Topic"
-msgstr "Eliminar tema"
+#, python-format
+msgid "%(count)s open ticket"
+msgid_plural "%(count)s open tickets"
+msgstr[0] "%(count)s ticket abierto"
+msgstr[1] "%(count)s de tickets abiertos"
+msgstr[2] "%(count)s tickets abiertos"
 
 msgid "Notes are never shown to the contact."
 msgstr "Las notas nunca se muestran al contacto."
@@ -3997,24 +4035,17 @@ msgstr "Debe verificar su correo electrónico antes de continuar. Le hemos envia
 msgid "If you haven't received the email, check your spam folder or contact support for assistance."
 msgstr "Si no ha recibido el correo electrónico, revise su carpeta de spam o póngase en contacto con el soporte para obtener ayuda."
 
-msgid "Update Model"
-msgstr "Actualizar modelo"
+msgid "Model limit reached"
+msgstr "Límite de modelos alcanzado"
 
-msgid "Delete Model"
-msgstr "Eliminar modelo"
-
-msgid "Add Large Language Models (LLMs) to your workspace to unlock AI assisted features."
-msgstr "Añada modelos de lenguaje grandes (LLM) a su workspace para desbloquear funciones asistidas por IA."
-
-#, python-format
-msgid "%(counter)s use"
-msgid_plural "%(counter)s uses"
-msgstr[0] "%(counter)s uso"
-msgstr[1] "%(counter)s usos"
-msgstr[2] "%(counter)s usos"
+msgid "Remove a model before adding another one."
+msgstr "Elimine un modelo antes de agregar otro."
 
 msgid "No models yet"
 msgstr "Aún no hay modelos"
+
+msgid "Update Model"
+msgstr "Actualizar modelo"
 
 msgid "Contact"
 msgstr "Contacto"
@@ -4271,6 +4302,19 @@ msgstr "No hay canales"
 msgid "No logs in the last 7 days."
 msgstr "No hay registros en los últimos 7 días."
 
+msgid "Showing these logs unredacted."
+msgstr "Mostrando estos registros sin censurar."
+
+msgid "These logs are redacted as this workspace is anonymous."
+msgstr "Estos registros están censurados porque este workspace es anónimo."
+
+msgctxt "button to hide contact details in logs again"
+msgid "Redact"
+msgstr "Censurar"
+
+msgid "Show unredacted"
+msgstr "Mostrar sin censurar"
+
 msgid "Incoming message from"
 msgstr "Mensaje entrante de"
 
@@ -4298,6 +4342,17 @@ msgstr "El teléfono no se ha sincronizado desde hace %(since)s"
 
 msgid "Messages won't be sent or received until it does. Check that it's on and connected to the internet."
 msgstr "No se enviarán ni recibirán mensajes hasta que lo haga. Compruebe que esté encendido y conectado a internet."
+
+#, python-format
+msgid "Failures · %(days)s days"
+msgstr "Fallos · %(days)s días"
+
+msgid "failed"
+msgstr "fallidos"
+
+#, python-format
+msgid "%(failed)s of %(sent)s sent"
+msgstr "%(failed)s de %(sent)s enviados"
 
 #, python-format
 msgid "Messages · %(days)s days"
@@ -4343,19 +4398,6 @@ msgstr "Sin sincronizar"
 
 msgid "The phone hasn't connected yet."
 msgstr "El teléfono aún no se ha conectado."
-
-msgid "Speed"
-msgstr "Velocidad"
-
-msgid "msg/sec"
-msgstr "msj/seg"
-
-#, python-format
-msgid "A broadcast to 100k contacts takes about %(duration)s"
-msgstr "Una difusión a 100 mil contactos tarda aproximadamente %(duration)s"
-
-msgid "About speed"
-msgstr "Acerca de la velocidad"
 
 msgid "Recent logs"
 msgstr "Registros recientes"
@@ -4414,12 +4456,6 @@ msgstr "No se ha sincronizado ninguna plantilla para este canal."
 
 msgid "Cancel"
 msgstr "Cancelar"
-
-msgid "Delete channel"
-msgstr "Eliminar canal"
-
-msgid "Delete Channel"
-msgstr "Eliminar canal"
 
 msgid "To get started, you'll need your short code along with your Africa's Talking username and an API key, which you can generate under Settings in your Africa's Talking app."
 msgstr "Para comenzar, necesitará su código corto junto con su nombre de usuario de Africa's Talking y una clave de API, que puede generar en Settings en su aplicación de Africa's Talking."
@@ -5136,6 +5172,13 @@ msgstr "Eliminar Global"
 msgid "Globals are variables you can use across all of your flows but manage the value for in one place. For example, you might use them to store API keys you need to access external services or product names that might change later."
 msgstr "Las variables globales son variables que puede utilizar en todos sus flujos pero cuyo valor gestiona en un solo lugar. Por ejemplo, puede utilizarlas para almacenar claves de API que necesita para acceder a servicios externos o nombres de productos que podrían cambiar más adelante."
 
+#, python-format
+msgid "%(counter)s use"
+msgid_plural "%(counter)s uses"
+msgstr[0] "%(counter)s uso"
+msgstr[1] "%(counter)s usos"
+msgstr[2] "%(counter)s usos"
+
 msgid "No globals"
 msgstr "No hay globales"
 
@@ -5496,7 +5539,7 @@ msgstr "Ningún mensaje"
 msgid "Hi"
 msgstr "Hola"
 
-msgid "If you have any questions we are always here to help."
+msgid "If you have any questions, we are always here to help."
 msgstr "Si tiene alguna pregunta, siempre estamos aquí para ayudarle."
 
 #, python-format
@@ -5555,47 +5598,6 @@ msgstr "Su <a href=\"%(url)s\">canal de WhatsApp</a> tiene problemas actualmente
 msgid "Your WhatsApp channel (%(url)s) is currently having problems fetching templates."
 msgstr "Su canal de WhatsApp (%(url)s) tiene problemas actualmente para obtener las plantillas."
 
-msgid "Your workspace has been flagged due to suspicious activity. To re-enable starting flows and sending messages, please contact support."
-msgstr "Su workspace ha sido marcado debido a actividad sospechosa. Para volver a habilitar el inicio de flujos y el envío de mensajes, póngase en contacto con el soporte."
-
-msgid ""
-"\n"
-"Your workspace has been flagged due to suspicious activity. To re-enable starting flows and sending messages, please\n"
-"contact support.\n"
-msgstr ""
-"\n"
-"Su workspace ha sido marcado debido a actividad sospechosa. Para volver a habilitar el inicio de flujos y el envío de mensajes,\n"
-"póngase en contacto con el soporte.\n"
-
-msgid "Your workspace has been restricted because of a problem with billing."
-msgstr "Su workspace ha sido restringido debido a un problema con la facturación."
-
-msgid "Your workspace has been restricted because it has exceeded the limits of its plan."
-msgstr "Su workspace ha sido restringido porque ha superado los límites de su plan."
-
-msgid "Your workspace has been restricted."
-msgstr "Su workspace ha sido restringido."
-
-msgid "Starting flows and sending messages are disabled, but your flows will keep handling incoming messages."
-msgstr "El inicio de flujos y el envío de mensajes están deshabilitados, pero sus flujos seguirán gestionando los mensajes entrantes."
-
-#, python-format
-msgid "Unless this is resolved, your workspace will be suspended on %(date)s. Please contact support."
-msgstr "Si esto no se resuelve, su workspace será suspendido el %(date)s. Póngase en contacto con el soporte."
-
-msgid "Please contact support."
-msgstr "Póngase en contacto con el soporte."
-
-msgid "Your workspace has been suspended. To re-enable starting flows and sending messages, please contact support."
-msgstr "Su workspace ha sido suspendido. Para volver a habilitar el inicio de flujos y el envío de mensajes, póngase en contacto con el soporte."
-
-msgid ""
-"\n"
-"Your workspace has been suspended. To re-enable starting flows and sending messages, please contact support.\n"
-msgstr ""
-"\n"
-"Su workspace ha sido suspendido. Para volver a habilitar el inicio de flujos y el envío de mensajes, póngase en contacto con el soporte.\n"
-
 #, python-format
 msgid "User <b>%(email)s</b> accepted an invitation to join your workspace."
 msgstr "El usuario %(email)s aceptó una invitación para unirse a su workspace."
@@ -5618,9 +5620,6 @@ msgstr "Su <a href=\"%(read_url)s\">canal Android</a> parece seguir ejecutando u
 #, python-format
 msgid "Your <a href=\"%(read_url)s\">WhatsApp channel</a> appears to not be syncing templates."
 msgstr "Su <a href=\"%(read_url)s\">canal de WhatsApp</a> parece no estar sincronizando las plantillas."
-
-msgid "Your workspace has been restricted. Starting flows and sending messages are disabled until this is resolved, but your flows will keep handling incoming messages."
-msgstr "Su workspace ha sido restringido. El inicio de flujos y el envío de mensajes están deshabilitados hasta que esto se resuelva, pero sus flujos seguirán gestionando los mensajes entrantes."
 
 #, python-format
 msgid "Some webhook calls from your flows are taking too long to respond or failing too frequently. If the problem persists these calls will be temporarily disabled. You can check the <a href=\"%(logs_url)s\">webhook call log</a> to see which calls are the problem."
@@ -6135,6 +6134,10 @@ msgstr "Dar servicio a la cuenta"
 msgid "Invalid org, servicing not available."
 msgstr "Org no válida, el servicio no está disponible."
 
+#, python-format
+msgid "Suspending <b>%(name)s</b> will cancel any messages waiting to be sent on its channels, and on those of any child workspaces suspended with it. There is no way to undo this. Are you sure?"
+msgstr "La suspensión de <b>%(name)s</b> cancelará los mensajes pendientes de envío en sus canales y en los de cualquier espacio de trabajo secundario suspendido con él. No hay forma de deshacerlo. ¿Está seguro?"
+
 msgid "Deleting this user will also delete the following workspaces owned by this user."
 msgstr "Al eliminar este usuario también se eliminarán los siguientes workspaces cuyo propietario es este usuario."
 
@@ -6226,8 +6229,17 @@ msgstr "Error al cargar"
 msgid "Any tickets opened within the selected date range will be included. You may optionally include additional columns for fields for each contact."
 msgstr "Se incluirán todos los tickets abiertos dentro del rango de fechas seleccionado. Opcionalmente puede incluir columnas adicionales para los campos de cada contacto."
 
-msgid "All Agents"
+msgid "Edit Topic"
+msgstr "Editar tema"
+
+msgid "All agents"
 msgstr "Todos los agentes"
+
+msgid "Oldest"
+msgstr "Más antiguos"
+
+msgid "Most recent"
+msgstr "Más recientes"
 
 msgid "See more tickets"
 msgstr "Ver más tickets"

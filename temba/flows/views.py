@@ -57,7 +57,7 @@ from temba.utils.fields import (
     TembaChoiceField,
 )
 from temba.utils.uuid import UUID_REGEX
-from temba.utils.views.mixins import ContextMenuMixin, ModalFormMixin, SpaMixin
+from temba.utils.views.mixins import ContextMenuMixin, ModalFormMixin, ScopedUpdateMixin, SpaMixin
 
 from .models import (
     FlowLabel,
@@ -427,7 +427,7 @@ class FlowCRUDL(SmartCRUDL):
         cancel_url = "uuid@flows.flow_editor"
         success_url = "@flows.flow_list"
 
-    class Copy(OrgObjPermsMixin, SmartUpdateView):
+    class Copy(OrgObjPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         fields = []
 
         def form_valid(self, form):
@@ -1370,8 +1370,9 @@ class FlowCRUDL(SmartCRUDL):
                     # changed, and if they're in a flow the user must confirm interrupting it
                     search_attrs = self.fields["contact_search"].widget.attrs
                     search_attrs["fixed"] = True
-                    if contact.current_flow:
-                        search_attrs["current_flow"] = contact.current_flow.name
+                    current_flow = contact.get_current_flow()
+                    if current_flow:
+                        search_attrs["current_flow"] = current_flow.name
 
                 if flow:
                     self.fields["flow"].widget = forms.HiddenInput(
@@ -1459,11 +1460,7 @@ class FlowCRUDL(SmartCRUDL):
             """
             uuids = [u for u in self.request.GET.get("c", "").split(",") if u]
             if len(uuids) == 1:
-                return (
-                    self.request.org.contacts.filter(uuid=uuids[0], is_active=True)
-                    .select_related("current_flow")
-                    .first()
-                )
+                return self.request.org.contacts.filter(uuid=uuids[0], is_active=True).first()
             return None
 
         def get_form_kwargs(self):
@@ -1602,7 +1599,7 @@ class FlowLabelCRUDL(SmartCRUDL):
             self.object.delete()
             return self.render_modal_response()
 
-    class Update(ModalFormMixin, OrgObjPermsMixin, SmartUpdateView):
+    class Update(ModalFormMixin, OrgObjPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         form_class = FlowLabelForm
         success_url = "uuid@flows.flow_filter"
         submit_button_name = _("Save")
@@ -1743,7 +1740,7 @@ class FlowStartCRUDL(SmartCRUDL):
                 )
             return JsonResponse({"results": results})
 
-    class Interrupt(ModalFormMixin, OrgObjPermsMixin, SmartUpdateView):
+    class Interrupt(ModalFormMixin, OrgObjPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         default_template = "smartmin/delete_confirm.html"
         permission = "flows.flowstart_update"
         fields = ()

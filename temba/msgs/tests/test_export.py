@@ -525,7 +525,7 @@ class MessageExportTest(TembaTest):
 
     def test_from_archives(self):
         self.org.created_on = datetime(2017, 1, 1, 9, tzinfo=tzone.utc)
-        self.org.save()
+        self.org.save(update_fields=("created_on",))
 
         flow = self.create_flow("Color Flow")
 

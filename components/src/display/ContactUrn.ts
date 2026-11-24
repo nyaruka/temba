@@ -31,7 +31,7 @@ export class ContactUrn extends RapidElement {
         padding: 0px;
         border: 0px;
         box-shadow: none;
-        margin-right: 0.5em;
+        margin-right: var(--temba-urn-small-margin, 0.5em);
       }
     `;
   }

@@ -45,6 +45,10 @@ const getStatusReasonMessage = (reason: string): string => {
       return msg('Message is too old to send');
     case 'channel_removed':
       return msg('Channel was removed');
+    case 'no_destination':
+      return msg('No channel available to send message');
+    case 'org_suspended':
+      return msg('Workspace is suspended');
     default:
       return msg('Message failed to send');
   }
@@ -112,7 +116,12 @@ export interface MsgEvent extends ContactEvent {
   _status?: {
     created_on: string;
     status: 'wired' | 'sent' | 'delivered' | 'read' | 'errored' | 'failed';
-    reason: 'error_limit' | 'too_old' | 'channel_removed';
+    reason:
+      | 'error_limit'
+      | 'too_old'
+      | 'channel_removed'
+      | 'no_destination'
+      | 'org_suspended';
   };
   _deleted?: {
     created_on: string;
