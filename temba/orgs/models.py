@@ -441,16 +441,9 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         if as_child:
             assert Org.FEATURE_CHILD_ORGS in self.features, "only orgs with this feature enabled can create child orgs"
             assert not self.is_child, "child orgs can't create children"
+            assert self.status == Org.STATUS_ACTIVE, "restricted or suspended orgs can't create children"
         else:
             assert Org.FEATURE_NEW_ORGS in self.features, "only orgs with this feature enabled can create new orgs"
-
-        # children share their parent's status so they can't be used to get around a restriction or suspension
-        status = dict(
-            status=self.status,
-            status_reason=Org.RESTRICTED_PARENT if self.status_cascades else self.status_reason,
-            status_changed_on=self.status_changed_on,
-            suspends_on=self.suspends_on,
-        )
 
         org = Org.objects.create(
             name=name,
@@ -462,7 +455,6 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
             slug=self.get_unique_slug(name),
             created_by=user,
             modified_by=user,
-            **(status if as_child else {}),
         )
 
         org.add_user(user, OrgRole.ADMINISTRATOR)

@@ -982,8 +982,25 @@ class OrgCRUDL(SmartCRUDL):
             def __init__(self, org, *args, **kwargs):
                 super().__init__(*args, **kwargs)
 
+                self.org = org
                 self.fields["type"].choices = self.TYPE_CHOICES
                 self.fields["timezone"].initial = org.timezone
+
+            @property
+            def default_type(self):
+                return self.TYPE_CHILD if Org.FEATURE_CHILD_ORGS in self.org.features else self.TYPE_NEW
+
+            def clean(self):
+                cleaned_data = super().clean()
+                cleaned_data["as_child"] = (cleaned_data.get("type") or self.default_type) == self.TYPE_CHILD
+
+                # otherwise a child would be a way to get around the restriction or suspension
+                if cleaned_data["as_child"] and self.org.status != Org.STATUS_ACTIVE:
+                    raise forms.ValidationError(
+                        _("Child workspaces can't be created while this workspace is restricted or suspended.")
+                    )
+
+                return cleaned_data
 
             class Meta:
                 model = Org
@@ -1014,13 +1031,11 @@ class OrgCRUDL(SmartCRUDL):
             return reverse("orgs.org_start")
 
         def form_valid(self, form):
-            default_type = form.TYPE_CHILD if Org.FEATURE_CHILD_ORGS in self.request.org.features else form.TYPE_NEW
-
             self.object = self.request.org.create_new(
                 self.request.user,
                 form.cleaned_data["name"],
                 tz=form.cleaned_data["timezone"],
-                as_child=form.cleaned_data.get("type", default_type) == form.TYPE_CHILD,
+                as_child=form.cleaned_data["as_child"],
             )
 
             if "HTTP_X_PJAX" not in self.request.META:

@@ -232,9 +232,9 @@ class OrgTest(TembaTest):
         )
         self.assertEqual(Org.BLOCKER_RESTRICTED, self.org.send_blocker)
 
-        # new children get their parent's status
-        org1_child3 = self.org.create_new(self.admin, "Child 3", tzone.utc, as_child=True)
-        assert_org(org1_child3, Org.STATUS_RESTRICTED, Org.RESTRICTED_PARENT, suspends_on)
+        # restricted workspaces can't create children
+        with self.assertRaises(AssertionError):
+            self.org.create_new(self.admin, "Child 3", tzone.utc, as_child=True)
 
         self.org.restrict(Org.RESTRICTED_STAFF)  # noop as already restricted
 
@@ -248,14 +248,10 @@ class OrgTest(TembaTest):
         assert_org(org1_child1, Org.STATUS_SUSPENDED, Org.RESTRICTED_PARENT)
         assert_org(org1_child2, Org.STATUS_SUSPENDED, Org.RESTRICTED_PARENT)
         assert_org(self.org2, Org.STATUS_ACTIVE, changed=False)
-
-        org1_child4 = self.org.create_new(self.admin, "Child 4", tzone.utc, as_child=True)
-        assert_org(org1_child4, Org.STATUS_SUSPENDED, Org.RESTRICTED_PARENT)
         assert_signalled(
             (self.org, Org.STATUS_SUSPENDED),
             (org1_child1, Org.STATUS_SUSPENDED),
             (org1_child2, Org.STATUS_SUSPENDED),
-            (org1_child3, Org.STATUS_SUSPENDED),
         )
         self.assertEqual(Org.BLOCKER_SUSPENDED, self.org.send_blocker)
 
@@ -274,8 +270,6 @@ class OrgTest(TembaTest):
             (self.org, Org.STATUS_ACTIVE),
             (org1_child1, Org.STATUS_ACTIVE),
             (org1_child2, Org.STATUS_ACTIVE),
-            (org1_child3, Org.STATUS_ACTIVE),
-            (org1_child4, Org.STATUS_ACTIVE),
         )
         self.assertIsNone(self.org.send_blocker)
 
@@ -334,8 +328,6 @@ class OrgTest(TembaTest):
         assert_signalled(
             (self.org, Org.STATUS_RESTRICTED),
             (org1_child2, Org.STATUS_RESTRICTED),
-            (org1_child3, Org.STATUS_RESTRICTED),
-            (org1_child4, Org.STATUS_RESTRICTED),
         )
 
         # and when the flag is lifted, the child goes back to sharing its parent's restriction
@@ -359,8 +351,6 @@ class OrgTest(TembaTest):
             (self.org, Org.STATUS_ACTIVE),
             (org1_child1, Org.STATUS_ACTIVE),
             (org1_child2, Org.STATUS_ACTIVE),
-            (org1_child3, Org.STATUS_ACTIVE),
-            (org1_child4, Org.STATUS_ACTIVE),
         )
 
         self.org.restrict(Org.RESTRICTED_LIMITS, suspends_on=suspends_on)

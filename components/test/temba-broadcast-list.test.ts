@@ -322,7 +322,7 @@ describe('temba-broadcast-list', () => {
       'Broadcast'
     );
     // the creator trails the sent date in the header
-    const when = detail.querySelector('.detail-when') as HTMLElement;
+    const when = detail.querySelector('.detail-subtitle') as HTMLElement;
     expect(when.textContent).to.contain('Sent');
     expect(when.querySelector('temba-date')).to.exist;
     expect(when.textContent).to.contain('by admin@textit.com');
@@ -363,7 +363,7 @@ describe('temba-broadcast-list', () => {
     expect(redirects).to.have.length(1);
     expect(redirects[0].url).to.equal('/contact/group/group-1/');
     // the pill click must not fall through to the row's dialog
-    expect((list as any).detailBroadcast).to.be.null;
+    expect((list as any).detailItem).to.be.null;
   });
 
   it('closes the dialog when a recipient pill inside it is clicked', async () => {
@@ -389,7 +389,7 @@ describe('temba-broadcast-list', () => {
     // navigating away — the dialog closes behind the redirect
     expect(redirects).to.have.length(1);
     expect(redirects[0].url).to.equal('/contact/read/c-1/');
-    expect((list as any).detailBroadcast).to.be.null;
+    expect((list as any).detailItem).to.be.null;
   });
 
   it('refuses unsafe pill hrefs and honors meta-click', async () => {
@@ -410,7 +410,7 @@ describe('temba-broadcast-list', () => {
     expect(redirects).to.have.length(0);
 
     // meta-click — new tab, no in-app redirect, dialog untouched
-    (list as any).detailBroadcast = broadcast();
+    (list as any).detailItem = broadcast();
     const opened: string[] = [];
     const realOpen = window.open;
     (window as any).open = (url: string) => opened.push(url);
@@ -425,7 +425,7 @@ describe('temba-broadcast-list', () => {
     }
     expect(opened).to.deep.equal(['/contact/group/g-1/']);
     expect(redirects).to.have.length(0);
-    expect((list as any).detailBroadcast).to.not.be.null;
+    expect((list as any).detailItem).to.not.be.null;
   });
 
   it('details the full message: attachments, quick replies, exclusions', async () => {
@@ -510,7 +510,7 @@ describe('temba-broadcast-list', () => {
       ) as HTMLElement
     ).click();
     await list.updateComplete;
-    expect((list as any).detailBroadcast).to.be.null;
+    expect((list as any).detailItem).to.be.null;
     expect((list.shadowRoot.querySelector('temba-dialog') as any).open).to.not
       .be.true;
 
@@ -524,7 +524,7 @@ describe('temba-broadcast-list', () => {
     // the dialog also hides itself (mask click) and tells us after
     dialog.dispatchEvent(new CustomEvent('temba-dialog-hidden'));
     await list.updateComplete;
-    expect((list as any).detailBroadcast).to.be.null;
+    expect((list as any).detailItem).to.be.null;
   });
 
   it('closes on escape', async () => {
@@ -534,7 +534,7 @@ describe('temba-broadcast-list', () => {
       new KeyboardEvent('keyup', { key: 'Escape', bubbles: true })
     );
     await list.updateComplete;
-    expect((list as any).detailBroadcast).to.be.null;
+    expect((list as any).detailItem).to.be.null;
   });
 
   it('fires selection events for edit and delete', async () => {
@@ -560,7 +560,7 @@ describe('temba-broadcast-list', () => {
     expect(fired).to.have.length(1);
     expect(fired[0].action).to.equal('edit_broadcast');
     expect(fired[0].broadcast.uuid).to.equal('bcast-301');
-    expect((list as any).detailBroadcast).to.be.null;
+    expect((list as any).detailItem).to.be.null;
 
     // reopen and delete
     const row = list.shadowRoot.querySelector('tr.row') as HTMLElement;
