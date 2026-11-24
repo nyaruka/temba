@@ -17,7 +17,6 @@ from temba.ai.types.openai.type import OpenAIType
 from temba.api.models import Resthook, WebHookEvent
 from temba.archives.models import Archive
 from temba.campaigns.models import Campaign, CampaignEvent
-from temba.channels.models import SyncEvent
 from temba.contacts.models import ContactExport, ContactField, ContactFire, ContactImport, ContactImportBatch
 from temba.flows.models import FlowLabel, FlowRun, FlowSession, FlowStart, FlowStartCount, ResultsExport
 from temba.globals.models import Global
@@ -946,13 +945,6 @@ class OrgDeleteTest(TembaTest):
     def _create_channel_content(self, org, add) -> tuple:
         channel1 = add(self.create_channel("TG", "Telegram", "+250785551212", org=org))
         channel2 = add(self.create_channel("A", "Android", "+1234567890", org=org))
-        add(
-            SyncEvent.create(
-                channel2,
-                dict(pending=[], retry=[], power_source="P", power_status="full", power_level="100", network_type="W"),
-                [],
-            )
-        )
         add(ChannelDisconnectedIncidentType.get_or_create(channel2))
         add(
             HTTPLog.objects.create(

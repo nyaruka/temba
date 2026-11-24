@@ -4,14 +4,13 @@ from datetime import timedelta
 from celery import shared_task
 
 from django.conf import settings
-from django.db.models import Count
 from django.utils import timezone
 
 from temba import mailroom
 from temba.utils.crons import cron_task
 from temba.utils.models import delete_in_batches
 
-from .models import Channel, ChannelEvent, SyncEvent
+from .models import Channel, ChannelEvent
 from .types.android import AndroidType
 
 logger = logging.getLogger(__name__)
@@ -62,34 +61,5 @@ def trim_channel_events():
     trim_before = timezone.now() - settings.RETENTION_PERIODS["channelevent"]
 
     num_deleted = delete_in_batches(ChannelEvent.objects.filter(created_on__lte=trim_before))
-
-    return {"deleted": num_deleted}
-
-
-@cron_task()
-def trim_channel_sync_events():
-    """
-    Trims old Android channel sync events
-    """
-
-    trim_before = timezone.now() - settings.RETENTION_PERIODS["syncevent"]
-    num_deleted = 0
-
-    channels_with_events = (
-        SyncEvent.objects.filter(created_on__lte=trim_before)
-        .values("channel")
-        .annotate(Count("id"))
-        .filter(id__count__gt=1)
-    )
-    for result in channels_with_events:
-        # trim older but always leave at least one per channel
-        event_ids = list(
-            SyncEvent.objects.filter(created_on__lte=trim_before, channel_id=result["channel"])
-            .order_by("-created_on")
-            .values_list("id", flat=True)[1:]
-        )
-
-        SyncEvent.objects.filter(id__in=event_ids).delete()
-        num_deleted += len(event_ids)
 
     return {"deleted": num_deleted}
