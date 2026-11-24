@@ -19,7 +19,7 @@ from temba.api.support import (
 from temba.api.views import ListAPIMixin
 from temba.utils.uuid import is_uuid
 
-from .models import Broadcast, BroadcastMsgCount, Label, LabelCount, Msg, MsgFolder
+from .models import Broadcast, BroadcastMsgCount, Label, Msg, MsgFolder
 
 
 class BroadcastsEndpoint(SearchLengthMixin, ListAPIMixin, BaseEndpoint):
@@ -172,7 +172,7 @@ class MessagesEndpoint(SearchLengthMixin, ListAPIMixin, BaseEndpoint):
         # when there's no search, avoiding a COUNT(*) on the messages table.
         org = self.request.org
         if self.request.query_params.get("label"):
-            return LabelCount.get_totals([self.label], using="readonly")[self.label] if self.label else 0
+            return self.label.get_message_count(using="readonly") if self.label else 0
 
         return MsgFolder.get_counts(org, using="readonly").get(self.folder, 0) if self.folder else 0
 

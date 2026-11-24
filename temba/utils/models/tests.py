@@ -245,7 +245,12 @@ class SearchSliceQuerySetTest(TembaTest):
         self.assertEqual([str(ann.uuid)], readonly.uuids)
         self.assertEqual(10, readonly.offset)
         self.assertEqual(100, readonly.count())
+        self.assertEqual(contacts.raw_query, readonly.raw_query)
         self.assertEqual("default", contacts.db)
+
+        # and it still guards its slice like the original
+        with self.assertRaises(IndexError):
+            readonly[0:10]
 
     def test_prefetch_related(self):
         ann = self.create_contact("Ann", urns=["tel:+12340000001"])

@@ -201,6 +201,8 @@ class ContactsEndpoint(SearchLengthMixin, ListAPIMixin, WriteAPIMixin, BaseEndpo
         return ("-" if desc else "") + key
 
     def get_queryset(self):
+        # only GETs list, so like other list endpoints this reads from the readonly database, which can briefly lag
+        # behind an update made through this endpoint's POST (get_object stays on the default database)
         org = self.request.org
         group = self.derive_group()
         if group is None:

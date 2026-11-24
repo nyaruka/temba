@@ -1055,14 +1055,14 @@ class Label(OrgAsset, DependencyMixin):
 
         return qs.order_by("-label_msg_uuid")
 
-    def get_message_count(self):
+    def get_message_count(self, *, using: str = "default"):
         """
         Returns the count of messages tagged with this label, whatever folder they're in - a label is the user's own
         tag and is independent of where a message is filed. Deleted messages have their labellings removed so
         contribute nothing.
         """
 
-        return LabelCount.get_totals([self])[self]
+        return LabelCount.get_totals([self], using=using)[self]
 
     def toggle_label(self, msgs, add: bool):
         """
