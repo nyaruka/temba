@@ -226,8 +226,9 @@ class DefinitionExportTest(TembaTest, CRUDLTestMixin):
         new_campaign = Campaign.objects.filter(is_active=True).last()
         new_event = campaign.events.filter(is_active=True).last()
 
-        # same campaign, but new event
+        # same campaign, modified by the import, but new event
         self.assertEqual(campaign.id, new_campaign.id)
+        self.assertGreater(new_campaign.modified_on, campaign.modified_on)
         self.assertNotEqual(event.id, new_event.id)
 
     def test_import_flow_dependency_graph(self):
@@ -515,7 +516,7 @@ class DefinitionExportTest(TembaTest, CRUDLTestMixin):
 
         trigger = Trigger.objects.filter(keywords=["patient"]).first()
         trigger.flow = confirm_appointment
-        trigger.save()
+        trigger.save(update_fields=("flow",))
 
         # now reimport
         self.import_file("flows/the_clinic.json")
@@ -666,7 +667,7 @@ class DefinitionExportTest(TembaTest, CRUDLTestMixin):
         # now archive a flow
         register = Flow.objects.filter(name="Register Patient").first()
         register.is_archived = True
-        register.save()
+        register.save(update_fields=("is_archived",))
 
         # default view shouldn't show archived flows
         response = self.client.get(reverse("orgs.org_export"))
@@ -690,7 +691,7 @@ class DefinitionExportTest(TembaTest, CRUDLTestMixin):
 
         # now delete a flow
         register.is_active = False
-        register.save()
+        register.save(update_fields=("is_active",))
 
         # default view shouldn't show deleted flows
         response = self.client.get(reverse("orgs.org_export"))

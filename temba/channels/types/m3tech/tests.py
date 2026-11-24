@@ -16,7 +16,7 @@ class M3TechTypeTest(TembaTest):
         self.assertChannelTypeNotOffered(url)
 
         self.org.timezone = "Asia/Karachi"
-        self.org.save()
+        self.org.save(update_fields=("timezone",))
 
         # the new channel picker offers it
         self.assertChannelTypeOffered(url)

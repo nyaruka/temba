@@ -27,6 +27,7 @@ from temba.tickets.models import Ticket, Topic
 from temba.users.models import User
 from temba.utils import json
 from temba.utils.fields import NameValidator
+from temba.utils.models import changed_fields, field_values
 
 from ..models import BulkActionFailure, Resthook, ResthookSubscriber, WebHookEvent
 from ..validators import UniqueForOrgValidator
@@ -249,6 +250,7 @@ class ArticleWriteSerializer(WriteSerializer):
 
         if self.instance:
             article = self.instance
+            before = field_values(article)
             was_published = article.status == Article.STATUS_PUBLISHED
 
             for field in ("title", "description", "body", "language"):
@@ -271,7 +273,7 @@ class ArticleWriteSerializer(WriteSerializer):
                 article.status, article.published_on = Article.STATUS_DRAFT, None
 
             article.modified_by = user
-            article.save()
+            article.save(update_fields=(*changed_fields(article, before), "modified_on"))
         else:
             was_published = False
             article = Article.create(
@@ -615,7 +617,19 @@ class CampaignEventWriteSerializer(WriteSerializer):
             self.instance.unit = unit
             self.instance.delivery_hour = delivery_hour
             self.instance.relative_to = relative_to
-            self.instance.save()
+            self.instance.save(
+                update_fields=(
+                    "event_type",
+                    "flow",
+                    "translations",
+                    "base_language",
+                    "offset",
+                    "unit",
+                    "delivery_hour",
+                    "relative_to",
+                    "modified_on",
+                )
+            )
 
         else:
             needs_scheduling = True

@@ -57,7 +57,7 @@ from temba.utils.fields import (
     TembaChoiceField,
 )
 from temba.utils.uuid import UUID_REGEX
-from temba.utils.views.mixins import ContextMenuMixin, ModalFormMixin, SpaMixin
+from temba.utils.views.mixins import ContextMenuMixin, ModalFormMixin, ScopedUpdateMixin, SpaMixin
 
 from .models import (
     FlowLabel,
@@ -427,7 +427,7 @@ class FlowCRUDL(SmartCRUDL):
         cancel_url = "uuid@flows.flow_editor"
         success_url = "@flows.flow_list"
 
-    class Copy(OrgObjPermsMixin, SmartUpdateView):
+    class Copy(OrgObjPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         fields = []
 
         def form_valid(self, form):
@@ -1599,7 +1599,7 @@ class FlowLabelCRUDL(SmartCRUDL):
             self.object.delete()
             return self.render_modal_response()
 
-    class Update(ModalFormMixin, OrgObjPermsMixin, SmartUpdateView):
+    class Update(ModalFormMixin, OrgObjPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         form_class = FlowLabelForm
         success_url = "uuid@flows.flow_filter"
         submit_button_name = _("Save")
@@ -1740,7 +1740,7 @@ class FlowStartCRUDL(SmartCRUDL):
                 )
             return JsonResponse({"results": results})
 
-    class Interrupt(ModalFormMixin, OrgObjPermsMixin, SmartUpdateView):
+    class Interrupt(ModalFormMixin, OrgObjPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         default_template = "smartmin/delete_confirm.html"
         permission = "flows.flowstart_update"
         fields = ()

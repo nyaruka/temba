@@ -34,7 +34,15 @@ class SiteViewsTest(TembaTest):
         self.site.tagline = "Answers for everyone"
         self.site.footer = "Made by Nyaruka"
         self.site.is_enabled = True
-        self.site.save()
+        self.site.save(
+            update_fields=(
+                "domain",
+                "domain_verified_on",
+                "tagline",
+                "footer",
+                "is_enabled",
+            )
+        )
 
         self.flows = self.create_article("Flows", description="All about flows")
         self.nodes = self.create_article("Nodes", parent=self.flows, body="A **node** is a step in a flow.")

@@ -55,6 +55,7 @@ from temba.utils.views.mixins import (
     ModalFormMixin,
     NonAtomicMixin,
     NoNavMixin,
+    ScopedUpdateMixin,
     SpaMixin,
 )
 
@@ -212,7 +213,7 @@ class UserCRUDL(SmartCRUDL):
             context["team_topics"] = self.team.topics.order_by(Lower("name"))
             return context
 
-    class Update(RequireFeatureMixin, ModalFormMixin, OrgObjPermsMixin, SmartUpdateView):
+    class Update(RequireFeatureMixin, ModalFormMixin, OrgObjPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         class Form(forms.ModelForm):
             role = forms.ChoiceField(choices=OrgRole.choices(), required=True, label=_("Role"), widget=SelectWidget())
             team = forms.ModelChoiceField(queryset=Team.objects.none(), required=False, widget=SelectWidget())
@@ -328,7 +329,7 @@ class UserCRUDL(SmartCRUDL):
             # if current user no longer belongs to this org, redirect to org chooser
             return reverse("orgs.user_list") if still_in_org else reverse("orgs.org_choose")
 
-    class Edit(ComponentFormMixin, InferUserMixin, SmartUpdateView):
+    class Edit(ComponentFormMixin, InferUserMixin, ScopedUpdateMixin, SmartUpdateView):
         class Form(forms.ModelForm):
             first_name = forms.CharField(label=_("First Name"), widget=InputWidget())
             last_name = forms.CharField(label=_("Last Name"), widget=InputWidget())
@@ -901,7 +902,7 @@ class OrgCRUDL(SmartCRUDL):
             context["has_children"] = bool(from_email_custom) and org.children.filter(is_active=True).exists()
             return context
 
-    class Update(ModalFormMixin, OrgObjPermsMixin, SmartUpdateView):
+    class Update(ModalFormMixin, OrgObjPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         class Form(forms.ModelForm):
             name = forms.CharField(max_length=128, label=_("Name"), widget=InputWidget())
             timezone = TimeZoneFormField(label=_("Timezone"), widget=SelectWidget(attrs={"searchable": True}))
@@ -1204,7 +1205,7 @@ class OrgCRUDL(SmartCRUDL):
             else:
                 return HttpResponseRedirect(f"{reverse('account_signup')}?invite={secret}")
 
-    class JoinAccept(NoNavMixin, InvitationMixin, SmartUpdateView):
+    class JoinAccept(NoNavMixin, InvitationMixin, ScopedUpdateMixin, SmartUpdateView):
         """
         Simple join button for existing and logged in users to accept a workspace invitation.
         """
@@ -1302,7 +1303,7 @@ class OrgCRUDL(SmartCRUDL):
             self.object.add_user(user, OrgRole.ADMINISTRATOR)
             return self.object
 
-    class Resthooks(SpaMixin, ComponentFormMixin, InferOrgMixin, OrgPermsMixin, SmartUpdateView):
+    class Resthooks(SpaMixin, ComponentFormMixin, InferOrgMixin, OrgPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         class ResthookForm(forms.ModelForm):
             new_slug = forms.SlugField(
                 required=False,
@@ -1365,7 +1366,9 @@ class OrgCRUDL(SmartCRUDL):
 
             return super().pre_save(obj)
 
-    class Prometheus(RequireFeatureMixin, FormaxSectionMixin, InferOrgMixin, OrgPermsMixin, SmartUpdateView):
+    class Prometheus(
+        RequireFeatureMixin, FormaxSectionMixin, InferOrgMixin, OrgPermsMixin, ScopedUpdateMixin, SmartUpdateView
+    ):
         class Form(forms.ModelForm):
             class Meta:
                 model = Org
@@ -1417,7 +1420,7 @@ class OrgCRUDL(SmartCRUDL):
                     if integration.is_available_to(self.request.user):
                         integration.management_ui(self.object, formax)
 
-    class Edit(FormaxSectionMixin, InferOrgMixin, OrgPermsMixin, SmartUpdateView):
+    class Edit(FormaxSectionMixin, InferOrgMixin, OrgPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         class Form(forms.ModelForm):
             name = forms.CharField(max_length=128, label=_("Name"), widget=InputWidget())
             timezone = TimeZoneFormField(label=_("Timezone"), widget=SelectWidget(attrs={"searchable": True}))
@@ -1432,7 +1435,7 @@ class OrgCRUDL(SmartCRUDL):
         def derive_exclude(self):
             return ["language"] if len(settings.LANGUAGES) == 1 else []
 
-    class Locations(FormaxSectionMixin, InferOrgMixin, OrgPermsMixin, SmartUpdateView):
+    class Locations(FormaxSectionMixin, InferOrgMixin, OrgPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         class CountryForm(forms.ModelForm):
             root_location = forms.ModelChoiceField(
                 Org.get_possible_countries(),
@@ -1448,7 +1451,7 @@ class OrgCRUDL(SmartCRUDL):
 
         form_class = CountryForm
 
-    class Languages(FormaxSectionMixin, InferOrgMixin, OrgPermsMixin, SmartUpdateView):
+    class Languages(FormaxSectionMixin, InferOrgMixin, OrgPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         class LanguageForm(forms.ModelForm):
             primary_lang = ArbitraryJsonChoiceField(
                 required=True,

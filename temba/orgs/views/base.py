@@ -25,7 +25,7 @@ from temba.contacts.models import ContactField, ContactGroup
 from temba.utils import on_transaction_commit
 from temba.utils.fields import SelectMultipleWidget, TembaDateField
 from temba.utils.models import exclude_deleted
-from temba.utils.views.mixins import ComponentFormMixin, ContextMenuMixin, ModalFormMixin, SpaMixin
+from temba.utils.views.mixins import ComponentFormMixin, ContextMenuMixin, ModalFormMixin, ScopedUpdateMixin, SpaMixin
 
 from .mixins import BulkActionMixin, DependencyMixin, OrgObjPermsMixin, OrgPermsMixin
 
@@ -82,7 +82,7 @@ class BaseCreateModal(ComponentFormMixin, ModalFormMixin, LimitAwareMixin, OrgPe
         return obj
 
 
-class BaseUpdateView(OrgObjPermsMixin, SmartUpdateView):
+class BaseUpdateView(OrgObjPermsMixin, ScopedUpdateMixin, SmartUpdateView):
     """
     Base update view
     """

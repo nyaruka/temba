@@ -10,7 +10,7 @@ class ThinQTest(TembaTest):
         Channel.objects.all().delete()
 
         self.org.timezone = "America/Los_Angeles"
-        self.org.save()
+        self.org.save(update_fields=("timezone",))
 
         url = reverse("channels.types.thinq.claim")
         self.login(self.admin)

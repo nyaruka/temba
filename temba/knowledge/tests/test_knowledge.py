@@ -922,7 +922,7 @@ class ArticleTest(TembaTest):
         # and so does saving it once it's published, however it's saved - keeping a column's palette index as a
         # class and an uploaded image as its storage key, so that nothing in it changes when the palette or storage do
         article.body = "# Steps\n\n![shot](orgs/1/knowledge/shot.png)\n\n| background: 1 |\n| - |\n| one |"
-        article.save()
+        article.save(update_fields=("body",))
         article.refresh_from_db()
         self.assertEqual(
             '<h1 id="steps">Steps</h1>\n<p><img alt="shot" src="storage:orgs/1/knowledge/shot.png"></p>\n'

@@ -40,7 +40,7 @@ from temba.users.models import User
 from temba.utils import json, on_transaction_commit
 from temba.utils.fields import CheckboxWidget, InputWidget, SelectWidget, TembaChoiceField
 from temba.utils.models.es import SearchSliceQuerySet
-from temba.utils.views.mixins import ContextMenuMixin, ModalFormMixin, NonAtomicMixin, SpaMixin
+from temba.utils.views.mixins import ContextMenuMixin, ModalFormMixin, NonAtomicMixin, ScopedUpdateMixin, SpaMixin
 
 from .forms import ContactGroupForm, CreateContactForm, UpdateContactForm
 from .models import URN, Contact, ContactExport, ContactField, ContactGroup, ContactImport
@@ -779,7 +779,7 @@ class ContactCRUDL(SmartCRUDL):
         def get_success_url(self):
             return f"{reverse('tickets.ticket_list')}all/{self.ticket.uuid}/"
 
-    class Interrupt(ModalFormMixin, OrgObjPermsMixin, SmartUpdateView):
+    class Interrupt(ModalFormMixin, OrgObjPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         """
         Interrupt this contact
         """
@@ -1156,7 +1156,7 @@ class ContactImportCRUDL(SmartCRUDL):
             obj.num_records = self.form.num_records
             return obj
 
-    class Preview(SpaMixin, OrgObjPermsMixin, SmartUpdateView):
+    class Preview(SpaMixin, OrgObjPermsMixin, ScopedUpdateMixin, SmartUpdateView):
         menu_path = "/contact/import"
 
         class Form(forms.ModelForm):

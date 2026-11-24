@@ -222,7 +222,12 @@ class FlowTest(TembaTest, CRUDLTestMixin):
         rev = flow.revisions.get()
         rev.definition["spec_version"] = "13.0.0"
         rev.spec_version = "13.0.0"
-        rev.save()
+        rev.save(
+            update_fields=(
+                "definition",
+                "spec_version",
+            )
+        )
 
         old_modified_on = flow.modified_on
         old_saved_on = flow.saved_on
@@ -258,7 +263,7 @@ class FlowTest(TembaTest, CRUDLTestMixin):
         self.assertFalse(flow.is_archived)
 
         campaign.is_archived = True
-        campaign.save()
+        campaign.save(update_fields=("is_archived",))
 
         # can archive if the campaign is archived
         Flow.apply_action_archive(self.admin, Flow.objects.filter(pk=flow.pk))
@@ -267,13 +272,13 @@ class FlowTest(TembaTest, CRUDLTestMixin):
         self.assertTrue(flow.is_archived)
 
         campaign.is_archived = False
-        campaign.save()
+        campaign.save(update_fields=("is_archived",))
 
         flow.is_archived = False
-        flow.save()
+        flow.save(update_fields=("is_archived",))
 
         campaign_event.is_active = False
-        campaign_event.save()
+        campaign_event.save(update_fields=("is_active",))
 
         # can archive if the campaign is not archived with no active event
         Flow.apply_action_archive(self.admin, Flow.objects.filter(pk=flow.pk))
@@ -689,7 +694,7 @@ class FlowTest(TembaTest, CRUDLTestMixin):
         self.login(self.admin)
         flow = Flow.create(self.org, self.admin, "Flow")
         flow.flow_type = Flow.TYPE_SURVEY
-        flow.save()
+        flow.save(update_fields=("flow_type",))
 
         # keywords aren't an option for survey flows
         response = self.client.get(reverse("flows.flow_update", args=[flow.uuid]))

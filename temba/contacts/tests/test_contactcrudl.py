@@ -1619,7 +1619,7 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
             schedule=Schedule.create(self.org, timezone.now() + timedelta(days=4), Schedule.REPEAT_NEVER),
         )
         paused_bcast.schedule.is_paused = True
-        paused_bcast.schedule.save()
+        paused_bcast.schedule.save(update_fields=("is_paused",))
 
         # a paused scheduled trigger - should be excluded
         paused_trigger = Trigger.create(
@@ -1631,7 +1631,7 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
         )
         paused_trigger.contacts.add(contact)
         paused_trigger.schedule.is_paused = True
-        paused_trigger.schedule.save()
+        paused_trigger.schedule.save(update_fields=("is_paused",))
 
         future = self.requestView(timeline_url, self.admin).json()["future"]
         messages = [e.get("message") for e in future if e["type"] == "scheduled_broadcast"]

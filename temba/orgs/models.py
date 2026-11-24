@@ -1423,7 +1423,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         self.modified_on = timezone.now()
         self.deleted_on = timezone.now()
         self.config = {}
-        self.save()
+        self.save(update_fields=("modified_on", "deleted_on", "config"))
 
         return counts
 

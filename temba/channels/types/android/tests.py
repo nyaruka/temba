@@ -232,7 +232,7 @@ class AndroidTypeTest(TembaTest, CRUDLTestMixin):
 
         # set back to RW...
         android2.country = "RW"
-        android2.save()
+        android2.save(update_fields=("country",))
 
         # our country is RW
         self.assertEqual(self.org.default_country_code, "RW")

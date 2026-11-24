@@ -164,6 +164,6 @@ class FlowsEndpointTest(APITest):
 
         # inactive flows are never returned
         archived.is_active = False
-        archived.save()
+        archived.save(update_fields=("is_active",))
 
         self.assertGet(endpoint_url, [self.editor], results=[color, survey])

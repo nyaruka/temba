@@ -13,12 +13,12 @@ class AfricastalkingTypeTest(TembaTest):
         self.login(self.admin)
 
         self.org.timezone = "Africa/Cairo"  # not supported
-        self.org.save()
+        self.org.save(update_fields=("timezone",))
 
         self.assertChannelTypeNotOffered(url)
 
         self.org.timezone = "Africa/Nairobi"
-        self.org.save()
+        self.org.save(update_fields=("timezone",))
 
         # the new channel picker offers it
         self.assertChannelTypeOffered(url)

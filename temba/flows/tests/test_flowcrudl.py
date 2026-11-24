@@ -383,7 +383,7 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # test ivr flow creation
         self.channel.role = "SRCA"
-        self.channel.save()
+        self.channel.save(update_fields=("role",))
 
         response = self.client.post(
             create_url,
@@ -1366,12 +1366,12 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # change our channel to use a whatsapp scheme
         self.channel.schemes = [URN.WHATSAPP_SCHEME]
-        self.channel.save()
+        self.channel.save(update_fields=("schemes",))
         assert_features({"auto_translate", "messaging", "whatsapp", "airtime", "resthook"})
 
         # change our channel to use a facebook scheme
         self.channel.schemes = [URN.FACEBOOK_SCHEME]
-        self.channel.save()
+        self.channel.save(update_fields=("schemes",))
         assert_features({"auto_translate", "messaging", "airtime", "resthook"})
 
         self.setUpLocations()
@@ -1381,12 +1381,17 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         # make our channel one that can also make and answer calls
         self.channel.schemes = [URN.TEL_SCHEME]
         self.channel.role = "SRCA"
-        self.channel.save()
+        self.channel.save(
+            update_fields=(
+                "schemes",
+                "role",
+            )
+        )
         assert_features({"auto_translate", "messaging", "ivr", "airtime", "resthook", "locations"})
 
         # or make it receive only
         self.channel.role = "R"
-        self.channel.save()
+        self.channel.save(update_fields=("role",))
         assert_features({"auto_translate", "airtime", "resthook", "locations"})
 
         # configure SMTP for flow emails
@@ -1437,7 +1442,12 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         # change our channel to use a whatsapp scheme
         self.channel.schemes = [URN.WHATSAPP_SCHEME]
         self.channel.channel_type = "TWA"
-        self.channel.save()
+        self.channel.save(
+            update_fields=(
+                "schemes",
+                "channel_type",
+            )
+        )
 
         mr_mocks.flow_start_preview(query="age > 30", total=2)
         response = self.client.post(
@@ -1452,7 +1462,7 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(response.json()["warnings"], [])
 
         self.channel.channel_type = "WAC"
-        self.channel.save()
+        self.channel.save(update_fields=("channel_type",))
 
         # clear dependencies, this will cause our flow to look like it isn't using templates
         flow.info["dependencies"] = []

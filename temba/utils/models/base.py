@@ -1,3 +1,4 @@
+import copy
 import types
 from enum import Enum
 
@@ -9,6 +10,24 @@ from django.utils.translation import gettext_lazy as _
 
 from temba.utils.fields import NameValidator
 from temba.utils.uuid import is_uuid, uuid4
+
+
+def field_values(obj) -> dict:
+    """
+    Snapshots the concrete field values of the given instance so that changes to it can be found later
+    """
+    return {f.attname: copy.deepcopy(getattr(obj, f.attname)) for f in obj._meta.concrete_fields if not f.primary_key}
+
+
+def changed_fields(obj, before: dict) -> list[str]:
+    """
+    Gets the names of the fields of the given instance which differ from the given snapshot
+    """
+    return [
+        f.name
+        for f in obj._meta.concrete_fields
+        if f.attname in before and getattr(obj, f.attname) != before[f.attname]
+    ]
 
 
 def generate_uuid():
