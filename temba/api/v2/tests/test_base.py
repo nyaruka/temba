@@ -231,8 +231,11 @@ class EndpointsTest(APITest):
         response = request_by_basic_auth(contacts_url, self.admin.email, token1.key)
         self.assertResponseError(response, None, "Invalid token or email", status_code=403)
 
-        # a revoked token can't be used either
-        token2.release()
+        # a revoked token can't be used either, whatever is_active says
+        token2.deleted_on = timezone.now()
+        token2.save(update_fields=("deleted_on",))
+
+        self.assertNotIn(token2, self.editor.get_api_tokens(self.org))
 
         response = request_by_token(contacts_url, token2.key)
         self.assertResponseError(response, None, "Invalid token", status_code=403)
