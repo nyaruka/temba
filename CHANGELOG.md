@@ -1,3 +1,8 @@
+## v26.3.227 (2026-11-24)
+ * Read an Android channel's latest sync from its sync state
+ * Show why a message failed when its workspace was suspended or it had no destination
+ * Share the detail dialog, page chrome and cell helpers across the lists
+
 ## v26.3.226 (2026-11-24)
  * Make Channel.sync_state non-null and default it to an empty object
  * Don't let restricted or suspended workspaces create child workspaces
