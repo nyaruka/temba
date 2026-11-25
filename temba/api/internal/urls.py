@@ -12,6 +12,7 @@ from temba.msgs.api import BroadcastsEndpoint, MessagesEndpoint
 from temba.triggers.api import TriggersEndpoint
 
 from .views import (
+    APITokensEndpoint,
     ArticlesEndpoint,
     AssetsEndpoint,
     LLMsEndpoint,
@@ -25,6 +26,7 @@ from .views import (
 urlpatterns = [
     # ========== endpoints A-Z ===========
     re_path(r"^ai_models$", AIModelsEndpoint.as_view(), name="api.internal.ai_models"),
+    re_path(r"^api_tokens$", APITokensEndpoint.as_view(), name="api.internal.api_tokens"),
     re_path(r"^articles$", ArticlesEndpoint.as_view(), name="api.internal.articles"),
     re_path(r"^assets$", AssetsEndpoint.as_view(), name="api.internal.assets"),
     re_path(r"^broadcasts$", BroadcastsEndpoint.as_view(), name="api.internal.broadcasts"),

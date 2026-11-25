@@ -4072,14 +4072,11 @@ msgstr ""
 msgid "Delete Token"
 msgstr ""
 
+msgid "No tokens"
+msgstr ""
+
 #, python-format
 msgid "These are your personal tokens for accessing the <a href=\"%(api_url)s\">API</a>. You can have a maximum of %(limit)s."
-msgstr ""
-
-msgid "Last Used"
-msgstr ""
-
-msgid "No tokens"
 msgstr ""
 
 msgid "Endpoints"

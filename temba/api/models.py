@@ -244,5 +244,15 @@ class APIToken(DeletedOnMixin):
 
         audit.record("api_token.released", user=self.user, org=self.org, actor=user, token=self.key[:4])
 
+    def as_json(self, context=None) -> dict:
+        """
+        Internal API shape, consumed by the temba-apitoken-list component
+        """
+        return {
+            "key": self.key,
+            "created_on": self.created.isoformat(),
+            "last_used_on": self.last_used_on.isoformat() if self.last_used_on else None,
+        }
+
     def __str__(self):
         return self.key

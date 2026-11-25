@@ -19,7 +19,7 @@ from temba.orgs.models import Org
 from temba.templates.models import Template, TemplateTranslation
 from temba.tickets.models import Shortcut, Topic
 
-from ..models import APIPermission, SSLPermission
+from ..models import APIPermission, APIToken, SSLPermission
 from ..support import (
     APISessionAuthentication,
     CreatedOnCursorPagination,
@@ -56,6 +56,23 @@ class BaseEndpoint(BaseAPIView):
 # ============================================================
 # Endpoints (A-Z)
 # ============================================================
+
+
+class APITokensEndpoint(ListAPIMixin, BaseEndpoint):
+    """
+    The current user's API tokens for the current org, oldest first, used by the API token list component
+    """
+
+    class Pagination(CursorPagination):
+        ordering = ("created", "key")
+
+    model = APIToken
+    serializer_class = serializers.ModelAsJsonSerializer
+    pagination_class = Pagination
+
+    def get_queryset(self):
+        # read from the primary database rather than the readonly replica, so a token appears as soon as it's created
+        return self.request.user.get_api_tokens(self.request.org)
 
 
 class ArticlesEndpoint(BaseEndpoint):

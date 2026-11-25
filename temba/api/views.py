@@ -14,9 +14,9 @@ from django.utils.translation import gettext_lazy as _
 from temba import mailroom
 from temba.api.support import InvalidQueryError
 from temba.contacts.models import URN
-from temba.orgs.views.base import BaseDeleteModal, BaseListView
+from temba.orgs.views.base import BaseDeleteModal, BaseListComponentView
 from temba.utils.models import OrgAsset, OrgLimitMixin
-from temba.utils.views.mixins import ContextMenuMixin, NonAtomicMixin, SpaMixin
+from temba.utils.views.mixins import NonAtomicMixin
 
 from .models import APIToken, BulkActionFailure
 
@@ -302,11 +302,15 @@ class APITokenCRUDL(SmartCRUDL):
     model = APIToken
     actions = ("list", "delete")
 
-    class List(SpaMixin, ContextMenuMixin, BaseListView):
+    class List(BaseListComponentView):
         title = _("API Tokens")
         menu_path = "/settings/api-tokens"
-        paginate_by = None
+        list_endpoint = "api.internal.api_tokens"
+        allow_search = False
         token_limit = 3
+
+        def derive_list_query(self) -> str:
+            return ""  # the endpoint has no folders
 
         def build_context_menu(self, menu):
             if self.request.user.get_api_tokens(self.request.org).count() < self.token_limit:
@@ -316,9 +320,6 @@ class APITokenCRUDL(SmartCRUDL):
             context = super().get_context_data(**kwargs)
             context["token_limit"] = self.token_limit
             return context
-
-        def get_queryset(self, **kwargs):
-            return self.request.user.get_api_tokens(self.request.org).order_by("created")
 
         def post(self, request, *args, **kwargs):
             # there's no create view - just a POST to this view

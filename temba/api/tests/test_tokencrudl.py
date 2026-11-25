@@ -10,7 +10,12 @@ class APITokenCRUDLTest(CRUDLTestMixin, TembaTest):
         tokens_url = reverse("api.apitoken_list")
 
         self.assertRequestDisallowed(tokens_url, [None, self.agent])
-        self.assertListFetch(tokens_url, [self.admin], context_objects=[])
+        response = self.assertListFetch(tokens_url, [self.editor, self.admin], context_objects=[])
+
+        # the temba-apitoken-list component fetches the tokens itself from the internal API
+        self.assertContains(response, "temba-apitoken-list")
+        self.assertEqual(f"{reverse('api.internal.api_tokens')}.json", response.context["list_url"])
+        self.assertEqual(3, response.context["token_limit"])
 
         # add user to other org and create API tokens for both
         self.org2.add_user(self.admin, OrgRole.EDITOR)
@@ -19,7 +24,6 @@ class APITokenCRUDLTest(CRUDLTestMixin, TembaTest):
         APIToken.create(self.org, self.editor)  # other user
         APIToken.create(self.org2, self.admin)  # other org
 
-        response = self.assertListFetch(tokens_url, [self.admin], context_objects=[token1, token2], choose_org=self.org)
         self.assertContentMenu(tokens_url, self.admin, ["New"], choose_org=self.org)
 
         # can POST to create new token
@@ -28,10 +32,9 @@ class APITokenCRUDLTest(CRUDLTestMixin, TembaTest):
         self.assertEqual(3, self.admin.get_api_tokens(self.org).count())
         token3 = self.admin.get_api_tokens(self.org).order_by("created").last()
 
+        self.assertEqual([token1, token2, token3], list(self.admin.get_api_tokens(self.org).order_by("created")))
+
         # and now option to create new token is gone because we've reached the limit
-        response = self.assertListFetch(
-            tokens_url, [self.admin], context_objects=[token1, token2, token3], choose_org=self.org
-        )
         self.assertContentMenu(tokens_url, self.admin, [], choose_org=self.org)
 
         # and POSTing is noop

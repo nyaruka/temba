@@ -3087,6 +3087,22 @@
   <source><x id="0" equiv-text="${count}"/> uses</source>
   <target><x id="0" equiv-text="${count}"/> utilisations</target>
 </trans-unit>
+<trans-unit id="s9ff5f04461579e78">
+  <source>No API tokens</source>
+  <target>Aucun jeton d'API</target>
+</trans-unit>
+<trans-unit id="s97cd82e84d3b3fba">
+  <source>Last Used</source>
+  <target>Dernière utilisation</target>
+</trans-unit>
+<trans-unit id="s3687049d1af562c4">
+  <source>Copy</source>
+  <target>Copier</target>
+</trans-unit>
+<trans-unit id="s8b97ea84af17c029">
+  <source>Never</source>
+  <target>Jamais</target>
+</trans-unit>
 </body>
 </file>
 </xliff>

@@ -13,6 +13,7 @@ from temba import mailroom
 from temba.ai.models import LLM
 from temba.ai.types.openai.type import OpenAIType
 from temba.ai.types.openai_azure.type import OpenAIAzureType
+from temba.api.models import APIToken
 from temba.api.tests.mixins import APITestMixin
 from temba.campaigns.models import Campaign, CampaignEvent
 from temba.channels.models import Channel, ChannelLog
@@ -37,6 +38,40 @@ NUM_BASE_QUERIES = 3  # number of queries required for any request (internal API
 
 
 class EndpointsTest(APITestMixin, TembaTest):
+    def test_api_tokens(self):
+        endpoint_url = reverse("api.internal.api_tokens") + ".json"
+
+        self.assertGetNotPermitted(endpoint_url, [None, self.agent])
+        self.assertPostNotAllowed(endpoint_url)
+        self.assertDeleteNotAllowed(endpoint_url)
+
+        token1 = APIToken.create(self.org, self.admin)
+        token2 = APIToken.create(self.org, self.admin)
+        token2.last_used_on = timezone.now()
+        token2.save(update_fields=("last_used_on",))
+        released = APIToken.create(self.org, self.admin)
+        released.release()
+        APIToken.create(self.org, self.editor)  # other user
+        APIToken.create(self.org2, self.admin2)  # other org
+
+        # only the user's own active tokens, oldest first
+        response = self.assertGet(
+            endpoint_url,
+            [self.admin],
+            results=[
+                {"key": token1.key, "created_on": matchers.ISODatetime(), "last_used_on": None},
+                {"key": token2.key, "created_on": matchers.ISODatetime(), "last_used_on": matchers.ISODatetime()},
+            ],
+            num_queries=NUM_BASE_QUERIES + 1,
+        )
+        self.assertEqual("cursor", response.json()["paged_by"])
+
+        self.assertGet(
+            endpoint_url,
+            [self.editor],
+            results=[{"key": matchers.String(), "created_on": matchers.ISODatetime(), "last_used_on": None}],
+        )
+
     def test_locations(self):
         endpoint_url = reverse("api.internal.locations") + ".json"
 

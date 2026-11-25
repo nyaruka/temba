@@ -4100,15 +4100,12 @@ msgstr "Você está prestes a deletar o token de API <b>%(prefix)s</b>. Não é 
 msgid "Delete Token"
 msgstr "Deletar token"
 
+msgid "No tokens"
+msgstr "Nenhum token"
+
 #, python-format
 msgid "These are your personal tokens for accessing the <a href=\"%(api_url)s\">API</a>. You can have a maximum of %(limit)s."
 msgstr "Estes são os seus tokens pessoais para acessar a <a href=\"%(api_url)s\">API</a>. Você pode ter no máximo %(limit)s."
-
-msgid "Last Used"
-msgstr "Último uso"
-
-msgid "No tokens"
-msgstr "Nenhum token"
 
 msgid "Endpoints"
 msgstr "Endpoints"
