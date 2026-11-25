@@ -27,7 +27,7 @@ from temba.notifications.incidents.builtin import ChannelDisconnectedIncidentTyp
 from temba.notifications.types.builtin import ExportFinishedNotificationType
 from temba.orgs.models import Export, Invitation, Org, OrgMembership, OrgRole
 from temba.orgs.signals import org_status_changed
-from temba.orgs.tasks import delete_released_orgs, restart_stalled_exports, suspend_restricted_orgs
+from temba.orgs.tasks import purge_deleted_orgs, restart_stalled_exports, suspend_restricted_orgs
 from temba.request_logs.models import HTTPLog
 from temba.schedules.models import Schedule
 from temba.templates.models import TemplateTranslation
@@ -1229,7 +1229,7 @@ class OrgDeleteTest(TembaTest):
 
         self.assertTrue(org.is_active)
         self.assertIsNone(org.released_on)
-        self.assertIsNone(org.deleted_on)
+        self.assertIsNone(org.purged_on)
 
         for o in org_content:
             self.assertTrue(self._exists(o), f"{repr(o)} should still exist")
@@ -1239,7 +1239,7 @@ class OrgDeleteTest(TembaTest):
 
         self.assertFalse(org.is_active)
         self.assertIsNotNone(org.released_on)
-        self.assertIsNone(org.deleted_on)
+        self.assertIsNone(org.purged_on)
 
         for o in org_content:
             self.assertTrue(self._exists(o), f"{repr(o)} should still exist")
@@ -1250,7 +1250,7 @@ class OrgDeleteTest(TembaTest):
         self.assertFalse(org.is_active)
         self.assertEqual({}, org.config)
         self.assertIsNotNone(org.released_on)
-        self.assertIsNotNone(org.deleted_on)
+        self.assertIsNotNone(org.purged_on)
 
         for o in org_content:
             self.assertFalse(self._exists(o), f"{repr(o)} shouldn't still exist")
@@ -1305,7 +1305,7 @@ class OrgDeleteTest(TembaTest):
         self.assertUserActive(self.admin2)
         self.assertUserActive(group_admin)  # because they still have access to org #2
 
-        delete_released_orgs()
+        purge_deleted_orgs()
 
         self.assertOrgReleased(self.org, org1_content)  # deletion hasn't occurred yet because releasing was too soon
         self.assertOrgReleased(org1_child1)
@@ -1318,7 +1318,7 @@ class OrgDeleteTest(TembaTest):
         # a membership added after release shouldn't block deletion of the team it references
         self.org.add_user(self.agent, OrgRole.AGENT, team=Team.objects.get(org=self.org, name="Spam Only"))
 
-        delete_released_orgs()
+        purge_deleted_orgs()
 
         self.assertOrgDeleted(self.org, org1_content)
         self.assertFalse(self.org.users.exists())

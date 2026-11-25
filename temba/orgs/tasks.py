@@ -101,13 +101,13 @@ def suspend_restricted_orgs():
 
 
 @cron_task(lock_timeout=7 * 24 * 60 * 60)
-def delete_released_orgs():
+def purge_deleted_orgs():
     # for each org that was released over 7 days ago, delete it for real
     week_ago = timezone.now() - timedelta(days=Org.DELETE_DELAY_DAYS)
 
     num_deleted, num_failed = 0, 0
 
-    for org in Org.objects.filter(is_active=False, released_on__lt=week_ago, deleted_on=None).order_by("released_on"):
+    for org in Org.objects.filter(is_active=False, released_on__lt=week_ago, purged_on=None).order_by("released_on"):
         start = timezone.now()
 
         try:
