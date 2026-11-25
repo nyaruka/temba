@@ -1,3 +1,8 @@
+## v26.3.232 (2026-11-25)
+ * Remove the in-process template sync and its incident type (#7353)
+ * Treat the readonly database connection as a replica of default (#7352)
+ * Drop the APIToken.is_active column (#7278)
+
 ## v26.3.231 (2026-11-25)
  * Remove APIToken.is_active from the model, keeping its column with a default (#7277)
  * Sync channel templates through mailroom (#7349)
