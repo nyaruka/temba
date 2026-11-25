@@ -99,7 +99,7 @@
         </button>
       {% endif %}
       {% if sheets.templates %}
-        <button type="button" class="dash-card {% if templates.last_sync.is_error %}bad{% endif %}" data-sheet="templates">
+        <button type="button" class="dash-card {% if templates.last_sync.failed %}bad{% endif %}" data-sheet="templates">
           <span class="dash-card-label">{% trans "Templates" %}</span>
           {% if templates.total %}
             <span class="dash-card-value">
@@ -112,15 +112,15 @@
           {% if templates.others %}
             <span class="dash-card-note">{{ templates.others|join:", " }}</span>
           {% endif %}
-          {% if templates.last_sync.is_error %}
+          {% if templates.last_sync.failed %}
             <span class="dash-card-note">
-              {% blocktrans trimmed with since=templates.last_sync.created_on|timesince %}
+              {% blocktrans trimmed with since=templates.last_sync.synced_on|timesince %}
                 Last sync failed {{ since }} ago
               {% endblocktrans %}
             </span>
           {% elif templates.last_sync %}
             <span class="dash-card-note">
-              {% blocktrans trimmed with since=templates.last_sync.created_on|timesince %}
+              {% blocktrans trimmed with since=templates.last_sync.synced_on|timesince %}
                 Synced {{ since }} ago
               {% endblocktrans %}
             </span>

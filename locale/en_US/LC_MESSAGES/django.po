@@ -483,6 +483,9 @@ msgstr ""
 msgid "Webhook Verify"
 msgstr ""
 
+msgid "Template Sync"
+msgstr ""
+
 #, python-format
 msgid "%(link)s offers SMS short codes in over 20 countries across Africa through a single account, connected directly to each country's mobile networks. Connect a short code you have with them to message contacts throughout the region."
 msgstr ""

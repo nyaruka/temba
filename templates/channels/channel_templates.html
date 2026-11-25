@@ -9,25 +9,25 @@
 {% block content %}
   <div class="channel-templates">
     {% if last_sync %}
-      <div class="dash-banner {% if not last_sync.is_error %}info{% endif %}">
-        <temba-icon name="{% if last_sync.is_error %}alert_warning{% else %}check{% endif %}" size="1.1"></temba-icon>
+      <div class="dash-banner {% if not last_sync.failed %}info{% endif %}">
+        <temba-icon name="{% if last_sync.failed %}alert_warning{% else %}check{% endif %}" size="1.1"></temba-icon>
         <div class="dash-banner-text">
-          {% if last_sync.is_error %}
+          {% if last_sync.failed %}
             <div class="dash-banner-title">
-              {% blocktrans trimmed with since=last_sync.created_on|timesince %}
+              {% blocktrans trimmed with since=last_sync.synced_on|timesince %}
                 The last sync failed {{ since }} ago
               {% endblocktrans %}
             </div>
             {% trans "These may be out of date until a sync succeeds." %}
           {% else %}
-            {% blocktrans trimmed with since=last_sync.created_on|timesince %}
+            {% blocktrans trimmed with since=last_sync.synced_on|timesince %}
               Synced from the provider {{ since }} ago.
             {% endblocktrans %}
           {% endif %}
         </div>
-        {% if can_view_syncs %}
+        {% if sync_logs_url %}
           <div class="dash-banner-actions">
-            <a class="dash-link" href="{% url 'request_logs.httplog_channel' object.uuid %}" data-sheet-push="{% trans "Sync Logs" %}">{% trans "View sync logs" %}</a>
+            <a class="dash-link" href="{{ sync_logs_url }}" data-sheet-push="{% trans "Sync Logs" %}">{% trans "View sync logs" %}</a>
           </div>
         {% endif %}
       </div>

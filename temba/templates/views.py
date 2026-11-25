@@ -1,4 +1,3 @@
-import requests
 from smartmin.views import SmartCRUDL, SmartFormView
 
 from django import forms
@@ -80,9 +79,7 @@ class TemplateCRUDL(SmartCRUDL):
 
             has_errors = False
             for channel in channels:
-                try:
-                    channel.refresh_templates()
-                except requests.RequestException:
+                if not channel.refresh_templates():
                     has_errors = True
 
             if has_errors:

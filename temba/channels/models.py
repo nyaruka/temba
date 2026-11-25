@@ -491,41 +491,23 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
 
         return TYPES.get(self.type.template_type)
 
-    def refresh_templates(self):
-        from temba.notifications.incidents.builtin import ChannelTemplatesFailedIncidentType
-        from temba.request_logs.models import HTTPLog
-        from temba.templates.models import TemplateTranslation
-
-        r = get_valkey_connection()
-
-        key = "refresh_channel_templates_%d" % self.id
-
-        # we need to make sure the channel is not syncing the templates
-        if r.get(key):  # pragma: no cover
-            return
-
-        with r.lock(key, 60):
-            try:
-                raw_templates = self.type.fetch_templates(self)
-
-                TemplateTranslation.update_local(self, raw_templates)
-
-                # if we have an ongoing template incident, end it
-                ongoing = self.incidents.filter(
-                    incident_type=ChannelTemplatesFailedIncidentType.slug, ended_on=None
-                ).first()
-                if ongoing:
-                    ongoing.end()
-            except requests.RequestException as e:
-                # if last 5 sync attempts have been errors, create an incident
-                recent_is_errors = list(
-                    self.http_logs.filter(log_type=HTTPLog.WHATSAPP_TEMPLATES_SYNCED)
-                    .order_by("-id")
-                    .values_list("is_error", flat=True)[:5]
-                )
-                if len(recent_is_errors) >= 5 and all(recent_is_errors):
-                    ChannelTemplatesFailedIncidentType.get_or_create(self)
-                raise e
+    def refresh_templates(self) -> bool:
+        """
+        Syncs this channel's templates from its provider through mailroom, returning whether it succeeded. Mailroom
+        records a failed fetch on the channel itself, and another sync already running counts as success.
+        """
+        try:
+            mailroom.get_client().channel_sync_templates(self.org, self)
+        except mailroom.RequestException as e:
+            if e.response.status_code == 409:
+                return True
+            if e.response.status_code != 422:
+                logger.warning(f"error syncing templates for channel #{self.id}: {e}")
+            return False
+        except requests.RequestException as e:
+            logger.warning(f"error syncing templates for channel #{self.id}: {e}")
+            return False
+        return True
 
     @classmethod
     def add_authenticated_external_channel(
@@ -649,6 +631,14 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
             return "%s (%s)" % (self.config.get("wa_number", ""), self.config.get("wa_verified_name", self.name))
 
         return self.address
+
+    @cached_property
+    def last_templates_sync(self) -> "TemplatesSync | None":
+        """
+        Gets the latest sync of this channel's templates from its provider
+        """
+        state = self.sync_state.get("templates")
+        return TemplatesSync.from_json(state) if state else None
 
     @cached_property
     def last_sync(self) -> "AndroidSync | None":
@@ -1278,6 +1268,7 @@ class ChannelLog:
     LOG_TYPE_TOKEN_REFRESH = "token_refresh"
     LOG_TYPE_PAGE_SUBSCRIBE = "page_subscribe"
     LOG_TYPE_WEBHOOK_VERIFY = "webhook_verify"
+    LOG_TYPE_TEMPLATE_SYNC = "template_sync"
     LOG_TYPE_DISPLAY = {
         LOG_TYPE_UNKNOWN: _("Other Event"),
         LOG_TYPE_MSG_SEND: _("Message Send"),
@@ -1295,6 +1286,7 @@ class ChannelLog:
         LOG_TYPE_TOKEN_REFRESH: _("Token Refresh"),
         LOG_TYPE_PAGE_SUBSCRIBE: _("Page Subscribe"),
         LOG_TYPE_WEBHOOK_VERIFY: _("Webhook Verify"),
+        LOG_TYPE_TEMPLATE_SYNC: _("Template Sync"),
     }
 
     uuid: str
@@ -1461,3 +1453,18 @@ class AndroidSync:
         # one odd state can't break every page that shows channel health
         values = {f.name: data[f.name] for f in fields(cls) if f.name != "synced_on" and data.get(f.name) is not None}
         return cls(synced_on=iso8601.parse_date(data["synced_on"]), **values)
+
+
+@dataclass(frozen=True)
+class TemplatesSync:
+    """
+    The latest sync of a channel's templates from its provider, as mailroom records it under the templates key of its
+    sync state
+    """
+
+    synced_on: datetime
+    failed: bool = False
+
+    @classmethod
+    def from_json(cls, data: dict):
+        return cls(synced_on=iso8601.parse_date(data["synced_on"]), failed=bool(data.get("failed")))
