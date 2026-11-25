@@ -1093,6 +1093,9 @@ class EndpointsTest(APITestMixin, TembaTest):
         self.assertGetNotAllowed(endpoint_url)
         self.assertDeleteNotAllowed(endpoint_url)
 
+        self.login(self.admin)
+        self.assertEqual(405, self.client.options(endpoint_url).status_code)
+
         flow = self.create_flow("Welcome")
         group = self.create_group("Customers")
         contact = self.create_contact("Alice", phone="+1234567001")

@@ -287,8 +287,19 @@ class FlowCRUDL(SmartCRUDL):
             )
 
         def post(self, request, *args, **kwargs):
-            # try to parse our body
-            definition = json.loads(force_str(request.body))
+            try:
+                definition = json.loads(force_str(request.body))
+                Version(definition[Flow.DEFINITION_SPEC_VERSION])
+            except ValueError, TypeError, KeyError:  # InvalidVersion is a ValueError
+                return JsonResponse(
+                    {
+                        "status": "failure",
+                        "description": _("Your flow failed validation. Please refresh your browser."),
+                        "detail": None,
+                    },
+                    status=400,
+                )
+
             try:
                 flow = self.get_object(self.get_queryset())
                 revision, issues = flow.save_revision(self.request.user, definition)
@@ -318,10 +329,8 @@ class FlowCRUDL(SmartCRUDL):
                     % e.other_user
                 )
                 detail = None
-            except Exception as e:  # pragma: no cover
-                import traceback
-
-                traceback.print_stack(e)
+            except Exception:  # pragma: no cover
+                logger.exception("Error saving flow revision")
                 error = _("Your flow could not be saved. Please refresh your browser.")
                 detail = None
 
@@ -1144,6 +1153,19 @@ class FlowCRUDL(SmartCRUDL):
                 json_dict = json.loads(request.body)
             except Exception as e:  # pragma: needs cover
                 return JsonResponse(dict(status="error", description="Error parsing JSON: %s" % str(e)), status=400)
+
+            if isinstance(json_dict, dict) and "trigger" in json_dict:
+                valid = "contact" in json_dict and isinstance(json_dict["trigger"], dict)
+            elif isinstance(json_dict, dict) and "resume" in json_dict:
+                valid = "contact" in json_dict and "session" in json_dict
+            else:
+                valid = False
+
+            if not valid:
+                return JsonResponse(
+                    dict(status="error", description="Request must include a contact and a trigger or resume"),
+                    status=400,
+                )
 
             try:
                 return JsonResponse(self._simulate(json_dict))

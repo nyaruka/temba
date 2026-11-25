@@ -1039,6 +1039,14 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         response = self.client.post(revisions_url, definition, content_type="application/json")
         self.assertResponseError(response, "description", "Your flow has been upgraded to the latest version")
 
+        # malformed bodies are rejected rather than erroring
+        del definition[Flow.DEFINITION_SPEC_VERSION]
+        for body in ("not json", "[]", definition, {**definition, Flow.DEFINITION_SPEC_VERSION: None}):
+            response = self.client.post(
+                revisions_url, body if isinstance(body, str) else json.dumps(body), content_type="application/json"
+            )
+            self.assertResponseError(response, "description", "Your flow failed validation")
+
     @mock_mailroom
     def test_preview_start(self, mr_mocks):
         flow = self.create_flow("Test Flow")
@@ -2436,6 +2444,18 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
 
         self.login(self.admin)
         simulate_url = reverse("flows.flow_simulate", args=[flow.uuid])
+
+        # requests without a contact and a trigger or resume are rejected
+        for body in (
+            [],
+            {"contact": payload["contact"]},
+            {"trigger": {"type": "manual"}},
+            {"contact": payload["contact"], "trigger": "manual"},
+            {"contact": payload["contact"], "resume": {}},
+        ):
+            response = self.client.post(simulate_url, json.dumps(body), content_type="application/json")
+            self.assertEqual(400, response.status_code)
+            self.assertEqual("error", response.json()["status"])
 
         # a mailroom error becomes a 500
         mr_mocks.exception(mailroom.RequestException("sim/start", {}, MockJsonResponse(400, {"error": "boom"})))
