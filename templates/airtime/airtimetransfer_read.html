@@ -9,25 +9,13 @@
 {% endblock above-bar %}
 {% block post-fields %}
   {% if show_logs %}
-    <h3>
-      {% trans "HTTP Logs" %}
-      {% for log in http_logs %}
-        <hr>
-        <pre style="margin-top: 10px" class="data prettyprint">{{ log.request|default:"" }}</pre>
-        <pre style="margin-top: 10px" class="data prettyprint">{% if log.response %}{{ log.response|default:"" }}{% else %}{% trans "No Data" %}{% endif %}</pre>
+    <div class="log-view">
+      <h3>{% trans "Logs" %}</h3>
+      {% for log in logs %}
+        {% include "includes/svc_log.html" %}
+      {% empty %}
+        <div>{% trans "Logs are kept for 7 days." %}</div>
       {% endfor %}
-    </h3>
+    </div>
   {% endif %}
 {% endblock post-fields %}
-{% block extra-script %}
-  {{ block.super }}
-  <script>
-    onSpload(function() {
-      prettyPrint();
-    });
-  </script>
-{% endblock extra-script %}
-{% block extra-style %}
-  {{ block.super }}
-  <link rel="stylesheet" href="{{ STATIC_URL }}rest_framework/css/prettify.css">
-{% endblock extra-style %}

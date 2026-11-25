@@ -82,6 +82,12 @@ msgstr "Deletar modelo"
 msgid "Your LLM model has been deleted."
 msgstr "Seu modelo de LLM foi deletado."
 
+msgid "Create Transfer"
+msgstr "Criar transferência"
+
+msgid "Confirm Transfer"
+msgstr "Confirmar transferência"
+
 msgid "Recent Airtime Transfers"
 msgstr "Transferências recentes de Airtime"
 
@@ -3395,9 +3401,6 @@ msgstr "Código de confirmação inválido"
 msgid "Getting Started"
 msgstr "Introduzindo"
 
-msgid "Airtime Transferred"
-msgstr "Airtime Transferido"
-
 msgid "WhatsApp Templates Synced"
 msgstr "Templates do WhatsApp sincronizados"
 
@@ -4069,11 +4072,8 @@ msgstr "Nenhuma transferência de crédito"
 msgid "Back"
 msgstr "Voltar"
 
-msgid "HTTP Logs"
-msgstr "Logs HTTP"
-
-msgid "No Data"
-msgstr "Sem dados"
+msgid "Logs"
+msgstr "Registros"
 
 msgid "You are not a member of any workspaces and need an invitation to continue."
 msgstr "Você não é membro de nenhuma área de trabalho e precisa de um convite para continuar."
@@ -4328,12 +4328,6 @@ msgstr "Mensagem enviada para"
 msgid "Call with"
 msgstr "Chamada com"
 
-msgid "OK"
-msgstr "OK"
-
-msgid "Learn more"
-msgstr "Saiba mais"
-
 msgid "Sending is paused"
 msgstr "O envio está pausado"
 
@@ -4408,6 +4402,9 @@ msgstr "Logs recentes"
 
 msgid "View all"
 msgstr "Ver tudo"
+
+msgid "OK"
+msgstr "OK"
 
 #, python-format
 msgid "Failed after %(ms)s ms"
@@ -5264,6 +5261,9 @@ msgstr "Acesso da equipe interna"
 
 msgid "End"
 msgstr "Fim"
+
+msgid "Learn more"
+msgstr "Saiba mais"
 
 msgid "No calls"
 msgstr "Nenhuma chamada"

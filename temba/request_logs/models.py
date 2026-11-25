@@ -7,7 +7,6 @@ from django.db.models import Index, Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from temba.airtime.models import AirtimeTransfer
 from temba.channels.models import Channel
 from temba.flows.models import Flow
 from temba.orgs.models import Org
@@ -27,7 +26,6 @@ class HTTPLog(models.Model):
 
     # log type choices
     WEBHOOK_CALLED = "webhook_called"
-    AIRTIME_TRANSFERRED = "airtime_transferred"
     WHATSAPP_TEMPLATES_SYNCED = "whatsapp_templates_synced"
     WHATSAPP_TOKENS_SYNCED = "whatsapp_tokens_synced"
     WHATSAPP_CONTACTS_REFRESHED = "whatsapp_contacts_refreshed"
@@ -36,7 +34,6 @@ class HTTPLog(models.Model):
     # possible log type choices and descriptive names
     LOG_TYPE_CHOICES = (
         (WEBHOOK_CALLED, "Webhook Called"),
-        (AIRTIME_TRANSFERRED, _("Airtime Transferred")),
         (WHATSAPP_TEMPLATES_SYNCED, _("WhatsApp Templates Synced")),
         (WHATSAPP_TOKENS_SYNCED, _("WhatsApp Tokens Synced")),
         (WHATSAPP_CONTACTS_REFRESHED, _("WhatsApp Contacts Refreshed")),
@@ -59,7 +56,6 @@ class HTTPLog(models.Model):
 
     # foreign keys for fetching logs
     flow = models.ForeignKey(Flow, related_name="http_logs", on_delete=models.PROTECT, null=True)
-    airtime_transfer = models.ForeignKey(AirtimeTransfer, related_name="http_logs", on_delete=models.PROTECT, null=True)
     channel = models.ForeignKey(Channel, related_name="http_logs", on_delete=models.PROTECT, null=True)
 
     @classmethod

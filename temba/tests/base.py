@@ -821,6 +821,27 @@ class TembaTest(SmartminTest):
 
         return ChannelLog._from_item(channel, item)
 
+    def create_airtime_log(self, transfer, log_type: str, *, http_logs=(), errors=(), org=None):
+        """
+        Adds a log of an airtime transfer's interaction with its provider, as mailroom writes it to DynamoDB
+        """
+        created_on = timezone.now()
+        dynamo.MAIN.put_item(
+            Item={
+                "PK": f"att#{transfer.uuid}",
+                "SK": f"log#{uuid7(created_on)}",
+                "OrgID": (org or transfer.org).id,
+                "TTL": int((created_on + timedelta(days=7)).timestamp()),
+                "Data": {
+                    "type": log_type,
+                    "elapsed_ms": 12,
+                    "created_on": created_on.isoformat(),
+                    "is_error": bool(errors),
+                },
+                "DataGZ": dynamo.dump_jsongz({"http_logs": list(http_logs), "errors": list(errors)}),
+            }
+        )
+
     def create_channel_event(self, channel, urn, event_type, occurred_on=None, extra=None):
         urn_obj = contact_urn_lookup(channel.org, urn)
         if urn_obj:

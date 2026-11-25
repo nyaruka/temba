@@ -72,6 +72,12 @@ msgstr ""
 msgid "Your LLM model has been deleted."
 msgstr ""
 
+msgid "Create Transfer"
+msgstr ""
+
+msgid "Confirm Transfer"
+msgstr ""
+
 msgid "Recent Airtime Transfers"
 msgstr ""
 
@@ -3368,9 +3374,6 @@ msgstr ""
 msgid "Getting Started"
 msgstr ""
 
-msgid "Airtime Transferred"
-msgstr ""
-
 msgid "WhatsApp Templates Synced"
 msgstr ""
 
@@ -4041,10 +4044,7 @@ msgstr ""
 msgid "Back"
 msgstr ""
 
-msgid "HTTP Logs"
-msgstr ""
-
-msgid "No Data"
+msgid "Logs"
 msgstr ""
 
 msgid "You are not a member of any workspaces and need an invitation to continue."
@@ -4300,12 +4300,6 @@ msgstr ""
 msgid "Call with"
 msgstr ""
 
-msgid "OK"
-msgstr ""
-
-msgid "Learn more"
-msgstr ""
-
 msgid "Sending is paused"
 msgstr ""
 
@@ -4378,6 +4372,9 @@ msgid "Recent logs"
 msgstr ""
 
 msgid "View all"
+msgstr ""
+
+msgid "OK"
 msgstr ""
 
 #, python-format
@@ -5224,6 +5221,9 @@ msgid "Staff access"
 msgstr ""
 
 msgid "End"
+msgstr ""
+
+msgid "Learn more"
 msgstr ""
 
 msgid "No calls"

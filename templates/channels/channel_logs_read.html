@@ -53,40 +53,7 @@
       </div>
     {% endif %}
     {% for log in logs %}
-      <div class="log-view">
-        <div class="log-summary">
-          <span class="log-summary-title">{{ log.type_display }}</span>
-          <span class="dash-pill {% if log.is_error %}bad{% else %}good{% endif %}">
-            {% if log.is_error %}
-              {% trans "Error" %}
-            {% else %}
-              {% trans "OK" %}
-            {% endif %}
-          </span>
-          <span class="log-summary-meta">
-            <span>{{ log.elapsed_ms|intcomma }} ms</span>
-            <temba-date value="{{ log.created_on }}" display="timedate"></temba-date>
-          </span>
-        </div>
-        {% if log.errors %}
-          <div class="log-errors">
-            {% for err in log.errors %}
-              <div class="log-error">
-                <temba-icon name="error" size="1.1"></temba-icon>
-                <div>
-                  {{ err.message }}
-                  {% if err.ref_url %}
-                    <a href="{{ err.ref_url }}" target="_blank" rel="noopener">{% trans "Learn more" %}</a>
-                  {% endif %}
-                </div>
-              </div>
-            {% endfor %}
-          </div>
-        {% endif %}
-        {% for http_log in log.http_logs %}
-          {% include "includes/http_log.html" with log=http_log %}
-        {% endfor %}
-      </div>
+      {% include "includes/svc_log.html" %}
     {% endfor %}
   </div>
   {% if can_break and is_sheet %}
