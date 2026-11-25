@@ -170,7 +170,6 @@
 's33f85f24c0f5f008': `Guardar`,
 's3458d58fad2e9def': `El valor predeterminado es 60 segundos.`,
 's34bc4cc9fb5b7aa4': `Instrucciones`,
-'s358edca3fc337c88': `Las plantillas de tu canal de WhatsApp no se pudieron sincronizar`,
 's363a9cc509be1902': `Sin URNs`,
 's3643189d1abbb7f4': `Código`,
 's36aa0b4519551ac3': `Se requieren al menos 2 grupos para la división aleatoria`,

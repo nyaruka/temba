@@ -3,8 +3,8 @@ from unittest.mock import patch
 from django.urls import reverse
 
 from temba.contacts.models import ContactExport
-from temba.notifications.incidents.builtin import ChannelTemplatesFailedIncidentType
-from temba.notifications.models import Notification
+from temba.notifications.incidents.builtin import ChannelOutdatedAppIncidentType
+from temba.notifications.models import Incident, Notification
 from temba.notifications.types.builtin import ExportFinishedNotificationType
 from temba.orgs.models import OrgMembership, OrgRole
 from temba.tests import CRUDLTestMixin, TembaTest
@@ -30,13 +30,15 @@ class NotificationCRUDLTest(TembaTest, CRUDLTestMixin):
         notification.refresh_from_db()
         self.assertTrue(notification.is_seen)
 
-    @patch.object(ChannelTemplatesFailedIncidentType, "email_required", True)
+    @patch.object(ChannelOutdatedAppIncidentType, "email_required", True)
     def test_unsubscribe(self):
         export = ContactExport.create(self.org, self.editor)
         ExportFinishedNotificationType.create(export)
 
         self.org.add_user(self.editor, OrgRole.ADMINISTRATOR)  # so they're also notified of incidents
-        ChannelTemplatesFailedIncidentType.get_or_create(self.channel)
+        Incident.get_or_create(
+            self.org, ChannelOutdatedAppIncidentType.slug, scope=str(self.channel.id), channel=self.channel
+        )
 
         notification = self.editor.notifications.get(export=export)
         unsubscribe_url = notification.get_unsubscribe_url().removeprefix("https://app.rapidpro.io")

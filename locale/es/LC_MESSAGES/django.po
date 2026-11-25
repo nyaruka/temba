@@ -3001,9 +3001,6 @@ msgstr "Aplicación Android del canal desactualizada"
 msgid "Webhooks Unhealthy"
 msgstr "Webhooks con problemas"
 
-msgid "WhatsApp Templates Sync Failed"
-msgstr "Error al sincronizar las plantillas de WhatsApp"
-
 msgid "Incident"
 msgstr "Incidente"
 
@@ -4451,9 +4448,6 @@ msgstr "Es posible que estén desactualizadas hasta que una sincronización se c
 msgid "Synced from the provider %(since)s ago."
 msgstr "Sincronizadas desde el proveedor hace %(since)s."
 
-msgid "View sync logs"
-msgstr "Ver registros de sincronización"
-
 msgid "No templates have been synced for this channel."
 msgstr "No se ha sincronizado ninguna plantilla para este canal."
 
@@ -5594,14 +5588,6 @@ msgid "Your workspace has a channel that appears to be still running an old vers
 msgstr "Su workspace tiene un canal que parece seguir ejecutando una versión antigua de la aplicación cliente. Ver incidencias (%(url)s)"
 
 #, python-format
-msgid "Your <a href=\"%(url)s\">WhatsApp channel</a> is currently having problems fetching templates."
-msgstr "Su <a href=\"%(url)s\">canal de WhatsApp</a> tiene problemas actualmente para obtener las plantillas."
-
-#, python-format
-msgid "Your WhatsApp channel (%(url)s) is currently having problems fetching templates."
-msgstr "Su canal de WhatsApp (%(url)s) tiene problemas actualmente para obtener las plantillas."
-
-#, python-format
 msgid "User <b>%(email)s</b> accepted an invitation to join your workspace."
 msgstr "El usuario %(email)s aceptó una invitación para unirse a su workspace."
 
@@ -5619,10 +5605,6 @@ msgstr "Su <a href=\"%(read_url)s\">canal Android</a> parece estar desconectado 
 #, python-format
 msgid "Your <a href=\"%(read_url)s\">Android channel</a> appears to be still running an old version of the client app."
 msgstr "Su <a href=\"%(read_url)s\">canal Android</a> parece seguir ejecutando una versión antigua de la aplicación cliente."
-
-#, python-format
-msgid "Your <a href=\"%(read_url)s\">WhatsApp channel</a> appears to not be syncing templates."
-msgstr "Su <a href=\"%(read_url)s\">canal de WhatsApp</a> parece no estar sincronizando las plantillas."
 
 #, python-format
 msgid "Some webhook calls from your flows are taking too long to respond or failing too frequently. If the problem persists these calls will be temporarily disabled. You can check the <a href=\"%(logs_url)s\">webhook call log</a> to see which calls are the problem."

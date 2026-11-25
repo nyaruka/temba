@@ -5,30 +5,7 @@ from django.utils.translation import gettext_lazy as _
 
 from temba.channels.models import Channel
 from temba.orgs.models import DependencyMixin, Org
-from temba.utils.languages import alpha2_to_alpha3
 from temba.utils.models import OrgAsset, update_if_changed
-
-
-class TemplateType:
-    slug: str
-    variable_regex: str
-
-    def update_local(self, channel, raw: dict):  # pragma: no cover
-        pass
-
-    def _extract_variables(self, text: str) -> list:
-        return list(sorted({m for m in self.variable_regex.findall(text)}))
-
-    def _parse_language(self, lang: str) -> str:
-        """
-        Converts a WhatsApp language code which can be alpha2 ('en') or alpha2_country ('en_US') or alpha3 ('fil')
-        to our locale format ('eng' or 'eng-US').
-        """
-        language, country = lang.split("_") if "_" in lang else [lang, None]
-        if len(language) == 2:
-            language = alpha2_to_alpha3(language)
-
-        return f"{language}-{country}" if country else language
 
 
 class Template(OrgAsset, DependencyMixin):
@@ -142,30 +119,6 @@ class TemplateTranslation(models.Model):
     external_locale = models.CharField(null=True, max_length=6)  # e.g. en_US
     is_supported = models.BooleanField(default=True)  # whether all components are supported
     is_compatible = models.BooleanField(default=True)  # whether parameters match those of template base translation
-
-    @classmethod
-    def update_local(cls, channel, raw_templates: list):
-        """
-        Updates the local translations against the fetched raw templates from the given channel
-        """
-
-        seen_ids = []
-        templates = set()
-
-        for raw_template in raw_templates:
-            translation = channel.template_type.update_local(channel, raw_template)
-            if translation:
-                seen_ids.append(translation.id)
-                templates.add(translation.template)
-
-        # delete any template translations we didn't see
-        for gone in channel.template_translations.exclude(id__in=seen_ids):
-            gone.delete()
-
-        # if any templates don't have a base translation update them
-        for template in templates:
-            if not template.base_translation:
-                template.update_base()
 
     @classmethod
     def get_or_create(

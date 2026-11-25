@@ -170,7 +170,6 @@
 's33f85f24c0f5f008': `Enregistrer`,
 's3458d58fad2e9def': `60 secondes par défaut.`,
 's34bc4cc9fb5b7aa4': `Instructions`,
-'s358edca3fc337c88': `La synchronisation des modèles de votre canal WhatsApp a échoué`,
 's363a9cc509be1902': `Aucun URN`,
 's3643189d1abbb7f4': `Code`,
 's36aa0b4519551ac3': `Au moins 2 groupes sont requis pour la division aléatoire`,

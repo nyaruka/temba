@@ -170,7 +170,6 @@
 's33f85f24c0f5f008': `Salvar`,
 's3458d58fad2e9def': `O padrão é 60 segundos.`,
 's34bc4cc9fb5b7aa4': `Instruções`,
-'s358edca3fc337c88': `A sincronização dos modelos do seu canal WhatsApp falhou`,
 's363a9cc509be1902': `Sem URNs`,
 's3643189d1abbb7f4': `Código`,
 's36aa0b4519551ac3': `Pelo menos 2 grupos são necessários para a divisão aleatória`,

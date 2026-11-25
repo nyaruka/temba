@@ -832,14 +832,14 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(["1 rejected"], response.context["templates"]["others"])
         self.assertIn("templates", response.context["sheets"])
 
-        # once synced, the sheet says how that went, with a link to the sync logs for those who can see them
+        # once synced, the sheet says how that went
         Channel.objects.filter(id=wac.id).update(
             sync_state={"templates": {"synced_on": timezone.now().isoformat(), "failed": False}}
         )
         response = self.assertReadFetch(templates_url, [self.editor, self.admin])
         self.assertFalse(response.context["last_sync"].failed)
         self.assertContains(response, "Synced from the provider")
-        self.assertEqual(reverse("channels.channel_logs_list", args=[wac.uuid]), response.context["sync_logs_url"])
+        self.assertNotContains(response, "View sync logs")
 
         Channel.objects.filter(id=wac.id).update(
             sync_state={"templates": {"synced_on": timezone.now().isoformat(), "failed": True}}

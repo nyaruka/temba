@@ -990,10 +990,6 @@
   <source>Your android channel is not connected</source>
   <target>Votre canal Android n'est pas connecté</target>
 </trans-unit>
-<trans-unit id="s358edca3fc337c88">
-  <source>Your WhatsApp channel templates failed syncing</source>
-  <target>La synchronisation des modèles de votre canal WhatsApp a échoué</target>
-</trans-unit>
 <trans-unit id="se815ea098ec82f9b">
   <source>Your webhook calls are not working properly.</source>
   <target>Vos appels de webhook ne fonctionnent pas correctement.</target>

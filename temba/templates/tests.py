@@ -86,105 +86,43 @@ class TemplateTest(TembaTest):
         self.assertEqual(3, TemplateTranslation.objects.filter(channel=channel1).count())
         self.assertEqual(1, TemplateTranslation.objects.filter(channel=channel2).count())
 
-    def test_update_local(self):
-        channel = self.create_channel("D3C", "Channel 1", "1234")
+        hello = hello_eng.template
+        self.assertFalse(hello.is_approved())
+        self.assertFalse(Template.get_or_create(self.org, "empty").is_approved())
 
-        TemplateTranslation.update_local(
-            channel,
-            [
-                {
-                    "name": "hello",
-                    "components": [{"type": "BODY", "text": "Hello"}],
-                    "language": "en",
-                    "status": "APPROVED",
-                    "id": "1001",
-                },
-                {
-                    "name": "hello",
-                    "components": [{"type": "BODY", "text": "Hola"}],
-                    "language": "es",
-                    "status": "PENDING",
-                    "id": "1002",
-                },
-                {
-                    "name": "hello",
-                    "components": [{"type": "BODY", "text": "Bonjour {{1}}"}],
-                    "language": "fr",
-                    "status": "REJECTED",
-                    "id": "1003",
-                },
-                {
-                    "name": "goodbye",
-                    "components": [{"type": "BODY", "text": "Goodbye"}],
-                    "language": "fr",
-                    "status": "PENDING",
-                    "id": "2001",
-                },
-            ],
+        hello.update_base()
+        self.assertEqual(hello_eng, hello.base_translation)
+
+        # changing the base translation's variables makes the others incompatible
+        TemplateTranslation.get_or_create(
+            channel1,
+            "hello",
+            locale="eng-US",
+            status=TemplateTranslation.STATUS_APPROVED,
+            external_id="1234",
+            external_locale="en_US",
+            namespace="",
+            components=[],
+            variables=[{"type": "text"}],
+            is_supported=True,
         )
+        hello_fra.refresh_from_db()
+        self.assertFalse(hello_fra.is_compatible)
+        self.assertFalse(hello.is_approved())
 
-        hello, goodbye = self.org.templates.order_by("id")
-        self.assertEqual("hello", hello.name)
-        self.assertEqual("eng", hello.base_translation.locale)
-        self.assertEqual(3, hello.translations.count())
+        hello_fra.status = TemplateTranslation.STATUS_APPROVED
+        hello_fra.save(update_fields=("status",))
+        self.assertTrue(hello.is_approved())
 
-        hello_eng, hello_spa, hello_fra = hello.translations.order_by("id")
-        self.assertEqual("eng", hello_eng.locale)
-        self.assertEqual(TemplateTranslation.STATUS_APPROVED, hello_eng.status)
-        self.assertTrue(hello_eng.is_supported)
-        self.assertTrue(hello_eng.is_compatible)
-        self.assertEqual("spa", hello_spa.locale)
-        self.assertEqual(TemplateTranslation.STATUS_PENDING, hello_spa.status)
-        self.assertTrue(hello_spa.is_supported)
-        self.assertTrue(hello_spa.is_compatible)
-        self.assertEqual("fra", hello_fra.locale)
-        self.assertEqual(TemplateTranslation.STATUS_REJECTED, hello_fra.status)
-        self.assertTrue(hello_fra.is_supported)
-        self.assertFalse(hello_fra.is_compatible)  # because of parameter mismatch
+        # deleting a translation that isn't the base leaves the base alone
+        hello_fra.delete()
+        hello.refresh_from_db()
+        self.assertEqual(hello_eng, hello.base_translation)
 
-        self.assertEqual("goodbye", goodbye.name)
-        self.assertEqual("fra", goodbye.base_translation.locale)
-        self.assertEqual(1, goodbye.translations.count())
-        self.assertEqual(4, channel.template_translations.count())
-
-        # update again, no more fra translation, and parameter added to eng, so spa should become incompatible
-        TemplateTranslation.update_local(
-            channel,
-            [
-                {
-                    "name": "hello",
-                    "components": [{"type": "BODY", "text": "Hello {{1}}"}],
-                    "language": "en",
-                    "status": "APPROVED",
-                    "id": "1234",
-                },
-                {
-                    "name": "hello",
-                    "components": [{"type": "BODY", "text": "Hola"}],
-                    "language": "es",
-                    "status": "APPROVED",
-                    "id": "1002",
-                },
-            ],
-        )
-
-        hello, goodbye = self.org.templates.order_by("id")
-        self.assertEqual("eng", hello.base_translation.locale)
-        self.assertEqual(2, hello.translations.count())
-
-        hello_eng, hello_spa = hello.translations.order_by("id")
-        self.assertEqual("eng", hello_eng.locale)
-        self.assertEqual(TemplateTranslation.STATUS_APPROVED, hello_eng.status)
-        self.assertTrue(hello_eng.is_supported)
-        self.assertTrue(hello_eng.is_compatible)
-        self.assertEqual("spa", hello_spa.locale)
-        self.assertEqual(TemplateTranslation.STATUS_APPROVED, hello_spa.status)
-        self.assertTrue(hello_spa.is_supported)
-        self.assertFalse(hello_spa.is_compatible)
-
-        self.assertIsNone(goodbye.base_translation)
-        self.assertEqual(0, goodbye.translations.count())
-        self.assertEqual(2, channel.template_translations.count())
+        # deleting the base finds a new one, if there is one
+        hello_eng.delete()
+        hello.refresh_from_db()
+        self.assertIsNone(hello.base_translation)
 
     def test_refresh_task(self):
         org3 = Org.objects.create(
