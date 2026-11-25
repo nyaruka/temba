@@ -47,17 +47,52 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
             return TwilioClient(account_sid, account_token)
         return None
 
+    def get_whatsapp_senders(self):
+        """
+        Fetches the ONLINE WhatsApp senders registered on the account via Twilio's Senders API. These are not
+        necessarily incoming phone numbers on the account, so they won't show up in incoming_phone_numbers.
+        """
+        client = self.get_twilio_client()
+        if not client:
+            return []
+
+        senders = []
+        for sender in client.messaging.v2.channels_senders.stream(channel="whatsapp"):
+            if sender.status != "ONLINE":
+                continue
+
+            # sender_id looks like "whatsapp:+1234567890"
+            sender_id = sender.sender_id or ""
+            if not sender_id.startswith("whatsapp:"):
+                continue
+            phone = sender_id.split(":", 1)[-1]
+            try:
+                parsed = phonenumbers.parse(phone, None)
+            except phonenumbers.NumberParseException:
+                continue
+
+            senders.append(
+                dict(
+                    e164=phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164),
+                    number=phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.INTERNATIONAL),
+                    country=region_code_for_number(parsed),
+                    sid=sender.sid,
+                )
+            )
+
+        return senders
+
     def pre_process(self, request, *args, **kwargs):
         try:
             self.client = self.get_twilio_client()
             if not self.client:
                 return HttpResponseRedirect(
-                    f'{reverse("channels.types.twilio.connect")}?claim_type={self.channel_type.slug}'
+                    f"{reverse('channels.types.twilio.connect')}?claim_type={self.channel_type.slug}"
                 )
             self.account = self.client.api.account.fetch()
         except TwilioRestException:
             return HttpResponseRedirect(
-                f'{reverse("channels.types.twilio.connect")}?claim_type={self.channel_type.slug}'
+                f"{reverse('channels.types.twilio.connect')}?claim_type={self.channel_type.slug}"
             )
 
         return super().pre_process(request, *args, **kwargs)
@@ -88,18 +123,31 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
 
     def get_existing_numbers(self, org):
         client = self.get_twilio_client()
-        if client:
-            twilio_account_numbers = client.api.incoming_phone_numbers.stream(page_size=1000)
+        if not client:
+            return []
 
         numbers = []
-        for number in twilio_account_numbers:
+        seen = set()
+        for number in client.api.incoming_phone_numbers.stream(page_size=1000):
             parsed = phonenumbers.parse(number.phone_number, None)
+            seen.add(phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164))
             numbers.append(
                 dict(
                     number=phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.INTERNATIONAL),
                     country=region_code_for_number(parsed),
                 )
             )
+
+        # also offer WhatsApp senders that aren't incoming numbers on the account
+        try:
+            for sender in self.get_whatsapp_senders():
+                if sender["e164"] in seen:
+                    continue
+                seen.add(sender["e164"])
+                numbers.append(dict(number=sender["number"], country=sender["country"]))
+        except TwilioRestException:
+            # don't let a senders API failure hide the account's incoming numbers
+            pass
 
         return numbers
 
@@ -115,18 +163,25 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         twilio_phones = client.api.incoming_phone_numbers.stream(phone_number=phone_number)
         channel_uuid = uuid4()
 
-        # create new TwiML app
         callback_domain = org.get_brand_domain()
 
         twilio_phone = next(twilio_phones, None)
-        if not twilio_phone:
-            raise Exception(_("Only existing Twilio WhatsApp number are supported"))
+        if twilio_phone:
+            number_sid = twilio_phone.sid
+        else:
+            # not an incoming number on the account, see if it's a registered WhatsApp sender
+            try:
+                senders = self.get_whatsapp_senders()
+            except TwilioRestException:
+                raise Exception(_("Unable to verify WhatsApp sender, please try again."))
+            sender = next((s for s in senders if s["e164"] == phone_number), None)
+            if not sender:
+                raise Exception(_("Only existing Twilio WhatsApp number are supported"))
+            number_sid = sender["sid"]
 
         phone = phonenumbers.format_number(
             phonenumbers.parse(phone_number, None), phonenumbers.PhoneNumberFormat.NATIONAL
         )
-
-        number_sid = twilio_phone.sid
 
         config = {
             Channel.CONFIG_NUMBER_SID: number_sid,

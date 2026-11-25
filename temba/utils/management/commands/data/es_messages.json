@@ -1,0 +1,65 @@
+{
+    "index_patterns": ["messages-v1-*"],
+    "template": {
+        "settings": {
+            "index": {
+                "number_of_shards": 3,
+                "number_of_replicas": 1,
+                "sort.field": ["@timestamp"], 
+                "sort.order": ["desc"]
+            },
+            "analysis": {
+                "filter": {
+                    "stop_filter": {
+                        "type": "stop",
+                        "stopwords": [
+                            "_arabic_",
+                            "_cjk_",
+                            "_english_",
+                            "_french_",
+                            "_russian_",
+                            "_spanish_"
+                        ]
+                    }
+                },
+                "analyzer": {
+                    "msg_text": {
+                        "type": "custom",
+                        "tokenizer": "standard",
+                        "filter": [
+                            "lowercase",
+                            "stop_filter"
+                        ]
+                    }
+                }
+            }
+        },
+        "mappings": {
+            "dynamic": false,
+            "_routing": {
+                "required": true
+            },
+            "properties": {
+                "@timestamp": {
+                    "type": "date"
+                },
+                "org_id": {
+                    "type": "keyword"
+                },
+                "contact_uuid": {
+                    "type": "keyword"
+                },
+                "urn_path": {
+                    "type": "keyword"
+                },
+                "text": {
+                    "type": "text",
+                    "analyzer": "msg_text"
+                },
+                "in_ticket": {
+                    "type": "boolean"
+                }
+            }
+        }
+    }
+}

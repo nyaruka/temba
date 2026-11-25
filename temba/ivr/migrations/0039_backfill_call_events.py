@@ -72,7 +72,6 @@ def apply_manual():  # pragma: no cover
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("ivr", "0038_alter_call_uuid"),
     ]

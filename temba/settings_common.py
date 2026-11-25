@@ -46,6 +46,8 @@ DYNAMO_ENDPOINT_URL = f"http://{_localstack_host}:4566"
 DYNAMO_TABLE_PREFIX = "Test" if TESTING else "Temba"
 DYNAMO_AWS_REGION = os.environ.get("DYNAMO_AWS_REGION", default=AWS_REGION)
 
+ELASTIC_ENDPOINT_URL = "http://elastic:9200"
+
 # -----------------------------------------------------------------------------------
 # Storage
 # -----------------------------------------------------------------------------------
@@ -132,11 +134,8 @@ TESTFILES_DIR = os.path.join(PROJECT_DIR, "../testfiles")
 STATICFILES_DIRS = (
     os.path.join(PROJECT_DIR, "../static"),
     os.path.join(PROJECT_DIR, "../media"),
-    os.path.join(PROJECT_DIR, "../node_modules/@nyaruka/flow-editor/build"),
     os.path.join(PROJECT_DIR, "../node_modules/@nyaruka/temba-components/dist/static"),
     os.path.join(PROJECT_DIR, "../node_modules"),
-    os.path.join(PROJECT_DIR, "../node_modules/react/umd"),
-    os.path.join(PROJECT_DIR, "../node_modules/react-dom/umd"),
 )
 STATIC_ROOT = os.path.join(PROJECT_DIR, "../sitestatic")
 STATIC_URL = "/sitestatic/"
@@ -214,6 +213,7 @@ MIDDLEWARE = (
     "temba.middleware.LanguageMiddleware",
     "temba.middleware.TimezoneMiddleware",
     "temba.middleware.ToastMiddleware",
+    "temba.middleware.PreviewMiddleware",
     "allauth.account.middleware.AccountMiddleware",
 )
 
@@ -346,7 +346,6 @@ PERMISSIONS = {
     "archives.archive": ("run", "message"),
     "campaigns.campaign": ("archive", "activate", "menu"),
     "channels.channel": ("chart", "claim", "configuration", "logs", "facebook_whitelist"),
-    "classifiers.classifier": ("connect", "sync"),
     "contacts.contact": ("export", "chat", "interrupt", "menu", "omnibox", "open_ticket", "start"),
     "contacts.contactfield": ("update_priority",),
     "contacts.contactgroup": ("menu",),
@@ -359,7 +358,6 @@ PERMISSIONS = {
     "msgs.msg": ("archive", "export", "label", "menu"),
     "orgs.export": ("download",),
     "orgs.org": (
-        "country",
         "create",
         "dashboard",
         "download",
@@ -370,6 +368,7 @@ PERMISSIONS = {
         "join_accept",
         "join",
         "languages",
+        "locations",
         "manage_integrations",
         "manage",
         "menu",
@@ -384,7 +383,7 @@ PERMISSIONS = {
         "twilio_connect",
         "workspace",
     ),
-    "request_logs.httplog": ("webhooks", "classifier"),
+    "request_logs.httplog": ("webhooks",),
     "tickets.ticket": ("assign", "menu", "note", "export", "analytics"),
     "triggers.trigger": ("archived", "type", "menu"),
 }
@@ -419,11 +418,6 @@ GROUP_PERMISSIONS = {
         "channels.channel_read",
         "channels.channel_update",
         "channels.channelevent_list",
-        "classifiers.classifier_connect",
-        "classifiers.classifier_delete",
-        "classifiers.classifier_list",
-        "classifiers.classifier_read",
-        "classifiers.classifier_sync",
         "contacts.contact_chat",
         "contacts.contact_create",
         "contacts.contact_delete",
@@ -464,7 +458,7 @@ GROUP_PERMISSIONS = {
         "notifications.notification.*",
         "orgs.export.*",
         "orgs.invitation.*",
-        "orgs.org_country",
+        "orgs.org_locations",
         "orgs.org_create",
         "orgs.org_dashboard",
         "orgs.org_delete",
@@ -519,8 +513,6 @@ GROUP_PERMISSIONS = {
         "channels.channel_read",
         "channels.channel_update",
         "channels.channelevent_list",
-        "classifiers.classifier_list",
-        "classifiers.classifier_read",
         "contacts.contact_chat",
         "contacts.contact_create",
         "contacts.contact_delete",
@@ -540,6 +532,7 @@ GROUP_PERMISSIONS = {
         "flows.flowrun_list",
         "flows.flowstart_create",
         "flows.flowstart_list",
+        "flows.flowstart_read",
         "flows.flowstart_update",
         "globals.global.*",
         "ivr.call_list",
@@ -693,8 +686,8 @@ CELERY_BEAT_SCHEDULE = {
     "squash-group-counts": {"task": "squash_group_counts", "schedule": timedelta(seconds=60)},
     "squash-flow-counts": {"task": "squash_flow_counts", "schedule": timedelta(seconds=30)},
     "squash-item-counts": {"task": "squash_item_counts", "schedule": timedelta(seconds=30)},
+    "squash-llm-counts": {"task": "squash_llm_counts", "schedule": timedelta(seconds=60)},
     "squash-msg-counts": {"task": "squash_msg_counts", "schedule": timedelta(seconds=60)},
-    "sync-classifier-intents": {"task": "sync_classifier_intents", "schedule": timedelta(seconds=300)},
     "trim-channel-events": {"task": "trim_channel_events", "schedule": crontab(hour=3, minute=0)},
     "trim-channel-sync-events": {"task": "trim_channel_sync_events", "schedule": crontab(hour=3, minute=0)},
     "trim-exports": {"task": "trim_exports", "schedule": crontab(hour=2, minute=0)},
@@ -703,6 +696,7 @@ CELERY_BEAT_SCHEDULE = {
     "refresh-teams-tokens": {"task": "refresh_teams_tokens", "schedule": crontab(hour=8, minute=0)},
     "trim-flow-sessions": {"task": "trim_flow_sessions", "schedule": crontab(hour=0, minute=0)},
     "trim-http-logs": {"task": "trim_http_logs", "schedule": crontab(hour=2, minute=0)},
+    "trim-llm-counts": {"task": "trim_llm_counts", "schedule": crontab(hour=3, minute=0)},
     "trim-notifications": {"task": "trim_notifications", "schedule": crontab(hour=2, minute=0)},
     "trim-webhook-events": {"task": "trim_webhook_events", "schedule": crontab(hour=3, minute=0)},
     "update-members-seen": {"task": "update_members_seen", "schedule": timedelta(seconds=30)},
@@ -754,16 +748,10 @@ INTEGRATION_TYPES = [
     "temba.orgs.integrations.dtone.DTOneType",
 ]
 
-CLASSIFIER_TYPES = [
-    "temba.classifiers.types.wit.WitType",
-    "temba.classifiers.types.bothub.BothubType",
-]
-
 CHANNEL_TYPES = [
     "temba.channels.types.africastalking.AfricasTalkingType",
     "temba.channels.types.arabiacell.ArabiaCellType",
     "temba.channels.types.bandwidth.BandwidthType",
-    "temba.channels.types.bongolive.BongoLiveType",
     "temba.channels.types.burstsms.BurstSMSType",
     "temba.channels.types.chip.ChipType",
     "temba.channels.types.clickatell.ClickatellType",
@@ -802,7 +790,6 @@ CHANNEL_TYPES = [
     "temba.channels.types.playmobile.PlayMobileType",
     "temba.channels.types.plivo.PlivoType",
     "temba.channels.types.rocketchat.RocketChatType",
-    "temba.channels.types.shaqodoon.ShaqodoonType",
     "temba.channels.types.signalwire.SignalWireType",
     "temba.channels.types.slack.SlackType",
     "temba.channels.types.smscentral.SMSCentralType",
@@ -828,30 +815,43 @@ CHANNEL_TYPES = [
     "temba.channels.types.android.AndroidType",
     "temba.channels.types.weniwebchat.WeniWebChatType",
     "temba.channels.types.teams.TeamsType",
-    "temba.channels.types.test.TestType",
 ]
 
 LLM_TYPES = {
     "temba.ai.types.anthropic.type.AnthropicType": {
-        "models": [
-            "claude-3-7-sonnet-20250219",
-            "claude-3-5-sonnet-20241022",
-            "claude-3-5-haiku-20241022",
-            "claude-3-opus-20240229",
-        ],
-    },
-    "temba.ai.types.deepseek.type.DeepSeekType": {
-        "models": ["deepseek-chat"],
+        # model id -> max output tokens
+        "models": {
+            "claude-opus-4-7": 128_000,
+            "claude-opus-4-5-20251101": 64_000,
+            "claude-sonnet-4-6": 64_000,
+            "claude-3-7-sonnet-20250219": 64_000,
+            "claude-haiku-4-5-20251001": 64_000,
+            "claude-3-5-haiku-20241022": 8_192,
+        },
     },
     "temba.ai.types.google.type.GoogleType": {
-        "models": ["gemini-2.0-flash", "gemini-1.5-flash"],
+        "models": {
+            "gemini-2.5-flash": 65_536,
+            "gemini-2.0-flash": 8_192,
+            "gemini-1.5-flash": 8_192,
+        },
     },
     "temba.ai.types.openai.type.OpenAIType": {
-        "models": ["gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", "gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"],
+        "models": {
+            "gpt-5.5": 128_000,
+            "gpt-5.4": 128_000,
+            "gpt-5.4-mini": 128_000,
+            "gpt-4.1": 32_768,
+            "gpt-4.1-mini": 32_768,
+            "gpt-4.1-nano": 32_768,
+            "gpt-4o": 16_384,
+            "gpt-4o-mini": 16_384,
+            "gpt-3.5-turbo": 4_096,
+        },
     },
 }
 if TESTING:
-    LLM_TYPES["temba.ai.types.openai_azure.type.OpenAIAzureType"] = {"models": ["gpt-35-turbo", "gpt-4"]}
+    LLM_TYPES["temba.ai.types.openai_azure.type.OpenAIAzureType"] = {"models": {"gpt-35-turbo": 4_096}}
 
 
 # set of ISO-639-3 codes of languages to allow in addition to all ISO-639-1 languages
@@ -900,6 +900,7 @@ RETENTION_PERIODS = {
     "export": timedelta(days=90),
     "flowsession": timedelta(days=7),
     "httplog": timedelta(days=3),
+    "llmcount": timedelta(days=30),
     "notification": timedelta(days=30),
     "syncevent": timedelta(days=7),
     "webhookevent": timedelta(hours=48),

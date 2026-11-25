@@ -21,7 +21,7 @@ class ClaimView(ClaimViewMixin, SmartFormView):
         send_notification = forms.CharField(
             label=_("Send notification"),
             required=False,
-            help_text=_("Check if you want this channel to send notifications " "to contacts."),
+            help_text=_("Check if you want this channel to send notifications to contacts."),
             widget=forms.CheckboxInput(),
         )
 

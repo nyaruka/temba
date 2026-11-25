@@ -108,12 +108,12 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
             self.client = self.get_twilio_client()
             if not self.client:
                 return HttpResponseRedirect(
-                    f'{reverse("channels.types.twilio.connect")}?claim_type={self.channel_type.slug}'
+                    f"{reverse('channels.types.twilio.connect')}?claim_type={self.channel_type.slug}"
                 )
             self.account = self.client.api.account.fetch()
         except TwilioRestException:
             return HttpResponseRedirect(
-                f'{reverse("channels.types.twilio.connect")}?claim_type={self.channel_type.slug}'
+                f"{reverse('channels.types.twilio.connect')}?claim_type={self.channel_type.slug}"
             )
 
         return super().pre_process(request, *args, **kwargs)
@@ -221,10 +221,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
 
             else:  # pragma: no cover
                 raise Exception(
-                    _(
-                        "Short code not found on your Twilio Account. "
-                        "Please check you own the short code and Try again"
-                    )
+                    _("Short code not found on your Twilio Account. Please check you own the short code and Try again")
                 )
         else:
             twilio_phone = next(twilio_phones, None)
@@ -397,7 +394,7 @@ class UpdateForm(UpdateChannelForm):
         return super().clean()
 
     class Meta(UpdateChannelForm.Meta):
-        fields = ("name", "is_enabled", "log_policy")
+        fields = ("name", "is_enabled")
 
 
 class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):

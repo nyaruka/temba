@@ -144,6 +144,13 @@ class TembaTagLibraryTest(TembaTest):
             'JSON.parse("{\\u0022special\\u0022: \\u0022\\u003Cscript\\u003Ealert(\\u005C\\u0022XSS\\u005C\\u0022)\\u003B\\u003C/script\\u003E\\u0022}")',
         )
 
+    def test_pretty_json(self):
+        from temba.utils.templatetags.temba import pretty_json
+
+        self.assertEqual("{}", pretty_json({}))
+        self.assertEqual('{\n  "a": 1,\n  "b": 2\n}', pretty_json({"b": 2, "a": 1}))
+        self.assertEqual('{\n  "name": "Año"\n}', pretty_json({"name": "Año"}))
+
     def test_verbose_name_plural(self):
         flow = self.create_flow("Test")
         group = self.create_group("Testers", contacts=[])

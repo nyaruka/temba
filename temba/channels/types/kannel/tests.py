@@ -30,7 +30,6 @@ class KannelTypeTest(TembaTest):
             post_data["number"] = "3071"
             post_data["country"] = "RW"
             post_data["url"] = "http://textit.com/cgi-bin/sendsms"
-            post_data["verify_ssl"] = False
             post_data["encoding"] = Channel.ENCODING_SMART
 
             response = self.client.post(claim_url, post_data)
@@ -41,7 +40,6 @@ class KannelTypeTest(TembaTest):
             self.assertTrue(channel.uuid)
             self.assertEqual(post_data["number"], channel.address)
             self.assertEqual(post_data["url"], channel.config["send_url"])
-            self.assertEqual(False, channel.config["verify_ssl"])
             self.assertEqual(Channel.ENCODING_SMART, channel.config[Channel.CONFIG_ENCODING])
 
             # make sure we generated a username and password

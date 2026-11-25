@@ -6,12 +6,10 @@ from django.db import connection, models
 from django.test import TestCase
 
 from temba.contacts.models import Contact
-from temba.flows.models import Flow
 from temba.tests import TembaTest
-from temba.users.models import User
 
 from .base import delete_in_batches, patch_queryset_count, update_if_changed
-from .es import IDSliceQuerySet
+from .es import SearchSliceQuerySet
 from .fields import JSONAsTextField
 
 
@@ -84,102 +82,123 @@ class ModelsTest(TembaTest):
         self.assertEqual("McAdmin", self.admin.last_name)
 
 
-class IDSliceQuerySetTest(TembaTest):
+class SearchSliceQuerySetTest(TembaTest):
     def test_fields(self):
+        ann = self.create_contact("Ann", urns=["tel:+12340000001"])
+        bob = self.create_contact("Bob", urns=["tel:+12340000002"])
+
         # if we don't specify fields, we fetch *
-        users = IDSliceQuerySet(User, [self.agent.id, self.editor.id], offset=0, total=3)
+        contacts = SearchSliceQuerySet(Contact, [str(ann.uuid), str(bob.uuid)], offset=0, total=3)
 
         self.assertEqual(
-            f"""SELECT t.* FROM users_user t JOIN (VALUES (1, {self.agent.id}), (2, {self.editor.id})) tmp_resultset (seq, model_id) ON t.id = tmp_resultset.model_id ORDER BY tmp_resultset.seq""",
-            users.raw_query,
+            f"""SELECT t.* FROM contacts_contact t JOIN (VALUES (1, '{ann.uuid}'), (2, '{bob.uuid}')) tmp_resultset (seq, model_uuid) ON t.uuid = tmp_resultset.model_uuid ORDER BY tmp_resultset.seq""",
+            contacts.raw_query,
         )
 
         with self.assertNumQueries(1):
-            users = list(users)
+            contacts = list(contacts)
         with self.assertNumQueries(0):  # already fetched
-            users[0].email
+            contacts[0].name
 
         # if we do specify fields, it's like only on a regular queryset
-        users = IDSliceQuerySet(User, [self.agent.id, self.editor.id], only=("id", "first_name"), offset=0, total=3)
+        contacts = SearchSliceQuerySet(Contact, [str(ann.uuid), str(bob.uuid)], only=("id", "name"), offset=0, total=3)
 
         self.assertEqual(
-            f"""SELECT t.id, t.first_name FROM users_user t JOIN (VALUES (1, {self.agent.id}), (2, {self.editor.id})) tmp_resultset (seq, model_id) ON t.id = tmp_resultset.model_id ORDER BY tmp_resultset.seq""",
-            users.raw_query,
+            f"""SELECT t.id, t.name FROM contacts_contact t JOIN (VALUES (1, '{ann.uuid}'), (2, '{bob.uuid}')) tmp_resultset (seq, model_uuid) ON t.uuid = tmp_resultset.model_uuid ORDER BY tmp_resultset.seq""",
+            contacts.raw_query,
         )
 
         with self.assertNumQueries(1):
-            users = list(users)
+            contacts = list(contacts)
         with self.assertNumQueries(1):  # requires fetch
-            users[0].email
+            contacts[0].language
 
     def test_slicing(self):
-        empty = IDSliceQuerySet(User, [], offset=0, total=0)
+        ann = self.create_contact("Ann", urns=["tel:+12340000001"])
+        bob = self.create_contact("Bob", urns=["tel:+12340000002"])
+        cat = self.create_contact("Cat", urns=["tel:+12340000003"])
+
+        empty = SearchSliceQuerySet(Contact, [], offset=0, total=0)
         self.assertEqual(0, len(empty))
 
-        users = IDSliceQuerySet(User, [self.agent.id, self.editor.id, self.admin.id], offset=0, total=3)
-        self.assertEqual(self.agent.id, users[0].id)
-        self.assertEqual(self.editor.id, users[0:3][1].id)
-        self.assertEqual(0, users.offset)
-        self.assertEqual(3, users.total)
+        contacts = SearchSliceQuerySet(Contact, [str(ann.uuid), str(bob.uuid), str(cat.uuid)], offset=0, total=3)
+        self.assertEqual(ann.uuid, contacts[0].uuid)
+        self.assertEqual(bob.uuid, contacts[0:3][1].uuid)
+        self.assertEqual(0, contacts.offset)
+        self.assertEqual(3, contacts.total)
 
         with self.assertRaises(IndexError):
-            users[4]
+            contacts[4]
 
         with self.assertRaises(IndexError):
-            users[-1]
+            contacts[-1]
 
         with self.assertRaises(IndexError):
-            users[1:2]
+            contacts[1:2]
 
         with self.assertRaises(TypeError):
-            users["foo"]
+            contacts["foo"]
 
-        users = IDSliceQuerySet(User, [self.agent.id, self.editor.id, self.admin.id], offset=10, total=100)
-        self.assertEqual(self.agent.id, users[10].id)
-        self.assertEqual(self.agent.id, users[10:11][0].id)
-
-        with self.assertRaises(IndexError):
-            users[0]
+        contacts = SearchSliceQuerySet(Contact, [str(ann.uuid), str(bob.uuid), str(cat.uuid)], offset=10, total=100)
+        self.assertEqual(ann.uuid, contacts[10].uuid)
+        self.assertEqual(ann.uuid, contacts[10:11][0].uuid)
 
         with self.assertRaises(IndexError):
-            users[11:15]
+            contacts[0]
+
+        with self.assertRaises(IndexError):
+            contacts[11:15]
 
     def test_filter(self):
-        users = IDSliceQuerySet(User, [self.agent.id, self.editor.id, self.admin.id], offset=10, total=100)
+        ann = self.create_contact("Ann", urns=["tel:+12340000001"])
+        bob = self.create_contact("Bob", urns=["tel:+12340000002"])
+        cat = self.create_contact("Cat", urns=["tel:+12340000003"])
+        uuids = [str(ann.uuid), str(bob.uuid), str(cat.uuid)]
 
-        filtered = users.filter(pk=self.agent.id)
-        self.assertEqual(User, filtered.model)
-        self.assertEqual([self.agent.id], filtered.ids)
+        contacts = SearchSliceQuerySet(Contact, uuids, offset=10, total=100)
+
+        filtered = contacts.filter(uuid=ann.uuid)
+        self.assertEqual(Contact, filtered.model)
+        self.assertEqual([str(ann.uuid)], filtered.uuids)
         self.assertEqual(0, filtered.offset)
         self.assertEqual(1, filtered.total)
 
-        filtered = users.filter(pk__in=[self.agent.id, self.admin.id])
-        self.assertEqual(User, filtered.model)
-        self.assertEqual([self.agent.id, self.admin.id], filtered.ids)
+        filtered = contacts.filter(uuid__in=[ann.uuid, cat.uuid])
+        self.assertEqual(Contact, filtered.model)
+        self.assertEqual([str(ann.uuid), str(cat.uuid)], filtered.uuids)
         self.assertEqual(0, filtered.offset)
         self.assertEqual(2, filtered.total)
 
-        # pks can be strings
-        filtered = users.filter(pk=str(self.agent.id))
-        self.assertEqual([self.agent.id], filtered.ids)
+        # filtering by pk does a DB lookup to find matching UUIDs
+        filtered = contacts.filter(pk=ann.id)
+        self.assertEqual([str(ann.uuid)], filtered.uuids)
 
-        # only filtering by pk is supported
+        filtered = contacts.filter(pk__in=[ann.id, cat.id])
+        self.assertEqual([str(ann.uuid), str(cat.uuid)], filtered.uuids)
+
+        # only filtering by pk or uuid is supported
         with self.assertRaises(ValueError):
-            users.filter(name="Bob")
+            contacts.filter(name="Bob")
 
     def test_none(self):
-        users = IDSliceQuerySet(User, [self.agent.id, self.editor.id], offset=0, total=2)
-        empty = users.none()
-        self.assertEqual([], empty.ids)
+        ann = self.create_contact("Ann", urns=["tel:+12340000001"])
+        bob = self.create_contact("Bob", urns=["tel:+12340000002"])
+
+        contacts = SearchSliceQuerySet(Contact, [str(ann.uuid), str(bob.uuid)], offset=0, total=2)
+        empty = contacts.none()
+        self.assertEqual([], empty.uuids)
         self.assertEqual(0, empty.total)
 
     def test_prefetch_related(self):
-        flow1 = self.create_flow("Test 1")
-        flow2 = self.create_flow("Test 2")
+        ann = self.create_contact("Ann", urns=["tel:+12340000001"])
+        bob = self.create_contact("Bob", urns=["tel:+12340000002"])
+
         with self.assertNumQueries(2):
-            flows = list(IDSliceQuerySet(Flow, [flow1.id, flow2.id], offset=0, total=2).prefetch_related("org"))
-            self.assertEqual(self.org, flows[0].org)
-            self.assertEqual(self.org, flows[1].org)
+            contacts = list(
+                SearchSliceQuerySet(Contact, [str(ann.uuid), str(bob.uuid)], offset=0, total=2).prefetch_related("org")
+            )
+            self.assertEqual(self.org, contacts[0].org)
+            self.assertEqual(self.org, contacts[1].org)
 
 
 class JsonModelTestDefaultNull(models.Model):

@@ -1,0 +1,188 @@
+{
+    "settings": {
+        "index": {
+            "number_of_shards": 3,
+            "number_of_replicas": 1
+        },
+        "analysis": {
+            "analyzer": {
+                "trigrams": {
+                    "type": "custom",
+                    "tokenizer": "trigram",
+                    "filter": [
+                        "lowercase"
+                    ]
+                },
+                "locations": {
+                    "tokenizer": "location_tokenizer",
+                    "filter": [
+                        "lowercase",
+                        "word_delimiter"
+                    ]
+                },
+                "prefix": {
+                    "type": "custom",
+                    "tokenizer": "standard",
+                    "filter": [
+                        "lowercase",
+                        "prefix_filter"
+                    ]
+                },
+                "name_search": {
+                    "type": "custom",
+                    "tokenizer": "standard",
+                    "filter": [
+                        "lowercase",
+                        "max_length"
+                    ]
+                }
+            },
+            "tokenizer": {
+                "location_tokenizer": {
+                    "type": "pattern",
+                    "pattern": "(.* > )?([^>]+)",
+                    "group": 2
+                },
+                "trigram": {
+                    "type": "ngram",
+                    "min_gram": 3,
+                    "max_gram": 3
+                }
+            },
+            "normalizer": {
+                "lowercase": {
+                    "type": "custom",
+                    "char_filter": [],
+                    "filter": [
+                        "lowercase",
+                        "trim"
+                    ]
+                }
+            },
+            "filter": {
+                "prefix_filter": {
+                    "type": "edge_ngram",
+                    "min_gram": 2,
+                    "max_gram": 8
+                },
+                "max_length": {
+                    "type": "truncate",
+                    "length": 8
+                }
+            }
+        }
+    },
+    "mappings": {
+        "dynamic": false,
+        "_routing": {
+            "required": true
+        },
+        "properties": {
+            "id": {
+                "type": "long"
+            },
+            "org_id": {
+                "type": "keyword"
+            },
+            "name": {
+                "type": "text",
+                "analyzer": "prefix",
+                "search_analyzer": "name_search",
+                "fields": {
+                    "keyword": {
+                        "type": "keyword",
+                        "normalizer": "lowercase"
+                    }
+                }
+            },
+            "status": {
+                "type": "keyword"
+            },
+            "language": {
+                "type": "keyword",
+                "normalizer": "lowercase"
+            },
+            "fields": {
+                "type": "nested",
+                "properties": {
+                    "field": {
+                        "type": "keyword"
+                    },
+                    "text": {
+                        "type": "keyword",
+                        "normalizer": "lowercase"
+                    },
+                    "number": {
+                        "type": "scaled_float",
+                        "scaling_factor": 10000,
+                        "ignore_malformed": true
+                    },
+                    "datetime": {
+                        "type": "date"
+                    },
+                    "state": {
+                        "type": "text",
+                        "analyzer": "locations"
+                    },
+                    "state_keyword": {
+                        "type": "keyword",
+                        "normalizer": "lowercase"
+                    },
+                    "district": {
+                        "type": "text",
+                        "analyzer": "locations"
+                    },
+                    "district_keyword": {
+                        "type": "keyword",
+                        "normalizer": "lowercase"
+                    },
+                    "ward": {
+                        "type": "text",
+                        "analyzer": "locations"
+                    },
+                    "ward_keyword": {
+                        "type": "keyword",
+                        "normalizer": "lowercase"
+                    }
+                }
+            },
+            "urns": {
+                "type": "nested",
+                "properties": {
+                    "path": {
+                        "type": "text",
+                        "analyzer": "trigrams",
+                        "fields": {
+                            "keyword": {
+                                "type": "keyword",
+                                "normalizer": "lowercase"
+                            }
+                        }
+                    },
+                    "scheme": {
+                        "type": "keyword",
+                        "normalizer": "lowercase"
+                    }
+                }
+            },
+            "group_ids": {
+                "type": "keyword"
+            },
+            "flow_id": {
+                "type": "keyword"
+            },
+            "flow_history_ids": {
+                "type": "keyword"
+            },
+            "tickets": {
+                "type": "integer"
+            },
+            "created_on": {
+                "type": "date"
+            },
+            "last_seen_on": {
+                "type": "date"
+            }
+        }
+    }
+}

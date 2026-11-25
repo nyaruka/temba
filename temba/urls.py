@@ -21,7 +21,6 @@ urlpatterns += [
     re_path(r"^", include("temba.archives.urls")),
     re_path(r"^", include("temba.campaigns.urls")),
     re_path(r"^", include("temba.channels.urls")),
-    re_path(r"^", include("temba.classifiers.urls")),
     re_path(r"^", include("temba.contacts.urls")),
     re_path(r"^", include("temba.dashboard.urls")),
     re_path(r"^", include("temba.flows.urls")),

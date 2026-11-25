@@ -99,6 +99,7 @@ class BaseAPIView(NonAtomicMixin, generics.GenericAPIView):
         context = super().get_serializer_context()
         context["org"] = self.request.org
         context["user"] = self.request.user
+        context["by_token"] = isinstance(self.request.auth, APIToken)
         return context
 
     def normalize_urn(self, value):
@@ -322,7 +323,6 @@ class APITokenCRUDL(SmartCRUDL):
         fields = ("key",)
         cancel_url = "@api.apitoken_list"
         redirect_url = "@api.apitoken_list"
-        submit_button_name = _("Delete")
 
         def has_permission(self, request, *args, **kwargs):
             return self.get_object().user == request.user

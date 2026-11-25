@@ -28,7 +28,6 @@ def apply_manual():  # pragma: no cover
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("archives", "0031_delete_rolled_up"),
     ]

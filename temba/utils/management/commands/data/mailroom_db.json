@@ -10,75 +10,26 @@
             "sequence_start": 10000,
             "users": [
                 {
+                    "uuid": "ad9fdf9f-56ab-422a-b77d-e3ec26091a25",
                     "email": "admin1@textit.com",
                     "role": "A",
                     "first_name": "Andy",
                     "last_name": "Admin"
                 },
                 {
+                    "uuid": "ed84a3d7-92e4-4a8b-b01f-db11ff83bbb6",
                     "email": "editor1@textit.com",
                     "role": "E",
                     "first_name": "Ed",
                     "last_name": "McEditor"
                 },
                 {
+                    "uuid": "aee44553-ab35-482b-a4d4-6f000ec611ab",
                     "email": "agent1@textit.com",
                     "role": "T",
                     "first_name": "Ann",
                     "last_name": "D'Agent",
                     "team": "Partners"
-                }
-            ],
-            "classifiers": [
-                {
-                    "uuid": "097e026c-ae79-4740-af67-656dbedf0263",
-                    "classifier_type": "luis",
-                    "name": "LUIS",
-                    "config": {
-                        "app_id": "12345",
-                        "version": "0.1",
-                        "endpoint_url": "https://foo.com",
-                        "primary_key": "sesame"
-                    },
-                    "intents": [
-                        {
-                            "name": "book_flight",
-                            "external_id": "10406609-9749-47d4-bd2b-f3b778d5a491"
-                        },
-                        {
-                            "name": "book_car",
-                            "external_id": "65eae80b-c0fb-4054-9d64-10de08e59a62"
-                        }
-                    ]
-                },
-                {
-                    "uuid": "ff2a817c-040a-4eb2-8404-7d92e8b79dd0",
-                    "classifier_type": "wit",
-                    "name": "Wit.ai",
-                    "config": {
-                        "app_id": "67890",
-                        "access_token": "sesame"
-                    },
-                    "intents": [
-                        {
-                            "name": "register",
-                            "external_id": "register"
-                        }
-                    ]
-                },
-                {
-                    "uuid": "859b436d-3005-4e43-9ad5-3de5f26ede4c",
-                    "classifier_type": "bothub",
-                    "name": "BotHub",
-                    "config": {
-                        "access_token": "access_token"
-                    },
-                    "intents": [
-                        {
-                            "name": "intent",
-                            "external_id": "intent"
-                        }
-                    ]
                 }
             ],
             "channels": [
@@ -335,6 +286,7 @@
                     "group": "Doctors",
                     "events": [
                         {
+                            "uuid": "3c8eca88-a5f8-4e27-96f4-e47f19cc0de8",
                             "flow": "Favorites",
                             "offset_field": "joined",
                             "offset": "5",
@@ -343,7 +295,7 @@
                             "start_mode": "I"
                         },
                         {
-                            "uuid": "3a92a964-3a8d-420b-9206-2cd9d884ac30",
+                            "uuid": "f2a3f8c5-e831-4df3-b046-8d8cdb90f178",
                             "base_language": "eng",
                             "translations": {
                                 "eng": {"text": "Hi @contact.name, it is time to consult with your patients."},
@@ -355,6 +307,7 @@
                             "start_mode": "P"
                         },
                         {
+                            "uuid": "552a7155-66bc-4323-aad0-8421f87a4e0c",
                             "flow": "Pick a Number",
                             "offset_field": "joined",
                             "offset": "1",
@@ -515,7 +468,6 @@
                     "config": {}
                 }
             ],
-            "classifiers": [],
             "contacts": [
                 {
                     "uuid": "f6d20b72-f7d8-44dc-87f2-aae046dbff95",
@@ -554,6 +506,7 @@
             "topics": [],
             "users": [
                 {
+                    "uuid": "a2afc5e7-e97b-45e5-9850-8896957fef54",
                     "email": "admin2@textit.com",
                     "role": "A",
                     "first_name": "",

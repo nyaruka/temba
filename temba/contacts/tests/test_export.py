@@ -428,7 +428,7 @@ class ContactExportTest(TembaTest):
         )
 
         # export a search
-        mr_mocks.contact_export([contact2.id, contact3.id])
+        mr_mocks.contact_export([str(contact2.uuid), str(contact3.uuid)])
         with self.assertNumQueries(23):
             sheets, export = self._export(
                 self.org.active_contacts_group, "name has adam or name has deng", with_groups=[group1]
@@ -494,7 +494,7 @@ class ContactExportTest(TembaTest):
             assertReimport(export)
 
         # export a search within a specified group of contacts
-        mr_mocks.contact_export([contact.id])
+        mr_mocks.contact_export([str(contact.uuid)])
         with self.assertNumQueries(21):
             sheets, export = self._export(group1, search="Hagg", with_groups=[group1])
             self.assertExcelSheet(

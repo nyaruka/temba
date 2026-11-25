@@ -1,6 +1,15 @@
 {% extends "orgs/base/list.html" %}
 {% load smartmin sms temba contacts i18n humanize channels %}
 
+{% block pre-table %}
+  {% if outbox_warning %}
+    <temba-alert level="warning" class="mb-4">
+      {% blocktrans trimmed %}
+        Your channels are taking a while to send messages. Please wait for the outbound queue to clear before sending new messages.
+      {% endblocktrans %}
+    </temba-alert>
+  {% endif %}
+{% endblock pre-table %}
 {% block modaxes %}
   <temba-modax header="{% trans "New Label" %}"
                endpoint="{% url 'msgs.label_create' %}"
@@ -60,16 +69,16 @@
                 <div class="flex items-center flex-row">
                   {% if 'label' in actions %}
                     {% for label in object.labels.all %}
-                      <a href="{% url 'msgs.msg_filter' label.uuid %}" onclick="goto(event, this)">
-                        <temba-label data-id="{{ label.id }}" icon="label" clickable class="mx-1 my-1">
+                      <a href="{% url 'msgs.msg_filter' label.uuid %}">
+                        <temba-label data-id="{{ label.id }}" type="label" clickable class="mx-1">
                           {{ label.name }}
                         </temba-label>
                       </a>
                     {% endfor %}
                   {% endif %}
                   {% if object.flow and object.flow.is_active %}
-                    <a href="{% url 'flows.flow_editor' object.flow.uuid %}" onclick="goto(event, this)">
-                      <temba-label icon="flow" primary clickable class="mx-1 my-1">
+                    <a href="{% url 'flows.flow_editor' object.flow.uuid %}">
+                      <temba-label type="flow" primary clickable class="mx-1">
                         {{ object.flow.name }}
                       </temba-label>
                     </a>
@@ -114,9 +123,11 @@
         return;
       }
 
-      var row = event.target.closest("tr");
-      var uuid = row.getAttribute("data-sender-uuid");
+      if (event.target.closest("a")) {
+        return;
+      }
 
+      var row = event.target.closest("tr");
       goto(event, row);
     }
 

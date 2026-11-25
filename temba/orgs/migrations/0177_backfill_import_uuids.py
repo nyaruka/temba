@@ -21,7 +21,6 @@ def backfill_import_uuids(apps, schema_editor):  # pragma: no cover
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("orgs", "0176_orgimport_uuid"),
     ]

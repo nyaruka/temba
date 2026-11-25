@@ -11,14 +11,39 @@
     function deleteBroadcast(id) {
       showModax("{{_('Delete Broadcast')|escapejs}}", "/broadcast/scheduled_delete/" + id + "/");
     }
+
+    onSpload(function() {
+      document.querySelectorAll('.broadcast .thumb img').forEach(function(img) {
+        img.style.width = '48px';
+      });
+
+      var maxRecipients = 5;
+      document.querySelectorAll('.broadcast .recipients').forEach(function(container) {
+        var items = container.children;
+        if (items.length > maxRecipients) {
+          var overflow = items.length - maxRecipients;
+          for (var i = maxRecipients; i < items.length; i++) {
+            items[i].style.display = 'none';
+          }
+          var more = document.createElement('temba-label');
+          more.className = 'mr-1 mb-1';
+          more.setAttribute('type', 'neutral');
+          more.textContent = '+' + overflow + ' more';
+          container.appendChild(more);
+        }
+      });
+    });
   </script>
 {% endblock extra-script %}
 {% block extra-style %}
   {{ block.super }}
   <style type="text/css">
-    .thumb {
-      width: 100px;
+    .broadcast .thumb img {
       height: auto;
+    }
+
+    .broadcast .attachments .attachment {
+      margin-bottom: 0;
     }
   </style>
 {% endblock extra-style %}
@@ -31,8 +56,12 @@
   {% for object in object_list %}
     {% if forloop.first %}
       <div class="mt-4 mb-4 shadow rounded-lg bg-white">{% include "includes/short_pagination.html" %}</div>
+      <div class="broadcast-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 1.5rem;">
     {% endif %}
     {% include "msgs/includes/broadcast.html" with broadcast=object %}
+    {% if forloop.last %}
+      </div>
+    {% endif %}
   {% empty %}
     {% blocktrans trimmed %}
       <div class="mt-4">Create your first scheduled broadcast to get started.</div>

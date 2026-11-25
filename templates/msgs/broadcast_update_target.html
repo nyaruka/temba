@@ -1,1 +1,19 @@
 {% extends "msgs/broadcast_create_target.html" %}
+
+{% block extra-script %}
+  <script type="text/javascript">
+    {
+      const modax = getModax();
+      const modalBody = modax.shadowRoot;
+      const queryWidget = modalBody.querySelector("temba-contact-search");
+
+      queryWidget.addEventListener("temba-content-changed", function(e) {
+        if (e.detail.blockers && e.detail.blockers.length > 0) {
+          modax.disabled = true;
+        } else if (e.detail.query) {
+          modax.disabled = false;
+        }
+      });
+    }
+  </script>
+{% endblock extra-script %}

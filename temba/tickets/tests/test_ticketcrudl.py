@@ -98,6 +98,18 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         # and again we have a specific ticket so we should show context menu for it
         self.assertContentMenu(deep_link, self.admin, ["Add Note", "Start Flow"])
 
+        # deep link with assignee filter on all folder passes assignee_uuid to context
+        assignee_link = f"{list_url}all/open/?assignee={self.admin.uuid}"
+        response = self.assertListFetch(assignee_link, [self.agent], context_objects=[])
+        self.assertEqual("all", response.context["folder"])
+        self.assertEqual(str(self.admin.uuid), response.context["assignee_uuid"])
+
+        # assignee filter is not passed on non-all folders
+        response = self.assertListFetch(
+            f"{list_url}mine/open/?assignee={self.admin.uuid}", [self.admin], context_objects=[]
+        )
+        self.assertNotIn("assignee_uuid", response.context)
+
         # non-existent topic should give a 404
         bad_topic_link = f"{list_url}{uuid4()}/open/{ticket.uuid}/"
         response = self.requestView(bad_topic_link, self.agent)
@@ -352,6 +364,35 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         response = self.client.get(f"{all_open_url}?after={datetime_to_timestamp(c1_t2.last_activity_on)}")
         self.assertEqual(1, len(response.json()["results"]))
 
+        # test filtering by assignee on the all folder
+        assert_tickets(f"{all_open_url}?assignee={self.admin.uuid}", self.admin, expected=[c1_t1])
+        assert_tickets(f"{all_open_url}?assignee={self.agent3.uuid}", self.admin, expected=[c1_t2])
+        assert_tickets(f"{all_open_url}?assignee={self.agent.uuid}", self.admin, expected=[])
+
+        # assignee filter is ignored on non-all folders
+        assert_tickets(f"{mine_open_url}?assignee={self.agent3.uuid}", self.admin, expected=[c1_t1])
+        assert_tickets(f"{unassigned_open_url}?assignee={self.admin.uuid}", self.admin, expected=[c2_t1])
+
+        # assignee filter still respects topic access restrictions
+        # agent2 only has access to sales topic, so filtering by admin (who has a General ticket) returns nothing
+        assert_tickets(f"{all_open_url}?assignee={self.admin.uuid}", self.agent2, expected=[])
+        # but filtering by agent3 (who has a Sales ticket) returns that ticket
+        assert_tickets(f"{all_open_url}?assignee={self.agent3.uuid}", self.agent2, expected=[c1_t2])
+
+        # invalid assignee UUID returns all tickets
+        assert_tickets(f"{all_open_url}?assignee={uuid4()}", self.admin, expected=[c2_t1, c1_t2, c1_t1])
+
+        # test assignee filter with pagination (paginate_by=25, so we need 25+ tickets)
+        bulk_tickets = []
+        for i in range(24):
+            bulk_tickets.append(self.create_ticket(contact3, assignee=self.admin))
+        # now we have 25 admin-assigned tickets total (c1_t1 + 24 new ones), which triggers pagination re-query
+        response = self.requestView(f"{all_open_url}?assignee={self.admin.uuid}", self.admin)
+        actual = [t["ticket"]["uuid"] for t in response.json()["results"]]
+        self.assertEqual(25, len(actual))
+        for bt in bulk_tickets:
+            bt.delete()
+
         # unassigned tickets
         assert_tickets(unassigned_open_url, self.admin, expected=[c2_t1])
         assert_tickets(unassigned_open_url, self.editor, expected=[c2_t1])
@@ -594,8 +635,47 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
             response.json(),
         )
 
-    def test_export_stats(self):
-        export_url = reverse("tickets.ticket_export_stats")
+    def test_leaderboard(self):
+        leaderboard_url = reverse("tickets.ticket_leaderboard")
+
+        self.assertRequestDisallowed(leaderboard_url, [None, self.agent])
+
+        self.login(self.admin)
+
+        response = self.client.get(leaderboard_url + "?since=2024-03-01&until=2024-05-01")
+        self.assertEqual(200, response.status_code)
+        self.assertEqual({"results": []}, response.json())
+
+        # create reply counts - scope format: msgs:ticketreplies:{team_id}:{user_id}
+        self.org.daily_counts.create(day=date(2024, 4, 25), scope=f"msgs:ticketreplies:0:{self.admin.id}", count=5)
+        self.org.daily_counts.create(day=date(2024, 4, 26), scope=f"msgs:ticketreplies:0:{self.admin.id}", count=3)
+        self.org.daily_counts.create(
+            day=date(2024, 4, 25), scope=f"msgs:ticketreplies:{self.sales_only.id}:{self.agent2.id}", count=10
+        )
+        self.org.daily_counts.create(day=date(2024, 4, 25), scope=f"msgs:ticketreplies:0:{self.editor.id}", count=2)
+        self.org.daily_counts.create(
+            day=date(2024, 5, 3), scope=f"msgs:ticketreplies:0:{self.admin.id}", count=100
+        )  # out of period
+
+        response = self.client.get(leaderboard_url + "?since=2024-03-01&until=2024-05-01")
+        data = response.json()
+
+        self.assertEqual(3, len(data["results"]))
+        # ordered by reply count descending
+        self.assertEqual("agent2@textit.com", data["results"][0]["name"])
+        self.assertEqual(str(self.agent2.uuid), data["results"][0]["uuid"])
+        self.assertEqual(10, data["results"][0]["replies"])
+
+        self.assertEqual(str(self.admin), data["results"][1]["name"])
+        self.assertEqual(str(self.admin.uuid), data["results"][1]["uuid"])
+        self.assertEqual(8, data["results"][1]["replies"])
+
+        self.assertEqual(str(self.editor), data["results"][2]["name"])
+        self.assertEqual(str(self.editor.uuid), data["results"][2]["uuid"])
+        self.assertEqual(2, data["results"][2]["replies"])
+
+    def test_analytics_export(self):
+        export_url = reverse("tickets.ticket_analytics_export")
 
         self.login(self.admin)
 

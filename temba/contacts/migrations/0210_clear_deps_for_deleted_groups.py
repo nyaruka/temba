@@ -11,7 +11,6 @@ def clear_deps_for_deleted_groups(apps, schema_editor):  # pragma: no cover
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("contacts", "0209_alter_contactgroup_status"),
     ]

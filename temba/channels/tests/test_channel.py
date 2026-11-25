@@ -561,7 +561,7 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.create_outgoing_msg(contact1, "How is it going?", status=Msg.STATUS_QUEUED)
         self.create_outgoing_msg(contact2, "How is it going?", status=Msg.STATUS_QUEUED)
 
-        # should contain messages for the the channel only
+        # should contain messages for the channel only
         response = self.sync(self.tel_channel, cmds=[])
         self.assertEqual(200, response.status_code)
 
@@ -573,7 +573,7 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(len(cmds[0]["to"]), 1)
         self.assertEqual(cmds[0]["to"][0]["phone"], "+250788382382")
 
-        # Should contain messages for the the channel only
+        # Should contain messages for the channel only
         response = self.sync(channel2, cmds=[])
         self.assertEqual(200, response.status_code)
 

@@ -1,16 +1,18 @@
 from decimal import Decimal
 
-from temba.tests import TembaTest
+from temba.tests import TembaTest, cleanup
 from temba.utils import dynamo
 
 
 class DynamoTest(TembaTest):
-    def tearDown(self):
-        for table in [dynamo.MAIN, dynamo.HISTORY]:
-            for item in table.scan()["Items"]:
-                table.delete_item(Key={"PK": item["PK"], "SK": item["SK"]})
+    @cleanup(dynamodb=True)
+    def test_number_deserialization_monkey_patch(self):
+        dynamo.MAIN.put_item(
+            Item={"PK": "foo#3", "SK": "bar#100", "BigNum": Decimal("1234567891234560000000000000000000000000")}
+        )
 
-        return super().tearDown()
+        item = dynamo.MAIN.get_item(Key={"PK": "foo#3", "SK": "bar#100"})
+        self.assertEqual(Decimal("1234567891234560000000000000000000000000"), item["Item"]["BigNum"])
 
     def test_get_client(self):
         client1 = dynamo.get_client()
@@ -25,6 +27,7 @@ class DynamoTest(TembaTest):
         self.assertEqual(36, len(data))
         self.assertEqual({"foo": "barbarbarbarbarbarbarbarbarbarbarbarbarbarbarbar"}, dynamo.load_jsongz(data))
 
+    @cleanup(dynamodb=True)
     def test_batch_get(self):
         dynamo.MAIN.put_item(Item={"PK": "foo#3", "SK": "bar#100", "OrgID": Decimal(1), "Data": {}})
         dynamo.MAIN.put_item(Item={"PK": "foo#1", "SK": "bar#101", "OrgID": Decimal(1), "Data": {}})
@@ -41,6 +44,7 @@ class DynamoTest(TembaTest):
             items,
         )
 
+    @cleanup(dynamodb=True)
     def test_delete_partition(self):
         self.assertEqual(0, dynamo.delete_partition(dynamo.HISTORY, "foo#1"))
 
@@ -71,6 +75,7 @@ class DynamoTest(TembaTest):
             items,
         )
 
+    @cleanup(dynamodb=True)
     def test_merged_page_query(self):
         # insert 10 items across 3 partition keys
         items = [

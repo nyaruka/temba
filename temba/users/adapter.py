@@ -12,13 +12,19 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from temba.orgs.models import Invitation
-from temba.orgs.views.views import switch_to_org
 from temba.users.models import User
 from temba.utils.email.send import EmailSender
 
 
 class InviteAdapterMixin:
     def post_login(self, request, user, *, email_verification, signal_kwargs, email, signup, redirect_url):
+        # deferred so this module stays importable from allauth's startup
+        # `adapter_check`. Importing anything from `temba.orgs.views.*` at module
+        # scope runs `temba/orgs/views/__init__.py`, which star-imports the
+        # heavy `views.py`; under Python 3.14's stricter `_ModuleLock` deadlock
+        # detection that races with runserver's autoreloader and aborts startup.
+        from temba.orgs.views.utils import switch_to_org
+
         # if we are working with an invite, mark it as accepted
         secret = request.session.pop("invite_secret", None)
         if secret:
@@ -72,7 +78,6 @@ class InviteAdapterMixin:
 
 class TembaAccountAdapter(InviteAdapterMixin, DefaultAccountAdapter):
     def send_mail(self, template_prefix, email, context):
-
         # allauth's default send_mail puts `email` in the template context;
         # keep that contract so templates like account_already_exists render it.
         context.setdefault("email", email)
@@ -200,5 +205,5 @@ class TembaMFAAdapter(DefaultMFAAdapter):
         url = super().build_totp_url(user, secret)
 
         # some totp clients support images in the QR code
-        url = f"{url}&image={self.request.branding.get("logos").get("favico")}"
+        url = f"{url}&image={self.request.branding.get('logos').get('favico')}"
         return url

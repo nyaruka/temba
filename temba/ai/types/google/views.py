@@ -31,7 +31,6 @@ class CredentialsForm(BaseConnectWizard.Form):
         model_choices = [
             (m.name, m.display_name) for m in available_models if not allowed_models or m.name in allowed_models
         ]
-
         self.extra_data = {"model_choices": model_choices}  # save our model choices as extra data
 
         return api_key

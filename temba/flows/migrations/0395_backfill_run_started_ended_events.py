@@ -96,7 +96,6 @@ def apply_manual():  # pragma: no cover
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("flows", "0394_remove_flowsession_call_remove_flowsession_contact_and_more"),
     ]

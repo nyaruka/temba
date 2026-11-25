@@ -152,6 +152,28 @@ class DocumentationRenderer(BrowsableAPIRenderer):
         }
 
 
+class SearchCountMixin:
+    """
+    Pagination mixin that includes a `count` of matching rows on the response when the request carries a `search=`
+    query param. CursorPagination omits count by default to skip a COUNT(*) per request — but searched list views need
+    the tally so the UI can surface "N results". A search has already narrowed the queryset enough that the count is
+    cheap; an unfiltered listing still pays no count cost.
+    """
+
+    def paginate_queryset(self, queryset, request, view=None):
+        # Capture the count from the filtered queryset before the parent slices it down to a single cursor page. The
+        # base CursorPagination doesn't keep the source queryset on `self`, so we have to grab it here.
+        self._search_count = queryset.count() if request.query_params.get("search") else None
+        return super().paginate_queryset(queryset, request, view)
+
+    def get_paginated_response(self, data):
+        response = super().get_paginated_response(data)
+        count = getattr(self, "_search_count", None)
+        if count is not None:
+            response.data["count"] = count
+        return response
+
+
 class CreatedOnCursorPagination(CursorPagination):
     ordering = ("-created_on", "-id")
     offset_cutoff = 100000

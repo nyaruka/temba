@@ -20,6 +20,10 @@ class MockTwilioClient(Client):
     def api(self):
         return MockTwilioClient.MockAPI()
 
+    @property
+    def messaging(self):
+        return MockTwilioClient.MockMessaging()
+
     def validate(self, request):
         return True
 
@@ -170,6 +174,29 @@ class MockTwilioClient(Client):
 
         def get(self, sid):
             return self.list()[0]
+
+    class MockMessaging:
+        @property
+        def v2(self):
+            return MockTwilioClient.MockMessagingV2()
+
+    class MockMessagingV2:
+        @property
+        def channels_senders(self):
+            return MockTwilioClient.MockChannelsSenders()
+
+    class MockChannelsSender:
+        def __init__(self, sender_id, status="ONLINE", sid="XETestSenderSid"):
+            self.sender_id = sender_id
+            self.status = status
+            self.sid = sid
+
+    class MockChannelsSenders(MockInstanceResource):
+        def __init__(self, *args):
+            pass
+
+        def stream(self, *args, **kwargs):
+            return iter([])
 
     class MockCalls(MockInstanceResource):
         def __init__(self):

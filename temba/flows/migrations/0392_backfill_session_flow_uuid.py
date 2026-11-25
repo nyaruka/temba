@@ -35,6 +35,7 @@ def apply_manual():  # pragma: no cover
 
 
 class Migration(migrations.Migration):
+    atomic = False
 
     dependencies = [
         ("flows", "0391_flowsession_current_flow_uuid"),

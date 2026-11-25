@@ -22,7 +22,7 @@ def register_llm_type(type_class):
 
 def reload_llm_types():
     """
-    Re-loads the dynamic classifier types
+    Re-loads the dynamic llm types
     """
     global TYPES
 

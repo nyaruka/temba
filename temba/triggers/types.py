@@ -42,7 +42,7 @@ class KeywordTriggerType(ChannelTriggerType):
         )
         match_type = forms.ChoiceField(
             choices=Trigger.MATCH_TYPES,
-            initial=Trigger.MATCH_FIRST_WORD,
+            initial=Trigger.MATCH_ONLY_WORD,
             label=_("Trigger When"),
             help_text=_("How to match a message with a keyword."),
         )

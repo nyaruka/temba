@@ -5,17 +5,10 @@
     {
       "_ui": {
         "nodes": {
-          "44ddbbbd-be98-439c-b809-cf14f694b28b": {
+          "26090582-43bc-48d9-a40a-916811117fc9": {
             "position": {
-              "left": 100,
-              "top": 0
-            },
-            "type": "execute_actions"
-          },
-          "f0de487c-35ad-4fb1-a710-1076147313f2": {
-            "position": {
-              "left": 140,
-              "top": 220
+              "left": 162,
+              "top": 568
             },
             "type": "wait_for_response"
           },
@@ -26,19 +19,27 @@
             },
             "type": "execute_actions"
           },
-          "ba77561e-aa7e-4efa-baeb-1e19fbdd100d": {
+          "4402d305-eb6a-4e29-aa4d-6423bc0a4896": {
             "position": {
-              "left": 96,
-              "top": 355
+              "left": 84,
+              "top": 740
             },
             "type": "execute_actions"
           },
-          "26090582-43bc-48d9-a40a-916811117fc9": {
+          "44ddbbbd-be98-439c-b809-cf14f694b28b": {
             "position": {
-              "left": 162,
-              "top": 568
+              "left": 100,
+              "top": 0
             },
-            "type": "wait_for_response"
+            "type": "execute_actions"
+          },
+          "76f0fefc-cde6-4aed-b306-fe2de726db6f": {
+            "config": {},
+            "position": {
+              "left": 220,
+              "top": 1400
+            },
+            "type": "wait_for_dial"
           },
           "9cddd0a1-5af2-49ae-8376-1817c23be88e": {
             "position": {
@@ -47,10 +48,10 @@
             },
             "type": "execute_actions"
           },
-          "4402d305-eb6a-4e29-aa4d-6423bc0a4896": {
+          "b227a3e5-bcfb-4d77-b4ac-a4a2500e0cbd": {
             "position": {
-              "left": 84,
-              "top": 740
+              "left": 300,
+              "top": 1600
             },
             "type": "execute_actions"
           },
@@ -61,20 +62,12 @@
             },
             "type": "wait_for_response"
           },
-          "e10c8b96-4cec-4b0a-a0ea-95bc87d3aece": {
+          "ba77561e-aa7e-4efa-baeb-1e19fbdd100d": {
             "position": {
-              "left": 104,
-              "top": 1083
+              "left": 96,
+              "top": 355
             },
             "type": "execute_actions"
-          },
-          "76f0fefc-cde6-4aed-b306-fe2de726db6f": {
-            "type": "wait_for_dial",
-            "position": {
-              "left": 220,
-              "top": 1400
-            },
-            "config": {}
           },
           "c5bb9e75-6349-4d01-ab1e-944acc476447": {
             "position": {
@@ -83,18 +76,25 @@
             },
             "type": "execute_actions"
           },
-          "b227a3e5-bcfb-4d77-b4ac-a4a2500e0cbd": {
+          "e10c8b96-4cec-4b0a-a0ea-95bc87d3aece": {
             "position": {
-              "left": 300,
-              "top": 1600
+              "left": 104,
+              "top": 1083
             },
             "type": "execute_actions"
+          },
+          "f0de487c-35ad-4fb1-a710-1076147313f2": {
+            "position": {
+              "left": 140,
+              "top": 220
+            },
+            "type": "wait_for_response"
           }
         },
         "stickies": {}
       },
       "expire_after_minutes": 5,
-      "language": "base",
+      "language": "und",
       "localization": {},
       "metadata": {
         "expires": 10080
@@ -118,6 +118,7 @@
           "uuid": "44ddbbbd-be98-439c-b809-cf14f694b28b"
         },
         {
+          "actions": [],
           "exits": [
             {
               "destination_uuid": "ba77561e-aa7e-4efa-baeb-1e19fbdd100d",
@@ -180,8 +181,7 @@
               "type": "msg"
             }
           },
-          "uuid": "f0de487c-35ad-4fb1-a710-1076147313f2",
-          "actions": []
+          "uuid": "f0de487c-35ad-4fb1-a710-1076147313f2"
         },
         {
           "actions": [
@@ -216,6 +216,7 @@
           "uuid": "ba77561e-aa7e-4efa-baeb-1e19fbdd100d"
         },
         {
+          "actions": [],
           "exits": [
             {
               "destination_uuid": "4402d305-eb6a-4e29-aa4d-6423bc0a4896",
@@ -262,8 +263,7 @@
               "type": "msg"
             }
           },
-          "uuid": "26090582-43bc-48d9-a40a-916811117fc9",
-          "actions": []
+          "uuid": "26090582-43bc-48d9-a40a-916811117fc9"
         },
         {
           "actions": [
@@ -298,6 +298,7 @@
           "uuid": "4402d305-eb6a-4e29-aa4d-6423bc0a4896"
         },
         {
+          "actions": [],
           "exits": [
             {
               "destination_uuid": "e10c8b96-4cec-4b0a-a0ea-95bc87d3aece",
@@ -324,8 +325,7 @@
               "type": "msg"
             }
           },
-          "uuid": "b2b7d368-5a6d-4ced-a066-8217ed5bf146",
-          "actions": []
+          "uuid": "b2b7d368-5a6d-4ced-a066-8217ed5bf146"
         },
         {
           "actions": [
@@ -347,93 +347,92 @@
           ],
           "exits": [
             {
-              "uuid": "f2404f7d-2be6-4500-b61a-703db5459b61",
-              "destination_uuid": "76f0fefc-cde6-4aed-b306-fe2de726db6f"
+              "destination_uuid": "76f0fefc-cde6-4aed-b306-fe2de726db6f",
+              "uuid": "f2404f7d-2be6-4500-b61a-703db5459b61"
             }
           ],
           "uuid": "e10c8b96-4cec-4b0a-a0ea-95bc87d3aece"
         },
         {
-          "uuid": "76f0fefc-cde6-4aed-b306-fe2de726db6f",
           "actions": [],
-          "router": {
-            "type": "switch",
-            "wait": {
-              "type": "dial",
-              "phone": "2065551212"
+          "exits": [
+            {
+              "destination_uuid": "c5bb9e75-6349-4d01-ab1e-944acc476447",
+              "uuid": "e5855edc-295b-4205-85a5-29790f59a295"
             },
-            "default_category_uuid": "20753879-0261-428f-bcd8-b7be67c9b8cd",
-            "categories": [
-              {
-                "uuid": "568923e0-c3d1-467a-8589-1b5deb5f2e6b",
-                "name": "Answered",
-                "exit_uuid": "e5855edc-295b-4205-85a5-29790f59a295"
-              },
-              {
-                "uuid": "00823422-a217-4d07-8676-85d777bac975",
-                "name": "No Answer",
-                "exit_uuid": "ee12cb3f-6d47-4ff6-9712-0b749231a9d4"
-              },
-              {
-                "uuid": "3e009811-9bc0-491b-b8a0-6f2625fceed8",
-                "name": "Busy",
-                "exit_uuid": "52bd89f8-6834-4466-aea2-05d80a4ac3be"
-              },
-              {
-                "uuid": "20753879-0261-428f-bcd8-b7be67c9b8cd",
-                "name": "Failed",
-                "exit_uuid": "b11e71e2-b90d-463b-b350-f13d5a991148"
-              }
-            ],
+            {
+              "destination_uuid": "b227a3e5-bcfb-4d77-b4ac-a4a2500e0cbd",
+              "uuid": "ee12cb3f-6d47-4ff6-9712-0b749231a9d4"
+            },
+            {
+              "destination_uuid": "b227a3e5-bcfb-4d77-b4ac-a4a2500e0cbd",
+              "uuid": "52bd89f8-6834-4466-aea2-05d80a4ac3be"
+            },
+            {
+              "destination_uuid": "b227a3e5-bcfb-4d77-b4ac-a4a2500e0cbd",
+              "uuid": "b11e71e2-b90d-463b-b350-f13d5a991148"
+            }
+          ],
+          "router": {
             "cases": [
               {
-                "uuid": "a3abc973-0e94-49ad-92c0-860c6d92b804",
-                "type": "has_only_text",
                 "arguments": [
                   "answered"
                 ],
-                "category_uuid": "568923e0-c3d1-467a-8589-1b5deb5f2e6b"
+                "category_uuid": "568923e0-c3d1-467a-8589-1b5deb5f2e6b",
+                "type": "has_only_text",
+                "uuid": "a3abc973-0e94-49ad-92c0-860c6d92b804"
               },
               {
-                "uuid": "3b261a79-dc91-482d-a9f4-d54d901dc065",
-                "type": "has_only_text",
                 "arguments": [
                   "no_answer"
                 ],
-                "category_uuid": "00823422-a217-4d07-8676-85d777bac975"
+                "category_uuid": "00823422-a217-4d07-8676-85d777bac975",
+                "type": "has_only_text",
+                "uuid": "3b261a79-dc91-482d-a9f4-d54d901dc065"
               },
               {
-                "uuid": "ace33089-dbc0-47dd-a6ff-051bd8e4c1c9",
-                "type": "has_only_text",
                 "arguments": [
                   "busy"
                 ],
-                "category_uuid": "3e009811-9bc0-491b-b8a0-6f2625fceed8"
+                "category_uuid": "3e009811-9bc0-491b-b8a0-6f2625fceed8",
+                "type": "has_only_text",
+                "uuid": "ace33089-dbc0-47dd-a6ff-051bd8e4c1c9"
               }
             ],
-            "operand": "@(default(resume.dial.status, \"\"))"
-          },
-          "exits": [
-            {
-              "uuid": "e5855edc-295b-4205-85a5-29790f59a295",
-              "destination_uuid": "c5bb9e75-6349-4d01-ab1e-944acc476447"
-            },
-            {
-              "uuid": "ee12cb3f-6d47-4ff6-9712-0b749231a9d4",
-              "destination_uuid": "b227a3e5-bcfb-4d77-b4ac-a4a2500e0cbd"
-            },
-            {
-              "uuid": "52bd89f8-6834-4466-aea2-05d80a4ac3be",
-              "destination_uuid": "b227a3e5-bcfb-4d77-b4ac-a4a2500e0cbd"
-            },
-            {
-              "uuid": "b11e71e2-b90d-463b-b350-f13d5a991148",
-              "destination_uuid": "b227a3e5-bcfb-4d77-b4ac-a4a2500e0cbd"
+            "categories": [
+              {
+                "exit_uuid": "e5855edc-295b-4205-85a5-29790f59a295",
+                "name": "Answered",
+                "uuid": "568923e0-c3d1-467a-8589-1b5deb5f2e6b"
+              },
+              {
+                "exit_uuid": "ee12cb3f-6d47-4ff6-9712-0b749231a9d4",
+                "name": "No Answer",
+                "uuid": "00823422-a217-4d07-8676-85d777bac975"
+              },
+              {
+                "exit_uuid": "52bd89f8-6834-4466-aea2-05d80a4ac3be",
+                "name": "Busy",
+                "uuid": "3e009811-9bc0-491b-b8a0-6f2625fceed8"
+              },
+              {
+                "exit_uuid": "b11e71e2-b90d-463b-b350-f13d5a991148",
+                "name": "Failed",
+                "uuid": "20753879-0261-428f-bcd8-b7be67c9b8cd"
+              }
+            ],
+            "default_category_uuid": "20753879-0261-428f-bcd8-b7be67c9b8cd",
+            "operand": "@(default(resume.dial.status, \"\"))",
+            "type": "switch",
+            "wait": {
+              "phone": "2065551212",
+              "type": "dial"
             }
-          ]
+          },
+          "uuid": "76f0fefc-cde6-4aed-b306-fe2de726db6f"
         },
         {
-          "uuid": "c5bb9e75-6349-4d01-ab1e-944acc476447",
           "actions": [
             {
               "text": "Great, they answered.",
@@ -443,13 +442,13 @@
           ],
           "exits": [
             {
-              "uuid": "82e15b5d-b005-40cf-aa34-72d36b1809c8",
-              "destination_uuid": null
+              "destination_uuid": null,
+              "uuid": "82e15b5d-b005-40cf-aa34-72d36b1809c8"
             }
-          ]
+          ],
+          "uuid": "c5bb9e75-6349-4d01-ab1e-944acc476447"
         },
         {
-          "uuid": "b227a3e5-bcfb-4d77-b4ac-a4a2500e0cbd",
           "actions": [
             {
               "text": "We didn't get through.",
@@ -459,16 +458,17 @@
           ],
           "exits": [
             {
-              "uuid": "7f379aae-8008-4785-9ca2-c5963aebec1a",
-              "destination_uuid": null
+              "destination_uuid": null,
+              "uuid": "7f379aae-8008-4785-9ca2-c5963aebec1a"
             }
-          ]
+          ],
+          "uuid": "b227a3e5-bcfb-4d77-b4ac-a4a2500e0cbd"
         }
       ],
-      "spec_version": "13.1.0",
+      "revision": 7,
+      "spec_version": "14.4.0",
       "type": "voice",
-      "uuid": "5fdf1652-f034-4265-ad14-eccc3019d6c7",
-      "revision": 7
+      "uuid": "5fdf1652-f034-4265-ad14-eccc3019d6c7"
     }
   ],
   "campaigns": [],

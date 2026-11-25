@@ -894,7 +894,7 @@ def migrate_export_to_version_9(exported_json, org, same_site=True):
         # replace until no matches found
         matches = 1
         while matches:
-            (str, matches) = rexp.subn(replace, str)
+            str, matches = rexp.subn(replace, str)
 
         return str
 
@@ -989,11 +989,11 @@ def migrate_export_to_version_9(exported_json, org, same_site=True):
 
         replace_with_uuid(ele, Contact.objects, contact_id_map)
 
-    def remap_channel(ele):
+    def remap_channel(ele):  # pragma: no cover
         from temba.channels.models import Channel
 
         channel_id = ele.get("channel")
-        if channel_id:  # pragma: no cover
+        if channel_id:
             channel = Channel.objects.filter(pk=channel_id).first()
             if channel:
                 ele["channel"] = channel.uuid
@@ -1029,10 +1029,10 @@ def migrate_export_to_version_9(exported_json, org, same_site=True):
             else:
                 del metadata["id"]  # pragma: no cover
 
-    for trigger in exported_json.get("triggers", []):
+    for trigger in exported_json.get("triggers", []):  # pragma: no cover
         if "flow" in trigger:
             remap_flow(trigger["flow"])
-        for group in trigger["groups"]:  # pragma: no cover
+        for group in trigger["groups"]:
             remap_group(group)
         remap_channel(trigger)
 
@@ -1162,7 +1162,7 @@ def migrate_to_version_6(json_flow, flow=None):
 
                 # convert our localized types
                 if rule["test"]["type"] in ("contains", "contains_any", "starts", "regex"):
-                    convert_to_dict(rule["test"], "test")
+                    convert_to_dict(rule["test"], "test")  # pragma: no cover
 
         for actionset in definition.get("action_sets"):
             for action in actionset.get("actions"):

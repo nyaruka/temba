@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("msgs", "0295_msg_ticket_uuid_alter_broadcast_uuid"),
     ]

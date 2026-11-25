@@ -9,7 +9,7 @@ class OrgContextProcessorTest(TembaTest):
 
         self.assertTrue(perms["msgs"]["msg_list"])
         self.assertTrue(perms["contacts"]["contact_update"])
-        self.assertTrue(perms["orgs"]["org_country"])
+        self.assertTrue(perms["orgs"]["org_locations"])
         self.assertTrue(perms["orgs"]["org_delete"])
         self.assertTrue(perms["tickets"]["ticket_list"])
         self.assertTrue(perms["users"]["user_list"])

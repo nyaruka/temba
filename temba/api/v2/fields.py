@@ -7,7 +7,7 @@ from temba.campaigns.models import Campaign, CampaignEvent
 from temba.channels.models import Channel
 from temba.contacts.models import URN, Contact, ContactField as ContactFieldModel, ContactGroup, ContactURN
 from temba.flows.models import Flow
-from temba.msgs.models import Attachment, Label, Media, Msg, QuickReply
+from temba.msgs.models import Attachment, Label, Media, Msg
 from temba.tickets.models import Ticket, Topic
 from temba.users.models import User
 from temba.utils import languages
@@ -128,13 +128,30 @@ class QuickReplySerializer(serializers.Serializer):
     A serializer for quick replies
     """
 
-    text = serializers.CharField(max_length=64)
-    extra = serializers.CharField(max_length=64, required=False, allow_null=True)
+    type = serializers.ChoiceField(choices=("text", "location"), default="text")
+    text = serializers.CharField(max_length=64, required=False, allow_null=True)
+    extra = serializers.CharField(max_length=72, required=False, allow_null=True)
 
     def to_internal_value(self, data):
         value = super().to_internal_value(data)
 
-        return QuickReply(value["text"], value.get("extra"))
+        qr = {"type": value["type"]}
+        if "text" in value:
+            qr["text"] = value["text"]
+        if "extra" in value:
+            qr["extra"] = value["extra"]
+
+        return qr
+
+    def run_validation(self, data=serializers.empty):
+        typ = data.get("type", "text")
+
+        if typ == "text" and not data.get("text"):
+            raise serializers.ValidationError("Quick replies of type 'text' require a 'text' value.")
+        elif typ == "location" and data.get("extra"):
+            raise serializers.ValidationError("Quick replies of type 'location' cannot have an 'extra' value.")
+
+        return super().run_validation(data)
 
 
 class TranslatedQuickRepliesField(TranslatedField):
@@ -374,7 +391,7 @@ class MediaField(TembaModelField):
         try:
             att = Attachment.parse(value)  # try as a <content-type>:<url> attachment string
             return find_uuid(att.url)
-        except ValueError:
+        except ValueError, TypeError:
             pass
         return None
 

@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from urllib.parse import urlencode
 
 import regex
+from django_valkey import get_valkey_connection
 from smartmin.views import (
     SmartCreateView,
     SmartCRUDL,
@@ -25,9 +26,9 @@ from django.utils.encoding import force_str
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import FormView
 
 from temba import mailroom
+from temba.campaigns.models import CampaignEvent
 from temba.channels.models import Channel
 from temba.contacts.models import URN
 from temba.flows.models import Flow, FlowStart
@@ -54,7 +55,7 @@ from temba.utils.fields import (
     TembaChoiceField,
 )
 from temba.utils.text import slugify_with
-from temba.utils.views.mixins import ContextMenuMixin, ModalFormMixin, SpaMixin, StaffOnlyMixin
+from temba.utils.views.mixins import ContextMenuMixin, ModalFormMixin, SpaMixin
 
 from .models import (
     FlowLabel,
@@ -141,11 +142,11 @@ class FlowCRUDL(SmartCRUDL):
         "import_translation",
         "export_results",
         "editor",
-        "next",
         "results",
         "result_chart",
         "preview_start",
         "start",
+        "interrupt",
         "activity",
         "engagement_timeline",
         "engagement_progress",
@@ -177,7 +178,7 @@ class FlowCRUDL(SmartCRUDL):
             )
 
             if self.has_org_perm("globals.global_list"):
-                menu.append(self.create_divider()),
+                menu.append(self.create_divider())
                 menu.append(self.create_menu_item(name=_("Globals"), icon="global", href="globals.global_list"))
 
             label_items = []
@@ -607,11 +608,14 @@ class FlowCRUDL(SmartCRUDL):
 
             if action == "archive":
                 ignored = objects.filter(is_archived=False)
-                if ignored:
-                    flow_names = ", ".join([f.name for f in ignored])
+                if ignored.exists():
+                    flow_names = ", ".join(f.name for f in ignored)
                     raise forms.ValidationError(
-                        _("The following flows are still used by campaigns so could not be archived: %(flows)s"),
-                        params={"flows": flow_names},
+                        _(
+                            "The following flows with active campaigns or ongoing runs cannot be "
+                            "archived: %(flows)s. Runs can be interrupted from the editor."
+                        )
+                        % {"flows": flow_names}
                     )
 
         def get_bulk_action_labels(self):
@@ -736,11 +740,10 @@ class FlowCRUDL(SmartCRUDL):
             context["active_start"] = flow.get_active_start()
             context["feature_filters"] = json.dumps(self.get_features(flow.org))
             context["default_topic"] = json.dumps(flow.org.default_topic.as_engine_ref())
-
             return context
 
         def get_features(self, org) -> list:
-            features = []
+            features = ["auto_translate"]
 
             facebook_channel = org.get_channel(Channel.ROLE_SEND, scheme=URN.FACEBOOK_SCHEME)
             whatsapp_channel = org.get_channel(Channel.ROLE_SEND, scheme=URN.WHATSAPP_SCHEME)
@@ -751,11 +754,9 @@ class FlowCRUDL(SmartCRUDL):
                 features.append("whatsapp")
             if org.get_integrations(IntegrationType.Category.AIRTIME):
                 features.append("airtime")
-            if org.classifiers.filter(is_active=True).exists():
-                features.append("classifier")
             if org.get_resthooks():
                 features.append("resthook")
-            if org.country_id:
+            if org.root_location_id:
                 features.append("locations")
 
             return features
@@ -772,6 +773,7 @@ class FlowCRUDL(SmartCRUDL):
                     as_button=True,
                     disabled=True,
                 )
+                menu.add_modax(_("Interrupt"), "interrupt-flow", reverse("flows.flow_interrupt", args=[obj.uuid]))
 
             if self.has_org_perm("flows.flow_results"):
                 menu.add_link(_("Results"), reverse("flows.flow_results", args=[obj.uuid]))
@@ -801,20 +803,6 @@ class FlowCRUDL(SmartCRUDL):
 
             if self.has_org_perm("orgs.org_export"):
                 menu.add_link(_("Export Definition"), f"{reverse('orgs.org_export')}?flow={obj.id}")
-
-            # limit PO export/import to non-archived flows since mailroom doesn't know about archived flows
-            if not obj.is_archived:
-                menu.add_modax(
-                    _("Export Translation"),
-                    "export-translation",
-                    reverse("flows.flow_export_translation", args=[obj.id]),
-                )
-
-                if self.has_org_perm("flows.flow_update"):
-                    menu.add_link(_("Import Translation"), reverse("flows.flow_import_translation", args=[obj.id]))
-
-    class Next(StaffOnlyMixin, Editor, SpaMixin):
-        template_name = "flows/flow_next.html"
 
     class ChangeLanguage(OrgObjPermsMixin, SmartUpdateView):
         class Form(forms.Form):
@@ -1229,7 +1217,7 @@ class FlowCRUDL(SmartCRUDL):
 
         def get(self, request, *args, **kwargs):
             flow = self.get_object(self.get_queryset())
-            (active, visited) = flow.get_activity()
+            active, visited = flow.get_activity()
             return JsonResponse(dict(nodes=active, segments=visited))
 
     class Simulate(BaseReadView):
@@ -1290,9 +1278,6 @@ class FlowCRUDL(SmartCRUDL):
                     "urn": test_urn,
                 }
 
-            if "flow" in req_json:
-                payload["flows"] = [{"uuid": flow.uuid, "definition": req_json["flow"]}]
-
             # check if we are triggering a new session
             if "trigger" in req_json:
                 payload["trigger"] = req_json["trigger"]
@@ -1342,6 +1327,9 @@ class FlowCRUDL(SmartCRUDL):
                 "Your channels will likely take over a day to reach all of the selected contacts. Consider "
                 "selecting fewer contacts before continuing."
             ),
+            "templates_cost": _(
+                "This flow uses message templates which may incur additional fees from your channel provider."
+            ),
         }
 
         def get_blockers(self, flow, send_time) -> list:
@@ -1365,19 +1353,19 @@ class FlowCRUDL(SmartCRUDL):
 
             return blockers
 
-        def get_warnings(self, flow, query, send_time) -> list:
+        def get_warnings(self, features, flow, query, send_time) -> list:
             warnings = []
             hours = send_time / timedelta(hours=1)
             if settings.SEND_HOURS_WARNING and hours >= settings.SEND_HOURS_WARNING:
                 warnings.append(self.warnings["too_many_recipients"])
+
+            templates = flow.get_dependencies_metadata("template")
 
             # if we have a whatsapp channel that requires a message template; exclude twilio whatsApp
             whatsapp_channel = flow.org.channels.filter(
                 role__contains=Channel.ROLE_SEND, schemes__contains=[URN.WHATSAPP_SCHEME], is_active=True
             ).exclude(channel_type__in=["TWA"])
             if whatsapp_channel:
-                # check to see we are using templates
-                templates = flow.get_dependencies_metadata("template")
                 if not templates:
                     warnings.append(self.warnings["no_templates"])
 
@@ -1390,6 +1378,10 @@ class FlowCRUDL(SmartCRUDL):
                         )
                     elif not template.is_approved():
                         warnings.append(_(f"Your message template {template.name} is not approved and cannot be sent."))
+
+            # warn about potential template costs if the flow uses templates and brand has cost warnings enabled
+            if "cost_warnings" in features and templates:
+                warnings.append(self.warnings["templates_cost"])
 
             if FlowStart.has_unfinished(flow.org):
                 warnings.append(self.warnings["already_starting"])
@@ -1417,7 +1409,7 @@ class FlowCRUDL(SmartCRUDL):
                 {
                     "query": query,
                     "total": total,
-                    "warnings": self.get_warnings(flow, query, send_time),
+                    "warnings": self.get_warnings(request.branding.get("features", []), flow, query, send_time),
                     "blockers": self.get_blockers(flow, send_time),
                     "send_time": send_time.total_seconds(),
                 }
@@ -1548,6 +1540,58 @@ class FlowCRUDL(SmartCRUDL):
             )
             return super().form_valid(form)
 
+    class Interrupt(BaseUpdateModal):
+        class Form(forms.Form):
+            archive = forms.BooleanField(
+                required=False,
+                label=_("Archive Flow"),
+                help_text=_("This will prevent new contacts from entering the flow."),
+                widget=CheckboxWidget(),
+            )
+
+            def __init__(self, instance, org, **kwargs):
+                super().__init__(**kwargs)
+
+        form_class = Form
+        fields = ("archive",)
+        permission = "flows.flow_start"
+        submit_button_name = _("Interrupt")
+        success_url = "hide"
+
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            flow = self.get_object()
+            counts = flow.get_run_counts()
+            context["run_count"] = counts[FlowRun.STATUS_ACTIVE] + counts[FlowRun.STATUS_WAITING]
+            context["can_interrupt"] = self._can_interrupt(flow)
+            context["can_archive"] = self._can_archive(flow)
+            return context
+
+        def form_valid(self, form):
+            flow = self.get_object()
+
+            if self._can_interrupt(flow):
+                mailroom.get_client().flow_interrupt(flow.org, flow)
+
+                # Archive the flow if requested, but not if it has active campaign events
+                if form.cleaned_data.get("archive") and self._can_archive(flow):
+                    flow.archive(self.request.user, interrupt_sessions=False)
+
+            return self.render_modal_response(form)
+
+        def _can_interrupt(self, flow) -> bool:
+            # Check if an interruption is already in progress
+            r = get_valkey_connection()
+            progress_key = f"interrupt_flow_progress:{flow.id}"
+            progress_value = r.get(progress_key)
+
+            return not progress_value or int(progress_value) == 0
+
+        def _can_archive(self, flow) -> bool:
+            return not CampaignEvent.objects.filter(
+                is_active=True, flow=flow, campaign__org=flow.org, campaign__is_archived=False
+            ).exists()
+
     class Assets(OrgPermsMixin, SmartTemplateView):
         """
         TODO update editor to use API endpoint instead of this
@@ -1567,19 +1611,6 @@ class FlowCRUDL(SmartCRUDL):
 
             results = [{"iso": code, "name": languages.get_name(code)} for code in org.flow_languages]
             return JsonResponse({"results": sorted(results, key=lambda lang: lang["name"])})
-
-
-# this is just for adhoc testing of the preprocess url
-class PreprocessTest(FormView):  # pragma: no cover
-    @csrf_exempt
-    def dispatch(self, *args, **kwargs):
-        return super().dispatch(*args, **kwargs)
-
-    def post(self, request, *args, **kwargs):
-        return HttpResponse(
-            json.dumps(dict(text="Norbert", extra=dict(occupation="hoopster", skillz=7.9))),
-            content_type="application/json",
-        )
 
 
 class FlowLabelForm(UniqueNameMixin, forms.ModelForm):
@@ -1655,7 +1686,7 @@ class FlowLabelCRUDL(SmartCRUDL):
 
 class FlowStartCRUDL(SmartCRUDL):
     model = FlowStart
-    actions = ("list", "interrupt", "status")
+    actions = ("list", "read", "interrupt", "status")
 
     class List(SpaMixin, BaseListView):
         title = _("Flow Starts")
@@ -1688,7 +1719,21 @@ class FlowStartCRUDL(SmartCRUDL):
 
             return context
 
-    class Status(OrgPermsMixin, SmartListView):
+    class Read(BaseReadView):
+        template_name = "flows/flowstart_read.html"
+
+        def derive_queryset(self, **kwargs):
+            qs = super().derive_queryset(**kwargs)
+            return qs.select_related("flow", "created_by").prefetch_related("contacts", "groups")
+
+        def get_context_data(self, *args, **kwargs):
+            context = super().get_context_data(*args, **kwargs)
+
+            FlowStartCount.bulk_annotate([self.object])
+
+            return context
+
+    class Status(BaseListView):
         permission = "flows.flowstart_list"
 
         def derive_queryset(self, **kwargs):

@@ -61,7 +61,7 @@ class ContactTest(TembaTest):
 
         # create 10 notes
         for i in range(10):
-            self.joe.set_note(self.admin, f"{note_text} {i+1}")
+            self.joe.set_note(self.admin, f"{note_text} {i + 1}")
 
         notes = self.joe.notes.all().order_by("id")
 
@@ -79,9 +79,9 @@ class ContactTest(TembaTest):
 
         self.assertEqual(
             [
-                call(self.org, self.admin, [self.joe], [modifiers.Status(status="blocked")]),
-                call(self.org, self.admin, [self.joe], [modifiers.Status(status="stopped")]),
-                call(self.org, self.admin, [self.joe], [modifiers.Status(status="active")]),
+                call(self.org, self.admin, [self.joe], [modifiers.Status(status="blocked")], "ui"),
+                call(self.org, self.admin, [self.joe], [modifiers.Status(status="stopped")], "ui"),
+                call(self.org, self.admin, [self.joe], [modifiers.Status(status="active")], "ui"),
             ],
             mr_mocks.calls["contact_modify"],
         )
@@ -89,12 +89,12 @@ class ContactTest(TembaTest):
     @override_settings(MAILROOM_URL="http://mailroom:8090")
     @patch("requests.post")
     def test_open_ticket(self, mock_post):
-        mock_post.return_value = MockJsonResponse(200, {"modified": {self.joe.id: {"contact": {}, "events": []}}})
+        mock_post.return_value = MockJsonResponse(200, {"events": {str(self.joe.uuid): []}, "skipped": []})
 
         self.joe.open_ticket(self.admin, topic=self.org.default_topic, assignee=self.agent, note="Looks sus")
 
         mock_post.assert_called_once_with(
-            "http://mailroom:8090/mr/contact/modify",
+            "http://mailroom:8090/mi/contact/modify",
             headers={"User-Agent": "Temba"},
             json={
                 "org_id": self.org.id,
@@ -108,6 +108,7 @@ class ContactTest(TembaTest):
                         "note": "Looks sus",
                     }
                 ],
+                "via": "ui",
             },
         )
 

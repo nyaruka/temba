@@ -5,7 +5,7 @@
   {% if not team.all_topics %}
     <div class="mb-4">
       {% for topic in team_topics %}
-        <temba-label icon="topic" class="mx-1 my-1">
+        <temba-label icon="topic" type="topic" class="mx-1 my-1">
           {{ topic.name }}
         </temba-label>
       {% endfor %}

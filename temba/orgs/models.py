@@ -195,9 +195,7 @@ class OrgRole(Enum):
 
 class Org(SmartModel):
     """
-    An Org can have several users and is the main component that holds all Flows, Messages, Contacts, etc. Orgs
-    know their country so they can deal with locally formatted numbers (numbers provided without a country code).
-    As such, each org can only add phone channels from one country.
+    An Org can have several users and is the main component that holds all Flows, Messages, Contacts, etc.
 
     Users will create new Org for Flows that should be kept separate (say for distinct projects), or for
     each country where they are deploying messaging applications.
@@ -245,12 +243,14 @@ class Org(SmartModel):
     FEATURE_CHILD_ORGS = "child_orgs"  # can create child workspaces of this org
     FEATURE_TEAMS = "teams"  # can create teams to organize agent users
     FEATURE_PROMETHEUS = "prometheus"  # can create a prometheus token to access metrics
+    FEATURE_SHARED_CHANNELS = "shared_channels"  # can share channels between orgs
     FEATURES_CHOICES = (
         (FEATURE_USERS, _("Users")),
         (FEATURE_NEW_ORGS, _("New Orgs")),
         (FEATURE_CHILD_ORGS, _("Child Orgs")),
         (FEATURE_TEAMS, _("Teams")),
         (FEATURE_PROMETHEUS, _("Prometheus")),
+        (FEATURE_SHARED_CHANNELS, _("Shared Channels")),
     )
 
     LIMIT_CHANNELS = "channels"
@@ -263,6 +263,7 @@ class Org(SmartModel):
     LIMIT_TEAMS = "teams"
 
     DELETE_DELAY_DAYS = 7  # how many days after releasing that an org is deleted
+    OUTBOX_WARNING_THRESHOLD = 10_000
 
     BLOCKER_SUSPENDED = _(
         "Sorry, your workspace is currently suspended. To re-enable starting flows and sending messages, please "
@@ -296,7 +297,7 @@ class Org(SmartModel):
         default=DATE_FORMAT_DAY_FIRST,
         help_text=_("Default formatting and parsing of dates in flows and messages."),
     )
-    country = models.ForeignKey("locations.AdminBoundary", null=True, on_delete=models.PROTECT)
+    root_location = models.ForeignKey("locations.AdminBoundary", null=True, on_delete=models.PROTECT, related_name="+")
     flow_languages = ArrayField(models.CharField(max_length=3), default=list, validators=[ArrayMinLengthValidator(1)])
     input_collation = models.CharField(max_length=32, choices=COLLATION_CHOICES, default=COLLATION_DEFAULT)
     flow_smtp = models.CharField(null=True)  # e.g. smtp://...
@@ -773,9 +774,9 @@ class Org(SmartModel):
         Gets the default country as a pycountry country for this org
         """
 
-        # first try the country boundary field
-        if self.country:
-            if country := pycountry.countries.get(name=self.country.name):
+        # first try the root location boundary field
+        if self.root_location:
+            if country := pycountry.countries.get(name=self.root_location.name):
                 return country
 
         # next up try timezone
@@ -852,7 +853,7 @@ class Org(SmartModel):
         """
         return self.users.filter(id=user.id).exists()
 
-    def add_user(self, user: User, role: OrgRole, *, team=None):
+    def add_user(self, user: User, role: OrgRole, *, team=None, can_assign=True, can_reply_non_own=True):
         """
         Adds the given user to this org with the given role
         """
@@ -867,7 +868,14 @@ class Org(SmartModel):
         if role == OrgRole.AGENT and not team:
             team = self.default_team
 
-        self._membership_cache[user] = OrgMembership.objects.create(org=self, user=user, role_code=role.code, team=team)
+        self._membership_cache[user] = OrgMembership.objects.create(
+            org=self,
+            user=user,
+            role_code=role.code,
+            team=team,
+            can_assign=can_assign,
+            can_reply_non_own=can_reply_non_own,
+        )
 
     def remove_user(self, user: User):
         """
@@ -1157,10 +1165,6 @@ class Org(SmartModel):
         for glob in self.globals.all():
             glob.delete()
 
-        for classifier in self.classifiers.all():
-            classifier.release(user)
-            classifier.delete()
-
         for llm in self.llms.all():
             llm.delete()
 
@@ -1212,6 +1216,8 @@ class OrgMembership(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     role_code = models.CharField(max_length=1)
     team = models.ForeignKey("tickets.Team", on_delete=models.PROTECT, null=True)
+    can_assign = models.BooleanField(default=True)
+    can_reply_non_own = models.BooleanField(default=True)
     last_seen_on = models.DateTimeField(null=True)
 
     @property

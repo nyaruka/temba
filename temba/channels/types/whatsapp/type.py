@@ -10,7 +10,15 @@ from temba.contacts.models import URN
 from temba.request_logs.models import HTTPLog
 
 from ...models import ChannelType
-from .views import ClaimView, ClearSessionToken, Connect, RequestCode, SelectWABA, VerifyCode
+from .views import (
+    WHATSAPP_GRAPH_API_BASE,
+    ClaimView,
+    ClearSessionToken,
+    Connect,
+    RequestCode,
+    SelectWABA,
+    VerifyCode,
+)
 
 
 class WhatsAppType(ChannelType):
@@ -58,14 +66,14 @@ class WhatsAppType(ChannelType):
         headers = {"Authorization": f"Bearer {settings.WHATSAPP_ADMIN_SYSTEM_USER_TOKEN}"}
 
         # Subscribe to events
-        url = f"https://graph.facebook.com/v22.0/{waba_id}/subscribed_apps"
+        url = f"{WHATSAPP_GRAPH_API_BASE}/{waba_id}/subscribed_apps"
         resp = requests.post(url, headers=headers)
 
         if resp.status_code != 200:  # pragma: no cover
             raise ValidationError(_("Unable to subscribe to app to WABA with ID %s" % waba_id))
 
         # register numbers
-        url = f"https://graph.facebook.com/v22.0/{channel.address}/register"
+        url = f"{WHATSAPP_GRAPH_API_BASE}/{channel.address}/register"
         data = {"messaging_product": "whatsapp", "pin": wa_pin}
 
         resp = requests.post(url, data=data, headers=headers)
@@ -77,7 +85,7 @@ class WhatsAppType(ChannelType):
 
     def fetch_templates(self, channel) -> list:
         waba_id = channel.config["wa_waba_id"]
-        url = f"https://graph.facebook.com/v22.0/{waba_id}/message_templates"
+        url = f"{WHATSAPP_GRAPH_API_BASE}/{waba_id}/message_templates"
         headers = {"Authorization": f"Bearer {settings.WHATSAPP_ADMIN_SYSTEM_USER_TOKEN}"}
         templates = []
 

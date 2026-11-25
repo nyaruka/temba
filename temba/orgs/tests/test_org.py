@@ -14,8 +14,6 @@ from temba.api.models import Resthook, WebHookEvent
 from temba.archives.models import Archive
 from temba.campaigns.models import Campaign, CampaignEvent
 from temba.channels.models import SyncEvent
-from temba.classifiers.models import Classifier
-from temba.classifiers.types.wit import WitType
 from temba.contacts.models import ContactExport, ContactField, ContactFire, ContactImport, ContactImportBatch
 from temba.flows.models import FlowLabel, FlowRun, FlowSession, FlowStart, FlowStartCount, ResultsExport
 from temba.globals.models import Global
@@ -160,11 +158,11 @@ class OrgTest(TembaTest):
         with self.assertRaises(AssertionError):
             self.org.set_flow_languages(self.admin, ["eng", "eng"])
 
-    def test_country_view(self):
+    def test_locations_view(self):
         self.setUpLocations()
 
         settings_url = reverse("orgs.org_workspace")
-        country_url = reverse("orgs.org_country")
+        country_url = reverse("orgs.org_locations")
 
         rwanda = AdminBoundary.objects.get(name="Rwanda")
 
@@ -176,12 +174,16 @@ class OrgTest(TembaTest):
         response = self.client.get(country_url)
         self.assertEqual(200, response.status_code)
 
+        # clear root_location so we can verify the POST sets it
+        self.org.root_location = None
+        self.org.save(update_fields=("root_location",))
+
         # save with Rwanda as a country
-        self.client.post(country_url, {"country": rwanda.id})
+        self.client.post(country_url, {"root_location": rwanda.id})
 
         # assert it has changed
         self.org.refresh_from_db()
-        self.assertEqual("Rwanda", str(self.org.country))
+        self.assertEqual("Rwanda", str(self.org.root_location))
         self.assertEqual("RW", self.org.default_country_code)
 
         response = self.client.get(settings_url)
@@ -193,18 +195,18 @@ class OrgTest(TembaTest):
             self.assertNotContains(response, "Rwanda")
 
     def test_default_country(self):
-        # if country boundary is set and name is valid country, that has priority
-        self.org.country = AdminBoundary.create(osm_id="171496", name="Ecuador", level=0)
+        # if root location boundary is set and name is valid country, that has priority
+        self.org.root_location = AdminBoundary.create(osm_id="171496", name="Ecuador", level=0)
         self.org.timezone = "Africa/Nairobi"
-        self.org.save(update_fields=("country", "timezone"))
+        self.org.save(update_fields=("root_location", "timezone"))
 
         self.assertEqual("EC", self.org.default_country.alpha_2)
 
         del self.org.default_country
 
         # if country name isn't valid, we'll try timezone
-        self.org.country.name = "Fantasia"
-        self.org.country.save(update_fields=("name",))
+        self.org.root_location.name = "Fantasia"
+        self.org.root_location.save(update_fields=("name",))
 
         self.assertEqual("KE", self.org.default_country.alpha_2)
 
@@ -534,7 +536,7 @@ class OrgDeleteTest(TembaTest):
             contact_uuid=contacts[0].uuid,
             current_flow_uuid=flow1.uuid,
             status=FlowSession.STATUS_WAITING,
-            output_url="http://sessions.com/123.json",
+            output={"status": "waiting"},
         )
         add(
             FlowRun.objects.create(
@@ -556,9 +558,6 @@ class OrgDeleteTest(TembaTest):
 
         global1 = add(Global.get_or_create(org, user, "org_name", "Org Name", "Acme Ltd"))
         flow1.global_dependencies.add(global1)
-
-        classifier1 = add(Classifier.create(org, user, WitType.slug, "Booker", {}, sync=False))
-        flow1.classifier_dependencies.add(classifier1)
 
         llm1 = add(LLM.create(org, user, OpenAIType(), "gpt-4o", "GPT-4", {}))
         flow1.llm_dependencies.add(llm1)
@@ -791,7 +790,7 @@ class OrgDeleteTest(TembaTest):
 
         delete_released_orgs()
 
-        self.assertOrgReleased(self.org, org1_content)  # deletion hasn't occured yet because releasing was too soon
+        self.assertOrgReleased(self.org, org1_content)  # deletion hasn't occurred yet because releasing was too soon
         self.assertOrgReleased(org1_child1)
         self.assertOrgReleased(org1_child2)
         self.assertOrgActive(self.org2, org2_content)
@@ -861,7 +860,9 @@ class AnonOrgTest(TembaTest):
         self.assertNotContains(response, "788 123 123")
         self.assertContains(response, contact.ref)
 
-        # create an incoming message, check number doesn't appear in inbox
+        # create an incoming message - by default (preview off) the inbox renders the legacy template which prints
+        # the contact via name_or_urn, so URN masking still needs coverage on that path. In preview mode the temba-msg-list
+        # component fetches messages from the internal API (separately covered in temba/api/internal/tests.py).
         msg2 = self.create_incoming_msg(contact, "ok")
 
         response = self.client.get(reverse("msgs.msg_inbox"))

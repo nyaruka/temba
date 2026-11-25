@@ -20,7 +20,7 @@
   <table class="list lined scrolled">
     <tbody>
       {% for obj in object_list %}
-        <tr {% if org_perms.ai.llm_update %}onclick="showUpdateLLMModal('{{ obj.uuid }}')" class="hover-linked update"{% endif %}>
+        <tr {% if org_perms.ai.llm_update and not obj.is_system %}onclick="showUpdateLLMModal('{{ obj.uuid }}')" class="hover-linked update"{% endif %}>
           <td style="width: 32px">
             <temba-icon class="inline-block mr-1 align-middle" name="{{ obj.type.icon }}">
             </temba-icon>
@@ -46,11 +46,13 @@
           </td>
           {% if org_perms.ai.llm_delete %}
             <td class="w-10">
-              <temba-icon name="delete"
-                          clickable="true"
-                          style="--icon-color:#bbb"
-                          onclick="event.stopPropagation(); showDeleteLLMModal('{{ obj.uuid }}');">
-              </temba-icon>
+              {% if not obj.is_system %}
+                <temba-icon name="delete"
+                            clickable="true"
+                            style="--icon-color:#bbb"
+                            onclick="event.stopPropagation(); showDeleteLLMModal('{{ obj.uuid }}');">
+                </temba-icon>
+              {% endif %}
             </td>
           {% endif %}
         </tr>

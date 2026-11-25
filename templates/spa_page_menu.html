@@ -26,11 +26,17 @@
         disabled: item.disabled,
         onSubmit: item.on_submit,
         onRedirect: item.on_redirect,
-        id: item.modal_id
+        id: item.modal_id,
+        originX: event.detail.originX,
+        originY: event.detail.originY
       }
       showModax(item.title, item.url, modaxOptions);
     } else if (item.type === 'url_post') {
       posterize(item.url);
+    } else if (item.type === 'js') {
+      if (window[item.id]) {
+        window[item.id]();
+      }
     }
 
     // items need to be refreshed in the top left sidebar menu

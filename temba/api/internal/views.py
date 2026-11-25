@@ -75,11 +75,11 @@ class LocationsEndpoint(ListAPIMixin, BaseEndpoint):
         level = self.LEVELS.get(self.request.query_params.get("level"))
         query = self.request.query_params.get("query")
 
-        if not org.country or not level:
+        if not org.root_location or not level:
             return AdminBoundary.objects.none()
 
         qs = AdminBoundary.objects.filter(
-            path__startswith=f"{org.country.name} {AdminBoundary.PATH_SEPARATOR}", level=level
+            path__startswith=f"{org.root_location.name} {AdminBoundary.PATH_SEPARATOR}", level=level
         )
 
         if query:
@@ -124,6 +124,9 @@ class ShortcutsEndpoint(ListAPIMixin, BaseEndpoint):
     model = Shortcut
     serializer_class = serializers.ShortcutReadSerializer
     pagination_class = ModifiedOnCursorPagination
+
+    def get_queryset(self):
+        return super().get_queryset().filter(org=self.request.org, is_active=True)
 
 
 class TemplatesEndpoint(ListAPIMixin, BaseEndpoint):

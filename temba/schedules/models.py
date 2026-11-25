@@ -122,6 +122,32 @@ class Schedule(models.Model):
 
             self.save()
 
+    def project_fires(self, horizon) -> list:
+        """
+        Projects future fires for this schedule from `next_fire` up to and including `horizon`. A
+        one-off schedule returns just `next_fire` (if before the horizon); a repeating schedule
+        iterates `calculate_next_fire` to build successive occurrences while they remain inside the
+        window. A safety cap guards against pathological schedules that fail to advance.
+        """
+
+        if self.next_fire is None or self.next_fire > horizon:
+            return []
+
+        fires = [self.next_fire]
+        if self.repeat_period == Schedule.REPEAT_NEVER:
+            return fires
+
+        # the safety cap guards against a pathological schedule that never advances past the horizon;
+        # if it's ever hit we silently return the truncated list rather than erroring (no real schedule
+        # repeats often enough to produce this many fires within a one-year window)
+        safety_cap = 10_000
+        for _i in range(safety_cap - 1):
+            next_fire = self.calculate_next_fire(fires[-1])
+            if not next_fire or next_fire <= fires[-1] or next_fire > horizon:
+                break
+            fires.append(next_fire)
+        return fires
+
     def calculate_next_fire(self, now):
         """
         Get the next point in the future when our schedule should fire again. Note this should only be called to find
@@ -139,7 +165,7 @@ class Schedule(models.Model):
         # if monthly, set to the day of the month scheduled and move forward until we are in the future
         if self.repeat_period == Schedule.REPEAT_MONTHLY:
             while True:
-                (weekday, days) = calendar.monthrange(next_fire.year, next_fire.month)
+                weekday, days = calendar.monthrange(next_fire.year, next_fire.month)
                 day_of_month = min(days, self.repeat_day_of_month)
                 next_fire = next_fire.replace(day=day_of_month, hour=hour, minute=minute)
                 if next_fire > now:

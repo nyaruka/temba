@@ -1,5 +1,8 @@
 from datetime import datetime, timedelta, timezone as tzone
 from unittest.mock import call, patch
+from urllib.parse import quote
+
+import iso8601
 
 from django.conf import settings
 from django.urls import reverse
@@ -7,11 +10,11 @@ from django.utils import timezone
 
 from temba import mailroom
 from temba.campaigns.models import Campaign, CampaignEvent
-from temba.contacts.models import Contact, ContactExport, ContactField, ContactFire
+from temba.contacts.models import Contact, ContactExport, ContactField
 from temba.locations.models import AdminBoundary
 from temba.mailroom.client.types import Exclusions
 from temba.msgs.models import Media
-from temba.orgs.models import Export, OrgRole
+from temba.orgs.models import Export, OrgMembership, OrgRole
 from temba.schedules.models import Schedule
 from temba.tests import CRUDLTestMixin, MockResponse, TembaTest, matchers, mock_mailroom
 from temba.tests.engine import MockSessionWriter
@@ -159,7 +162,7 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
 
         response = self.assertListFetch(list_url + "?search=age+%3D+18", [self.editor], context_objects=[frank])
         self.assertEqual(response.context["search"], "age = 18")
-        self.assertEqual(response.context["save_dynamic_search"], True)
+        self.assertEqual(response.context["search_is_saveable"], True)
         self.assertIsNone(response.context["search_error"])
         self.assertEqual(
             [f.name for f in response.context["contact_fields"]], ["Home", "Age", "Last Seen On", "Created On"]
@@ -177,14 +180,14 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
             list_url + '?search=age+>+18+and+home+%3D+"Kigali"', [self.editor], context_objects=[joe]
         )
         self.assertEqual(response.context["search"], 'age > 18 AND home = "Kigali"')
-        self.assertEqual(response.context["save_dynamic_search"], True)
+        self.assertEqual(response.context["search_is_saveable"], True)
         self.assertIsNone(response.context["search_error"])
 
         mr_mocks.contact_search("Joe", cleaned='name ~ "Joe"', contacts=[joe])
 
         response = self.assertListFetch(list_url + "?search=Joe", [self.editor], context_objects=[joe])
         self.assertEqual(response.context["search"], 'name ~ "Joe"')
-        self.assertEqual(response.context["save_dynamic_search"], True)
+        self.assertEqual(response.context["search_is_saveable"], True)
         self.assertIsNone(response.context["search_error"])
 
         with self.anonymous(self.org):
@@ -194,7 +197,7 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
             self.assertEqual(list(response.context["object_list"]), [joe])
             self.assertIsNone(response.context["search_error"])
             self.assertEqual(response.context["search"], f"id = {joe.id}")
-            self.assertEqual(response.context["save_dynamic_search"], False)
+            self.assertEqual(response.context["search_is_saveable"], False)
 
         # try with invalid search string
         mr_mocks.exception(mailroom.QueryValidationException("mismatched input at (((", "syntax"))
@@ -203,6 +206,10 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
         self.assertEqual(list(response.context["object_list"]), [])
         self.assertEqual(response.context["search_error"], "Invalid query syntax.")
         self.assertContains(response, "Invalid query syntax.")
+
+        mr_mocks.exception(mailroom.QueryValidationException("mismatched input at (((", "syntax"))
+
+        self.assertContentMenu(list_url + "?search=(((", self.editor, ["New Contact", "New Group"])  # no export
 
         # error response if query too long
         response = self.client.get(list_url + "?search=" + "x" * 10001)
@@ -245,7 +252,7 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
 
         # we re-run the search for the response, but exclude Joe
         self.assertEqual(
-            call(self.org, active_contacts, "Joe", sort="", offset=0, exclude_ids=[joe.id]),
+            call(self.org, active_contacts, "Joe", sort="", offset=0, exclude=[joe]),
             mr_mocks.calls["contact_search"][-1],
         )
 
@@ -254,6 +261,90 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
 
         joe.refresh_from_db()
         self.assertEqual(Contact.STATUS_ARCHIVED, joe.status)
+
+    @mock_mailroom
+    def test_preview_list(self, mr_mocks):
+        joe = self.create_contact("Joe", phone="123")
+        frank = self.create_contact("Frank", phone="124")
+        group = self.create_group("Crew", contacts=[joe, frank])
+
+        list_url = reverse("contacts.contact_list")
+        group_url = reverse("contacts.contact_group", args=[group.uuid])
+
+        self.login(self.admin)
+
+        # default render is still the legacy table
+        response = self.client.get(list_url)
+        self.assertNotContains(response, "temba-contact-list")
+
+        # entering preview mode swaps in the temba-contact-list component, pointed at the internal contacts api
+        self.client.cookies["temba-preview"] = "1"
+
+        response = self.client.get(list_url)
+        self.assertContains(response, "temba-contact-list")
+        self.assertEqual(
+            f"{reverse('api.internal.contacts')}.json?folder=active", response.context["new_list_endpoint"]
+        )
+
+        # send / start-flow are clientOnly (they open a modal); the group dropdown carries a labelsEndpoint of the
+        # workspace's static groups; the rest post to the action endpoint
+        actions = {a["key"]: a for a in response.context["new_list_bulk_actions"]}
+        self.assertEqual(["label", "block", "archive", "send", "start-flow"], list(actions.keys()))
+        self.assertTrue(actions["send"]["clientOnly"])
+        self.assertTrue(actions["start-flow"]["clientOnly"])
+        self.assertNotIn("clientOnly", actions["archive"])
+        self.assertEqual("/api/v2/groups.json?manual_only=1", actions["label"]["labelsEndpoint"])
+
+        # a user group is selected by uuid rather than a status folder
+        response = self.client.get(group_url)
+        self.assertEqual(
+            f"{reverse('api.internal.contacts')}.json?group={group.uuid}", response.context["new_list_endpoint"]
+        )
+        # a manual group has no subtitle
+        self.assertEqual("", response.context["new_list_subtitle"])
+
+        # a smart (dynamic) group surfaces its query as the list subtitle
+        smart = self.create_group("Females", query="gender = F")
+        response = self.client.get(reverse("contacts.contact_group", args=[smart.uuid]))
+        self.assertEqual(smart.query, response.context["new_list_subtitle"])
+
+        # the component posts contact uuids in `objects`; the view translates them to ids so the bulk action applies
+        self.client.post(list_url, {"action": "archive", "objects": str(joe.uuid)})
+        joe.refresh_from_db()
+        self.assertEqual(Contact.STATUS_ARCHIVED, joe.status)
+
+        # the group dropdown adds the selection to a static group (group posted by uuid; omitting `add` means add)
+        newsletter = self.create_group("Newsletter", contacts=[])
+        self.client.post(list_url, {"action": "label", "objects": str(frank.uuid), "label": str(newsletter.uuid)})
+        self.assertIn(frank, newsletter.contacts.all())
+
+        # ...and removes them when add=false (BulkActionMixin maps that to unlabel)
+        self.client.post(
+            list_url, {"action": "label", "objects": str(frank.uuid), "label": str(newsletter.uuid), "add": "false"}
+        )
+        self.assertNotIn(frank, newsletter.contacts.all())
+
+        # a label posted as a numeric id (a legacy form post rather than the component) is passed through untranslated
+        self.client.post(list_url, {"action": "label", "objects": str(frank.uuid), "label": str(newsletter.id)})
+        self.assertIn(frank, newsletter.contacts.all())
+
+        # on a group page, an "unlabel" with no group falls back to the current group ("Remove from group")
+        self.client.post(group_url, {"action": "unlabel", "objects": str(frank.uuid)})
+        self.assertNotIn(frank, group.contacts.all())
+
+        # a malformed contact uuid in `objects` is ignored rather than raising (no 500 on hostile/garbage input)
+        response = self.client.post(list_url, {"action": "archive", "objects": "not-a-uuid"})
+        self.assertEqual(200, response.status_code)
+
+        del self.client.cookies["temba-preview"]
+
+        # back on the legacy (non-preview) list, the content menu still surfaces Create Smart Group when the search is
+        # saveable as a group — build_context_menu reads the search straight off the request query string here
+        self.assertContentMenu(
+            list_url + "?search=age+%3E+30",
+            self.admin,
+            ["Create Smart Group", "New Contact", "New Group", "Export"],
+        )
 
     @mock_mailroom
     def test_blocked(self, mr_mocks):
@@ -410,7 +501,7 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
         response = self.assertReadFetch(group1_url, [self.editor, self.admin])
 
         self.assertEqual([frank, joe], list(response.context["object_list"]))
-        self.assertEqual(["block", "unlabel", "send", "start-flow"], list(response.context["actions"]))
+        self.assertEqual(["unlabel", "block", "send", "start-flow"], list(response.context["actions"]))
         self.assertEqual(
             [f.name for f in response.context["contact_fields"]], ["Home", "Age", "Last Seen On", "Created On"]
         )
@@ -536,7 +627,7 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
                         "urn": "tel:+250781111111",
                         "channel": {"uuid": str(self.channel.uuid), "name": "Test Channel"},
                     },
-                    "_user": {"uuid": str(self.editor.uuid), "name": "Ed", "avatar": None},
+                    "_user": {"uuid": str(self.editor.uuid), "name": "Ed McEdits", "avatar": None},
                 }
             },
             response.json(),
@@ -577,7 +668,7 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
                         "urn": "tel:+250781111111",
                         "channel": {"uuid": str(self.channel.uuid), "name": "Test Channel"},
                     },
-                    "_user": {"uuid": str(self.editor.uuid), "name": "Ed", "avatar": None},
+                    "_user": {"uuid": str(self.editor.uuid), "name": "Ed McEdits", "avatar": None},
                 }
             },
             response.json(),
@@ -600,6 +691,54 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
 
         response = self.client.post(chat_url, {"text": "Hello"}, content_type="application/json")
         self.assertEqual(404, response.status_code)
+
+    @mock_mailroom
+    def test_chat_reply_non_own_permission(self, mr_mocks):
+        contact = self.create_contact("Joe Blow", urns=["tel:+250781111111"])
+        ticket = self.create_ticket(contact)
+        chat_url = reverse("contacts.contact_chat", args=[contact.uuid])
+
+        # restrict agent's ability to reply to unassigned tickets
+        OrgMembership.objects.filter(org=self.org, user=self.agent).update(can_reply_non_own=False)
+        self.org._membership_cache = {}
+
+        self.login(self.agent)
+
+        # agent can't reply to an unassigned ticket
+        response = self.client.post(
+            chat_url, {"text": "Hello", "ticket": str(ticket.uuid)}, content_type="application/json"
+        )
+        self.assertEqual(403, response.status_code)
+
+        # assign ticket to the agent
+        ticket.assignee = self.agent
+        ticket.save(update_fields=("assignee",))
+
+        # agent CAN reply to a ticket assigned to them
+        response = self.client.post(
+            chat_url, {"text": "Hello", "ticket": str(ticket.uuid)}, content_type="application/json"
+        )
+        self.assertEqual(200, response.status_code)
+
+        # assign ticket to someone else
+        ticket.assignee = self.admin
+        ticket.save(update_fields=("assignee",))
+
+        # agent can't reply to ticket assigned to another user
+        response = self.client.post(
+            chat_url, {"text": "Hello", "ticket": str(ticket.uuid)}, content_type="application/json"
+        )
+        self.assertEqual(403, response.status_code)
+
+        # restore permission
+        OrgMembership.objects.filter(org=self.org, user=self.agent).update(can_reply_non_own=True)
+        self.org._membership_cache = {}
+
+        # agent can now reply to ticket assigned to someone else
+        response = self.client.post(
+            chat_url, {"text": "Hello", "ticket": str(ticket.uuid)}, content_type="application/json"
+        )
+        self.assertEqual(200, response.status_code)
 
     @patch("temba.mailroom.events.Event.get_by_contact")
     @patch("django.utils.timezone.now")
@@ -698,6 +837,68 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
             response.json(),
         )
         self.assertEqual(response.json()["events"][0]["uuid"], response.json()["next"])
+
+    @mock_mailroom
+    def test_chat_search(self, mr_mocks):
+        contact = self.create_contact("Joe Blow", urns=["tel:+250781111111"])
+
+        chat_search_url = reverse("contacts.contact_chat_search", args=[contact.uuid])
+
+        self.assertRequestDisallowed(chat_search_url, [None])
+
+        self.login(self.editor)
+
+        # empty text returns empty results
+        response = self.client.get(chat_search_url + "?text=")
+        self.assertEqual(200, response.status_code)
+        self.assertEqual({"results": []}, response.json())
+
+        # no text param returns empty results
+        response = self.client.get(chat_search_url)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual({"results": []}, response.json())
+
+        # with results from mailroom
+        mr_mocks.msg_search(
+            [
+                (
+                    contact,
+                    {
+                        "uuid": "019a9935-022e-7bb3-9d6f-03d773be623e",
+                        "type": "msg_received",
+                        "created_on": "2025-11-17T16:00:00+00:00",
+                    },
+                ),
+                (
+                    contact,
+                    {
+                        "uuid": "019a9935-022e-7bb3-9d6f-03d773be624e",
+                        "type": "msg_created",
+                        "created_on": "2025-11-17T16:01:00+00:00",
+                    },
+                ),
+            ]
+        )
+
+        response = self.client.get(chat_search_url + "?text=hello")
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            {
+                "results": [
+                    {
+                        "uuid": "019a9935-022e-7bb3-9d6f-03d773be623e",
+                        "type": "msg_received",
+                        "created_on": "2025-11-17T16:00:00+00:00",
+                    },
+                    {
+                        "uuid": "019a9935-022e-7bb3-9d6f-03d773be624e",
+                        "type": "msg_created",
+                        "created_on": "2025-11-17T16:01:00+00:00",
+                    },
+                ]
+            },
+            response.json(),
+        )
 
     @mock_mailroom
     def test_update(self, mr_mocks):
@@ -969,66 +1170,51 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
             export.config,
         )
 
-    def test_scheduled(self):
+    def test_timeline(self):
         contact1 = self.create_contact("Joe", phone="+1234567890")
         contact2 = self.create_contact("Frank", phone="+1204567802")
         farmers = self.create_group("Farmers", contacts=[contact1, contact2])
 
-        schedule_url = reverse("contacts.contact_scheduled", args=[contact1.uuid])
+        timeline_url = reverse("contacts.contact_timeline", args=[contact1.uuid])
 
-        self.assertRequestDisallowed(schedule_url, [None, self.agent, self.admin2])
-        response = self.assertReadFetch(schedule_url, [self.editor, self.admin])
-        self.assertEqual({"results": []}, response.json())
+        self.assertRequestDisallowed(timeline_url, [None, self.agent, self.admin2])
+        response = self.assertReadFetch(timeline_url, [self.editor, self.admin])
+        self.assertEqual([], response.json()["campaigns"])
+        self.assertEqual([], response.json()["future"])
+        self.assertEqual([], response.json()["past"])
+        self.assertEqual(0, response.json()["future_count"])
+        self.assertIsNone(response.json()["next_before"])
+        self.assertIsNone(response.json()["next_after"])
 
-        # create a campaign and event fires for this contact
+        # create a campaign with a past and a future event, computed from the contact's join date
         campaign = Campaign.create(self.org, self.admin, "Reminders", farmers)
         joined = self.create_field("joined", "Joined On", value_type=ContactField.TYPE_DATETIME)
-        event2_flow = self.create_flow("Reminder Flow")
-        event1 = CampaignEvent.create_message_event(
+        flow = self.create_flow("Reminder Flow")
+        msg_event = CampaignEvent.create_message_event(
             self.org,
             self.admin,
             campaign,
             joined,
-            2,
+            3,
             unit="D",
             translations={"eng": {"text": "Hi"}},
             base_language="eng",
         )
-        event2 = CampaignEvent.create_flow_event(self.org, self.admin, campaign, joined, 2, unit="D", flow=event2_flow)
-        # old fire version should not be displayed
-        ContactFire.objects.create(
-            org=self.org,
-            contact=contact1,
-            fire_type=ContactFire.TYPE_CAMPAIGN_EVENT,
-            scope=f"{event1.id}:{event1.fire_version}",  # old version
-            fire_on=timezone.now() + timedelta(days=2),
-        )
-        # update event
-        event1.fire_version += 1
-        event1.save()
-        fire1 = ContactFire.objects.create(
-            org=self.org,
-            contact=contact1,
-            fire_type=ContactFire.TYPE_CAMPAIGN_EVENT,
-            scope=f"{event1.id}:{event1.fire_version}",  # latest version
-            fire_on=timezone.now() + timedelta(days=2),
-        )
-        fire2 = ContactFire.objects.create(
-            org=self.org,
-            contact=contact1,
-            fire_type=ContactFire.TYPE_CAMPAIGN_EVENT,
-            scope=f"{event2.id}:{event2.fire_version}",
-            fire_on=timezone.now() + timedelta(days=5),
-        )
+        flow_event = CampaignEvent.create_flow_event(self.org, self.admin, campaign, joined, 20, unit="D", flow=flow)
 
-        # create scheduled and regular broadcasts which send to both groups
-        bcast1 = self.create_broadcast(
+        # contact joined 10 days ago, so the +3 day event is past and the +20 day event is upcoming
+        self.set_contact_field(contact1, "joined", (timezone.now() - timedelta(days=10)).isoformat())
+        joined_on = contact1.get_field_value(joined)
+
+        # create a scheduled broadcast and an already-sent broadcast
+        bcast = self.create_broadcast(
             self.admin,
             {"eng": {"text": "Hi again"}},
             contacts=[contact1, contact2],
-            schedule=Schedule.create(self.org, timezone.now() + timedelta(days=3), Schedule.REPEAT_DAILY),
+            schedule=Schedule.create(self.org, timezone.now() + timedelta(days=3), Schedule.REPEAT_NEVER),
         )
         self.create_broadcast(self.admin, {"eng": {"text": "Bye"}}, contacts=[contact1, contact2])  # not scheduled
+        sent_msg = contact1.msgs.get(broadcast__isnull=False)
 
         # create scheduled trigger which this contact is explicitly added to
         trigger1_flow = self.create_flow("Favorites 1")
@@ -1037,7 +1223,7 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
             self.admin,
             trigger_type=Trigger.TYPE_SCHEDULE,
             flow=trigger1_flow,
-            schedule=Schedule.create(self.org, timezone.now() + timedelta(days=4), Schedule.REPEAT_WEEKLY),
+            schedule=Schedule.create(self.org, timezone.now() + timedelta(days=4), Schedule.REPEAT_NEVER),
         )
         trigger1.contacts.add(contact1, contact2)
 
@@ -1048,7 +1234,7 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
             self.admin,
             trigger_type=Trigger.TYPE_SCHEDULE,
             flow=trigger2_flow,
-            schedule=Schedule.create(self.org, timezone.now() + timedelta(days=6), Schedule.REPEAT_MONTHLY),
+            schedule=Schedule.create(self.org, timezone.now() + timedelta(days=6), Schedule.REPEAT_NEVER),
         )
         trigger2.groups.add(farmers)
 
@@ -1058,57 +1244,602 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
             self.admin,
             trigger_type=Trigger.TYPE_SCHEDULE,
             flow=self.create_flow("Favorites 3"),
-            schedule=Schedule.create(self.org, timezone.now() + timedelta(days=4), Schedule.REPEAT_WEEKLY),
+            schedule=Schedule.create(self.org, timezone.now() + timedelta(days=4), Schedule.REPEAT_NEVER),
         )
         trigger3.contacts.add(contact1, contact2)
         trigger3.exclude_groups.add(farmers)
 
-        response = self.requestView(schedule_url, self.admin)
+        response = self.requestView(timeline_url, self.admin)
         self.assertEqual(
-            {
-                "results": [
-                    {
-                        "type": "campaign_event",
-                        "scheduled": fire1.fire_on.isoformat(),
-                        "repeat_period": None,
-                        "campaign": {"uuid": str(campaign.uuid), "name": "Reminders"},
-                        "message": "Hi",
+            [
+                {
+                    "type": "scheduled_broadcast",
+                    "scheduled": bcast.schedule.next_fire.astimezone(tzone.utc).isoformat(),
+                    "message": "Hi again",
+                },
+                {
+                    "type": "scheduled_trigger",
+                    "scheduled": trigger1.schedule.next_fire.astimezone(tzone.utc).isoformat(),
+                    "flow": {
+                        "uuid": str(trigger1_flow.uuid),
+                        "name": "Favorites 1",
+                        "url": reverse("flows.flow_editor", args=[trigger1_flow.uuid]),
                     },
-                    {
-                        "type": "scheduled_broadcast",
-                        "scheduled": bcast1.schedule.next_fire.astimezone(tzone.utc).isoformat(),
-                        "repeat_period": "D",
-                        "message": "Hi again",
+                },
+                {
+                    "type": "scheduled_trigger",
+                    "scheduled": trigger2.schedule.next_fire.astimezone(tzone.utc).isoformat(),
+                    "flow": {
+                        "uuid": str(trigger2_flow.uuid),
+                        "name": "Favorites 2",
+                        "url": reverse("flows.flow_editor", args=[trigger2_flow.uuid]),
                     },
-                    {
-                        "type": "scheduled_trigger",
-                        "scheduled": trigger1.schedule.next_fire.astimezone(tzone.utc).isoformat(),
-                        "repeat_period": "W",
-                        "flow": {"uuid": str(trigger1_flow.uuid), "name": "Favorites 1"},
+                },
+                {
+                    "type": "campaign_event",
+                    "scheduled": (joined_on + timedelta(days=20)).isoformat(),
+                    "campaign": {
+                        "uuid": str(campaign.uuid),
+                        "name": "Reminders",
+                        "url": reverse("campaigns.campaign_read", args=[campaign.uuid]),
                     },
-                    {
-                        "type": "campaign_event",
-                        "scheduled": fire2.fire_on.isoformat(),
-                        "repeat_period": None,
-                        "campaign": {"uuid": str(campaign.uuid), "name": "Reminders"},
-                        "flow": {"uuid": str(event2_flow.uuid), "name": "Reminder Flow"},
+                    "url": reverse("campaigns.campaignevent_read", args=[campaign.uuid, flow_event.uuid]),
+                    "flow": {
+                        "uuid": str(flow.uuid),
+                        "name": "Reminder Flow",
+                        "url": reverse("flows.flow_editor", args=[flow.uuid]),
                     },
-                    {
-                        "type": "scheduled_trigger",
-                        "scheduled": trigger2.schedule.next_fire.astimezone(tzone.utc).isoformat(),
-                        "repeat_period": "M",
-                        "flow": {"uuid": str(trigger2_flow.uuid), "name": "Favorites 2"},
-                    },
-                ]
-            },
-            response.json(),
+                },
+            ],
+            response.json()["future"],
         )
+        self.assertEqual(
+            [
+                {"type": "sent_broadcast", "scheduled": sent_msg.created_on.isoformat(), "message": "Bye"},
+                {
+                    "type": "campaign_event",
+                    "scheduled": (joined_on + timedelta(days=3)).isoformat(),
+                    "campaign": {
+                        "uuid": str(campaign.uuid),
+                        "name": "Reminders",
+                        "url": reverse("campaigns.campaign_read", args=[campaign.uuid]),
+                    },
+                    "url": reverse("campaigns.campaignevent_read", args=[campaign.uuid, msg_event.uuid]),
+                    "message": "Hi",
+                },
+            ],
+            response.json()["past"],
+        )
+        self.assertEqual(
+            [
+                {
+                    "uuid": str(campaign.uuid),
+                    "name": "Reminders",
+                    "url": reverse("campaigns.campaign_read", args=[campaign.uuid]),
+                },
+            ],
+            response.json()["campaigns"],
+        )
+        self.assertEqual(4, response.json()["future_count"])
+        self.assertIsNone(response.json()["next_before"])
+        self.assertIsNone(response.json()["next_after"])
 
-        # fires for archived campaigns shouldn't appear
+        # events for archived campaigns shouldn't appear
         campaign.archive(self.admin)
 
-        response = self.requestView(schedule_url, self.admin)
-        self.assertEqual(3, len(response.json()["results"]))
+        response = self.requestView(timeline_url, self.admin)
+        self.assertEqual(3, len(response.json()["future"]))  # campaign event dropped
+        self.assertEqual(3, response.json()["future_count"])
+        self.assertEqual(1, len(response.json()["past"]))  # campaign event dropped, sent broadcast remains
+
+    def test_timeline_delivery_hour_snapping(self):
+        """A campaign event with a delivery_hour snaps its projected time to that hour in the org timezone."""
+        contact = self.create_contact("Joe", phone="+1234567890")
+        group = self.create_group("Members", contacts=[contact])
+        timeline_url = reverse("contacts.contact_timeline", args=[contact.uuid])
+
+        joined = self.create_field("joined", "Joined On", value_type=ContactField.TYPE_DATETIME)
+        # joined a few days ago at an arbitrary time-of-day so we can confirm the projected time isn't
+        # just anchor + offset; the +20 day offset below still lands comfortably in the future
+        joined_at = timezone.now().replace(hour=3, minute=37, second=12, microsecond=0) - timedelta(days=5)
+        self.set_contact_field(contact, "joined", joined_at.isoformat())
+
+        # +20 day event with delivery_hour=9 (UNIT_DAYS) -> projected time snaps to 09:00 org-local
+        campaign = Campaign.create(self.org, self.admin, "Reminders", group)
+        CampaignEvent.create_message_event(
+            self.org,
+            self.admin,
+            campaign,
+            joined,
+            20,
+            unit="D",
+            delivery_hour=9,
+            translations={"eng": {"text": "Morning reminder"}},
+            base_language="eng",
+        )
+
+        response = self.requestView(timeline_url, self.admin)
+        future = response.json()["future"]
+        self.assertEqual(1, len(future))
+
+        scheduled = iso8601.parse_date(future[0]["scheduled"]).astimezone(self.org.timezone)
+        expected = (
+            (joined_at + timedelta(days=20))
+            .astimezone(self.org.timezone)
+            .replace(hour=9, minute=0, second=0, microsecond=0)
+        )
+        self.assertEqual(expected, scheduled)
+        self.assertEqual(9, scheduled.hour)
+        self.assertEqual(0, scheduled.minute)
+
+    def test_timeline_inactive_and_missing_anchor(self):
+        """Inactive campaign events and events whose anchor field the contact lacks are omitted."""
+        contact = self.create_contact("Joe", phone="+1234567890")
+        group = self.create_group("Members", contacts=[contact])
+        timeline_url = reverse("contacts.contact_timeline", args=[contact.uuid])
+
+        joined = self.create_field("joined", "Joined On", value_type=ContactField.TYPE_DATETIME)
+        # a second datetime field that the contact has NO value for
+        renewed = self.create_field("renewed", "Renewed On", value_type=ContactField.TYPE_DATETIME)
+        self.set_contact_field(contact, "joined", (timezone.now() - timedelta(days=5)).isoformat())
+
+        campaign = Campaign.create(self.org, self.admin, "Reminders", group)
+
+        # an active event anchored on a field the contact HAS -> appears
+        visible = CampaignEvent.create_message_event(
+            self.org,
+            self.admin,
+            campaign,
+            joined,
+            20,
+            unit="D",
+            translations={"eng": {"text": "Visible"}},
+            base_language="eng",
+        )
+
+        # an active event anchored on a field the contact does NOT have -> omitted (line 710)
+        CampaignEvent.create_message_event(
+            self.org,
+            self.admin,
+            campaign,
+            renewed,
+            20,
+            unit="D",
+            translations={"eng": {"text": "No anchor"}},
+            base_language="eng",
+        )
+
+        # an inactive event on a field the contact has -> omitted (line 703)
+        inactive = CampaignEvent.create_message_event(
+            self.org,
+            self.admin,
+            campaign,
+            joined,
+            25,
+            unit="D",
+            translations={"eng": {"text": "Inactive"}},
+            base_language="eng",
+        )
+        inactive.is_active = False
+        inactive.save(update_fields=("is_active",))
+
+        response = self.requestView(timeline_url, self.admin)
+        future = response.json()["future"]
+
+        # only the single visible event survives
+        self.assertEqual(1, len(future))
+        self.assertEqual(1, response.json()["future_count"])
+        self.assertEqual(reverse("campaigns.campaignevent_read", args=[campaign.uuid, visible.uuid]), future[0]["url"])
+        self.assertEqual("Visible", future[0]["message"])
+
+    def test_timeline_pagination(self):
+        contact = self.create_contact("Joe", phone="+1234567890")
+        timeline_url = reverse("contacts.contact_timeline", args=[contact.uuid])
+
+        # send the contact more past broadcasts than fit on a single page
+        for i in range(7):
+            self.create_broadcast(self.admin, {"eng": {"text": f"Bcast {i}"}}, contacts=[contact])
+
+        response = self.requestView(timeline_url, self.admin)
+        self.assertEqual([], response.json()["future"])
+        self.assertEqual(0, response.json()["future_count"])
+        self.assertEqual(5, len(response.json()["past"]))
+        next_before = response.json()["next_before"]
+        self.assertIsNotNone(next_before)
+
+        # paging back with the cursor returns the remaining older events
+        response = self.requestView(timeline_url + f"?before={quote(next_before)}", self.admin)
+        self.assertEqual([], response.json()["future"])
+        self.assertEqual(2, len(response.json()["past"]))
+        self.assertIsNone(response.json()["next_before"])
+
+        # and now stack up enough upcoming scheduled broadcasts to test forward paging
+        for i in range(12):
+            self.create_broadcast(
+                self.admin,
+                {"eng": {"text": f"Upcoming {i}"}},
+                contacts=[contact],
+                schedule=Schedule.create(self.org, timezone.now() + timedelta(days=i + 1), Schedule.REPEAT_NEVER),
+            )
+
+        response = self.requestView(timeline_url, self.admin)
+        self.assertEqual(10, len(response.json()["future"]))
+        self.assertEqual(12, response.json()["future_count"])
+        next_after = response.json()["next_after"]
+        self.assertIsNotNone(next_after)
+
+        response = self.requestView(timeline_url + f"?after={quote(next_after)}", self.admin)
+        self.assertEqual(2, len(response.json()["future"]))
+        self.assertEqual(12, response.json()["future_count"])
+        self.assertIsNone(response.json()["next_after"])
+
+    def test_timeline_pagination_mixed_past(self):
+        """The past-page cursor pages correctly through a mix of campaign events and sent broadcasts."""
+        contact = self.create_contact("Joe", phone="+1234567890")
+        group = self.create_group("Members", contacts=[contact])
+        timeline_url = reverse("contacts.contact_timeline", args=[contact.uuid])
+
+        # contact joined 100 days ago - campaign offsets below all land in the past
+        joined = self.create_field("joined", "Joined On", value_type=ContactField.TYPE_DATETIME)
+        joined_at = timezone.now() - timedelta(days=100)
+        self.set_contact_field(contact, "joined", joined_at.isoformat())
+
+        # four past campaign message events at distinct offsets (-90, -80, -70, -60 days)
+        campaign = Campaign.create(self.org, self.admin, "Reminders", group)
+        for days in (10, 20, 30, 40):
+            CampaignEvent.create_message_event(
+                self.org,
+                self.admin,
+                campaign,
+                joined,
+                days,
+                unit="D",
+                translations={"eng": {"text": f"Campaign +{days}d"}},
+                base_language="eng",
+            )
+
+        # four sent broadcasts interleaved in time with the campaign events. created_on is
+        # immutable (DB trigger), so we set it at insert time on a fresh outgoing msg and then
+        # attach it to the broadcast (a non-created_on field update, which the trigger allows)
+        for i in range(4):
+            bcast = self.create_broadcast(self.admin, {"eng": {"text": f"Bcast {i}"}}, contacts=[contact])
+            bcast.msgs.all().delete()  # drop the auto-created now-dated msg
+            msg = self.create_outgoing_msg(
+                contact,
+                f"Bcast {i}",
+                created_on=joined_at + timedelta(days=15 + i * 10),  # -85, -75, -65, -55 days
+            )
+            msg.broadcast = bcast
+            msg.save(update_fields=("broadcast",))
+
+        # eight past events total, five per page -> first page has five, cursor set
+        response = self.requestView(timeline_url, self.admin)
+        first = response.json()["past"]
+        self.assertEqual(5, len(first))
+        next_before = response.json()["next_before"]
+        self.assertIsNotNone(next_before)
+
+        # second page returns the remaining three, no further cursor
+        response = self.requestView(timeline_url + f"?before={quote(next_before)}", self.admin)
+        second = response.json()["past"]
+        self.assertEqual(3, len(second))
+        self.assertIsNone(response.json()["next_before"])
+
+        # across both pages we see all eight events with no duplicates and no drops
+        scheduled = [e["scheduled"] for e in first] + [e["scheduled"] for e in second]
+        self.assertEqual(8, len(scheduled))
+        self.assertEqual(8, len(set(scheduled)))
+        # and they remain in strict newest-first order across the boundary
+        self.assertEqual(scheduled, sorted(scheduled, reverse=True))
+
+    def test_timeline_pagination_tied_timestamps(self):
+        """Past events sharing an exact timestamp are never split across a page boundary."""
+        contact = self.create_contact("Joe", phone="+1234567890")
+        group = self.create_group("Members", contacts=[contact])
+        timeline_url = reverse("contacts.contact_timeline", args=[contact.uuid])
+
+        joined = self.create_field("joined", "Joined On", value_type=ContactField.TYPE_DATETIME)
+        joined_at = timezone.now() - timedelta(days=100)
+        self.set_contact_field(contact, "joined", joined_at.isoformat())
+
+        # campaign with four newer events at distinct offsets, plus three events at one identical
+        # (older) offset. Newest-first, the page boundary (past_limit=5) falls inside the tied group:
+        # positions 5/6/7 are the three tied siblings, so without the tie-break guard the next-page
+        # `< cursor` filter would drop the un-shown siblings. This exercises the tie-break while loop.
+        campaign = Campaign.create(self.org, self.admin, "Reminders", group)
+        for days in (40, 50, 60, 70):  # distinct, all NEWER than the +30d tied group
+            CampaignEvent.create_message_event(
+                self.org,
+                self.admin,
+                campaign,
+                joined,
+                days,
+                unit="D",
+                translations={"eng": {"text": f"Distinct +{days}d"}},
+                base_language="eng",
+            )
+        for i in range(3):
+            CampaignEvent.create_message_event(
+                self.org,
+                self.admin,
+                campaign,
+                joined,
+                30,  # all +30 days -> identical time, older than the distinct ones above
+                unit="D",
+                translations={"eng": {"text": f"Tied {i}"}},
+                base_language="eng",
+            )
+
+        # walk every past page, collecting all events
+        seen = []
+        before = None
+        for _ in range(10):  # generous cap to avoid an infinite loop on regression
+            url = timeline_url + (f"?before={quote(before)}" if before else "")
+            data = self.requestView(url, self.admin).json()
+            seen.extend(data["past"])
+            before = data["next_before"]
+            if not before:
+                break
+
+        scheduled = [e["scheduled"] for e in seen]
+        # all seven events present, none dropped, none duplicated
+        self.assertEqual(7, len(scheduled))
+        # the 3 tied events share one timestamp, the other 4 are distinct -> 5 distinct timestamps
+        self.assertEqual(5, len(set(scheduled)))
+        # the three tied events all survive
+        self.assertEqual(3, sum(1 for e in seen if e["message"].startswith("Tied")))
+
+    def test_timeline_pagination_tied_sent_broadcasts(self):
+        """Sent broadcasts tied at the page boundary beyond the capped load are recovered via the supplemental query."""
+        contact = self.create_contact("Joe", phone="+1234567890")
+        timeline_url = reverse("contacts.contact_timeline", args=[contact.uuid])
+
+        base = timezone.now() - timedelta(days=30)
+
+        # eight sent broadcasts ALL sharing the exact same created_on. the past page loads only
+        # past_limit + 1 (=6) of them, so two tied siblings are left unloaded. the page boundary lands
+        # on this shared timestamp, and the supplemental tied-broadcast query must recover the two that
+        # the capped load missed - otherwise the strict `< cursor` next page would silently drop them.
+        for i in range(8):
+            bcast = self.create_broadcast(self.admin, {"eng": {"text": f"Tied {i}"}}, contacts=[contact])
+            bcast.msgs.all().delete()  # drop the auto-created now-dated msg
+            msg = self.create_outgoing_msg(contact, f"Tied {i}", created_on=base)
+            msg.broadcast = bcast
+            msg.save(update_fields=("broadcast",))
+
+        # walk every past page, collecting all events
+        seen = []
+        before = None
+        for _ in range(20):  # generous cap to avoid an infinite loop on regression
+            url = timeline_url + (f"?before={quote(before)}" if before else "")
+            data = self.requestView(url, self.admin).json()
+            seen.extend(data["past"])
+            before = data["next_before"]
+            if not before:
+                break
+
+        # all eight tied broadcasts survive paging, none dropped, none duplicated
+        messages = [e["message"] for e in seen]
+        self.assertEqual(8, len(messages))
+        self.assertEqual(set(f"Tied {i}" for i in range(8)), set(messages))
+
+    def test_timeline_excludes_paused_schedules(self):
+        """Scheduled broadcasts and triggers whose schedule is paused are excluded from the timeline."""
+        contact = self.create_contact("Joe", phone="+1234567890")
+        timeline_url = reverse("contacts.contact_timeline", args=[contact.uuid])
+
+        # a non-paused scheduled broadcast (future fire) - should appear in future
+        self.create_broadcast(
+            self.admin,
+            {"eng": {"text": "Active bcast"}},
+            contacts=[contact],
+            schedule=Schedule.create(self.org, timezone.now() + timedelta(days=3), Schedule.REPEAT_NEVER),
+        )
+
+        # a paused scheduled broadcast (future fire) - should be excluded
+        paused_bcast = self.create_broadcast(
+            self.admin,
+            {"eng": {"text": "Paused bcast"}},
+            contacts=[contact],
+            schedule=Schedule.create(self.org, timezone.now() + timedelta(days=4), Schedule.REPEAT_NEVER),
+        )
+        paused_bcast.schedule.is_paused = True
+        paused_bcast.schedule.save()
+
+        # a paused scheduled trigger - should be excluded
+        paused_trigger = Trigger.create(
+            self.org,
+            self.admin,
+            trigger_type=Trigger.TYPE_SCHEDULE,
+            flow=self.create_flow("Paused Flow"),
+            schedule=Schedule.create(self.org, timezone.now() + timedelta(days=5), Schedule.REPEAT_NEVER),
+        )
+        paused_trigger.contacts.add(contact)
+        paused_trigger.schedule.is_paused = True
+        paused_trigger.schedule.save()
+
+        future = self.requestView(timeline_url, self.admin).json()["future"]
+        messages = [e.get("message") for e in future if e["type"] == "scheduled_broadcast"]
+        self.assertEqual(["Active bcast"], messages)  # non-paused broadcast present
+        self.assertNotIn("Paused bcast", messages)  # paused broadcast excluded
+        self.assertEqual([], [e for e in future if e["type"] == "scheduled_trigger"])  # paused trigger excluded
+
+    def test_timeline_more_past_not_dropped_with_tied_sent_broadcasts(self):
+        """Older past events aren't dropped when a full page of tied sent broadcasts straddles the boundary."""
+        contact = self.create_contact("Joe", phone="+1234567890")
+        group = self.create_group("Members", contacts=[contact])
+        timeline_url = reverse("contacts.contact_timeline", args=[contact.uuid])
+
+        tied_at = timezone.now() - timedelta(days=30)
+
+        # eight sent broadcasts ALL sharing one created_on (T = now - 30d). With past_limit=5 the first
+        # page loads only past_limit + 1 (=6) of them; the in-memory tie-break extends to all 6 loaded
+        # (the cap), then the supplemental DB query appends the other 2 tied siblings -> past_page holds 8.
+        for i in range(8):
+            bcast = self.create_broadcast(self.admin, {"eng": {"text": f"Tied {i}"}}, contacts=[contact])
+            bcast.msgs.all().delete()  # drop the auto-created now-dated msg
+            msg = self.create_outgoing_msg(contact, f"Tied {i}", created_on=tied_at)
+            msg.broadcast = bcast
+            msg.save(update_fields=("broadcast",))
+
+        # two OLDER past campaign message events at distinct times strictly older than T. The contact
+        # joined 100 days ago, so the +10d / +40d offsets project to now - 90d and now - 60d.
+        joined = self.create_field("joined", "Joined On", value_type=ContactField.TYPE_DATETIME)
+        joined_at = timezone.now() - timedelta(days=100)
+        self.set_contact_field(contact, "joined", joined_at.isoformat())
+        campaign = Campaign.create(self.org, self.admin, "Reminders", group)
+        for days in (10, 40):  # -> now - 90d and now - 60d, both older than the tied broadcasts at T
+            CampaignEvent.create_message_event(
+                self.org,
+                self.admin,
+                campaign,
+                joined,
+                days,
+                unit="D",
+                translations={"eng": {"text": f"Campaign +{days}d"}},
+                base_language="eng",
+            )
+
+        # the old code computed has_more_past as len(past_window)=8 > len(past_page)=8 -> False, so the
+        # first page's cursor was None and the 2 older campaign events were silently dropped. the fix
+        # compares against the in-memory window end (6) instead, so paging continues to the older events.
+        seen = []
+        before = None
+        for _ in range(20):  # generous cap to avoid an infinite loop on regression
+            url = timeline_url + (f"?before={quote(before)}" if before else "")
+            data = self.requestView(url, self.admin).json()
+            seen.extend(data["past"])
+            before = data["next_before"]
+            if not before:
+                break
+
+        messages = [e["message"] for e in seen]
+        # all 10 events surface across paging: 8 tied broadcasts + 2 older campaign events, no drops/dupes
+        self.assertEqual(10, len(messages))
+        self.assertEqual(set(messages), set([f"Tied {i}" for i in range(8)] + ["Campaign +10d", "Campaign +40d"]))
+        # the 2 older campaign events specifically must survive (the false-negative the fix addresses)
+        self.assertIn("Campaign +10d", messages)
+        self.assertIn("Campaign +40d", messages)
+
+    def test_timeline_pagination_tied_future(self):
+        """Upcoming events tied at the future page boundary are never split across the page boundary."""
+        contact = self.create_contact("Joe", phone="+1234567890")
+        timeline_url = reverse("contacts.contact_timeline", args=[contact.uuid])
+
+        # nine distinct upcoming scheduled broadcasts (days 1..9) plus a tied group of three sharing
+        # one later start_time. soonest-first, the future_limit=10 boundary falls inside the tied group
+        # (positions 10/11/12), so the tie-break while loop must extend the page to cover the whole group.
+        for i in range(9):
+            self.create_broadcast(
+                self.admin,
+                {"eng": {"text": f"Distinct {i}"}},
+                contacts=[contact],
+                schedule=Schedule.create(self.org, timezone.now() + timedelta(days=i + 1), Schedule.REPEAT_NEVER),
+            )
+        tied_start = timezone.now() + timedelta(days=20)
+        for i in range(3):
+            self.create_broadcast(
+                self.admin,
+                {"eng": {"text": f"Tied {i}"}},
+                contacts=[contact],
+                schedule=Schedule.create(self.org, tied_start, Schedule.REPEAT_NEVER),
+            )
+
+        # walk every future page, collecting all events
+        seen = []
+        after = None
+        for _ in range(20):  # generous cap to avoid an infinite loop on regression
+            url = timeline_url + (f"?after={quote(after)}" if after else "")
+            data = self.requestView(url, self.admin).json()
+            seen.extend(data["future"])
+            after = data["next_after"]
+            if not after:
+                break
+
+        messages = [e["message"] for e in seen]
+        # all twelve upcoming events present, none dropped, none duplicated
+        self.assertEqual(12, len(messages))
+        self.assertEqual(12, len(set(messages)))
+        # the three tied events all survive
+        self.assertEqual(3, sum(1 for m in messages if m.startswith("Tied")))
+
+    def test_timeline_malformed_cursor(self):
+        """A garbage before/after cursor is treated as absent and returns a normal 200, not a 500."""
+        contact = self.create_contact("Joe", phone="+1234567890")
+        timeline_url = reverse("contacts.contact_timeline", args=[contact.uuid])
+
+        # baseline response with no cursor (drop `now`, which is recomputed fresh per request)
+        expected = self.requestView(timeline_url, self.admin).json()
+        del expected["now"]
+
+        for param in ("before", "after"):
+            response = self.requestView(timeline_url + f"?{param}=garbage", self.admin)
+            self.assertEqual(200, response.status_code)
+            # an unparseable cursor falls back to the default (no cursor), matching the baseline
+            actual = response.json()
+            del actual["now"]
+            self.assertEqual(expected, actual)
+
+    def test_timeline_repeating_projection(self):
+        """A repeating scheduled broadcast expands into timeline entries within the one-year horizon."""
+        contact = self.create_contact("Joe", phone="+1234567890")
+        timeline_url = reverse("contacts.contact_timeline", args=[contact.uuid])
+
+        bcast = self.create_broadcast(
+            self.admin,
+            {"eng": {"text": "Weekly check-in"}},
+            contacts=[contact],
+            schedule=Schedule.create(
+                self.org,
+                timezone.now() + timedelta(days=2),
+                Schedule.REPEAT_WEEKLY,
+                repeat_days_of_week="M",
+            ),
+        )
+
+        response = self.requestView(timeline_url, self.admin)
+
+        # the weekly broadcast is projected forward through the one-year window -
+        # 52 or 53 occurrences depending on calendar alignment, ten visible per page
+        self.assertIn(response.json()["future_count"], (52, 53))
+        self.assertEqual(10, len(response.json()["future"]))
+        self.assertIsNotNone(response.json()["next_after"])
+        for entry in response.json()["future"]:
+            self.assertEqual("scheduled_broadcast", entry["type"])
+            self.assertEqual("Weekly check-in", entry["message"])
+
+        # those occurrences are sorted oldest-first; the first matches the schedule's next_fire.
+        # because the schedule starts in the future, update_schedule sets next_fire to the raw
+        # start_time (not snapped to a Monday) and calculate_next_fire only snaps subsequent fires
+        # onto Mondays - so the first interval isn't necessarily 7 days, but every interval after
+        # the second occurrence is
+        fires = [iso8601.parse_date(e["scheduled"]) for e in response.json()["future"]]
+        self.assertEqual(bcast.schedule.next_fire.astimezone(tzone.utc), fires[0])
+        for earlier, later in zip(fires[1:], fires[2:]):
+            self.assertEqual(timedelta(days=7), later - earlier)
+
+    def test_timeline_horizon_drops_distant_future(self):
+        """A one-off scheduled event more than a year out is dropped from the timeline."""
+        contact = self.create_contact("Joe", phone="+1234567890")
+        timeline_url = reverse("contacts.contact_timeline", args=[contact.uuid])
+
+        # one within the window, one well outside it
+        self.create_broadcast(
+            self.admin,
+            {"eng": {"text": "Soon"}},
+            contacts=[contact],
+            schedule=Schedule.create(self.org, timezone.now() + timedelta(days=30), Schedule.REPEAT_NEVER),
+        )
+        self.create_broadcast(
+            self.admin,
+            {"eng": {"text": "Way out"}},
+            contacts=[contact],
+            schedule=Schedule.create(self.org, timezone.now() + timedelta(days=400), Schedule.REPEAT_NEVER),
+        )
+
+        response = self.requestView(timeline_url, self.admin)
+        self.assertEqual(1, response.json()["future_count"])
+        self.assertEqual(["Soon"], [e["message"] for e in response.json()["future"]])
 
     @mock_mailroom
     def test_open_ticket(self, mr_mocks):
@@ -1140,7 +1871,7 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
 
         self.login(self.admin)
 
-        # shoud see start flow option
+        # should see start flow option
         response = self.client.get(read_url)
         self.assertContentMenu(read_url, self.admin, ["Edit", "Start Flow", "Open Ticket"])
 
@@ -1203,7 +1934,7 @@ class ContactCRUDLTest(CRUDLTestMixin, TembaTest):
         # can't delete contact in other org
         delete_url = reverse("contacts.contact_delete", args=[other_org_contact.uuid])
         response = self.client.post(delete_url, {"uuid": other_org_contact.uuid})
-        self.assertLoginRedirect(response)
+        self.assertEqual(404, response.status_code)
 
         # contact should be unchanged
         other_org_contact.refresh_from_db()

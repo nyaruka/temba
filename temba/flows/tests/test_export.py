@@ -1098,7 +1098,8 @@ class ResultsExportTest(TembaTest):
             tz,
         )
 
-    def test_no_responses(self):
+    @mock_mailroom
+    def test_no_responses(self, mr_mocks):
         today = timezone.now().astimezone(self.org.timezone).date()
         flow = self.create_flow("Test")
 

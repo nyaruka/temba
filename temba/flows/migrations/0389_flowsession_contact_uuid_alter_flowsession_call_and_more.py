@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("contacts", "0210_clear_deps_for_deleted_groups"),
         ("flows", "0388_squashed"),

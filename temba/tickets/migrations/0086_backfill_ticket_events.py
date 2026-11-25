@@ -138,7 +138,6 @@ def apply_manual():  # pragma: no cover
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("tickets", "0085_remove_ticket_tickets_contact_open_and_more"),
     ]

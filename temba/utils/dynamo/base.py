@@ -1,10 +1,16 @@
+from decimal import Rounded
+
 import boto3
+from boto3.dynamodb.types import DYNAMODB_CONTEXT
 from botocore.client import Config
 
 from django.conf import settings
 from django.utils.functional import SimpleLazyObject
 
 _client = None
+
+# monkey patch until https://github.com/boto/boto3/issues/4693 resolved
+DYNAMODB_CONTEXT.traps[Rounded] = False
 
 
 def get_client():

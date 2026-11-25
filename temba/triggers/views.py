@@ -270,10 +270,6 @@ class TriggerCRUDL(SmartCRUDL):
 
             add_section("trigger-closed-ticket", "triggers.trigger_create_closed_ticket", "trigger_closed_ticket")
 
-            if ContactURN.SCHEMES_SUPPORTING_OPTINS.intersection(org_schemes):
-                add_section("trigger-opt-in", "triggers.trigger_create_opt_in", "optin")
-                add_section("trigger-opt-out", "triggers.trigger_create_opt_out", "optout")
-
     class BaseCreate(FormaxSectionMixin, OrgPermsMixin, ComponentFormMixin, SmartCreateView):
         trigger_type = None
         permission = "triggers.trigger_create"

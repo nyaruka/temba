@@ -80,7 +80,7 @@ class CampaignCRUDLTest(TembaTest, CRUDLTestMixin):
 
         campaign.archive(self.admin)
 
-        self.assertContentMenu(read_url, self.admin, ["Activate", "Export"])
+        self.assertContentMenu(read_url, self.admin, ["Activate", "Export", "-", "Delete"])
 
     @mock_mailroom
     def test_update(self, mr_mocks):
@@ -132,6 +132,36 @@ class CampaignCRUDLTest(TembaTest, CRUDLTestMixin):
 
         self.assertRequestDisallowed(update_url, [self.admin])
 
+    def test_delete(self):
+        group = self.create_group("Reporters", contacts=[])
+        campaign = self.create_campaign(self.org, "Welcomes", group)
+        registered = self.org.fields.get(key="registered")
+        CampaignEvent.create_flow_event(
+            self.org, self.admin, campaign, registered, offset=0, unit="D", flow=self.create_flow("Event2Flow")
+        )
+        CampaignEvent.create_flow_event(
+            self.org, self.admin, campaign, registered, offset=1, unit="H", flow=self.create_flow("Event3Flow")
+        )
+
+        self.assertEqual(Campaign.objects.filter(id=campaign.id, is_active=True).count(), 1)
+        self.assertEqual(CampaignEvent.objects.filter(campaign=campaign, is_active=True).count(), 3)
+
+        delete_url = reverse("campaigns.campaign_delete", args=[campaign.uuid])
+
+        self.assertRequestDisallowed(delete_url, [None, self.agent, self.admin2])
+        self.assertDeleteFetch(delete_url, [self.editor, self.admin], status=404)  # can't delete active campaign
+
+        campaign.archive(self.admin)
+        self.assertRequestDisallowed(delete_url, [None, self.agent, self.admin2])
+        self.assertDeleteFetch(delete_url, [self.editor, self.admin])
+        self.assertDeleteSubmit(delete_url, self.admin, object_deactivated=campaign)
+
+        self.assertEqual(Campaign.objects.filter(id=campaign.id, is_active=True).count(), 0)
+        self.assertEqual(CampaignEvent.objects.filter(campaign=campaign, is_active=True).count(), 0)
+
+        self.assertEqual(Campaign.objects.filter(id=campaign.id, is_active=False).count(), 1)
+        self.assertEqual(CampaignEvent.objects.filter(campaign=campaign, is_active=False).count(), 3)
+
     def test_list(self):
         list_url = reverse("campaigns.campaign_list")
 
@@ -173,7 +203,7 @@ class CampaignCRUDLTest(TembaTest, CRUDLTestMixin):
         other_org_group = self.create_group("Reporters", contacts=[], org=self.org2)
         other_org_campaign = self.create_campaign(self.org2, "Welcomes", other_org_group)
 
-        archive_url = reverse("campaigns.campaign_archive", args=[campaign.id])
+        archive_url = reverse("campaigns.campaign_archive", args=[campaign.uuid])
 
         # can't archive campaign if not logged in
         response = self.client.post(archive_url)
@@ -188,15 +218,15 @@ class CampaignCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertTrue(campaign.is_archived)
 
         # activate that archve
-        response = self.client.post(reverse("campaigns.campaign_activate", args=[campaign.id]))
+        response = self.client.post(reverse("campaigns.campaign_activate", args=[campaign.uuid]))
         self.assertEqual(302, response.status_code)
 
         campaign.refresh_from_db()
         self.assertFalse(campaign.is_archived)
 
         # can't archive campaign from other org
-        response = self.client.post(reverse("campaigns.campaign_archive", args=[other_org_campaign.id]))
-        self.assertEqual(302, response.status_code)
+        response = self.client.post(reverse("campaigns.campaign_archive", args=[other_org_campaign.uuid]))
+        self.assertEqual(404, response.status_code)
 
         # check object is unchanged
         other_org_campaign.refresh_from_db()

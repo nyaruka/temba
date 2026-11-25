@@ -65,22 +65,9 @@
   <div class="sign-in-notice">{% blocktranslate %}Already have an account? {{ link }}Sign in{{ end_link }}{% endblocktranslate %}</div>
 {% endif %}
 {% endblock content %}
-{% block extra-script %}
-  <script src="{{ STATIC_URL }}lib/jsTimezoneDetect/jstz.js"></script>
-  <script type="text/javascript">
-    onSpload(function() {
-      var timezone = jstz.determine().name();
-      document.getElementById("id_timezone").value = timezone;
-    });
-  </script>
-{% endblock extra-script %}
 {% block extra-style %}
   {{ block.super }}
   <style>
-    label[for="id_workspace"] {
-      display: block;
-    }
-
     #id_first_name,
     #id_last_name {
       width: 100%;

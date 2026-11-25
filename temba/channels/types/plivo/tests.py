@@ -209,7 +209,7 @@ class PlivoTypeTest(TembaTest):
         # simulate invalid credentials
         with patch("requests.get") as mock_get:
             mock_get.return_value = MockResponse(
-                401, "Could not verify your access level for that URL." "\nYou have to login with proper credentials"
+                401, "Could not verify your access level for that URL.\nYou have to login with proper credentials"
             )
             response = self.client.post(connect_url, dict(auth_id="auth-id", auth_token="auth-token"))
             self.assertContains(

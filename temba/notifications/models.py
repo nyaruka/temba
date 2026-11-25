@@ -257,7 +257,7 @@ class Notification(models.Model):
 
         return TYPES[self.notification_type]
 
-    def as_json(self) -> dict:
+    def as_json(self, context=None) -> dict:
         return self.type.as_json(self)
 
     class Meta:

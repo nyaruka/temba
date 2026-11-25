@@ -232,7 +232,7 @@ class TemplateTranslation(models.Model):
 
     def delete(self):
         """
-        Overriden so that if this translation is the base translation for a template, we find a new base for that template
+        Overridden so that if this translation is the base translation for a template, we find a new base for that template
         """
 
         try:

@@ -6,7 +6,6 @@ import temba.utils.uuid
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("orgs", "0177_backfill_import_uuids"),
     ]

@@ -1,13 +1,17 @@
 #!/bin/bash
 
-#set -o errexit
-#set -o pipefail
-#set -o nounset
-
-if [ ! -z "${BRANDING_FILES}" ]; then
-    git clone -b $BRANDING_BRANCH $BRANDING_FILES $PROJECT_PATH/$BRANDING_SLUG/
-    mv $PROJECT_PATH/$BRANDING_SLUG/$BRANDING_SLUG/ $PROJECT_PATH/static/brands/
-fi
+export GUNICORN_APP=${GUNICORN_APP:-"temba.wsgi:application"}
+export GUNICORN_LOG_CONF=${GUNICORN_LOG_CONF:-"${PROJECT_PATH}/docker/gunicorn/gunicorn-logging.conf"}
+export GUNICORN_CONF=${GUNICORN_CONF:-"${PROJECT_PATH}/docker/gunicorn/gunicorn.conf.py"}
+export LOG_LEVEL=${LOG_LEVEL:-"INFO"}
+export FORWARDED_ALLOW_IPS=${FORWARDED_ALLOW_IPS:-'*'}
+export COMPRESS_ENABLED=${COMPRESS_ENABLED:-'true'}
+export BRANDING_ENABLED=${BRANDING_ENABLED:-'true'}
+export CELERY_APP=${CELERY_APP:-"temba"}
+export CELERY_MAX_WORKERS=${CELERY_MAX_WORKERS:-'4'}
+export CELERY_BEAT_DATABASE_FILE=${CELERY_BEAT_DATABASE_FILE:-'/tmp/celery_beat_database'}
+export HEALTHCHECK_TIMEOUT=${HEALTHCHECK_TIMEOUT:-"10"}
+export APP_PORT=${APP_PORT:-"8001"}
 
 do_gosu(){
     user="$1"
@@ -37,22 +41,67 @@ do_gosu(){
 }
 
 if [[ "start" == "$1" ]]; then
-    do_gosu "${PROJECT_USER}:${PROJECT_GROUP}" python manage.py collectstatic --noinput
-
-    if [ "${COMPRESS_ENABLED}" = true ]; then
-        do_gosu "${PROJECT_USER}:${PROJECT_GROUP}" python manage.py compress --extension=.haml,.html --force
+    do_gosu "${PROJECT_USER}:${PROJECT_GROUP}" rm -rf "/tmp/${BRANDING_SLUG}/"
+    do_gosu "${PROJECT_USER}:${PROJECT_GROUP}" mkdir -p "${PROJECT_PATH}/static/brands/${BRANDING_SLUG}/"
+    if [ -n "${BRANDING_FILES}" ]; then
+        do_gosu "${PROJECT_USER}:${PROJECT_GROUP}" git clone \
+          -b "${BRANDING_BRANCH}" "${BRANDING_FILES}" "/tmp/${BRANDING_SLUG}/" \
+          --single-branch --depth=1
+        do_gosu "${PROJECT_USER}:${PROJECT_GROUP}" cp -rf "/tmp/${BRANDING_SLUG}/${BRANDING_SLUG}/"* "${PROJECT_PATH}/static/brands/${BRANDING_SLUG}/"
     fi
 
-    echo "Starting server..."
+    do_gosu "${PROJECT_USER}:${PROJECT_GROUP}" python manage.py collectstatic --noinput
 
-    do_gosu "${PROJECT_USER}:${PROJECT_GROUP}" exec gunicorn temba.wsgi:application \
-        --name="$PROJECT" \
-        --chdir="$PROJECT_PATH" \
-        --bind=0.0.0.0:8001 \
-        --timeout=120 \
-        --log-level=info \
-        --log-config="$PROJECT_PATH/docker/gunicorn/gunicorn-logging.conf" \
-        -c "$PROJECT_PATH/docker/gunicorn/gunicorn.conf.py"
+    # Normalize COMPRESS_ENABLED so that True/TRUE/true/1 all trigger offline compression.
+    # .haml stays in the scan because this release still has compress tags in Haml templates.
+    COMPRESS_ENABLED_NORMALIZED="$(echo "${COMPRESS_ENABLED:-true}" | tr '[:upper:]' '[:lower:]')"
+    case "${COMPRESS_ENABLED_NORMALIZED}" in
+        true|1|yes|on)
+            echo "Running offline compression..."
+            do_gosu "${PROJECT_USER}:${PROJECT_GROUP}" python manage.py compress --extension=.haml,.html --force
+            ;;
+        *)
+            echo "Skipping offline compression (COMPRESS_ENABLED=${COMPRESS_ENABLED})"
+            ;;
+    esac
+
+    echo "Starting server..."
+    do_gosu "${PROJECT_USER}:${PROJECT_GROUP}" exec gunicorn "${GUNICORN_APP}" \
+      --name="${PROJECT}" \
+      --chdir="${PROJECT_PATH}" \
+      --bind="0.0.0.0:${APP_PORT}" \
+      --log-config="${GUNICORN_LOG_CONF}" \
+      -c "${GUNICORN_CONF}"
+elif [[ "celery-worker" == "$1" ]]; then
+    celery_queue="celery"
+    if [ "${2}" ] ; then
+        celery_queue="${2}"
+    fi
+    do_gosu "${PROJECT_USER}:${PROJECT_GROUP}" exec celery \
+        -A "${CELERY_APP}" --workdir="${PROJECT_PATH}" worker \
+        -Q "${celery_queue}" \
+        -O fair \
+        -l "${LOG_LEVEL}" \
+        --autoscale="${CELERY_MAX_WORKERS},1"
+elif [[ "celery-beat" == "$1" ]]; then
+    do_gosu "${PROJECT_USER}:${PROJECT_GROUP}" exec celery \
+        -A "${CELERY_APP}" --workdir="${PROJECT_PATH}" beat \
+        --loglevel="${LOG_LEVEL}" \
+        -s "${CELERY_BEAT_DATABASE_FILE}"
+elif [[ "healthcheck-celery-worker" == "$1" ]]; then
+    celery_queue="celery"
+    if [ "${2}" ] ; then
+        celery_queue="${2}"
+    fi
+    HEALTHCHECK_OUT=$(
+        do_gosu "${PROJECT_USER}:${PROJECT_GROUP}" celery -A "${CELERY_APP}" \
+            inspect ping \
+            -d "${celery_queue}@${HOSTNAME}" \
+            --timeout "${HEALTHCHECK_TIMEOUT}" 2>&1
+    )
+    echo "${HEALTHCHECK_OUT}"
+    grep -F -qs "${celery_queue}@${HOSTNAME}: OK" <<< "${HEALTHCHECK_OUT}" || exit 1
+    exit 0
 fi
 
 exec "$@"

@@ -1,40 +1,47 @@
 {
-  "campaigns": [], 
-  "version": 10, 
-  "site": "https://app.rapidpro.io", 
+  "campaigns": [],
+  "version": "13",
+  "site": "https://app.rapidpro.io",
   "flows": [
     {
-      "base_language": "eng", 
-      "action_sets": [
+      "_ui": {
+        "nodes": {
+          "14fb87aa-22cc-4e9a-a8d6-dd4640426bed": {
+            "position": {
+              "left": 100,
+              "top": 0
+            },
+            "type": "execute_actions"
+          }
+        },
+        "stickies": {}
+      },
+      "expire_after_minutes": 10080,
+      "language": "eng",
+      "localization": {},
+      "name": "Send All",
+      "nodes": [
         {
-          "y": 0, 
-          "x": 100, 
-          "destination": null, 
-          "uuid": "14fb87aa-22cc-4e9a-a8d6-dd4640426bed", 
           "actions": [
             {
-              "msg": {
-                "eng": "Hey, how are you?"
-              }, 
-              "media": {}, 
-              "send_all": true, 
-              "type": "reply"
+              "text": "Hey, how are you?",
+              "type": "send_msg",
+              "uuid": "88d51772-7cde-4001-a16d-7ad932a7cd2d"
             }
-          ]
+          ],
+          "exits": [
+            {
+              "uuid": "cd58fa97-1dad-44eb-8265-5f3e962a0da9"
+            }
+          ],
+          "uuid": "14fb87aa-22cc-4e9a-a8d6-dd4640426bed"
         }
-      ], 
-      "version": 10, 
-      "flow_type": "F", 
-      "entry": "14fb87aa-22cc-4e9a-a8d6-dd4640426bed", 
-      "rule_sets": [], 
-      "metadata": {
-        "expires": 10080, 
-        "revision": 1, 
-        "uuid": "4b8089fb-bb10-4cbc-800f-a0aa8bb21713", 
-        "name": "Send All", 
-        "saved_on": "2017-03-16T14:53:04.119831Z"
-      }
+      ],
+      "revision": 1,
+      "spec_version": "14.4.0",
+      "type": "messaging",
+      "uuid": "4b8089fb-bb10-4cbc-800f-a0aa8bb21713"
     }
-  ], 
+  ],
   "triggers": []
 }

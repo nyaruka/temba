@@ -46,36 +46,44 @@ class DefinitionsEndpointTest(APITest):
         self.assertGet(
             endpoint_url + f"?flow={flow1.uuid}",
             [self.editor],
-            raw=lambda j: {f["name"] for f in j["flows"]} == {"Parent Flow", "Child Flow 1", "Child Flow 2"}
-            and len(j["campaigns"]) == 1
-            and len(j["triggers"]) == 1,
+            raw=lambda j: (
+                {f["name"] for f in j["flows"]} == {"Parent Flow", "Child Flow 1", "Child Flow 2"}
+                and len(j["campaigns"]) == 1
+                and len(j["triggers"]) == 1
+            ),
         )
 
         # flow + all dependencies explicitly
         self.assertGet(
             endpoint_url + f"?flow={flow1.uuid}&dependencies=all",
             [self.editor],
-            raw=lambda j: {f["name"] for f in j["flows"]} == {"Parent Flow", "Child Flow 1", "Child Flow 2"}
-            and len(j["campaigns"]) == 1
-            and len(j["triggers"]) == 1,
+            raw=lambda j: (
+                {f["name"] for f in j["flows"]} == {"Parent Flow", "Child Flow 1", "Child Flow 2"}
+                and len(j["campaigns"]) == 1
+                and len(j["triggers"]) == 1
+            ),
         )
 
         # flow + no dependencies
         self.assertGet(
             endpoint_url + f"?flow={flow1.uuid}&dependencies=none",
             [self.editor],
-            raw=lambda j: {f["name"] for f in j["flows"]} == {"Parent Flow"}
-            and len(j["campaigns"]) == 0
-            and len(j["triggers"]) == 0,
+            raw=lambda j: (
+                {f["name"] for f in j["flows"]} == {"Parent Flow"}
+                and len(j["campaigns"]) == 0
+                and len(j["triggers"]) == 0
+            ),
         )
 
         # flow + just flow dependencies (includes triggers)
         self.assertGet(
             endpoint_url + f"?flow={flow1.uuid}&dependencies=flows",
             [self.editor],
-            raw=lambda j: {f["name"] for f in j["flows"]} == {"Parent Flow", "Child Flow 1", "Child Flow 2"}
-            and len(j["campaigns"]) == 0
-            and len(j["triggers"]) == 1,
+            raw=lambda j: (
+                {f["name"] for f in j["flows"]} == {"Parent Flow", "Child Flow 1", "Child Flow 2"}
+                and len(j["campaigns"]) == 0
+                and len(j["triggers"]) == 1
+            ),
         )
 
         # campaign + all dependencies

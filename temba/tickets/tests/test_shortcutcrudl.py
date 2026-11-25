@@ -90,6 +90,9 @@ class ShortcutCRUDLTest(TembaTest, CRUDLTestMixin):
         response = self.assertDeleteFetch(delete_url, [self.editor, self.admin])
         self.assertContains(response, "You are about to delete")
 
+        response = self.assertDeleteSubmit(delete_url, self.admin2, object_unchanged=shortcut1)
+        self.assertEqual(404, response.status_code)
+
         # submit to delete it
         response = self.assertDeleteSubmit(delete_url, self.admin, object_deactivated=shortcut1, success_status=302)
 

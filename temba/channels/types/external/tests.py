@@ -196,10 +196,10 @@ class ExternalTypeTest(TembaTest):
         self.assertEqual(channel.role, "RS")
         self.assertEqual(channel.name, "Channel 1234")
 
-        # staff users see extra log policy field
+        # staff users see extra fields
         self.login(self.customer_support, choose_org=self.org)
         response = self.client.get(update_url)
         self.assertEqual(
-            ["name", "role", "is_enabled", "log_policy", "allow_international", "loc"],
+            ["name", "role", "is_enabled", "allow_international", "loc"],
             list(response.context["form"].fields.keys()),
         )

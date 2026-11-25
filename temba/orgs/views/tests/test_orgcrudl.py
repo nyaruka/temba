@@ -144,7 +144,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         self.child_org = Org.objects.create(
             name="Child Org",
             timezone=ZoneInfo("Africa/Kigali"),
-            country=self.org.country,
+            root_location=self.org.root_location,
             created_by=self.admin,
             modified_by=self.admin,
             parent=self.org,
@@ -301,8 +301,8 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         invitation = Invitation.create(self.org, self.admin, "edwin@textit.com", OrgRole.EDITOR)
 
         join_url = reverse("orgs.org_join", args=[invitation.secret])
-        signup_url = f"{reverse("account_signup")}?invite={invitation.secret}"
-        login_url = f"{reverse("account_login")}?invite={invitation.secret}"
+        signup_url = f"{reverse('account_signup')}?invite={invitation.secret}"
+        login_url = f"{reverse('account_login')}?invite={invitation.secret}"
         join_accept_url = reverse("orgs.org_join_accept", args=[invitation.secret])
 
         # if no user exists then we redirect to the join signup page
@@ -387,11 +387,9 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
             signup_url,
             {
                 "email": "canbeanything@temba.io",
-                "workspace": "Ignored",
                 "password1": self.default_password,
                 "first_name": "Edwin",
                 "last_name": "Kagabo",
-                "timezone": "Africa/Kigali",
             },
             follow=True,
         )
@@ -656,6 +654,21 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         org = Org.objects.get(name="Signup Org")
         self.assertEqual(org.timezone, ZoneInfo("Africa/Kigali"))
         self.assertEqual(str(org), "Signup Org")
+
+        # if signup is re-submitted without an org in session, we shouldn't create a duplicate org
+        session = self.client.session
+        session["org_id"] = None
+        session.save()
+
+        response = self.client.post(
+            signup_url,
+            {
+                "name": "Signup Org",
+                "timezone": "Africa/Kigali",
+            },
+        )
+        self.assertRedirect(response, reverse("orgs.org_start"))
+        self.assertEqual(1, Org.objects.filter(name="Signup Org", users=user).count())
 
         # now if we go to signup, we should redirect to the org start page
         self.login(user)
@@ -1158,11 +1171,10 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertIsNone(self.org.prometheus_token)
 
     def test_switch(self):
-
         self.login(self.admin)
 
         # hitting switch for an org we don't have access to routes to choose
-        response = self.client.get(f"{reverse("orgs.org_switch")}?other_org={self.org2.id}&next=/msg")
+        response = self.client.get(f"{reverse('orgs.org_switch')}?other_org={self.org2.id}&next=/msg")
         self.assertRedirect(response, reverse("orgs.org_choose"))
 
         # can't post to it either
@@ -1171,7 +1183,7 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # now put us in that org and we should see the switch option
         self.org2.add_user(self.admin, OrgRole.ADMINISTRATOR)
-        response = self.client.get(f"{reverse("orgs.org_switch")}?other_org={self.org2.id}&next=/msg")
+        response = self.client.get(f"{reverse('orgs.org_switch')}?other_org={self.org2.id}&next=/msg")
         self.assertContains(
             response, f"The page you are requesting belongs to one of your other workspaces, <b>{self.org2.name}</b>"
         )
@@ -1181,3 +1193,15 @@ class OrgCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertRedirect(response, "/msg")
         self.assertEqual(str(self.org2.uuid), self.client.session["org_uuid"])
         self.assertEqual(self.org2.id, self.client.session["org_id"])
+
+        # external next URL should be ignored and fall back to start
+        response = self.client.post(
+            reverse("orgs.org_switch"), {"other_org": self.org2.id, "next": "https://evil.example.com/"}
+        )
+        self.assertRedirect(response, reverse("orgs.org_start"))
+
+        # schemeless external URL should also be rejected
+        response = self.client.post(
+            reverse("orgs.org_switch"), {"other_org": self.org2.id, "next": "//evil.example.com/"}
+        )
+        self.assertRedirect(response, reverse("orgs.org_start"))

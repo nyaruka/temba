@@ -52,7 +52,7 @@ class TwilioMessagingServiceTypeTest(TembaTest):
 
             response = self.client.get(claim_twilio_ms)
             self.assertRedirects(
-                response, f'{reverse("channels.types.twilio.connect")}?claim_type=twilio_messaging_service'
+                response, f"{reverse('channels.types.twilio.connect')}?claim_type=twilio_messaging_service"
             )
 
             mock_get_twilio_client.side_effect = TwilioRestException(
@@ -61,7 +61,7 @@ class TwilioMessagingServiceTypeTest(TembaTest):
 
             response = self.client.get(claim_twilio_ms)
             self.assertRedirects(
-                response, f'{reverse("channels.types.twilio.connect")}?claim_type=twilio_messaging_service'
+                response, f"{reverse('channels.types.twilio.connect')}?claim_type=twilio_messaging_service"
             )
 
         with patch("temba.tests.twilio.MockTwilioClient.MockAccounts.get") as mock_get:

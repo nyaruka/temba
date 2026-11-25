@@ -1,59 +1,78 @@
 {
   "campaigns": [],
-  "version": 3,
+  "version": "13",
   "site": "http://rapidpro.io",
   "flows": [
     {
-      "definition": {
-        "rule_sets": [],
-        "entr": "d2ed3c4c-c4d0-4f54-b0b0-6eaa5afd33f8",
-        "action_sets": [
-          {
-            "y": 0,
-            "x": 100,
-            "destination": null,
-            "uuid": "d2ed3c4c-c4d0-4f54-b0b0-6eaa5afd33f8",
-            "actions": [
-              {
-                "msg": "You've been registered as a new mother, congratulations on having sex at least once. Your CHW is @extra.contact.phone",
-                "type": "reply"
-              },
-              {
-                "field": "chw",
-                "type": "save",
-                "value": "@extra.contact.tel_e164",
-                "label": "CHW"
-              },
-              {
-                "field": "expected_delivery_date",
-                "type": "save",
-                "value": "@extra.flow.edd",
-                "label": "Expected Delivery Date"
-              },
-              {
-                "field": "name",
-                "type": "save",
-                "value": "@extra.flow.name",
-                "label": "Contact Name"
-              },
-              {
-                "type": "add_group",
-                "groups": [ 
-                  {
-                  "name": "Expecting Mothers"
-                  }
-                ]
-              }
-            ]
+      "_ui": {
+        "nodes": {
+          "d2ed3c4c-c4d0-4f54-b0b0-6eaa5afd33f8": {
+            "position": {
+              "left": 100,
+              "top": 0
+            },
+            "type": "execute_actions"
           }
-        ],
-        "metadata": {
-          "notes": []
-        }
+        },
+        "stickies": {}
       },
-      "flow_type": "F",
+      "expire_after_minutes": 0,
+      "language": "und",
+      "localization": {},
       "name": "New Mother",
-      "id": 1500
+      "nodes": [
+        {
+          "actions": [
+            {
+              "text": "You've been registered as a new mother, congratulations on having sex at least once. Your CHW is @parent.fields.phone",
+              "type": "send_msg",
+              "uuid": "8ba1aab5-0e9b-406b-a350-906cff6139db"
+            },
+            {
+              "field": {
+                "key": "chw",
+                "name": "CHW"
+              },
+              "type": "set_contact_field",
+              "uuid": "a3046be6-698e-4f21-914a-504065b3d616",
+              "value": "@(default(urn_parts(parent.urns.tel).path, \"\"))"
+            },
+            {
+              "field": {
+                "key": "expected_delivery_date",
+                "name": "Expected Delivery Date"
+              },
+              "type": "set_contact_field",
+              "uuid": "e4bc2d63-1ff9-4a6e-b428-9949ae469dcd",
+              "value": "@parent.results.edd"
+            },
+            {
+              "name": "@parent.results.name",
+              "type": "set_contact_name",
+              "uuid": "32af2113-a319-4b2c-817b-d12b43958ffd"
+            },
+            {
+              "groups": [
+                {
+                  "name_match": "Expecting Mothers"
+                }
+              ],
+              "type": "add_contact_groups",
+              "uuid": "ed296ddc-d904-4ee3-a4c8-96332d1a4676"
+            }
+          ],
+          "exits": [
+            {
+              "uuid": "85f2ea68-f477-4cfa-971e-e7d7db013c56"
+            }
+          ],
+          "uuid": "d2ed3c4c-c4d0-4f54-b0b0-6eaa5afd33f8"
+        }
+      ],
+      "revision": 0,
+      "spec_version": "14.4.0",
+      "type": "messaging",
+      "uuid": "31c99659-e09f-4351-9c54-9d73f7fadc31"
     }
   ],
   "triggers": []

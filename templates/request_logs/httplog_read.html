@@ -4,8 +4,6 @@
 {% block title-text %}
   {% if object.flow %}
     {% trans "Flow Event" %}
-  {% elif object.classifier %}
-    {% trans "Classifier Event" %}
   {% elif object.channel %}
     {% trans "Channel Event" %}
   {% endif %}

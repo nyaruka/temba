@@ -68,8 +68,8 @@
               </div>
               <div class="whitespace-no-break flex items-center ml-2 justify-end flex-wrap">
                 {% for label in object.labels.all %}
-                  <a href="{% url 'flows.flow_filter' label.uuid %}" onclick="goto(event, this)">
-                    <temba-label data-id="{{ label.id }}" icon="label" clickable class="mx-1 my-1">
+                  <a href="{% url 'flows.flow_filter' label.uuid %}">
+                    <temba-label data-id="{{ label.id }}" type="label" clickable class="mx-1">
                       {{ label.name }}
                     </temba-label>
                   </a>
@@ -99,7 +99,7 @@
   {{ block.super }}
   <script type="text/javascript">
     function handleRowClicked(event) {
-      if (event.target.tagName == "A" || event.target.tagName == "BUTTON") {
+      if (event.target.closest("a") || event.target.tagName == "BUTTON") {
         return;
       }
 

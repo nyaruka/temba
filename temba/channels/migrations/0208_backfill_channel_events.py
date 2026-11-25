@@ -109,7 +109,6 @@ def apply_manual():  # pragma: no cover
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("channels", "0207_squashed"),
     ]

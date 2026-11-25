@@ -3,36 +3,6 @@
   "site": "https://app.rapidpro.io",
   "flows": [
     {
-      "name": "Background",
-      "uuid": "1ff89517-5735-466b-be31-682b49521cbf",
-      "spec_version": "13.1.0",
-      "language": "eng",
-      "type": "messaging_background",
-      "nodes": [
-        {
-          "uuid": "cf80a41e-c7b2-46ea-994d-b2301589276b",
-          "actions": [
-            {
-              "attachments": [],
-              "text": "Nothing to see here",
-              "type": "send_msg",
-              "quick_replies": [],
-              "uuid": "16c21cf7-8987-430d-bb5a-243f3b5ce2ad"
-            },
-            {
-              "uuid": "6e9c9b9e-9de5-49ee-a74f-4c7fbfdda9d0",
-              "type": "set_contact_name",
-              "name": "Bob"
-            }
-          ],
-          "exits": [
-            {
-              "uuid": "b52df965-88c1-4933-b48a-8b96a8baacda",
-              "destination_uuid": null
-            }
-          ]
-        }
-      ],
       "_ui": {
         "nodes": {
           "cf80a41e-c7b2-46ea-994d-b2301589276b": {
@@ -44,12 +14,42 @@
           }
         }
       },
-      "revision": 6,
-      "expire_after_minutes": 10080,
+      "expire_after_minutes": 0,
+      "language": "eng",
+      "localization": {},
       "metadata": {
         "expires": 10080
       },
-      "localization": {}
+      "name": "Background",
+      "nodes": [
+        {
+          "actions": [
+            {
+              "attachments": [],
+              "quick_replies": [],
+              "text": "Nothing to see here",
+              "type": "send_msg",
+              "uuid": "16c21cf7-8987-430d-bb5a-243f3b5ce2ad"
+            },
+            {
+              "name": "Bob",
+              "type": "set_contact_name",
+              "uuid": "6e9c9b9e-9de5-49ee-a74f-4c7fbfdda9d0"
+            }
+          ],
+          "exits": [
+            {
+              "destination_uuid": null,
+              "uuid": "b52df965-88c1-4933-b48a-8b96a8baacda"
+            }
+          ],
+          "uuid": "cf80a41e-c7b2-46ea-994d-b2301589276b"
+        }
+      ],
+      "revision": 6,
+      "spec_version": "14.4.0",
+      "type": "messaging_background",
+      "uuid": "1ff89517-5735-466b-be31-682b49521cbf"
     }
   ],
   "campaigns": [],

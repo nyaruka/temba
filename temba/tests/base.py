@@ -140,8 +140,8 @@ class TembaTest(SmartminTest):
 
         self.country.update_path()
 
-        self.org.country = self.country
-        self.org.save(update_fields=("country",))
+        self.org.root_location = self.country
+        self.org.save(update_fields=("root_location",))
 
     def login(self, user, *, choose_org=None):
         self.assertTrue(
@@ -283,7 +283,7 @@ class TembaTest(SmartminTest):
         status=Msg.STATUS_HANDLED,
         visibility=Msg.VISIBILITY_VISIBLE,
         created_on=None,
-        external_id=None,
+        external_identifier=None,
         voice=False,
         flow=None,
         logs=None,
@@ -299,7 +299,7 @@ class TembaTest(SmartminTest):
             status=status,
             created_on=created_on,
             visibility=visibility,
-            external_id=external_id,
+            external_identifier=external_identifier,
             flow=flow,
             logs=logs,
         )
@@ -366,7 +366,7 @@ class TembaTest(SmartminTest):
         created_by=None,
         sent_on=None,
         visibility=Msg.VISIBILITY_VISIBLE,
-        external_id=None,
+        external_identifier=None,
         high_priority=False,
         flow=None,
         broadcast=None,
@@ -389,21 +389,21 @@ class TembaTest(SmartminTest):
             assert channel and contact_urn, "messages require a channel and contact URN, except for failed_reason=D"
 
         return Msg.objects.create(
-            uuid=uuid7(),
+            uuid=uuid7(created_on or timezone.now()),
             org=org,
             direction=direction,
             contact=contact,
             contact_urn=contact_urn,
             text=text,
             attachments=attachments,
-            quick_replies=quick_replies,
+            quickreplies=quick_replies,
             locale=locale,
             channel=channel,
             status=status or (Msg.STATUS_PENDING if direction == Msg.DIRECTION_IN else Msg.STATUS_INITIALIZING),
             msg_type=msg_type,
             visibility=visibility,
             is_android=bool(channel and channel.is_android),
-            external_id=external_id,
+            external_identifier=external_identifier,
             high_priority=high_priority,
             created_on=created_on or timezone.now(),
             created_by=created_by,
@@ -572,7 +572,7 @@ class TembaTest(SmartminTest):
             uuid=uuid7(),
             contact_uuid=contact.uuid,
             status=FlowSession.STATUS_COMPLETED,
-            output_url="http://sessions.com/123.json",
+            output={"status": "waiting"},
             call_uuid=call.uuid,
             ended_on=timezone.now(),
         )
@@ -840,7 +840,7 @@ class TembaTest(SmartminTest):
 
             actual.append(val)
 
-        self.assertEqual(expected, actual, f"mismatch in row {row_num+1}")
+        self.assertEqual(expected, actual, f"mismatch in row {row_num + 1}")
 
     def assertExcelSheet(self, sheet, rows, tz=None):
         """
@@ -956,9 +956,9 @@ class MigrationTest(TembaTest):
     migrate_to = None
 
     def setUp(self):
-        assert (
-            self.migrate_from and self.migrate_to
-        ), "TestCase '{}' must define migrate_from and migrate_to properties".format(type(self).__name__)
+        assert self.migrate_from and self.migrate_to, (
+            "TestCase '{}' must define migrate_from and migrate_to properties".format(type(self).__name__)
+        )
 
         # set up our temba test
         super().setUp()

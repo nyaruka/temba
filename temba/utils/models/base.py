@@ -117,7 +117,7 @@ class TembaNameMixin(models.Model):
         count = 1
         while True:
             count_str = f" {count}"
-            name = f"{base_name[:cls.MAX_NAME_LEN - len(count_str)]}{count_str}" if count > 1 else base_name
+            name = f"{base_name[: cls.MAX_NAME_LEN - len(count_str)]}{count_str}" if count > 1 else base_name
             if not qs.filter(name__iexact=name).exists():
                 return name
             count += 1

@@ -12,84 +12,58 @@
 {% block content %}
   <div class="mt-4 shadow rounded-lg rounded-bl-none rounded-br-none bg-white">{% include "includes/short_pagination.html" %}</div>
   <div class="flex-grow overflow-y-auto shadow rounded-b-lg">
-    <table class="list lined header scrolled">
+    <table class="list lined header scrolled selectable">
       <thead>
         <tr>
-          <th colspan="3">
-            <div class="flex justify-end">
-              <div class="flow-start-type-selector flex">
-                <div onclick="goto(event, this)"
-                     href="{% url 'flows.flowstart_list' %}"
-                     class="{% if not filtered %}is-active{% endif %} linked mr-1">{% trans "All" %}</div>
-                |
-                <div onclick="goto(event, this)"
-                     href="{% url 'flows.flowstart_list' %}?type=manual"
-                     class="{% if filtered %}is-active{% endif %} linked ml-1">{% trans "Manual" %}</div>
-              </div>
+          <th style="width:100%">
+            <div class="flow-start-type-selector flex">
+              <div onclick="goto(event, this)"
+                   href="{% url 'flows.flowstart_list' %}"
+                   class="{% if not filtered %}is-active{% endif %} linked mr-1">{% trans "All" %}</div>
+              |
+              <div onclick="goto(event, this)"
+                   href="{% url 'flows.flowstart_list' %}?type=manual"
+                   class="{% if filtered %}is-active{% endif %} linked ml-1">{% trans "Manual" %}</div>
             </div>
           </th>
+          <th>{% trans "Type" %}</th>
+          <th style="text-align:right">{% trans "Contacts" %}</th>
+          <th style="text-align:right">{% trans "Started" %}</th>
         </tr>
       </thead>
       <tbody>
         {% for obj in object_list %}
-          <tr style="{% if obj.is_starting %}border:none;{% endif %}">
-            <td style="{% if obj.is_starting %}border:none;{% endif %}">
+          <tr onclick="showStart(event, this)"
+              data-endpoint="{% url 'flows.flowstart_read' obj.uuid %}"
+              class="flowstart object-row select-row">
+            <td>
               {% if obj.flow.is_active %}
-                <a href="{% url 'flows.flow_editor' obj.flow.uuid %}">{{ obj.flow.name }}</a>
+                {# djlint:off #}
+                <a href="{% url 'flows.flow_editor' obj.flow.uuid %}" onclick="event.stopPropagation()"><temba-label type="flow" primary clickable>{{ obj.flow.name }}</temba-label></a>
+                {# djlint:on #}
               {% else %}
                 {% trans "A deleted flow" %}
               {% endif %}
-              {% if obj.start_type == "M" %}
-                {% blocktrans trimmed with user=obj.created_by.email %}
-                  was started by {{ user }}
-                {% endblocktrans %}
-              {% elif obj.start_type == "Z" %}
-                {% trans "was started by Zapier" %}
-              {% else %}
-                {% trans "was started by an API call" %}
-              {% endif %}
-              <div style="padding-top: 10px; max-height: 150px; overflow-y: auto;" class="flex flex-wrap">
-                {% include "includes/recipients.html" with groups=obj.groups.all contacts=obj.contacts.all query=obj.query %}
-                {% include "includes/exclusions.html" with exclusions=obj.exclusions %}
-              </div>
             </td>
-            <td style="text-align: right; {% if obj.is_starting %}border:none;{% endif %}">
-              <div class="flex flex-col">
-                <div style="white-space:nowrap">{{ obj.created_on|timedate }}</div>
-                <div style="padding-top: 10px; font-size: 11px; white-space: nowrap;">
+            <td>{{ obj.get_start_type_display }}</td>
+            <td style="text-align: right; white-space: nowrap;">
+              {% if obj.contact_count is not None %}{{ obj.contact_count|intcomma }}{% endif %}
+            </td>
+            <td style="text-align: right;">
+              <div style="white-space:nowrap">{{ obj.created_on|timedate }}</div>
+              {% if obj.status == 'F' or obj.status == 'I' or obj.is_starting %}
+                <div style="padding-top: 6px; font-size: 11px; white-space: nowrap;">
                   {% if obj.status == 'F' %}
                     {% trans "Failed" %}
                   {% elif obj.status == 'I' %}
                     {% trans "Interrupted" %}
                   {% else %}
-                    {% if obj.is_starting %}
-                      {% trans "Starting" %}
-                    {% else %}
-                      {% trans "Started" %}
-                    {% endif %}
-                    {% if obj.contact_count is not None %}
-                      {% blocktrans trimmed with count=obj.contact_count|intcomma count counter=obj.contact_count %}
-                        <b>{{ count }}</b> contact
-                      {% plural %}
-                        <b>{{ count }}</b> contacts
-                      {% endblocktrans %}
-                    {% endif %}
+                    {% trans "Starting" %}
                   {% endif %}
                 </div>
-              </div>
+              {% endif %}
             </td>
           </tr>
-          {% if obj.is_starting %}
-            <tr>
-              <td colspan="99" style="padding:0px 1rem; padding-bottom:1rem;margin:0px;">
-                <temba-start-progress id="{{ obj.id }}"
-                                      interrupttitle="Interrupt Flow"
-                                      interruptendpoint="{% url 'flows.flowstart_interrupt' obj.id %}"
-                                      statusendpoint="{% url 'flows.flowstart_status' %}?id={{ obj.id }}">
-                </temba-start-progress>
-              </td>
-            </tr>
-          {% endif %}
         {% empty %}
           <tr class="empty_list">
             <td colspan="99">{% trans "No flow starts" %}</td>
@@ -98,4 +72,20 @@
       </tbody>
     </table>
   </div>
+  <temba-modax id="start-details">
+  </temba-modax>
 {% endblock content %}
+{% block extra-script %}
+  {{ block.super }}
+  <script type="text/javascript">
+    function showStart(event, row) {
+      if (event.target.closest("a")) {
+        return;
+      }
+
+      var modax = document.querySelector("#start-details");
+      modax.endpoint = row.dataset.endpoint;
+      modax.open = true;
+    }
+  </script>
+{% endblock extra-script %}

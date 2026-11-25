@@ -31,16 +31,16 @@ class AnthropicTypeTest(TembaTest, CRUDLTestMixin):
 
         # get our model list from an api key
         mock_client.return_value.models.list.return_value = [
+            Mock(id="claude-opus-4-7", display_name="Claude Opus 4.7"),
             Mock(id="claude-3-7-sonnet-20250219", display_name="Claude 3.7 Sonnet"),
-            Mock(id="claude-3-5-sonnet-20241022", display_name="Claude 3.5 Sonnet (New)"),
             Mock(id="claude-3-5-sonnet-20240620", display_name="Claude 3.5 Sonnet (Old)"),
         ]
         response = self.process_wizard("connect_view", connect_url, {"credentials": {"api_key": "good_key"}})
         self.assertEqual(
             response.context["form"].fields["model"].choices,
             [
+                ("claude-opus-4-7", "Claude Opus 4.7"),
                 ("claude-3-7-sonnet-20250219", "Claude 3.7 Sonnet"),
-                ("claude-3-5-sonnet-20241022", "Claude 3.5 Sonnet (New)"),
             ],
         )
 

@@ -1,243 +1,297 @@
 {
-  "version": "11.11",
+  "version": "13",
   "site": "https://textit.in",
   "flows": [
     {
-      "entry": "b834eea1-443c-4201-99f9-fcd1e4c5eac0",
-      "action_sets": [
-        {
-          "uuid": "b834eea1-443c-4201-99f9-fcd1e4c5eac0",
-          "x": 69,
-          "y": 0,
-          "destination": "fc0caf53-8d87-469a-97a5-153cbb63a7a1",
-          "actions": [
-            {
-              "type": "reply",
-              "uuid": "f7d5f2c4-1e55-4926-8306-2538eaadabe3",
-              "msg": {
-                "eng": "This is parent"
-              },
-              "media": {},
-              "quick_replies": [],
-              "send_all": false
-            }
-          ],
-          "exit_uuid": "1e25f7de-96ca-4f8c-94cc-f0bb23bde9b2"
-        },
-        {
-          "uuid": "672802f8-4432-4244-99b0-404af1b285b7",
-          "x": 121,
-          "y": 280,
-          "destination": "6594a948-fdbf-482a-af5c-7b01d39121da",
-          "actions": [
-            {
-              "type": "reply",
-              "uuid": "98fa3ef8-eeee-46d2-a735-cdf6fc2374c2",
-              "msg": {
-                "eng": "Completed"
-              },
-              "media": {},
-              "quick_replies": [],
-              "send_all": false
-            }
-          ],
-          "exit_uuid": "d138f858-ff92-40ae-80b5-5b0893066012"
-        },
-        {
-          "uuid": "b8bb71fb-d27b-42a6-98a4-2e73c137c2e8",
-          "x": 431,
-          "y": 276,
-          "destination": "6594a948-fdbf-482a-af5c-7b01d39121da",
-          "actions": [
-            {
-              "type": "reply",
-              "uuid": "4cbfa0fb-d622-4e25-ab5e-37d35602baf8",
-              "msg": {
-                "eng": "Expired"
-              },
-              "media": {},
-              "quick_replies": [],
-              "send_all": false
-            }
-          ],
-          "exit_uuid": "d5ccef96-250f-41c1-b66d-914774ba0381"
-        },
-        {
-          "uuid": "36b55887-3fe3-49be-b3c7-2abdf288fdbb",
-          "x": 267,
-          "y": 585,
-          "destination": null,
-          "actions": [
-            {
-              "type": "reply",
-              "uuid": "fe65073d-79f5-489b-a811-c539f727f276",
-              "msg": {
-                "eng": "Ended"
-              },
-              "media": {},
-              "quick_replies": [],
-              "send_all": false
-            }
-          ],
-          "exit_uuid": "15194711-df3d-4519-8009-bc52061c2b88"
-        }
-      ],
-      "rule_sets": [
-        {
-          "uuid": "fc0caf53-8d87-469a-97a5-153cbb63a7a1",
-          "x": 299,
-          "y": 99,
-          "label": "Response 1",
-          "rules": [
-            {
-              "uuid": "17ce588f-1eca-45ab-a94b-a93872556f77",
-              "category": {
-                "eng": "Completed"
-              },
-              "destination": "672802f8-4432-4244-99b0-404af1b285b7",
-              "destination_type": "A",
-              "test": {
-                "type": "subflow",
-                "exit_type": "completed"
-              },
-              "label": null
+      "_ui": {
+        "nodes": {
+          "36b55887-3fe3-49be-b3c7-2abdf288fdbb": {
+            "position": {
+              "left": 267,
+              "top": 585
             },
-            {
-              "uuid": "cca1bd3d-1e88-4c5c-80e2-451d39700672",
-              "category": {
-                "eng": "Expired"
-              },
-              "destination": "b8bb71fb-d27b-42a6-98a4-2e73c137c2e8",
-              "destination_type": "A",
-              "test": {
-                "type": "subflow",
-                "exit_type": "expired"
-              },
-              "label": null
-            }
-          ],
-          "finished_key": null,
-          "ruleset_type": "subflow",
-          "response_type": "",
-          "operand": "@step.value",
-          "config": {
-            "flow": {
-              "name": "child",
-              "uuid": "c4dd3c3a-1c7c-4bb8-a8c4-11aaec1a4fea"
-            }
+            "type": "execute_actions"
+          },
+          "6594a948-fdbf-482a-af5c-7b01d39121da": {
+            "position": {
+              "left": 252,
+              "top": 434
+            },
+            "type": "wait_for_response"
+          },
+          "672802f8-4432-4244-99b0-404af1b285b7": {
+            "position": {
+              "left": 121,
+              "top": 280
+            },
+            "type": "execute_actions"
+          },
+          "b834eea1-443c-4201-99f9-fcd1e4c5eac0": {
+            "position": {
+              "left": 69,
+              "top": 0
+            },
+            "type": "execute_actions"
+          },
+          "b8bb71fb-d27b-42a6-98a4-2e73c137c2e8": {
+            "position": {
+              "left": 431,
+              "top": 276
+            },
+            "type": "execute_actions"
+          },
+          "fc0caf53-8d87-469a-97a5-153cbb63a7a1": {
+            "position": {
+              "left": 299,
+              "top": 99
+            },
+            "type": "split_by_subflow"
           }
         },
+        "stickies": {}
+      },
+      "expire_after_minutes": 10080,
+      "language": "eng",
+      "localization": {},
+      "name": "parent",
+      "nodes": [
         {
-          "uuid": "6594a948-fdbf-482a-af5c-7b01d39121da",
-          "x": 252,
-          "y": 434,
-          "label": "End",
-          "rules": [
-            {
-              "uuid": "dd86be4e-8c54-4ef6-84dc-6f786fe2c7b1",
-              "category": {
-                "eng": "All Responses"
-              },
-              "destination": "36b55887-3fe3-49be-b3c7-2abdf288fdbb",
-              "destination_type": "A",
-              "test": {
-                "type": "true"
-              },
-              "label": null
-            }
-          ],
-          "finished_key": null,
-          "ruleset_type": "wait_message",
-          "response_type": "",
-          "operand": "@step.value",
-          "config": {}
-        }
-      ],
-      "base_language": "eng",
-      "flow_type": "M",
-      "version": "11.11",
-      "metadata": {
-        "name": "parent",
-        "saved_on": "2019-02-19T21:38:35.335104Z",
-        "revision": 33,
-        "uuid": "2cdcd8d9-a210-4269-a0cd-f4a07cc4f68a",
-        "expires": 10080
-      }
-    },
-    {
-      "entry": "f94a3ae8-7f2d-40eb-8430-017be1c48a62",
-      "action_sets": [
-        {
-          "uuid": "f94a3ae8-7f2d-40eb-8430-017be1c48a62",
-          "x": 100,
-          "y": 0,
-          "destination": "6b35ab7c-e517-40a1-b3dd-006bc66afc61",
           "actions": [
             {
-              "type": "reply",
-              "uuid": "45f8719d-5d66-42d7-b126-38df067dd78b",
-              "msg": {
-                "eng": "Child"
-              },
-              "media": {},
-              "quick_replies": [],
-              "send_all": false
+              "text": "This is parent",
+              "type": "send_msg",
+              "uuid": "f7d5f2c4-1e55-4926-8306-2538eaadabe3"
             }
           ],
-          "exit_uuid": "de31d5ec-7e00-4391-a5d1-ad28cd39faa7"
-        }
-      ],
-      "rule_sets": [
-        {
-          "uuid": "6b35ab7c-e517-40a1-b3dd-006bc66afc61",
-          "x": 233,
-          "y": 162,
-          "label": "Response 1",
-          "rules": [
+          "exits": [
             {
-              "uuid": "97e713bf-1027-4c67-a884-0cefc1d5a6f3",
-              "category": {
-                "eng": "All Responses"
+              "destination_uuid": "fc0caf53-8d87-469a-97a5-153cbb63a7a1",
+              "uuid": "1e25f7de-96ca-4f8c-94cc-f0bb23bde9b2"
+            }
+          ],
+          "uuid": "b834eea1-443c-4201-99f9-fcd1e4c5eac0"
+        },
+        {
+          "actions": [
+            {
+              "flow": {
+                "name": "child",
+                "uuid": "c4dd3c3a-1c7c-4bb8-a8c4-11aaec1a4fea"
               },
-              "destination": null,
-              "destination_type": null,
-              "test": {
-                "type": "true"
-              },
-              "label": null
+              "type": "enter_flow",
+              "uuid": "45b4b6bd-1a87-460b-ba95-e39e147f7732"
+            }
+          ],
+          "exits": [
+            {
+              "destination_uuid": "672802f8-4432-4244-99b0-404af1b285b7",
+              "uuid": "17ce588f-1eca-45ab-a94b-a93872556f77"
             },
             {
-              "uuid": "2d792a87-b07f-4e9b-b82e-61d0278811c6",
-              "category": {
-                "eng": "No Response"
-              },
-              "destination": null,
-              "destination_type": null,
-              "test": {
-                "type": "timeout",
-                "minutes": 1
-              },
-              "label": null
+              "destination_uuid": "b8bb71fb-d27b-42a6-98a4-2e73c137c2e8",
+              "uuid": "cca1bd3d-1e88-4c5c-80e2-451d39700672"
             }
           ],
-          "finished_key": null,
-          "ruleset_type": "wait_message",
-          "response_type": "",
-          "operand": "@step.value",
-          "config": {}
+          "router": {
+            "cases": [
+              {
+                "arguments": [
+                  "completed"
+                ],
+                "category_uuid": "f90efbe2-2a29-4e50-abe0-33faa5ac1172",
+                "type": "has_only_text",
+                "uuid": "5465e3cc-0d3d-48e8-8c7d-1aee9d4937cc"
+              },
+              {
+                "arguments": [
+                  "expired"
+                ],
+                "category_uuid": "1dbd060f-6cf5-4982-93e0-4504af167055",
+                "type": "has_only_text",
+                "uuid": "2f1c39d0-250d-45f6-93f4-0755a081c82f"
+              }
+            ],
+            "categories": [
+              {
+                "exit_uuid": "17ce588f-1eca-45ab-a94b-a93872556f77",
+                "name": "Completed",
+                "uuid": "f90efbe2-2a29-4e50-abe0-33faa5ac1172"
+              },
+              {
+                "exit_uuid": "cca1bd3d-1e88-4c5c-80e2-451d39700672",
+                "name": "Expired",
+                "uuid": "1dbd060f-6cf5-4982-93e0-4504af167055"
+              }
+            ],
+            "default_category_uuid": "",
+            "operand": "@child.status",
+            "result_name": "Response 1",
+            "type": "switch"
+          },
+          "uuid": "fc0caf53-8d87-469a-97a5-153cbb63a7a1"
+        },
+        {
+          "actions": [
+            {
+              "text": "Expired",
+              "type": "send_msg",
+              "uuid": "4cbfa0fb-d622-4e25-ab5e-37d35602baf8"
+            }
+          ],
+          "exits": [
+            {
+              "destination_uuid": "6594a948-fdbf-482a-af5c-7b01d39121da",
+              "uuid": "d5ccef96-250f-41c1-b66d-914774ba0381"
+            }
+          ],
+          "uuid": "b8bb71fb-d27b-42a6-98a4-2e73c137c2e8"
+        },
+        {
+          "actions": [
+            {
+              "text": "Completed",
+              "type": "send_msg",
+              "uuid": "98fa3ef8-eeee-46d2-a735-cdf6fc2374c2"
+            }
+          ],
+          "exits": [
+            {
+              "destination_uuid": "6594a948-fdbf-482a-af5c-7b01d39121da",
+              "uuid": "d138f858-ff92-40ae-80b5-5b0893066012"
+            }
+          ],
+          "uuid": "672802f8-4432-4244-99b0-404af1b285b7"
+        },
+        {
+          "exits": [
+            {
+              "destination_uuid": "36b55887-3fe3-49be-b3c7-2abdf288fdbb",
+              "uuid": "dd86be4e-8c54-4ef6-84dc-6f786fe2c7b1"
+            }
+          ],
+          "router": {
+            "cases": [],
+            "categories": [
+              {
+                "exit_uuid": "dd86be4e-8c54-4ef6-84dc-6f786fe2c7b1",
+                "name": "All Responses",
+                "uuid": "abbfa780-8fd3-4720-ae24-60b30c3f3177"
+              }
+            ],
+            "default_category_uuid": "abbfa780-8fd3-4720-ae24-60b30c3f3177",
+            "operand": "@input",
+            "result_name": "End",
+            "type": "switch",
+            "wait": {
+              "type": "msg"
+            }
+          },
+          "uuid": "6594a948-fdbf-482a-af5c-7b01d39121da"
+        },
+        {
+          "actions": [
+            {
+              "text": "Ended",
+              "type": "send_msg",
+              "uuid": "fe65073d-79f5-489b-a811-c539f727f276"
+            }
+          ],
+          "exits": [
+            {
+              "uuid": "15194711-df3d-4519-8009-bc52061c2b88"
+            }
+          ],
+          "uuid": "36b55887-3fe3-49be-b3c7-2abdf288fdbb"
         }
       ],
-      "base_language": "eng",
-      "flow_type": "M",
-      "version": "11.11",
-      "metadata": {
-        "name": "child",
-        "saved_on": "2019-02-19T21:26:35.104036Z",
-        "revision": 12,
-        "uuid": "c4dd3c3a-1c7c-4bb8-a8c4-11aaec1a4fea",
-        "expires": 5,
-        "ivr_retry_failed_events": null
-      }
+      "revision": 33,
+      "spec_version": "14.4.0",
+      "type": "messaging",
+      "uuid": "2cdcd8d9-a210-4269-a0cd-f4a07cc4f68a"
+    },
+    {
+      "_ui": {
+        "nodes": {
+          "6b35ab7c-e517-40a1-b3dd-006bc66afc61": {
+            "position": {
+              "left": 233,
+              "top": 162
+            },
+            "type": "wait_for_response"
+          },
+          "f94a3ae8-7f2d-40eb-8430-017be1c48a62": {
+            "position": {
+              "left": 100,
+              "top": 0
+            },
+            "type": "execute_actions"
+          }
+        },
+        "stickies": {}
+      },
+      "expire_after_minutes": 5,
+      "language": "eng",
+      "localization": {},
+      "name": "child",
+      "nodes": [
+        {
+          "actions": [
+            {
+              "text": "Child",
+              "type": "send_msg",
+              "uuid": "45f8719d-5d66-42d7-b126-38df067dd78b"
+            }
+          ],
+          "exits": [
+            {
+              "destination_uuid": "6b35ab7c-e517-40a1-b3dd-006bc66afc61",
+              "uuid": "de31d5ec-7e00-4391-a5d1-ad28cd39faa7"
+            }
+          ],
+          "uuid": "f94a3ae8-7f2d-40eb-8430-017be1c48a62"
+        },
+        {
+          "exits": [
+            {
+              "uuid": "97e713bf-1027-4c67-a884-0cefc1d5a6f3"
+            },
+            {
+              "uuid": "2d792a87-b07f-4e9b-b82e-61d0278811c6"
+            }
+          ],
+          "router": {
+            "cases": [],
+            "categories": [
+              {
+                "exit_uuid": "97e713bf-1027-4c67-a884-0cefc1d5a6f3",
+                "name": "All Responses",
+                "uuid": "00281a29-46b7-419e-b4d4-3585a5ee821c"
+              },
+              {
+                "exit_uuid": "2d792a87-b07f-4e9b-b82e-61d0278811c6",
+                "name": "No Response",
+                "uuid": "f8566ece-fd21-42b1-af10-e0b450151ba5"
+              }
+            ],
+            "default_category_uuid": "00281a29-46b7-419e-b4d4-3585a5ee821c",
+            "operand": "@input",
+            "result_name": "Response 1",
+            "type": "switch",
+            "wait": {
+              "timeout": {
+                "category_uuid": "f8566ece-fd21-42b1-af10-e0b450151ba5",
+                "seconds": 60
+              },
+              "type": "msg"
+            }
+          },
+          "uuid": "6b35ab7c-e517-40a1-b3dd-006bc66afc61"
+        }
+      ],
+      "revision": 12,
+      "spec_version": "14.4.0",
+      "type": "messaging",
+      "uuid": "c4dd3c3a-1c7c-4bb8-a8c4-11aaec1a4fea"
     }
   ],
   "campaigns": [],

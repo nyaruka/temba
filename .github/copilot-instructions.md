@@ -1,7 +1,0 @@
-- Don't put any placeholder text in `__init__.py` files.
-- Don't use lazy imports inside functions or methods unless necessary for to avoid cyclic dependencies.
-- Run `./code_check.py` before committing which will check formatting and for missing database migrations.
-- When running tests:
-  - Include the --keepdb flag to speed things up.
-- When reviewing pull requests:
-  - Don't complain about `print()` usage in data migrations.

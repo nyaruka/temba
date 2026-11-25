@@ -11,8 +11,8 @@ from .sync import get_sync_commands
 class AndroidTest(TembaTest):
     def test_register_unsupported_android(self):
         # remove our explicit country so it needs to be derived from channels
-        self.org.country = None
-        self.org.save()
+        self.org.root_location = None
+        self.org.save(update_fields=("root_location",))
 
         Channel.objects.all().delete()
 

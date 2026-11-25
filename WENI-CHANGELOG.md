@@ -1,5 +1,6 @@
 Unreleased
 ----------
+* Update RapidPro Ireland to v26.2.2
 * Fix Instagram reconnect: use Facebook OAuth redirect instead of FB.login popup, reuse the claim redirect URI already whitelisted in Meta, and return a clear error when the linked page is missing from the token (no 500)
 
 1.8.8-rapidpro-26.0.0

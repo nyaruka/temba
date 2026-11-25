@@ -143,9 +143,9 @@ class CRUDLTestMixin:
     def assertDeleteSubmit(
         self, url, user, *, object_unchanged=None, object_deleted=None, object_deactivated=None, success_status=302
     ):
-        assert (
-            object_unchanged or object_deleted or object_deactivated
-        ), "must specify object_unchanged or object_deleted or object_deactivated"
+        assert object_unchanged or object_deleted or object_deactivated, (
+            "must specify object_unchanged or object_deleted or object_deactivated"
+        )
 
         if object_unchanged:
             checks = [ObjectUnchanged(object_unchanged)]

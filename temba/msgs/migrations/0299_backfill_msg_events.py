@@ -48,7 +48,7 @@ VISIBILITY_DELETED_BY_USER = "D"
 VISIBILITY_DELETED_BY_SENDER = "X"
 
 
-def backfill_msg_events(apps, schema_editor):
+def backfill_msg_events(apps, schema_editor):  # pragma: no cover
     Msg = apps.get_model("msgs", "Msg")
     Contact = apps.get_model("contacts", "Contact")
 
@@ -162,7 +162,7 @@ def backfill_msg_events(apps, schema_editor):
         print(f"Wrote {num_written} msg events (last id={last_id}, created_on={last_created_on.isoformat()})")
 
 
-def _msg_in(obj) -> dict:
+def _msg_in(obj) -> dict:  # pragma: no cover
     d = _base_msg(obj)
 
     if obj.external_id:
@@ -171,7 +171,7 @@ def _msg_in(obj) -> dict:
     return d
 
 
-def _msg_out(obj) -> dict:
+def _msg_out(obj) -> dict:  # pragma: no cover
     d = _base_msg(obj)
 
     if obj.quick_replies:
@@ -182,7 +182,7 @@ def _msg_out(obj) -> dict:
     return d
 
 
-def _base_msg(obj) -> dict:
+def _base_msg(obj) -> dict:  # pragma: no cover
     d = {
         "urn": obj.contact_urn.identity if obj.contact_urn else None,
         "channel": _channel(obj.channel) if obj.channel else None,
@@ -194,7 +194,7 @@ def _base_msg(obj) -> dict:
     return d
 
 
-def _channel(channel) -> dict:
+def _channel(channel) -> dict:  # pragma: no cover
     return {"uuid": str(channel.uuid), "name": channel.name}
 
 
@@ -205,7 +205,6 @@ def apply_manual():  # pragma: no cover
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("msgs", "0298_alter_broadcastmsgcount_count_alter_labelcount_count"),
     ]

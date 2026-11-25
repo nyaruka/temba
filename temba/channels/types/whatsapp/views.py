@@ -1,3 +1,5 @@
+import logging
+import traceback
 from random import randint
 
 import requests
@@ -16,6 +18,16 @@ from temba.utils.text import truncate
 
 from ...models import Channel
 from ...views import ClaimViewMixin
+
+logger = logging.getLogger(__name__)
+
+# base URL for all WhatsApp Cloud Graph API calls (also imported by type.py) - bump the version here in one place
+WHATSAPP_GRAPH_API_BASE = "https://graph.facebook.com/v22.0"
+
+# WhatsApp Cloud only requires the business_management OAuth scope at the top level; the
+# whatsapp_business_management and whatsapp_business_messaging permissions are granted as
+# granular (per-WABA) scopes and so are not present in the token's top-level scopes list.
+REQUIRED_SCOPE = "business_management"
 
 
 class ClaimView(ClaimViewMixin, SmartFormView):
@@ -44,7 +56,7 @@ class ClaimView(ClaimViewMixin, SmartFormView):
         app_id = settings.FACEBOOK_APPLICATION_ID
         app_secret = settings.FACEBOOK_APPLICATION_SECRET
 
-        url = "https://graph.facebook.com/v22.0/debug_token"
+        url = f"{WHATSAPP_GRAPH_API_BASE}/debug_token"
         params = {"access_token": f"{app_id}|{app_secret}", "input_token": oauth_user_token}
 
         response = requests.get(url, params=params)
@@ -53,10 +65,9 @@ class ClaimView(ClaimViewMixin, SmartFormView):
             return HttpResponseRedirect(reverse("channels.types.whatsapp.connect"))
 
         response_json = response.json()
-        for perm in ["business_management", "whatsapp_business_management", "whatsapp_business_messaging"]:
-            if perm not in response_json["data"]["scopes"]:
-                self.remove_token_credentials_from_session()
-                return HttpResponseRedirect(reverse("channels.types.whatsapp.connect"))
+        if REQUIRED_SCOPE not in response_json["data"]["scopes"]:
+            self.remove_token_credentials_from_session()
+            return HttpResponseRedirect(reverse("channels.types.whatsapp.connect"))
 
         target_waba = self.request.GET.get("waba_id", None)
         if not target_waba:
@@ -75,7 +86,7 @@ class ClaimView(ClaimViewMixin, SmartFormView):
 
         target_waba = self.request.GET.get("waba_id", None)
 
-        url = f"https://graph.facebook.com/v18.0/{target_waba}"
+        url = f"{WHATSAPP_GRAPH_API_BASE}/{target_waba}"
         params = {
             "access_token": oauth_user_token,
             "fields": "id,name,currency,message_template_namespace,owner_business_info,account_review_status,on_behalf_of_business_info,primary_funding_id,purchase_order_number,timezone_id",
@@ -88,7 +99,7 @@ class ClaimView(ClaimViewMixin, SmartFormView):
             "on_behalf_of_business_info", target_waba_details.get("owner_business_info")
         ).get("id")
 
-        url = f"https://graph.facebook.com/v18.0/{target_waba}/phone_numbers"
+        url = f"{WHATSAPP_GRAPH_API_BASE}/{target_waba}/phone_numbers"
         params = {"access_token": oauth_user_token}
         response = requests.get(url, params=params)
         response_json = response.json()
@@ -105,14 +116,14 @@ class ClaimView(ClaimViewMixin, SmartFormView):
                     waba_id=target_waba_details["id"],
                     currency=target_waba_details.get("currency", "USD"),
                     business_id=business_id,
-                    message_template_namespace=target_waba_details["message_template_namespace"],
+                    message_template_namespace=target_waba_details.get("message_template_namespace"),
                     is_registered=is_registered,
                 )
             )
 
         context["phone_numbers"] = phone_numbers
 
-        context["claim_url"] = f"{reverse("channels.types.whatsapp.claim")}?waba_id={target_waba}"
+        context["claim_url"] = f"{reverse('channels.types.whatsapp.claim')}?waba_id={target_waba}"
         context["clear_session_token_url"] = reverse("channels.types.whatsapp.clear_session_token")
         context["connect_whatsapp_url"] = reverse("channels.types.whatsapp.connect")
         context["facebook_app_id"] = settings.FACEBOOK_APPLICATION_ID
@@ -158,7 +169,7 @@ class ClaimView(ClaimViewMixin, SmartFormView):
             config["wa_pin"] = pin
 
             # assign system user to WABA
-            url = f"https://graph.facebook.com/v22.0/{waba_id}/assigned_users"
+            url = f"{WHATSAPP_GRAPH_API_BASE}/{waba_id}/assigned_users"
             params = {"user": f"{settings.WHATSAPP_ADMIN_SYSTEM_USER_ID}", "tasks": ["MANAGE"]}
             headers = {"Authorization": f"Bearer {settings.WHATSAPP_ADMIN_SYSTEM_USER_TOKEN}"}
 
@@ -212,10 +223,9 @@ class SelectWABA(ChannelTypeMixin, OrgPermsMixin, SmartTemplateView):
             return HttpResponseRedirect(reverse("channels.types.whatsapp.connect"))
 
         response_json = response.json()
-        for perm in ["business_management", "whatsapp_business_management", "whatsapp_business_messaging"]:
-            if perm not in response_json["data"]["scopes"]:
-                self.remove_token_credentials_from_session()
-                return HttpResponseRedirect(reverse("channels.types.whatsapp.connect"))
+        if REQUIRED_SCOPE not in response_json["data"]["scopes"]:
+            self.remove_token_credentials_from_session()
+            return HttpResponseRedirect(reverse("channels.types.whatsapp.connect"))
 
         return super().pre_process(request, *args, **kwargs)
 
@@ -245,7 +255,7 @@ class SelectWABA(ChannelTypeMixin, OrgPermsMixin, SmartTemplateView):
         app_id = settings.FACEBOOK_APPLICATION_ID
         app_secret = settings.FACEBOOK_APPLICATION_SECRET
 
-        url = "https://graph.facebook.com/v18.0/debug_token"
+        url = f"{WHATSAPP_GRAPH_API_BASE}/debug_token"
         params = {"access_token": f"{app_id}|{app_secret}", "input_token": oauth_user_token}
 
         response = requests.get(url, params=params)
@@ -292,7 +302,7 @@ class RequestCode(ChannelTypeMixin, OrgObjPermsMixin, SmartModelActionView, Smar
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        phone_number_url = f"https://graph.facebook.com/v22.0/{self.object.address}"
+        phone_number_url = f"{WHATSAPP_GRAPH_API_BASE}/{self.object.address}"
         headers = {"Authorization": f"Bearer {settings.WHATSAPP_ADMIN_SYSTEM_USER_TOKEN}"}
         resp = requests.get(phone_number_url, headers=headers)
 
@@ -308,14 +318,14 @@ class RequestCode(ChannelTypeMixin, OrgObjPermsMixin, SmartModelActionView, Smar
 
         phone_number_id = channel.address
 
-        request_code_url = f"https://graph.facebook.com/v22.0/{phone_number_id}/request_code"
+        request_code_url = f"{WHATSAPP_GRAPH_API_BASE}/{phone_number_id}/request_code"
         params = {"code_method": "SMS", "language": "en_US"}
         headers = {"Authorization": f"Bearer {settings.WHATSAPP_ADMIN_SYSTEM_USER_TOKEN}"}
 
         resp = requests.post(request_code_url, params=params, headers=headers)
 
         if resp.status_code != 200:  # pragma: no cover
-            phone_number_url = f"https://graph.facebook.com/v22.0/{phone_number_id}"
+            phone_number_url = f"{WHATSAPP_GRAPH_API_BASE}/{phone_number_id}"
             resp = requests.get(phone_number_url, headers=headers)
 
             verified_status = False
@@ -360,7 +370,7 @@ class VerifyCode(ChannelTypeMixin, OrgObjPermsMixin, SmartModelActionView, Smart
         waba_id = channel.config.get("wa_waba_id")
         wa_pin = channel.config.get("wa_pin")
 
-        request_code_url = f"https://graph.facebook.com/v22.0/{phone_number_id}/verify_code"
+        request_code_url = f"{WHATSAPP_GRAPH_API_BASE}/{phone_number_id}/verify_code"
         params = {"code": f"{code}"}
         headers = {"Authorization": f"Bearer {settings.WHATSAPP_ADMIN_SYSTEM_USER_TOKEN}"}
 
@@ -370,7 +380,7 @@ class VerifyCode(ChannelTypeMixin, OrgObjPermsMixin, SmartModelActionView, Smart
             raise forms.ValidationError(_("Failed to verify phone number with code %s") % code)
 
         # register numbers
-        url = f"https://graph.facebook.com/v22.0/{channel.address}/register"
+        url = f"{WHATSAPP_GRAPH_API_BASE}/{channel.address}/register"
         data = {"messaging_product": "whatsapp", "pin": wa_pin}
 
         resp = requests.post(url, data=data, headers=headers)
@@ -390,11 +400,13 @@ class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
             super().__init__(*args, **kwargs)
 
         def clean(self):
+            app_id = settings.FACEBOOK_APPLICATION_ID
+            app_secret = settings.FACEBOOK_APPLICATION_SECRET
+
+            debug_response = None
+
             try:
                 auth_token = self.cleaned_data.get("user_access_token", None)
-
-                app_id = settings.FACEBOOK_APPLICATION_ID
-                app_secret = settings.FACEBOOK_APPLICATION_SECRET
 
                 if settings.FACEBOOK_LOGIN_WHATSAPP_CONFIG_ID:
                     token_request_data = {
@@ -406,29 +418,35 @@ class Connect(ChannelTypeMixin, OrgPermsMixin, SmartFormView):
                         + self.org.get_brand_domain()
                         + reverse("channels.types.whatsapp.connect"),
                     }
-                    token_url = "https://graph.facebook.com/v22.0/oauth/access_token"
+                    token_url = f"{WHATSAPP_GRAPH_API_BASE}/oauth/access_token"
                     response = requests.post(token_url, json=token_request_data)
                     response_json = response.json()
                     if int(response.status_code / 100) == 2:
                         auth_token = response_json["access_token"]
 
-                url = "https://graph.facebook.com/v22.0/debug_token"
+                url = f"{WHATSAPP_GRAPH_API_BASE}/debug_token"
                 params = {"access_token": f"{app_id}|{app_secret}", "input_token": auth_token}
 
                 response = requests.get(url, params=params)
                 response_json = response.json()
+                debug_response = response_json
 
                 if response.status_code == 200:
                     self.cleaned_data["user_access_token"] = auth_token
                 else:
                     raise Exception("Failed to debug user token")
 
-                for perm in ["business_management", "whatsapp_business_management", "whatsapp_business_messaging"]:
-                    if perm not in response_json.get("data", dict()).get("scopes", []):
-                        raise Exception(
-                            'Missing permission, we need all the following permissions "business_management", "whatsapp_business_management", "whatsapp_business_messaging"'
-                        )
+                if REQUIRED_SCOPE not in response_json.get("data", dict()).get("scopes", []):
+                    raise Exception(f'Missing permission, we need the "{REQUIRED_SCOPE}" permission')
             except Exception:
+                # redact app credentials which can appear in request URLs/tracebacks before logging
+                details = traceback.format_exc()
+                if debug_response is not None:
+                    details += f"\ndebug_token response: {debug_response}"
+                for secret in (app_secret, app_id):
+                    if secret:
+                        details = details.replace(str(secret), "******")
+                logger.error(f"WhatsApp Cloud connect failed:\n{details}")
                 raise forms.ValidationError(_("Sorry account could not be connected. Please try again"), code="invalid")
 
             return self.cleaned_data

@@ -30,12 +30,12 @@
   <div class="p-4">
     <div class="mb-2 whitespace-nowrap text-right">
       {# djlint:off #}
-      <a href="{% url 'channels.channel_read' translation.channel.uuid %}" onclick="goto(event, this)"><temba-label icon="{{ translation.channel.type.icon }}" clickable class="mr-1 mb-1">{{ translation.channel }}</temba-label></a>
+      <a href="{% url 'channels.channel_read' translation.channel.uuid %}"><temba-label icon="{{ translation.channel.type.icon }}" type="channel" clickable class="mr-1 mb-1">{{ translation.channel }}</temba-label></a>
       {# djlint:on #}
-      <temba-label icon="language">
+      <temba-label icon="language" type="neutral">
         {{ translation.locale }}
       </temba-label>
-      <temba-label icon="{{ status_icons|field:translation.status }}" class="ml-2">
+      <temba-label icon="{{ status_icons|field:translation.status }}" type="neutral" class="ml-2">
         {{ translation.get_status_display }}
       </temba-label>
     </div>

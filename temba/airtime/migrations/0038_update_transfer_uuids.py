@@ -26,7 +26,6 @@ def update_transfer_uuids(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("airtime", "0037_squashed"),
     ]

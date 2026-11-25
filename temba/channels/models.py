@@ -94,8 +94,6 @@ class ChannelType(metaclass=ABCMeta):
     category = None
     beta_only = False
 
-    org_feature = None  # org feature required to use this channel type
-
     unique_addresses = False
 
     # the courier handling URL, will be wired automatically for use in templates, but wired to a null handler
@@ -133,8 +131,7 @@ class ChannelType(metaclass=ABCMeta):
         Determines whether this channel type is available to the given user considering the region and when not considering region, e.g. check timezone
         """
 
-        org_feature_visible = self.org_feature is None or self.org_feature in org.features
-        region_ignore_visible = org_feature_visible and ((not self.beta_only) or user.is_beta)
+        region_ignore_visible = (not self.beta_only) or user.is_beta
         region_aware_visible = True
 
         if self.available_timezones is not None:
@@ -253,7 +250,6 @@ class Channel(LegacyUUIDMixin, TembaModel, DependencyMixin):
     CONFIG_KEY = "key"
     CONFIG_API_ID = "api_id"
     CONFIG_API_KEY = "api_key"
-    CONFIG_VERIFY_SSL = "verify_ssl"
     CONFIG_USE_NATIONAL = "use_national"
     CONFIG_ENCODING = "encoding"
     CONFIG_PAGE_NAME = "page_name"
@@ -304,15 +300,6 @@ class Channel(LegacyUUIDMixin, TembaModel, DependencyMixin):
         (CONTENT_TYPE_XML, _("XML - text/xml; charset=utf-8")),
     )
 
-    LOG_POLICY_NONE = "N"
-    LOG_POLICY_ERRORS = "E"
-    LOG_POLICY_ALL = "A"
-    LOG_POLICY_CHOICES = (
-        (LOG_POLICY_NONE, "Discard All"),
-        (LOG_POLICY_ERRORS, "Write Errors Only"),
-        (LOG_POLICY_ALL, "Write All"),
-    )
-
     SIMULATOR_CHANNEL = {
         "uuid": "440099cf-200c-4d45-a8e7-4a564f4a0e8b",
         "name": "Simulator Channel",
@@ -341,7 +328,6 @@ class Channel(LegacyUUIDMixin, TembaModel, DependencyMixin):
     config = models.JSONField(default=dict)
     schemes = ArrayField(models.CharField(max_length=16), default=_get_default_channel_scheme)
     role = models.CharField(max_length=4, default=DEFAULT_ROLE)
-    log_policy = models.CharField(max_length=1, default=LOG_POLICY_ALL, choices=LOG_POLICY_CHOICES)
     tps = models.IntegerField(null=True)
     is_enabled = models.BooleanField(default=True)
 
@@ -435,16 +421,6 @@ class Channel(LegacyUUIDMixin, TembaModel, DependencyMixin):
         from .types import TYPES
 
         return TYPES.values()
-
-    @classmethod
-    def get_org_features_choices(cls):
-        from .types import TYPES
-
-        features = []
-        for channel_type in TYPES.values():
-            if channel_type.org_feature:
-                features.append((channel_type.org_feature, f"Channel: {channel_type.name}"))
-        return tuple(features)
 
     @property
     def type(self) -> ChannelType:

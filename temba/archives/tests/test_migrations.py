@@ -72,3 +72,36 @@ class DeleteRolledUpTest(MigrationTest):
         assert_exists(self.d240428, False)  # rolled up and purged
         assert_exists(self.d240427, False)  # empty and purged
         assert_exists(self.m2404, True)  # monthly rollup
+
+
+class ClearEmptyUploadsTest(MigrationTest):
+    app = "archives"
+    migrate_from = "0033_alter_archive_uuid"
+    migrate_to = "0034_remove_empty_uploads"
+
+    def setUpBeforeMigration(self, apps):
+        # non-empty archive with upload
+        self.d240501 = self.create_archive(Archive.TYPE_MSG, "D", date(2024, 5, 1), [{"id": 1}])
+
+        # empty archive without upload
+        self.d240502 = self.create_archive(Archive.TYPE_MSG, "D", date(2024, 5, 2), [])
+
+        # empty archive with upload
+        self.d240503 = self.create_archive(Archive.TYPE_MSG, "D", date(2024, 5, 3), [])
+        self.d240503.location = "test-archives:some/key/for/archive.zip"
+        self.d240503.hash = "somehashvalue"
+        self.d240503.save()
+
+    def test_migration(self):
+        def assert_upload(archive, exists: bool):
+            archive.refresh_from_db()
+            if exists:
+                self.assertIsNotNone(archive.location, f"Expected archive {archive!r} to have upload")
+                self.assertIsNotNone(archive.hash, f"Expected archive {archive!r} to have hash")
+            else:
+                self.assertIsNone(archive.location, f"Expected archive {archive!r} to have upload cleared")
+                self.assertIsNone(archive.hash, f"Expected archive {archive!r} to have hash cleared")
+
+        assert_upload(self.d240501, True)  # non-empty archive upload should remain
+        assert_upload(self.d240502, False)  # empty archive upload should remain cleared
+        assert_upload(self.d240503, False)  # empty archive upload should be cleared

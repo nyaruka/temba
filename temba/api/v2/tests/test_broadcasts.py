@@ -204,11 +204,21 @@ class BroadcastsEndpointTest(APITest):
                 "eng": {
                     "text": "Hello @contact.name",
                     "attachments": [f"image/jpeg:{media1.url}", f"video/mp4:{media2.url}"],
-                    "quick_replies": [{"text": "Red"}, {"text": "Green", "extra": "Like grass"}, {"text": "Blue"}],
+                    "quick_replies": [
+                        {"type": "text", "text": "Red"},
+                        {"type": "text", "text": "Green", "extra": "Like grass"},
+                        {"type": "text", "text": "Blue"},
+                    ],
                 },
                 "spa": {"text": "Hola @contact.name"},
                 "kin": {"attachments": [f"video/mp4:{media2.url}"]},
-                "fra": {"quick_replies": [{"text": "Rouge"}, {"text": "Vert"}, {"text": "Bleu"}]},
+                "fra": {
+                    "quick_replies": [
+                        {"type": "text", "text": "Rouge"},
+                        {"type": "text", "text": "Vert"},
+                        {"type": "text", "text": "Bleu"},
+                    ]
+                },
             },
             broadcast.translations,
         )

@@ -29,8 +29,7 @@ class FirebaseCloudMessagingType(ChannelType):
 
     config_ui = ConfigUI(
         blurb=_(
-            "To finish configuring this channel, you'll have to POST to the following URLs with the "
-            "parameters below."
+            "To finish configuring this channel, you'll have to POST to the following URLs with the parameters below."
         ),
         endpoints=[
             ConfigUI.Endpoint(

@@ -1,44 +1,51 @@
 {
-  "version": 8, 
+  "version": "13",
   "flows": [
     {
-      "base_language": "eng", 
-      "action_sets": [
+      "_ui": {
+        "nodes": {
+          "9855bdb6-7cd1-4d48-813f-516b651fee28": {
+            "position": {
+              "left": 100,
+              "top": 0
+            },
+            "type": "execute_actions"
+          }
+        },
+        "stickies": {}
+      },
+      "expire_after_minutes": 10080,
+      "language": "eng",
+      "localization": {},
+      "name": "Group Send Flow",
+      "nodes": [
         {
-          "y": 0, 
-          "x": 100, 
-          "destination": null, 
-          "uuid": "9855bdb6-7cd1-4d48-813f-516b651fee28", 
           "actions": [
             {
-              "msg": {
-                "eng": "It is time for a new survey."
-              }, 
-              "variables": [], 
-              "type": "send", 
               "groups": [
                 {
-                  "name": "Survey Audience", 
-                  "id": 195
+                  "name": "Survey Audience",
+                  "uuid": "e17c6643-610a-4ffc-80d1-2ed583788d9d"
                 }
-              ], 
-              "contacts": []
+              ],
+              "text": "It is time for a new survey.",
+              "type": "send_broadcast",
+              "uuid": "dc21cfe1-6c0f-4bb2-9918-6dc00e8d530f"
             }
-          ]
+          ],
+          "exits": [
+            {
+              "uuid": "82cfbbbe-867b-445b-926b-6a717199bc91"
+            }
+          ],
+          "uuid": "9855bdb6-7cd1-4d48-813f-516b651fee28"
         }
-      ], 
-      "version": 8, 
-      "flow_type": "F", 
-      "entry": "9855bdb6-7cd1-4d48-813f-516b651fee28", 
-      "rule_sets": [], 
-      "metadata": {
-        "expires": 10080, 
-        "revision": 1, 
-        "id": 43122, 
-        "name": "Group Send Flow", 
-        "saved_on": "2015-12-07T17:14:50.591634Z"
-      }
+      ],
+      "revision": 1,
+      "spec_version": "14.4.0",
+      "type": "messaging",
+      "uuid": "92474cb5-7d9c-42a1-8953-5f81824a660d"
     }
-  ], 
+  ],
   "triggers": []
 }

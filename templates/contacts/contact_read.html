@@ -11,24 +11,23 @@
               index="{{ request.GET.tab }}"
               collapses="true"
               class="flex-grow -mt-2">
-    <temba-tab class="chat" icon="message" name="{{ _("Chat") |escapejs }}">
-      <div style="border-top-right-radius: var(--curvature);" class="flex flex-grow flex-col overflow-y-auto">
-        <temba-contact-chat contact="{{ object.uuid }}"
-                            monitor="true"
-                            avatar="{{ branding.logos.avatar }}"
-                            {% if org_perms.contacts.contact_interrupt %}showInterrupt{% endif %}
-                            {% if org_perms.channels.channel_logs or request.user.is_staff %}showMessageLogsAfter="{{ msg_logs_after }}"{% endif %}
-                            -temba-interrupt="handleInterruptContact">
-        </temba-contact-chat>
-      </div>
+    <temba-tab icon="message" name="{{ _("Chat") |escapejs }}">
+      <temba-contact-chat contact="{{ object.uuid }}"
+                          monitor="true"
+                          avatar="{{ branding.logos.avatar }}"
+                          {% if object.last_seen_on %}showSearch{% endif %}
+                          {% if org_perms.contacts.contact_interrupt %}showInterrupt{% endif %}
+                          {% if org_perms.channels.channel_logs or request.user.is_staff %}showMessageLogsAfter="{{ msg_logs_after }}"{% endif %}
+                          -temba-interrupt="handleInterruptContact">
+      </temba-contact-chat>
     </temba-tab>
     <temba-tab icon="info" name="{{ _("Details") |escapejs }}">
-      <temba-contact-details contact="{{ object.uuid }}" class="p-4 overflow-y-auto">
+      <temba-contact-details contact="{{ object.uuid }}" class="py-4 px-1 overflow-y-auto">
       </temba-contact-details>
     </temba-tab>
     <temba-tab icon="fields" name="{{ _("Fields") |escapejs }}">
       <div style="border-top-right-radius: var(--curvature)"
-           class="flex flex-grow flex-col p-4 overflow-y-auto">
+           class="flex flex-grow flex-col py-4 px-1 overflow-y-auto">
         <temba-contact-fields timezone="{{ object.org.timezone }}"
                               contact="{{ object.uuid }}"
                               -temba-button-clicked="handleFieldSearch">
@@ -41,19 +40,14 @@
         </temba-contact-fields>
       </div>
     </temba-tab>
-    <temba-tab icon="campaign" name="{{ _("Next Up") |escapejs }}" hideEmpty hidden>
-      <div style="border-top-right-radius: var(--curvature)"
-           class="flex flex-grow flex-col p-4 overflow-y-auto">
-        <temba-contact-pending contact="{{ object.uuid }}" -temba-selection="handlePendingClicked">
-        </temba-contact-pending>
+    <temba-tab icon="schedule" name="{{ _("Next Up") |escapejs }}">
+      <div style="border-top-right-radius: var(--curvature); background: #fff"
+           class="flex flex-grow flex-col py-8 px-4 overflow-y-auto">
+        <temba-contact-timeline contact="{{ object.uuid }}" -temba-selection="handleTimelineClicked">
+        </temba-contact-timeline>
       </div>
     </temba-tab>
-    <temba-tab icon="notes"
-               name="{{ _("Notepad") }}"
-               activity
-               activityColor="#ffbd00"
-               selectionBackground="#fff9c2"
-               borderColor="#ebdf6f">
+    <temba-tab icon="notes" name="{{ _("Notepad") }}" activity>
       <temba-contact-notepad contact="{{ object.uuid }}">
       </temba-contact-notepad>
     </temba-tab>
@@ -91,10 +85,10 @@
     function handleContactRefreshed(evt) {
       var contact = evt.detail.data;
 
-      // if our contact refreshes, refresh our pendingEvents
-      var pending = document.querySelector("temba-contact-pending");
-      if (pending) {
-        pending.refresh();
+      // if our contact refreshes, refresh the timeline
+      var timeline = document.querySelector("temba-contact-timeline");
+      if (timeline) {
+        timeline.refresh();
       }
 
       var menu = document.querySelector("temba-menu");
@@ -105,8 +99,11 @@
 
     function handleTabChanged() {
       var tab = document.querySelector("temba-tabs").index;
+      // keep the tab in the fetched url (not just the displayed one) so that navigating
+      // away and back re-fetches this page with ?tab= set and restores the active tab
+      // rather than defaulting to the first (Chat) tab
       window.history.replaceState({
-        url: "{% url 'contacts.contact_read' object.uuid %}",
+        url: "{% url 'contacts.contact_read' object.uuid %}?tab=" + tab,
         show: window.location.pathname + "?tab=" + tab
       }, "", "?tab=" + tab);
     }
@@ -115,14 +112,16 @@
       spaGet("/contact/?search=" + encodeURIComponent(evt.detail.key) + "+%3D+" + encodeURIComponent("\"" + evt.detail.value + "\""))
     }
 
-    function handlePendingClicked(evt) {
-      var pending = evt.detail;
+    function handleTimelineClicked(evt) {
+      var event = evt.detail;
 
-      if (pending.type == "campaign_event") {
-        spaGet("/campaign/read/" + pending.campaign.uuid + "/");
-      } else if (pending.type == "scheduled_broadcast") {
+      if (event.url) {
+        spaGet(event.url);
+      } else if (event.type == "scheduled_broadcast") {
         spaGet("{% url 'msgs.broadcast_scheduled' %}");
-      } else {
+      } else if (event.type == "sent_broadcast") {
+        spaGet("{% url 'msgs.broadcast_list' %}");
+      } else if (event.type == "scheduled_trigger") {
         spaGet("{% url 'triggers.trigger_folder' 'schedule' %}");
       }
     }

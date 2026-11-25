@@ -1,202 +1,278 @@
 {
-  "version": 8, 
+  "version": "13",
   "flows": [
     {
-      "base_language": "eng", 
-      "action_sets": [
+      "_ui": {
+        "nodes": {
+          "19d6bdaf-c134-4b90-8f56-60a301060d99": {
+            "position": {
+              "left": 112,
+              "top": 337
+            },
+            "type": "wait_for_response"
+          },
+          "5610d5e4-0b8f-4bef-a5d2-1a1ea61fbb1e": {
+            "position": {
+              "left": 114,
+              "top": 803
+            },
+            "type": "wait_for_response"
+          },
+          "81f732f4-2a35-4283-9b77-abc4a09e5aa2": {
+            "position": {
+              "left": 126,
+              "top": 0
+            },
+            "type": "execute_actions"
+          },
+          "893191e2-dd1a-4904-8bd5-1df0e8ef44c2": {
+            "position": {
+              "left": 129,
+              "top": 675
+            },
+            "type": "execute_actions"
+          },
+          "8c6d835f-4d34-4f9e-978f-2f0e161577b5": {
+            "position": {
+              "left": 128,
+              "top": 449
+            },
+            "type": "execute_actions"
+          },
+          "bc2581b8-209c-47a8-b041-ba06faf7eab9": {
+            "position": {
+              "left": 130,
+              "top": 922
+            },
+            "type": "execute_actions"
+          },
+          "e3138a39-5df2-4c6a-918a-a94e7044022c": {
+            "position": {
+              "left": 127,
+              "top": 226
+            },
+            "type": "execute_actions"
+          },
+          "f7a21353-6050-4bed-bd42-b3627ac140d1": {
+            "position": {
+              "left": 113,
+              "top": 566
+            },
+            "type": "wait_for_response"
+          },
+          "fc80c25f-2099-453e-a4a8-9fa826ff3bd4": {
+            "position": {
+              "left": 111,
+              "top": 108
+            },
+            "type": "wait_for_response"
+          }
+        },
+        "stickies": {}
+      },
+      "expire_after_minutes": 0,
+      "language": "eng",
+      "localization": {},
+      "name": "Media Survey",
+      "nodes": [
         {
-          "y": 449, 
-          "x": 128, 
-          "destination": "f7a21353-6050-4bed-bd42-b3627ac140d1", 
-          "uuid": "8c6d835f-4d34-4f9e-978f-2f0e161577b5", 
           "actions": [
             {
-              "msg": {
-                "eng": "Send your location"
-              }, 
-              "type": "reply"
+              "text": "What is your name?",
+              "type": "send_msg",
+              "uuid": "57b54958-32bb-459f-81b1-1f4a2c99b218"
             }
-          ]
-        }, 
+          ],
+          "exits": [
+            {
+              "destination_uuid": "fc80c25f-2099-453e-a4a8-9fa826ff3bd4",
+              "uuid": "80a5814c-a514-4056-937f-1387b9c0bc5f"
+            }
+          ],
+          "uuid": "81f732f4-2a35-4283-9b77-abc4a09e5aa2"
+        },
         {
-          "y": 226, 
-          "x": 127, 
-          "destination": "19d6bdaf-c134-4b90-8f56-60a301060d99", 
-          "uuid": "e3138a39-5df2-4c6a-918a-a94e7044022c", 
+          "exits": [
+            {
+              "destination_uuid": "e3138a39-5df2-4c6a-918a-a94e7044022c",
+              "uuid": "6ca9ffbe-2f99-47eb-a750-8c153799c3b6"
+            }
+          ],
+          "router": {
+            "cases": [],
+            "categories": [
+              {
+                "exit_uuid": "6ca9ffbe-2f99-47eb-a750-8c153799c3b6",
+                "name": "All Responses",
+                "uuid": "bd543961-4501-479f-9dd7-7f2b12f8e0a3"
+              }
+            ],
+            "default_category_uuid": "bd543961-4501-479f-9dd7-7f2b12f8e0a3",
+            "operand": "@input",
+            "result_name": "Name",
+            "type": "switch",
+            "wait": {
+              "type": "msg"
+            }
+          },
+          "uuid": "fc80c25f-2099-453e-a4a8-9fa826ff3bd4"
+        },
+        {
           "actions": [
             {
-              "msg": {
-                "eng": "Send a profile pic"
-              }, 
-              "type": "reply"
+              "text": "Send a profile pic",
+              "type": "send_msg",
+              "uuid": "ff42a9a5-349a-4e5a-9497-1baab21810e4"
             }
-          ]
-        }, 
+          ],
+          "exits": [
+            {
+              "destination_uuid": "19d6bdaf-c134-4b90-8f56-60a301060d99",
+              "uuid": "9bbede29-acc6-4dd6-b9bd-ba4472bc7643"
+            }
+          ],
+          "uuid": "e3138a39-5df2-4c6a-918a-a94e7044022c"
+        },
         {
-          "y": 0, 
-          "x": 126, 
-          "destination": "fc80c25f-2099-453e-a4a8-9fa826ff3bd4", 
-          "uuid": "81f732f4-2a35-4283-9b77-abc4a09e5aa2", 
+          "exits": [
+            {
+              "destination_uuid": "8c6d835f-4d34-4f9e-978f-2f0e161577b5",
+              "uuid": "df070bac-d85f-4fba-bf1b-7c7215e8b41f"
+            }
+          ],
+          "router": {
+            "cases": [],
+            "categories": [
+              {
+                "exit_uuid": "df070bac-d85f-4fba-bf1b-7c7215e8b41f",
+                "name": "All Responses",
+                "uuid": "58066e6e-3947-4f83-ae1a-6fb44a20c9d9"
+              }
+            ],
+            "default_category_uuid": "58066e6e-3947-4f83-ae1a-6fb44a20c9d9",
+            "operand": "@input",
+            "result_name": "Photo",
+            "type": "switch",
+            "wait": {
+              "hint": {
+                "type": "image"
+              },
+              "type": "msg"
+            }
+          },
+          "uuid": "19d6bdaf-c134-4b90-8f56-60a301060d99"
+        },
+        {
           "actions": [
             {
-              "msg": {
-                "eng": "What is your name?"
-              }, 
-              "type": "reply"
+              "text": "Send your location",
+              "type": "send_msg",
+              "uuid": "674cf412-98e2-472a-9f4b-d47d66644da4"
             }
-          ]
-        }, 
+          ],
+          "exits": [
+            {
+              "destination_uuid": "f7a21353-6050-4bed-bd42-b3627ac140d1",
+              "uuid": "7b0e4103-092b-4286-b7f8-d633d3a38be9"
+            }
+          ],
+          "uuid": "8c6d835f-4d34-4f9e-978f-2f0e161577b5"
+        },
         {
-          "y": 922, 
-          "x": 130, 
-          "destination": null, 
-          "uuid": "bc2581b8-209c-47a8-b041-ba06faf7eab9", 
+          "exits": [
+            {
+              "destination_uuid": "893191e2-dd1a-4904-8bd5-1df0e8ef44c2",
+              "uuid": "c0337ee3-0c9c-472f-a265-71f3604f5056"
+            }
+          ],
+          "router": {
+            "cases": [],
+            "categories": [
+              {
+                "exit_uuid": "c0337ee3-0c9c-472f-a265-71f3604f5056",
+                "name": "All Responses",
+                "uuid": "30bfc106-ab3d-4851-91ee-33d7a3bbb036"
+              }
+            ],
+            "default_category_uuid": "30bfc106-ab3d-4851-91ee-33d7a3bbb036",
+            "operand": "@input",
+            "result_name": "Location",
+            "type": "switch",
+            "wait": {
+              "hint": {
+                "type": "location"
+              },
+              "type": "msg"
+            }
+          },
+          "uuid": "f7a21353-6050-4bed-bd42-b3627ac140d1"
+        },
+        {
           "actions": [
             {
-              "msg": {
-                "eng": "Name: @flow.name \nPhoto: @flow.photo\nVideo: @flow.video\nLocation: @flow.location"
-              }, 
-              "type": "reply"
+              "text": "Send a video of yourself doing something awesome.",
+              "type": "send_msg",
+              "uuid": "587d3be4-a013-4449-b015-0b12d13d7d49"
             }
-          ]
-        }, 
+          ],
+          "exits": [
+            {
+              "destination_uuid": "5610d5e4-0b8f-4bef-a5d2-1a1ea61fbb1e",
+              "uuid": "34276d2a-d612-4363-9b9e-cba69f31f994"
+            }
+          ],
+          "uuid": "893191e2-dd1a-4904-8bd5-1df0e8ef44c2"
+        },
         {
-          "y": 675, 
-          "x": 129, 
-          "destination": "5610d5e4-0b8f-4bef-a5d2-1a1ea61fbb1e", 
-          "uuid": "893191e2-dd1a-4904-8bd5-1df0e8ef44c2", 
+          "exits": [
+            {
+              "destination_uuid": "bc2581b8-209c-47a8-b041-ba06faf7eab9",
+              "uuid": "ac5f4e3e-1075-4844-8784-7d715691a23c"
+            }
+          ],
+          "router": {
+            "cases": [],
+            "categories": [
+              {
+                "exit_uuid": "ac5f4e3e-1075-4844-8784-7d715691a23c",
+                "name": "All Responses",
+                "uuid": "50c9afbf-4fed-44b4-b377-f7dcc44cd00b"
+              }
+            ],
+            "default_category_uuid": "50c9afbf-4fed-44b4-b377-f7dcc44cd00b",
+            "operand": "@input",
+            "result_name": "Video",
+            "type": "switch",
+            "wait": {
+              "hint": {
+                "type": "video"
+              },
+              "type": "msg"
+            }
+          },
+          "uuid": "5610d5e4-0b8f-4bef-a5d2-1a1ea61fbb1e"
+        },
+        {
           "actions": [
             {
-              "msg": {
-                "eng": "Send a video of yourself doing something awesome."
-              }, 
-              "type": "reply"
+              "text": "Name: @results.name \nPhoto: @results.photo\nVideo: @results.video\nLocation: @results.location",
+              "type": "send_msg",
+              "uuid": "1c016840-d61e-4ab8-b689-3c07450a4a38"
             }
-          ]
+          ],
+          "exits": [
+            {
+              "uuid": "1d7afbc6-f53e-4c87-a66f-6121f292c056"
+            }
+          ],
+          "uuid": "bc2581b8-209c-47a8-b041-ba06faf7eab9"
         }
-      ], 
-      "version": 8, 
-      "flow_type": "S", 
-      "entry": "81f732f4-2a35-4283-9b77-abc4a09e5aa2", 
-      "rule_sets": [
-        {
-          "uuid": "f7a21353-6050-4bed-bd42-b3627ac140d1", 
-          "webhook_action": null, 
-          "rules": [
-            {
-              "test": {
-                "test": "true", 
-                "type": "true"
-              }, 
-              "category": {
-                "eng": "All Responses"
-              }, 
-              "destination": "893191e2-dd1a-4904-8bd5-1df0e8ef44c2", 
-              "uuid": "c0337ee3-0c9c-472f-a265-71f3604f5056", 
-              "destination_type": "A"
-            }
-          ], 
-          "webhook": null, 
-          "ruleset_type": "wait_gps", 
-          "label": "Location", 
-          "operand": "@step.value", 
-          "finished_key": null, 
-          "response_type": "", 
-          "y": 566, 
-          "x": 113, 
-          "config": {}
-        }, 
-        {
-          "uuid": "19d6bdaf-c134-4b90-8f56-60a301060d99", 
-          "webhook_action": null, 
-          "rules": [
-            {
-              "test": {
-                "test": "true", 
-                "type": "true"
-              }, 
-              "category": {
-                "eng": "All Responses"
-              }, 
-              "destination": "8c6d835f-4d34-4f9e-978f-2f0e161577b5", 
-              "uuid": "df070bac-d85f-4fba-bf1b-7c7215e8b41f", 
-              "destination_type": "A"
-            }
-          ], 
-          "webhook": null, 
-          "ruleset_type": "wait_photo", 
-          "label": "Photo", 
-          "operand": "@step.value", 
-          "finished_key": null, 
-          "response_type": "", 
-          "y": 337, 
-          "x": 112, 
-          "config": {}
-        }, 
-        {
-          "uuid": "fc80c25f-2099-453e-a4a8-9fa826ff3bd4", 
-          "webhook_action": null, 
-          "rules": [
-            {
-              "test": {
-                "test": "true", 
-                "type": "true"
-              }, 
-              "category": {
-                "eng": "All Responses"
-              }, 
-              "destination": "e3138a39-5df2-4c6a-918a-a94e7044022c", 
-              "uuid": "6ca9ffbe-2f99-47eb-a750-8c153799c3b6", 
-              "destination_type": "A"
-            }
-          ], 
-          "webhook": null, 
-          "ruleset_type": "wait_message", 
-          "label": "Name", 
-          "operand": "@step.value", 
-          "finished_key": null, 
-          "response_type": "", 
-          "y": 108, 
-          "x": 111, 
-          "config": {}
-        }, 
-        {
-          "uuid": "5610d5e4-0b8f-4bef-a5d2-1a1ea61fbb1e", 
-          "webhook_action": null, 
-          "rules": [
-            {
-              "test": {
-                "test": "true", 
-                "type": "true"
-              }, 
-              "category": {
-                "eng": "All Responses"
-              }, 
-              "destination": "bc2581b8-209c-47a8-b041-ba06faf7eab9", 
-              "uuid": "ac5f4e3e-1075-4844-8784-7d715691a23c", 
-              "destination_type": "A"
-            }
-          ], 
-          "webhook": null, 
-          "ruleset_type": "wait_video", 
-          "label": "Video", 
-          "operand": "@step.value", 
-          "finished_key": null, 
-          "response_type": "", 
-          "y": 803, 
-          "x": 114, 
-          "config": {}
-        }
-      ], 
-      "metadata": {
-        "name": "Media Survey", 
-        "contact_creation": "run", 
-        "expires": 10080, 
-        "saved_on": "2016-02-27T00:23:19.801198Z", 
-        "id": 35613, 
-        "revision": 169
-      }
+      ],
+      "revision": 169,
+      "spec_version": "14.4.0",
+      "type": "messaging_offline",
+      "uuid": "9097ec00-3af0-4eef-988d-26c5094ce4ec"
     }
-  ], 
+  ],
   "triggers": []
 }

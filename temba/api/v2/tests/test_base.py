@@ -248,6 +248,7 @@ class EndpointsTest(APITest):
         self.login(self.editor)
         response = self.client.get(explorer_url)
         self.assertEqual(200, response.status_code)
+        self.assertEqual(response.context["active_org"], self.org)
 
         self.login(self.admin)
 

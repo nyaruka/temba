@@ -14,16 +14,16 @@
       {% if field == '__all__' %}<div class="alert alert-error my-4">{{ errors }}</div>{% endif %}
     {% endfor %}
     <div class="mt-4">
-      <input type="text"
-             name="username"
-             maxlength="254"
-             placeholder="{{ _("Email Address") |escapejs }}"
-             value="{% if form.username.value %}{{ form.username.value|escape }}{% endif %}"
-             class="input">
+      <temba-textinput name="username"
+                       maxlength="254"
+                       placeholder="{{ _("Email Address") |escape }}"
+                       value="{% if form.username.value %}{{ form.username.value|escape }}{% endif %}">
+      </temba-textinput>
     </div>
     {% if form.username.errors %}<div class="alert alert-error mt-4">{{ form.username.errors }}</div>{% endif %}
     <div class="mt-4">
-      <input type="password" name="password" placeholder="{{ _("Password") |escapejs }}" class="input">
+      <temba-textinput name="password" placeholder="{{ _("Password") |escape }}" password="true">
+      </temba-textinput>
     </div>
     {% if form.password.errors %}<div class="alert alert-error mt-4">{{ form.password.errors }}</div>{% endif %}
     <div class="mt-2 text-right">

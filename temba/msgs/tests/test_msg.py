@@ -95,6 +95,11 @@ class MsgTest(TembaTest, CRUDLTestMixin):
             msg2.as_archive_json(),
         )
 
+    def test_as_json_logs_url_without_user_or_org(self):
+        # defensive guard in _get_logs_url: a truthy context missing user/org returns None rather than raising
+        msg = self.create_incoming_msg(self.joe, "hi")
+        self.assertIsNone(msg._get_logs_url({"unrelated": "value"}))
+
     @patch("django.core.files.storage.default_storage.delete")
     @mock_mailroom
     def test_bulk_soft_delete(self, mr_mocks, mock_storage_delete):

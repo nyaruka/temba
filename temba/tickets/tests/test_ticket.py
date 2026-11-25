@@ -33,8 +33,8 @@ class TicketTest(TembaTest):
 
         self.assertEqual(
             [
-                call(self.org, self.admin, [ticket], self.agent),
-                call(self.org, self.admin, [ticket], None),
+                call(self.org, self.admin, [ticket], self.agent, via="ui"),
+                call(self.org, self.admin, [ticket], None, via="ui"),
             ],
             mr_mocks.calls["ticket_change_assignee"],
         )
@@ -42,22 +42,24 @@ class TicketTest(TembaTest):
         # test bulk adding a note
         Ticket.bulk_add_note(self.org, self.admin, [ticket], "please handle")
 
-        self.assertEqual([call(self.org, self.admin, [ticket], "please handle")], mr_mocks.calls["ticket_add_note"])
+        self.assertEqual(
+            [call(self.org, self.admin, [ticket], "please handle", via="ui")], mr_mocks.calls["ticket_add_note"]
+        )
 
         # test bulk changing topic
         Ticket.bulk_change_topic(self.org, self.admin, [ticket], topic)
 
-        self.assertEqual([call(self.org, self.admin, [ticket], topic)], mr_mocks.calls["ticket_change_topic"])
+        self.assertEqual([call(self.org, self.admin, [ticket], topic, via="ui")], mr_mocks.calls["ticket_change_topic"])
 
         # test bulk closing
         Ticket.bulk_close(self.org, self.admin, [ticket])
 
-        self.assertEqual([call(self.org, self.admin, [ticket])], mr_mocks.calls["ticket_close"])
+        self.assertEqual([call(self.org, self.admin, [ticket], via="ui")], mr_mocks.calls["ticket_close"])
 
         # test bulk re-opening
         Ticket.bulk_reopen(self.org, self.admin, [ticket])
 
-        self.assertEqual([call(self.org, self.admin, [ticket])], mr_mocks.calls["ticket_reopen"])
+        self.assertEqual([call(self.org, self.admin, [ticket], via="ui")], mr_mocks.calls["ticket_reopen"])
 
     @mock_mailroom
     def test_counts(self, mr_mocks):

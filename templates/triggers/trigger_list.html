@@ -57,10 +57,10 @@
                 </div>
               </div>
               {% if obj.channel or obj.contacts.all or obj.groups.all or obj.exclude_groups.all %}
-                <div class="text-sm mt-2">
+                <div class="text-sm mt-2 flex items-center flex-wrap">
                   {% if obj.channel %}
                     {# djlint:off #}
-                      <a href="{% url 'channels.channel_read' obj.channel.uuid %}" onclick="goto(event, this)"><temba-label icon="{{ obj.channel.type.icon }}" clickable class="mr-1 mb-1">{{ obj.channel }}</temba-label></a>
+                    <a href="{% url 'channels.channel_read' obj.channel.uuid %}"><temba-label icon="{{ obj.channel.type.icon }}" type="channel" clickable class="mr-1 mb-1">{{ obj.channel }}</temba-label></a>
                     {# djlint:on #}
                   {% endif %}
                   {% include "includes/recipients.html" with contacts=obj.contacts.all groups=obj.groups.all exclude_groups=obj.exclude_groups.all groups_as_filters=True %}
@@ -70,8 +70,8 @@
           </td>
           <td>
             <div class="text-right">
-              <a href="{% url 'flows.flow_editor' obj.flow.uuid %}" onclick="goto(event, this)">
-                <temba-label icon="flow" primary clickable class="mx-1 my-1">
+              <a href="{% url 'flows.flow_editor' obj.flow.uuid %}">
+                <temba-label type="flow" primary clickable class="mx-1 my-1">
                   {{ obj.flow.name }}
                 </temba-label>
               </a>
@@ -103,6 +103,10 @@
 
     function updateTrigger(event, id) {
       if (event.target.tagName == "TEMBA-CHECKBOX") {
+        return;
+      }
+
+      if (event.target.closest("a")) {
         return;
       }
 

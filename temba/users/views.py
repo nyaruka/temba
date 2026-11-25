@@ -55,5 +55,4 @@ class TembaSignupView(TembaInviteMixin, SignupView):
 
         if self.invite:
             initial["email"] = self.invite.email
-            initial["workspace"] = self.invite.org.name
         return initial

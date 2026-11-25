@@ -13,6 +13,7 @@ from .models import Msg
 
 class ComposeForm(Form):
     compose = ComposeField(
+        label="",
         widget=ComposeWidget(
             attrs={
                 "chatbox": True,
@@ -20,7 +21,6 @@ class ComposeForm(Form):
                 "counter": True,
                 "completion": True,
                 "quickreplies": True,
-                "optins": True,
                 "templates": True,
                 "maxlength": Msg.MAX_TEXT_LEN,
                 "maxAttachments": Msg.MAX_ATTACHMENTS,
@@ -75,7 +75,7 @@ class ComposeForm(Form):
 
         return compose
 
-    def __init__(self, org, *args, **kwargs):
+    def __init__(self, org, *args, features=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.org = org
         isos = [iso for iso in org.flow_languages]
@@ -101,6 +101,11 @@ class ComposeForm(Form):
         compose_attrs = self.fields["compose"].widget.attrs
         compose_attrs["languages"] = json.dumps(langs)
 
+        if features and "cost_warnings" in features:
+            compose_attrs["template-warning"] = str(
+                _("Using a message template may incur additional fees from your channel provider.")
+            )
+
 
 class ScheduleForm(ScheduleFormMixin):
     SEND_NOW = "now"
@@ -115,7 +120,7 @@ class ScheduleForm(ScheduleFormMixin):
         choices=SEND_CHOICES, widget=forms.RadioSelect(attrs={"widget_only": True}), required=False
     )
 
-    def __init__(self, org, *args, **kwargs):
+    def __init__(self, org, *args, features=None, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.fields["start_datetime"].required = False
@@ -135,7 +140,6 @@ class ScheduleForm(ScheduleFormMixin):
 
 
 class TargetForm(Form):
-
     contact_search = forms.JSONField(
         widget=ContactSearchWidget(
             attrs={
@@ -148,7 +152,7 @@ class TargetForm(Form):
         ),
     )
 
-    def __init__(self, org, *args, **kwargs):
+    def __init__(self, org, *args, features=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.org = org
 

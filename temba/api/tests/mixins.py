@@ -44,14 +44,21 @@ class APITestMixin:
 
         return self.client.delete(endpoint_url, content_type="application/json", HTTP_X_FORWARDED_HTTPS="https")
 
-    def _postJSON(self, endpoint_url: str, user, data: dict, **kwargs):
+    def _postJSON(self, endpoint_url: str, user, data: dict, *, by_token=False, zapier=False):
         self.client.logout()
-        if user:
-            self.login(user)
 
-        return self.client.post(
-            endpoint_url, data, content_type="application/json", HTTP_X_FORWARDED_HTTPS="https", **kwargs
-        )
+        kwargs = {"HTTP_X_FORWARDED_HTTPS": "https"}
+        if user:
+            if by_token:
+                token = APIToken.create(self.org, user)
+                kwargs["HTTP_AUTHORIZATION"] = f"Token {token.key}"
+            else:
+                self.login(user)
+
+        if zapier:
+            kwargs["HTTP_USER_AGENT"] = "Zapier"
+
+        return self.client.post(endpoint_url, data, content_type="application/json", **kwargs)
 
     def assertGetNotAllowed(self, endpoint_url: str):
         response = self._getJSON(endpoint_url, self.admin)
@@ -129,8 +136,18 @@ class APITestMixin:
             response = self._postJSON(endpoint_url, user, {})
             self.assertEqual(403, response.status_code, f"status code mismatch for user {user}")
 
-    def assertPost(self, endpoint_url: str, user, data: dict, *, errors: dict = None, status=None, **kwargs):
-        response = self._postJSON(endpoint_url, user, data, **kwargs)
+    def assertPost(
+        self,
+        endpoint_url: str,
+        user,
+        data: dict,
+        *,
+        errors: dict = None,
+        status=None,
+        by_token=False,
+        zapier=False,
+    ):
+        response = self._postJSON(endpoint_url, user, data, by_token=by_token, zapier=zapier)
         if errors:
             for field, msg in errors.items():
                 self.assertResponseError(response, field, msg, status_code=status or 400)

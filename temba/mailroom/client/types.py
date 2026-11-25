@@ -53,7 +53,7 @@ class ParsedQuery:
 class SearchResults:
     query: str
     total: int
-    contact_ids: list
+    contact_uuids: list
     metadata: QueryMetadata
 
 

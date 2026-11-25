@@ -1,88 +1,157 @@
 {
   "campaigns": [],
-  "version": 3,
+  "version": "13",
   "site": "http://rapidpro.io",
   "flows": [
     {
-      "definition": {
-        "rule_sets": [
-          {
-            "y": 106,
-            "x": 100,
-            "response_type": "C",
-            "rules": [
+      "_ui": {
+        "nodes": {
+          "06bb3899-5de4-4cbc-ad5f-70b9634d80c4": {
+            "position": {
+              "left": 100,
+              "top": 106
+            },
+            "type": "wait_for_response"
+          },
+          "2f2adf23-87db-41d3-9436-afe48ab5403c": {
+            "position": {
+              "left": 100,
+              "top": 0
+            },
+            "type": "execute_actions"
+          },
+          "9a8ba8b2-8c80-4635-9f5d-015c15fdc44a": {
+            "position": {
+              "left": 118,
+              "top": 228
+            },
+            "type": "execute_actions"
+          },
+          "fa15e3c4-cd1a-4b95-9303-352e7e4ae19f": {
+            "config": {
+              "operand": {
+                "id": "name",
+                "name": "Name",
+                "type": "property"
+              }
+            },
+            "position": {
+              "left": 300,
+              "top": 300
+            },
+            "type": "split_by_contact_field"
+          }
+        },
+        "stickies": {}
+      },
+      "expire_after_minutes": 0,
+      "language": "und",
+      "localization": {},
+      "name": "Pick a Number",
+      "nodes": [
+        {
+          "actions": [
+            {
+              "text": "Pick a number between 1-10.",
+              "type": "send_msg",
+              "uuid": "12d17773-4696-4228-8a37-b119a0ab093f"
+            }
+          ],
+          "exits": [
+            {
+              "destination_uuid": "06bb3899-5de4-4cbc-ad5f-70b9634d80c4",
+              "uuid": "cc734b14-b31c-4e63-b0dd-88ce6dd9ed53"
+            }
+          ],
+          "uuid": "2f2adf23-87db-41d3-9436-afe48ab5403c"
+        },
+        {
+          "exits": [
+            {
+              "destination_uuid": "9a8ba8b2-8c80-4635-9f5d-015c15fdc44a",
+              "uuid": "41418f9d-73e5-43b8-a341-3f7af70e13c1"
+            },
+            {
+              "uuid": "e53c2616-7b8d-4821-968a-4488e9980454"
+            }
+          ],
+          "router": {
+            "cases": [
               {
-                "test": {
-                  "max": "10",
-                  "type": "between",
-                  "min": "1"
-                },
-                "destination": "9a8ba8b2-8c80-4635-9f5d-015c15fdc44a",
-                "uuid": "41418f9d-73e5-43b8-a341-3f7af70e13c1"
+                "arguments": [
+                  "1",
+                  "10"
+                ],
+                "category_uuid": "9a7a9f28-5bea-4da7-a288-7ed3c2b2eeb3",
+                "type": "has_number_between",
+                "uuid": "3b21826c-59b2-410f-aded-5fd5f40fec16"
+              }
+            ],
+            "categories": [
+              {
+                "exit_uuid": "41418f9d-73e5-43b8-a341-3f7af70e13c1",
+                "name": "1-10",
+                "uuid": "9a7a9f28-5bea-4da7-a288-7ed3c2b2eeb3"
               },
               {
-                "test": {
-                  "test": "true",
-                  "type": "true"
-                },
-                "category": "Other",
-                "destination": null,
-                "uuid": "e53c2616-7b8d-4821-968a-4488e9980454"
+                "exit_uuid": "e53c2616-7b8d-4821-968a-4488e9980454",
+                "name": "Other",
+                "uuid": "e91c9c0b-a761-47e6-8527-b6055ebe39b3"
               }
             ],
-            "uuid": "06bb3899-5de4-4cbc-ad5f-70b9634d80c4",
-            "label": "number"
+            "default_category_uuid": "e91c9c0b-a761-47e6-8527-b6055ebe39b3",
+            "operand": "@input",
+            "result_name": "number",
+            "type": "switch",
+            "wait": {
+              "type": "msg"
+            }
           },
-          {
-            "y": 300,
-            "x": 300,
-            "response_type": "C",
-            "rules": [
+          "uuid": "06bb3899-5de4-4cbc-ad5f-70b9634d80c4"
+        },
+        {
+          "actions": [
+            {
+              "text": "You picked @results.number!",
+              "type": "send_msg",
+              "uuid": "70588336-7b9e-45c3-b83d-605243646251"
+            }
+          ],
+          "exits": [
+            {
+              "uuid": "b4573ddf-f28c-4aa6-8574-4fe3b9827882"
+            }
+          ],
+          "uuid": "9a8ba8b2-8c80-4635-9f5d-015c15fdc44a"
+        },
+        {
+          "exits": [
+            {
+              "destination_uuid": "06bb3899-5de4-4cbc-ad5f-70b9634d80c4",
+              "uuid": "586e84c2-d9b5-45d7-ac2e-f0640c040f30"
+            }
+          ],
+          "router": {
+            "cases": [],
+            "categories": [
               {
-                "test": {
-                  "test": "true",
-                  "type": "true"
-                },
-                "category": "All Responses",
-                "destination": "06bb3899-5de4-4cbc-ad5f-70b9634d80c4",
-                "uuid": "586e84c2-d9b5-45d7-ac2e-f0640c040f30"
+                "exit_uuid": "586e84c2-d9b5-45d7-ac2e-f0640c040f30",
+                "name": "All Responses",
+                "uuid": "b9840285-a708-4845-b9c6-b2a7b28fa650"
               }
             ],
-            "uuid": "fa15e3c4-cd1a-4b95-9303-352e7e4ae19f",
-            "label": "passive",
-            "operand": "@contact.name"
-          }
-        ],
-        "action_sets": [
-          {
-            "y": 0,
-            "x": 100,
-            "destination": "06bb3899-5de4-4cbc-ad5f-70b9634d80c4",
-            "uuid": "2f2adf23-87db-41d3-9436-afe48ab5403c",
-            "actions": [
-              {
-                "msg": "Pick a number between 1-10.",
-                "type": "reply"
-              }
-            ]
+            "default_category_uuid": "b9840285-a708-4845-b9c6-b2a7b28fa650",
+            "operand": "@contact.name",
+            "result_name": "passive",
+            "type": "switch"
           },
-          {
-            "y": 228,
-            "x": 118,
-            "destination": null,
-            "uuid": "9a8ba8b2-8c80-4635-9f5d-015c15fdc44a",
-            "actions": [
-              {
-                "msg": "You picked @flow.number!",
-                "type": "reply"
-              }
-            ]
-          }
-        ]
-      },
-      "flow_type": "F",
-      "name": "Pick a Number",
-      "id": 2100
+          "uuid": "fa15e3c4-cd1a-4b95-9303-352e7e4ae19f"
+        }
+      ],
+      "revision": 0,
+      "spec_version": "14.4.0",
+      "type": "messaging",
+      "uuid": "dd034104-4a78-4aad-9beb-e9d79d8c84a9"
     }
   ],
   "triggers": []

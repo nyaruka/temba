@@ -70,7 +70,7 @@ class TriggerCRUDLTest(TembaTest, CRUDLTestMixin):
         self.login(self.admin)
         response = self.client.get(create_url)
 
-        self.assertNotContains(response, create_opt_in_url)  # staff only for now
+        self.assertNotContains(response, create_opt_in_url)
 
         # call triggers can be made without a call channel
         self.assertContains(response, create_inbound_call_url)
@@ -87,12 +87,12 @@ class TriggerCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertContains(response, create_new_convo_url)
         self.assertNotContains(response, create_missed_call_url)
 
-        # for now only beta testers see opt-in triggers
+        # opt-in triggers should not appear in the new trigger chooser
         Group.objects.get(name="Beta").user_set.add(self.editor)
         self.login(self.editor, choose_org=self.org)
         response = self.client.get(create_url)
 
-        self.assertContains(response, create_opt_in_url)
+        self.assertNotContains(response, create_opt_in_url)
 
     def test_create_keyword(self):
         create_url = reverse("triggers.trigger_create_keyword")

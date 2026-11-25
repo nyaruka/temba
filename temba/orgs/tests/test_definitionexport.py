@@ -66,7 +66,8 @@ class DefinitionExportTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(1, len(response.context["buckets"]))
         self.assertEqual([child, parent], response.context["buckets"][0])
 
-    def test_import_voice_flows_expiration_time(self):
+    @mock_mailroom
+    def test_import_voice_flows_expiration_time(self, mr_mocks):
         # import file has invalid expires for an IVR flow so it should get clamped to the maximum (15)
         self.get_flow("ivr")
 
@@ -144,7 +145,8 @@ class DefinitionExportTest(TembaTest, CRUDLTestMixin):
             self.assertIsNone(Flow.objects.filter(org=self.org, name="New Mother").first())
 
     @patch("temba.mailroom.client.client.MailroomClient.campaign_schedule")
-    def test_import_campaign_with_translations(self, mock_schedule):
+    @mock_mailroom
+    def test_import_campaign_with_translations(self, mr_mocks, mock_schedule):
         self.import_file("test_flows/campaign_import_with_translations.json")
 
         campaign = Campaign.objects.all().first()
@@ -157,7 +159,8 @@ class DefinitionExportTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(event.base_language, "swa")
 
     @patch("temba.mailroom.client.client.MailroomClient.campaign_schedule")
-    def test_reimport(self, mock_schedule):
+    @mock_mailroom
+    def test_reimport(self, mr_mocks, mock_schedule):
         self.import_file("test_flows/survey_campaign.json")
 
         campaign = Campaign.objects.filter(is_active=True).last()
@@ -400,7 +403,7 @@ class DefinitionExportTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(1, Trigger.objects.filter(keywords=["rating"], is_archived=False).count())
         self.assertEqual(1, Trigger.objects.filter(flow=flow).count())
 
-        # shoud have archived the existing
+        # should have archived the existing
         self.assertFalse(Trigger.objects.filter(id=trigger1.id, is_archived=False).first())
         self.assertFalse(Trigger.objects.filter(id=trigger2.id, is_archived=False).first())
 
@@ -649,7 +652,8 @@ class DefinitionExportTest(TembaTest, CRUDLTestMixin):
         response = self.client.get("%s?archived=1" % reverse("orgs.org_export"))
         self.assertNotContains(response, "Register Patient")
 
-    def test_prevent_flow_type_changes(self):
+    @mock_mailroom
+    def test_prevent_flow_type_changes(self, mr_mocks):
         flow1 = self.create_flow("Background")
 
         flow2 = self.get_flow("background")  # contains a flow called Background

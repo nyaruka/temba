@@ -11,16 +11,23 @@ from temba.tickets.models import Shortcut
 
 class ModelAsJsonSerializer(serializers.BaseSerializer):
     def to_representation(self, instance):
-        return instance.as_json()
+        # Pass the DRF serializer context through so model as_json
+        # methods can resolve permission/retention-gated fields
+        # (e.g. Msg.as_json uses context["user"] / context["org"]
+        # for the channel-log link).
+        return instance.as_json(context=self.context)
 
 
 class LLMReadSerializer(serializers.ModelSerializer):
-
     type = serializers.CharField(source="llm_type")
+    roles = serializers.SerializerMethodField()
+
+    def get_roles(self, obj):
+        return [LLM.ROLE_NAMES[r] for r in obj.roles]
 
     class Meta:
         model = LLM
-        fields = ("uuid", "name", "type")
+        fields = ("uuid", "name", "type", "roles")
 
 
 class LocationReadSerializer(serializers.ModelSerializer):

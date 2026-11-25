@@ -6,6 +6,12 @@
   {% if form.fields.team %}
     <div class="team hidden">{% render_field 'team' %}</div>
   {% endif %}
+  {% if form.fields.can_assign %}
+    <div class="agent-options hidden" style="--control-margin-bottom: 0">
+      {% render_field 'can_assign' %}
+      {% render_field 'can_reply_non_own' %}
+    </div>
+  {% endif %}
 {% endblock fields %}
 {% block modal-script %}
   {{ block.super }}
@@ -14,15 +20,34 @@
     var roleSelect = modalBody.querySelector("temba-select[name='role']");
     var team = modalBody.querySelector(".team");
     var teamSelect = modalBody.querySelector("temba-select[name='team']");
+    var agentOptions = modalBody.querySelector(".agent-options");
+
+    function updateAgentFields(isAgent) {
+      if (team) {
+        if (isAgent) {
+          team.classList.remove("hidden");
+        } else {
+          team.classList.add("hidden");
+          teamSelect.clear();
+        }
+      }
+      if (agentOptions) {
+        if (isAgent) {
+          agentOptions.classList.remove("hidden");
+        } else {
+          agentOptions.classList.add("hidden");
+        }
+      }
+    }
+
+    // set initial state based on current role
+    if (roleSelect.values && roleSelect.values.length > 0) {
+      updateAgentFields(roleSelect.values[0].value === "T");
+    }
 
     roleSelect.addEventListener("change", function(evt) {
       var selected = evt.target.values[0];
-      if (selected.value === "T") {
-        team.classList.remove("hidden");
-      } else {
-        team.classList.add("hidden");
-        teamSelect.clear();
-      }
+      updateAgentFields(selected.value === "T");
     });
   </script>
 {% endblock modal-script %}

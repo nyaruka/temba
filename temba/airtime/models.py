@@ -7,9 +7,24 @@ from temba.utils.models import TembaUUIDMixin
 
 
 class AirtimeTransfer(TembaUUIDMixin, models.Model):
-    STATUS_SUCCESS = "S"
-    STATUS_FAILED = "F"
-    STATUS_CHOICES = ((STATUS_SUCCESS, "Success"), (STATUS_FAILED, "Failed"))
+    STATUS_CREATED = "P"
+    STATUS_CONFIRMED = "C"
+    STATUS_REJECTED = "J"
+    STATUS_CANCELLED = "A"
+    STATUS_SUBMITTED = "B"
+    STATUS_COMPLETED = "S"
+    STATUS_REVERSED = "R"
+    STATUS_DECLINED = "D"
+    STATUS_CHOICES = (
+        (STATUS_CREATED, "Created"),
+        (STATUS_CONFIRMED, "Confirmed"),
+        (STATUS_REJECTED, "Rejected"),
+        (STATUS_CANCELLED, "Cancelled"),
+        (STATUS_SUBMITTED, "Submitted"),
+        (STATUS_COMPLETED, "Completed"),
+        (STATUS_REVERSED, "Reversed"),
+        (STATUS_DECLINED, "Declined"),
+    )
 
     org = models.ForeignKey(Org, on_delete=models.PROTECT, related_name="airtime_transfers")
     status = models.CharField(max_length=1, choices=STATUS_CHOICES)

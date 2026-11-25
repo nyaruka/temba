@@ -1,0 +1,49 @@
+{% extends "orgs/base/list.html" %}
+{% load i18n contacts temba %}
+
+{% block table %}
+  <table class="list lined selectable scrolled">
+    <thead>
+      <tr>
+        <th>{% trans "Contact" %}</th>
+        <th>{% trans "Recipient" %}</th>
+        <th>{% trans "Currency" %}</th>
+        <th>{% trans "Amount" %}</th>
+        <th>{% trans "Status" %}</th>
+        <th>{% trans "Time" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for object in object_list %}
+        <tr onclick="handleRowClicked(event)"
+            href="{% url 'airtime.airtimetransfer_read' object.uuid %}">
+          <td class="whitespace-nowrap">{{ object.contact|name_or_urn:user_org|truncatechars:20 }}</td>
+          <td class="whitespace-nowrap">{{ object.recipient_display }}</td>
+          <td>{{ object.currency|default:"--" }}</td>
+          <td>
+            {% if object.actual_amount %}
+              {{ object.actual_amount|floatformat:2 }}
+            {% else %}
+              --
+            {% endif %}
+          </td>
+          <td class="whitespace-nowrap">{{ object.get_status_display }}</td>
+          <td class="whitespace-nowrap">{{ object.created_on|timedate }}</td>
+        </tr>
+      {% empty %}
+        <tr class="empty_list">
+          <td colspan="99" class="text-center">{% trans "No airtime transfers" %}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock table %}
+{% block extra-script %}
+  {{ block.super }}
+  <script type="text/javascript">
+    function handleRowClicked(event) {
+      var row = event.target.closest("tr");
+      goto(event, row);
+    }
+  </script>
+{% endblock extra-script %}

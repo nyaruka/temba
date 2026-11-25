@@ -248,6 +248,9 @@ class Archive(models.Model):
         # and lastly delete ourselves
         super().delete()
 
+    def __repr__(self):  # pragma: no cover
+        return f"<Archive id={self.id} type={self.archive_type} period={self.period}:{self.start_date}>"
+
     class Meta:
         unique_together = ("org", "archive_type", "start_date", "period")
 

@@ -1,119 +1,161 @@
 {
-  "campaigns": [], 
-  "version": 9, 
-  "site": "https://app.rapidpro.io", 
+  "campaigns": [],
+  "version": "13",
+  "site": "https://app.rapidpro.io",
   "flows": [
     {
-      "base_language": "eng", 
-      "action_sets": [
+      "_ui": {
+        "nodes": {
+          "9aabeefc-1f7f-4522-8f33-26632a1e30e0": {
+            "position": {
+              "left": 146,
+              "top": 149
+            },
+            "type": "split_by_subflow"
+          },
+          "bfad640d-f106-418c-b4d6-1758f8556d8c": {
+            "position": {
+              "left": 100,
+              "top": 0
+            },
+            "type": "execute_actions"
+          }
+        },
+        "stickies": {}
+      },
+      "expire_after_minutes": 10080,
+      "language": "eng",
+      "localization": {},
+      "name": "Parent Flow",
+      "nodes": [
         {
-          "y": 0, 
-          "x": 100, 
-          "destination": "9aabeefc-1f7f-4522-8f33-26632a1e30e0", 
-          "uuid": "bfad640d-f106-418c-b4d6-1758f8556d8c", 
           "actions": [
             {
-              "msg": {
-                "eng": "This is the parent flow"
-              }, 
-              "type": "reply"
+              "text": "This is the parent flow",
+              "type": "send_msg",
+              "uuid": "67b6c3c7-c50a-4eb0-80b3-8c5940639ed1"
             }
-          ]
-        }
-      ], 
-      "version": 9, 
-      "flow_type": "F", 
-      "entry": "bfad640d-f106-418c-b4d6-1758f8556d8c", 
-      "rule_sets": [
+          ],
+          "exits": [
+            {
+              "destination_uuid": "9aabeefc-1f7f-4522-8f33-26632a1e30e0",
+              "uuid": "b244decf-37c1-4d2f-b901-0014824e2382"
+            }
+          ],
+          "uuid": "bfad640d-f106-418c-b4d6-1758f8556d8c"
+        },
         {
-          "uuid": "9aabeefc-1f7f-4522-8f33-26632a1e30e0", 
-          "webhook_action": null, 
-          "rules": [
+          "actions": [
             {
-              "test": {
-                "type": "subflow", 
-                "exit_type": "completed"
-              }, 
-              "category": {
-                "eng": "Completed"
-              }, 
+              "flow": {
+                "name": "Child Flow",
+                "uuid": "c541b853-e33d-4fbb-8086-99e5d8ed6dc2"
+              },
+              "type": "enter_flow",
+              "uuid": "42d1a95f-79ad-45ff-8849-ed9378b03cab"
+            }
+          ],
+          "exits": [
+            {
               "uuid": "7d569e59-dfb8-402f-ad12-c91446c3705e"
-            }, 
+            },
             {
-              "test": {
-                "type": "subflow", 
-                "exit_type": "expired"
-              }, 
-              "category": {
-                "eng": "Expired"
-              }, 
               "uuid": "41772f9e-cc13-4775-b88d-63f2a8e2ddef"
             }
-          ], 
-          "webhook": null, 
-          "ruleset_type": "subflow", 
-          "label": "Response 1", 
-          "operand": "@step.value", 
-          "finished_key": null, 
-          "response_type": "", 
-          "y": 149, 
-          "x": 146, 
-          "config": {
-            "flow": {
-              "name": "Child Flow", 
-              "uuid": "c541b853-e33d-4fbb-8086-99e5d8ed6dc2"
-            }
-          }
+          ],
+          "router": {
+            "cases": [
+              {
+                "arguments": [
+                  "completed"
+                ],
+                "category_uuid": "f3ecb815-9203-447b-bb74-1c32370a1fd7",
+                "type": "has_only_text",
+                "uuid": "f6af930a-89a1-4f31-b307-eabd46388e01"
+              },
+              {
+                "arguments": [
+                  "expired"
+                ],
+                "category_uuid": "e2c12b1e-6094-4ee9-b149-a57403be68e0",
+                "type": "has_only_text",
+                "uuid": "75cd299c-e7e6-4511-a6df-0e3631acb5f2"
+              }
+            ],
+            "categories": [
+              {
+                "exit_uuid": "7d569e59-dfb8-402f-ad12-c91446c3705e",
+                "name": "Completed",
+                "uuid": "f3ecb815-9203-447b-bb74-1c32370a1fd7"
+              },
+              {
+                "exit_uuid": "41772f9e-cc13-4775-b88d-63f2a8e2ddef",
+                "name": "Expired",
+                "uuid": "e2c12b1e-6094-4ee9-b149-a57403be68e0"
+              }
+            ],
+            "default_category_uuid": "",
+            "operand": "@child.status",
+            "result_name": "Response 1",
+            "type": "switch"
+          },
+          "uuid": "9aabeefc-1f7f-4522-8f33-26632a1e30e0"
         }
-      ], 
-      "metadata": {
-        "expires": 10080, 
-        "revision": 3, 
-        "uuid": "1ddf2d46-0cce-4c33-8049-9ebbbe28bb61", 
-        "name": "Parent Flow", 
-        "saved_on": "2016-08-18T20:57:34.525716Z"
-      }
-    }, 
+      ],
+      "revision": 3,
+      "spec_version": "14.4.0",
+      "type": "messaging",
+      "uuid": "1ddf2d46-0cce-4c33-8049-9ebbbe28bb61"
+    },
     {
-      "base_language": "eng", 
-      "action_sets": [
+      "_ui": {
+        "nodes": {
+          "9f93e107-1e21-4e55-97c5-dbbfeca405a4": {
+            "position": {
+              "left": 100,
+              "top": 0
+            },
+            "type": "execute_actions"
+          }
+        },
+        "stickies": {}
+      },
+      "expire_after_minutes": 10080,
+      "language": "eng",
+      "localization": {},
+      "name": "Child Flow",
+      "nodes": [
         {
-          "y": 0, 
-          "x": 100, 
-          "destination": null, 
-          "uuid": "9f93e107-1e21-4e55-97c5-dbbfeca405a4", 
           "actions": [
             {
-              "msg": {
-                "eng": "This is the child flow."
-              }, 
-              "type": "reply"
+              "text": "This is the child flow.",
+              "type": "send_msg",
+              "uuid": "413fe4b7-61af-4114-83a6-d0ed4a2d4886"
             }
-          ]
+          ],
+          "exits": [
+            {
+              "uuid": "c9bdaed8-61f5-4e8a-8dc8-16c4fc8cd956"
+            }
+          ],
+          "uuid": "9f93e107-1e21-4e55-97c5-dbbfeca405a4"
         }
-      ], 
-      "version": 9, 
-      "flow_type": "F", 
-      "entry": "9f93e107-1e21-4e55-97c5-dbbfeca405a4", 
-      "rule_sets": [], 
-      "metadata": {
-        "expires": 10080, 
-        "revision": 1, 
-        "uuid": "c541b853-e33d-4fbb-8086-99e5d8ed6dc2", 
-        "name": "Child Flow", 
-        "saved_on": "2016-08-18T20:57:02.559064Z"
-      }
+      ],
+      "revision": 1,
+      "spec_version": "14.4.0",
+      "type": "messaging",
+      "uuid": "c541b853-e33d-4fbb-8086-99e5d8ed6dc2"
     }
-  ], 
+  ],
   "triggers": [
     {
-      "trigger_type": "K", 
+      "trigger_type": "K",
       "flow": {
-        "name": "Child Flow", 
+        "name": "Child Flow",
         "uuid": "c541b853-e33d-4fbb-8086-99e5d8ed6dc2"
-      }, 
-      "groups": [], 
-      "keyword": "child", 
+      },
+      "groups": [],
+      "keyword": "child",
       "channel": null
     }
   ]

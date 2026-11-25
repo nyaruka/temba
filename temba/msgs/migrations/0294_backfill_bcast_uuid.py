@@ -30,7 +30,6 @@ def apply_manual():  # pragma: no cover
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("msgs", "0293_broadcast_uuid"),
     ]

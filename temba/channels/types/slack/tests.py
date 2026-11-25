@@ -111,7 +111,7 @@ class SlackTypeTest(TembaTest):
                 "bot_token": "BTK0123456789ABCDEFabcdef-1a2b3c4d",
                 "verification_token": "VTK0123456789ABCDEFabcdef-1a2b3c4d",
             },
-        ),
+        )
 
         # test access config page
         config_url = reverse("channels.channel_configuration", args=[channel.uuid])

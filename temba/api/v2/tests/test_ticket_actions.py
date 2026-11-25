@@ -3,6 +3,7 @@ from unittest.mock import call
 
 from django.urls import reverse
 
+from temba.orgs.models import OrgMembership
 from temba.tests import mock_mailroom
 from temba.tickets.models import Topic
 
@@ -86,23 +87,22 @@ class TicketActionsEndpointTest(APITest):
         )
 
         self.assertEqual(
-            [call(self.org, self.agent, [ticket1, ticket2], self.agent)], mr_mocks.calls["ticket_change_assignee"]
+            call(self.org, self.agent, [ticket1, ticket2], self.agent, via="ui"),
+            mr_mocks.calls["ticket_change_assignee"].pop(),
         )
 
         # unassign tickets
         self.assertPost(
             endpoint_url,
-            self.agent,
+            self.admin,
             {"tickets": [str(ticket1.uuid)], "action": "assign", "assignee": None},
             status=204,
+            by_token=True,
         )
 
         self.assertEqual(
-            [
-                call(self.org, self.agent, [ticket1, ticket2], self.agent),
-                call(self.org, self.agent, [ticket1], None),
-            ],
-            mr_mocks.calls["ticket_change_assignee"],
+            call(self.org, self.admin, [ticket1], None, via="api"),
+            mr_mocks.calls["ticket_change_assignee"].pop(),
         )
 
         # add a note to tickets
@@ -114,10 +114,8 @@ class TicketActionsEndpointTest(APITest):
         )
 
         self.assertEqual(
-            [
-                call(self.org, self.agent, [ticket1, ticket2], "Looks important"),
-            ],
-            mr_mocks.calls["ticket_add_note"],
+            call(self.org, self.agent, [ticket1, ticket2], "Looks important", via="ui"),
+            mr_mocks.calls["ticket_add_note"].pop(),
         )
 
         # change topic of tickets
@@ -129,10 +127,8 @@ class TicketActionsEndpointTest(APITest):
         )
 
         self.assertEqual(
-            [
-                call(self.org, self.agent, [ticket1, ticket2], sales),
-            ],
-            mr_mocks.calls["ticket_change_topic"],
+            call(self.org, self.agent, [ticket1, ticket2], sales, via="ui"),
+            mr_mocks.calls["ticket_change_topic"].pop(),
         )
 
         # close tickets
@@ -163,3 +159,25 @@ class TicketActionsEndpointTest(APITest):
         ticket2.refresh_from_db()
         self.assertEqual("O", ticket1.status)
         self.assertEqual("O", ticket2.status)
+
+        # restrict agent's ability to assign tickets
+        OrgMembership.objects.filter(org=self.org, user=self.agent).update(can_assign=False)
+        self.org._membership_cache = {}
+
+        self.assertPost(
+            endpoint_url,
+            self.agent,
+            {"tickets": [str(ticket1.uuid)], "action": "assign", "assignee": "agent@textit.com"},
+            errors={"non_field_errors": "You do not have permission to assign tickets."},
+        )
+
+        # restore permission and verify it works again
+        OrgMembership.objects.filter(org=self.org, user=self.agent).update(can_assign=True)
+        self.org._membership_cache = {}
+
+        self.assertPost(
+            endpoint_url,
+            self.agent,
+            {"tickets": [str(ticket1.uuid)], "action": "assign", "assignee": "agent@textit.com"},
+            status=204,
+        )

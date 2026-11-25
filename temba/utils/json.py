@@ -3,14 +3,6 @@ import decimal
 import json
 
 
-def load(value):
-    """
-    Reads the passed in file to a JSON dictionary. The dictionary passed back will be ordered
-    and decimal values will be represented as a decimal.Decimal.
-    """
-    return json.load(value, parse_float=decimal.Decimal)
-
-
 def loads(value):
     """
     Converts the passed in string to a JSON dictionary. The dictionary passed back will be ordered

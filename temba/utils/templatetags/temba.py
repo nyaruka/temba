@@ -74,11 +74,6 @@ def annotated_field(field, label, help_text):
 
 
 @register.filter
-def js_bool(value):
-    return "true" if value else "false"
-
-
-@register.filter
 def to_json(value):
     """
     To use a python variable in JS, we call json.dumps to serialize as JSON server-side and reconstruct using
@@ -92,6 +87,14 @@ def to_json(value):
     escaped_output = escapejs(value)
 
     return mark_safe(f'JSON.parse("{escaped_output}")')
+
+
+@register.filter
+def pretty_json(value):
+    """
+    Pretty-prints a value as indented JSON for display, e.g. flow start params.
+    """
+    return json.dumps(value, indent=2, sort_keys=True, ensure_ascii=False)
 
 
 @register.filter

@@ -1,298 +1,352 @@
 {
-  "version": 5,
+  "version": "13",
   "flows": [
     {
-      "definition": {
-        "base_language": "eng",
-        "action_sets": [
-          {
-            "y": 0,
-            "x": 119,
-            "destination": "d0e01dde-dcd2-43e9-8f8e-ae1699a80395",
-            "uuid": "2e6aaa75-ffb7-4c48-baee-57e4149e452c",
-            "actions": [
-              {
-                "msg": {
-                  "eng": "What is your age, sex, location? Separate your responses with a space. For example \"15 f seattle\"."
-                },
-                "type": "reply"
-              }
-            ]
+      "_ui": {
+        "nodes": {
+          "0b18b474-00ab-40a0-af25-5d7c91aa64d7": {
+            "position": {
+              "left": 116,
+              "top": 234
+            },
+            "type": "execute_actions"
           },
-          {
-            "y": 265,
-            "x": 904,
-            "destination": "d0e01dde-dcd2-43e9-8f8e-ae1699a80395",
-            "uuid": "9f1c79ae-581a-45ff-a9ea-4096f8231aad",
-            "actions": [
-              {
-                "msg": {
-                  "eng": "Sorry, @flow.age doesn't look like a valid age, please try again."
-                },
-                "type": "reply"
-              }
-            ]
+          "1cc063a7-afea-460d-b8a0-c8c2a2e37e35": {
+            "position": {
+              "left": 831,
+              "top": 414
+            },
+            "type": "execute_actions"
           },
-          {
-            "y": 414,
-            "x": 831,
-            "destination": "d0e01dde-dcd2-43e9-8f8e-ae1699a80395",
-            "uuid": "1cc063a7-afea-460d-b8a0-c8c2a2e37e35",
-            "actions": [
-              {
-                "msg": {
-                  "eng": "Sorry, @flow.gender doesn't look like a valid gender. Try again."
-                },
-                "type": "reply"
-              }
-            ]
+          "2e6aaa75-ffb7-4c48-baee-57e4149e452c": {
+            "position": {
+              "left": 119,
+              "top": 0
+            },
+            "type": "execute_actions"
           },
-          {
-            "y": 571,
-            "x": 735,
-            "destination": "d0e01dde-dcd2-43e9-8f8e-ae1699a80395",
-            "uuid": "6be94ef5-bffc-4864-bd71-8e7cd87d7178",
-            "actions": [
-              {
-                "msg": {
-                  "eng": "I don't know the location @flow.location. Please try again."
-                },
-                "type": "reply"
+          "3d8c9a32-fe04-4b95-9b2c-c66dd4ff2b24": {
+            "config": {
+              "delimiter": " ",
+              "index": 2,
+              "operand": {
+                "id": "message_form"
               }
-            ]
+            },
+            "position": {
+              "left": 366,
+              "top": 486
+            },
+            "type": "split_by_run_result_delimited"
           },
-          {
-            "y": 234,
-            "x": 116,
-            "destination": null,
-            "uuid": "0b18b474-00ab-40a0-af25-5d7c91aa64d7",
-            "actions": [
-              {
-                "msg": {
-                  "eng": "Thanks for your submission. We have that as:\n\n@flow.age / @flow.gender / @flow.location"
-                },
-                "type": "reply"
+          "6be94ef5-bffc-4864-bd71-8e7cd87d7178": {
+            "position": {
+              "left": 735,
+              "top": 571
+            },
+            "type": "execute_actions"
+          },
+          "9f1c79ae-581a-45ff-a9ea-4096f8231aad": {
+            "position": {
+              "left": 904,
+              "top": 265
+            },
+            "type": "execute_actions"
+          },
+          "b7563d6f-279a-4b19-bff6-0ee3ccfa5d5f": {
+            "config": {
+              "delimiter": " ",
+              "index": 0,
+              "operand": {
+                "id": "message_form"
               }
-            ]
+            },
+            "position": {
+              "left": 460,
+              "top": 226
+            },
+            "type": "split_by_run_result_delimited"
+          },
+          "d0e01dde-dcd2-43e9-8f8e-ae1699a80395": {
+            "position": {
+              "left": 459,
+              "top": 117
+            },
+            "type": "wait_for_response"
+          },
+          "eb669471-fadf-489b-9ce6-c10bb4add673": {
+            "config": {
+              "delimiter": " ",
+              "index": 1,
+              "operand": {
+                "id": "message_form"
+              }
+            },
+            "position": {
+              "left": 385,
+              "top": 344
+            },
+            "type": "split_by_run_result_delimited"
           }
-        ],
-        "last_saved": "2015-08-05T19:02:29.296446Z",
-        "entry": "2e6aaa75-ffb7-4c48-baee-57e4149e452c",
-        "rule_sets": [
-          {
-            "uuid": "d0e01dde-dcd2-43e9-8f8e-ae1699a80395",
-            "webhook_action": null,
-            "rules": [
-              {
-                "category": {
-                  "base": "All Responses",
-                  "eng": "All Responses"
-                },
-                "uuid": "bb0c523f-d216-4bf3-8794-664a9d9b3ccb",
-                "destination": "b7563d6f-279a-4b19-bff6-0ee3ccfa5d5f",
-                "destination_type": "R",
-                "test": {
-                  "test": "true",
-                  "type": "true"
-                },
-                "config": {
-                  "type": "true",
-                  "verbose_name": "contains anything",
-                  "name": "Other",
-                  "operands": 0
-                }
-              }
-            ],
-            "webhook": null,
-            "ruleset_type": "wait_message",
-            "label": "Message Form",
-            "operand": "@step.value",
-            "finished_key": null,
-            "response_type": "",
-            "y": 117,
-            "x": 459,
-            "config": {}
-          },
-          {
-            "uuid": "b7563d6f-279a-4b19-bff6-0ee3ccfa5d5f",
-            "webhook_action": null,
-            "rules": [
-              {
-                "test": {
-                  "max": "100",
-                  "type": "between",
-                  "min": "0"
-                },
-                "category": {
-                  "base": "0 - 100",
-                  "eng": "0 - 100"
-                },
-                "destination": "eb669471-fadf-489b-9ce6-c10bb4add673",
-                "uuid": "a9c7276e-2f5d-4e6d-9efd-2b8d39c3ec50",
-                "destination_type": "R"
-              },
-              {
-                "category": {
-                  "base": "Other",
-                  "eng": "Other"
-                },
-                "uuid": "83ce1500-c6e6-4eb1-8feb-76cd439c6e36",
-                "destination": "9f1c79ae-581a-45ff-a9ea-4096f8231aad",
-                "destination_type": "A",
-                "test": {
-                  "test": "true",
-                  "type": "true"
-                },
-                "config": {
-                  "type": "true",
-                  "verbose_name": "contains anything",
-                  "name": "Other",
-                  "operands": 0
-                }
-              }
-            ],
-            "webhook": null,
-            "ruleset_type": "form_field",
-            "label": "Age",
-            "operand": "@flow.message_form",
-            "finished_key": null,
-            "response_type": "",
-            "y": 226,
-            "x": 460,
-            "config": {
-              "field_delimiter": " ",
-              "field_index": 0
-            }
-          },
-          {
-            "uuid": "eb669471-fadf-489b-9ce6-c10bb4add673",
-            "webhook_action": null,
-            "rules": [
-              {
-                "test": {
-                  "test": {
-                    "eng": "Male m"
-                  },
-                  "base": "Male m",
-                  "type": "contains_any"
-                },
-                "category": {
-                  "base": "Male",
-                  "eng": "Male"
-                },
-                "destination": "3d8c9a32-fe04-4b95-9b2c-c66dd4ff2b24",
-                "uuid": "bda1d6b0-2b8d-4ddb-a888-3e41b3243a0f",
-                "destination_type": "R"
-              },
-              {
-                "test": {
-                  "test": {
-                    "eng": "Female f"
-                  },
-                  "base": "Female f",
-                  "type": "contains_any"
-                },
-                "category": {
-                  "base": "Female",
-                  "eng": "Female"
-                },
-                "destination": "3d8c9a32-fe04-4b95-9b2c-c66dd4ff2b24",
-                "uuid": "4b8421ab-209f-4638-a267-82c4f83c73b2",
-                "destination_type": "R"
-              },
-              {
-                "category": {
-                  "base": "Other",
-                  "eng": "Other"
-                },
-                "uuid": "b61d7b97-21ab-4df5-a475-d16122aba572",
-                "destination": "1cc063a7-afea-460d-b8a0-c8c2a2e37e35",
-                "destination_type": "A",
-                "test": {
-                  "test": "true",
-                  "type": "true"
-                },
-                "config": {
-                  "type": "true",
-                  "verbose_name": "contains anything",
-                  "name": "Other",
-                  "operands": 0
-                }
-              }
-            ],
-            "webhook": null,
-            "ruleset_type": "form_field",
-            "label": "Gender",
-            "operand": "@flow.message_form",
-            "finished_key": null,
-            "response_type": "",
-            "y": 344,
-            "x": 385,
-            "config": {
-              "field_delimiter": " ",
-              "field_index": 1
-            }
-          },
-          {
-            "uuid": "3d8c9a32-fe04-4b95-9b2c-c66dd4ff2b24",
-            "webhook_action": null,
-            "rules": [
-              {
-                "test": {
-                  "test": {
-                    "eng": "seattle chicago miami"
-                  },
-                  "base": "seattle chicago miami",
-                  "type": "contains_any"
-                },
-                "category": {
-                  "base": "Valid",
-                  "eng": "Valid"
-                },
-                "destination": "0b18b474-00ab-40a0-af25-5d7c91aa64d7",
-                "uuid": "1b36cb64-b0ce-43cc-9b50-8f45f29c9643",
-                "destination_type": "A"
-              },
-              {
-                "category": {
-                  "base": "Other",
-                  "eng": "Other"
-                },
-                "uuid": "b9419b3c-0cd0-4956-93ac-b6fd0da2964a",
-                "destination": "6be94ef5-bffc-4864-bd71-8e7cd87d7178",
-                "destination_type": "A",
-                "test": {
-                  "test": "true",
-                  "type": "true"
-                },
-                "config": {
-                  "type": "true",
-                  "verbose_name": "contains anything",
-                  "name": "Other",
-                  "operands": 0
-                }
-              }
-            ],
-            "webhook": null,
-            "ruleset_type": "form_field",
-            "label": "Location",
-            "operand": "@flow.message_form",
-            "finished_key": null,
-            "response_type": "",
-            "y": 486,
-            "x": 366,
-            "config": {
-              "field_delimiter": " ",
-              "field_index": 2
-            }
-          }
-        ],
-        "metadata": {}
+        },
+        "stickies": {}
       },
-      "expires": 10080,
-      "id": 34393,
-      "flow_type": "F",
-      "name": "SMS Form"
+      "expire_after_minutes": 0,
+      "language": "eng",
+      "localization": {},
+      "name": "SMS Form",
+      "nodes": [
+        {
+          "actions": [
+            {
+              "text": "What is your age, sex, location? Separate your responses with a space. For example \"15 f seattle\".",
+              "type": "send_msg",
+              "uuid": "df38e0f5-2118-4cb8-bf5f-6715ce05c5f5"
+            }
+          ],
+          "exits": [
+            {
+              "destination_uuid": "d0e01dde-dcd2-43e9-8f8e-ae1699a80395",
+              "uuid": "da0b87ee-5beb-41c8-a285-a6b885304ab4"
+            }
+          ],
+          "uuid": "2e6aaa75-ffb7-4c48-baee-57e4149e452c"
+        },
+        {
+          "exits": [
+            {
+              "destination_uuid": "b7563d6f-279a-4b19-bff6-0ee3ccfa5d5f",
+              "uuid": "bb0c523f-d216-4bf3-8794-664a9d9b3ccb"
+            }
+          ],
+          "router": {
+            "cases": [],
+            "categories": [
+              {
+                "exit_uuid": "bb0c523f-d216-4bf3-8794-664a9d9b3ccb",
+                "name": "All Responses",
+                "uuid": "472bd5c2-3e04-4c13-8d1e-8682bc264c41"
+              }
+            ],
+            "default_category_uuid": "472bd5c2-3e04-4c13-8d1e-8682bc264c41",
+            "operand": "@input",
+            "result_name": "Message Form",
+            "type": "switch",
+            "wait": {
+              "type": "msg"
+            }
+          },
+          "uuid": "d0e01dde-dcd2-43e9-8f8e-ae1699a80395"
+        },
+        {
+          "exits": [
+            {
+              "destination_uuid": "eb669471-fadf-489b-9ce6-c10bb4add673",
+              "uuid": "a9c7276e-2f5d-4e6d-9efd-2b8d39c3ec50"
+            },
+            {
+              "destination_uuid": "9f1c79ae-581a-45ff-a9ea-4096f8231aad",
+              "uuid": "83ce1500-c6e6-4eb1-8feb-76cd439c6e36"
+            }
+          ],
+          "router": {
+            "cases": [
+              {
+                "arguments": [
+                  "0",
+                  "100"
+                ],
+                "category_uuid": "c74654d1-6fe2-4727-8a2c-5759e9711344",
+                "type": "has_number_between",
+                "uuid": "ea373dfd-0ff4-4629-aac1-11139459d11d"
+              }
+            ],
+            "categories": [
+              {
+                "exit_uuid": "a9c7276e-2f5d-4e6d-9efd-2b8d39c3ec50",
+                "name": "0 - 100",
+                "uuid": "c74654d1-6fe2-4727-8a2c-5759e9711344"
+              },
+              {
+                "exit_uuid": "83ce1500-c6e6-4eb1-8feb-76cd439c6e36",
+                "name": "Other",
+                "uuid": "7a95d343-9518-472d-a080-804071b59c8b"
+              }
+            ],
+            "default_category_uuid": "7a95d343-9518-472d-a080-804071b59c8b",
+            "operand": "@(field(results.message_form, 0, \" \"))",
+            "result_name": "Age",
+            "type": "switch"
+          },
+          "uuid": "b7563d6f-279a-4b19-bff6-0ee3ccfa5d5f"
+        },
+        {
+          "actions": [
+            {
+              "text": "Thanks for your submission. We have that as:\n\n@results.age / @results.gender / @results.location",
+              "type": "send_msg",
+              "uuid": "a6aa8390-0a2d-443a-ba03-d7ed94038f0a"
+            }
+          ],
+          "exits": [
+            {
+              "uuid": "cce97819-2766-477a-8088-87423f16573c"
+            }
+          ],
+          "uuid": "0b18b474-00ab-40a0-af25-5d7c91aa64d7"
+        },
+        {
+          "actions": [
+            {
+              "text": "Sorry, @results.age doesn't look like a valid age, please try again.",
+              "type": "send_msg",
+              "uuid": "2e5fe8c9-490a-4453-ba34-27b9de3b9f16"
+            }
+          ],
+          "exits": [
+            {
+              "destination_uuid": "d0e01dde-dcd2-43e9-8f8e-ae1699a80395",
+              "uuid": "e19af06c-7bef-4547-bb79-3aa5c29e2a03"
+            }
+          ],
+          "uuid": "9f1c79ae-581a-45ff-a9ea-4096f8231aad"
+        },
+        {
+          "exits": [
+            {
+              "destination_uuid": "3d8c9a32-fe04-4b95-9b2c-c66dd4ff2b24",
+              "uuid": "bda1d6b0-2b8d-4ddb-a888-3e41b3243a0f"
+            },
+            {
+              "destination_uuid": "3d8c9a32-fe04-4b95-9b2c-c66dd4ff2b24",
+              "uuid": "4b8421ab-209f-4638-a267-82c4f83c73b2"
+            },
+            {
+              "destination_uuid": "1cc063a7-afea-460d-b8a0-c8c2a2e37e35",
+              "uuid": "b61d7b97-21ab-4df5-a475-d16122aba572"
+            }
+          ],
+          "router": {
+            "cases": [
+              {
+                "arguments": [
+                  "Male m"
+                ],
+                "category_uuid": "aeed1446-9a11-4187-bf10-f6a3e5925bb5",
+                "type": "has_any_word",
+                "uuid": "e48e3c86-9297-4d05-ac99-223cde55cecc"
+              },
+              {
+                "arguments": [
+                  "Female f"
+                ],
+                "category_uuid": "357c7a34-b061-4e5c-9ea0-2078676bc251",
+                "type": "has_any_word",
+                "uuid": "33f74f75-c7ee-4f27-94f2-f617c49a9c1e"
+              }
+            ],
+            "categories": [
+              {
+                "exit_uuid": "bda1d6b0-2b8d-4ddb-a888-3e41b3243a0f",
+                "name": "Male",
+                "uuid": "aeed1446-9a11-4187-bf10-f6a3e5925bb5"
+              },
+              {
+                "exit_uuid": "4b8421ab-209f-4638-a267-82c4f83c73b2",
+                "name": "Female",
+                "uuid": "357c7a34-b061-4e5c-9ea0-2078676bc251"
+              },
+              {
+                "exit_uuid": "b61d7b97-21ab-4df5-a475-d16122aba572",
+                "name": "Other",
+                "uuid": "e87ea167-0b7d-401c-9c2a-09a22b879fe4"
+              }
+            ],
+            "default_category_uuid": "e87ea167-0b7d-401c-9c2a-09a22b879fe4",
+            "operand": "@(field(results.message_form, 1, \" \"))",
+            "result_name": "Gender",
+            "type": "switch"
+          },
+          "uuid": "eb669471-fadf-489b-9ce6-c10bb4add673"
+        },
+        {
+          "actions": [
+            {
+              "text": "Sorry, @results.gender doesn't look like a valid gender. Try again.",
+              "type": "send_msg",
+              "uuid": "9ed4d362-e60e-4376-998b-5a70ba618320"
+            }
+          ],
+          "exits": [
+            {
+              "destination_uuid": "d0e01dde-dcd2-43e9-8f8e-ae1699a80395",
+              "uuid": "f8fb5498-20a1-4c42-b7ab-d492dbec7efd"
+            }
+          ],
+          "uuid": "1cc063a7-afea-460d-b8a0-c8c2a2e37e35"
+        },
+        {
+          "exits": [
+            {
+              "destination_uuid": "0b18b474-00ab-40a0-af25-5d7c91aa64d7",
+              "uuid": "1b36cb64-b0ce-43cc-9b50-8f45f29c9643"
+            },
+            {
+              "destination_uuid": "6be94ef5-bffc-4864-bd71-8e7cd87d7178",
+              "uuid": "b9419b3c-0cd0-4956-93ac-b6fd0da2964a"
+            }
+          ],
+          "router": {
+            "cases": [
+              {
+                "arguments": [
+                  "seattle chicago miami"
+                ],
+                "category_uuid": "10b5ab8c-a9ce-4480-a404-f83eafdad98f",
+                "type": "has_any_word",
+                "uuid": "a22f33c1-6b51-4360-867d-e5d76470ac80"
+              }
+            ],
+            "categories": [
+              {
+                "exit_uuid": "1b36cb64-b0ce-43cc-9b50-8f45f29c9643",
+                "name": "Valid",
+                "uuid": "10b5ab8c-a9ce-4480-a404-f83eafdad98f"
+              },
+              {
+                "exit_uuid": "b9419b3c-0cd0-4956-93ac-b6fd0da2964a",
+                "name": "Other",
+                "uuid": "bda4282f-1b8f-4bb1-8713-42abd4203a55"
+              }
+            ],
+            "default_category_uuid": "bda4282f-1b8f-4bb1-8713-42abd4203a55",
+            "operand": "@(field(results.message_form, 2, \" \"))",
+            "result_name": "Location",
+            "type": "switch"
+          },
+          "uuid": "3d8c9a32-fe04-4b95-9b2c-c66dd4ff2b24"
+        },
+        {
+          "actions": [
+            {
+              "text": "I don't know the location @results.location. Please try again.",
+              "type": "send_msg",
+              "uuid": "dcdd3d20-f7e7-4f39-b70c-e711b0722661"
+            }
+          ],
+          "exits": [
+            {
+              "destination_uuid": "d0e01dde-dcd2-43e9-8f8e-ae1699a80395",
+              "uuid": "0dadc691-7abd-499a-a28d-fcf0fc4c8066"
+            }
+          ],
+          "uuid": "6be94ef5-bffc-4864-bd71-8e7cd87d7178"
+        }
+      ],
+      "revision": 0,
+      "spec_version": "14.4.0",
+      "type": "messaging",
+      "uuid": "8b53d166-57c2-4943-8e93-a2b4077ec88e"
     }
   ],
   "triggers": []

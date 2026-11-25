@@ -60,7 +60,7 @@ class FlowActivityCountTest(TembaTest):
             uuid=uuid4(),
             contact_uuid=contact.uuid,
             status=FlowSession.STATUS_WAITING,
-            output_url="http://sessions.com/123.json",
+            output={"status": "waiting"},
             created_on=timezone.now(),
         )
 

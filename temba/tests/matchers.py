@@ -1,6 +1,9 @@
+import gzip
+import json
 from datetime import datetime, timezone as tzone
 
 import regex
+from boto3.dynamodb.types import Binary
 
 from temba.tests.dates import FULL_ISO8601_REGEX, ISO_YYYY_MM_DD
 
@@ -143,3 +146,26 @@ class Float(MatcherMixin, float):
         if self.min is not None and other < self.min:
             return False
         return True
+
+
+class GZippedJSON(MatcherMixin):
+    """
+    Matches a gzipped JSON payload (as bytes or DynamoDB Binary) whose decoded value equals the given payload.
+    """
+
+    def __init__(self, payload):
+        self.payload = payload
+
+    def __eq__(self, other):
+        if isinstance(other, Binary):
+            other = bytes(other)
+        if not isinstance(other, (bytes, bytearray)):
+            return False
+        try:
+            decoded = json.loads(gzip.decompress(other).decode("utf-8"))
+        except OSError, ValueError:
+            return False
+        return decoded == self.payload
+
+    def __repr__(self):
+        return f"<Any:GZippedJSON:payload={self.payload!r}>"

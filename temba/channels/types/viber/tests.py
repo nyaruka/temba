@@ -107,11 +107,11 @@ class ViberTypeTest(TembaTest, CRUDLTestMixin):
         # read page has link to update page
         self.assertContentMenu(read_url, self.admin, ["Configuration", "Logs", "Edit", "Delete"])
 
-        # staff users see extra log policy field
+        # staff users see extra fields
         self.assertUpdateFetch(
             update_url,
             [self.customer_support],
-            form_fields=["name", "is_enabled", "log_policy", "welcome_message"],
+            form_fields=["name", "is_enabled", "welcome_message"],
             choose_org=self.org,
         )
 

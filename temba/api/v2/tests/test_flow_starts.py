@@ -118,8 +118,8 @@ class FlowStartsEndpointTest(APITest):
             endpoint_url,
             self.admin,
             {"contacts": [joe.uuid], "flow": flow.uuid},
-            HTTP_USER_AGENT="Zapier",
             status=201,
+            zapier=True,
         )
 
         self.assertEqual(

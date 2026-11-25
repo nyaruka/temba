@@ -1,16 +1,16 @@
 [project]
 name = "temba"
-version = "26.0.0"
+version = "26.2.2"
 description = "Hosted service for visually building interactive messaging applications"
 authors = [
     {"name" = "Nyaruka", "email" = "code@nyaruka.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.14.5,<3.15"
 dependencies = [
     "psycopg[pool] ~= 3.2.9",
-    "django ~= 5.2.9",
-    "django-allauth[mfa] (>=65.8.1,<66.0.0)",
+    "django~=5.2.14",
+    "django-allauth[mfa]>=65.8.1,<66.0.0",
     "django-compressor ~= 4.5.1",
     "django-countries ~= 7.6.1",
     "django-formtools ~= 2.5.1",
@@ -18,13 +18,13 @@ dependencies = [
     "django-mptt ~= 0.16.0",
     "django-storages ~= 1.14.6",
     "django-timezone-field ~= 6.1.0",
-    "django-valkey (>=0.2.1,<0.3.0)",
+    "django-valkey>=0.2.1,<0.3.0",
     "djangorestframework ~= 3.16.0",
     "dj-database-url ~= 0.5.0",
-    "smartmin ~= 5.2.2",
+    "smartmin>=5.2.4,<6.0.0",
     "celery[redis] ~= 5.5.3",
-    "boto3 ~= 1.38.36",
-    "cryptography ~= 45.0.4",
+    "boto3>=1.42.24,<2.0.0",
+    "cryptography~=48.0.1",
     "pyotp ~= 2.4.1",
     "geojson ~= 2.5.0",
     "markdown ~= 3.8.0",
@@ -32,7 +32,7 @@ dependencies = [
     "python-magic ~= 0.4.27",
     "xlsxlite ~= 1.0.0",
     "colorama ~= 0.4.6",
-    "gunicorn (>=23.0.0,<24.0.0)",
+    "gunicorn>=23.0.0,<24.0.0",
     "iptools ~= 0.7.0",
     "iso8601 ~= 2.1.0",
     "iso639-lang ~= 2.6.0",
@@ -44,65 +44,44 @@ dependencies = [
     "chardet ~= 5.2.0",
     "openpyxl ~= 3.1.5",
     "ffmpeg-python ~= 0.2.0",
-    "pillow ~= 10.4.0",
+    "pillow ~= 12.2.0",
     "google-auth ~= 2.32.0",
-    "google-genai (>=1.10.0,<2.0.0)",
-    "twilio ~= 9.3.7",
+    "google-genai>=1.10.0,<2.0.0",
+    "twilio>=9.10.9,<10.0.0",
     "vonage ~= 3.17.4",
     "slack-sdk ~= 3.17.0",
-    "openai (>=1.66.3,<2.0.0)",
-    "anthropic (>=0.54.0,<1.0.0)",
-    "fido2 (>=2.0.0,<3.0.0)"
+    "openai>=1.66.3,<2.0.0",
+    "anthropic>=0.54.0,<1.0.0",
+    "fido2>=2.0.0,<3.0.0",
+    "elasticsearch>=9.0.0,<10.0.0"
 ]
 
 [project.urls]
 repository = "http://github.com/rapidpro/rapidpro"
 
-[tool.poetry.dependencies]
-python = "~3.12"
-django-redis = "^4.12.1"
-redis = "^5.2.0"
-iso639-lang = "^2.2.3"
-
-[tool.poetry.group.dev.dependencies]
-black = "^24.4.2"
-coverage = { extras = ["toml"], version = "^7.5.4" }
-isort = "^5.13.2"
-responses = "^0.25.3"
-ruff = "^0.5.0"
-djlint = "^1.34.1"
-
-[tool.poetry.requires-plugins]
-poetry-bumpversion = ">=0.3.3"
-
-[tool.poetry_bumpversion.file."temba/__init__.py"]
-
-[tool.black]
-line-length = 120
+[dependency-groups]
+dev = [
+    "coverage[toml]>=7.5.4",
+    "responses>=0.25.3",
+    "ruff>=0.15.6",
+    "djlint>=1.34.1",
+]
 
 [tool.ruff]
 line-length = 120
 fix = true
 
 [tool.ruff.lint]
-select = ["E", "F", "W"]
+select = ["E", "F", "W", "I"]
 ignore = ["E741", "E501", "F405"]
 
-[tool.isort]
-multi_line_output = 3
-force_grid_wrap = 0
-line_length = 120
-include_trailing_comma = true
-combine_as_imports = true
-sections = [
-    "FUTURE",
-    "STDLIB",
-    "THIRDPARTY",
-    "DJANGO",
-    "FIRSTPARTY",
-    "LOCALFOLDER",
-]
-known_django = ["django"]
+[tool.ruff.lint.isort]
+combine-as-imports = true
+known-first-party = ["temba"]
+section-order = ["future", "standard-library", "third-party", "django", "first-party", "local-folder"]
+
+[tool.ruff.lint.isort.sections]
+django = ["django"]
 
 [tool.djlint]
 blank_line_after_tag = "load"
@@ -140,5 +119,5 @@ exclude_lines = [
 omit = ["**/tests*", "**/tests/*", "*settings*", "**/management/commands/*"]
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"

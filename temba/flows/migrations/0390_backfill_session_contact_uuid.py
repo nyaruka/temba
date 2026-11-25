@@ -35,7 +35,6 @@ def apply_manual():  # pragma: no cover
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("flows", "0389_flowsession_contact_uuid_alter_flowsession_call_and_more"),
     ]

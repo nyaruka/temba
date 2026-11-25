@@ -1,0 +1,36 @@
+{% extends "includes/modax.html" %}
+{% load i18n smartmin %}
+
+{% block fields %}
+  {% if run_count %}
+    {% if can_interrupt %}
+      <div class="mb-4">
+        {% blocktrans trimmed %}
+          This will interrupt the <b>{{ run_count }}</b> contacts currently in this flow. There is no way to undo this.
+          Are you sure?
+        {% endblocktrans %}
+      </div>
+      {% if not can_archive %}
+        <temba-alert level="warning">
+          {% blocktrans trimmed %}
+            This flow can't be archived because it is used by active campaigns. If you want to prevent new contacts from
+            entering this flow, please remove it from the campaigns first, and then archive it.
+          {% endblocktrans %}
+        </temba-alert>
+      {% else %}
+        {% render_field 'archive' %}
+      {% endif %}
+    {% else %}
+      {% blocktrans trimmed %}
+        There is an existing interruption in progress for this flow. Please wait for it to complete before starting another one.
+      {% endblocktrans %}
+    {% endif %}
+  {% else %}
+    {% blocktrans trimmed %}
+      There are no contacts currently in this flow to be interrupted.
+    {% endblocktrans %}
+  {% endif %}
+{% endblock fields %}
+{% block form-buttons %}
+  {% if run_count and can_interrupt %}<input type="submit" value="{{ submit_button_name }}" class="btn btn-primary">{% endif %}
+{% endblock form-buttons %}

@@ -17,7 +17,7 @@ class UpdateTransferUUIDsTest(MigrationTest):
         self.transfer1 = AirtimeTransfer.objects.create(
             uuid="47f26cfc-f3f2-4e13-bea9-36555aaf7cea",
             org=self.org,
-            status=AirtimeTransfer.STATUS_SUCCESS,
+            status="S",
             contact=contact,
             recipient="tel:+250700000003",
             currency="RWF",
@@ -28,7 +28,7 @@ class UpdateTransferUUIDsTest(MigrationTest):
         self.transfer2 = AirtimeTransfer.objects.create(
             uuid="01989ad9-7c1a-7b8d-a59e-141c265730dc",
             org=self.org,
-            status=AirtimeTransfer.STATUS_FAILED,
+            status="F",
             sender="tel:+250700000002",
             contact=contact,
             recipient="tel:+250700000003",
@@ -58,7 +58,7 @@ class WriteTransferEventsTest(MigrationTest):
         self.transfer1 = AirtimeTransfer.objects.create(
             uuid="0198a01f-5b93-7763-8713-84ef3748062f",
             org=self.org,
-            status=AirtimeTransfer.STATUS_SUCCESS,
+            status="S",
             contact=contact,
             recipient="tel:+250700000003",
             currency="RWF",
@@ -69,7 +69,7 @@ class WriteTransferEventsTest(MigrationTest):
         self.transfer2 = AirtimeTransfer.objects.create(
             uuid="0198a01f-81fd-7ed3-8206-595dc09d152f",
             org=self.org,
-            status=AirtimeTransfer.STATUS_FAILED,
+            status="F",
             sender="tel:+250700000002",
             contact=contact,
             recipient="tel:+250700000003",
@@ -81,7 +81,7 @@ class WriteTransferEventsTest(MigrationTest):
         self.transfer3 = AirtimeTransfer.objects.create(
             uuid="0198a01f-daf2-7acc-bd3c-6a3803e92e20",
             org=self.org,
-            status=AirtimeTransfer.STATUS_SUCCESS,
+            status="S",
             sender="tel:+250700000002",
             contact=deleted,
             recipient="tel:+250700000003",

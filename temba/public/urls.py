@@ -21,4 +21,4 @@ urlpatterns = [
 ]
 
 if DEBUG:  # pragma: needs cover
-    urlpatterns.append(re_path(r"^style/$", Style.as_view(), {}, "public.public_style")),
+    urlpatterns.append(re_path(r"^style/$", Style.as_view(), {}, "public.public_style"))

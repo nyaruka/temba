@@ -85,8 +85,8 @@ module.exports = {
             md: '768px',
         },
         fontFamily: {
-            sans: ['Roboto', 'sans-serif'],
-            alt: ['Roboto', 'sans-serif'],
+            sans: ['Inter', 'system-ui', '-apple-system', '"Segoe UI"', 'Roboto', 'sans-serif'],
+            alt: ['Inter', 'system-ui', '-apple-system', '"Segoe UI"', 'Roboto', 'sans-serif'],
             serif: [
                 'Georgia',
                 'Cambria',

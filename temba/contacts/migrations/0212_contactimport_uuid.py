@@ -6,7 +6,6 @@ import temba.utils.uuid
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("contacts", "0211_alter_contactgroupcount_count"),
     ]

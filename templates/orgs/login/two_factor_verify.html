@@ -14,7 +14,8 @@
   <form method="post">
     {% csrf_token %}
     <div class="mt-4">
-      <input name="otp" maxlength="6" placeholder="{{ _("6-digit code") |escape }}" class="input">
+      <temba-textinput name="otp" maxlength="6" placeholder="{{ _("6-digit code") |escape }}">
+      </temba-textinput>
     </div>
     {% if form.otp.errors %}<div class="alert alert-error mt-4">{{ form.otp.errors }}</div>{% endif %}
     <div class="mt-2 text-right">

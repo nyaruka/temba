@@ -32,14 +32,14 @@ class BoundaryCRUDL(SmartCRUDL):
             # we didn't shortcut for some other reason, check that they have an
             # org
             if not response:
-                if not request.org.country:
+                if not request.org.root_location:
                     messages.warning(request, _("You must select a country for your workspace."))
                     return HttpResponseRedirect(reverse("orgs.org_workspace"))
 
             return super().pre_process(request, *args, **kwargs)
 
         def get_object(self, queryset=None):
-            return self.request.org.country
+            return self.request.org.root_location
 
     class Geometry(OrgPermsMixin, SmartReadView):
         @classmethod

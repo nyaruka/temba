@@ -1,3 +1,4 @@
+import gc
 import logging
 from datetime import timedelta
 
@@ -32,7 +33,10 @@ def perform_export(export_id):
     """
     Perform an export
     """
-    Export.objects.select_related("org", "created_by").get(id=export_id).perform()
+    try:
+        Export.objects.select_related("org", "created_by").get(id=export_id).perform()
+    finally:
+        gc.collect()
 
 
 @shared_task

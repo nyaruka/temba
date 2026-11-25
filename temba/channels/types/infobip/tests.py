@@ -24,15 +24,20 @@ class InfobipTypeTest(TembaTest):
         post_data["country"] = "NI"
         post_data["number"] = "250788123123"
         post_data["api_key"] = "12345"
-        post_data["base_url"] = "https://api.infobip.com"
 
+        # reject anything that isn't a plain subdomain label
+        post_data["subdomain"] = "https://xxxxx.api.infobip.com"
+        response = self.client.post(url, post_data)
+        self.assertFormError(response.context["form"], "subdomain", "Enter a valid subdomain.")
+
+        post_data["subdomain"] = "abcde"
         response = self.client.post(url, post_data)
 
         channel = Channel.objects.get()
 
         self.assertEqual("NI", channel.country)
         self.assertEqual(post_data["api_key"], channel.config["api_key"])
-        self.assertEqual(post_data["base_url"], channel.config["base_url"])
+        self.assertEqual("https://abcde.api.infobip.com", channel.config["base_url"])
         self.assertEqual("+250788123123", channel.address)
         self.assertEqual("IB", channel.channel_type)
 
@@ -53,7 +58,7 @@ class InfobipTypeTest(TembaTest):
         post_data["country"] = "NI"
         post_data["number"] = "20050"
         post_data["api_key"] = "12345"
-        post_data["base_url"] = "https://api.infobip.com"
+        post_data["subdomain"] = "abcde"
 
         response = self.client.post(url, post_data)
 
@@ -61,6 +66,6 @@ class InfobipTypeTest(TembaTest):
 
         self.assertEqual("NI", channel.country)
         self.assertEqual(post_data["api_key"], channel.config["api_key"])
-        self.assertEqual(post_data["base_url"], channel.config["base_url"])
+        self.assertEqual("https://abcde.api.infobip.com", channel.config["base_url"])
         self.assertEqual("20050", channel.address)
         self.assertEqual("IB", channel.channel_type)

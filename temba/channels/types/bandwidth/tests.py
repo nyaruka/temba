@@ -8,7 +8,6 @@ from ...models import Channel
 
 
 class BandwidthTypeTest(TembaTest):
-
     @patch("requests.post")
     def test_claim_voice(self, mock_post):
         mock_post.return_value = MockResponse(

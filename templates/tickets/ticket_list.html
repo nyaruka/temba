@@ -60,10 +60,6 @@
       display: none;
     }
 
-    temba-select[name='ticket-status'] {
-      margin-top: 0em !important;
-    }
-
     .spa-footer {}
 
     .chat-pane .empty {
@@ -174,18 +170,22 @@
     var initialTicket = '{{uuid}}';
     var focusNext;
     var messageSent;
+    var assigneeFilter = {% if assignee_uuid %} '{{ assignee_uuid }}'
+    {% else %}null{% endif %};
 
     function handleMessageSent(evt) {
       var ticket = evt.detail.msg.ticket;
       if (ticket) {
 
-        // auto assign tickets when a message is sent
+        // auto assign tickets when a message is sent (if user has assign permission)
         const chat = document.querySelector("temba-contact-chat");
-        var assigned = chat.assignTicket("{{user.email}}");
+        if (!chat.disableAssign) {
+          var assigned = chat.assignTicket("{{user.email}}");
 
-        // if we performed assignment, track our sent message
-        if (assigned) {
-          messageSent = true;
+          // if we performed assignment, track our sent message
+          if (assigned) {
+            messageSent = true;
+          }
         }
       }
     }
@@ -196,13 +196,30 @@
 
     function handleTicketsMenuChanged(menuItem) {
       var statusSelect = document.querySelector('temba-select[name="ticket-status"]');
+      var assigneeSelect = document.querySelector('temba-user-select[name="assignee-filter"]');
       ticketUUID = null;
       focusNext = null;
       if (folder !== menuItem.id) {
         document.title = menuItem.name;
 
-        const title = document.querySelector("#folder-title");
-        title.innerHTML = menuItem.name;
+        const titleText = document.querySelector("#title-text");
+        const titleRow = document.querySelector("#title-row");
+
+        // show/hide user select based on folder
+        if (menuItem.id === 'all') {
+          titleRow.classList.add('hidden');
+          if (assigneeSelect) {
+            assigneeSelect.classList.remove('hidden');
+          }
+        } else {
+          titleText.textContent = menuItem.name;
+          titleRow.classList.remove('hidden');
+          if (assigneeSelect) {
+            assigneeSelect.classList.add('hidden');
+            assigneeSelect.clear();
+          }
+          assigneeFilter = null;
+        }
 
         // whenever our menu changes, reset filter
         if (statusSelect) {
@@ -248,6 +265,12 @@
 
       // if we have auto selecting, dont clear the chat
       var ticketsEndpoint = `/ticket/folder/${folder}/${status}/${initialTicket || ''}`;
+
+      // add assignee filter if set
+      if (assigneeFilter) {
+        ticketsEndpoint += `?assignee=${assigneeFilter}`;
+      }
+
       if (ticketsEndpoint != tickets.endpoint) {
         if (!tickets.nextSelection) {
           chat.contact = null;
@@ -269,6 +292,44 @@
       ticketUUID = null;
       focusNext = null;
       status = event.target.value
+      updateTicketList();
+    }
+
+    function updateBrowserUrl() {
+      var tabs = document.querySelector("temba-tabs");
+      var path = `/ticket/${folder}/${status}/`;
+      if (ticketUUID) {
+        path += `${ticketUUID}/`;
+      }
+
+      // build query params
+      var params = [];
+      if (assigneeFilter && folder === 'all') {
+        params.push(`assignee=${assigneeFilter}`);
+      }
+      if (tabs && tabs.index) {
+        params.push(`tab=${tabs.index}`);
+      }
+      if (params.length > 0) {
+        path += "?" + params.join("&");
+      }
+
+      window.history.replaceState({
+        url: path,
+        show: path
+      }, "", path);
+    }
+
+    function handleAssigneeFilterChanged(event) {
+      ticketUUID = null;
+      focusNext = null;
+      if (event.target.value) {
+        assigneeFilter = JSON.parse(event.target.value)["uuid"];
+      } else {
+        assigneeFilter = null;
+      }
+
+      updateBrowserUrl();
       updateTicketList();
     }
 
@@ -363,28 +424,19 @@
 
       updateTicketList();
 
-      var path = `${folder}/${status}/${ticketUUID || ''}`;
-      var show = `/ticket/${path}`;
-
-      if (!show.endsWith("/")) {
-        show += "/";
-      }
-
-      if (tabs) {
-        tab = tabs.index;
-        show += "?tab=" + tab;
-      }
-
       var contentMenu = document.querySelector("#default-content-menu");
       if (contentMenu) {
-        contentMenu.endpoint = show;
+        var menuPath = `/ticket/${folder}/${status}/`;
+        if (ticketUUID) {
+          menuPath += `${ticketUUID}/`;
+        }
+        if (tabs && tabs.index) {
+          menuPath += `?tab=${tabs.index}`;
+        }
+        contentMenu.endpoint = menuPath;
       }
 
-      window.history.replaceState({
-        url: show,
-        show: show
-      }, "", show);
-
+      updateBrowserUrl();
     }
 
     function handleNameClicked() {
@@ -410,6 +462,10 @@
 
     function handleContactRefreshed(evt) {
       var contact = evt.detail.data;
+      var chat = document.querySelector("temba-contact-chat");
+      if (chat && contact) {
+        chat.showSearch = !!contact.last_seen_on;
+      }
     }
 
     function handleTicketsRefreshed(event) {
@@ -497,12 +553,7 @@
     }
 
     function handleTabChanged() {
-      var tab = document.querySelector("temba-tabs").index;
-      var url = window.location.pathname + "?tab=" + tab;
-      window.history.replaceState({
-        url: url,
-        show: url
-      }, "", "?tab=" + tab);
+      updateBrowserUrl();
     }
 
     function handleTicketListResized(event) {
@@ -529,9 +580,10 @@
     <div class="flex ticket-ui">
       <temba-resizer -temba-resized="handleTicketListResized" class="flex flex-row">
         <div class="ticket-list flex flex-col p-5 pr-0">
-          <div class="flex mb-2">
+          <div class="flex mb-2 {% if folder == "all" %}hidden{% endif %}" id="title-row">
             <div class="flex-grow relative" id="folder-title">
               <div id="title-text">{{ title }}</div>
+
             </div>
             <temba-content-menu endpoint="{% url 'tickets.ticket_folder' folder status uuid %}"
                                 -temba-selection="handleContentMenuSelected(event)"
@@ -540,6 +592,17 @@
                                 id="topic-content-menu">
             </temba-content-menu>
           </div>
+          <temba-user-select name="assignee-filter"
+                            placeholder="{% trans "All Agents" %}"
+                            onchange="handleAssigneeFilterChanged(event)"
+                            valueKey="uuid"
+                            {% if assignee_uuid %}value="{{ assignee_uuid }}"{% endif %}
+                            class="{% if folder != "all" %}hidden{% endif %}"
+                            style="z-index:3; margin-bottom:0.5em; width:100%;"
+                            searchable
+                            searchOnFocus
+                            clearable>
+              </temba-user-select>
           <temba-select style="z-index:2"
                         name="ticket-status"
                         onchange="handleStatusFilterChanged(event)"
@@ -623,22 +686,22 @@
                     collapses="true"
                     class="flex-grow hidden">
           <temba-tab icon="message" name="{{ _("Chat") |escapejs }}">
-            <div style="border-top-right-radius: var(--curvature);" class="flex flex-grow flex-col overflow-y-auto">
-              <temba-contact-chat agent="{{ request.user.email }}"
-                                  style="opacity: 0"
-                                  monitor="true"
-                                  -temba-ticket-updated="handleTicketUpdated"
-                                  -temba-message-sent="handleMessageSent"
-                                  -temba-interrupt="handleInterruptContact"
-                                  {% if org_perms.contacts.contact_interrupt %}showInterrupt{% endif %}
-                                  {% if org_perms.channels.channel_logs or request.user.is_staff %}showMessageLogsAfter="{{ msg_logs_after }}"{% endif %}
-                                  avatar="{{ branding.logos.avatar }}">
-              </temba-contact-chat>
-            </div>
+            <temba-contact-chat agent="{{ request.user.email }}"
+                                style="opacity: 0"
+                                monitor="true"
+                                -temba-ticket-updated="handleTicketUpdated"
+                                -temba-message-sent="handleMessageSent"
+                                -temba-interrupt="handleInterruptContact"
+                                {% if org_perms.contacts.contact_interrupt %}showInterrupt{% endif %}
+                                {% if org_perms.channels.channel_logs or request.user.is_staff %}showMessageLogsAfter="{{ msg_logs_after }}"{% endif %}
+                                {% if not can_assign %}disableAssign{% endif %}
+                                {% if not can_reply_non_own %}disableReply{% endif %}
+                                avatar="{{ branding.logos.avatar }}">
+            </temba-contact-chat>
           </temba-tab>
           <temba-tab icon="fields" name="{{ _("Fields") |escapejs }}">
             <div style="border-top-right-radius: var(--curvature)"
-                 class="flex flex-grow flex-col p-4 overflow-y-auto">
+                 class="flex flex-grow flex-col py-4 px-1 overflow-y-auto">
               <temba-contact-fields timezone="{{ object.org.timezone }}"
                                     -temba-button-clicked="handleFieldSearch"
                                     role="{{ request.role.code }}">
@@ -648,12 +711,7 @@
               </temba-contact-fields>
             </div>
           </temba-tab>
-          <temba-tab icon="notes"
-                     name="{{ _("Notepad") }}"
-                     activity
-                     activityColor="#ffbd00"
-                     selectionBackground="#fff9c2"
-                     borderColor="#ebdf6f">
+          <temba-tab icon="notes" name="{{ _("Notepad") }}" activity>
             <temba-contact-notepad contact="{{ object.uuid }}">
             </temba-contact-notepad>
           </temba-tab>

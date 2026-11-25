@@ -7,7 +7,6 @@ from array import array
 from dataclasses import dataclass
 from enum import Enum
 from fnmatch import fnmatch
-from typing import Optional
 from urllib.parse import unquote, urlparse
 
 import iso8601
@@ -18,6 +17,7 @@ from django.core.files.storage import default_storage
 from django.db import models
 from django.db.models import Prefetch, Q, Sum
 from django.db.models.functions import Lower
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -417,33 +417,6 @@ class Attachment:
         return f"{self.content_type}:{self.url}"
 
 
-@dataclass
-class QuickReply:
-    """
-    Represents a message quick reply stored as text\nextra
-    """
-
-    text: str
-    extra: Optional[str]
-
-    @classmethod
-    def parse(cls, s: str):
-        parts = s.split("\n")
-        return cls(parts[0], parts[1] if len(parts) > 1 else None)
-
-    def as_json(self) -> dict:
-        d = {"text": self.text}
-        if self.extra:
-            d["extra"] = self.extra
-        return d
-
-    def __str__(self) -> str:
-        s = self.text
-        if self.extra:
-            s += "\n" + self.extra
-        return s
-
-
 class Msg(models.Model):
     """
     Messages are either inbound or outbound and can have varying statuses depending on their direction. Generally an
@@ -506,6 +479,7 @@ class Msg(models.Model):
     TYPE_OPTIN = "O"
     TYPE_VOICE = "V"
     TYPE_CHOICES = ((TYPE_TEXT, "Text"), (TYPE_OPTIN, "Opt-In Request"), (TYPE_VOICE, "Interactive Voice Response"))
+    TYPE_SLUGS = {TYPE_TEXT: "text", TYPE_OPTIN: "optin", TYPE_VOICE: "voice"}
 
     FAILED_NO_DESTINATION = "D"
     FAILED_CONTACT = "C"
@@ -552,7 +526,7 @@ class Msg(models.Model):
     # message content
     text = models.TextField()
     attachments = ArrayField(models.URLField(max_length=Attachment.MAX_LEN), null=True)
-    quick_replies = ArrayField(models.CharField(max_length=64), null=True)
+    quickreplies = models.JSONField(null=True)
     optin = models.ForeignKey("msgs.OptIn", on_delete=models.DO_NOTHING, null=True, db_index=False, db_constraint=False)
     locale = models.CharField(max_length=6, null=True)  # eng, eng-US, por-BR, und etc
     templating = models.JSONField(null=True)
@@ -578,14 +552,48 @@ class Msg(models.Model):
     failed_reason = models.CharField(null=True, max_length=1, choices=FAILED_CHOICES)  # why we've failed
 
     # the id of this message on the other side of its channel
-    external_id = models.CharField(max_length=255, null=True)
+    external_identifier = models.CharField(max_length=255, null=True)
 
     log_uuids = ArrayField(models.UUIDField(), null=True)
 
-    # TODO remove
-    ticket = models.ForeignKey(
-        "tickets.Ticket", on_delete=models.DO_NOTHING, null=True, db_index=False, db_constraint=False
-    )
+    def as_json(self, context=None) -> dict:
+        """
+        Internal API shape, consumed by the temba-msg-list component.
+        `context` is the DRF serializer context (with `user` / `org`) and
+        is used to resolve the channel-log link, which is permission- and
+        retention-gated.
+        """
+        return {
+            "id": self.id,
+            "uuid": str(self.uuid),
+            "type": self.TYPE_SLUGS.get(self.msg_type),
+            "contact": {"uuid": str(self.contact.uuid), "name": self.contact.get_display(self.org)},
+            "text": self.text,
+            "attachments": [a.as_json() for a in self.get_attachments()],
+            "labels": [{"uuid": str(lb.uuid), "name": lb.name} for lb in self.labels.all()],
+            "flow": {"uuid": str(self.flow.uuid), "name": self.flow.name} if self.flow else None,
+            "created_on": self.created_on.isoformat() if self.created_on else None,
+            "logs_url": self._get_logs_url(context) if context else None,
+        }
+
+    def _get_logs_url(self, context):
+        """
+        Mirrors the channel_log_link template tag — returns the URL of
+        this message's channel log only when the viewer can read logs,
+        the channel is still active, and the message is within the
+        channel-log retention window.
+        """
+        user = context.get("user")
+        org = context.get("org")
+        if not (user and org):
+            return None
+        if not (user.has_org_perm(org, "channels.channel_logs") or user.is_staff):
+            return None
+        if not (self.channel and self.channel.is_active and self.created_on):
+            return None
+        if timezone.now() - self.created_on >= settings.RETENTION_PERIODS["channellog"]:
+            return None
+        return reverse("channels.channel_logs_read", args=[self.channel.uuid, "msg", self.uuid])
 
     def as_archive_json(self):
         """
@@ -618,12 +626,6 @@ class Msg(models.Model):
         Gets this message's attachments parsed into objects
         """
         return Attachment.parse_all(self.attachments)
-
-    def get_quick_replies(self):
-        """
-        Gets this message's quick replies parsed into objects
-        """
-        return [QuickReply.parse(qr) for qr in self.quick_replies or []]
 
     def get_logs(self) -> list:
         return ChannelLog.get_by_uuid(self.channel, self.log_uuids or [])
@@ -749,12 +751,6 @@ class Msg(models.Model):
                 fields=["created_on"],
                 condition=Q(direction="O", is_android=True, status__in=("I", "Q", "E")),
             ),
-            # used by courier to lookup messages by external id
-            models.Index(
-                name="msgs_by_external_id",
-                fields=["channel_id", "external_id"],
-                condition=Q(external_id__isnull=False),
-            ),
             # used for Inbox view and API folder
             models.Index(
                 name="msgs_inbox",
@@ -787,14 +783,20 @@ class Msg(models.Model):
             ),
         ]
         constraints = [
-            models.CheckConstraint(name="direction_is_in_or_out", check=Q(direction="I") | Q(direction="O")),
+            models.CheckConstraint(name="direction_is_in_or_out", condition=Q(direction="I") | Q(direction="O")),
             models.CheckConstraint(
                 name="incoming_has_channel_and_urn",
-                check=Q(direction="O") | Q(channel__isnull=False, contact_urn__isnull=False),
+                condition=Q(direction="O") | Q(channel__isnull=False, contact_urn__isnull=False),
             ),
             models.CheckConstraint(
                 name="no_sent_status_without_sent_on",
-                check=(~Q(status__in=("W", "S", "D", "R"), sent_on__isnull=True)),
+                condition=(~Q(status__in=("W", "S", "D", "R"), sent_on__isnull=True)),
+            ),
+            # used by courier to lookup messages for status updates and prevent duplicate incoming messages
+            models.UniqueConstraint(
+                name="unique_msgs_external_identifiers",
+                fields=["channel", "external_identifier"],
+                condition=Q(external_identifier__isnull=False),
             ),
         ]
 

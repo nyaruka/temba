@@ -1,21 +1,30 @@
-from smartmin.views import SmartCreateView, SmartCRUDL, SmartDeleteView, SmartUpdateView
+from smartmin.views import SmartCreateView, SmartCRUDL
 
 from django import forms
-from django.core.exceptions import ValidationError
 from django.db.models.functions import Lower
-from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.functional import cached_property
+from django.utils.html import format_html, format_html_join
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from temba.contacts.models import ContactField, ContactGroup
 from temba.flows.models import Flow
 from temba.msgs.models import Msg
-from temba.orgs.views.base import BaseListView, BaseMenuView, BaseReadView, BaseUpdateModal
-from temba.orgs.views.mixins import BulkActionMixin, OrgObjPermsMixin, OrgPermsMixin
-from temba.utils import languages
-from temba.utils.fields import CompletionTextarea, InputWidget, SelectWidget, TembaChoiceField
+from temba.orgs.views.base import (
+    BaseDeleteModal,
+    BaseListView,
+    BaseMenuView,
+    BaseReadView,
+    BaseUpdateModal,
+    BaseUpdateView,
+)
+from temba.orgs.views.mixins import BulkActionMixin, OrgPermsMixin
+from temba.templates.models import Template, TemplateTranslation
+from temba.utils import json, languages
+from temba.utils.compose import compose_deserialize, compose_serialize
+from temba.utils.fields import ComposeField, ComposeWidget, InputWidget, SelectWidget, TembaChoiceField
 from temba.utils.views.mixins import ContextMenuMixin, ModalFormMixin, SpaMixin
 
 from .models import Campaign, CampaignEvent
@@ -44,7 +53,7 @@ class CampaignForm(forms.ModelForm):
 
 class CampaignCRUDL(SmartCRUDL):
     model = Campaign
-    actions = ("create", "read", "update", "list", "archived", "archive", "activate", "menu")
+    actions = ("create", "read", "update", "list", "delete", "archived", "archive", "activate", "menu")
 
     class Menu(BaseMenuView):
         def derive_menu(self):
@@ -108,10 +117,18 @@ class CampaignCRUDL(SmartCRUDL):
 
             if obj.is_archived:
                 if self.has_org_perm("campaigns.campaign_activate"):
-                    menu.add_url_post(_("Activate"), reverse("campaigns.campaign_activate", args=[obj.id]))
+                    menu.add_url_post(_("Activate"), reverse("campaigns.campaign_activate", args=[obj.uuid]))
 
                 if self.has_org_perm("orgs.org_export"):
                     menu.add_link(_("Export"), f"{reverse('orgs.org_export')}?campaign={obj.id}&archived=1")
+                if self.has_org_perm("campaigns.campaign_delete"):
+                    menu.new_group()
+                    menu.add_modax(
+                        _("Delete"),
+                        "campaign-delete",
+                        reverse("campaigns.campaign_delete", args=[obj.uuid]),
+                        title=_("Delete Campaign"),
+                    )
             else:
                 if self.has_org_perm("campaigns.campaignevent_create"):
                     menu.add_modax(
@@ -133,7 +150,7 @@ class CampaignCRUDL(SmartCRUDL):
                     menu.add_link(_("Export"), f"{reverse('orgs.org_export')}?campaign={obj.id}")
 
                 if self.has_org_perm("campaigns.campaign_archive"):
-                    menu.add_url_post(_("Archive"), reverse("campaigns.campaign_archive", args=[obj.id]))
+                    menu.add_url_post(_("Archive"), reverse("campaigns.campaign_archive", args=[obj.uuid]))
 
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
@@ -188,7 +205,7 @@ class CampaignCRUDL(SmartCRUDL):
         def get_queryset(self, *args, **kwargs):
             return super().get_queryset(*args, **kwargs).filter(is_archived=True)
 
-    class Archive(OrgObjPermsMixin, SmartUpdateView):
+    class Archive(BaseUpdateView):
         fields = ()
         success_url = "uuid@campaigns.campaign_read"
         success_message = _("Campaign archived")
@@ -197,7 +214,7 @@ class CampaignCRUDL(SmartCRUDL):
             obj.apply_action_archive(self.request.user, Campaign.objects.filter(id=obj.id))
             return obj
 
-    class Activate(OrgObjPermsMixin, SmartUpdateView):
+    class Activate(BaseUpdateView):
         fields = ()
         success_url = "uuid@campaigns.campaign_read"
         success_message = _("Campaign activated")
@@ -205,6 +222,14 @@ class CampaignCRUDL(SmartCRUDL):
         def save(self, obj):
             obj.apply_action_restore(self.request.user, Campaign.objects.filter(id=obj.id))
             return obj
+
+    class Delete(BaseDeleteModal):
+        cancel_url = "uuid@campaigns.campaign_read"
+        redirect_url = "@campaigns.campaign_list"
+
+        def get_queryset(self, **kwargs):
+            qs = super().get_queryset(**kwargs)
+            return qs.filter(is_archived=True)
 
 
 class CampaignEventForm(forms.ModelForm):
@@ -227,7 +252,7 @@ class CampaignEventForm(forms.ModelForm):
     )
 
     flow_to_start = TembaChoiceField(
-        queryset=Flow.objects.filter(is_active=True),
+        queryset=Flow.objects.none(),
         required=False,
         empty_label=None,
         widget=SelectWidget(
@@ -277,24 +302,73 @@ class CampaignEventForm(forms.ModelForm):
         widget=SelectWidget(attrs={"widget_only": True}),
     )
 
+    compose = ComposeField(
+        required=False,
+        label="",
+        widget=ComposeWidget(
+            attrs={
+                "chatbox": True,
+                "attachments": True,
+                "counter": True,
+                "completion": True,
+                "quickreplies": True,
+                "templates": True,
+                "hide_label": True,
+                "min-height": 60,
+                "maxlength": Msg.MAX_TEXT_LEN,
+                "maxAttachments": Msg.MAX_ATTACHMENTS,
+            }
+        ),
+    )
+
+    def _base_language(self):
+        if self.instance.id and self.instance.base_language:
+            return self.instance.base_language
+        return self.org.flow_languages[0]
+
     def clean(self):
         data = super().clean()
 
         if self.data["event_type"] == CampaignEvent.TYPE_MESSAGE:
-            if self.languages:
-                language = self.languages[0].language
-                iso_code = language["iso_code"]
-                if iso_code not in self.data or not self.data[iso_code].strip():
-                    raise ValidationError(_("A message is required for '%s'") % language["name"])
+            compose = data.get("compose") or {}
+            base_language = self._base_language()
+            primary_language = self.org.flow_languages[0] if self.org.flow_languages else None
 
-                for lang_data in self.languages:
-                    lang = lang_data.language
-                    iso_code = lang["iso_code"]
-                    if iso_code in self.data and len(self.data[iso_code].strip()) > Msg.MAX_TEXT_LEN:
-                        raise ValidationError(
-                            _("Translation for '%(language)s' exceeds the %(limit)d character limit.")
-                            % dict(language=lang["name"], limit=Msg.MAX_TEXT_LEN)
-                        )
+            def is_missing(values):
+                if values:
+                    return not (
+                        values.get("text", "") or values.get("attachments", []) or values.get("quick_replies", [])
+                    )
+                return True
+
+            base = compose.get(base_language)
+            primary = compose.get(primary_language)
+            if is_missing(base) and is_missing(primary):
+                self.add_error("compose", _("This field is required."))
+
+            for values in compose.values():
+                if values:
+                    text = values.get("text", "")
+                    attachments = values.get("attachments", [])
+                    if text and len(text) > Msg.MAX_TEXT_LEN:
+                        self.add_error("compose", _(f"Maximum allowed text is {Msg.MAX_TEXT_LEN} characters."))
+                    if attachments and len(attachments) > Msg.MAX_ATTACHMENTS:
+                        self.add_error("compose", _(f"Maximum allowed attachments is {Msg.MAX_ATTACHMENTS} files."))
+
+            primary_values = compose.get(primary_language) or compose.get(base_language, {})
+            template = primary_values.get("template", None)
+            locale = primary_values.get("locale", None)
+            variables = primary_values.get("variables", [])
+            if template:
+                translation = TemplateTranslation.objects.filter(
+                    template__org=self.org, template__uuid=template, locale=locale
+                ).first()
+                if translation:
+                    for idx, param in enumerate(translation.variables):
+                        if param.get("type") != "text":
+                            if idx >= len(variables) or not variables[idx]:
+                                self.add_error("compose", _("The attachment for the WhatsApp template is required."))
+
             if not data.get("message_start_mode"):
                 self.add_error("message_start_mode", _("This field is required."))
         else:
@@ -306,8 +380,6 @@ class CampaignEventForm(forms.ModelForm):
         return data
 
     def pre_save(self, request, obj):
-        org = request.org
-
         # if it's before, negate the offset
         if self.cleaned_data["direction"] == "B":
             obj.offset = -obj.offset
@@ -317,25 +389,55 @@ class CampaignEventForm(forms.ModelForm):
 
         # if its a message flow, set that accordingly
         if self.cleaned_data["event_type"] == CampaignEvent.TYPE_MESSAGE:
-            base_language = org.flow_languages[0]
-            if self.instance.id and self.instance.base_language:
-                base_language = self.instance.base_language
+            base_language = self._base_language()
+            compose = self.cleaned_data.get("compose") or {}
 
-            translations = {}
-            for language in self.languages:
-                iso_code = language.language["iso_code"]
-                if iso_code in self.cleaned_data and self.cleaned_data.get(iso_code, "").strip():
-                    translations[iso_code] = self.cleaned_data.get(iso_code, "").strip()
+            # pull the template off the primary/base translation before deserializing
+            primary_language = self.org.flow_languages[0] if self.org.flow_languages else base_language
+            template_uuid = None
+            template_variables = []
+            primary_values = compose.get(primary_language) or compose.get(base_language) or {}
+            if primary_values.get("template"):
+                template_uuid = primary_values.pop("template", None)
+                template_variables = primary_values.pop("variables", [])
+                primary_values.pop("locale", None)
 
-            obj.translations = {lang: {"text": text} for lang, text in translations.items()}
+            # remove template-related keys from all translations so they aren't stored per-language
+            for values in compose.values():
+                if isinstance(values, dict):
+                    values.pop("template", None)
+                    values.pop("variables", None)
+                    values.pop("locale", None)
+
+            # only keep translations that have actual content
+            trimmed = {}
+            for lang, values in compose.items():
+                text = (values.get("text") or "").strip() if values else ""
+                attachments = values.get("attachments", []) if values else []
+                quick_replies = values.get("quick_replies", []) if values else []
+                if text or attachments or quick_replies:
+                    trimmed[lang] = values
+
+            obj.translations = compose_deserialize(trimmed)
             obj.base_language = base_language
-            obj.full_clean()
             obj.start_mode = self.cleaned_data["message_start_mode"]
+            obj.flow = None
+
+            if template_uuid:
+                obj.template = Template.objects.filter(org=self.org, uuid=template_uuid).first()
+                obj.template_variables = list(template_variables) if template_variables else None
+            else:
+                obj.template = None
+                obj.template_variables = None
 
         # otherwise, it's an event that runs an existing flow
         else:
             obj.flow = self.cleaned_data["flow_to_start"]
             obj.start_mode = self.cleaned_data["flow_start_mode"]
+            obj.translations = None
+            obj.base_language = None
+            obj.template = None
+            obj.template_variables = None
 
             # force passive mode for user-selected background flows
             if obj.flow.flow_type == Flow.TYPE_BACKGROUND:
@@ -343,6 +445,7 @@ class CampaignEventForm(forms.ModelForm):
 
     def __init__(self, org, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.org = org
 
         relative_to = self.fields["relative_to"]
         relative_to.queryset = org.fields.filter(is_active=True, value_type=ContactField.TYPE_DATETIME).order_by(
@@ -364,77 +467,38 @@ class CampaignEventForm(forms.ModelForm):
         ):
             flow.widget.attrs["info_text"] = CampaignEventCRUDL.BACKGROUND_WARNING
 
-        message = {lang: t["text"] for lang, t in (self.instance.translations or {}).items()}
-        self.languages = []
+        # build compose initial and language list
+        base_language = self.instance.base_language if self.instance.id else org.flow_languages[0]
+        isos = list(org.flow_languages)
 
-        # add in all of our languages for message forms
-        for lang_code in org.flow_languages:
-            lang_name = languages.get_name(lang_code)
-            insert = None
+        compose = {}
+        if self.instance.id and self.instance.event_type == CampaignEvent.TYPE_MESSAGE and self.instance.translations:
+            compose = compose_serialize(self.instance.translations, base_language=base_language)
 
-            # if it's our primary language, allow use to steal the 'Default' message
-            if org.flow_languages[0] == lang_code:
-                initial = message.get(lang_code, "")
+            # remove any languages not present on the org, except the base language
+            for iso in list(compose.keys()):
+                if iso != base_language and iso not in isos:
+                    del compose[iso]
 
-                if not initial:
-                    initial = message.get("base", "") or message.get("und", "")
+            # ensure base language is represented in the iso list
+            if base_language not in isos:
+                if isos and isos[0] in compose:
+                    isos.append(base_language)
+                else:
+                    isos.insert(0, base_language)
+            elif isos[0] not in compose:
+                isos.remove(base_language)
+                isos.insert(0, base_language)
 
-                # also, let's show it first
-                insert = 0
-            else:
-                # otherwise, its just a normal language
-                initial = message.get(lang_code, "")
+            if self.instance.template:
+                compose.setdefault(base_language, {})
+                compose[base_language]["template"] = str(self.instance.template.uuid)
+                compose[base_language]["variables"] = self.instance.template_variables or []
 
-            field = forms.CharField(
-                widget=CompletionTextarea(
-                    attrs={
-                        "placeholder": _(
-                            "Hi @contact.name! This is just a friendly reminder to apply your fertilizer."
-                        ),
-                        "widget_only": True,
-                        "maxlength": Msg.MAX_TEXT_LEN,
-                    }
-                ),
-                required=False,
-                label=lang_name,
-                initial=initial,
-            )
-
-            self.fields[lang_code] = field
-            field.language = dict(name=lang_name, iso_code=lang_code)
-
-            # see if we need to insert or append
-            if insert is not None:
-                self.languages.insert(insert, field)
-            else:
-                self.languages.append(field)
-
-        # determine our base language if necessary
-        base_language = org.flow_languages[0]
-
-        # if we are editing, always include the base language
-        if self.instance.id:
-            base_language = self.instance.base_language
-
-        # add our default language, we'll insert it at the front of the list
-        if base_language and base_language not in self.fields:
-            field = forms.CharField(
-                widget=CompletionTextarea(
-                    attrs={
-                        "placeholder": _(
-                            "Hi @contact.name! This is just a friendly reminder to apply your fertilizer."
-                        ),
-                        "widget_only": True,
-                    }
-                ),
-                required=False,
-                label=_("Default"),
-                initial=message.get(base_language),
-            )
-
-            self.fields[base_language] = field
-            field.language = dict(iso_code=base_language, name="Default")
-            self.languages.insert(0, field)
+        langs = [{"iso": iso, "name": str(_("Default")) if iso == "und" else languages.get_name(iso)} for iso in isos]
+        compose_attrs = self.fields["compose"].widget.attrs
+        compose_attrs["languages"] = json.dumps(langs)
+        self.fields["compose"].initial = compose
 
     class Meta:
         model = CampaignEvent
@@ -480,6 +544,28 @@ class CampaignEventCRUDL(SmartCRUDL):
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
             context["recent_fires"] = self.object.get_recent_fires()
+
+            if self.object.event_type == CampaignEvent.TYPE_MESSAGE and self.object.translations:
+                org_langs = self.object.campaign.org.flow_languages
+                names = sorted(
+                    languages.get_name(iso)
+                    for iso in self.object.translations.keys()
+                    if iso != self.object.base_language and iso in org_langs
+                )
+                bolded = [format_html("<b>{}</b>", n) for n in names]
+                if len(bolded) == 1:
+                    context["translations_summary"] = bolded[0]
+                elif len(bolded) == 2:
+                    context["translations_summary"] = format_html(
+                        _("{first} and {second}"), first=bolded[0], second=bolded[1]
+                    )
+                elif len(bolded) > 2:
+                    context["translations_summary"] = format_html(
+                        _("{list}, and {last}"),
+                        list=mark_safe(format_html_join(", ", "{}", ((b,) for b in bolded[:-1]))),
+                        last=bolded[-1],
+                    )
+                context["translation_count"] = len(bolded)
             return context
 
         def build_context_menu(self, menu):
@@ -493,7 +579,7 @@ class CampaignEventCRUDL(SmartCRUDL):
                 menu.add_modax(
                     _("Edit"),
                     "event-update",
-                    reverse("campaigns.campaignevent_update", args=[obj.id]),
+                    reverse("campaigns.campaignevent_update", args=[obj.uuid]),
                     title=_("Edit Event"),
                     as_button=True,
                 )
@@ -502,24 +588,15 @@ class CampaignEventCRUDL(SmartCRUDL):
                 menu.add_modax(
                     _("Delete"),
                     "event-delete",
-                    reverse("campaigns.campaignevent_delete", args=[obj.id]),
+                    reverse("campaigns.campaignevent_delete", args=[obj.uuid]),
                     title=_("Delete Event"),
                 )
 
-    class Delete(ModalFormMixin, OrgObjPermsMixin, SmartDeleteView):
-        default_template = "smartmin/delete_confirm.html"
-        submit_button_name = _("Delete")
-        fields = ("uuid",)
+    class Delete(BaseDeleteModal):
+        model_org_lookup = "campaign__org"
 
         def get_object_org(self):
             return self.get_object().campaign.org
-
-        def post(self, request, *args, **kwargs):
-            self.object = self.get_object()
-            self.object.release(self.request.user)
-
-            redirect_url = self.get_redirect_url()
-            return HttpResponseRedirect(redirect_url)
 
         def get_redirect_url(self):
             return reverse("campaigns.campaign_read", args=[self.object.campaign.uuid])
@@ -527,9 +604,9 @@ class CampaignEventCRUDL(SmartCRUDL):
         def get_cancel_url(self):  # pragma: needs cover
             return reverse("campaigns.campaign_read", args=[self.object.campaign.uuid])
 
-    class Update(ModalFormMixin, OrgObjPermsMixin, SmartUpdateView):
+    class Update(BaseUpdateModal):
         form_class = CampaignEventForm
-        default_fields = [
+        fields = (
             "event_type",
             "flow_to_start",
             "offset",
@@ -539,7 +616,9 @@ class CampaignEventCRUDL(SmartCRUDL):
             "delivery_hour",
             "message_start_mode",
             "flow_start_mode",
-        ]
+            "compose",
+        )
+        model_org_lookup = "campaign__org"
 
         def get_form_kwargs(self):
             kwargs = super().get_form_kwargs()
@@ -547,11 +626,7 @@ class CampaignEventCRUDL(SmartCRUDL):
             return kwargs
 
         def get_queryset(self):
-            return (
-                super()
-                .get_queryset()
-                .filter(is_active=True, status=CampaignEvent.STATUS_READY, campaign__is_archived=False)
-            )
+            return super().get_queryset().filter(status=CampaignEvent.STATUS_READY, campaign__is_archived=False)
 
         def get_object_org(self):
             return self.get_object().campaign.org
@@ -560,20 +635,6 @@ class CampaignEventCRUDL(SmartCRUDL):
             context = super().get_context_data(**kwargs)
             context["background_warning"] = CampaignEventCRUDL.BACKGROUND_WARNING
             return context
-
-        def derive_fields(self):
-            from copy import deepcopy
-
-            fields = deepcopy(self.default_fields)
-
-            # add in all of our flow languages
-            org = self.request.org
-            fields += org.flow_languages
-
-            if self.object.base_language not in fields:
-                fields.append(self.object.base_language)
-
-            return fields
 
         def derive_initial(self):
             initial = super().derive_initial()
@@ -621,7 +682,7 @@ class CampaignEventCRUDL(SmartCRUDL):
             return reverse("campaigns.campaignevent_read", args=[self.object.campaign.uuid, self.object.uuid])
 
     class Create(ModalFormMixin, OrgPermsMixin, SmartCreateView):
-        default_fields = [
+        fields = (
             "event_type",
             "flow_to_start",
             "offset",
@@ -631,7 +692,8 @@ class CampaignEventCRUDL(SmartCRUDL):
             "delivery_hour",
             "message_start_mode",
             "flow_start_mode",
-        ]
+            "compose",
+        )
         form_class = CampaignEventForm
         template_name = "campaigns/campaignevent_update.html"
 
@@ -649,16 +711,6 @@ class CampaignEventCRUDL(SmartCRUDL):
             return get_object_or_404(
                 Campaign, id=self.kwargs["campaign_id"], org=self.request.org, is_active=True, is_archived=False
             )
-
-        def derive_fields(self):
-            from copy import deepcopy
-
-            fields = deepcopy(self.default_fields)
-
-            # add in all of our flow languages
-            fields += self.request.org.flow_languages
-
-            return fields
 
         def get_success_url(self):
             return reverse("campaigns.campaign_read", args=[self.object.campaign.uuid])

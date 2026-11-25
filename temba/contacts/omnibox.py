@@ -3,7 +3,7 @@ import json
 from django.db.models.functions import Lower
 
 from temba import mailroom
-from temba.utils.models.es import IDSliceQuerySet
+from temba.utils.models.es import SearchSliceQuerySet
 
 from .models import Contact, ContactGroup
 
@@ -71,11 +71,11 @@ def _mixed_search(org, search: str, types: str) -> tuple:
                 org, org.active_contacts_group, query, sort="name", limit=PER_TYPE_LIMIT
             )
             contacts = list(
-                IDSliceQuerySet(
+                SearchSliceQuerySet(
                     Contact,
-                    search_results.contact_ids,
+                    search_results.contact_uuids,
                     offset=0,
-                    total=len(search_results.contact_ids),
+                    total=len(search_results.contact_uuids),
                     only=("id", "uuid", "name", "org_id"),
                 ).prefetch_related("org")
             )

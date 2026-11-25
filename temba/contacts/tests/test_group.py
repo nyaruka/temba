@@ -77,7 +77,7 @@ class ContactGroupTest(TembaTest):
         group.save(update_fields=("status",))
 
         # query groups should get their own icon
-        self.assertEqual(group.get_attrs(), {"icon": "group_smart"})
+        self.assertEqual(group.get_attrs(), {"icon": "group_smart", "type": "group"})
 
         # can't update query again while it is in this state
         with self.assertRaises(AssertionError):

@@ -35,7 +35,6 @@ $$ LANGUAGE plpgsql;
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("msgs", "0290_remove_msg_msgs_inbox_remove_msg_msgs_flows_and_more"),
         ("sql", "0008_squashed"),

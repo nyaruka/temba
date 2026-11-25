@@ -18,7 +18,7 @@
   <table class="list lined scrolled">
     <tbody>
       {% for obj in object_list %}
-        <tr onclick="showUpdateShortcutModal({{ obj.uuid }})" class="hover-linked update">
+        <tr onclick="showUpdateShortcutModal('{{ obj.uuid }}')" class="hover-linked update">
           <td class="whitespace-nowrap"
               style="min-width: 50px;
                      max-width:150px;

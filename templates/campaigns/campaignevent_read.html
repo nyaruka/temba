@@ -17,10 +17,55 @@
       <b>{{ object.get_fire_count|intcomma }}</b> scheduled contacts
     </div>
   </div>
-  <div class="event-details p-4 bg-gray-200 rounded-lg mb-4">
+  <div class="event-details p-4 bg-white rounded-lg mb-4">
     {% if object.event_type == 'M' %}
       <div class="cap-label">{% trans "Send Message" %}</div>
-      <div class="text-gray-600">{{ object.get_message.text }}</div>
+      <div class="text-gray-600 py-3">
+        <temba-expression-highlight>{{ object.get_message.text }}</temba-expression-highlight>
+      </div>
+      {% with attachments=object.get_message.attachments %}
+        {% if attachments %}
+          <div class="attachments flex flex-row flex-wrap mt-2" style="gap: 0.5em">
+            {% for attachment in attachments %}{% attachment_button attachment True %}{% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      {% with qrs=object.get_message.quick_replies %}
+        {% if qrs %}
+          <div class="flex flex-row flex-wrap mt-2" style="gap: 6px">
+            {% for qr in qrs %}
+              <span style="padding: 4px 8px;
+                           border-radius: 18px;
+                           border: 1px solid var(--color-quick-reply, rgb(60, 146, 221));
+                           background: white;
+                           color: var(--color-quick-reply, rgb(60, 146, 221));
+                           font-size: 11px;
+                           white-space: nowrap;
+                           overflow: hidden;
+                           text-overflow: ellipsis">
+                {{ qr.text }}
+              </span>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      {% if object.template %}
+        <div class="flex flex-row flex-wrap mt-2">
+          <div class="flex items-center px-2 py-1 mr-1 rounded"
+               style="border: 1px solid #7dc8bc;
+                      background: #f0faf7;
+                      color: #128C7E;
+                      font-size: 0.85em">
+            <temba-icon class="mr-1" name="channel_wa" style="--icon-color: #128C7E"></temba-icon>
+            <div>{{ object.template.name }}</div>
+          </div>
+        </div>
+      {% endif %}
+      {% if translations_summary %}
+        <div class="mt-3 text-sm text-gray-500">
+          {% blocktrans count counter=translation_count with langs=translations_summary %}Translation provided in {{ langs }}{% plural %}Translations provided in {{ langs }}{% endblocktrans %}
+        </div>
+      {% endif %}
     {% else %}
       <div class="start-flow">
         {% trans "Start" %}

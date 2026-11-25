@@ -68,6 +68,16 @@ class UserCRUDLTest(TembaTest, CRUDLTestMixin):
 
         self.assertContentMenu(team_url, self.admin, ["Edit", "Delete"])
 
+        # teams from other orgs must not be accessible by id
+        self.org2.features = [Org.FEATURE_TEAMS]
+        self.org2.save(update_fields=("features",))
+        other_team = Team.create(self.org2, self.admin2, "Secret Team")
+
+        other_team_url = reverse("orgs.user_team", args=[other_team.id])
+        response = self.requestView(other_team_url, self.admin)
+        self.assertEqual(404, response.status_code)
+        self.assertNotContains(response, "Secret Team", status_code=404)
+
     def test_update(self):
         system_user = self.create_user("system@textit.com")
         system_user.is_system = True
@@ -84,7 +94,12 @@ class UserCRUDLTest(TembaTest, CRUDLTestMixin):
 
         self.assertRequestDisallowed(update_url, [None, self.editor, self.agent])
 
-        self.assertUpdateFetch(update_url, [self.admin], form_fields={"role": "T"})
+        # agent form includes permission fields
+        self.assertUpdateFetch(
+            update_url,
+            [self.admin],
+            form_fields={"role": "T", "can_assign": True, "can_reply_non_own": True},
+        )
 
         # check can't update user not in the current org
         self.assertRequestDisallowed(reverse("orgs.user_update", args=[self.admin2.id]), [self.admin])
@@ -95,9 +110,26 @@ class UserCRUDLTest(TembaTest, CRUDLTestMixin):
 
         self.assertEqual({self.agent, self.editor}, set(self.org.get_users(roles=[OrgRole.EDITOR])))
 
+        # editor form does not include permission fields
+        self.assertUpdateFetch(update_url, [self.admin], form_fields={"role": "E"})
+
         # and back to an agent
         self.assertUpdateSubmit(update_url, self.admin, {"role": "T"})
         self.assertEqual({self.agent}, set(self.org.get_users(roles=[OrgRole.AGENT])))
+
+        # update agent with restricted permissions
+        self.assertUpdateSubmit(update_url, self.admin, {"role": "T", "can_assign": False})
+        self.org._membership_cache = {}
+        membership = self.org.get_membership(self.agent)
+        self.assertFalse(membership.can_assign)
+        self.assertFalse(membership.can_reply_non_own)
+
+        # update agent with full permissions
+        self.assertUpdateSubmit(update_url, self.admin, {"role": "T", "can_assign": True, "can_reply_non_own": True})
+        self.org._membership_cache = {}
+        membership = self.org.get_membership(self.agent)
+        self.assertTrue(membership.can_assign)
+        self.assertTrue(membership.can_reply_non_own)
 
         # adding teams feature enables team selection for agents
         self.org.features += [Org.FEATURE_TEAMS]
@@ -106,7 +138,11 @@ class UserCRUDLTest(TembaTest, CRUDLTestMixin):
 
         update_url = reverse("orgs.user_update", args=[self.agent.id])
 
-        self.assertUpdateFetch(update_url, [self.admin], form_fields={"role": "T", "team": self.org.default_team})
+        self.assertUpdateFetch(
+            update_url,
+            [self.admin],
+            form_fields={"role": "T", "team": self.org.default_team, "can_assign": True, "can_reply_non_own": True},
+        )
         self.assertUpdateSubmit(update_url, self.admin, {"role": "T", "team": sales.id})
 
         self.org._membership_cache = {}

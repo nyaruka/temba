@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 
 
 class FormaxSectionMixin:
-
     def form_valid(self, form):
         response = super().form_valid(form)
         response = self.render_to_response(self.get_context_data(form=form))
@@ -74,4 +73,4 @@ class Formax:
                 )
             )
 
-        logger.debug(f"{url} {response.status_code} {int((time.time() - start)*1000)}ms")
+        logger.debug(f"{url} {response.status_code} {int((time.time() - start) * 1000)}ms")

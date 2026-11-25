@@ -130,17 +130,20 @@
         <script src="{{ STATIC_URL }}js/labels.js"></script>
       {% endcompress %}
     {% endblock scripts %}
-    {% for script in flow_editor_scripts %}<script type="text/javascript" src="{{script}}"></script>{% endfor %}
-    {% for style in flow_editor_styles %}<link rel="stylesheet" href="{{ style }}" type="text/css">{% endfor %}
     {% block favico %}
       <link type="image/ico" rel="shortcut icon" href="{{ STATIC_URL }}images/favicon.ico">
     {% endblock favico %}
     {% block styles %}
       <link rel="stylesheet"
-            href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:200,300,400,500">
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
       {% compress css %}
         <link type="text/css" rel="stylesheet" href="{{ STATIC_URL }}css/tailwind.css">
         <link type="text/css" rel="stylesheet" href="{{ STATIC_URL }}css/temba-components.css">
+        {# design-system.css is the styleguide's source of truth — load it #}
+        {# after temba-components.css so its :root tokens (primary, accent #}
+        {# ramp, neutrals, status, etc.) override the legacy duplicates, #}
+        {# keeping the running app in lockstep with /static/styleguide/. #}
+        <link type="text/css" rel="stylesheet" href="{{ STATIC_URL }}css/design-system.css">
         <link type="text/css" rel="stylesheet" href="{{ STATIC_URL }}css/frame.css">
         <link type="text/css" rel="stylesheet" href="{{ STATIC_URL }}css/mobile.css">
         <style>
@@ -161,7 +164,7 @@
     <body class="bg-gradient" id="pageBody">
       {% if COMPONENTS_DEV_MODE %}
         <script type="module">
-          import '/out-tsc/temba-modules.js';
+          import '{{ COMPONENTS_DEV_URL }}/out-tsc/temba-modules.js';
         </script>
       {% else %}
         <script src="{% static '@nyaruka/temba-components/dist/temba-components.js' %}"></script>
@@ -174,10 +177,11 @@
                      groups="/api/v2/groups.json"
                      workspace="/api/v2/workspace.json"
                      shortcuts="/api/internal/shortcuts.json"
-                     users="/api/v2/users.json">
+                     users="/api/v2/users.json"
+                     brand="{{ branding.name }}">
         </temba-store>
       {% else %}
-        <temba-store>
+        <temba-store brand="{{ branding.name }}">
         </temba-store>
       {% endif %}
       <div class="flex flex-col h-full">

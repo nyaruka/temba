@@ -78,7 +78,7 @@ class HTTPLogCRUDL(SmartCRUDL):
             if str_to_bool(self.request.GET.get("error")):
                 menu.add_link(_("All logs"), reverse("request_logs.httplog_webhooks"))
             else:
-                menu.add_link(_("Errors"), f'{reverse("request_logs.httplog_webhooks")}?error=1')
+                menu.add_link(_("Errors"), f"{reverse('request_logs.httplog_webhooks')}?error=1")
 
     class Channel(ContextMenuMixin, BaseObjLogsView):
         source_field = "channel"

@@ -1,18 +1,16 @@
 # General
 .DS_Store
-.idea
 *~
 .envrc
 .devcontainer
 .direnv
+orca
+orca.yaml
 .commit
 .ruff_cache
 .vscode/
 .venv
 venv
-*.sublime*
-manage.sh
-
 .coverage
 coverage.xml
 celerybeat-schedule.db
@@ -23,6 +21,16 @@ node_modules
 screenshots
 sitestatic
 temba/settings.py
+temba/settings_local.py
+manage.sh
+rp.sh
+
+# AI
+.claude/
+CLAUDE.md
+CODEX.md
+AGENTS.md
+start.sh
 
 # Exclude media folder except files used for import testing
 media/apks

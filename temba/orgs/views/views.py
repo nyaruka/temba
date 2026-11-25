@@ -21,6 +21,7 @@ from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.db.models import F, Prefetch, Q
 from django.db.models.functions import Lower
 from django.http import HttpResponseRedirect, JsonResponse
@@ -29,6 +30,7 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.encoding import DjangoUnicodeDecodeError, force_str
 from django.utils.functional import cached_property
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext_lazy as _
 
 from temba.api.models import Resthook
@@ -177,7 +179,7 @@ class UserCRUDL(SmartCRUDL):
         def team(self):
             from temba.tickets.models import Team
 
-            return get_object_or_404(Team, id=self.kwargs["team_id"])
+            return get_object_or_404(Team, id=self.kwargs["team_id"], org=self.request.org)
 
         def build_context_menu(self, menu):
             if not self.team.is_system:
@@ -215,6 +217,14 @@ class UserCRUDL(SmartCRUDL):
         class Form(forms.ModelForm):
             role = forms.ChoiceField(choices=OrgRole.choices(), required=True, label=_("Role"), widget=SelectWidget())
             team = forms.ModelChoiceField(queryset=Team.objects.none(), required=False, widget=SelectWidget())
+            can_assign = forms.BooleanField(
+                required=False, label=_("Can assign tickets"), widget=CheckboxWidget(attrs={"widget_only": True})
+            )
+            can_reply_non_own = forms.BooleanField(
+                required=False,
+                label=_("Can reply to tickets not assigned to them"),
+                widget=CheckboxWidget(attrs={"widget_only": True}),
+            )
 
             def __init__(self, org, *args, **kwargs):
                 self.org = org
@@ -225,7 +235,7 @@ class UserCRUDL(SmartCRUDL):
 
             class Meta:
                 model = User
-                fields = ("role", "team")
+                fields = ("role", "team", "can_assign", "can_reply_non_own")
 
         form_class = Form
         require_feature = Org.FEATURE_USERS
@@ -237,11 +247,23 @@ class UserCRUDL(SmartCRUDL):
             return self.request.org.get_users().exclude(is_system=True)
 
         def derive_exclude(self):
-            return [] if Org.FEATURE_TEAMS in self.request.org.features else ["team"]
+            exclude = [] if Org.FEATURE_TEAMS in self.request.org.features else ["team"]
+
+            # only show agent-specific fields if the current user being edited is an agent
+            membership = self.request.org.get_membership(self.object)
+            if membership.role != OrgRole.AGENT:
+                exclude.extend(["can_assign", "can_reply_non_own"])
+
+            return exclude
 
         def derive_initial(self):
             membership = self.request.org.get_membership(self.object)
-            return {"role": membership.role.code, "team": membership.team}
+            return {
+                "role": membership.role.code,
+                "team": membership.team,
+                "can_assign": membership.can_assign,
+                "can_reply_non_own": membership.can_reply_non_own,
+            }
 
         def get_form_kwargs(self):
             kwargs = super().get_form_kwargs()
@@ -253,12 +275,20 @@ class UserCRUDL(SmartCRUDL):
             team = self.form.cleaned_data.get("team")
             team = (team or self.request.org.default_team) if role == OrgRole.AGENT else None
 
+            can_assign = self.form.cleaned_data.get("can_assign", True)
+            can_reply_non_own = self.form.cleaned_data.get("can_reply_non_own", True)
+
+            # non-agent roles always have full permissions
+            if role != OrgRole.AGENT:
+                can_assign = True
+                can_reply_non_own = True
+
             # don't update if user is the last administrator and role is being changed to something else
             has_other_admins = self.request.org.get_admins().exclude(id=obj.id).exists()
             if role != OrgRole.ADMINISTRATOR and not has_other_admins:
                 return obj
 
-            self.request.org.add_user(obj, role, team=team)
+            self.request.org.add_user(obj, role, team=team, can_assign=can_assign, can_reply_non_own=can_reply_non_own)
             return obj
 
         def get_success_url(self):
@@ -299,7 +329,6 @@ class UserCRUDL(SmartCRUDL):
             return reverse("orgs.user_list") if still_in_org else reverse("orgs.org_choose")
 
     class Edit(ComponentFormMixin, InferUserMixin, SmartUpdateView):
-
         class Form(forms.ModelForm):
             first_name = forms.CharField(
                 label=_("First Name"), widget=InputWidget(attrs={"placeholder": _("Required")})
@@ -377,7 +406,7 @@ class OrgCRUDL(SmartCRUDL):
         "choose",
         "delete",
         "menu",
-        "country",
+        "locations",
         "languages",
         "list",
         "create",
@@ -502,22 +531,6 @@ class OrgCRUDL(SmartCRUDL):
 
                     if len(items):
                         menu.append(self.create_menu_item(name=_("Channels"), items=items, inline=True))
-
-                if self.has_org_perm("classifiers.classifier_read"):
-                    items = []
-                    classifiers = org.classifiers.filter(is_active=True).order_by(Lower("name"))
-                    for classifier in classifiers:
-                        items.append(
-                            self.create_menu_item(
-                                menu_id=classifier.uuid,
-                                name=classifier.name,
-                                href=reverse("classifiers.classifier_read", args=[classifier.uuid]),
-                                icon=classifier.get_type().get_icon(),
-                            )
-                        )
-
-                    if len(items):
-                        menu.append(self.create_menu_item(name=_("Classifiers"), items=items, inline=True))
 
                 if self.has_org_perm("archives.archive_message"):
                     items = [
@@ -745,7 +758,7 @@ class OrgCRUDL(SmartCRUDL):
 
             try:
                 flows = [int(elt) for elt in flows]
-            except (ValueError, TypeError):
+            except ValueError, TypeError:
                 return JsonResponse({"error": _("'flows' must be a list of integers.")}, status=400)
 
             if not isinstance(campaigns, list):
@@ -753,7 +766,7 @@ class OrgCRUDL(SmartCRUDL):
 
             try:
                 campaigns = [int(elt) for elt in campaigns]
-            except (ValueError, TypeError):
+            except ValueError, TypeError:
                 return JsonResponse({"error": _("'campaigns' must contain only integers.")}, status=400)
 
             flow_ids = [elt for elt in flows if elt]
@@ -1070,7 +1083,13 @@ class OrgCRUDL(SmartCRUDL):
         # valid form means we set our org and redirect to next
         def form_valid(self, form):
             switch_to_org(self.request, form.cleaned_data["other_org"])
-            success_url = form.cleaned_data["next"] or reverse("orgs.org_start")
+            success_url = form.cleaned_data["next"]
+            if not success_url or not url_has_allowed_host_and_scheme(
+                success_url,
+                allowed_hosts={self.request.get_host()},
+                require_https=self.request.is_secure(),
+            ):
+                success_url = reverse("orgs.org_start")
             return HttpResponseRedirect(success_url)
 
     class Start(SmartTemplateView):
@@ -1284,17 +1303,31 @@ class OrgCRUDL(SmartCRUDL):
         form_class = SignupForm
         permission = None
 
+        @staticmethod
+        def get_current_user_org(user) -> Org | None:
+            membership = (
+                OrgMembership.objects.filter(user=user, org__is_active=True)
+                .select_related("org")
+                .order_by(F("last_seen_on").desc(nulls_last=True), "-id")
+                .first()
+            )
+            return membership.org if membership else None
+
         def get_success_url(self):
             return "%s?start" % reverse("public.public_welcome")
 
         def pre_process(self, request, *args, **kwargs):
-
             # only authenticated users can come here
             if not request.user.is_authenticated:
                 return HttpResponseRedirect(reverse("account_signup"))
 
             # if we already have an org, just go there
             if request.org:
+                return HttpResponseRedirect(reverse("orgs.org_start"))
+
+            # if user has memberships but no org in session, switch to their most recent org
+            if user_org := self.get_current_user_org(request.user):
+                switch_to_org(self.request, user_org)
                 return HttpResponseRedirect(reverse("orgs.org_start"))
 
             # if our brand doesn't allow signups, then redirect to the account page
@@ -1308,12 +1341,16 @@ class OrgCRUDL(SmartCRUDL):
             return initial
 
         def save(self, obj):
-            user = self.request.user
-            self.object = Org.create(user, self.form.cleaned_data["name"], self.form.cleaned_data["timezone"])
+            # Lock the user row so concurrent signup submissions can't create multiple orgs.
+            with transaction.atomic():
+                user = User.objects.select_for_update().get(pk=self.request.user.pk)
+                self.object = self.get_current_user_org(user)
+                if not self.object:
+                    self.object = Org.create(user, self.form.cleaned_data["name"], self.form.cleaned_data["timezone"])
 
-            switch_to_org(self.request, obj)
+            switch_to_org(self.request, self.object)
 
-            return obj
+            return self.object
 
     class Resthooks(SpaMixin, ComponentFormMixin, InferOrgMixin, OrgPermsMixin, SmartUpdateView):
         class ResthookForm(forms.ModelForm):
@@ -1417,8 +1454,8 @@ class OrgCRUDL(SmartCRUDL):
             if self.has_org_perm("orgs.org_languages"):
                 formax.add_section("languages", reverse("orgs.org_languages"), icon="language")
 
-            if self.has_org_perm("orgs.org_country") and "locations" in settings.FEATURES:
-                formax.add_section("country", reverse("orgs.org_country"), icon="location")
+            if self.has_org_perm("orgs.org_locations") and "locations" in settings.FEATURES:
+                formax.add_section("locations", reverse("orgs.org_locations"), icon="location")
 
             if self.has_org_perm("orgs.org_flow_smtp"):
                 formax.add_section("email", reverse("orgs.org_flow_smtp"), icon="email")
@@ -1446,9 +1483,9 @@ class OrgCRUDL(SmartCRUDL):
         def derive_exclude(self):
             return ["language"] if len(settings.LANGUAGES) == 1 else []
 
-    class Country(FormaxSectionMixin, InferOrgMixin, OrgPermsMixin, SmartUpdateView):
+    class Locations(FormaxSectionMixin, InferOrgMixin, OrgPermsMixin, SmartUpdateView):
         class CountryForm(forms.ModelForm):
-            country = forms.ModelChoiceField(
+            root_location = forms.ModelChoiceField(
                 Org.get_possible_countries(),
                 required=False,
                 label=_("The country used for location values. (optional)"),
@@ -1458,7 +1495,7 @@ class OrgCRUDL(SmartCRUDL):
 
             class Meta:
                 model = Org
-                fields = ("country",)
+                fields = ("root_location",)
 
         form_class = CountryForm
 
@@ -1576,7 +1613,7 @@ class OrgCRUDL(SmartCRUDL):
             if self.request.META.get("HTTP_X_REQUESTED_WITH") == "XMLHttpRequest" and self.request.method == "GET":
                 return "orgs.org_languages"
             else:
-                return "orgs.org_country"
+                return "orgs.org_locations"
 
 
 class InvitationCRUDL(SmartCRUDL):
@@ -1692,7 +1729,7 @@ class OrgImportCRUDL(SmartCRUDL):
                 data = self.cleaned_data["file"].read()
                 try:
                     json_data = json.loads(force_str(data))
-                except (DjangoUnicodeDecodeError, ValueError):
+                except DjangoUnicodeDecodeError, ValueError:
                     raise ValidationError(_("This file is not a valid flow definition file."))
 
                 if Version(str(json_data.get("version", 0))) < Version(Org.EARLIEST_IMPORT_VERSION):

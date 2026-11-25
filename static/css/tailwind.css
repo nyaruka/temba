@@ -102,7 +102,7 @@ Add the correct font weight in Edge and Safari.
 
 b,
 strong {
-  font-weight: bolder;
+  font-weight: 600;
 }
 
 /**
@@ -366,7 +366,7 @@ ul {
  */
 
 html {
-  font-family: Roboto, sans-serif; /* 1 */
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; /* 1 */
   line-height: 1.5; /* 2 */
 }
 
@@ -706,406 +706,148 @@ a:hover {
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
   }
 
-.button-light {
-  border-radius: 0.5rem;
-  display: inline-block;
-  font-weight: 400;
-  font-size: 1.125rem;
-  line-height: 1;
-  padding-top: 0.75rem;
-  padding-bottom: 0.75rem;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
-  --tw-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
-  text-align: center;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-          user-select: none;
-  white-space: nowrap;
-  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-  transition-duration: 200ms;
-  margin-top: 1px;
-}
-
-.button-light:active {
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
-.button-light:hover {
-    text-decoration: none;
-    cursor: pointer;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
-.button-light {
-  --tw-bg-opacity: 1;
-  background-color: rgba(247, 247, 247, var(--tw-bg-opacity));
-  --tw-text-opacity: 1;
-  color: rgba(113, 113, 113, var(--tw-text-opacity));
-}
-
-.button-light:hover {
-    cursor: pointer;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
-.button-action {
-  border-radius: 0.5rem;
-  display: inline-block;
-  font-weight: 400;
-  font-size: 1.125rem;
-  line-height: 1;
-  padding-top: 0.75rem;
-  padding-bottom: 0.75rem;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
-  --tw-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
-  text-align: center;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-          user-select: none;
-  white-space: nowrap;
-  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-  transition-duration: 200ms;
-  margin-top: 1px;
-}
-
-.button-action:active {
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
-.button-action:hover {
-    text-decoration: none;
-    cursor: pointer;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
-.button-action {
-  --tw-bg-opacity: 1;
-  background-color: rgba(247, 247, 247, var(--tw-bg-opacity));
-  --tw-text-opacity: 1;
-  color: rgba(113, 113, 113, var(--tw-text-opacity));
-}
-
-.button-action:hover {
-    cursor: pointer;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
-.button-action {
-  padding: 8px 12px;
-  display: flex;
-  align-items: center;
-  margin-left: 0.5rem;
-  margin-right: 0.5rem;
-}
+/* button-light, button-action — DS ghost-style, see consolidated block below. */
 
 .p-icon {
   padding: 8px 12px;
 }
 
-.button-tertiary {
-  border-radius: 0.5rem;
-  display: inline-block;
-  font-weight: 400;
-  font-size: 1.125rem;
+/* button-tertiary, button-secondary — DS-aligned, see consolidated block below. */
+
+/* ─── Legacy CSS-based buttons ────────────────────────────────────────────
+   These class-based buttons predate <temba-button>. They share the DS
+   button chrome and only differ in surface/tint. Replace with
+   <temba-button> when convenient. */
+.button-primary,
+.button-white,
+.button-light,
+.button-action,
+.button-tertiary,
+.button-secondary,
+.button-danger,
+.button-dark-alpha {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  font-size: 12.5px;
+  font-weight: var(--w-regular);
+  letter-spacing: -0.005em;
   line-height: 1;
-  padding-top: 0.75rem;
-  padding-bottom: 0.75rem;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
-  --tw-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
-  text-align: center;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-          user-select: none;
   white-space: nowrap;
-  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-  transition-duration: 200ms;
-  margin-top: 1px;
-}
-
-.button-tertiary:active {
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
-.button-tertiary:hover {
-    text-decoration: none;
-    cursor: pointer;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
-.button-tertiary {
-  background-color: rgb(var(--tertiary-rgb));
-  --tw-text-opacity: 1;
-  color: rgba(255, 255, 255, var(--tw-text-opacity));
-}
-
-.button-secondary {
-  border-radius: 0.5rem;
-  display: inline-block;
-  font-weight: 400;
-  font-size: 1.125rem;
-  line-height: 1;
-  padding-top: 0.75rem;
-  padding-bottom: 0.75rem;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
-  --tw-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+  box-sizing: border-box;
   text-align: center;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-          user-select: none;
-  white-space: nowrap;
-  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-  transition-duration: 200ms;
-  margin-top: 1px;
+  text-decoration: none;
+  transition: background 120ms, border-color 120ms, color 120ms, box-shadow 120ms;
 }
 
-.button-secondary:active {
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
-.button-secondary:hover {
-    text-decoration: none;
-    cursor: pointer;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
-.button-secondary {
-  background-color: rgb(var(--secondary-rgb));
-  --tw-text-opacity: 1;
-  color: rgba(255, 255, 255, var(--tw-text-opacity));
-}
-
+/* solid accent — primary CTA */
 .button-primary {
-  border-radius: 0.5rem;
-  display: inline-block;
-  font-weight: 400;
-  font-size: 1.125rem;
-  line-height: 1;
-  padding-top: 0.75rem;
-  padding-bottom: 0.75rem;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
-  --tw-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
-  text-align: center;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-          user-select: none;
-  white-space: nowrap;
-  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-  transition-duration: 200ms;
-  margin-top: 1px;
+  background: var(--accent-600);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 1px 1px rgba(15, 22, 36, 0.1);
 }
-
-.button-primary:active {
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
 .button-primary:hover {
-    text-decoration: none;
-    cursor: pointer;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
-.button-primary {
-  --tw-text-opacity: 1;
-  color: rgba(255, 255, 255, var(--tw-text-opacity));
-  background: var(--color-primary-dark) !important;
+  background: var(--accent-700);
+  text-decoration: none;
 }
 
-.button-white {
-  border-radius: 0.5rem;
-  display: inline-block;
-  font-weight: 400;
-  font-size: 1.125rem;
-  line-height: 1;
-  padding-top: 0.75rem;
-  padding-bottom: 0.75rem;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
-  --tw-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
-  text-align: center;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-          user-select: none;
-  white-space: nowrap;
-  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-  transition-duration: 200ms;
-  margin-top: 1px;
+/* surface + border — secondary CTA */
+.button-white,
+.button-light,
+.button-action {
+  background: var(--surface);
+  border-color: var(--border-strong);
+  color: var(--text-1);
+}
+.button-white:hover,
+.button-light:hover,
+.button-action:hover {
+  background: var(--sunken);
+  text-decoration: none;
 }
 
-.button-white:active {
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
-.button-white:hover {
-    text-decoration: none;
-    cursor: pointer;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
-.button-white {
-  --tw-bg-opacity: 1;
-  background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
-  color: rgb(var(--primary-rgb));
+/* tertiary accent (legacy green) */
+.button-tertiary {
+  background: rgb(var(--tertiary-rgb));
+  color: #fff;
+}
+.button-tertiary:hover {
+  background: color-mix(in srgb, rgb(var(--tertiary-rgb)) 88%, black);
+  text-decoration: none;
 }
 
+/* secondary accent (legacy magenta) */
+.button-secondary {
+  background: rgb(var(--secondary-rgb));
+  color: #fff;
+}
+.button-secondary:hover {
+  background: color-mix(in srgb, rgb(var(--secondary-rgb)) 88%, black);
+  text-decoration: none;
+}
+
+/* destructive — red */
 .button-danger {
-  border-radius: 0.5rem;
-  display: inline-block;
-  font-weight: 400;
-  font-size: 1.125rem;
-  line-height: 1;
-  padding-top: 0.75rem;
-  padding-bottom: 0.75rem;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
-  --tw-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
-  text-align: center;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-          user-select: none;
-  white-space: nowrap;
-  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-  transition-duration: 200ms;
-  margin-top: 1px;
+  background: var(--danger, rgb(var(--error-rgb)));
+  color: #fff;
 }
-
-.button-danger:active {
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
 .button-danger:hover {
-    text-decoration: none;
-    cursor: pointer;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
-.button-danger {
-  background-color: rgb(var(--error-rgb));
-  --tw-text-opacity: 1;
-  color: rgba(255, 255, 255, var(--tw-text-opacity));
+  background: color-mix(in srgb, var(--danger, rgb(var(--error-rgb))) 88%, black);
+  text-decoration: none;
 }
 
+/* dark overlay — for use on light backgrounds where you need a muted button */
 .button-dark-alpha {
-  border-radius: 0.5rem;
-  display: inline-block;
-  font-weight: 400;
-  font-size: 1.125rem;
-  line-height: 1;
-  padding-top: 0.75rem;
-  padding-bottom: 0.75rem;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
-  --tw-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
-  text-align: center;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-          user-select: none;
-  white-space: nowrap;
-  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-  transition-duration: 200ms;
-  margin-top: 1px;
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-2);
 }
-
-.button-dark-alpha:active {
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
 .button-dark-alpha:hover {
-    text-decoration: none;
-    cursor: pointer;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
-.button-dark-alpha {
-  background-color: rgba(0, 0, 0, .2);
-  --tw-text-opacity: 1;
-  color: rgba(255, 255, 255, var(--tw-text-opacity));
+  background: rgba(0, 0, 0, 0.08);
+  text-decoration: none;
 }
 
+/* button-danger, button-dark-alpha — DS-aligned, see consolidated block above. */
+
+/* compact dark-alpha button (chrome overlays on dark backgrounds) */
 .button-sm {
-  border-radius: 0.5rem;
-  display: inline-block;
-  font-weight: 400;
-  font-size: 1.125rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  font-weight: var(--w-regular);
+  letter-spacing: -0.005em;
   line-height: 1;
-  padding-top: 0.75rem;
-  padding-bottom: 0.75rem;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
-  --tw-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
-  text-align: center;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-          user-select: none;
   white-space: nowrap;
-  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-  transition-duration: 200ms;
-  margin-top: 1px;
-}
-
-.button-sm:active {
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
-.button-sm:hover {
-    text-decoration: none;
-    cursor: pointer;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
-.button-sm {
-  background-color: rgba(0, 0, 0, .2);
-  --tw-text-opacity: 1;
-  color: rgba(255, 255, 255, var(--tw-text-opacity));
-  font-size: 0.875rem;
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  --tw-shadow: 0 0 #0000;
-  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
-  color: rgba(255, 255, 255, .9);
-  letter-spacing: 0.05em;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+  box-sizing: border-box;
+  text-align: center;
+  text-decoration: none;
+  background: rgba(0, 0, 0, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+  transition: background 120ms, color 120ms;
 }
 
 .button-sm:hover {
-    --tw-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-    box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
-    transform: none;
-    cursor: pointer;
-    box-shadow: inset 0 0 20px 10px rgba(255, 255, 255, 0.2);
-  }
+  background: rgba(0, 0, 0, 0.3);
+  text-decoration: none;
+}
 
 .lift {
   will-change: transform, opacity;
@@ -7164,11 +6906,11 @@ ul.steps {
 }
 
 .font-sans {
-  font-family: Roboto, sans-serif;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 .font-alt {
-  font-family: Roboto, sans-serif;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 .font-serif {
@@ -7192,7 +6934,7 @@ ul.steps {
 }
 
 .font-bold {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .hover\:font-light:hover {
@@ -7208,7 +6950,7 @@ ul.steps {
 }
 
 .hover\:font-bold:hover {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .focus\:font-light:focus {
@@ -7224,7 +6966,7 @@ ul.steps {
 }
 
 .focus\:font-bold:focus {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .h-0 {
@@ -20683,11 +20425,11 @@ ul.steps {
   }
 
   .md\:font-sans {
-    font-family: Roboto, sans-serif;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
 
   .md\:font-alt {
-    font-family: Roboto, sans-serif;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
 
   .md\:font-serif {
@@ -20711,7 +20453,7 @@ ul.steps {
   }
 
   .md\:font-bold {
-    font-weight: 700;
+    font-weight: 600;
   }
 
   .md\:hover\:font-light:hover {
@@ -20727,7 +20469,7 @@ ul.steps {
   }
 
   .md\:hover\:font-bold:hover {
-    font-weight: 700;
+    font-weight: 600;
   }
 
   .md\:focus\:font-light:focus {
@@ -20743,7 +20485,7 @@ ul.steps {
   }
 
   .md\:focus\:font-bold:focus {
-    font-weight: 700;
+    font-weight: 600;
   }
 
   .md\:h-0 {

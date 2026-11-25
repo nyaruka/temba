@@ -155,7 +155,6 @@ class TwilioType(TemplateType):
                 supported = False
 
             if raw[content_type].get("actions"):
-
                 for idx, action in enumerate(raw[content_type]["actions"]):
                     button_name = f"button.{idx}"
                     button_text = action.get("title", "")

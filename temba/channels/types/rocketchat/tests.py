@@ -153,7 +153,7 @@ class RocketChatViewTest(RocketChatMixin):
             domain = data["base_url"].replace("http://", "").replace("https://", "").split("/")[0]
             expected = f"{RocketChatType.name}: {domain}"
             if len(expected) > max_length:
-                expected = f"{expected[:max_length-3]}..."
+                expected = f"{expected[: max_length - 3]}..."
             self.assertEqual(channel.name, expected)
             self.assertFalse(channel.config[RocketChatType.CONFIG_BASE_URL].endswith("/"))
 

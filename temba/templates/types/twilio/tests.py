@@ -39,7 +39,6 @@ class TwilioTypeTest(TembaTest):
 
     @patch("requests.get")
     def test_update_local_twa(self, mock_get):
-
         channel = self.create_channel(
             "TWA",
             "channel",

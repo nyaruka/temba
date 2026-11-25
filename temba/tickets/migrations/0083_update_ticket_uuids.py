@@ -32,7 +32,6 @@ def apply_manual():  # pragma: no cover
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("tickets", "0082_alter_ticketevent_uuid"),
     ]

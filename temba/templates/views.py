@@ -1,5 +1,5 @@
 import requests
-from smartmin.views import SmartCRUDL, SmartFormView, SmartReadView
+from smartmin.views import SmartCRUDL, SmartFormView
 
 from django import forms
 from django.contrib import messages
@@ -8,8 +8,8 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from temba.channels.models import Channel
-from temba.orgs.views.base import BaseListView, BaseUsagesModal
-from temba.orgs.views.mixins import OrgObjPermsMixin, OrgPermsMixin
+from temba.orgs.views.base import BaseListView, BaseReadView, BaseUsagesModal
+from temba.orgs.views.mixins import OrgPermsMixin
 from temba.utils.views.mixins import ContextMenuMixin, SpaMixin
 
 from .models import Template, TemplateTranslation
@@ -33,8 +33,7 @@ class TemplateCRUDL(SmartCRUDL):
         def build_context_menu(self, menu):
             menu.add_url_post(_("Refresh"), reverse("templates.template_refresh"), as_button=True)
 
-    class Read(SpaMixin, OrgObjPermsMixin, SmartReadView):
-        slug_url_kwarg = "uuid"
+    class Read(SpaMixin, BaseReadView):
         status_icons = {
             TemplateTranslation.STATUS_PENDING: "template_pending",
             TemplateTranslation.STATUS_APPROVED: "template_approved",

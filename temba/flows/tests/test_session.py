@@ -15,27 +15,27 @@ class FlowSessionTest(TembaTest):
         session1 = FlowSession.objects.create(
             uuid=uuid4(),
             contact_uuid=contact.uuid,
-            output_url="http://sessions.com/123.json",
+            output={"status": "completed"},
             status=FlowSession.STATUS_COMPLETED,
             ended_on=datetime(2025, 1, 15, 0, 0, 0, 0, tzone.utc),
         )
         session2 = FlowSession.objects.create(
             uuid=uuid4(),
             contact_uuid=contact.uuid,
-            output_url="http://sessions.com/234.json",
+            output={"status": "completed"},
             status=FlowSession.STATUS_COMPLETED,
             ended_on=datetime(2025, 1, 16, 0, 0, 0, 0, tzone.utc),
         )
         session3 = FlowSession.objects.create(
             uuid=uuid4(),
             contact_uuid=contact.uuid,
-            output_url="http://sessions.com/345.json",
+            output={"status": "waiting"},
             status=FlowSession.STATUS_WAITING,
         )
         session4 = FlowSession.objects.create(
             uuid=uuid4(),
             contact_uuid=contact.uuid,
-            output_url="http://sessions.com/345.json",
+            output={"status": "completed"},
             status=FlowSession.STATUS_COMPLETED,
             ended_on=timezone.now() - timedelta(days=3),
         )

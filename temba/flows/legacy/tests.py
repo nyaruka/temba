@@ -116,7 +116,8 @@ class FlowMigrationTest(TembaTest):
         flow.update(flow_json)
         return Flow.objects.get(pk=flow.pk)
 
-    def test_migrate_malformed_single_message_flow(self):
+    @mock_mailroom
+    def test_migrate_malformed_single_message_flow(self, mr_mocks):
         flow = Flow.objects.create(
             name="Single Message Flow",
             org=self.org,
@@ -137,7 +138,8 @@ class FlowMigrationTest(TembaTest):
         self.assertEqual(Flow.CURRENT_SPEC_VERSION, flow_json["spec_version"])
         self.assertEqual(2, flow_json["revision"])
 
-    def test_migrate_to_11_12(self):
+    @mock_mailroom
+    def test_migrate_to_11_12(self, mr_mocks):
         flow = self.load_flow("favorites")
         definition = {
             "entry": "79b4776b-a995-475d-ae06-1cab9af8a28e",
@@ -238,14 +240,16 @@ class FlowMigrationTest(TembaTest):
         self.assertEqual(migrated["action_sets"][0]["actions"][0]["msg"]["base"], "Hey there, Yes or No?")
         self.assertEqual(len(migrated["action_sets"]), 3)
 
-    def test_migrate_to_11_12_with_one_node(self):
+    @mock_mailroom
+    def test_migrate_to_11_12_with_one_node(self, mr_mocks):
         flow = self.load_flow("migrate_to_11_12_one_node")
         flow_json = self.load_flow_def("migrate_to_11_12_one_node")
         migrated = migrate_to_version_11_12(flow_json, flow)
 
         self.assertEqual(len(migrated["action_sets"]), 0)
 
-    def test_migrate_to_11_12_other_org_existing_flow(self):
+    @mock_mailroom
+    def test_migrate_to_11_12_other_org_existing_flow(self, mr_mocks):
         flow = self.load_flow("migrate_to_11_12_other_org", {"CHANNEL-UUID": str(self.channel.uuid)})
         flow_json = self.load_flow_def("migrate_to_11_12_other_org", {"CHANNEL-UUID": str(self.channel.uuid)})
 
@@ -267,7 +271,8 @@ class FlowMigrationTest(TembaTest):
 
         self.assertEqual(flow.channel_dependencies.count(), 1)
 
-    def test_migrate_to_11_11(self):
+    @mock_mailroom
+    def test_migrate_to_11_11(self, mr_mocks):
         flow = self.load_flow("migrate_to_11_11")
         flow_json = self.load_flow_def("migrate_to_11_11")
 
@@ -327,7 +332,8 @@ class FlowMigrationTest(TembaTest):
             },
         )
 
-    def test_migrate_to_11_9(self):
+    @mock_mailroom
+    def test_migrate_to_11_9(self, mr_mocks):
         flow = self.load_flow("migrate_to_11_9", name="Master")
 
         # give our flows same UUIDs as in import and make 2 of them invalid
@@ -644,7 +650,8 @@ class FlowMigrationTest(TembaTest):
         # we cannot migrate flows to version 11 without flow object (languages depend on flow.org)
         self.assertRaises(ValueError, migrate_to_version_11_1, definition)
 
-    def test_migrate_to_11_0(self):
+    @mock_mailroom
+    def test_migrate_to_11_0(self, mr_mocks):
         self.create_field("nickname", "Nickname", ContactField.TYPE_TEXT)
         self.create_field("district", "District", ContactField.TYPE_DISTRICT)
         self.create_field("joined_on", "Joined On", ContactField.TYPE_DATETIME)
@@ -677,7 +684,8 @@ class FlowMigrationTest(TembaTest):
             ],
         )
 
-    def test_migrate_to_11_0_with_null_ruleset_label(self):
+    @mock_mailroom
+    def test_migrate_to_11_0_with_null_ruleset_label(self, mr_mocks):
         flow = self.load_flow("migrate_to_11_0")
         definition = {
             "rule_sets": [
@@ -698,7 +706,8 @@ class FlowMigrationTest(TembaTest):
 
         self.assertEqual(migrated, definition)
 
-    def test_migrate_to_11_0_with_null_msg_text(self):
+    @mock_mailroom
+    def test_migrate_to_11_0_with_null_msg_text(self, mr_mocks):
         flow = self.load_flow("migrate_to_11_0")
         definition = {
             "action_sets": [
@@ -715,7 +724,8 @@ class FlowMigrationTest(TembaTest):
         migrated = migrate_to_version_11_0(definition, flow)
         self.assertEqual(migrated, definition)
 
-    def test_migrate_to_11_0_with_broken_localization(self):
+    @mock_mailroom
+    def test_migrate_to_11_0_with_broken_localization(self, mr_mocks):
         flow = self.load_flow("migrate_to_11_0")
         flow_def = self.load_flow_def("migrate_to_11_0")
         migrated = migrate_to_version_11_0(flow_def, flow)
@@ -769,7 +779,8 @@ class FlowMigrationTest(TembaTest):
             for action in actionset["actions"]:
                 self.assertIsNotNone(action.get("uuid"))
 
-    def test_migrate_to_10(self):
+    @mock_mailroom
+    def test_migrate_to_10(self, mr_mocks):
         # this is really just testing our rewriting of webhook rulesets
         flow = self.load_flow("dual_webhook")
         flow_def = self.load_flow_def("dual_webhook")
@@ -782,7 +793,8 @@ class FlowMigrationTest(TembaTest):
             self.assertNotIn("webhook", ruleset)
             self.assertNotIn("webhook_action", ruleset)
 
-    def test_migrate_to_9(self):
+    @mock_mailroom
+    def test_migrate_to_9(self, mr_mocks):
         contact = self.create_contact("Ben Haggerty", phone="+12065552020")
 
         # our group and flow to move to uuids
@@ -1021,7 +1033,8 @@ class FlowMigrationTest(TembaTest):
         self.assertEqual("@step.value|lower_case", beer_expression["operand"])
         self.assertEqual(5, len(beer_expression["rules"]))
 
-    def test_migrate_sample_flows(self):
+    @mock_mailroom
+    def test_migrate_sample_flows(self, mr_mocks):
         self.org.create_sample_flows("https://app.rapidpro.io")
         self.assertEqual(3, self.org.flows.filter(name__icontains="Sample Flow").count())
 

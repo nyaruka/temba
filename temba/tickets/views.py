@@ -26,6 +26,7 @@ from temba.orgs.views.base import (
     BaseUpdateModal,
 )
 from temba.orgs.views.mixins import OrgObjPermsMixin, OrgPermsMixin, RequireFeatureMixin
+from temba.users.models import User
 from temba.utils.dates import datetime_to_timestamp, timestamp_to_datetime
 from temba.utils.db.functions import SplitPart
 from temba.utils.export import response_from_workbook
@@ -163,7 +164,18 @@ class TeamCRUDL(SmartCRUDL):
 
 class TicketCRUDL(SmartCRUDL):
     model = Ticket
-    actions = ("menu", "list", "folder", "update", "note", "chart", "export_stats", "export", "analytics")
+    actions = (
+        "menu",
+        "list",
+        "folder",
+        "update",
+        "note",
+        "chart",
+        "leaderboard",
+        "export",
+        "analytics",
+        "analytics_export",
+    )
 
     class Menu(BaseMenuView):
         def derive_menu(self):
@@ -234,15 +246,29 @@ class TicketCRUDL(SmartCRUDL):
 
             return menu
 
-    class Analytics(SpaMixin, OrgPermsMixin, SmartTemplateView):
+    class Analytics(SpaMixin, ContextMenuMixin, OrgPermsMixin, SmartTemplateView):
         permission = "tickets.ticket_analytics"
         title = _("Analytics")
-
         menu_path = "/ticket/analytics"
+
+        def build_context_menu(self, menu):
+            menu.add_link(_("Export Raw"), reverse("tickets.ticket_analytics_export"))
 
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
             return context
+
+    class AnalyticsExport(OrgPermsMixin, SmartTemplateView):
+        permission = "tickets.ticket_analytics"
+
+        def render_to_response(self, context, **response_kwargs):
+            num_days = self.request.GET.get("days", 90)
+            today = timezone.now().date()
+            workbook = export_ticket_stats(
+                self.request.org, today - timedelta(days=num_days), today + timedelta(days=1)
+            )
+
+            return response_from_workbook(workbook, f"ticket-stats-{timezone.now().strftime('%Y-%m-%d')}.xlsx")
 
     class List(SpaMixin, ContextMenuMixin, OrgPermsMixin, SmartListView):
         """
@@ -304,6 +330,16 @@ class TicketCRUDL(SmartCRUDL):
 
             if ticket:
                 context["nextUUID" if in_page else "uuid"] = str(ticket.uuid)
+
+            # pass assignee filter to template if provided
+            assignee_uuid = self.request.GET.get("assignee")
+            if assignee_uuid and isinstance(folder, AllFolder):
+                context["assignee_uuid"] = assignee_uuid
+
+            # pass agent permission flags to template
+            membership = self.request.org.get_membership(self.request.user)
+            context["can_assign"] = membership.can_assign if membership else True
+            context["can_reply_non_own"] = membership.can_reply_non_own if membership else True
 
             return context
 
@@ -374,10 +410,17 @@ class TicketCRUDL(SmartCRUDL):
             uuid = self.kwargs.get("uuid", None)
             after = int(self.request.GET.get("after", 0))
             before = int(self.request.GET.get("before", 0))
+            assignee_uuid = self.request.GET.get("assignee", None)
 
             # fetching new activity gets a different order later
             ordered = False if after else True
             qs = self.folder.get_queryset(org, user, ordered=ordered).filter(status=status)
+
+            # filter by assignee if specified (only applies to All folder)
+            if assignee_uuid and isinstance(self.folder, AllFolder):
+                assignee = User.objects.filter(uuid=assignee_uuid).first()
+                if assignee:
+                    qs = qs.filter(assignee=assignee)
 
             # all new activity
             after = int(self.request.GET.get("after", 0))
@@ -401,6 +444,12 @@ class TicketCRUDL(SmartCRUDL):
                     qs = self.folder.get_queryset(org, user, ordered=ordered).filter(
                         status=status, last_activity_on__gte=last_ticket.last_activity_on
                     )
+
+                    # reapply assignee filter if set
+                    if assignee_uuid and isinstance(self.folder, AllFolder):
+                        assignee = User.objects.filter(uuid=assignee_uuid).first()
+                        if assignee:
+                            qs = qs.filter(assignee=assignee)
 
                     # now reapply our before if we have one
                     if before:
@@ -626,17 +675,33 @@ class TicketCRUDL(SmartCRUDL):
             elif chart == "replies":
                 return self.get_replies_chart(self.request.org, since, until)
 
-    class ExportStats(OrgPermsMixin, SmartTemplateView):
+    class Leaderboard(OrgPermsMixin, ChartViewMixin, SmartTemplateView):
         permission = "tickets.ticket_analytics"
 
         def render_to_response(self, context, **response_kwargs):
-            num_days = self.request.GET.get("days", 90)
-            today = timezone.now().date()
-            workbook = export_ticket_stats(
-                self.request.org, today - timedelta(days=num_days), today + timedelta(days=1)
+            org = self.request.org
+            since, until = self.get_chart_period()
+
+            daily_counts = org.daily_counts.period(since, until).prefix("msgs:ticketreplies:")
+
+            counts = (
+                daily_counts.annotate(
+                    user_id=Cast(SplitPart(F("scope"), Value(":"), Value(4)), output_field=models.IntegerField())
+                )
+                .values("user_id")
+                .annotate(replies=Sum("count"))
+                .order_by("-replies")
             )
 
-            return response_from_workbook(workbook, f"ticket-stats-{timezone.now().strftime('%Y-%m-%d')}.xlsx")
+            users_by_id = {u.id: u for u in org.users.all()}
+
+            results = []
+            for row in counts:
+                user = users_by_id.get(row["user_id"])
+                if user:
+                    results.append({"name": str(user), "uuid": str(user.uuid), "replies": row["replies"]})
+
+            return JsonResponse({"results": results})
 
     class Export(BaseExportModal):
         export_type = TicketExport

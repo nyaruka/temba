@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("archives", "0027_alter_archive_location_alter_archive_url"),
     ]

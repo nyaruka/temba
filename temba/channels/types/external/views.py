@@ -62,7 +62,7 @@ class ClaimView(ClaimViewMixin, SmartFormView):
         max_length = forms.IntegerField(
             initial=160,
             validators=[MaxValueValidator(6400), MinValueValidator(60)],
-            help_text=_("The maximum length of any single message on this channel. " "(longer messages will be split)"),
+            help_text=_("The maximum length of any single message on this channel. (longer messages will be split)"),
         )
 
         send_authorization = forms.CharField(
@@ -121,7 +121,6 @@ class ClaimView(ClaimViewMixin, SmartFormView):
             )
             if content_type == Channel.CONTENT_TYPE_JSON:
                 try:
-
                     json.loads(replaced_body)
                 except json.decoder.JSONDecodeError:
                     raise ValidationError({"body": _("Invalid JSON, make sure to remove quotes around variables")})
@@ -151,7 +150,7 @@ class ClaimView(ClaimViewMixin, SmartFormView):
         max_length = forms.IntegerField(
             initial=160,
             validators=[MaxValueValidator(6400), MinValueValidator(60)],
-            help_text=_("The maximum length of any single message on this channel. " "(longer messages will be split)"),
+            help_text=_("The maximum length of any single message on this channel. (longer messages will be split)"),
         )
 
         send_authorization = forms.CharField(
@@ -243,5 +242,5 @@ class UpdateForm(UpdateChannelForm):
         return "".join(self.cleaned_data.get("role", []))
 
     class Meta(UpdateChannelForm.Meta):
-        fields = "name", "role", "is_enabled", "log_policy"
+        fields = "name", "role", "is_enabled"
         readonly = []

@@ -7,7 +7,8 @@ from django.test import override_settings
 from django.urls import reverse
 
 from temba.request_logs.models import HTTPLog
-from temba.tests import CRUDLTestMixin, MockJsonResponse, MockResponse, TembaTest
+from temba.tests import MockJsonResponse, MockResponse, TembaTest
+from temba.tests.crudl import CRUDLTestMixin
 from temba.utils.views.mixins import TEMBA_MENU_SELECTION
 
 from ...models import Channel
@@ -58,21 +59,17 @@ class WhatsAppTypeTest(TembaTest, CRUDLTestMixin):
                     200,
                     {"data": {"scopes": [], "is_valid": False}},
                 ),
-                # missing permissions
+                # missing permissions (has whatsapp scopes but not business_management)
                 MockJsonResponse(
                     200,
-                    {"data": {"scopes": [], "is_valid": True}},
+                    {"data": {"scopes": ["whatsapp_business_messaging"], "is_valid": True}},
                 ),
-                # success
+                # success - only business_management is required at the top level
                 MockJsonResponse(
                     200,
                     {
                         "data": {
-                            "scopes": [
-                                "business_management",
-                                "whatsapp_business_management",
-                                "whatsapp_business_messaging",
-                            ],
+                            "scopes": ["business_management"],
                             "is_valid": True,
                         }
                     },
@@ -153,14 +150,13 @@ class WhatsAppTypeTest(TembaTest, CRUDLTestMixin):
 
         with patch("requests.get") as wa_cloud_get, patch("requests.post") as wa_cloud_post:
             wa_cloud_get.side_effect = [
-                # pre-process missing permissions
+                # pre-process missing permissions (no business_management scope)
                 MockResponse(
                     200,
                     json.dumps(
                         {
                             "data": {
                                 "scopes": [
-                                    "business_management",
                                     "whatsapp_business_messaging",
                                 ],
                                 "is_valid": True,
@@ -542,14 +538,13 @@ class WhatsAppTypeTest(TembaTest, CRUDLTestMixin):
 
         with patch("requests.get") as wa_cloud_get:
             wa_cloud_get.side_effect = [
-                # pre-process missing permissions
+                # pre-process missing permissions (no business_management scope)
                 MockResponse(
                     200,
                     json.dumps(
                         {
                             "data": {
                                 "scopes": [
-                                    "business_management",
                                     "whatsapp_business_messaging",
                                 ],
                                 "is_valid": True,
@@ -572,7 +567,8 @@ class WhatsAppTypeTest(TembaTest, CRUDLTestMixin):
 
         with patch("requests.get") as wa_cloud_get:
             wa_cloud_get.side_effect = [
-                # pre-process for get
+                # pre-process for get - only business_management at the top level, the whatsapp
+                # permissions are granted as granular (per-WABA) scopes below
                 MockResponse(
                     200,
                     json.dumps(
@@ -580,8 +576,6 @@ class WhatsAppTypeTest(TembaTest, CRUDLTestMixin):
                             "data": {
                                 "scopes": [
                                     "business_management",
-                                    "whatsapp_business_management",
-                                    "whatsapp_business_messaging",
                                 ],
                                 "is_valid": True,
                             }
@@ -759,14 +753,16 @@ class WhatsAppTypeTest(TembaTest, CRUDLTestMixin):
 
         channel = Channel.objects.get(id=channel.id)
         self.assertEqual("New WA Name", channel.name)
-        self.assertTrue(channel.is_enabled)
+        self.assertTrue(channel.is_enabled)  # is_enabled should not be updated as admin is not a beta user
 
+        # make admin a beta user
         self.make_beta(self.admin)
         self.assertUpdateFetch(
             update_url,
             [self.editor],
             form_fields={"name": "New WA Name"},
         )
+
         self.assertUpdateFetch(
             update_url,
             [self.admin],
@@ -781,11 +777,12 @@ class WhatsAppTypeTest(TembaTest, CRUDLTestMixin):
 
         channel = Channel.objects.get(id=channel.id)
         self.assertEqual("Another Name", channel.name)
-        self.assertFalse(channel.is_enabled)
+        self.assertFalse(channel.is_enabled)  # is_enabled should be updated as admin is now a beta user
 
+        # staff users see extra fields
         self.assertUpdateFetch(
             update_url,
             [self.customer_support],
-            form_fields=["name", "is_enabled", "log_policy"],
+            form_fields=["name", "is_enabled"],
             choose_org=self.org,
         )

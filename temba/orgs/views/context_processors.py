@@ -13,7 +13,7 @@ class RolePermsWrapper:
         self.apps = defaultdict(lambda: defaultdict(lambda: False))
 
         for perm in role.permissions:
-            (app_label, codename) = perm.split(".")
+            app_label, codename = perm.split(".")
 
             self.apps[app_label][codename] = True
 

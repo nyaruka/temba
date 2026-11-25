@@ -22,7 +22,7 @@
           </div>
           <div class="flex" id="real_button">
             <input type="text" id="file-field">
-            <div style="margin-top:-1px" class="block button-primary ml-4">{% trans "Choose File" %}</div>
+            <div class="button-primary ml-4">{% trans "Choose File" %}</div>
           </div>
         {% endblock fields %}
         <temba-alert level="warning" class="my-6">
@@ -40,44 +40,34 @@
 {% endblock content %}
 {% block extra-style %}
   <style type="text/css">
-    input {
-      padding: 9px;
-      cursor: pointer;
-      box-shadow: rgba(0, 0, 0, 0.1) 0px 0px 0px 1px, rgba(0, 0, 0, 0.04) 0px 3px 20px 0px, rgba(0, 0, 0, 0.02) 0px 1px 2px 0px;
-    }
-
     #file-upload {
       position: relative;
     }
 
-    #real-button {
-      position: absolute;
-      top: 0px;
-      left: 0px;
-      z-index: 1;
-      height: 35px;
-      width: 450px;
-    }
-
     #file-field {
       width: 300px;
-      height: 35px;
-      font-size: 16px;
-      margin-bottom: 0px;
-      border-radius: 5px;
+      height: 28px;
+      box-sizing: border-box;
+      padding: 0 10px;
+      font-size: 12.5px;
+      margin-bottom: 0;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--r-sm);
+      box-shadow: none;
+      background: var(--surface);
+      cursor: pointer;
     }
 
     #file {
       position: absolute;
       width: 450px;
-      height: 35px;
-      top: 0px;
-      left: 0px;
+      height: 28px;
+      top: 0;
+      left: 0;
       text-align: right;
-      -moz-opacity: 0;
-      filter: alpha(opacity: 0);
       opacity: 0;
       z-index: 2;
+      cursor: pointer;
     }
   </style>
 {% endblock extra-style %}

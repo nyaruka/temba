@@ -41,14 +41,14 @@
 {% endwith %}
 {% for urn in urns %}<div class="item urn lbl mr-1 mb-1">{{ urn|format_urn:user_org }}</div>{% endfor %}
 {% if query %}
-  <a href="{% url 'contacts.contact_list' %}?search={{ query|urlencode }}" onclick="goto(event, this)">
-    <temba-label icon="search" class="mr-1 mb-1" clickable>
+  <a href="{% url 'contacts.contact_list' %}?search={{ query|urlencode }}">
+    <temba-label icon="search" type="neutral" class="mr-1 mb-1" clickable>
       {{ query }}
     </temba-label>
   </a>
 {% endif %}
 {% if node_uuid %}
-  <temba-label icon="flow" class="mr-1 mb-1">
+  <temba-label type="flow" class="mr-1 mb-1">
     {% trans "to a flow node" %}
   </temba-label>
 {% endif %}

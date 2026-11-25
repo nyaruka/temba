@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone as tzone
 from django_valkey import get_valkey_connection
 from smartmin.models import SmartModel
 
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models import Sum
 from django.utils import timezone
@@ -250,6 +251,15 @@ class Campaign(TembaModel):
 
         super().delete()
 
+    def release(self, user):
+        self.is_active = False
+        self.modified_by = user
+        self.modified_on = timezone.now()
+        self.save(update_fields=("is_active", "modified_by", "modified_on"))
+
+        for event in self.get_events():
+            event.release(user)
+
     class Meta:
         verbose_name = _("Campaign")
         verbose_name_plural = _("Campaigns")
@@ -297,8 +307,10 @@ class CampaignEvent(TembaUUIDMixin, SmartModel):
 
     # the content: either a flow or message translations
     flow = models.ForeignKey(Flow, on_delete=models.PROTECT, related_name="campaign_events", null=True, blank=True)
-    translations = models.JSONField(null=True)
+    translations = models.JSONField(null=True)  # text, attachments and quick replies by language
     base_language = models.CharField(max_length=3, null=True)  # ISO-639-3
+    template = models.ForeignKey("templates.Template", null=True, blank=True, on_delete=models.PROTECT)
+    template_variables = ArrayField(models.TextField(), null=True, blank=True)
 
     # what should happen to other runs when this event is triggered
     start_mode = models.CharField(max_length=1, choices=START_MODES_CHOICES, default=MODE_INTERRUPT)
@@ -317,6 +329,8 @@ class CampaignEvent(TembaUUIDMixin, SmartModel):
         base_language: str,
         delivery_hour=-1,
         start_mode=MODE_INTERRUPT,
+        template=None,
+        template_variables=(),
     ):
         assert campaign.org == org, "org mismatch"
         assert base_language and languages.get_name(base_language), f"{base_language} is not a valid language code"
@@ -337,6 +351,8 @@ class CampaignEvent(TembaUUIDMixin, SmartModel):
             base_language=base_language,
             delivery_hour=delivery_hour,
             start_mode=start_mode,
+            template=template,
+            template_variables=list(template_variables) if template_variables else None,
             created_by=user,
             modified_by=user,
         )

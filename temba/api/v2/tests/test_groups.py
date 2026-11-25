@@ -82,6 +82,9 @@ class GroupsEndpointTest(APITest):
         # filter by name
         self.assertGet(endpoint_url + "?name=developers", [self.editor], results=[developers])
 
+        # filter to static (manual) groups only — excludes smart and system groups
+        self.assertGet(endpoint_url + "?manual_only=1", [self.editor], results=[customers])
+
         # try to filter by both
         self.assertGet(
             endpoint_url + f"?uuid={customers.uuid}&name=developers",

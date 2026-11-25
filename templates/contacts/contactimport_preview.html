@@ -53,8 +53,8 @@
                     {% else %}
                       <strong>{{ column.mapping.name }}</strong>
                     {% endif %}
-                  </div>
-                {% endif %}
+                  {% endif %}
+                </div>
               </div>
             {% endfor %}
           </div>
@@ -156,6 +156,7 @@
       flex: 0 0;
       font-weight: bold;
       margin-right: 0.5rem;
+      white-space: nowrap;
     }
 
     .mapping-as {

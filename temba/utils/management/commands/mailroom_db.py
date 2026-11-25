@@ -14,7 +14,6 @@ from django.utils import timezone
 from temba.ai.models import LLM
 from temba.campaigns.models import Campaign, CampaignEvent
 from temba.channels.models import Channel
-from temba.classifiers.models import Classifier
 from temba.contacts.models import Contact, ContactField, ContactGroup, ContactURN
 from temba.flows.models import Flow
 from temba.globals.models import Global
@@ -39,6 +38,10 @@ MAILROOM_DB_USER = "mailroom_test"
 MAILROOM_DB_PASS = "temba"
 POSTGRES_PASS = "tembatemba"
 DUMP_FILE = "postgres.dump"
+
+# stable UUIDs for the root and system users which are created before our seeded UUID generator is patched in
+ROOT_USER_UUID = "00b8e9a3-7c41-4a52-9d83-6e1f5c8b2a47"
+SYSTEM_USER_UUID = "01a7d4f2-8c63-4b91-a5e8-3f9d7c2b1e58"
 
 
 class Command(BaseCommand):
@@ -70,6 +73,10 @@ class Command(BaseCommand):
         # run our migrations to put our database in the right state
         call_command("migrate")
 
+        # the system user is auto-created during migrate (post_migrate signal) before our seeded UUID generator
+        # is in play, so force a stable UUID on it
+        User.objects.filter(is_system=True).update(uuid=SYSTEM_USER_UUID)
+
         # this is a new database so clear out valkey
         self._log("Clearing out Valkey cache... ")
         r = get_valkey_connection()
@@ -77,13 +84,13 @@ class Command(BaseCommand):
         self._log(self.style.SUCCESS("OK") + "\n")
 
         self._log("Creating superuser... ")
-        superuser = User.objects.create_user("root", USER_PASSWORD, is_superuser=True)
+        superuser = User.objects.create_user("root", USER_PASSWORD, is_superuser=True, uuid=ROOT_USER_UUID)
         self._log(self.style.SUCCESS("OK") + "\n")
 
-        mr_cmd = f'mailroom --port={mr_port} -db="postgres://{db_user}:temba@localhost/{db_name}?sslmode=disable" -uuid-seed=123'
-        input(f"\nPlease start mailroom:\n   % ./{mr_cmd}\n\nPress enter when ready.\n")
+        mr_cmd = f'go run ./cmd/mailroom --port={mr_port} -db="postgres://{db_user}:temba@localhost/{db_name}?sslmode=disable" --valkey="valkey://localhost:6379/15" --workers-realtime=0 --workers-batch=0 --workers-throttled=0 -uuid-seed=123'
+        input(f"\nPlease start mailroom:\n   % {mr_cmd}\n\nPress enter when ready.\n")
 
-        country = self.load_locations(locs_file)
+        root_location = self.load_locations(locs_file)
 
         # patch UUID generation so it's deterministic
         from temba.utils import uuid
@@ -92,7 +99,7 @@ class Command(BaseCommand):
 
         # create each of our orgs
         for spec in orgs_spec["orgs"]:
-            self.create_org(spec, superuser, country)
+            self.create_org(spec, superuser, root_location)
 
         # leave id sequences starting at a known number so it's easier to identity newly created data in mailroom tests
         self.reset_id_sequences(30000)
@@ -153,7 +160,7 @@ class Command(BaseCommand):
 
             cursor.execute(f"ALTER SEQUENCE contacts_contactgroup_contacts_id_seq RESTART WITH {start}")
 
-    def create_org(self, spec, superuser, country):
+    def create_org(self, spec, superuser, root_location):
         self._log(f"\nCreating org {spec['name']}...\n")
 
         org = Org.objects.create(
@@ -161,7 +168,7 @@ class Command(BaseCommand):
             name=spec["name"],
             timezone=ZoneInfo("America/Los_Angeles"),
             flow_languages=spec["languages"],
-            country=country,
+            root_location=root_location,
             created_on=timezone.now(),
             created_by=superuser,
             modified_by=superuser,
@@ -182,7 +189,6 @@ class Command(BaseCommand):
         self.create_group_contacts(spec, org, superuser)
         self.create_campaigns(spec, org, superuser)
         self.create_templates(spec, org, superuser)
-        self.create_classifiers(spec, org, superuser)
         self.create_topics(spec, org, superuser)
         self.create_teams(spec, org, superuser)
         self.create_llms(spec, org, superuser)
@@ -206,28 +212,6 @@ class Command(BaseCommand):
                 created_by=user,
                 modified_by=user,
             )
-
-        self._log(self.style.SUCCESS("OK") + "\n")
-
-    def create_classifiers(self, spec, org, user):
-        self._log(f"Creating {len(spec['classifiers'])} classifiers... ")
-
-        for c in spec["classifiers"]:
-            classifier = Classifier.objects.create(
-                org=org,
-                name=c["name"],
-                config=c["config"],
-                classifier_type=c["classifier_type"],
-                uuid=c["uuid"],
-                created_by=user,
-                modified_by=user,
-            )
-
-            # add the intents
-            for intent in c["intents"]:
-                classifier.intents.create(
-                    name=intent["name"], external_id=intent["external_id"], created_on=timezone.now()
-                )
 
         self._log(self.style.SUCCESS("OK") + "\n")
 
@@ -283,7 +267,11 @@ class Command(BaseCommand):
 
         for u in spec["users"]:
             user = User.objects.create_user(
-                u["email"], USER_PASSWORD, first_name=u["first_name"], last_name=u["last_name"]
+                u["email"],
+                USER_PASSWORD,
+                uuid=u["uuid"],
+                first_name=u["first_name"],
+                last_name=u["last_name"],
             )
             team = org.teams.get(name=u["team"]) if u.get("team") else None
             org.add_user(user, OrgRole.from_code(u["role"]), team=team)
@@ -294,7 +282,8 @@ class Command(BaseCommand):
         self._log(f"Creating {len(spec['fields'])} fields... ")
 
         for f in spec["fields"]:
-            field = ContactField.objects.create(
+            ContactField.objects.create(
+                uuid=f["uuid"],
                 org=org,
                 key=f["key"],
                 name=f["name"],
@@ -304,8 +293,6 @@ class Command(BaseCommand):
                 created_by=user,
                 modified_by=user,
             )
-            field.uuid = f["uuid"]
-            field.save(update_fields=["uuid"])
 
         self._log(self.style.SUCCESS("OK") + "\n")
 
@@ -314,7 +301,13 @@ class Command(BaseCommand):
 
         for g in spec["globals"]:
             Global.objects.create(
-                org=org, key=g["key"], name=g["name"], value=g["value"], created_by=user, modified_by=user
+                uuid=g["uuid"],
+                org=org,
+                key=g["key"],
+                name=g["name"],
+                value=g["value"],
+                created_by=user,
+                modified_by=user,
             )
 
         self._log(self.style.SUCCESS("OK") + "\n")
@@ -372,7 +365,7 @@ class Command(BaseCommand):
 
                 if "flow" in e:
                     flow = Flow.objects.get(org=org, name=e["flow"])
-                    CampaignEvent.create_flow_event(
+                    event = CampaignEvent.create_flow_event(
                         org,
                         user,
                         campaign,
@@ -384,7 +377,7 @@ class Command(BaseCommand):
                         start_mode=e["start_mode"],
                     )
                 else:
-                    CampaignEvent.create_message_event(
+                    event = CampaignEvent.create_message_event(
                         org,
                         user,
                         campaign,
@@ -396,6 +389,8 @@ class Command(BaseCommand):
                         delivery_hour=e.get("delivery_hour", -1),
                         start_mode=e["start_mode"],
                     )
+                event.uuid = e["uuid"]
+                event.save(update_fields=("uuid",))
 
         # make events look like they've been scheduled
         CampaignEvent.objects.all().update(status=CampaignEvent.STATUS_READY, fire_version=1)
@@ -452,7 +447,13 @@ class Command(BaseCommand):
         self._log(self.style.SUCCESS("OK") + "\n")
 
     def create_group_contacts(self, spec, org, user):
+        from temba.utils import uuid
+
         self._log("Generating group contacts...")
+
+        # use a local generator seeded by the org id so bulk contacts have stable UUIDs
+        # across regens and don't collide between orgs
+        gen = uuid.seeded_generator(org.id)
 
         for g in spec["groups"]:
             size = int(g.get("size", 0))
@@ -476,6 +477,8 @@ class Command(BaseCommand):
                             fields={},
                             groups=[],
                         )
+                        contact.uuid = str(gen())
+                        contact.save(update_fields=("uuid",))
 
                     contacts.append(contact)
 

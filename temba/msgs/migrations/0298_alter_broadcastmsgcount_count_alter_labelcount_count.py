@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("msgs", "0297_alter_msg_created_on_alter_msg_status_alter_msg_uuid"),
     ]

@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("channels", "0208_backfill_channel_events"),
         ("contacts", "0210_clear_deps_for_deleted_groups"),

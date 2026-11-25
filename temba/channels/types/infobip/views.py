@@ -1,3 +1,5 @@
+import re
+
 import phonenumbers
 from smartmin.views import SmartFormView
 
@@ -8,6 +10,8 @@ from temba.channels.views import ALL_COUNTRIES, ClaimViewMixin
 from temba.utils.fields import SelectWidget
 
 from ...models import Channel
+
+SUBDOMAIN_RE = re.compile(r"^[a-z0-9][a-z0-9-]*[a-z0-9]$")
 
 
 class ClaimView(ClaimViewMixin, SmartFormView):
@@ -28,13 +32,21 @@ class ClaimView(ClaimViewMixin, SmartFormView):
             label=_("Infobip API Key"),
             help_text=_("The API Key"),
         )
-        base_url = forms.CharField(
+        subdomain = forms.CharField(
             required=True,
-            label=_("Infobip API base URL"),
+            max_length=63,
+            label=_("Infobip API subdomain"),
             help_text=_(
-                "To see your base URL, log in to the Infobip API Resource hub with your Infobip credentials. Once logged in, on all pages you should see your base URL in this format: https://xxxxx.api.infobip.com "
+                "The subdomain of your Infobip API base URL. For example, if your base URL is "
+                "https://xxxxx.api.infobip.com, enter xxxxx. You can find this in the Infobip API Resource hub."
             ),
         )
+
+        def clean_subdomain(self):
+            value = self.cleaned_data["subdomain"].strip().lower()
+            if not SUBDOMAIN_RE.match(value):
+                raise forms.ValidationError(_("Enter a valid subdomain."))
+            return value
 
         def clean_number(self):
             number = self.data["number"]
@@ -62,11 +74,11 @@ class ClaimView(ClaimViewMixin, SmartFormView):
         number = form.cleaned_data.get("number")
         title = f"Infobip: {number}"
         api_key = form.cleaned_data.get("api_key")
-        base_url = form.cleaned_data.get("base_url")
+        subdomain = form.cleaned_data.get("subdomain")
         country = form.cleaned_data.get("country")
         config = {
             Channel.CONFIG_API_KEY: api_key,
-            Channel.CONFIG_BASE_URL: base_url,
+            Channel.CONFIG_BASE_URL: f"https://{subdomain}.api.infobip.com",
             Channel.CONFIG_CALLBACK_DOMAIN: org.get_brand_domain(),
         }
 

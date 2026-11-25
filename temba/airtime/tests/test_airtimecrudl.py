@@ -12,20 +12,21 @@ class AirtimeCRUDLTest(TembaTest, CRUDLTestMixin):
 
         self.transfer1 = AirtimeTransfer.objects.create(
             org=self.org,
-            status=AirtimeTransfer.STATUS_SUCCESS,
+            status=AirtimeTransfer.STATUS_COMPLETED,
             contact=contact,
             recipient="tel:+250700000003",
             currency="RWF",
             desired_amount="1100",
             actual_amount="1000",
         )
+        # a rejected transfer has no currency or actual amount
         self.transfer2 = AirtimeTransfer.objects.create(
             org=self.org,
-            status=AirtimeTransfer.STATUS_FAILED,
+            status=AirtimeTransfer.STATUS_REJECTED,
             sender="tel:+250700000002",
             contact=contact,
             recipient="tel:+250700000003",
-            currency="USD",
+            currency=None,
             desired_amount="1100",
             actual_amount="0",
         )
@@ -33,7 +34,7 @@ class AirtimeCRUDLTest(TembaTest, CRUDLTestMixin):
         # and a transfer for a different org
         self.other_org_transfer = AirtimeTransfer.objects.create(
             org=self.org2,
-            status=AirtimeTransfer.STATUS_SUCCESS,
+            status=AirtimeTransfer.STATUS_COMPLETED,
             contact=self.create_contact("Frank", phone="+12065552021", org=self.org2),
             recipient="tel:+12065552021",
             currency="USD",
@@ -50,6 +51,9 @@ class AirtimeCRUDLTest(TembaTest, CRUDLTestMixin):
         )
         self.assertContains(response, "Ben Haggerty")
         self.assertContains(response, "+250 700 000 003")
+        self.assertContains(response, "Completed")
+        self.assertContains(response, "Rejected")
+        self.assertContains(response, "--")  # unset currency/amount
 
         with self.anonymous(self.org):
             response = self.requestView(list_url, self.admin)

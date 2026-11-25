@@ -1,0 +1,13 @@
+{% extends 'includes/modal.html' %}
+{% load i18n temba smartmin %}
+
+{% block modal %}
+  {% blocktrans trimmed with name=object.name %}
+    Are you sure you want to delete <b>{{ name }}</b>? This cannot be undone.
+  {% endblocktrans %}
+  <div class="hidden">
+    <form method="post">
+      <input type="submit" value="{% trans "Delete" %}">
+    </form>
+  </div>
+{% endblock modal %}

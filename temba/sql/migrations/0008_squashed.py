@@ -6,7 +6,6 @@ from . import InstallSQL
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("ivr", "0036_squashed"),
         ("locations", "0037_squashed"),

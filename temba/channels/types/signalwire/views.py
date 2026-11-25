@@ -1,3 +1,5 @@
+import re
+
 import phonenumbers
 import requests
 from smartmin.views import SmartFormView
@@ -10,6 +12,8 @@ from temba.utils.fields import SelectWidget
 
 from ...models import Channel
 from ...views import ALL_COUNTRIES, ClaimViewMixin
+
+SPACE_RE = re.compile(r"^[a-z0-9][a-z0-9-]*[a-z0-9]$")
 
 
 class SignalWireClaimView(ClaimViewMixin, SmartFormView):
@@ -27,8 +31,10 @@ class SignalWireClaimView(ClaimViewMixin, SmartFormView):
             label=_("Number"),
             help_text=_("The phone number or short code you are connecting."),
         )
-        domain = forms.CharField(
-            max_length=1024, label=_("Domain"), help_text=_("The domain for your account ex: rapid.signalwire.com")
+        space = forms.CharField(
+            max_length=63,
+            label=_("Space"),
+            help_text=_("Your SignalWire Space name. For example, if your space is rapid.signalwire.com, enter rapid."),
         )
         project_key = forms.CharField(
             max_length=64,
@@ -41,12 +47,23 @@ class SignalWireClaimView(ClaimViewMixin, SmartFormView):
             help_text=_("The API token to use to authenticate ex: FPd199eb93e878f8a3tw9ttna313914tnauwy"),
         )
 
+        def clean_space(self):
+            value = self.cleaned_data["space"].strip().lower()
+            if not SPACE_RE.match(value):
+                raise forms.ValidationError(_("Enter a valid space name."))
+            return value
+
         def clean(self):
-            sid = self.cleaned_data["project_key"]
-            token = self.cleaned_data["api_token"]
-            domain = self.cleaned_data["domain"]
-            number = self.cleaned_data["number"]
-            country = self.cleaned_data["country"]
+            sid = self.cleaned_data.get("project_key")
+            token = self.cleaned_data.get("api_token")
+            space = self.cleaned_data.get("space")
+            number = self.cleaned_data.get("number")
+            country = self.cleaned_data.get("country")
+
+            if not (space and number and country):
+                return self.cleaned_data
+
+            domain = f"{space}.signalwire.com"
 
             address = number
             if len(number) > 6:
@@ -67,7 +84,7 @@ class SignalWireClaimView(ClaimViewMixin, SmartFormView):
                         phone_sid = phone.get("sid", "")
                         break
             except Exception:
-                raise ValidationError("Unable to connect to SignalWire, please check your domain, key and token")
+                raise ValidationError("Unable to connect to SignalWire, please check your space, key and token")
 
             if phone_sid == "":
                 raise ValidationError(f"Unable to find phone with number {number} on your account")
@@ -83,7 +100,8 @@ class SignalWireClaimView(ClaimViewMixin, SmartFormView):
 
         country = data.get("country")
         number = data.get("number")
-        domain = data.get("domain")
+        space = data.get("space")
+        domain = f"{space}.signalwire.com"
         sid = data.get("project_key")
         token = data.get("api_token")
 

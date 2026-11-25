@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TextIt — Design System v0.1</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/design-system.css">
+  <link rel="stylesheet" href="styleguide.css">
+  <script src="../css/design-system.js"></script>
+</head>
+<body>
+
+<!--
+  Sprite of icons used by this page. Reference one with:
+    <svg class="ic"><use href="#ic-name"/></svg>
+  Stroke / size are set on the host <svg> via CSS.
+-->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ic-msg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-1.2 4.4 8.4 8.4 0 0 1-7.2 4.1 8.4 8.4 0 0 1-4.4-1.2L3 21l2.2-5.2A8.4 8.4 0 0 1 4 11.5a8.4 8.4 0 0 1 4.1-7.2A8.4 8.4 0 0 1 12.5 3h.6a8.4 8.4 0 0 1 7.9 7.9z"/></symbol>
+    <symbol id="ic-contacts" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+    <symbol id="ic-flow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M6 8.5v3a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3v-3"/></symbol>
+    <symbol id="ic-triggers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M5 6l2 2M3 13h3M19 6l-2 2M21 13h-3"/><circle cx="12" cy="14" r="5"/></symbol>
+    <symbol id="ic-history" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v5l3 2"/></symbol>
+    <symbol id="ic-tickets" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V9z"/><path d="M14 7v10" stroke-dasharray="2 2"/></symbol>
+    <symbol id="ic-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 7 3 9H3c0-2 3-2 3-9z"/><path d="M10 21a2 2 0 0 0 4 0"/></symbol>
+    <symbol id="ic-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+    <symbol id="ic-chevL" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></symbol>
+    <symbol id="ic-chevR" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></symbol>
+    <symbol id="ic-chevDown" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+    <symbol id="ic-archive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><path d="M10 12h4"/></symbol>
+    <symbol id="ic-field" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></symbol>
+    <symbol id="ic-group" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+    <symbol id="ic-person" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+    <symbol id="ic-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/></symbol>
+    <symbol id="ic-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="ic-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="ic-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="ic-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="ic-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4z"/></symbol>
+    <symbol id="ic-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></symbol>
+    <symbol id="ic-more" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></symbol>
+    <symbol id="ic-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12"/><path d="M6 10l6 6 6-6"/><path d="M4 20h16"/></symbol>
+    <symbol id="ic-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></symbol>
+    <symbol id="ic-warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 21h20L12 3z"/><path d="M12 9v5M12 17h.01"/></symbol>
+    <symbol id="ic-err" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></symbol>
+    <symbol id="ic-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="8 12 11 15 16 9"/></symbol>
+    <symbol id="ic-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-1.2 4.4 8.4 8.4 0 0 1-7.2 4.1 8.4 8.4 0 0 1-4.4-1.2L3 21l2.2-5.2A8.4 8.4 0 0 1 4 11.5a8.4 8.4 0 0 1 4.1-7.2A8.4 8.4 0 0 1 12.5 3h.6a8.4 8.4 0 0 1 7.9 7.9z"/></symbol>
+    <symbol id="ic-fields" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h2M3 12h2M3 18h2"/><rect x="8" y="4" width="13" height="4" rx="1"/><rect x="8" y="10" width="13" height="4" rx="1"/><rect x="8" y="16" width="13" height="4" rx="1"/></symbol>
+    <symbol id="ic-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/></symbol>
+    <symbol id="ic-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/></symbol>
+    <symbol id="ic-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></symbol>
+  </defs>
+</svg>
+
+<div class="ds">
+<div class="app">
+
+  <!-- left icon rail -->
+  <nav class="rail">
+    <div class="rail-top">
+      <div class="rail-org" title="Acme HealthOrg"><span>UM</span></div>
+      <div class="rail-items">
+        <button class="rail-item" title="Messages"><svg width="20" height="20"><use href="#ic-msg"/></svg></button>
+        <button class="rail-item" title="Contacts"><svg width="20" height="20"><use href="#ic-contacts"/></svg></button>
+        <button class="rail-item" title="Flows"><svg width="20" height="20"><use href="#ic-flow"/></svg></button>
+        <button class="rail-item" title="Triggers"><svg width="20" height="20"><use href="#ic-triggers"/></svg></button>
+        <button class="rail-item is-active" title="Campaigns"><svg width="20" height="20"><use href="#ic-history"/></svg></button>
+        <button class="rail-item" title="Tickets"><svg width="20" height="20"><use href="#ic-tickets"/></svg></button>
+      </div>
+    </div>
+    <div class="rail-bot">
+      <button class="rail-item" title="Notifications"><svg width="20" height="20"><use href="#ic-bell"/></svg></button>
+      <button class="rail-item" title="Settings"><svg width="20" height="20"><use href="#ic-settings"/></svg></button>
+    </div>
+  </nav>
+
+  <!-- section nav -->
+  <aside class="section-nav" id="sectionNav">
+    <header class="sn-h">
+      <h2>Design System</h2>
+      <button class="sn-collapse" id="snCollapse" aria-label="Toggle sidebar">
+        <svg width="16" height="16"><use href="#ic-chevL"/></svg>
+      </button>
+    </header>
+    <div class="sn-items">
+      <a class="sn-item is-active" href="#foundations"><svg width="15" height="15"><use href="#ic-sparkles"/></svg><span>Foundations</span></a>
+      <a class="sn-item" href="#colors"><svg width="15" height="15"><use href="#ic-circle"/></svg><span>Colors</span></a>
+      <a class="sn-item" href="#type"><svg width="15" height="15"><use href="#ic-field"/></svg><span>Typography</span></a>
+      <a class="sn-item" href="#components"><svg width="15" height="15"><use href="#ic-group"/></svg><span>Components</span><span class="sn-count">12</span></a>
+      <a class="sn-item" href="#patterns"><svg width="15" height="15"><use href="#ic-folder"/></svg><span>Patterns</span><span class="sn-count">5</span></a>
+      <div class="sn-section-label">App chrome</div>
+      <a class="sn-item" href="#chrome"><svg width="15" height="15"><use href="#ic-archive"/></svg><span>Layout</span></a>
+      <a class="sn-item" href="#header"><svg width="15" height="15"><use href="#ic-field"/></svg><span>Page header</span></a>
+      <a class="sn-item" href="#tables"><svg width="15" height="15"><use href="#ic-fields"/></svg><span>Lists &amp; tables</span></a>
+      <a class="sn-item" href="#patterns"><svg width="15" height="15"><use href="#ic-edit"/></svg><span>Forms &amp; modals</span></a>
+    </div>
+  </aside>
+
+  <!-- content -->
+  <main class="content">
+
+    <!-- page header -->
+    <header class="page-header" id="foundations">
+      <div class="page-header-row">
+        <div class="page-crumbs">
+          <a>TextIt</a>
+          <svg width="12" height="12"><use href="#ic-chevR"/></svg>
+          <a>Design</a>
+          <svg width="12" height="12"><use href="#ic-chevR"/></svg>
+          <span>Style guide</span>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-ghost btn-sm"><svg width="14" height="14"><use href="#ic-download"/></svg>Export tokens</button>
+          <button class="btn btn-primary btn-sm"><svg width="14" height="14"><use href="#ic-check"/></svg>Approve direction</button>
+        </div>
+      </div>
+      <div class="page-title-row">
+        <div>
+          <h1>Style guide</h1>
+          <p class="page-sub">A modernized core for TextIt — same DNA, sharper grid, better hierarchy. Apply across CRUDLs.</p>
+        </div>
+        <div class="page-meta">
+          <span class="status status-success"><span class="status-dot"></span>In review</span>
+          <span class="page-meta-sep"></span>
+          <span class="page-meta-text">v0.1 · May 7</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- colors -->
+    <section id="colors" class="sg-section">
+      <div class="sg-section-h">
+        <h2>Color</h2>
+        <p>One accent, a neutral gray ramp, four status colors plus neutral. The accent leans slightly more saturated than the current <code class="sg-code">rgb(58, 102, 150)</code> — modernized without losing the muted-blue feel.</p>
+      </div>
+
+      <div class="sg-grid">
+        <section class="sg-card" style="grid-column: span 2">
+          <header class="sg-card-h">
+            <div>
+              <h3>Accent ramp</h3>
+              <p class="sg-card-sub">Anchored at <strong>400 = primary</strong>; the ramp is derived outward via sRGB mixing. Pick a primary to re-theme the whole UI live.</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <label for="primaryPicker" class="sg-code" style="cursor:pointer;">--primary</label>
+              <input id="primaryPicker" type="color" value="#497FCE"
+                     style="width:36px;height:28px;padding:0;border:1px solid var(--border);border-radius:var(--r-sm);cursor:pointer;background:transparent;">
+              <code id="primaryValue" class="sg-code" style="min-width:74px;">#497FCE</code>
+            </div>
+          </header>
+          <div class="sg-card-body">
+            <div class="ramp">
+              <div class="ramp-step"><div class="ramp-chip" style="background: var(--accent-50)"></div><div class="ramp-stop">50</div></div>
+              <div class="ramp-step"><div class="ramp-chip" style="background: var(--accent-100)"></div><div class="ramp-stop">100</div></div>
+              <div class="ramp-step"><div class="ramp-chip" style="background: var(--accent-200)"></div><div class="ramp-stop">200</div></div>
+              <div class="ramp-step"><div class="ramp-chip" style="background: var(--accent-300)"></div><div class="ramp-stop">300</div></div>
+              <div class="ramp-step"><div class="ramp-chip" style="background: var(--accent-400);box-shadow:inset 0 0 0 2px var(--surface), inset 0 0 0 3px var(--accent-700);"></div><div class="ramp-stop">400</div></div>
+              <div class="ramp-step"><div class="ramp-chip" style="background: var(--accent-500)"></div><div class="ramp-stop">500</div></div>
+              <div class="ramp-step"><div class="ramp-chip" style="background: var(--accent-600)"></div><div class="ramp-stop">600</div></div>
+              <div class="ramp-step"><div class="ramp-chip" style="background: var(--accent-700)"></div><div class="ramp-stop">700</div></div>
+              <div class="ramp-step"><div class="ramp-chip" style="background: var(--accent-800)"></div><div class="ramp-stop">800</div></div>
+              <div class="ramp-step"><div class="ramp-chip" style="background: var(--accent-900)"></div><div class="ramp-stop">900</div></div>
+            </div>
+            <div class="usage-row">
+              <div class="usage-tag">Buttons · 500/600</div>
+              <div class="usage-tag">Pills · 50/700</div>
+              <div class="usage-tag">Active rail · 400</div>
+              <div class="usage-tag">Selection · 50</div>
+              <div class="usage-tag">Focus ring · 100</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="sg-card">
+          <header class="sg-card-h"><div><h3>Neutrals</h3></div></header>
+          <div class="sg-card-body">
+            <div class="neutrals">
+              <div class="neutral-row"><span class="neutral-chip" style="background: var(--bg)"></span><span class="neutral-name">bg</span><span class="neutral-val">var(--bg)</span></div>
+              <div class="neutral-row"><span class="neutral-chip" style="background: var(--surface)"></span><span class="neutral-name">surface</span><span class="neutral-val">var(--surface)</span></div>
+              <div class="neutral-row"><span class="neutral-chip" style="background: var(--sunken)"></span><span class="neutral-name">sunken</span><span class="neutral-val">var(--sunken)</span></div>
+              <div class="neutral-row"><span class="neutral-chip" style="background: var(--border)"></span><span class="neutral-name">border</span><span class="neutral-val">var(--border)</span></div>
+              <div class="neutral-row"><span class="neutral-chip" style="background: var(--border-strong)"></span><span class="neutral-name">b-strong</span><span class="neutral-val">var(--border-strong)</span></div>
+              <div class="neutral-row"><span class="neutral-chip" style="background: var(--text-3)"></span><span class="neutral-name">text-3</span><span class="neutral-val">var(--text-3)</span></div>
+              <div class="neutral-row"><span class="neutral-chip" style="background: var(--text-2)"></span><span class="neutral-name">text-2</span><span class="neutral-val">var(--text-2)</span></div>
+              <div class="neutral-row"><span class="neutral-chip" style="background: var(--text-1)"></span><span class="neutral-name">text-1</span><span class="neutral-val">var(--text-1)</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="sg-card" style="grid-column: span 3">
+          <header class="sg-card-h">
+            <div>
+              <h3>Status</h3>
+              <p class="sg-card-sub">One full palette across success / info / warning / danger / neutral.</p>
+            </div>
+          </header>
+          <div class="sg-card-body">
+            <div class="status-grid">
+              <div class="status-card status-card-success">
+                <div class="status-card-h"><svg width="16" height="16"><use href="#ic-ok"/></svg><span>Active</span></div>
+                <div class="status-card-row"><span class="status status-success"><span class="status-dot"></span>Active</span><span class="pill pill-keyword"><span class="pill-text">success</span></span></div>
+                <div class="status-card-tokens"><span>--success-bg</span><span>--success</span><span>--success-border</span></div>
+              </div>
+              <div class="status-card status-card-info">
+                <div class="status-card-h"><svg width="16" height="16"><use href="#ic-info"/></svg><span>Pending</span></div>
+                <div class="status-card-row"><span class="status status-info"><span class="status-dot"></span>Pending</span><span class="pill pill-keyword"><span class="pill-text">info</span></span></div>
+                <div class="status-card-tokens"><span>--info-bg</span><span>--info</span><span>--info-border</span></div>
+              </div>
+              <div class="status-card status-card-warning">
+                <div class="status-card-h"><svg width="16" height="16"><use href="#ic-warn"/></svg><span>Stopped</span></div>
+                <div class="status-card-row"><span class="status status-warning"><span class="status-dot"></span>Stopped</span><span class="pill pill-keyword"><span class="pill-text">warning</span></span></div>
+                <div class="status-card-tokens"><span>--warning-bg</span><span>--warning</span><span>--warning-border</span></div>
+              </div>
+              <div class="status-card status-card-danger">
+                <div class="status-card-h"><svg width="16" height="16"><use href="#ic-err"/></svg><span>Failed</span></div>
+                <div class="status-card-row"><span class="status status-danger"><span class="status-dot"></span>Failed</span><span class="pill pill-keyword"><span class="pill-text">danger</span></span></div>
+                <div class="status-card-tokens"><span>--danger-bg</span><span>--danger</span><span>--danger-border</span></div>
+              </div>
+              <div class="status-card status-card-neutral">
+                <div class="status-card-h"><svg width="16" height="16"><use href="#ic-archive"/></svg><span>Archived</span></div>
+                <div class="status-card-row"><span class="status status-neutral"><span class="status-dot"></span>Archived</span><span class="pill pill-keyword"><span class="pill-text">neutral</span></span></div>
+                <div class="status-card-tokens"><span>--neutral-bg</span><span>--neutral</span><span>--neutral-border</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- type -->
+    <section id="type" class="sg-section">
+      <div class="sg-section-h">
+        <h2>Typography</h2>
+        <p>Inter at <code class="sg-code">14px</code> base. Same spirit as Roboto but tighter letterforms and a true semibold. Numerics use tabular figures everywhere for tables.</p>
+      </div>
+      <div class="sg-grid">
+        <section class="sg-card" style="grid-column: span 2">
+          <header class="sg-card-h"><div><h3>Scale</h3></div></header>
+          <div class="sg-card-body">
+            <div class="type-scale">
+              <div class="type-row"><div class="type-meta"><div class="type-name">Display</div><div class="type-spec">32 / 38 · 600</div></div><div class="type-sample type-sample-display">Campaigns</div></div>
+              <div class="type-row"><div class="type-meta"><div class="type-name">H1</div><div class="type-spec">22 / 28 · 600</div></div><div class="type-sample type-sample-h1">Vaccination Reminders</div></div>
+              <div class="type-row"><div class="type-meta"><div class="type-name">H2</div><div class="type-spec">17 / 24 · 600</div></div><div class="type-sample type-sample-h2">Active campaigns</div></div>
+              <div class="type-row"><div class="type-meta"><div class="type-name">H3</div><div class="type-spec">14 / 20 · 600</div></div><div class="type-sample type-sample-h3">Schedule</div></div>
+              <div class="type-row"><div class="type-meta"><div class="type-name">Body</div><div class="type-spec">14 / 20 · 400</div></div><div class="type-sample type-sample-body">Sent 3 days after the contact joined the Mothers group.</div></div>
+              <div class="type-row"><div class="type-meta"><div class="type-name">Body sm</div><div class="type-spec">13 / 18 · 400</div></div><div class="type-sample type-sample-body-sm">Updated 2 hours ago by Susan Fishman</div></div>
+              <div class="type-row"><div class="type-meta"><div class="type-name">Caption</div><div class="type-spec">12 / 16 · 500</div></div><div class="type-sample type-sample-caption">ANCHOR · DELAY · MESSAGE</div></div>
+              <div class="type-row"><div class="type-meta"><div class="type-name">Mono</div><div class="type-spec">13 / 18 · 400</div></div><div class="type-sample type-sample-mono" style="font-family: var(--font-mono)">registration_date + 3 days</div></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="sg-card">
+          <header class="sg-card-h"><div><h3>Numerics</h3></div></header>
+          <div class="sg-card-body">
+            <div class="numerics">
+              <div class="num-big">4,832</div>
+              <div class="num-label">Active contacts</div>
+              <div class="num-rows">
+                <div><span>Sent</span><b>12,408</b></div>
+                <div><span>Delivered</span><b>11,902</b></div>
+                <div><span>Failed</span><b>506</b></div>
+              </div>
+              <p class="type-note">Tabular figures keep columns aligned across rows.</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- components -->
+    <section id="components" class="sg-section">
+      <div class="sg-section-h">
+        <h2>Components</h2>
+        <p>Building blocks. All sized to a 4px grid; corner radius and density are token-driven.</p>
+      </div>
+      <div class="sg-grid">
+
+        <section class="sg-card">
+          <header class="sg-card-h"><div><h3>Buttons</h3><p class="sg-card-sub">Primary for the one main action per surface; secondary for everything else.</p></div></header>
+          <div class="sg-card-body">
+            <div class="comp-row">
+              <button class="btn btn-primary"><svg width="16" height="16"><use href="#ic-check"/></svg>Save changes</button>
+              <button class="btn btn-secondary">Cancel</button>
+              <button class="btn btn-ghost"><svg width="16" height="16"><use href="#ic-edit"/></svg>Edit</button>
+              <button class="btn btn-danger"><svg width="16" height="16"><use href="#ic-trash"/></svg>Delete</button>
+            </div>
+            <div class="comp-row">
+              <button class="btn btn-primary btn-sm"><svg width="14" height="14"><use href="#ic-plus"/></svg>New campaign</button>
+              <button class="btn btn-secondary btn-sm">Filter</button>
+              <button class="btn btn-ghost btn-sm"><svg width="14" height="14"><use href="#ic-download"/></svg>Export</button>
+              <button class="btn btn-primary is-disabled" disabled>Disabled</button>
+            </div>
+            <div class="comp-row">
+              <button class="icon-btn" title="More"><svg width="16" height="16"><use href="#ic-more"/></svg></button>
+              <button class="icon-btn" title="Search"><svg width="16" height="16"><use href="#ic-search"/></svg></button>
+              <button class="icon-btn is-active" title="Edit"><svg width="16" height="16"><use href="#ic-edit"/></svg></button>
+            </div>
+          </div>
+        </section>
+
+        <section class="sg-card">
+          <header class="sg-card-h"><div><h3>Pills</h3><p class="sg-card-sub">Entity references. Flow → green, recipient (contact + group) → accent blue, field → amber, keyword → mono grey, label → neutral grey. Purple is reserved.</p></div></header>
+          <div class="sg-card-body">
+            <div class="comp-row">
+              <span class="pill pill-flow"><svg width="11.5" height="11.5"><use href="#ic-flow"/></svg><span class="pill-text">Vaccination Reminder</span></span>
+              <span class="pill pill-group"><svg width="11.5" height="11.5"><use href="#ic-group"/></svg><span class="pill-text">Mothers</span></span>
+              <span class="pill pill-contact"><svg width="11.5" height="11.5"><use href="#ic-person"/></svg><span class="pill-text">Dražen Seymour</span></span>
+            </div>
+            <div class="comp-row">
+              <span class="pill pill-field"><svg width="11.5" height="11.5"><use href="#ic-field"/></svg><span class="pill-text">registration_date</span></span>
+              <span class="pill pill-keyword"><span class="pill-text">jaws</span></span>
+              <span class="pill pill-label"><svg width="11.5" height="11.5"><use href="#ic-folder"/></svg><span class="pill-text">Onboarding</span></span>
+            </div>
+            <div class="comp-row">
+              <span class="pill pill-flow"><svg width="11.5" height="11.5"><use href="#ic-flow"/></svg><span class="pill-text">JAWS</span><button class="pill-x"><svg width="11" height="11"><use href="#ic-x"/></svg></button></span>
+              <span class="pill pill-group"><svg width="11.5" height="11.5"><use href="#ic-group"/></svg><span class="pill-text">Doctors</span><button class="pill-x"><svg width="11" height="11"><use href="#ic-x"/></svg></button></span>
+              <span class="pill pill-keyword"><span class="pill-text">help</span><button class="pill-x"><svg width="11" height="11"><use href="#ic-x"/></svg></button></span>
+            </div>
+          </div>
+        </section>
+
+        <section class="sg-card">
+          <header class="sg-card-h"><div><h3>Status &amp; badges</h3></div></header>
+          <div class="sg-card-body">
+            <div class="comp-row">
+              <span class="status status-success"><span class="status-dot"></span>Active</span>
+              <span class="status status-info"><span class="status-dot"></span>Pending</span>
+              <span class="status status-warning"><span class="status-dot"></span>Stopped</span>
+              <span class="status status-danger"><span class="status-dot"></span>Failed</span>
+              <span class="status status-neutral"><span class="status-dot"></span>Archived</span>
+            </div>
+            <div class="comp-row">
+              <span class="count-badge">4,832</span>
+              <span class="count-badge count-accent">12</span>
+              <span class="count-badge count-danger">3</span>
+              <span class="count-badge count-success">+24</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="sg-card">
+          <header class="sg-card-h"><div><h3>Avatars &amp; contact icons</h3><p class="sg-card-sub">Initials shown when no image is uploaded. Background colors are generated by the avatar component itself — not part of the design system tokens.</p></div></header>
+          <div class="sg-card-body">
+            <div class="comp-row" id="avatarRow">
+              <!-- avatars rendered by JS so the hashed-color logic is centralized -->
+            </div>
+            <div class="comp-row">
+              <span class="ch-icon ch-whatsapp"><svg width="14" height="14"><use href="#ic-phone"/></svg></span>
+              <span class="ch-icon ch-tel"><svg width="14" height="14"><use href="#ic-phone"/></svg></span>
+              <span class="ch-icon ch-fb"><svg width="14" height="14"><use href="#ic-msg"/></svg></span>
+              <span class="ch-icon ch-web"><svg width="14" height="14"><use href="#ic-chat"/></svg></span>
+            </div>
+            <div class="comp-row">
+              <div class="contact-line">
+                <span class="ch-icon ch-whatsapp"><svg width="14" height="14"><use href="#ic-phone"/></svg></span>
+                <span class="contact-name">Dražen Seymour</span>
+                <span class="contact-num">+250 700 009 996</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="sg-card" style="grid-column: span 2">
+          <header class="sg-card-h"><div><h3>Inputs</h3></div></header>
+          <div class="sg-card-body">
+            <div class="form-grid">
+              <label class="field">
+                <span class="field-label">Campaign name</span>
+                <input class="input" value="Vaccination Reminders"/>
+              </label>
+              <label class="field">
+                <span class="field-label">Contact group</span>
+                <div class="select-wrap">
+                  <span class="pill pill-group"><svg width="11.5" height="11.5"><use href="#ic-group"/></svg><span class="pill-text">Mothers</span></span>
+                  <svg width="14" height="14" class="select-chev"><use href="#ic-chevDown"/></svg>
+                </div>
+              </label>
+              <label class="field">
+                <span class="field-label">Anchor field</span>
+                <div class="select-wrap">
+                  <span class="pill pill-field"><svg width="11.5" height="11.5"><use href="#ic-field"/></svg><span class="pill-text">registration_date</span></span>
+                  <svg width="14" height="14" class="select-chev"><use href="#ic-chevDown"/></svg>
+                </div>
+              </label>
+              <label class="field">
+                <span class="field-label">Search</span>
+                <div class="search-wrap">
+                  <svg width="14" height="14" class="search-icon"><use href="#ic-search"/></svg>
+                  <input class="input" placeholder="Search contacts, fields, flows…"/>
+                  <kbd>⌘K</kbd>
+                </div>
+              </label>
+              <label class="field field-full">
+                <span class="field-label">Description <span class="opt">optional</span></span>
+                <textarea class="input" rows="2">Sent 3 days after the contact joined the Mothers group.</textarea>
+                <span class="field-help">Max 280 characters.</span>
+              </label>
+              <div class="field field-full">
+                <span class="field-label">Channels</span>
+                <div class="checkbox-row">
+                  <label class="checkbox is-checked"><span class="check-box"><svg width="11" height="11"><use href="#ic-check"/></svg></span>WhatsApp Business</label>
+                  <label class="checkbox is-checked"><span class="check-box"><svg width="11" height="11"><use href="#ic-check"/></svg></span>SMS</label>
+                  <label class="checkbox"><span class="check-box"></span>Voice</label>
+                  <label class="checkbox"><span class="check-box"></span>Web Chat</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </section>
+
+    <!-- tables -->
+    <section id="tables" class="sg-section">
+      <div class="sg-section-h">
+        <h2>Lists &amp; tables</h2>
+        <p>The bones of every CRUDL. Sticky header, hover reveals row actions, tabular figures, status as a column-1 affordance.</p>
+      </div>
+      <section class="sg-card" style="grid-column: span 3">
+        <header class="sg-card-h">
+          <div>
+            <h3>Campaigns — list</h3>
+            <p class="sg-card-sub">The standard CRUDL table.</p>
+          </div>
+          <div class="comp-row">
+            <button class="btn btn-ghost btn-sm"><svg width="14" height="14"><use href="#ic-search"/></svg>Search</button>
+            <button class="btn btn-ghost btn-sm"><svg width="14" height="14"><use href="#ic-download"/></svg>Export</button>
+            <button class="btn btn-primary btn-sm"><svg width="14" height="14"><use href="#ic-plus"/></svg>New campaign</button>
+          </div>
+        </header>
+        <div class="sg-card-body">
+          <div class="table-wrap">
+            <table class="t">
+              <thead>
+                <tr>
+                  <th class="t-check"><span class="check-box"></span></th>
+                  <th>Name</th>
+                  <th>Group</th>
+                  <th>Channel</th>
+                  <th class="t-num">Events</th>
+                  <th class="t-num">Contacts</th>
+                  <th>Status</th>
+                  <th>Updated</th>
+                  <th class="t-act"></th>
+                </tr>
+              </thead>
+              <tbody id="campaignsBody"><!-- rendered by JS --></tbody>
+            </table>
+            <div class="t-foot">
+              <span>1–6 of 6</span>
+              <div class="comp-row">
+                <button class="icon-btn icon-btn-sm" disabled><svg width="13" height="13"><use href="#ic-chevL"/></svg></button>
+                <button class="icon-btn icon-btn-sm" disabled><svg width="13" height="13"><use href="#ic-chevR"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- patterns -->
+    <section id="patterns" class="sg-section">
+      <div class="sg-section-h">
+        <h2>Patterns</h2>
+        <p>Compositions used across the app: empty states, page headers, modals.</p>
+      </div>
+      <div class="sg-grid">
+
+        <section class="sg-card" style="grid-column: span 2">
+          <header class="sg-card-h"><div><h3>Empty state</h3></div></header>
+          <div class="sg-card-body">
+            <div class="empty">
+              <div class="empty-art">
+                <svg width="32" height="32" stroke-width="1.4"><use href="#ic-history"/></svg>
+              </div>
+              <h4>No campaigns yet</h4>
+              <p>Campaigns send messages on a schedule relative to a contact field — like 3 days after registration.</p>
+              <div class="comp-row">
+                <button class="btn btn-primary"><svg width="16" height="16"><use href="#ic-plus"/></svg>Create your first campaign</button>
+                <button class="btn btn-ghost">Read the guide</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="sg-card">
+          <header class="sg-card-h"><div><h3>Modal</h3><p class="sg-card-sub">Centered, accent header, form inside.</p></div></header>
+          <div class="sg-card-body">
+            <div class="modal">
+              <div class="modal-h">
+                <span>Update Trigger</span>
+                <button class="modal-x"><svg width="14" height="14"><use href="#ic-x"/></svg></button>
+              </div>
+              <div class="modal-b">
+                <label class="field">
+                  <span class="field-label">Keywords</span>
+                  <div class="input input-tokens">
+                    <span class="pill pill-keyword"><span class="pill-text">jaws</span><button class="pill-x"><svg width="11" height="11"><use href="#ic-x"/></svg></button></span>
+                    <input placeholder="Add keyword…"/>
+                  </div>
+                </label>
+                <label class="field">
+                  <span class="field-label">Flow</span>
+                  <div class="select-wrap">
+                    <span class="pill pill-flow"><svg width="11.5" height="11.5"><use href="#ic-flow"/></svg><span class="pill-text">JAWS</span></span>
+                    <svg width="14" height="14" class="select-chev"><use href="#ic-chevDown"/></svg>
+                  </div>
+                </label>
+              </div>
+              <div class="modal-f">
+                <button class="btn btn-ghost">Cancel</button>
+                <button class="btn btn-primary">Save</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="sg-card" style="grid-column: span 3">
+          <header class="sg-card-h"><div><h3>Section header</h3><p class="sg-card-sub">What replaces the underlined H1.</p></div></header>
+          <div class="sg-card-body">
+            <div class="ph-demo">
+              <div class="page-crumbs">
+                <a>Campaigns</a>
+                <svg width="12" height="12"><use href="#ic-chevR"/></svg>
+                <span>Vaccination Reminders</span>
+              </div>
+              <div class="page-title-row">
+                <div>
+                  <h1>Vaccination Reminders</h1>
+                  <p class="page-sub">Sent 3 days after the contact joined the Mothers group.</p>
+                </div>
+                <div class="page-header-actions">
+                  <span class="status status-success"><span class="status-dot"></span>Active</span>
+                  <span class="page-meta-sep"></span>
+                  <button class="btn btn-ghost btn-sm"><svg width="14" height="14"><use href="#ic-archive"/></svg>Archive</button>
+                  <button class="btn btn-secondary btn-sm"><svg width="14" height="14"><use href="#ic-edit"/></svg>Edit</button>
+                  <button class="btn btn-primary btn-sm"><svg width="14" height="14"><use href="#ic-plus"/></svg>Add event</button>
+                </div>
+              </div>
+              <div class="ph-tabs">
+                <button class="ph-tab is-active">Overview</button>
+                <button class="ph-tab">Events</button>
+                <button class="ph-tab">Contacts</button>
+                <button class="ph-tab">History</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="sg-card" style="grid-column: span 3">
+          <header class="sg-card-h"><div><h3>Spacing &amp; radius</h3></div></header>
+          <div class="sg-card-body">
+            <div class="spacing-row" id="spacingRow"><!-- rendered by JS --></div>
+            <div class="radius-row">
+              <div class="radius-step"><div class="radius-chip" style="border-radius: var(--r-xs)"></div><div class="radius-label">xs</div></div>
+              <div class="radius-step"><div class="radius-chip" style="border-radius: var(--r-sm)"></div><div class="radius-label">sm</div></div>
+              <div class="radius-step"><div class="radius-chip" style="border-radius: var(--r)"></div><div class="radius-label">md</div></div>
+              <div class="radius-step"><div class="radius-chip" style="border-radius: var(--r-lg)"></div><div class="radius-label">lg</div></div>
+              <div class="radius-step"><div class="radius-chip" style="border-radius: 999px"></div><div class="radius-label">full</div></div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </section>
+
+    <footer class="sg-foot">
+      <span>TextIt design system · v0.1</span>
+      <span>Inter · 4px grid · OKLab-derived ramps</span>
+    </footer>
+
+  </main>
+</div>
+</div>
+
+<script>
+(function () {
+  // ─── primary color picker (re-themes ramp via design-system.js) ────
+  var picker = document.getElementById("primaryPicker");
+  var valueOut = document.getElementById("primaryValue");
+  if (picker && window.DesignSystem && window.DesignSystem.setPrimary) {
+    picker.addEventListener("input", function (e) {
+      var hex = e.target.value;
+      window.DesignSystem.setPrimary(hex);
+      if (valueOut) valueOut.textContent = hex.toUpperCase();
+    });
+  }
+
+  // ─── section nav collapse ───────────────────────────────────────────
+  var nav = document.getElementById("sectionNav");
+  var btn = document.getElementById("snCollapse");
+  btn.addEventListener("click", function () {
+    nav.classList.toggle("is-collapsed");
+    var ic = btn.querySelector("use");
+    ic.setAttribute("href", nav.classList.contains("is-collapsed") ? "#ic-chevR" : "#ic-chevL");
+  });
+
+  // ─── avatar row ─────────────────────────────────────────────────────
+  // Avatar background colors are NOT a design system concern — the avatar
+  // component generates them. This block exists only to render a realistic
+  // demo so the .avatar layout/typography can be evaluated.
+  var demoSwatches = [
+    ["linear-gradient(135deg,#FACC15,#EAB308)", "#573E04"],
+    ["linear-gradient(135deg,#F472B6,#DB2777)", "#5A0E37"],
+    ["linear-gradient(135deg,#A78BFA,#7C3AED)", "#2A1166"],
+    ["linear-gradient(135deg,#60A5FA,#2563EB)", "#0B2A66"],
+    ["linear-gradient(135deg,#34D399,#059669)", "#063522"],
+    ["linear-gradient(135deg,#FB923C,#EA580C)", "#5A1D04"],
+    ["linear-gradient(135deg,#22D3EE,#0891B2)", "#0A3640"],
+    ["linear-gradient(135deg,#F87171,#DC2626)", "#5A0F0F"],
+    ["linear-gradient(135deg,#A3E635,#65A30D)", "#1F3206"],
+    ["linear-gradient(135deg,#C084FC,#9333EA)", "#3B0E66"],
+    ["linear-gradient(135deg,#FCD34D,#D97706)", "#5A2C04"],
+    ["linear-gradient(135deg,#5EEAD4,#0D9488)", "#053D38"],
+  ];
+  function hashName(s) {
+    var h = 0;
+    for (var i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+    return Math.abs(h);
+  }
+  function initials(name) {
+    return name.split(/\s+/).map(function (s) { return s[0]; })
+      .filter(Boolean).slice(0, 2).join("").toUpperCase();
+  }
+  function makeAvatar(name, size) {
+    size = size || 28;
+    var swatch = demoSwatches[hashName(name) % demoSwatches.length];
+    var el = document.createElement("span");
+    el.className = "avatar";
+    el.style.width = size + "px";
+    el.style.height = size + "px";
+    el.style.fontSize = Math.round(size * 0.4) + "px";
+    el.style.background = swatch[0];
+    el.style.color = swatch[1];
+    el.textContent = initials(name);
+    return el;
+  }
+  var avatarRow = document.getElementById("avatarRow");
+  [
+    ["Adam McAdmin"],   ["Susan Fishman"], ["Eugene Ingabire"],
+    ["Marcus Reyes"],   ["Priya Shah"],    ["Tomi Adebayo"],
+    ["Liu Wei"],        ["Dr Wells", 36],  ["Unicef Mali", 44],
+  ].forEach(function (a) { avatarRow.appendChild(makeAvatar(a[0], a[1])); });
+
+  // ─── campaigns table body ───────────────────────────────────────────
+  var rows = [
+    { name: "Vaccination Reminders", group: "Mothers",   events: 4, channel: "whatsapp", channelLabel: "WhatsApp",  status: "success", statusLabel: "Active",   contacts: 4832, updated: "2h ago" },
+    { name: "Antenatal Care Series", group: "Mothers",   events: 8, channel: "whatsapp", channelLabel: "WhatsApp",  status: "success", statusLabel: "Active",   contacts: 2431, updated: "1d ago" },
+    { name: "Drug Adherence",        group: "Patients",  events: 3, channel: "tel",      channelLabel: "SMS",       status: "success", statusLabel: "Active",   contacts: 1958, updated: "3d ago" },
+    { name: "Farmer Onboarding",     group: "Farmers",   events: 5, channel: "tel",      channelLabel: "SMS",       status: "info",    statusLabel: "Pending",  contacts: 952,  updated: "5d ago" },
+    { name: "Teacher Check-in",      group: "Teachers",  events: 2, channel: "whatsapp", channelLabel: "WhatsApp",  status: "warning", statusLabel: "Stopped",  contacts: 1439, updated: "Apr 28" },
+    { name: "Survey Followup",       group: "Reporters", events: 6, channel: "fb",       channelLabel: "Messenger", status: "neutral", statusLabel: "Archived", contacts: 4588, updated: "Mar 30" },
+  ];
+  var icIcon = function (id, size) {
+    return '<svg width="' + size + '" height="' + size + '"><use href="#ic-' + id + '"/></svg>';
+  };
+  var body = document.getElementById("campaignsBody");
+  body.innerHTML = rows.map(function (r) {
+    var chIcon = r.channel === "fb" ? "msg" : "phone";
+    return '<tr>' +
+      '<td class="t-check"><span class="check-box"></span></td>' +
+      '<td><div class="t-name"><span class="t-name-icon">' + icIcon("history", 14) + '</span><span>' + r.name + '</span></div></td>' +
+      '<td><span class="pill pill-group">' + icIcon("group", 11.5) + '<span class="pill-text">' + r.group + '</span></span></td>' +
+      '<td><div class="t-ch"><span class="ch-icon ch-' + r.channel + '">' + icIcon(chIcon, 11) + '</span><span>' + r.channelLabel + '</span></div></td>' +
+      '<td class="t-num">' + r.events + '</td>' +
+      '<td class="t-num">' + r.contacts.toLocaleString() + '</td>' +
+      '<td><span class="status status-' + r.status + '"><span class="status-dot"></span>' + r.statusLabel + '</span></td>' +
+      '<td class="t-muted">' + r.updated + '</td>' +
+      '<td class="t-act"><div class="row-actions">' +
+        '<button class="icon-btn icon-btn-sm" title="Edit">' + icIcon("edit", 13) + '</button>' +
+        '<button class="icon-btn icon-btn-sm" title="Archive">' + icIcon("archive", 13) + '</button>' +
+        '<button class="icon-btn icon-btn-sm" title="More">' + icIcon("more", 13) + '</button>' +
+      '</div></td>' +
+    '</tr>';
+  }).join("");
+
+  // ─── spacing row ────────────────────────────────────────────────────
+  var spacing = document.getElementById("spacingRow");
+  [2, 4, 6, 8, 12, 16, 24, 32].forEach(function (n) {
+    var step = document.createElement("div");
+    step.className = "space-step";
+    step.innerHTML = '<div class="space-bar" style="width:' + n + 'px"></div>' +
+                     '<div class="space-label">' + n + '</div>';
+    spacing.appendChild(step);
+  });
+})();
+</script>
+
+</body>
+</html>

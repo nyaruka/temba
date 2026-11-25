@@ -1,135 +1,215 @@
-html {
-  --font-family: 'Roboto', Helvetica, Arial, sans-serif;
-  --font-size: 14px;
+  html.dragging * {
+    user-select: none;
+    pointer-events: none;
 
-  --disabled-opacity: 0.6;
+  }
 
-  /* Animations */
-  --transition-speed: 250ms;
-  --bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  html {
 
-  /* Smoothness */
-  --curvature: 6px;
-  --curvature-widget: 6px;
+    /* ─── TextIt Design System tokens ─────────────────────────────────────
+       Owned by /static/css/design-system.css — load that alongside this
+       file (frame.html does, and so does the styleguide).
+       --primary-rgb, --accent / --accent-50..900, the neutrals, status,
+       type, shape, density and shadow tokens all live there now; the
+       legacy aliases below reference them by name. */
 
-  /* RGB values */
-  --primary-rgb: 58, 102, 150;
-  --secondary-rgb: 140, 51, 140;
-  --tertiary-rgb: 135, 202, 35;
-  --focus-rgb: 82, 168, 236;
-  --error-rgb: 255, 99, 71;
-  --success-rgb: 102, 186, 104;
-  --selection-light-rgb: 240, 240, 240;
-  --selection-dark-rgb: 180, 180, 180;
+    /* ─── legacy aliases — point at the design-system tokens ──────────── */
 
-  /* Colors */
-  --color-text-dark: #555;
-  --color-text: #555;
-  --color-widget-text: #555;
-  --color-borders: rgba(0, 0, 0, 0.07);
-  --color-placeholder: #ccc;
-  --color-primary-light: #eee;
-  --color-secondary-light: rgba(var(--secondary-rgb), 0.3);
-  --color-primary-dark: rgb(var(--primary-rgb));
-  --color-secondary-dark: rgb(var(--secondary-rgb));
-  --color-message: #3c92dd;
-  --color-focus: #a4cafe;
-  --color-widget-bg: #fff;
-  --color-widget-bg-focused: #fff;
-  --color-widget-border: rgb(225, 225, 225);
-  --color-options-bg: var(--color-widget-bg);
-  --color-selection: #f0f6ff;
-  --color-row-hover: rgba(var(--selection-light-rgb), 0.4);
-  --color-available: #00f100;
-  --color-tertiary: rgb(var(--tertiary-rgb));
-  --color-text-light: rgba(255, 255, 255, 1);
-  --color-text-dark-secondary: rgba(0, 0, 0, 0.25);
-  --color-overlay-dark: rgba(0, 0, 0, 0.2);
-  --color-overlay-dark-text: rgba(255, 255, 255, 0.9);
-  --color-overlay-light: rgba(0, 0, 0, 0.035);
-  --color-overlay-light-text: rgba(0, 0, 0, 0.6);
-  --color-link-primary: rgba(var(--primary-rgb), 0.8);
-  --color-link-primary-hover: rgba(var(--primary-rgb), 0.9);
-  --color-link-secondary: rgba(var(--secondary-rgb), 0.8);
-  --color-link-secondary-hover: rgba(var(--secondary-rgb), 0.9);
-  --color-button-primary: var(--color-primary-dark);
-  --color-button-primary-text: var(--color-text-light);
-  --color-button-light: rgb(246, 248, 250);
-  --color-button-light-text: rgb(36, 41, 47);
-  --color-button-secondary: var(--color-secondary-light);
-  --color-button-secondary-text: var(--color-text-dark);
-  --color-button-destructive: rgb(var(--error-rgb));
-  --color-button-destructive-text: var(--color-text-light);
-  --color-button-attention: #3ca96a;
-  --color-connectors: #95cbef;
-  --color-label-primary: var(--color-primary-dark);
-  --color-label-primary-text: var(--color-text-light);
-  --color-label-secondary: var(--color-secondary-dark);
-  --color-label-secondary-text: var(--color-text-light);
-  --color-label-tertiary: var(--color-tertiary);
-  --color-label-tertiary-text: var(--color-text-light);
-  --color-nav-unselected: #fff;
-  --color-nav-selected-bg: #fff;
-  --color-nav-selected-text: var(--color-primary-dark);
-  --color-info: rgb(238, 246, 255);
-  --color-info-border: rgb(74, 163, 223);
-  --color-warning: rgb(255, 253, 218);
-  --color-warning-border: rgb(251, 246, 176);
-  --color-error: rgb(var(--error-rgb));
-  --color-alert: rgb(var(--error-rgb));
-  --color-success: #3ca96a;
-  --icon-color: var(--text-color);
-  --icon-color-circle: rgb(240, 240, 240);
-  --icon-color-circle-hover: rgba(245, 245, 245, 0.8);
-  --header-bg: var(--color-primary-dark);
-  --header-text: var(--color-text-light);
-  --color-text-help: rgb(120, 120, 120);
-  --color-automated: rgb(78, 205, 106);
+    --font-family: var(--font);
+    --secondary-rgb: 140, 51, 140;
+    --tertiary-rgb: 135, 202, 35;
 
-  /* Shadows */
-  --widget-box-shadow: rgba(-1, -1, 0, 0.1) 0px 1px 7px 0px,
-    rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
-  --widget-box-shadow-focused: 0 0 0 3px rgba(164, 202, 254, 0.45),
-    rgba(0, 0, 0, 0.05) 0px 3px 7px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
-  --widget-box-shadow-focused-error: 0 0 0 3px rgba(var(--error-rgb), 0.3);
-  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  --shadow-widget: 0 3px 20px 0 rgba(0, 0, 0, 0.04),
-    0 1px 2px 0 rgba(0, 0, 0, 0.02);
+    --focus-rgb: 91, 156, 229;
+    --error-rgb: 255, 99, 71;
+    --success-rgb: 102, 186, 104;
 
-  /* temba-select */
-  --select-input-height: inherit;
-  --temba-select-selected-font-size: 1em;
-  --temba-select-selected-line-height: 1.2em;
-  --options-block-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
-    0 1px 2px 0 rgba(0, 0, 0, 0.03);
-  --options-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-    0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --dropdown-shadow: rgb(0 0 0 / 15%) 0px 0px 30px, rgb(0 0 0 / 12%) 0px 2px 6px;
+    --selection-light-rgb: 240, 240, 240;
+    --selection-dark-rgb: 180, 180, 180;
 
-  /* buttons */
-  --button-font-size: 1.125rem;
-  --button-y: 0.2em;
-  --button-x: 1.5em;
+    --select-input-height: inherit;
 
-  /* textinput */
-  --temba-textinput-padding: 0.6em 0.8em;
-  --temba-textinput-font-size: 1;
+    --disabled-opacity: 0.6;
+    --curvature: 6px;
+    --curvature-widget: 6px;
+    --focus: rgb(var(--focus-rgb, 91, 156, 229));
+    --focus-50: color-mix(in srgb, var(--focus) 12%, white);
+    --focus-100: color-mix(in srgb, var(--focus) 24%, white);
+    --focus-200: color-mix(in srgb, var(--focus) 40%, white);
+    --focus-300: color-mix(in srgb, var(--focus) 60%, white);
+    --focus-600: color-mix(in srgb, var(--focus) 60%, black);
+    --focus-700: color-mix(in srgb, var(--focus) 45%, black);
+    --focus-muted: color-mix(in srgb, var(--focus) 60%, white);
+    --focus-halo: 0 0 0 3px
+      color-mix(in srgb, var(--focus) 30%, transparent);
+    --color-focus: #a4cafe;
+    --color-widget-bg: #fff;
+    --color-widget-bg-focused: #fff;
+    --color-widget-border: rgb(225, 225, 225);
 
-  /* charcount */
-  --temba-charcount-counts-margin-top: 4px;
-  --temba-charcount-summary-margin-top: 5px;
-  --temba-charcount-summary-position: absolute;
-  --temba-charcount-summary-right: 0px;
-  --temba-charcount-summary-bottom: 0px;
+    --color-options-bg: var(--surface);
 
-  /* help-text */
-  --help-text-margin-top: 0px;
-  --help-text-margin-left: 0.3em;
-  --help-text-size: 0.85em;
+    /* primary colors */
+    --color-selection: #f0f6ff;
+    --color-success: #3ca96a;
+    --color-row-hover: rgba(var(--selection-light-rgb), 0.4);
+    --color-message: #3c92dd;
+    --color-available: #00f100;
 
-  /* Other */
-  --label-size: 14px;
-  --event-padding: 0.5em 1em;
-  --control-margin-bottom: 15px;
-  --menu-padding: 1em;
-}
+    --widget-box-shadow: rgba(-1, -1, 0, 0.1) 0px 1px 7px 0px,
+      rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+    --widget-box-shadow-focused: 0 0 0 3px rgba(164, 202, 254, 0.45),
+      rgba(0, 0, 0, 0.05) 0px 3px 7px 0px,
+      rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+    --widget-box-shadow-focused-error: 0 0 0 3px rgba(var(--error-rgb), 0.3);
+
+    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-widget: 0 3px 20px 0 rgba(0, 0, 0, 0.04),
+      0 1px 2px 0 rgba(0, 0, 0, 0.02);
+
+    /* page text, borders, widgets */
+    --color-text: #555;
+    --color-widget-text: #555;
+    --color-borders: rgba(0, 0, 0, 0.07);
+    --color-placeholder: #ccc;
+
+    /* light colors, panel backgrounds, selection, etc */
+    --color-primary-light: #eee;
+    --color-secondary-light: rgba(var(--secondary-rgb), 0.3);
+
+    --color-label: var(--text-1);
+
+    /* dark colors, nav bar, buttons, etc — default to a ramp step
+       so they auto-theme when --primary-rgb changes. Hosts can still
+       override the legacy variable directly to break out of the ramp. */
+    --color-primary-dark: var(--accent-500);
+    --color-secondary-dark: rgb(var(--secondary-rgb));
+
+    /* light text goes over dark, dark over lights */
+    --color-text-light: rgba(255, 255, 255, 1);
+    --color-text-dark: #555;
+    --color-text-dark-secondary: rgba(0, 0, 0, 0.25);
+    --color-text-help: rgb(120, 120, 120);
+    --color-tertiary: rgb(var(--tertiary-rgb));
+
+    --help-text-size: 0.85em;
+    --help-text-margin-left: 0.3em;
+
+    /* solid overlays with text */
+    --color-overlay-dark: rgba(0, 0, 0, 0.2);
+    --color-overlay-dark-text: rgba(255, 255, 255, 0.9);
+    --color-overlay-light: rgba(0, 0, 0, 0.05);
+    --color-overlay-light-text: rgba(0, 0, 0, 0.6);
+
+    /* links, buttons, and label badges — default to ramp steps so
+       they auto-theme; overridable via direct variable setting. */
+    --color-link-primary: var(--accent-500);
+    --color-link-primary-hover: var(--accent-600);
+    --color-link-secondary: rgba(var(--secondary-rgb), 0.8);
+    --color-link-secondary-hover: rgba(var(--secondary-rgb), 0.9);
+    --color-button-primary: var(--accent-500);
+    --color-button-primary-text: var(--color-text-light);
+    --color-button-light: rgb(246, 248, 250);
+    --color-button-light-text: rgb(36, 41, 47);
+    --color-button-secondary: var(--color-secondary-light);
+    --color-button-secondary-text: var(--color-text-dark);
+
+    --color-button-destructive: rgb(var(--error-rgb));
+    --color-button-destructive-text: var(--color-text-light);
+
+    --color-button-attention: #3ca96a;
+
+    --color-connectors: #95cbef;
+
+    --color-label-primary: var(--color-primary-dark);
+    --color-label-primary-text: var(--color-text-light);
+    --color-label-secondary: var(--color-secondary-dark);
+    --color-label-secondary-text: var(--color-text-light);
+    --color-label-tertiary: var(--color-tertiary);
+    --color-label-tertiary-text: var(--color-text-light);
+
+    --color-nav-unselected: #fff;
+    --color-nav-selected-bg: #fff;
+    --color-nav-selected-text: var(--color-primary-dark);
+
+    --color-info: rgb(238, 246, 255);
+    --color-info-border: rgb(74, 163, 223);
+
+    --color-warning: rgb(255, 253, 218);
+    --color-warning-border: rgb(251, 246, 176);
+
+    --color-error: rgb(var(--error-rgb));
+    --color-alert: rgb(var(--error-rgb));
+
+    --color-quick-reply: rgb(60, 146, 221);
+    --color-automated: rgb(78, 205, 106);
+
+    --icon-color: var(--text-color);
+    --icon-color-hover: var(--icon-color);
+    --icon-color-circle-hover: rgba(245, 245, 245, .8);
+    --icon-color-circle: rgb(240, 240, 240);
+
+    --transition-speed: 250ms;
+    --event-padding: 0.5em 1em;
+    --temba-select-selected-padding: 0 var(--pad);
+    --temba-select-selected-line-height: 1.2em;
+    --temba-select-selected-font-size: 1em;
+    --temba-select-min-height: var(--input-h);
+
+    --font-size: 14px;
+    --button-font-size: 1.125rem;
+
+    --header-bg: var(--color-primary-dark);
+    --header-text: var(--color-text-light);
+
+    --temba-textinput-padding: 0.6em 0.8em;
+    --temba-textinput-font-size: 1;
+    --temba-textinput-min-height: var(--input-h);
+
+    --options-block-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
+      0 1px 2px 0 rgba(0, 0, 0, 0.03);
+    --options-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+      0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --dropdown-shadow: rgb(0 0 0 / 15%) 0px 0px 30px,
+      rgb(0 0 0 / 12%) 0px 2px 6px;
+
+    --label-size: 14px;
+    --control-margin-bottom: 15px;
+
+    --menu-padding: 1em;
+
+    font-size: var(--font-size);
+    font-family: var(--font-family);
+
+    --button-y: 0.2em;
+    --button-x: 1.5em;
+
+    --bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    --temba-charcount-counts-margin-top: 4px;
+    --temba-charcount-summary-margin-top: 5px;
+    --temba-charcount-summary-position: absolute;
+    --temba-charcount-summary-right: 0px;
+    --temba-charcount-summary-bottom: 0px;
+
+    --color-automated: rgb(78, 205, 106);
+
+  }
+
+  temba-select:focus {
+    outline: none;
+    box-shadow: none;
+  }
+
+  .flatpickr-calendar {
+    margin-top: 28px;
+    margin-bottom: 28px;
+    margin-left: -13px;
+  }
+
+  temba-dropdown {
+    opacity: 0;
+  }
+
+  temba-dropdown:defined {
+    opacity: 1;
+  }

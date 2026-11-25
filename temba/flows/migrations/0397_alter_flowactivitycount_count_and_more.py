@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("flows", "0396_remove_flowrun_path_alter_flowrun_session_uuid"),
     ]

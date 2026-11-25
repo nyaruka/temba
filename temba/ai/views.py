@@ -1,6 +1,6 @@
 import json
 
-from smartmin.views import SmartCRUDL, SmartReadView
+from smartmin.views import SmartCRUDL
 
 from django import forms
 from django.db.models.functions import Lower
@@ -10,8 +10,8 @@ from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt
 
 from temba import mailroom
-from temba.orgs.views.base import BaseDependencyDeleteModal, BaseListView, BaseUpdateModal
-from temba.orgs.views.mixins import OrgObjPermsMixin, OrgPermsMixin, UniqueNameMixin
+from temba.orgs.views.base import BaseDependencyDeleteModal, BaseListView, BaseReadView, BaseUpdateModal
+from temba.orgs.views.mixins import OrgPermsMixin, UniqueNameMixin
 from temba.utils.fields import InputWidget, SelectWidget
 from temba.utils.views.mixins import ContextMenuMixin, PostOnlyMixin, SpaMixin
 from temba.utils.views.wizard import SmartWizardView
@@ -98,9 +98,16 @@ class LLMCRUDL(SmartCRUDL):
         menu_path = "settings/ai"
         default_order = (Lower("name"),)
 
+        def derive_queryset(self, **kwargs):
+            return super().derive_queryset(**kwargs).filter(is_system=False)
+
         def build_context_menu(self, menu):
             if self.has_org_perm("ai.llm_connect") and not self.is_limit_reached():
+                org = self.request.org
+                user = self.request.user
                 for llm_type in LLM.get_types():
+                    if not llm_type.is_available_to(org, user):
+                        continue
                     menu.add_modax(
                         f"New {llm_type.name}",
                         f"new-{llm_type.slug}",
@@ -122,9 +129,7 @@ class LLMCRUDL(SmartCRUDL):
         form_class = Form
         success_url = "@ai.llm_list"
 
-    class Translate(PostOnlyMixin, OrgObjPermsMixin, SmartReadView):
-        slug_url_kwarg = "uuid"
-
+    class Translate(PostOnlyMixin, BaseReadView):
         @csrf_exempt
         def dispatch(self, *args, **kwargs):
             return super().dispatch(*args, **kwargs)
@@ -134,11 +139,11 @@ class LLMCRUDL(SmartCRUDL):
             data = json.loads(request.body)
 
             try:
-                translated = self.object.translate(data["lang"]["from"], data["lang"]["to"], data["text"])
-            except mailroom.AIServiceException:  # pragma: no cover
-                return JsonResponse({"error": "LLM was not able to translate as requested"}, status=400)
+                items = self.object.translate(data["source"], data["target"], data["items"])
+            except mailroom.AIServiceException as e:
+                return JsonResponse({"error": str(e)}, status=400)
 
-            return JsonResponse({"result": translated})
+            return JsonResponse({"items": items})
 
     class Delete(BaseDependencyDeleteModal):
         cancel_url = "@ai.llm_list"

@@ -26,7 +26,7 @@ class CredentialsForm(BaseConnectWizard.Form):
 
         if api_key:
             endpoint = self.endpoint + "/openai"  # mailroom using go client appends this
-            model = self.llm_type.settings["models"][0]
+            model = next(iter(self.llm_type.settings["models"]))
             try:
                 client = openai.AzureOpenAI(base_url=endpoint, api_key=api_key, api_version="2025-03-01-preview")
                 client.chat.completions.create(model=model, messages=[{"role": "user", "content": "How are you?"}])

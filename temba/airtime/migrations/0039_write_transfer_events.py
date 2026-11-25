@@ -48,7 +48,6 @@ def apply_manual():  # pragma: no cover
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("airtime", "0038_update_transfer_uuids"),
     ]

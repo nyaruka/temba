@@ -19,6 +19,7 @@ from django.core.validators import validate_email
 from django.db import models, transaction
 from django.db.models import Count, F, Max, Q, Sum, Value
 from django.db.models.functions import Concat, Lower
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -47,6 +48,7 @@ class URN:
         * No hex escaping in URN path
     """
 
+    BSUID_SCHEME = "bsuid"
     DELETED_SCHEME = "deleted"
     EMAIL_SCHEME = "mailto"
     EXTERNAL_SCHEME = "ext"
@@ -73,6 +75,7 @@ class URN:
     SCHEME_CHOICES = (
         (TEL_SCHEME, _("Phone Number")),
         (EMAIL_SCHEME, _("Email Address")),
+        (BSUID_SCHEME, _("WhatsApp BSUID")),
         (EXTERNAL_SCHEME, _("External Identifier")),
         (FACEBOOK_SCHEME, _("Facebook Identifier")),
         (FCM_SCHEME, _("Firebase Cloud Messaging Identifier")),
@@ -152,7 +155,7 @@ class URN:
             except phonenumbers.NumberParseException:  # pragma: no cover
                 pass
 
-        if display:
+        if display and formatted:
             return display
 
         return path
@@ -215,6 +218,10 @@ class URN:
         elif scheme == cls.WHATSAPP_SCHEME:
             return regex.match(r"^[0-9]+$", path, regex.V0) or regex.match(cls.BSUID_PATH_REGEX, path, regex.V0)
 
+        # bsuid (WhatsApp business-scoped user id): two-letter country code, dot, 1-128 alphanumerics
+        elif scheme == cls.BSUID_SCHEME:
+            return regex.match(r"^[A-Z]{2}\.[a-zA-Z0-9]{1,128}$", path, regex.V0)
+
         # validate Viber URNS look right (this is a guess)
         elif scheme == cls.VIBER_SCHEME:  # pragma: needs cover
             return regex.match(r"^[a-zA-Z0-9_=+/]{1,24}$", path, regex.V0)
@@ -257,7 +264,7 @@ class URN:
         elif scheme == cls.EMAIL_SCHEME:
             norm_path = norm_path.lower()
 
-        elif scheme == cls.WHATSAPP_SCHEME:
+        elif scheme in (cls.WHATSAPP_SCHEME, cls.BSUID_SCHEME):
             # business-scoped user ids have format CC.ALPHANUMERIC - uppercase the country code
             if len(norm_path) > 2 and norm_path[2] == ".":
                 norm_path = norm_path[:2].upper() + norm_path[2:]
@@ -540,7 +547,7 @@ class ContactField(TembaModel, DependencyMixin):
         return self.agent_access if self.org.get_user_role(user) == OrgRole.AGENT else self.ACCESS_EDIT
 
     def get_attrs(self):
-        return {"icon": "info" if self.is_proxy else "fields"}
+        return {"icon": "info" if self.is_proxy else "fields", "type": "field"}
 
     def release(self, user):
         assert not (self.is_system and self.org.is_active), "can't release system fields"
@@ -616,6 +623,7 @@ class Contact(LegacyUUIDMixin, SmartModel):
         urns: list[str],
         fields: dict[ContactField, str],
         groups: list,
+        via_api=False,
     ):
         engine_status = cls.ENGINE_STATUSES[status]
         fields_by_key = {f.key: v for f, v in fields.items()}
@@ -627,6 +635,7 @@ class Contact(LegacyUUIDMixin, SmartModel):
             ContactSpec(
                 name=name, language=language, status=engine_status, urns=urns, fields=fields_by_key, groups=group_uuids
             ),
+            "api" if via_api else "ui",
         )
 
     @property
@@ -653,7 +662,9 @@ class Contact(LegacyUUIDMixin, SmartModel):
 
     def get_scheduled_broadcasts(self):
         return (
-            self.org.broadcasts.filter(schedule__next_fire__gte=timezone.now(), is_active=True)
+            self.org.broadcasts.filter(
+                schedule__next_fire__gte=timezone.now(), schedule__is_paused=False, is_active=True
+            )
             .exclude(schedule=None)
             .filter(Q(contacts__in=[self]) | Q(groups__in=self.groups.all()))
             .distinct()
@@ -665,69 +676,242 @@ class Contact(LegacyUUIDMixin, SmartModel):
 
         return (
             self.org.triggers.filter(
-                trigger_type=Trigger.TYPE_SCHEDULE, schedule__next_fire__gte=timezone.now(), is_archived=False
+                trigger_type=Trigger.TYPE_SCHEDULE,
+                schedule__next_fire__gte=timezone.now(),
+                schedule__is_paused=False,
+                is_archived=False,
             )
             .filter(Q(contacts__in=[self]) | Q(groups__in=self.groups.all()))
             .exclude(exclude_groups__in=self.groups.all())
             .distinct()
-            .select_related("schedule")
+            .select_related("schedule", "flow")
         )
 
-    def get_scheduled(self) -> list:
+    def _get_campaigns(self):
         """
-        Gets this contact's upcoming activity
+        Returns the active campaigns this contact is a member of (via group membership).
+        """
+        from temba.campaigns.models import Campaign
+
+        return list(
+            Campaign.objects.filter(org=self.org, is_archived=False, group__in=self.groups.all())
+            .prefetch_related("events", "events__flow", "events__relative_to")
+            .distinct()
+        )
+
+    def _get_campaign_events(self, campaigns) -> list:
+        """
+        Computes the times of all campaign events for the given campaigns (which should be the ones
+        this contact is currently a member of).
+
+        Each event's time is derived from the contact's anchor date field plus the event offset, so the
+        result is the campaign's prospective timeline relative to this contact - not a record of what
+        actually fired (a contact may have joined a campaign mid-way through). Returns a list of
+        (datetime, event-dict) tuples.
         """
         from temba.campaigns.models import CampaignEvent
 
-        def scope_to_event_id(scope: str) -> int:
-            # scope is "<eventid>:<fire_version>"
-            return int(scope.split(":")[0])
+        field_values = {}  # cache anchor field values by field id
+        results = []
+        for campaign in campaigns:
+            for event in campaign.events.all():
+                if not event.is_active:
+                    continue
 
-        fires = self.fires.filter(fire_type=ContactFire.TYPE_CAMPAIGN_EVENT)
-        event_ids = {scope_to_event_id(f.scope) for f in fires}
-        events = CampaignEvent.objects.filter(
-            campaign__org=self.org, campaign__is_archived=False, id__in=event_ids, is_active=True
-        )
-        events_by_id = {e.id: e for e in events}
+                field = event.relative_to
+                if field.id not in field_values:
+                    field_values[field.id] = self.get_field_value(field)
+                anchor = field_values[field.id]
+                if anchor is None:  # contact has no value for this event's anchor field
+                    continue
 
-        merged = []
-        for fire in fires:
-            event = events_by_id.get(scope_to_event_id(fire.scope))
-            if event and fire.scope == f"{event.id}:{event.fire_version}":
+                when = anchor + event.get_offset()
+                if event.delivery_hour >= 0 and event.unit in (CampaignEvent.UNIT_DAYS, CampaignEvent.UNIT_WEEKS):
+                    when = when.astimezone(self.org.timezone).replace(
+                        hour=event.delivery_hour, minute=0, second=0, microsecond=0
+                    )
+
                 obj = {
                     "type": "campaign_event",
-                    "scheduled": fire.fire_on.isoformat(),
-                    "repeat_period": None,
-                    "campaign": event.campaign.as_export_ref(),
+                    "scheduled": when.isoformat(),
+                    "campaign": {
+                        **campaign.as_export_ref(),
+                        "url": reverse("campaigns.campaign_read", args=[campaign.uuid]),
+                    },
+                    "url": reverse("campaigns.campaignevent_read", args=[campaign.uuid, event.uuid]),
                 }
                 if event.event_type == CampaignEvent.TYPE_FLOW:
-                    obj["flow"] = event.flow.as_export_ref()
+                    obj["flow"] = {
+                        **event.flow.as_export_ref(),
+                        "url": reverse("flows.flow_editor", args=[event.flow.uuid]),
+                    }
                 else:
                     obj["message"] = event.get_message(contact=self)["text"]
 
-                merged.append(obj)
+                results.append((when, obj))
 
+        return results
+
+    def get_timeline(
+        self, *, before: str = None, after: str = None, past_limit: int = 5, future_limit: int = 10
+    ) -> dict:
+        """
+        Gets this contact's timeline - a merged, time-ordered view of campaign events and
+        broadcasts, both upcoming and past.
+
+        By default we return up to `future_limit` upcoming events plus the most recent `past_limit`
+        past events. Passing the returned `next_before` cursor pages further back through past events
+        with no limit; passing `next_after` pages further forward through upcoming events. The
+        returned `future_count` is the total number of upcoming events (uncapped) so callers can
+        display an accurate badge.
+        """
+        now = timezone.now()
+        # upcoming events are capped at a year out across the board - projected
+        # repeating schedules stop at the horizon, and one-off events beyond
+        # the horizon are simply dropped
+        horizon = now + timedelta(days=365)
+        campaigns = self._get_campaigns()
+
+        # build the canonical future and past pools - we always compute both so that
+        # future_count is accurate regardless of which page is being requested
+        future_full = []
+        past_full = []
+
+        for when, event in self._get_campaign_events(campaigns):
+            if when < now:
+                past_full.append((when, event))
+            elif when <= horizon:
+                future_full.append((when, event))
+
+        # repeating schedules expand into multiple timeline entries within the
+        # one-year horizon so the user sees the cadence directly rather than a
+        # "Weekly" caption on a single dot
         for broadcast in self.get_scheduled_broadcasts():
-            merged.append(
-                {
-                    "type": "scheduled_broadcast",
-                    "scheduled": broadcast.schedule.next_fire.isoformat(),
-                    "repeat_period": broadcast.schedule.repeat_period,
-                    "message": broadcast.get_translation()["text"],
-                }
-            )
-
+            text = broadcast.get_translation()["text"]
+            for fire_time in broadcast.schedule.project_fires(horizon):
+                future_full.append(
+                    (
+                        fire_time,
+                        {
+                            "type": "scheduled_broadcast",
+                            "scheduled": fire_time.isoformat(),
+                            "message": text,
+                        },
+                    )
+                )
         for trigger in self.get_scheduled_triggers():
-            merged.append(
-                {
-                    "type": "scheduled_trigger",
-                    "scheduled": trigger.schedule.next_fire.isoformat(),
-                    "repeat_period": trigger.schedule.repeat_period,
-                    "flow": trigger.flow.as_export_ref(),
-                }
+            flow_ref = {
+                **trigger.flow.as_export_ref(),
+                "url": reverse("flows.flow_editor", args=[trigger.flow.uuid]),
+            }
+            for fire_time in trigger.schedule.project_fires(horizon):
+                future_full.append(
+                    (
+                        fire_time,
+                        {
+                            "type": "scheduled_trigger",
+                            "scheduled": fire_time.isoformat(),
+                            "flow": flow_ref,
+                        },
+                    )
+                )
+
+        future_full.sort(key=lambda e: e[0])
+
+        # past page: events strictly before the past cursor (defaults to now). a malformed cursor
+        # (e.g. a hand-crafted query param) is treated as absent rather than raising, and the cursor
+        # is clamped to now so a future-dated cursor can't pull the entire (uncapped) past history
+        past_cutoff = now
+        if before:
+            try:
+                past_cutoff = min(iso8601.parse_date(before), now)
+            except iso8601.ParseError:
+                pass
+        past_window = [(w, e) for (w, e) in past_full if w < past_cutoff]
+
+        # sent broadcasts are loaded capped (past_limit + 1) so we can tell if there are more; the
+        # tie-break below tops this up if a tied group lands on the page boundary
+        sent_msg_ids = set()
+        sent = self.msgs.filter(broadcast__isnull=False, created_on__lt=past_cutoff).order_by("-created_on")
+        for msg in sent[: past_limit + 1]:
+            sent_msg_ids.add(msg.id)
+            past_window.append(
+                (
+                    msg.created_on,
+                    {"type": "sent_broadcast", "scheduled": msg.created_on.isoformat(), "message": msg.text},
+                )
             )
 
-        return sorted(merged, key=lambda k: k["scheduled"])
+        past_window.sort(key=lambda e: e[0], reverse=True)
+        has_more_past = len(past_window) > past_limit
+        past_page = past_window[:past_limit]
+
+        # the next-page cursor is a bare timestamp and the next page filters strictly before it, so
+        # if the page boundary splits a group of events sharing the same timestamp, the un-shown
+        # siblings would be dropped. campaign-event times derived from anchor + offset (and snapped
+        # to delivery_hour) can collide, so extend the page to cover the whole tied group at the
+        # boundary - then the strict `< cursor` next page can't skip anything
+        if has_more_past:
+            boundary = past_page[-1][0]
+            while len(past_page) < len(past_window) and past_window[len(past_page)][0] == boundary:
+                past_page.append(past_window[len(past_page)])
+            in_mem_end = len(past_page)  # entries beyond this come from the DB top-up below, not past_window
+
+            # sent broadcasts were only loaded capped, so the in-memory window may not hold every
+            # broadcast tied at the boundary timestamp - fetch any not already included and append
+            # them so the strict `< boundary` next-page cursor can't skip a tied sibling
+            for msg in self.msgs.filter(broadcast__isnull=False, created_on=boundary).exclude(id__in=sent_msg_ids):
+                past_page.append(
+                    (
+                        msg.created_on,
+                        {"type": "sent_broadcast", "scheduled": msg.created_on.isoformat(), "message": msg.text},
+                    )
+                )
+
+            # compare against the in-memory window end (not len(past_page)) - the DB top-up can push
+            # past_page past len(past_window) while older entries still remain to show on the next page
+            has_more_past = len(past_window) > in_mem_end or sent.filter(created_on__lt=boundary).exists()
+
+        # future page: events strictly after the future cursor (defaults to no cursor = from soonest).
+        # a malformed cursor is treated as absent rather than raising
+        after_dt = None
+        if after is not None:
+            try:
+                after_dt = iso8601.parse_date(after)
+            except iso8601.ParseError:
+                pass
+        if after_dt is not None:
+            future_window = [(w, e) for (w, e) in future_full if w > after_dt]
+        else:
+            future_window = future_full
+
+        has_more_future = len(future_window) > future_limit
+        future_page = future_window[:future_limit]
+
+        # same tie-break guard as the past page: the next-page cursor filters strictly after a bare
+        # timestamp, so extend the page to cover any tied group straddling the boundary
+        if has_more_future:
+            boundary = future_page[-1][0]
+            while len(future_page) < len(future_window) and future_window[len(future_page)][0] == boundary:
+                future_page.append(future_window[len(future_page)])
+            has_more_future = len(future_window) > len(future_page)
+
+        return {
+            "now": now.isoformat(),
+            "campaigns": [
+                {
+                    "uuid": str(c.uuid),
+                    "name": c.name,
+                    "url": reverse("campaigns.campaign_read", args=[c.uuid]),
+                }
+                for c in campaigns
+            ],
+            "future_count": len(future_full),
+            "future": [event for _, event in future_page],
+            "past": [event for _, event in past_page],
+            "next_before": past_page[-1][0].isoformat() if has_more_past and past_page else None,
+            "next_after": future_page[-1][0].isoformat() if has_more_future and future_page else None,
+        }
 
     def get_field_serialized(self, field) -> str:
         """
@@ -787,6 +971,41 @@ class Contact(LegacyUUIDMixin, SmartModel):
         else:
             return str(value)
 
+    def as_json(self, context=None) -> dict:
+        """
+        Internal API shape, consumed by the temba-contact-list component. `context` is the DRF serializer context
+        (with `org` and the featured `contact_fields`), used to serialize the URN (anon-masked per org) and the field
+        columns the list renders.
+        """
+        from temba.api.v2.fields import serialize_urn
+
+        org = context.get("org") if context else self.org
+        fields = context.get("contact_fields", ()) if context else ()
+        statuses = {
+            self.STATUS_ACTIVE: "active",
+            self.STATUS_BLOCKED: "blocked",
+            self.STATUS_STOPPED: "stopped",
+            self.STATUS_ARCHIVED: "archived",
+        }
+        urn = self.get_urn()
+        # `prefetched_groups` is attached in bulk by the list endpoint to avoid an N+1; `groups` lets the component
+        # pre-check the group dropdown against each row's current membership.
+        groups = self.prefetched_groups if hasattr(self, "prefetched_groups") else self.get_groups()
+
+        return {
+            "uuid": str(self.uuid),
+            "name": self.name,
+            "status": statuses.get(self.status),
+            # Pre-formatted primary URN for display (the component shows `urn` verbatim); anon orgs are masked by
+            # get_display.
+            "urn": urn.get_display(org=org, international=True) if urn else "",
+            "urns": [serialize_urn(org, u) for u in self.get_urns()],
+            "fields": {f.key: self.get_field_serialized(f) for f in fields},
+            "groups": [{"uuid": str(g.uuid), "name": g.name} for g in groups],
+            "last_seen_on": self.last_seen_on.isoformat() if self.last_seen_on else None,
+            "created_on": self.created_on.isoformat() if self.created_on else None,
+        }
+
     def update(self, name: str, language: str) -> list[modifiers.Modifier]:
         """
         Updates attributes of this contact
@@ -839,40 +1058,36 @@ class Contact(LegacyUUIDMixin, SmartModel):
     def update_urns(self, urns: list[str]) -> list[modifiers.Modifier]:
         return [modifiers.URNs(urns=urns, modification="set")]
 
-    def modify(self, user, mods: list[modifiers.Modifier], refresh=True):
-        self.bulk_modify(user, [self], mods)
+    def modify(self, user, mods: list[modifiers.Modifier], *, via_api=False, refresh=True):
+        self.bulk_modify(user, [self], mods, via_api=via_api)
         if refresh:
             self.refresh_from_db()
 
     @classmethod
-    def bulk_modify(cls, user, contacts, mods: list[modifiers.Modifier]):
+    def bulk_modify(cls, user, contacts, mods: list[modifiers.Modifier], *, via_api=False):
         if not contacts:
             return
 
         org = contacts[0].org
         client = mailroom.get_client()
         try:
-            response = client.contact_modify(org, user, contacts, mods)
+            response = client.contact_modify(org, user, contacts, mods, "api" if via_api else "ui")
         except mailroom.RequestException as e:
             logger.error(f"Contact update failed: {str(e)}", exc_info=True)
             raise e
 
-        def modified(contact):
-            c = response.get("modified", {}).get(contact.id, {}) or response.get(contact.id, {})
-            return len(c.get("events", [])) > 0
-
-        return [c.id for c in contacts if modified(c)]
+        return [c.id for c in contacts if response["events"].get(str(c.uuid), [])]
 
     @classmethod
-    def bulk_change_status(cls, user, contacts, status):
-        cls.bulk_modify(user, contacts, [modifiers.Status(status=status)])
+    def bulk_change_status(cls, user, contacts, status, via_api=False):
+        cls.bulk_modify(user, contacts, [modifiers.Status(status=status)], via_api=via_api)
 
     @classmethod
-    def bulk_change_group(cls, user, contacts, group, add: bool):
+    def bulk_change_group(cls, user, contacts, group, add: bool, via_api=False):
         mod = modifiers.Groups(
             groups=[modifiers.GroupRef(uuid=str(group.uuid), name=group.name)], modification="add" if add else "remove"
         )
-        cls.bulk_modify(user, contacts, mods=[mod])
+        cls.bulk_modify(user, contacts, mods=[mod], via_api=via_api)
 
     @classmethod
     def apply_action_block(cls, user, contacts):
@@ -1186,13 +1401,9 @@ class Contact(LegacyUUIDMixin, SmartModel):
             models.Index(
                 name="contacts_by_org_deleted", fields=("org", "-modified_on", "-id"), condition=Q(is_active=False)
             ),
-            # for getting the last modified_on during smart group population
-            models.Index(name="contacts_contact_org_modified", fields=["org", "-modified_on"]),
-            # for indexing modified contacts
-            models.Index(name="contacts_modified", fields=("modified_on",)),
         ]
         constraints = [
-            models.CheckConstraint(check=Q(status__in=("A", "B", "S", "V")), name="contact_status_valid"),
+            models.CheckConstraint(condition=Q(status__in=("A", "B", "S", "V")), name="contact_status_valid"),
         ]
 
 
@@ -1279,9 +1490,10 @@ class ContactURN(models.Model):
         unique_together = ("identity", "org")
         ordering = ("-priority", "id")
         constraints = [
-            models.CheckConstraint(check=~(Q(scheme="") | Q(path="")), name="non_empty_scheme_and_path"),
+            models.CheckConstraint(condition=~(Q(scheme="") | Q(path="")), name="non_empty_scheme_and_path"),
             models.CheckConstraint(
-                check=Q(identity=Concat(F("scheme"), Value(":"), F("path"))), name="identity_matches_scheme_and_path"
+                condition=Q(identity=Concat(F("scheme"), Value(":"), F("path"))),
+                name="identity_matches_scheme_and_path",
             ),
         ]
 
@@ -1464,7 +1676,7 @@ class ContactGroup(LegacyUUIDMixin, TembaModel, DependencyMixin):
         return "group_smart" if self.group_type == self.TYPE_SMART else "group"
 
     def get_attrs(self):
-        return {"icon": self.icon}
+        return {"icon": self.icon, "type": "group"}
 
     def update_query(self, query, reevaluate=True, parsed=None):
         """
@@ -1785,9 +1997,9 @@ class ContactExport(ExportType):
         include_group_memberships = bool(len(group_fields) > 0)
 
         if search:
-            contact_ids = mailroom.get_client().contact_export(export.org, group, query=search)
+            contact_uuids = mailroom.get_client().contact_export(export.org, group, query=search)
         else:
-            contact_ids = group.contacts.using("readonly").order_by("id").values_list("id", flat=True)
+            contact_uuids = group.contacts.using("readonly").order_by("id").values_list("uuid", flat=True).iterator()
 
         # create our exporter
         exporter = MultiSheetExporter(
@@ -1797,19 +2009,19 @@ class ContactExport(ExportType):
         num_records = 0
 
         # write out contacts in batches to limit memory usage
-        for batch_ids in itertools.batched(contact_ids, 1000):
+        for batch_uuids in itertools.batched(contact_uuids, 1000):
             # fetch all the contacts for our batch
             batch_contacts = (
-                Contact.objects.filter(id__in=batch_ids).prefetch_related("org", "groups").using("readonly")
+                Contact.objects.filter(uuid__in=batch_uuids).prefetch_related("org", "groups").using("readonly")
             )
 
-            # to maintain our sort, we need to lookup by id, create a map of our id->contact to aid in that
-            contact_by_id = {c.id: c for c in batch_contacts}
+            # to maintain our sort, we need to lookup by uuid, create a map of our uuid->contact to aid in that
+            contact_by_uuid = {str(c.uuid): c for c in batch_contacts}
 
             Contact.bulk_urn_cache_initialize(batch_contacts, using="readonly")
 
-            for contact_id in batch_ids:
-                contact = contact_by_id[contact_id]
+            for contact_uuid in batch_uuids:
+                contact = contact_by_uuid[str(contact_uuid)]
 
                 values = []
                 for field in fields:

@@ -5,7 +5,6 @@ from django.conf import settings
 from temba.api.v2 import fields
 from temba.campaigns.models import Campaign, CampaignEvent
 from temba.contacts.models import Contact, ContactField, ContactURN
-from temba.msgs.models import QuickReply
 
 from . import APITest
 
@@ -149,11 +148,23 @@ class FieldsTest(APITest):
 
         self.assertEqual(
             field.run_validation({"eng": [{"text": "Red"}, {"text": "Green"}, {"text": "Blue"}]}),
-            {"eng": [QuickReply("Red", None), QuickReply("Green", None), QuickReply("Blue", None)]},
+            {
+                "eng": [
+                    {"type": "text", "text": "Red"},
+                    {"type": "text", "text": "Green"},
+                    {"type": "text", "text": "Blue"},
+                ]
+            },
         )
         self.assertEqual(
             field.run_validation([{"text": "Red"}, {"text": "Green"}, {"text": "Blue"}]),
-            {"eng": [QuickReply("Red", None), QuickReply("Green", None), QuickReply("Blue", None)]},
+            {
+                "eng": [
+                    {"type": "text", "text": "Red"},
+                    {"type": "text", "text": "Green"},
+                    {"type": "text", "text": "Blue"},
+                ]
+            },
         )
         self.assertEqual(
             field.run_validation(
@@ -163,10 +174,24 @@ class FieldsTest(APITest):
                 }
             ),
             {
-                "eng": [QuickReply("Red", None), QuickReply("Green", None), QuickReply("Blue", None)],
-                "fra": [QuickReply("Rouge", None), QuickReply("Vert", None), QuickReply("Bleu", None)],
+                "eng": [
+                    {"type": "text", "text": "Red"},
+                    {"type": "text", "text": "Green"},
+                    {"type": "text", "text": "Blue"},
+                ],
+                "fra": [
+                    {"type": "text", "text": "Rouge"},
+                    {"type": "text", "text": "Vert"},
+                    {"type": "text", "text": "Bleu"},
+                ],
             },
         )
+        self.assertEqual(field.run_validation([{"type": "location"}]), {"eng": [{"type": "location"}]})
+        self.assertEqual(
+            field.run_validation([{"type": "location", "text": "Click"}]),
+            {"eng": [{"type": "location", "text": "Click"}]},
+        )
+
         self.assertRaises(serializers.ValidationError, field.run_validation, {"eng": ""})  # empty
         self.assertRaises(serializers.ValidationError, field.run_validation, "")  # empty
         self.assertRaises(serializers.ValidationError, field.run_validation, "  ")  # blank
@@ -178,7 +203,13 @@ class FieldsTest(APITest):
         self.assertRaises(serializers.ValidationError, field.run_validation, {"eng": [{"text": "1"}] * 11})  # too many
         self.assertRaises(serializers.ValidationError, field.run_validation, {"eng": [{"text": "a" * 65}]})  # too long
         self.assertRaises(serializers.ValidationError, field.run_validation, {"eng": [{"foo": "??"}]})
-        self.assertRaises(serializers.ValidationError, field.run_validation, {"eng": [{"text": {}}]})  # invalid qr
+        self.assertRaises(serializers.ValidationError, field.run_validation, {"eng": [{"text": {}}]})  # invalid text
+        self.assertRaises(
+            serializers.ValidationError, field.run_validation, {"eng": [{"type": "text"}]}
+        )  # missing text
+        self.assertRaises(
+            serializers.ValidationError, field.run_validation, {"eng": [{"type": "location", "extra": "what?"}]}
+        )  # can't have extra for location type
 
     def test_language_and_translations(self):
         self.assert_field(
@@ -305,7 +336,7 @@ class FieldsTest(APITest):
 
         self.assert_field(
             fields.MediaField(source="test"),
-            submissions={str(media.uuid): media, "xyz": serializers.ValidationError},
+            submissions={str(media.uuid): media, "xyz": serializers.ValidationError, 123: serializers.ValidationError},
             representations={media: str(media.uuid)},
         )
 

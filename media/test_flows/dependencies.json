@@ -1,445 +1,546 @@
 {
   "campaigns": [],
-  "version": 11.12,
+  "version": "13",
   "site": "https://textit.in",
   "flows": [
     {
-      "entry": "49bdff55-717c-48df-a44c-ac596b7f3321",
-      "action_sets": [
+      "_ui": {
+        "nodes": {
+          "06717975-4c39-40a9-8185-96e57698a7bd": {
+            "position": {
+              "left": 56,
+              "top": 1221
+            },
+            "type": "split_by_expression"
+          },
+          "2eefb600-d52d-4cab-8636-67d4d923b630": {
+            "position": {
+              "left": 305,
+              "top": 341
+            },
+            "type": "split_by_webhook"
+          },
+          "3fe6756e-81b3-4ad0-a5f4-2c6f29cdde54": {
+            "position": {
+              "left": 140,
+              "top": 1078
+            },
+            "type": "split_by_groups"
+          },
+          "49bdff55-717c-48df-a44c-ac596b7f3321": {
+            "position": {
+              "left": 51,
+              "top": 0
+            },
+            "type": "execute_actions"
+          },
+          "b6d0a62f-de37-460f-9d09-302a6f906b73": {
+            "position": {
+              "left": 21,
+              "top": 769
+            },
+            "type": "execute_actions"
+          },
+          "bbc9b80e-e99c-4d07-a4df-1b793643d5cb": {
+            "position": {
+              "left": 64,
+              "top": 552
+            },
+            "type": "execute_actions"
+          },
+          "cec4c5c5-5a46-4fd2-a2ce-0e5cf108bf59": {
+            "position": {
+              "left": 47,
+              "top": 441
+            },
+            "type": "wait_for_response"
+          }
+        },
+        "stickies": {}
+      },
+      "expire_after_minutes": 10080,
+      "language": "eng",
+      "localization": {
+        "fra": {
+          "3eaae046-b037-4e17-a8e7-f6dd418a315a": {
+            "text": [
+              "This is in the @fields.french_message"
+            ]
+          },
+          "aada603e-4b53-4049-93ae-bfb24722150a": {
+            "text": [
+              "French @(10 / fields.french_age & fields.french_fries)."
+            ]
+          },
+          "e8879619-af92-45e3-af2d-7158e25cd977": {
+            "name": [
+              "French Rule"
+            ]
+          },
+          "e957abed-e629-45ea-ab8b-7e173204aea7": {
+            "arguments": [
+              "@fields.french_rule"
+            ]
+          }
+        }
+      },
+      "name": "Dependencies",
+      "nodes": [
         {
-          "uuid": "49bdff55-717c-48df-a44c-ac596b7f3321",
-          "x": 51,
-          "y": 0,
-          "destination": "2eefb600-d52d-4cab-8636-67d4d923b630",
           "actions": [
             {
-              "type": "del_group",
-              "uuid": "1813c13f-1e82-4b20-aa96-c7c54785965e",
               "groups": [
                 {
-                  "uuid": "91746f38-ac2f-4b8c-ae59-43342c0d86f6",
-                  "name": "Dog Facts"
+                  "name": "Dog Facts",
+                  "uuid": "91746f38-ac2f-4b8c-ae59-43342c0d86f6"
                 }
-              ]
+              ],
+              "type": "remove_contact_groups",
+              "uuid": "1813c13f-1e82-4b20-aa96-c7c54785965e"
             },
             {
-              "type": "add_group",
-              "uuid": "3ec1d7d2-f6a0-4950-a5f2-3a3653209fa0",
               "groups": [
                 {
-                  "uuid": "a263eba5-4b86-4d72-8793-a6b789a3cd9d",
-                  "name": "Cat Facts"
+                  "name": "Cat Facts",
+                  "uuid": "a263eba5-4b86-4d72-8793-a6b789a3cd9d"
                 }
-              ]
+              ],
+              "type": "add_contact_groups",
+              "uuid": "3ec1d7d2-f6a0-4950-a5f2-3a3653209fa0"
             },
             {
-              "type": "save",
+              "field": {
+                "key": "favorite_cat",
+                "name": "Favorite Cat"
+              },
+              "type": "set_contact_field",
               "uuid": "cccc7794-ff03-4f11-8256-d31143459514",
-              "label": "Favorite Cat",
-              "field": "favorite_cat",
               "value": "Scottish Fold"
             },
             {
-              "type": "reply",
-              "uuid": "aada603e-4b53-4049-93ae-bfb24722150a",
-              "msg": {
-                "fra": "French @(10 / contact.french_age & contact.french_fries).",
-                "eng": "You are @contact.contact_age years old. @(CONCATENATE(\"Your CHW is \", contact.chw)). Your score is @(MAX(parent.contact.top, child.contact.bottom)). On @((DATEVALUE(\"24-10-2017\") + TIMEVALUE(\"12:30\"))). Thanks @parent.contact!"
-              },
-              "media": {
-                "eng": "image:@contact.attachment"
-              },
-              "quick_replies": [],
-              "send_all": false
+              "attachments": [
+                "image:@fields.attachment"
+              ],
+              "text": "You are @fields.contact_age years old. @(\"Your CHW is \" & fields.chw). Your score is @(max(parent.fields.top, child.fields.bottom)). On @((replace_time(date(\"24-10-2017\"), time(\"12:30\")))). Thanks @parent.contact!",
+              "type": "send_msg",
+              "uuid": "aada603e-4b53-4049-93ae-bfb24722150a"
             }
           ],
-          "exit_uuid": "8a840060-bada-46a3-99d7-41dac10383ce"
+          "exits": [
+            {
+              "destination_uuid": "2eefb600-d52d-4cab-8636-67d4d923b630",
+              "uuid": "8a840060-bada-46a3-99d7-41dac10383ce"
+            }
+          ],
+          "uuid": "49bdff55-717c-48df-a44c-ac596b7f3321"
         },
         {
-          "uuid": "bbc9b80e-e99c-4d07-a4df-1b793643d5cb",
-          "x": 64,
-          "y": 552,
-          "destination": "b6d0a62f-de37-460f-9d09-302a6f906b73",
           "actions": [
             {
-              "type": "send",
-              "uuid": "3eaae046-b037-4e17-a8e7-f6dd418a315a",
-              "msg": {
-                "fra": "This is in the @contact.french_message",
-                "eng": "This is a @contact.message"
-              },
-              "contacts": [],
-              "groups": [],
-              "variables": [
-                {
-                  "id": "@contact.recipient"
-                }
-              ],
-              "media": {}
+              "method": "GET",
+              "result_name": "Response 1",
+              "type": "call_webhook",
+              "url": "http://www.google.com/@(url_encode(fields.webhook))/endpoint.json",
+              "uuid": "44ca3caf-ba50-41d8-8648-5c086355e6d7"
+            }
+          ],
+          "exits": [
+            {
+              "destination_uuid": "cec4c5c5-5a46-4fd2-a2ce-0e5cf108bf59",
+              "uuid": "93e0559e-993c-4fad-8a40-99813261135d"
             },
             {
-              "type": "email",
-              "uuid": "95e6f13a-cedb-46e5-980f-37b7e171dad3",
-              "emails": [
+              "uuid": "de783d61-7a65-47cb-a1af-76d0f3d35982"
+            }
+          ],
+          "router": {
+            "cases": [
+              {
+                "arguments": [
+                  "200",
+                  "299"
+                ],
+                "category_uuid": "144addab-71c5-4136-ad8f-c41b82fbfb3c",
+                "type": "has_number_between",
+                "uuid": "6c7bb7e0-13e0-4169-adec-5853be888e99"
+              }
+            ],
+            "categories": [
+              {
+                "exit_uuid": "93e0559e-993c-4fad-8a40-99813261135d",
+                "name": "Success",
+                "uuid": "144addab-71c5-4136-ad8f-c41b82fbfb3c"
+              },
+              {
+                "exit_uuid": "de783d61-7a65-47cb-a1af-76d0f3d35982",
+                "name": "Failure",
+                "uuid": "8652c49e-45ad-4919-9f9c-b4f812d655a7"
+              }
+            ],
+            "default_category_uuid": "8652c49e-45ad-4919-9f9c-b4f812d655a7",
+            "operand": "@webhook.status",
+            "type": "switch"
+          },
+          "uuid": "2eefb600-d52d-4cab-8636-67d4d923b630"
+        },
+        {
+          "exits": [
+            {
+              "destination_uuid": "bbc9b80e-e99c-4d07-a4df-1b793643d5cb",
+              "uuid": "d6b990aa-f38a-40bc-8a13-a0293bbbfb65"
+            },
+            {
+              "uuid": "91f38720-f9db-4699-bb77-fcc673ce5b32"
+            }
+          ],
+          "router": {
+            "cases": [
+              {
+                "arguments": [
+                  "@fields.rule"
+                ],
+                "category_uuid": "e8879619-af92-45e3-af2d-7158e25cd977",
+                "type": "has_any_word",
+                "uuid": "e957abed-e629-45ea-ab8b-7e173204aea7"
+              }
+            ],
+            "categories": [
+              {
+                "exit_uuid": "d6b990aa-f38a-40bc-8a13-a0293bbbfb65",
+                "name": "Rule",
+                "uuid": "e8879619-af92-45e3-af2d-7158e25cd977"
+              },
+              {
+                "exit_uuid": "91f38720-f9db-4699-bb77-fcc673ce5b32",
+                "name": "Other",
+                "uuid": "76bd6b0a-7c3b-4e7c-97c9-3148bdc8f70d"
+              }
+            ],
+            "default_category_uuid": "76bd6b0a-7c3b-4e7c-97c9-3148bdc8f70d",
+            "operand": "@input",
+            "result_name": "Response 2",
+            "type": "switch",
+            "wait": {
+              "type": "msg"
+            }
+          },
+          "uuid": "cec4c5c5-5a46-4fd2-a2ce-0e5cf108bf59"
+        },
+        {
+          "actions": [
+            {
+              "legacy_vars": [
+                "@fields.recipient"
+              ],
+              "text": "This is a @fields.message",
+              "type": "send_broadcast",
+              "uuid": "3eaae046-b037-4e17-a8e7-f6dd418a315a"
+            },
+            {
+              "addresses": [
                 "test@rapidpro.io"
               ],
-              "subject": "Subject @contact.subject",
-              "msg": "Email @contact.email_message"
+              "body": "Email @fields.email_message",
+              "subject": "Subject @fields.subject",
+              "type": "send_email",
+              "uuid": "95e6f13a-cedb-46e5-980f-37b7e171dad3"
             }
           ],
-          "exit_uuid": "a89bc4bf-9bfa-4494-b6f6-cd66cc58bedb"
+          "exits": [
+            {
+              "destination_uuid": "b6d0a62f-de37-460f-9d09-302a6f906b73",
+              "uuid": "a89bc4bf-9bfa-4494-b6f6-cd66cc58bedb"
+            }
+          ],
+          "uuid": "bbc9b80e-e99c-4d07-a4df-1b793643d5cb"
         },
         {
-          "uuid": "b6d0a62f-de37-460f-9d09-302a6f906b73",
-          "x": 21,
-          "y": 769,
-          "destination": "3fe6756e-81b3-4ad0-a5f4-2c6f29cdde54",
           "actions": [
             {
-              "type": "save",
+              "field": {
+                "key": "next_cat_fact",
+                "name": "Next Cat Fact"
+              },
+              "type": "set_contact_field",
               "uuid": "083a62d2-261a-4122-bc2f-1dac8ca17e99",
-              "label": "Next Cat Fact",
-              "field": "next_cat_fact",
-              "value": "@contact.last_cat_fact"
+              "value": "@fields.last_cat_fact"
             },
             {
-              "type": "add_group",
-              "uuid": "0e4525c0-64f6-416a-8c3d-2bedcd1b4dbc",
               "groups": [
-                "@contact.cat_breed"
-              ]
-            },
-            {
-              "type": "del_group",
-              "uuid": "0b3bff5c-6cd1-40e8-9127-43580e69e0d6",
-              "groups": [
-                "@contact.organization"
-              ]
-            },
-            {
-              "type": "trigger-flow",
-              "uuid": "b4691b19-1909-4ada-8d33-a5a462b2f20a",
-              "flow": {
-                "uuid": "2b118e66-960f-4ba5-abb9-2b250916d4ff",
-                "name": "Child Flow"
-              },
-              "contacts": [],
-              "groups": [],
-              "variables": [
                 {
-                  "id": "@contact.other_phone"
+                  "name_match": "@fields.cat_breed"
                 }
-              ]
+              ],
+              "type": "add_contact_groups",
+              "uuid": "0e4525c0-64f6-416a-8c3d-2bedcd1b4dbc"
+            },
+            {
+              "groups": [
+                {
+                  "name_match": "@fields.organization"
+                }
+              ],
+              "type": "remove_contact_groups",
+              "uuid": "0b3bff5c-6cd1-40e8-9127-43580e69e0d6"
+            },
+            {
+              "flow": {
+                "name": "Child Flow",
+                "uuid": "2b118e66-960f-4ba5-abb9-2b250916d4ff"
+              },
+              "legacy_vars": [
+                "@fields.other_phone"
+              ],
+              "type": "start_session",
+              "uuid": "b4691b19-1909-4ada-8d33-a5a462b2f20a"
             }
           ],
-          "exit_uuid": "366a02fd-8621-4ebc-b4fe-5acf4c9df926"
+          "exits": [
+            {
+              "destination_uuid": "3fe6756e-81b3-4ad0-a5f4-2c6f29cdde54",
+              "uuid": "366a02fd-8621-4ebc-b4fe-5acf4c9df926"
+            }
+          ],
+          "uuid": "b6d0a62f-de37-460f-9d09-302a6f906b73"
+        },
+        {
+          "exits": [
+            {
+              "destination_uuid": "06717975-4c39-40a9-8185-96e57698a7bd",
+              "uuid": "1b30b5dc-0bfc-4742-9074-a2fd36eac6a0"
+            },
+            {
+              "uuid": "26fc3a7e-5ba5-4fad-bc0d-339aabcc26bd"
+            },
+            {
+              "uuid": "105262ad-ba0e-4f41-975a-b67713e874ea"
+            }
+          ],
+          "router": {
+            "cases": [
+              {
+                "arguments": [
+                  "04483ae2-9282-4aa1-9758-4914f5a73c0d",
+                  "Monkey Facts"
+                ],
+                "category_uuid": "070f70ce-3ddb-4e21-a0cb-41a9dbd85bf3",
+                "type": "has_group",
+                "uuid": "da80d098-bb84-432e-985b-609fbfa715a6"
+              },
+              {
+                "arguments": [
+                  "bffe656c-8c88-45f0-92f8-d603f5dcd861",
+                  "Fish Facts"
+                ],
+                "category_uuid": "ddcbfdab-81dc-4a06-b8ae-412bc2880658",
+                "type": "has_group",
+                "uuid": "832d32b2-7031-411a-bf5e-1ce3c010cd63"
+              }
+            ],
+            "categories": [
+              {
+                "exit_uuid": "1b30b5dc-0bfc-4742-9074-a2fd36eac6a0",
+                "name": "Monkey Facts",
+                "uuid": "070f70ce-3ddb-4e21-a0cb-41a9dbd85bf3"
+              },
+              {
+                "exit_uuid": "26fc3a7e-5ba5-4fad-bc0d-339aabcc26bd",
+                "name": "Fish Facts",
+                "uuid": "ddcbfdab-81dc-4a06-b8ae-412bc2880658"
+              },
+              {
+                "exit_uuid": "105262ad-ba0e-4f41-975a-b67713e874ea",
+                "name": "Other",
+                "uuid": "f576f2b3-e800-4525-b6ea-e01b1c7dd2ac"
+              }
+            ],
+            "default_category_uuid": "f576f2b3-e800-4525-b6ea-e01b1c7dd2ac",
+            "operand": "@contact.groups",
+            "result_name": "Group Split",
+            "type": "switch"
+          },
+          "uuid": "3fe6756e-81b3-4ad0-a5f4-2c6f29cdde54"
+        },
+        {
+          "exits": [
+            {
+              "uuid": "e9325fd9-30c7-49da-9868-0ff7c6ba9573"
+            }
+          ],
+          "router": {
+            "cases": [],
+            "categories": [
+              {
+                "exit_uuid": "e9325fd9-30c7-49da-9868-0ff7c6ba9573",
+                "name": "All Responses",
+                "uuid": "8c6ea73e-9a05-478e-a396-a8f25d404429"
+              }
+            ],
+            "default_category_uuid": "8c6ea73e-9a05-478e-a396-a8f25d404429",
+            "operand": "@(if(is_error(fields.expression_split), \"@contact.expression_split\", fields.expression_split))",
+            "result_name": "Response 4",
+            "type": "switch"
+          },
+          "uuid": "06717975-4c39-40a9-8185-96e57698a7bd"
         }
       ],
-      "rule_sets": [
-        {
-          "uuid": "2eefb600-d52d-4cab-8636-67d4d923b630",
-          "x": 305,
-          "y": 341,
-          "label": "Response 1",
-          "rules": [
-            {
-              "uuid": "93e0559e-993c-4fad-8a40-99813261135d",
-              "category": {
-                "eng": "Success"
-              },
-              "destination": "cec4c5c5-5a46-4fd2-a2ce-0e5cf108bf59",
-              "destination_type": "R",
-              "test": {
-                "type": "webhook_status",
-                "status": "success"
-              },
-              "label": null
-            },
-            {
-              "uuid": "de783d61-7a65-47cb-a1af-76d0f3d35982",
-              "category": {
-                "eng": "Failure"
-              },
-              "destination": null,
-              "destination_type": null,
-              "test": {
-                "type": "webhook_status",
-                "status": "failure"
-              },
-              "label": null
-            }
-          ],
-          "finished_key": null,
-          "ruleset_type": "webhook",
-          "response_type": "",
-          "operand": "@step.value",
-          "config": {
-            "webhook": "http://www.google.com/@(contact.webhook)/endpoint.json",
-            "webhook_action": "GET",
-            "webhook_headers": []
-          }
-        },
-        {
-          "uuid": "cec4c5c5-5a46-4fd2-a2ce-0e5cf108bf59",
-          "x": 47,
-          "y": 441,
-          "label": "Response 2",
-          "rules": [
-            {
-              "uuid": "d6b990aa-f38a-40bc-8a13-a0293bbbfb65",
-              "category": {
-                "fra": "French Rule",
-                "eng": "Rule"
-              },
-              "destination": "bbc9b80e-e99c-4d07-a4df-1b793643d5cb",
-              "destination_type": "A",
-              "test": {
-                "type": "contains_any",
-                "test": {
-                  "fra": "@contact.french_rule",
-                  "eng": "@contact.rule"
-                }
-              },
-              "label": null
-            },
-            {
-              "uuid": "91f38720-f9db-4699-bb77-fcc673ce5b32",
-              "category": {
-                "eng": "Other"
-              },
-              "destination": null,
-              "destination_type": null,
-              "test": {
-                "type": "true"
-              },
-              "label": null
-            }
-          ],
-          "finished_key": null,
-          "ruleset_type": "wait_message",
-          "response_type": "",
-          "operand": "@step.value",
-          "config": {}
-        },
-        {
-          "uuid": "3fe6756e-81b3-4ad0-a5f4-2c6f29cdde54",
-          "x": 140,
-          "y": 1078,
-          "label": "Group Split",
-          "rules": [
-            {
-              "uuid": "1b30b5dc-0bfc-4742-9074-a2fd36eac6a0",
-              "category": {
-                "eng": "Monkey Facts"
-              },
-              "destination": "06717975-4c39-40a9-8185-96e57698a7bd",
-              "destination_type": "R",
-              "test": {
-                "type": "in_group",
-                "test": {
-                  "name": "Monkey Facts",
-                  "uuid": "04483ae2-9282-4aa1-9758-4914f5a73c0d"
-                }
-              },
-              "label": null
-            },
-            {
-              "uuid": "26fc3a7e-5ba5-4fad-bc0d-339aabcc26bd",
-              "category": {
-                "eng": "Fish Facts"
-              },
-              "destination": null,
-              "destination_type": null,
-              "test": {
-                "type": "in_group",
-                "test": {
-                  "name": "Fish Facts",
-                  "uuid": "bffe656c-8c88-45f0-92f8-d603f5dcd861"
-                }
-              },
-              "label": null
-            },
-            {
-              "uuid": "105262ad-ba0e-4f41-975a-b67713e874ea",
-              "category": {
-                "eng": "Other"
-              },
-              "destination": null,
-              "destination_type": null,
-              "test": {
-                "type": "true"
-              },
-              "label": null
-            }
-          ],
-          "finished_key": null,
-          "ruleset_type": "group",
-          "response_type": "",
-          "operand": "@step.value",
-          "config": {}
-        },
-        {
-          "uuid": "06717975-4c39-40a9-8185-96e57698a7bd",
-          "x": 56,
-          "y": 1221,
-          "label": "Response 4",
-          "rules": [
-            {
-              "uuid": "e9325fd9-30c7-49da-9868-0ff7c6ba9573",
-              "category": {
-                "eng": "All Responses"
-              },
-              "destination": null,
-              "destination_type": null,
-              "test": {
-                "type": "true"
-              },
-              "label": null
-            }
-          ],
-          "finished_key": null,
-          "ruleset_type": "expression",
-          "response_type": "",
-          "operand": "@contact.expression_split",
-          "config": {}
-        }
-      ],
-      "base_language": "eng",
-      "flow_type": "M",
-      "version": "11.12",
-      "metadata": {
-        "expires": 10080,
-        "revision": 1,
-        "uuid": "845f5a05-e92e-46fa-9444-cde06fb53ea0",
-        "name": "Dependencies",
-        "saved_on": "2019-11-21T22:23:03.745441Z"
-      }
+      "revision": 1,
+      "spec_version": "14.4.0",
+      "type": "messaging",
+      "uuid": "845f5a05-e92e-46fa-9444-cde06fb53ea0"
     },
     {
-      "entry": "5d70c460-ae57-4fa8-b88d-27bc6d7f602c",
-      "action_sets": [
+      "_ui": {
+        "nodes": {
+          "3cc660aa-9a93-40a3-9eb9-29e9c1567dae": {
+            "position": {
+              "left": 725,
+              "top": 89
+            },
+            "type": "execute_actions"
+          },
+          "5d70c460-ae57-4fa8-b88d-27bc6d7f602c": {
+            "position": {
+              "left": 100,
+              "top": 0
+            },
+            "type": "execute_actions"
+          },
+          "d42cf9c9-7044-4aa5-8bad-2bdac6ae8090": {
+            "position": {
+              "left": 258,
+              "top": 146
+            },
+            "type": "wait_for_response"
+          }
+        },
+        "stickies": {}
+      },
+      "expire_after_minutes": 10080,
+      "language": "eng",
+      "localization": {
+        "fra": {
+          "dcfc12c6-e55d-4710-b67a-b165fa6b3a20": {
+            "arguments": [
+              "grune"
+            ]
+          }
+        }
+      },
+      "name": "Child Flow",
+      "nodes": [
         {
-          "uuid": "5d70c460-ae57-4fa8-b88d-27bc6d7f602c",
-          "x": 100,
-          "y": 0,
-          "destination": "d42cf9c9-7044-4aa5-8bad-2bdac6ae8090",
           "actions": [
             {
-              "type": "reply",
-              "uuid": "19b93945-4a7c-483c-8f5c-c58cb7ae11e6",
-              "msg": {
-                "eng": "What is your favorite color? @step.value"
-              },
-              "media": {},
-              "quick_replies": [],
-              "send_all": false
+              "text": "What is your favorite color? @input",
+              "type": "send_msg",
+              "uuid": "19b93945-4a7c-483c-8f5c-c58cb7ae11e6"
             }
           ],
-          "exit_uuid": "19537ca9-7354-4648-9f87-0588ec8c31bb"
+          "exits": [
+            {
+              "destination_uuid": "d42cf9c9-7044-4aa5-8bad-2bdac6ae8090",
+              "uuid": "19537ca9-7354-4648-9f87-0588ec8c31bb"
+            }
+          ],
+          "uuid": "5d70c460-ae57-4fa8-b88d-27bc6d7f602c"
         },
         {
-          "uuid": "3cc660aa-9a93-40a3-9eb9-29e9c1567dae",
-          "x": 725,
-          "y": 89,
-          "destination": "d42cf9c9-7044-4aa5-8bad-2bdac6ae8090",
           "actions": [
             {
-              "type": "reply",
-              "uuid": "b79bb401-3389-410a-81cd-6c80100a8c7a",
-              "msg": {
-                "eng": "don't know that one"
-              },
-              "media": {},
-              "quick_replies": [],
-              "send_all": false
+              "text": "don't know that one",
+              "type": "send_msg",
+              "uuid": "b79bb401-3389-410a-81cd-6c80100a8c7a"
             }
           ],
-          "exit_uuid": "685bef1b-f7c7-4931-912e-ab97d6b1575e"
-        }
-      ],
-      "rule_sets": [
+          "exits": [
+            {
+              "destination_uuid": "d42cf9c9-7044-4aa5-8bad-2bdac6ae8090",
+              "uuid": "685bef1b-f7c7-4931-912e-ab97d6b1575e"
+            }
+          ],
+          "uuid": "3cc660aa-9a93-40a3-9eb9-29e9c1567dae"
+        },
         {
-          "uuid": "d42cf9c9-7044-4aa5-8bad-2bdac6ae8090",
-          "x": 258,
-          "y": 146,
-          "label": "Color",
-          "rules": [
+          "exits": [
             {
-              "uuid": "d60e12cc-d404-4713-a153-1f1a61f96a44",
-              "category": {
-                "eng": "Red"
-              },
-              "destination": null,
-              "destination_type": null,
-              "test": {
-                "type": "contains_any",
-                "test": {
-                  "eng": "Red"
-                }
-              },
-              "label": null
+              "uuid": "d60e12cc-d404-4713-a153-1f1a61f96a44"
             },
             {
-              "uuid": "cb71ddfd-d2f4-411e-b39f-fd9936686aff",
-              "category": {
-                "eng": "Green"
-              },
-              "destination": null,
-              "destination_type": null,
-              "test": {
-                "type": "contains_any",
-                "test": {
-                  "fra": "grune",
-                  "eng": "Green"
-                }
-              },
-              "label": null
+              "uuid": "cb71ddfd-d2f4-411e-b39f-fd9936686aff"
             },
             {
-              "uuid": "6b54b491-8a8a-4ed3-af2b-a28da80ee3fc",
-              "category": {
-                "eng": "Blue"
-              },
-              "destination": null,
-              "destination_type": null,
-              "test": {
-                "type": "contains_any",
-                "test": {
-                  "eng": "Blue"
-                }
-              },
-              "label": null
+              "uuid": "6b54b491-8a8a-4ed3-af2b-a28da80ee3fc"
             },
             {
-              "uuid": "539ef77c-4e44-4d9b-9649-cc719fb65da3",
-              "category": {
-                "eng": "Other"
-              },
-              "destination": "3cc660aa-9a93-40a3-9eb9-29e9c1567dae",
-              "destination_type": "A",
-              "test": {
-                "type": "true"
-              },
-              "label": null
+              "destination_uuid": "3cc660aa-9a93-40a3-9eb9-29e9c1567dae",
+              "uuid": "539ef77c-4e44-4d9b-9649-cc719fb65da3"
             }
           ],
-          "finished_key": null,
-          "ruleset_type": "wait_message",
-          "response_type": "",
-          "operand": "@step.value",
-          "config": {}
+          "router": {
+            "cases": [
+              {
+                "arguments": [
+                  "Red"
+                ],
+                "category_uuid": "080868ef-7e45-4b2b-9d3a-8736114e05ab",
+                "type": "has_any_word",
+                "uuid": "2e2a18b2-0d69-46d1-ba3e-9803dd96d6a1"
+              },
+              {
+                "arguments": [
+                  "Green"
+                ],
+                "category_uuid": "34fd4bc2-842a-4817-87f8-273f9180ee87",
+                "type": "has_any_word",
+                "uuid": "dcfc12c6-e55d-4710-b67a-b165fa6b3a20"
+              },
+              {
+                "arguments": [
+                  "Blue"
+                ],
+                "category_uuid": "fa46ff86-a783-4eef-b18d-fdbb54ee692c",
+                "type": "has_any_word",
+                "uuid": "6f2359f2-a213-4e87-9e40-465d42c03b10"
+              }
+            ],
+            "categories": [
+              {
+                "exit_uuid": "d60e12cc-d404-4713-a153-1f1a61f96a44",
+                "name": "Red",
+                "uuid": "080868ef-7e45-4b2b-9d3a-8736114e05ab"
+              },
+              {
+                "exit_uuid": "cb71ddfd-d2f4-411e-b39f-fd9936686aff",
+                "name": "Green",
+                "uuid": "34fd4bc2-842a-4817-87f8-273f9180ee87"
+              },
+              {
+                "exit_uuid": "6b54b491-8a8a-4ed3-af2b-a28da80ee3fc",
+                "name": "Blue",
+                "uuid": "fa46ff86-a783-4eef-b18d-fdbb54ee692c"
+              },
+              {
+                "exit_uuid": "539ef77c-4e44-4d9b-9649-cc719fb65da3",
+                "name": "Other",
+                "uuid": "6399d529-db40-442a-89a9-462a4daa6158"
+              }
+            ],
+            "default_category_uuid": "6399d529-db40-442a-89a9-462a4daa6158",
+            "operand": "@input",
+            "result_name": "Color",
+            "type": "switch",
+            "wait": {
+              "type": "msg"
+            }
+          },
+          "uuid": "d42cf9c9-7044-4aa5-8bad-2bdac6ae8090"
         }
       ],
-      "base_language": "eng",
-      "flow_type": "M",
-      "version": "11.12",
-      "metadata": {
-        "expires": 10080,
-        "revision": 1,
-        "uuid": "2b118e66-960f-4ba5-abb9-2b250916d4ff",
-        "name": "Child Flow",
-        "saved_on": "2019-11-21T22:23:03.749707Z"
-      }
+      "revision": 1,
+      "spec_version": "14.4.0",
+      "type": "messaging",
+      "uuid": "2b118e66-960f-4ba5-abb9-2b250916d4ff"
     }
   ],
   "triggers": []

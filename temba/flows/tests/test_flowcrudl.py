@@ -11,15 +11,14 @@ from django.urls import reverse
 from temba import mailroom
 from temba.api.models import Resthook
 from temba.campaigns.models import Campaign, CampaignEvent
-from temba.classifiers.models import Classifier
 from temba.contacts.models import URN
-from temba.flows.models import Flow, FlowLabel, FlowStart, FlowUserConflictException, ResultsExport
+from temba.flows.models import Flow, FlowLabel, FlowRun, FlowStart, FlowUserConflictException, ResultsExport
 from temba.mailroom.client.types import Exclusions
 from temba.orgs.integrations.dtone.type import DTOneType
 from temba.orgs.models import Export
 from temba.templates.models import TemplateTranslation
 from temba.tests import CRUDLTestMixin, TembaTest, matchers, mock_mailroom
-from temba.tests.base import get_contact_search
+from temba.tests.base import get_contact_search, override_brand
 from temba.tests.requests import MockJsonResponse
 from temba.triggers.models import Trigger
 from temba.utils import json
@@ -581,11 +580,31 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # try to archive flow used by campaign
         response = self.client.post(list_url, {"action": "archive", "objects": flow3.id})
-        # TODO: convert to temba-toast
-        # self.assertContains(response, "The following flows are still used by campaigns")
+        self.assertToast(
+            response,
+            "info",
+            "The following flows with active campaigns or ongoing runs cannot be "
+            "archived: Flow 3. Runs can be interrupted from the editor.",
+        )
 
         flow3.refresh_from_db()
         self.assertFalse(flow3.is_archived)
+
+        # create a flow with ongoing runs
+        flow4 = self.create_flow("Flow 4")
+        flow4.counts.create(scope=f"status:{FlowRun.STATUS_WAITING}", count=10)
+
+        # try to archive flow with ongoing runs
+        response = self.client.post(list_url, {"action": "archive", "objects": flow4.id})
+        self.assertToast(
+            response,
+            "info",
+            "The following flows with active campaigns or ongoing runs cannot be "
+            "archived: Flow 4. Runs can be interrupted from the editor.",
+        )
+
+        flow4.refresh_from_db()
+        self.assertFalse(flow4.is_archived)
 
         # archive first flow
         response = self.client.post(list_url, {"action": "archive", "objects": flow1.id})
@@ -669,7 +688,8 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         response = self.client.get(reverse("flows.flow_filter", args=[label2.uuid]))
         self.assertEqual(f"/flow/labels/{label2.uuid}", response.headers.get(TEMBA_MENU_SELECTION))
 
-    def test_get_definition(self):
+    @mock_mailroom
+    def test_get_definition(self, mr_mocks):
         flow = self.get_flow("color_v13")
 
         # if definition is outdated, metadata values are updated from db object
@@ -705,7 +725,8 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
 
         self.assertEqual("Amazing Flow 2", flow.get_definition()["metadata"]["name"])
 
-    def test_revisions(self):
+    @mock_mailroom
+    def test_revisions(self, mr_mocks):
         flow = self.get_flow("legacy/color_v11")
 
         revisions_url = reverse("flows.flow_revisions", args=[flow.uuid])
@@ -718,8 +739,10 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         revision.spec_version = "11.12"
         revision.save(update_fields=("definition", "spec_version"))
 
-        # create a new migrated revision
+        # create a new migrated revision (rename so the save isn't a no-op)
         flow_def = revision.get_migrated_definition()
+        flow.name = "Color Renamed"
+        flow.save(update_fields=("name",))
         flow.save_revision(self.admin, flow_def)
 
         revisions = list(flow.revisions.all().order_by("-created_on"))
@@ -741,6 +764,7 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
                     "id": revisions[0].id,
                     "version": Flow.CURRENT_SPEC_VERSION,
                     "revision": 2,
+                    "changes": {"tags": ["routing", "spec"]},
                 },
                 {
                     "user": {"email": "admin@textit.com", "name": "Andy"},
@@ -748,6 +772,7 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
                     "id": revisions[1].id,
                     "version": "11.12",
                     "revision": 1,
+                    "changes": {},
                 },
             ],
             response.json()["results"],
@@ -798,13 +823,22 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         response = self.client.post(revisions_url, definition, content_type="application/json")
         self.assertEqual(302, response.status_code)
 
-        # check that we can create a new revision
+        # posting the unchanged definition is a no-op — no new revision created
         self.login(self.admin)
+        response = self.client.post(revisions_url, definition, content_type="application/json")
+        same_revision = response.json()
+        self.assertEqual(1, same_revision["revision"][Flow.DEFINITION_REVISION])
+        self.assertEqual(1, flow.revisions.count())
+
+        # but a real change creates a new revision (rename the flow so the next save
+        # picks up a metadata diff via the live flow.name)
+        flow.name = "Renamed Flow"
+        flow.save(update_fields=("name",))
         response = self.client.post(revisions_url, definition, content_type="application/json")
         new_revision = response.json()
         self.assertEqual(2, new_revision["revision"][Flow.DEFINITION_REVISION])
 
-        # but we can't save our old revision
+        # we can't save our old revision number
         response = self.client.post(revisions_url, definition, content_type="application/json")
         self.assertResponseError(
             response, "description", "Your changes will not be saved until you refresh your browser"
@@ -1003,7 +1037,6 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # with patch("temba.orgs.models.Org.get_estimated_send_time") as mock_get_estimated_send_time:
         with override_settings(SEND_HOURS_WARNING=24, SEND_HOURS_BLOCK=48):
-
             # we send at 10 tps, so make the total take 24 hours
             expected_tps = 10
             mr_mocks.flow_start_preview(
@@ -1096,31 +1129,30 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
             response = self.client.get(reverse("flows.flow_editor", args=[flow.uuid]))
             self.assertEqual(features, set(json.loads(response.context["feature_filters"])))
 
+        # auto_translate is always available
+        assert_features({"auto_translate"})
+
         # add a resthook
         Resthook.objects.create(org=flow.org, created_by=self.admin, modified_by=self.admin)
-        assert_features({"resthook"})
-
-        # add an NLP classifier
-        Classifier.objects.create(org=flow.org, config="", created_by=self.admin, modified_by=self.admin)
-        assert_features({"classifier", "resthook"})
+        assert_features({"auto_translate", "resthook"})
 
         # add a DT One integration
         DTOneType().connect(flow.org, self.admin, "login", "token")
-        assert_features({"airtime", "classifier", "resthook"})
+        assert_features({"auto_translate", "airtime", "resthook"})
 
         # change our channel to use a whatsapp scheme
         self.channel.schemes = [URN.WHATSAPP_SCHEME]
         self.channel.save()
-        assert_features({"whatsapp", "airtime", "classifier", "resthook"})
+        assert_features({"auto_translate", "whatsapp", "airtime", "resthook"})
 
         # change our channel to use a facebook scheme
         self.channel.schemes = [URN.FACEBOOK_SCHEME]
         self.channel.save()
-        assert_features({"optins", "airtime", "classifier", "resthook"})
+        assert_features({"auto_translate", "optins", "airtime", "resthook"})
 
         self.setUpLocations()
 
-        assert_features({"optins", "airtime", "classifier", "resthook", "locations"})
+        assert_features({"auto_translate", "optins", "airtime", "resthook", "locations"})
 
     @mock_mailroom
     def test_template_warnings(self, mr_mocks):
@@ -1263,6 +1295,51 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(response.json()["warnings"], [])
 
     @mock_mailroom
+    def test_template_cost_warnings(self, mr_mocks):
+        self.login(self.admin)
+        flow = self.create_flow("Template Flow")
+        flow.info["dependencies"] = [
+            {"type": "template", "uuid": "f712e05c-bbed-40f1-b3d9-671bb9b60775", "name": "affirmation"}
+        ]
+        flow.save(update_fields=("info",))
+
+        # flow uses templates but brand doesn't have cost_warnings feature
+        mr_mocks.flow_start_preview(query="age > 30", total=2)
+        response = self.client.post(
+            reverse("flows.flow_preview_start", args=[flow.id]),
+            {"query": "age > 30"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.json()["warnings"], [])
+
+        # enable cost_warnings brand feature
+        with override_brand(features=["cost_warnings"]):
+            # flow uses templates, should get cost warning
+            mr_mocks.flow_start_preview(query="age > 30", total=2)
+            response = self.client.post(
+                reverse("flows.flow_preview_start", args=[flow.id]),
+                {"query": "age > 30"},
+                content_type="application/json",
+            )
+            self.assertIn(
+                "This flow uses message templates which may incur additional fees from your channel provider.",
+                response.json()["warnings"],
+            )
+
+            # flow without templates should not get cost warning
+            flow2 = self.create_flow("No Templates")
+            mr_mocks.flow_start_preview(query="age > 30", total=2)
+            response = self.client.post(
+                reverse("flows.flow_preview_start", args=[flow2.id]),
+                {"query": "age > 30"},
+                content_type="application/json",
+            )
+            self.assertNotIn(
+                "This flow uses message templates which may incur additional fees from your channel provider.",
+                response.json()["warnings"],
+            )
+
+    @mock_mailroom
     def test_start(self, mr_mocks):
         contact = self.create_contact("Bob", phone="+593979099111")
         flow = self.create_flow("Test")
@@ -1379,7 +1456,8 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
             ),
         )
 
-    def test_copy_view(self):
+    @mock_mailroom
+    def test_copy_view(self, mr_mocks):
         flow = self.get_flow("color_v13")
 
         self.login(self.admin)
@@ -1637,8 +1715,8 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # hod data is stored in UTC, so we need to adjust for the timezone
         kigali_offset = 2
-        flow1.counts.create(scope=f"msgsin:hour:{9-kigali_offset}", count=5)  # 9a in Kigali
-        flow1.counts.create(scope=f"msgsin:hour:{12-kigali_offset}", count=3)  # 12p in Kigali
+        flow1.counts.create(scope=f"msgsin:hour:{9 - kigali_offset}", count=5)  # 9a in Kigali
+        flow1.counts.create(scope=f"msgsin:hour:{12 - kigali_offset}", count=3)  # 12p in Kigali
 
         response = self.requestView(hod_url, self.admin)
         resp_data = response.json()["data"]
@@ -1722,6 +1800,11 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
 
         self.login(self.admin)
 
+        # rename so the next save isn't a no-op (identical definitions don't create
+        # a new revision)
+        flow.name = "Favorites Renamed"
+        flow.save(update_fields=("name",))
+
         # saving should work
         flow.save_revision(self.admin, flow_json)
 
@@ -1755,7 +1838,8 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
             response.json(),
         )
 
-    def test_change_language(self):
+    @mock_mailroom
+    def test_change_language(self, mr_mocks):
         self.org.set_flow_languages(self.admin, ["eng", "spa", "ara"])
 
         flow = self.get_flow("favorites_v13")
@@ -1897,14 +1981,13 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
                 actual_payload = json.loads(mock_post.call_args_list[0][1]["data"])
                 actual_headers = mock_post.call_args_list[0][1]["headers"]
 
-                self.assertEqual(actual_url, "https://mailroom.temba.io/mr/sim/start")
+                self.assertEqual(actual_url, "https://mailroom.temba.io/mi/sim/start")
                 self.assertEqual(actual_payload["org_id"], flow.org_id)
                 self.assertEqual(
                     {"type": "manual", "user": {"uuid": str(self.admin.uuid), "name": "Andy"}},
                     actual_payload["trigger"],
                 )
                 self.assertEqual(len(actual_payload["assets"]["channels"]), 1)  # fake channel
-                self.assertEqual(len(actual_payload["flows"]), 1)
                 self.assertEqual(actual_headers["Authorization"], "Token sesame")
                 self.assertEqual(actual_headers["Content-Type"], "application/json")
 
@@ -1931,10 +2014,9 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
                 actual_payload = json.loads(mock_post.call_args_list[0][1]["data"])
                 actual_headers = mock_post.call_args_list[0][1]["headers"]
 
-                self.assertEqual(actual_url, "https://mailroom.temba.io/mr/sim/resume")
+                self.assertEqual(actual_url, "https://mailroom.temba.io/mi/sim/resume")
                 self.assertEqual(actual_payload["org_id"], flow.org_id)
                 self.assertEqual(len(actual_payload["assets"]["channels"]), 1)  # fake channel
-                self.assertEqual(len(actual_payload["flows"]), 1)
                 self.assertEqual(actual_headers["Authorization"], "Token sesame")
                 self.assertEqual(actual_headers["Content-Type"], "application/json")
 
@@ -2017,7 +2099,8 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         # can't delete already released flow
         self.assertEqual(response.status_code, 404)
 
-    def test_export_and_download_translation(self):
+    @mock_mailroom
+    def test_export_and_download_translation(self, mr_mocks):
         self.org.set_flow_languages(self.admin, ["spa"])
 
         flow = self.get_flow("favorites")
@@ -2056,7 +2139,8 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
             # filename includes language now
             self.assertEqual('attachment; filename="favorites.spa.po"', response["Content-Disposition"])
 
-    def test_import_translation(self):
+    @mock_mailroom
+    def test_import_translation(self, mr_mocks):
         self.org.set_flow_languages(self.admin, ["eng", "spa"])
 
         flow = self.get_flow("favorites_v13")
@@ -2080,8 +2164,7 @@ class FlowCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertFormError(response.context["form"], "po_file", "File doesn't appear to be a valid PO file.")
 
         # submit with something that's in the base language of the flow
-        po_file = io.BytesIO(
-            b"""
+        po_file = io.BytesIO(b"""
 #, fuzzy
 msgid ""
 msgstr ""
@@ -2091,8 +2174,7 @@ msgstr ""
 
 msgid "Blue"
 msgstr "Bluuu"
-        """
-        )
+        """)
         response = self.requestView(step1_url, self.admin, post_data={"po_file": po_file})
         self.assertFormError(
             response.context["form"],
@@ -2101,8 +2183,7 @@ msgstr "Bluuu"
         )
 
         # submit with something that's in the base language of the flow
-        po_file = io.BytesIO(
-            b"""
+        po_file = io.BytesIO(b"""
 #, fuzzy
 msgid ""
 msgstr ""
@@ -2112,8 +2193,7 @@ msgstr ""
 
 msgid "Blue"
 msgstr "Bleu"
-        """
-        )
+        """)
         response = self.requestView(step1_url, self.admin, post_data={"po_file": po_file})
         self.assertFormError(
             response.context["form"],
@@ -2122,12 +2202,10 @@ msgstr "Bleu"
         )
 
         # submit with something that doesn't have an explicit language
-        po_file = io.BytesIO(
-            b"""
+        po_file = io.BytesIO(b"""
 msgid "Blue"
 msgstr "Azul"
-        """
-        )
+        """)
         response = self.requestView(step1_url, self.admin, post_data={"po_file": po_file})
 
         self.assertEqual(302, response.status_code)
@@ -2137,8 +2215,7 @@ msgstr "Azul"
         self.assertContains(response, "Unknown")
 
         # submit a different PO that does have language set
-        po_file = io.BytesIO(
-            b"""
+        po_file = io.BytesIO(b"""
 #, fuzzy
 msgid ""
 msgstr ""
@@ -2152,8 +2229,7 @@ msgstr ""
 #: Favorites/a4d15ed4-5b24-407f-b86e-4b881f09a186/arguments:0
 msgid "Blue"
 msgstr "Azul"
-"""
-        )
+""")
         response = self.requestView(step1_url, self.admin, post_data={"po_file": po_file})
 
         self.assertEqual(302, response.status_code)
@@ -2165,9 +2241,12 @@ msgstr "Azul"
         self.assertContains(response, "Spanish (spa)")
         self.assertEqual({"language": "spa"}, response.context["form"].initial)
 
-        # confirm the import
+        # confirm the import — the imported definition has new Spanish localization
+        # so it's a real change (no-op imports don't create a new revision)
+        imported_def = flow.get_definition()
+        imported_def["localization"] = {"spa": {"a4d15ed4-5b24-407f-b86e-4b881f09a186": {"arguments": ["Azul"]}}}
         with patch("temba.mailroom.client.client.MailroomClient.po_import") as mock_po_import:
-            mock_po_import.return_value = {"flows": [flow.get_definition()]}
+            mock_po_import.return_value = {"flows": [imported_def]}
 
             response = self.requestView(step2_url, self.admin, post_data={"language": "spa"})
 
@@ -2195,3 +2274,122 @@ msgstr "Azul"
 
         # page should not include a chart for feedback
         self.assertNotContains(response, "Feedback")
+
+    @mock_mailroom
+    def test_interrupt(self, mr_mocks):
+        flow = self.create_flow("Test Flow")
+        other_org_flow = self.create_flow("Other Org Flow", org=self.org2)
+
+        interrupt_url = reverse("flows.flow_interrupt", args=[flow.uuid])
+        other_org_interrupt_url = reverse("flows.flow_interrupt", args=[other_org_flow.uuid])
+
+        # anonymous and agents should not have access
+        self.assertRequestDisallowed(interrupt_url, [None, self.agent])
+
+        # can't interrupt flow in other org
+        self.assertRequestDisallowed(other_org_interrupt_url, [self.admin])
+
+        # fetch the interrupt modal with no waiting contacts
+        response = self.assertUpdateFetch(interrupt_url, [self.editor, self.admin], form_fields=("archive",))
+        self.assertEqual(0, response.context["run_count"])
+        self.assertTrue(response.context["can_interrupt"])
+        self.assertContains(response, "There are no contacts currently in this flow")
+        self.assertNotContains(response, '<input type="submit"')
+
+        # add some waiting contacts
+        flow.counts.create(scope=f"status:{FlowRun.STATUS_WAITING}", count=15)
+
+        # fetch should now show the count
+        response = self.assertUpdateFetch(interrupt_url, [self.admin], form_fields=("archive",))
+        self.assertEqual(15, response.context["run_count"])
+        self.assertTrue(response.context["can_interrupt"])
+        self.assertTrue(response.context["can_archive"])
+        self.assertContains(response, "15")
+        self.assertContains(response, '<input type="submit"')
+
+        # submit the interrupt without archiving
+        self.requestView(interrupt_url, self.admin, post_data={})
+
+        # should have called mailroom to interrupt the flow
+        self.assertEqual([call(self.org, flow)], mr_mocks.calls["flow_interrupt"])
+
+        # flow should not be archived
+        flow.refresh_from_db()
+        self.assertFalse(flow.is_archived)
+
+        # submit the interrupt with archive option
+        mr_mocks.calls.clear()
+        self.requestView(interrupt_url, self.admin, post_data={"archive": True})
+
+        # should have called mailroom to interrupt the flow again
+        self.assertEqual([call(self.org, flow)], mr_mocks.calls["flow_interrupt"])
+
+        # flow should now be archived
+        flow.refresh_from_db()
+        self.assertTrue(flow.is_archived)
+
+        # create a new flow used by a campaign
+        campaign_flow = self.create_flow("Campaign Flow")
+        campaign_flow.counts.create(scope=f"status:{FlowRun.STATUS_WAITING}", count=10)
+        group = self.create_group("Reporters", contacts=[])
+        campaign = Campaign.create(self.org, self.admin, "Reminders", group)
+        registered = self.create_field("registered", "Registered", value_type="D")
+        CampaignEvent.create_flow_event(
+            self.org, self.admin, campaign, registered, offset=1, unit="W", flow=campaign_flow, delivery_hour="13"
+        )
+
+        campaign_interrupt_url = reverse("flows.flow_interrupt", args=[campaign_flow.uuid])
+
+        # fetch the interrupt modal - should show warning instead of archive checkbox
+        response = self.assertUpdateFetch(campaign_interrupt_url, [self.admin], form_fields=("archive",))
+        self.assertFalse(response.context["can_archive"])
+        self.assertContains(response, "used by active campaigns")
+        self.assertNotContains(response, "Archive Flow")
+
+        # submit the interrupt with archive option - should not archive because of campaigns
+        mr_mocks.calls.clear()
+        self.requestView(campaign_interrupt_url, self.admin, post_data={"archive": True})
+
+        self.assertEqual([call(self.org, campaign_flow)], mr_mocks.calls["flow_interrupt"])
+
+        campaign_flow.refresh_from_db()
+        self.assertFalse(campaign_flow.is_archived)
+
+        # test blocking when an interruption is already in progress
+        r = get_valkey_connection()
+        in_progress_flow = self.create_flow("In Progress Flow")
+        in_progress_flow.counts.create(scope=f"status:{FlowRun.STATUS_WAITING}", count=5)
+        in_progress_url = reverse("flows.flow_interrupt", args=[in_progress_flow.uuid])
+
+        # set the redis key to indicate an interruption is in progress
+        progress_key = f"interrupt_flow_progress:{in_progress_flow.id}"
+        r.set(progress_key, 10)
+
+        # fetch should show that we can't interrupt
+        response = self.assertUpdateFetch(in_progress_url, [self.admin], form_fields=("archive",))
+        self.assertFalse(response.context["can_interrupt"])
+
+        # try to submit the interrupt - should be blocked
+        mr_mocks.calls.clear()
+        self.requestView(in_progress_url, self.admin, post_data={})
+
+        # should NOT have called mailroom
+        self.assertEqual([], mr_mocks.calls["flow_interrupt"])
+
+        # clean up the redis key
+        r.delete(progress_key)
+
+        # now it should work
+        response = self.assertUpdateFetch(in_progress_url, [self.admin], form_fields=("archive",))
+        self.assertTrue(response.context["can_interrupt"])
+
+        self.requestView(in_progress_url, self.admin, post_data={})
+        self.assertEqual([call(self.org, in_progress_flow)], mr_mocks.calls["flow_interrupt"])
+
+        # test with redis key set to 0 (interruption complete)
+        r.set(progress_key, 0)
+        response = self.assertUpdateFetch(in_progress_url, [self.admin], form_fields=("archive",))
+        self.assertTrue(response.context["can_interrupt"])
+
+        # clean up
+        r.delete(progress_key)

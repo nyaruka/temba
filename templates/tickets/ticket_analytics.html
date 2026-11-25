@@ -11,6 +11,55 @@
       padding: 2em;
       border-radius: var(--curvature);
     }
+
+    .leaderboard {
+      background: #fff;
+      padding: 2em;
+      border-radius: var(--curvature);
+    }
+
+    .leaderboard table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .leaderboard th {
+      text-align: left;
+      padding: 0.5em 0.75em;
+      border-bottom: 2px solid #e5e7eb;
+      font-weight: 600;
+      color: #6b7280;
+      font-size: 0.85em;
+      text-transform: uppercase;
+    }
+
+    .leaderboard th:last-child {
+      text-align: right;
+    }
+
+    .leaderboard td {
+      padding: 0.65em 0.75em;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .leaderboard td:last-child {
+      text-align: right;
+    }
+
+    .leaderboard a {
+      color: var(--color-primary-dark);
+      text-decoration: none;
+    }
+
+    .leaderboard a:hover {
+      text-decoration: underline;
+    }
+
+    .leaderboard td.empty {
+      text-align: center;
+      padding: 2em;
+      color: #9ca3af;
+    }
   </style>
 {% endblock extra-style %}
 {% block content %}
@@ -47,16 +96,66 @@
                requireWindow
                legend>
   </temba-chart>
+  <div class="leaderboard mt-6" id="leaderboard">
+    <h3 style="margin: 0 0 1em 0; font-size: 1.1em; font-weight: 600;">Top Responders</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Replies</th>
+        </tr>
+      </thead>
+      <tbody id="leaderboard-body">
+        <tr>
+          <td colspan="2" class="empty">Loading...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 {% endblock content %}
 {% block extra-script %}
   {{ block.super }}
   <script type="text/javascript">
+    function escapeHtml(str) {
+      var div = document.createElement("div");
+      div.appendChild(document.createTextNode(str));
+      return div.innerHTML;
+    }
+
+    function fetchLeaderboard(since, until) {
+      var url = "{% url 'tickets.ticket_leaderboard' %}";
+      url += "?since=" + since + "&until=" + until;
+      var tbody = document.getElementById("leaderboard-body");
+      fetch(url, {
+          headers: {
+            "X-Requested-With": "XMLHttpRequest"
+          }
+        })
+        .then(function(response) {
+          return response.json();
+        })
+        .then(function(data) {
+          if (!data.results.length) {
+            tbody.innerHTML = '<tr><td colspan="2" class="empty">No replies in this period</td></tr>';
+            return;
+          }
+          tbody.innerHTML = data.results.map(function(user) {
+            return '<tr><td><a href="/ticket/all/open/?assignee=' + user.uuid + '">' +
+              escapeHtml(user.name) + '</a></td><td>' + user.replies.toLocaleString() + '</td></tr>';
+          }).join("");
+        })
+        .catch(function() {
+          tbody.innerHTML = '<tr><td colspan="2" class="empty">Failed to load</td></tr>';
+        });
+    }
+
     onSpload(function() {
       const rangePicker = document.querySelector("temba-range-picker");
       document.querySelectorAll("temba-chart").forEach(function(chart) {
         chart.setAttribute("start", rangePicker.startDate);
         chart.setAttribute("end", rangePicker.endDate);
       });
+      fetchLeaderboard(rangePicker.startDate, rangePicker.endDate);
       rangePicker.addEventListener("temba-date-range-changed", function(e) {
         const {
           start,
@@ -66,6 +165,7 @@
           chart.setAttribute("start", start);
           chart.setAttribute("end", end);
         });
+        fetchLeaderboard(start, end);
       });
     });
   </script>

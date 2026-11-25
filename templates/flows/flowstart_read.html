@@ -1,0 +1,129 @@
+{% extends "includes/modal.html" %}
+{% load smartmin temba contacts i18n humanize %}
+
+{% block modal-extra-style %}
+  {{ block.super }}
+  <style>
+    .start-section {
+      margin-bottom: 1.25rem;
+    }
+
+    .start-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .start-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-3, #999);
+      margin-bottom: 0.4rem;
+    }
+
+    .start-recipients {
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    /* kept in sync with .exclusion-pill in static/css/frame.css — duplicated here
+       because this modal renders in the temba-modax shadow DOM where frame.css doesn't apply */
+    .exclusion-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0 4px 4px 0;
+      padding: 2px 10px;
+      background: #fff;
+      border: 1px solid var(--color-borders, #e6e6e6);
+      border-radius: 999px;
+      color: var(--text-3, #777);
+      font-size: 12.5px;
+      --icon-color: var(--text-3, #777);
+    }
+
+    .start-params {
+      font-size: 12px;
+      margin: 0;
+      padding: 0.75rem;
+      background: var(--color-widget-bg, #f9f9f9);
+      border-radius: var(--curvature, 6px);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  </style>
+{% endblock modal-extra-style %}
+{% block modal %}
+  <div style="padding: 1rem 1.25rem;">
+    <div class="start-section">
+      <div class="start-label">{% trans "Flow" %}</div>
+      {% if object.flow.is_active %}
+        {# djlint:off #}
+        <a href="{% url 'flows.flow_editor' object.flow.uuid %}"><temba-label type="flow" primary clickable>{{ object.flow.name }}</temba-label></a>
+        {# djlint:on #}
+      {% else %}
+        {% trans "A deleted flow" %}
+      {% endif %}
+    </div>
+    <div class="start-section">
+      <div class="start-label">{% trans "Started by" %}</div>
+      <div>
+        {% if object.start_type == "M" %}
+          {{ object.created_by.email }}
+        {% elif object.start_type == "Z" %}
+          {% trans "Zapier" %}
+        {% else %}
+          {% trans "An API call" %}
+        {% endif %}
+      </div>
+    </div>
+    <div class="start-section">
+      <div class="start-label">{% trans "Started" %}</div>
+      <div>{{ object.created_on|timedate }}</div>
+    </div>
+    {% if object.groups.all or object.contacts.all or object.urns or object.query %}
+      <div class="start-section">
+        <div class="start-label">{% trans "Recipients" %}</div>
+        <div class="start-recipients">{% include "includes/recipients.html" with groups=object.groups.all contacts=object.contacts.all urns=object.urns query=object.query %}</div>
+      </div>
+    {% endif %}
+    {% if object.exclusions.in_a_flow or object.exclusions.started_previously or object.exclusions.not_seen_since_days %}
+      <div class="start-section">
+        <div class="start-label">{% trans "Excluding" %}</div>
+        <div class="start-recipients">{% include "includes/exclusions.html" with exclusions=object.exclusions %}</div>
+      </div>
+    {% endif %}
+    {% if object.params %}
+      <div class="start-section">
+        <div class="start-label">{% trans "Parameters" %}</div>
+        <pre class="start-params">{{ object.params|pretty_json }}</pre>
+      </div>
+    {% endif %}
+    <div class="start-section">
+      <div class="start-label">{% trans "Status" %}</div>
+      {% if object.is_starting %}
+        <temba-start-progress id="{{ object.id }}"
+                              interrupttitle="{{ _("Interrupt Flow") |escapejs }}"
+                              interruptendpoint="{% url 'flows.flowstart_interrupt' object.id %}"
+                              statusendpoint="{% url 'flows.flowstart_status' %}?id={{ object.id }}">
+        </temba-start-progress>
+      {% else %}
+        <div>
+          {% if object.status == 'F' %}
+            {% trans "Failed" %}
+          {% elif object.status == 'I' %}
+            {% trans "Interrupted" %}
+          {% else %}
+            {% trans "Started" %}
+            {% if object.contact_count is not None %}
+              {% blocktrans trimmed with count=object.contact_count|intcomma count counter=object.contact_count %}
+                <b>{{ count }}</b> contact
+              {% plural %}
+                <b>{{ count }}</b> contacts
+              {% endblocktrans %}
+            {% endif %}
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock modal %}

@@ -6,7 +6,6 @@ import temba.utils.uuid
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("orgs", "0175_alter_org_api_rates_alter_org_limits"),
     ]

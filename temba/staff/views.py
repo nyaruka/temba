@@ -14,7 +14,6 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt
 
-from temba.channels.models import Channel
 from temba.orgs.models import Org, OrgRole
 from temba.orgs.views import switch_to_org
 from temba.users.models import User
@@ -58,7 +57,7 @@ class OrgCRUDL(SmartCRUDL):
             menu.new_group()
             menu.add_url_post(
                 _("Service"),
-                f'{reverse("staff.org_service")}?other_org={obj.id}&next={reverse("msgs.msg_inbox", args=[])}',
+                f"{reverse('staff.org_service')}?other_org={obj.id}&next={reverse('msgs.msg_inbox', args=[])}",
             )
 
         def get_context_data(self, **kwargs):
@@ -152,7 +151,7 @@ class OrgCRUDL(SmartCRUDL):
 
         class Form(forms.ModelForm):
             features = forms.MultipleChoiceField(
-                choices=Org.FEATURES_CHOICES + Channel.get_org_features_choices(),
+                choices=Org.FEATURES_CHOICES,
                 widget=SelectMultipleWidget(),
                 required=False,
             )
@@ -181,7 +180,7 @@ class OrgCRUDL(SmartCRUDL):
                         label=limit_type.capitalize(),
                         required=False,
                         initial=org.limits.get(limit_type),
-                        widget=forms.TextInput(attrs={"placeholder": _("Limit")}),
+                        widget=forms.TextInput(attrs={"placeholder": f"{settings.ORG_LIMIT_DEFAULTS[limit_type]}"}),
                     )
                     field_key = f"{limit_type}_limit"
 

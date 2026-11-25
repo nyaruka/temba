@@ -2,11 +2,9 @@ import logging
 from datetime import date, datetime, timedelta
 from urllib.parse import quote, urlencode
 
-import requests
 from smartmin.views import SmartFormView, SmartModelActionView, SmartModelFormView
 
 from django import forms
-from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
@@ -15,7 +13,6 @@ from django.utils import timezone
 from django.utils.functional import cached_property
 
 from temba import __version__ as temba_version
-from temba.utils import json
 from temba.utils.fields import CheckboxWidget, DateWidget, InputWidget, SelectMultipleWidget, SelectWidget
 
 logger = logging.getLogger(__name__)
@@ -176,13 +173,19 @@ class ContextMenuMixin:
         context = super().get_context_data(**kwargs)
 
         # does the page have a content menu?
-        context["has_context_menu"] = len(self._get_context_menu()) > 0
+        context["has_context_menu"] = self.has_context_menu()
 
         # does the page have a search query?
         if "search" in self.request.GET:
             context["has_search_query"] = urlencode({"search": self.request.GET["search"]})
 
         return context
+
+    def has_context_menu(self):
+        """
+        If creating the context menu is non-trivial, views can override this
+        """
+        return len(self._get_context_menu()) > 0
 
     def _get_context_menu(self):
         menu = self.Menu()
@@ -197,6 +200,23 @@ class ContextMenuMixin:
             return JsonResponse({"items": self._get_context_menu()})
 
         return super().get(request, *args, **kwargs)
+
+
+class ModalHeaderMixin:
+    """
+    Mixin for views rendered in a modax that want to customize the modal header colors.
+    """
+
+    modal_header_bg = None
+    modal_header_text = None
+
+    def render_to_response(self, context, **response_kwargs):
+        response = super().render_to_response(context, **response_kwargs)
+        if self.modal_header_bg:
+            response["X-Temba-Header-Bg"] = self.modal_header_bg
+        if self.modal_header_text:
+            response["X-Temba-Header-Text"] = self.modal_header_text
+        return response
 
 
 class ModalFormMixin(SmartFormView):
@@ -303,43 +323,6 @@ class SpaMixin:
         context["temba_path"] = self.spa_path
         context["temba_referer"] = self.spa_referrer_path
         context[TEMBA_MENU_SELECTION] = self.derive_menu_path()
-
-        # the base page should prep the flow editor
-        if not self.is_content_only():
-            dev_mode = getattr(settings, "EDITOR_DEV_MODE", False)
-            dev_host = getattr(settings, "EDITOR_DEV_HOST", "localhost")
-            prefix = "/dev" if dev_mode else settings.STATIC_URL
-
-            # get our list of assets to incude
-            scripts = []
-            styles = []
-
-            if dev_mode:  # pragma: no cover
-                response = requests.get(f"http://{dev_host}:3000/asset-manifest.json")
-                data = response.json()
-            else:
-                with open("node_modules/@nyaruka/flow-editor/build/asset-manifest.json") as json_file:
-                    data = json.load(json_file)
-
-            for key, filename in data.get("files").items():
-                # tack on our prefix for dev mode
-                filename = prefix + filename
-
-                # ignore precache manifest
-                if key.startswith("precache-manifest") or key.startswith("service-worker"):
-                    continue
-
-                # css files
-                if key.endswith(".css") and filename.endswith(".css"):
-                    styles.append(filename)
-
-                # javascript
-                if key.endswith(".js") and filename.endswith(".js"):
-                    scripts.append(filename)
-
-            context["flow_editor_scripts"] = scripts
-            context["flow_editor_styles"] = styles
-            context["dev_mode"] = dev_mode
 
         return context
 

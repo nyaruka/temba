@@ -12,14 +12,13 @@ from temba import mailroom
 from temba.archives.models import Archive
 from temba.campaigns.models import Campaign, CampaignEvent
 from temba.channels.models import Channel, ChannelEvent
-from temba.classifiers.models import Classifier
 from temba.contacts.models import URN, Contact, ContactField, ContactGroup, ContactNote, ContactURN
 from temba.flows.models import Flow, FlowRun, FlowStart
 from temba.globals.models import Global
 from temba.locations.models import AdminBoundary
 from temba.mailroom import modifiers
 from temba.mailroom.client.types import Exclusions
-from temba.msgs.models import Broadcast, Label, Media, Msg, OptIn, QuickReply
+from temba.msgs.models import Broadcast, Label, Media, Msg, OptIn
 from temba.orgs.models import Org, OrgRole
 from temba.tickets.models import Ticket, Topic
 from temba.users.models import User
@@ -66,7 +65,7 @@ def _normalize_extra(extra, count):
         count += 1
         normalized = OrderedDict()
         for k, v in extra.items():
-            (normalized[normalize_key(k)], count) = _normalize_extra(v, count)
+            normalized[normalize_key(k)], count = _normalize_extra(v, count)
 
             if count >= FLOW_START_EXTRA_SIZE:
                 break
@@ -77,7 +76,7 @@ def _normalize_extra(extra, count):
         count += 1
         normalized = OrderedDict()
         for i, v in enumerate(extra):
-            (normalized[str(i)], count) = _normalize_extra(v, count)
+            normalized[str(i)], count = _normalize_extra(v, count)
 
             if count >= FLOW_START_EXTRA_SIZE:
                 break
@@ -279,7 +278,7 @@ class BroadcastWriteSerializer(WriteSerializer):
                 if lang not in translations:
                     translations[lang] = {}
 
-                translations[lang]["quick_replies"] = [qr.as_json() for qr in qrs]
+                translations[lang]["quick_replies"] = qrs
 
         if not base_language:
             base_language = next(iter(translations))
@@ -541,22 +540,6 @@ class ChannelReadSerializer(ReadSerializer):
         fields = ("uuid", "name", "address", "type", "country", "device", "last_seen", "created_on")
 
 
-class ClassifierReadSerializer(ReadSerializer):
-    type = serializers.SerializerMethodField()
-    intents = serializers.SerializerMethodField()
-    created_on = serializers.DateTimeField(default_timezone=tzone.utc)
-
-    def get_type(self, obj):
-        return obj.classifier_type
-
-    def get_intents(self, obj):
-        return [i.name for i in obj.intents.filter(is_active=True).order_by("name")]
-
-    class Meta:
-        model = Classifier
-        fields = ("uuid", "name", "type", "intents", "created_on")
-
-
 class ContactReadSerializer(ReadSerializer):
     STATUSES = {
         Contact.STATUS_ACTIVE: "active",
@@ -768,7 +751,7 @@ class ContactWriteSerializer(WriteSerializer):
                 mods += self.instance.update_static_groups(groups)
 
             if mods:
-                self.instance.modify(self.context["user"], mods)
+                self.instance.modify(self.context["user"], mods, via_api=True)
 
             if note is not None:
                 self.instance.set_note(self.context["user"], note)
@@ -784,6 +767,7 @@ class ContactWriteSerializer(WriteSerializer):
                 urns=urns or [],
                 fields=custom_fields or {},
                 groups=groups or [],
+                via_api=True,
             )
 
         return self.instance
@@ -1005,17 +989,17 @@ class ContactBulkActionSerializer(WriteSerializer):
         group = self.validated_data.get("group")
 
         if action == self.ADD:
-            Contact.bulk_change_group(user, contacts, group, add=True)
+            Contact.bulk_change_group(user, contacts, group, add=True, via_api=True)
         elif action == self.REMOVE:
-            Contact.bulk_change_group(user, contacts, group, add=False)
+            Contact.bulk_change_group(user, contacts, group, add=False, via_api=True)
         elif action == self.INTERRUPT:
             Contact.bulk_interrupt(user, contacts)
         elif action == self.ARCHIVE_MESSAGES or action == self.ARCHIVE:
             Msg.archive_all_for_contacts(contacts)
         elif action == self.BLOCK:
-            Contact.bulk_change_status(user, contacts, modifiers.Status.BLOCKED)
+            Contact.bulk_change_status(user, contacts, modifiers.Status.BLOCKED, via_api=True)
         elif action == self.UNBLOCK:
-            Contact.bulk_change_status(user, contacts, modifiers.Status.ACTIVE)
+            Contact.bulk_change_status(user, contacts, modifiers.Status.ACTIVE, via_api=True)
         elif action == self.DELETE:
             for contact in contacts:
                 contact.release(user)
@@ -1409,7 +1393,7 @@ class MsgReadSerializer(ReadSerializer):
         return [a.as_json() for a in obj.get_attachments()]
 
     def get_quick_replies(self, obj):
-        return [q.as_json() for q in obj.get_quick_replies()]
+        return obj.quickreplies or []
 
     def get_media(self, obj):
         return obj.attachments[0] if obj.attachments else None
@@ -1461,7 +1445,6 @@ class MsgWriteSerializer(WriteSerializer):
     quick_replies = serializers.ListField(
         required=False, child=fields.QuickReplySerializer(), max_length=Msg.MAX_QUICK_REPLIES
     )
-    ticket = fields.TicketField(required=False)  # deprecated and undocumented
 
     def validate(self, data):
         if not (data.get("text") or data.get("attachments")):
@@ -1476,9 +1459,8 @@ class MsgWriteSerializer(WriteSerializer):
         text = self.validated_data.get("text")
         attachments = [str(m) for m in self.validated_data.get("attachments", [])]
         quick_replies = self.validated_data.get("quick_replies", [])
-        ticket = self.validated_data.get("ticket")
 
-        resp = mailroom.get_client().msg_send(org, user, contact, text or "", attachments, quick_replies, ticket)
+        resp = mailroom.get_client().msg_send(org, user, contact, text or "", attachments, quick_replies)
 
         # to avoid fetching the new msg from the database, construct transient instances to pass to the serializer
         channel = None
@@ -1493,10 +1475,6 @@ class MsgWriteSerializer(WriteSerializer):
         else:
             contact_urn = None
 
-        msg_quick_replies = [
-            str(QuickReply(qr["text"], qr.get("extra"))) for qr in resp["event"]["msg"].get("quick_replies", [])
-        ]
-
         return Msg(
             uuid=resp["event"]["uuid"],
             id=resp["id"],
@@ -1510,7 +1488,7 @@ class MsgWriteSerializer(WriteSerializer):
             visibility=Msg.VISIBILITY_VISIBLE,
             text=resp["event"]["msg"].get("text"),
             attachments=resp["event"]["msg"].get("attachments", []),
-            quick_replies=msg_quick_replies,
+            quickreplies=resp["event"]["msg"].get("quick_replies", []),
             created_on=iso8601.parse_date(resp["created_on"]),
             modified_on=iso8601.parse_date(resp["modified_on"]),
         )
@@ -1748,6 +1726,14 @@ class TicketBulkActionSerializer(WriteSerializer):
         elif action == self.ACTION_CHANGE_TOPIC and not data.get("topic"):
             raise serializers.ValidationError('For action "%s" you must specify the topic' % action)
 
+        # check user has permission to assign tickets
+        if action == self.ACTION_ASSIGN:
+            org = self.context["org"]
+            user = self.context["user"]
+            membership = org.get_membership(user)
+            if membership and not membership.can_assign:
+                raise serializers.ValidationError("You do not have permission to assign tickets.")
+
         return data
 
     def save(self):
@@ -1759,16 +1745,19 @@ class TicketBulkActionSerializer(WriteSerializer):
         note = self.validated_data.get("note")
         topic = self.validated_data.get("topic")
 
+        # the UI uses the API but with session auth, so we don't count those calls as actually being via the API
+        via_api = self.context["by_token"]
+
         if action == self.ACTION_ASSIGN:
-            changed_uuids = Ticket.bulk_assign(org, user, tickets, assignee=assignee)
+            changed_uuids = Ticket.bulk_assign(org, user, tickets, assignee=assignee, via_api=via_api)
         elif action == self.ACTION_ADD_NOTE:
-            changed_uuids = Ticket.bulk_add_note(org, user, tickets, note=note)
+            changed_uuids = Ticket.bulk_add_note(org, user, tickets, note=note, via_api=via_api)
         elif action == self.ACTION_CHANGE_TOPIC:
-            changed_uuids = Ticket.bulk_change_topic(org, user, tickets, topic=topic)
+            changed_uuids = Ticket.bulk_change_topic(org, user, tickets, topic=topic, via_api=via_api)
         elif action == self.ACTION_CLOSE:
-            changed_uuids = Ticket.bulk_close(org, user, tickets)
+            changed_uuids = Ticket.bulk_close(org, user, tickets, via_api=via_api)
         elif action == self.ACTION_REOPEN:
-            changed_uuids = Ticket.bulk_reopen(org, user, tickets)
+            changed_uuids = Ticket.bulk_reopen(org, user, tickets, via_api=via_api)
 
         failed = [str(t.uuid) for t in tickets if str(t.uuid) not in changed_uuids]
         return BulkActionFailure(failed) if failed else None
@@ -1835,7 +1824,19 @@ class UserReadSerializer(ReadSerializer):
 
     class Meta:
         model = User
-        fields = ("uuid", "email", "first_name", "last_name", "role", "team", "created_on", "avatar")
+
+        fields = (
+            "uuid",
+            "name",
+            "email",
+            "role",
+            "team",
+            "created_on",
+            "avatar",
+            # deprecated fields
+            "first_name",
+            "last_name",
+        )
 
 
 class WorkspaceReadSerializer(ReadSerializer):

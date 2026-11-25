@@ -1,36 +1,17 @@
 {% extends "smartmin/form.html" %}
 {% load smartmin temba i18n %}
 
-{% block extra-script %}
-  {{ block.super }}
-  <script type="text/javascript"></script>
-{% endblock extra-script %}
 {% block modal-script %}
   {{ block.super }}
   <script type="text/javascript">
     var modax = getModax("#event-add, #event-update");
     var body = modax.getBody();
-    var languageLinks = body.querySelectorAll(".show_language");
     var deliveryHourOptions = body.querySelector("#send-at");
     var flowSelect = body.querySelector("temba-select[name='flow_to_start']");
-    var modeSelect = body.querySelector("temba-select[name='flow_start_mode']");
     var unitSelect = body.querySelector("temba-select[name='unit']");
     var eventTypeSelect = body.querySelector("temba-select[name='event_type']");
     var flowSection = body.querySelector("#flow-section");
     var messageSection = body.querySelector("#message-section");
-
-    var display = 'block';
-    for (var link of languageLinks) {
-      link.addEventListener('click', function(event) {
-        for (var section of body.querySelectorAll(".language")) {
-          section.style.display = 'none';
-        }
-        body.querySelector("." + event.target.dataset.iso).style.display = 'block';
-      });
-
-      body.querySelector("." + link.dataset.iso).style.display = display;
-      display = 'none';
-    }
 
     flowSelect.addEventListener('change', function(event) {
       var selection = event.target.selection;
@@ -94,11 +75,6 @@
       margin-bottom: 8px;
     }
 
-    #languages {
-      position: relative;
-      text-align: right;
-    }
-
     #schedule-section {
       display: flex;
     }
@@ -145,31 +121,6 @@
       opacity: 1;
     }
 
-    #background-flow-message {
-      opacity: 1;
-      transition: margin 200ms ease-in-out;
-      margin-bottom: 16px;
-      margin-top: -2em;
-      padding: 0.5em 1em;
-      background: #f3f3f3;
-      padding-top: 1.5em;
-      border-radius: var(--curvature);
-      font-size: .9em;
-      color: rgba(0, 0, 0, .5);
-      box-shadow: inset 0px 0px 4px rgb(0 0 0 / 10%)
-    }
-
-    #background-flow-message.hide {
-      opacity: 0;
-      max-height: 0;
-      margin-bottom: 0px;
-      margin-top: -4em;
-      margin-bottom: 2em;
-      pointer-events: none;
-
-    }
-
-
     .start-mode-help {
       display: inline-block;
       margin-bottom: 6px;
@@ -185,26 +136,16 @@
       display: flex;
     }
 
-    temba-completion {
-      margin: 10px 0px 20px 0px;
-      --textarea-height: 125px;
+    temba-compose {
+      display: block;
+      margin-bottom: 16px;
     }
   </style>
 {% endblock modal-extra-style %}
 {% block fields %}
   {% render_field 'event_type' %}
   <div id="message-section">
-    <div id="languages">
-      {% if form.languages|length > 1 %}
-        {% for field in form.languages %}
-          {% if forloop.counter0 > 0 %}|{% endif %}
-          {% if field.language.name %}<a data-iso="{{ field.language.iso_code }}" href="javascript:void(0);" class="show_language">{{ field.language.name }}</a>{% endif %}
-        {% endfor %}
-      {% endif %}
-    </div>
-    {% for field in form.languages %}
-      <div class="{{ field.language.iso_code }} {% if forloop.counter0 > 0 %}hide{% endif %} language">{% render_field field.language.iso_code %}</div>
-    {% endfor %}
+    {% render_field 'compose' %}
     <div id="event-message-start-mode">
       <div class="start-mode-help">{% trans "If the contact is already active in a flow" %}</div>
       {% render_field 'message_start_mode' %}

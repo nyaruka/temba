@@ -46,6 +46,17 @@ class ContactURNTest(TembaTest):
         )
         self.assertEqual(urn.get_display(self.org), "JIM")
 
+        urn = ContactURN.objects.create(
+            org=self.org,
+            scheme="telegram",
+            path="100200300",
+            identity="telegram:100200300",
+            priority=50,
+            display="JIM",
+        )
+        self.assertEqual(urn.get_display(self.org, formatted=False), "100200300")
+        self.assertEqual(urn.get_display(self.org, formatted=True), "JIM")
+
     def test_empty_scheme_disallowed(self):
         with self.assertRaises(IntegrityError):
             ContactURN.objects.create(org=self.org, scheme="", path="1234", identity=":1234")
@@ -84,6 +95,18 @@ class URNTest(TembaTest):
         self.assertFalse(URN.validate("whatsapp:br.1A2B3C4D"))
         self.assertFalse(URN.validate("whatsapp:BR.abc-123"))
         self.assertFalse(URN.validate("whatsapp:US.ENT.11815799212886844830"))
+
+    def test_bsuid_urn(self):
+        # valid BSUIDs: two-letter country code, dot, 1-128 alphanumerics
+        self.assertTrue(URN.validate("bsuid:BR.1A2B3C4D5E6F7G8H9I0J"))
+        self.assertTrue(URN.validate("bsuid:US.abcDEF123"))
+
+        # invalid: lowercase country code, missing dot, non-alphanumeric, too long
+        self.assertFalse(URN.validate("bsuid:br.1A2B3C4D"))
+        self.assertFalse(URN.validate("bsuid:BRA.12345"))
+        self.assertFalse(URN.validate("bsuid:BR12345"))
+        self.assertFalse(URN.validate("bsuid:BR.abc-123"))
+        self.assertFalse(URN.validate("bsuid:BR." + "a" * 129))
 
     def test_freshchat_urn(self):
         self.assertTrue(
@@ -166,6 +189,10 @@ class URNTest(TembaTest):
 
         # external ids are case sensitive
         self.assertEqual(URN.normalize("ext: eXterNAL123 "), "ext:eXterNAL123")
+
+        # bsuid - uppercase the two-letter country code prefix
+        self.assertEqual(URN.normalize("bsuid:br.1A2B3C4D"), "bsuid:BR.1A2B3C4D")
+        self.assertEqual(URN.normalize("bsuid:BR.1A2B3C4D"), "bsuid:BR.1A2B3C4D")
 
     def test_validate(self):
         self.assertFalse(URN.validate("xxxx", None))  # un-parseable URNs don't validate

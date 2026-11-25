@@ -4,13 +4,12 @@ from django.core import mail
 from django.test import override_settings
 from django.urls import reverse
 
-from temba.orgs.models import Invitation, OrgRole
+from temba.orgs.models import Invitation, OrgMembership, OrgRole
 from temba.tests.base import TembaTest
 from temba.users.models import User
 
 
 class UserAuthTest(TembaTest):
-
     # Auth is handled by allauth, only test things we override in any way
     def test_signup(self):
         signup_url = reverse("account_signup")
@@ -26,7 +25,6 @@ class UserAuthTest(TembaTest):
         self.assertFormError(form, "email", "Enter a valid email address.")
         self.assertFormError(form, "first_name", "This field is required.")
         self.assertFormError(form, "last_name", "This field is required.")
-        self.assertFormError(form, "workspace", "This field is required.")
 
         # test valid signup
         response = self.client.post(
@@ -34,10 +32,8 @@ class UserAuthTest(TembaTest):
             {
                 "first_name": "Bobby",
                 "last_name": "Burgers",
-                "workspace": "Bobby's Burgers",
                 "password1": "arstqwfp",
                 "email": "bobbyburgers@burgers.com",
-                "timezone": "America/New_York",
             },
         )
 
@@ -47,8 +43,11 @@ class UserAuthTest(TembaTest):
         self.assertEqual("Please Confirm Your Email Address", mail.outbox[0].subject)
         self.assertEqual(["bobbyburgers@burgers.com"], mail.outbox[0].recipients())
 
-    def test_change_password(self):
+        # user should exist but have no org membership (workspace created after email verification)
+        user = User.objects.get(email="bobbyburgers@burgers.com")
+        self.assertFalse(OrgMembership.objects.filter(user=user).exists())
 
+    def test_change_password(self):
         # make sure we get the correct help text on change password page
         self.login(self.admin)
 
@@ -67,7 +66,7 @@ class UserAuthTest(TembaTest):
 
         # Reauthenticate and make sure we get the QR code
         response = self.client.post(
-            f"{reverse("account_reauthenticate")}?{urlencode({'next': mfa_url})}",
+            f"{reverse('account_reauthenticate')}?{urlencode({'next': mfa_url})}",
             {"login": self.admin.email, "password": self.default_password},
             follow=True,
         )
@@ -96,7 +95,6 @@ class UserAuthTest(TembaTest):
 
     @override_settings(BRAND={"features": []})
     def test_invite_with_closed_signups(self):
-
         signup_url = reverse("account_signup")
 
         # make sure we can't access the signup page
@@ -109,10 +107,8 @@ class UserAuthTest(TembaTest):
             {
                 "first_name": "Bobby",
                 "last_name": "Burgers",
-                "workspace": "Bobby's Burgers",
                 "password1": "arstqwfp",
                 "email": "bobbyburgers@burgers.com",
-                "timezone": "America/New_York",
             },
         )
         self.assertContains(response, "Sign Up Closed")
@@ -132,8 +128,6 @@ class UserAuthTest(TembaTest):
                 "last_name": "Burgers",
                 "email": "bobbyburgers@burgers.com",
                 "password1": "arstqwfp",
-                "workspace": "Bobby's Burgers",
-                "timezone": "America/New_York",
             },
             follow=True,
         )

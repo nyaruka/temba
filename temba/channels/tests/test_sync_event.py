@@ -4,7 +4,6 @@ from ..models import Channel, SyncEvent
 
 
 class SyncEventTest(TembaTest):
-
     @mock_mailroom
     def test_sync_event_model(self, mr_mocks):
         self.sync_event = SyncEvent.create(

@@ -5,15 +5,15 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     container:
-      image: python:3.12-trixie
+      image: python:3.14-trixie
 
     env:
       node-version: '20'
-      mailroom-version: '10.2.0'
+      mailroom-version: '26.1.126'
 
     services:
       valkey:
-        image: valkey/valkey:8.0-alpine
+        image: valkey/valkey:8.1-alpine
         ports:
           - 6379:6379
       postgres:
@@ -26,7 +26,7 @@ jobs:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
       localstack:
-        image: localstack/localstack:4.0
+        image: localstack/localstack:4.14
         env:
           SERVICES: s3,dynamodb
         ports:
@@ -34,55 +34,52 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Linux packages
         run: |
           apt update
           apt install -y --no-install-recommends libgdal-dev ffmpeg
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: 2.2.1
-          virtualenvs-in-project: true
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
 
       - name: Install Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.node-version }}
 
       - name: Initialize environment
         run: |
-          poetry lock --no-interaction
-          poetry install --no-root
+          uv venv
+          uv sync --frozen
           corepack enable
           yarn install
           yarn global add less
           cd temba && ln -s settings.py.dev settings.py && cd ..
-          poetry run python manage.py migrate
-          poetry run python manage.py migrate_dynamo --testing
-          poetry run python manage.py create_buckets --testing
+          uv run python manage.py migrate
+          uv run python manage.py migrate_dynamo --testing
+          uv run python manage.py create_buckets --testing
           # fetch, extract and start mailroom
           wget https://github.com/nyaruka/mailroom/releases/download/v${{ env.mailroom-version }}/mailroom_${{ env.mailroom-version }}_linux_amd64.tar.gz
           tar -xvf mailroom_${{ env.mailroom-version }}_linux_amd64.tar.gz mailroom
-          # start mailroom but use different valkey db so that it doesn't actually handle tasks
-          ./mailroom -db=postgres://temba:temba@postgres:5432/temba?sslmode=disable -valkey=valkey://valkey:6379/15 -log-level=info > mailroom.log &
+          # start mailroom with workers disabled so it serves the web API but doesn't pop any queued tasks
+          ./mailroom -db=postgres://temba:temba@postgres:5432/temba?sslmode=disable -workers-realtime=0 -workers-batch=0 -workers-throttled=0 -log-level=info > mailroom.log &
 
       - name: Run pre-test checks
         run: |
           # test that everything is well formatted, no missing migrations etc
-          poetry run python code_check.py --debug
+          uv run python code_check.py --debug
           # check we can collect and compress all static files
-          poetry run python manage.py collectstatic --noinput --verbosity=0
-          poetry run python manage.py compress --extension=".html" --settings=temba.settings_compress
+          uv run python manage.py collectstatic --noinput --verbosity=0
+          uv run python manage.py compress --extension=".html" --settings=temba.settings_compress
 
       - name: Run tests
         run: |
-          poetry run coverage run manage.py test --keepdb --noinput --verbosity=2
-          poetry run coverage report -i
-          poetry run coverage xml
-          poetry run coverage html
+          uv run coverage run manage.py test --keepdb --noinput --verbosity=2
+          uv run coverage report -i
+          uv run coverage xml
+          uv run coverage html
 
       - name: Save coverage report as artifact
         uses: actions/upload-artifact@v4

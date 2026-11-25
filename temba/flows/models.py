@@ -15,27 +15,28 @@ from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.postgres.indexes import OpClass
 from django.db import models, transaction
-from django.db.models import Max, Prefetch, Q, Sum
-from django.db.models.functions import Lower, TruncDate
+from django.db.models import Prefetch, Q, Sum
+from django.db.models.functions import Lower
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from temba import mailroom
 from temba.ai.models import LLM
 from temba.channels.models import Channel
-from temba.classifiers.models import Classifier
 from temba.contacts.models import Contact, ContactField, ContactGroup
 from temba.globals.models import Global
 from temba.msgs.models import Label, OptIn
-from temba.orgs.models import DependencyMixin, Export, ExportType, Org, User
+from temba.orgs.models import DependencyMixin, Export, ExportType, Org
 from temba.templates.models import Template
 from temba.tickets.models import Topic
+from temba.users.models import User
 from temba.utils.export.models import MultiSheetExporter
 from temba.utils.models import JSONAsTextField, LegacyUUIDMixin, TembaModel, delete_in_batches
 from temba.utils.models.counts import BaseScopedCount, BaseSquashableCount
 from temba.utils.uuid import uuid4
 
 from . import legacy
+from .changes import compute_changes
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +101,7 @@ class Flow(LegacyUUIDMixin, TembaModel, DependencyMixin):
 
     FINAL_LEGACY_VERSION = legacy.VERSIONS[-1]
     INITIAL_GOFLOW_VERSION = "13.0.0"  # initial version of flow spec to use new engine
-    CURRENT_SPEC_VERSION = "14.3.0"  # current flow spec version
+    CURRENT_SPEC_VERSION = "14.4.1"  # current flow spec version
 
     EXPIRES_CHOICES = {
         TYPE_MESSAGE: (
@@ -164,7 +165,6 @@ class Flow(LegacyUUIDMixin, TembaModel, DependencyMixin):
 
     # dependencies on other assets
     channel_dependencies = models.ManyToManyField(Channel, related_name="dependent_flows")
-    classifier_dependencies = models.ManyToManyField(Classifier, related_name="dependent_flows")
     field_dependencies = models.ManyToManyField(ContactField, related_name="dependent_flows")
     flow_dependencies = models.ManyToManyField("Flow", related_name="dependent_flows")
     global_dependencies = models.ManyToManyField(Global, related_name="dependent_flows")
@@ -221,10 +221,6 @@ class Flow(LegacyUUIDMixin, TembaModel, DependencyMixin):
 
         return flow
 
-    @property
-    def engine_type(self):
-        return Flow.GOFLOW_TYPES.get(self.flow_type, "")
-
     @classmethod
     def import_flows(cls, org, user, export_json, dependency_mapping, same_site=False):
         """
@@ -259,7 +255,7 @@ class Flow(LegacyUUIDMixin, TembaModel, DependencyMixin):
 
             if flow:
                 flow.name = Flow.get_unique_name(org, flow_name, ignore=flow)
-                flow.version_number = flow_version
+                flow.version_number = str(flow_version)
                 flow.expires_after_minutes = flow_expires
                 flow.save(update_fields=("name", "expires_after_minutes"))
             else:
@@ -345,14 +341,24 @@ class Flow(LegacyUUIDMixin, TembaModel, DependencyMixin):
     def apply_action_archive(cls, user, flows):
         from temba.campaigns.models import CampaignEvent
 
-        for flow in flows:
-            # don't archive flows that belong to campaigns
-            has_events = CampaignEvent.objects.filter(
-                is_active=True, flow=flow, campaign__org=flow.org, campaign__is_archived=False
-            ).exists()
+        # single query to get IDs of all flows used by active campaigns
+        campaign_flow_ids = set(
+            CampaignEvent.objects.filter(is_active=True, flow__in=flows, campaign__is_archived=False).values_list(
+                "flow_id", flat=True
+            )
+        )
 
-            if not has_events:
-                flow.archive(user)
+        non_campaign_flows = [f for f in flows if f.id not in campaign_flow_ids]
+
+        # single prefetch for run counts
+        cls.prefetch_run_counts(non_campaign_flows)
+
+        for flow in non_campaign_flows:
+            counts = flow.get_run_counts()
+            if counts[FlowRun.STATUS_ACTIVE] + counts[FlowRun.STATUS_WAITING] > 0:
+                continue
+
+            flow.archive(user)
 
     @classmethod
     def apply_action_restore(cls, user, flows):
@@ -366,7 +372,6 @@ class Flow(LegacyUUIDMixin, TembaModel, DependencyMixin):
         return {"icon": self.TYPE_ICONS.get(self.flow_type, "flow"), "type": self.flow_type, "uuid": self.uuid}
 
     def get_category_counts(self, result_key=None):
-
         # get the possible results from the flow metadata
         results_by_key = {r["key"]: r for r in self.info["results"]}
 
@@ -440,9 +445,14 @@ class Flow(LegacyUUIDMixin, TembaModel, DependencyMixin):
         """
         Returns whether this flow is already being started by a user
         """
+        a_week_ago = timezone.now() - timedelta(days=7)
         return (
-            self.starts.filter(status__in=(FlowStart.STATUS_PENDING, FlowStart.STATUS_STARTED))
-            .exclude(created_by=None)
+            self.starts.filter(
+                status__in=(FlowStart.STATUS_PENDING, FlowStart.STATUS_STARTED),
+                created_on__gte=a_week_ago,
+                created_by__isnull=False,
+            )
+            .order_by("-created_on")
             .first()
         )
 
@@ -492,7 +502,6 @@ class Flow(LegacyUUIDMixin, TembaModel, DependencyMixin):
         # or name (this is an import from other workspace)
         dep_types = {
             "channel": self.org.channels.filter(is_active=True),
-            "classifier": self.org.classifiers.filter(is_active=True),
             "flow": self.org.flows.filter(is_active=True),
             "llm": self.org.llms.filter(is_active=True),
             "template": self.org.templates.all(),
@@ -696,11 +705,42 @@ class Flow(LegacyUUIDMixin, TembaModel, DependencyMixin):
         else:
             revision = 1
 
-        # update metadata from database object
+        # update metadata from database object; normalize spec_version to CURRENT
+        # since that's what we persist on the new revision row, so the saved row
+        # and the diff input agree
         definition[Flow.DEFINITION_UUID] = self.uuid
         definition[Flow.DEFINITION_NAME] = self.name
         definition[Flow.DEFINITION_REVISION] = revision
         definition[Flow.DEFINITION_EXPIRE_AFTER_MINUTES] = self.expires_after_minutes
+        definition[Flow.DEFINITION_SPEC_VERSION] = Flow.CURRENT_SPEC_VERSION
+
+        # diff against prior revision so we can skip no-op saves and later collapse
+        # like-for-like edits; done outside the transaction below because
+        # get_migrated_definition() may call mailroom (HTTP) and we don't want that
+        # holding row locks
+        changes = None
+        if current_revision:
+            prior_def = current_revision.definition
+            if current_revision.spec_version != Flow.CURRENT_SPEC_VERSION:
+                # migrate the prior forward so the schemas align; accepting that name/expire
+                # then come from the live flow (get_migrated_definition rewrites them) — fine
+                # because cross-spec saves are rare and not where metadata diffs matter
+                try:
+                    prior_def = current_revision.get_migrated_definition()
+                    # get_migrated_definition rewrites spec_version to CURRENT, but we
+                    # want compute_changes to see the original spec so it can tag "spec"
+                    prior_def[Flow.DEFINITION_SPEC_VERSION] = current_revision.spec_version
+                except Exception:
+                    # don't block a valid save just because the legacy migration failed
+                    logger.warning("could not migrate prior revision for flow %s", self.uuid, exc_info=True)
+                    prior_def = None
+            if prior_def is not None:
+                changes = compute_changes(prior_def, definition)
+
+        # if the definition is unchanged from the current revision, don't create a
+        # new one — author-only changes shouldn't produce revision churn
+        if changes is not None and not changes["tags"]:
+            return current_revision, (self.info or {}).get("issues", [])
 
         # inspect the flow (with optional validation)
         info = mailroom.get_client().flow_inspect(self.org, definition)
@@ -731,12 +771,21 @@ class Flow(LegacyUUIDMixin, TembaModel, DependencyMixin):
             # create our new revision
             revision = self.revisions.create(
                 definition=definition,
+                changes=changes,
                 created_by=user,
                 spec_version=Flow.CURRENT_SPEC_VERSION,
                 revision=revision,
             )
 
             self.update_dependencies(info["dependencies"])
+
+        # cap the revision history inline so it doesn't pile up between cron runs;
+        # best-effort and outside the save transaction so a trim failure can neither
+        # roll back nor surface as a save failure (the cron task is the safety net)
+        try:
+            FlowRevision.trim_for_flow(self.id)
+        except Exception:
+            logger.warning("failed to trim revisions for flow %s", self.uuid, exc_info=True)
 
         return revision, info["issues"]
 
@@ -789,7 +838,6 @@ class Flow(LegacyUUIDMixin, TembaModel, DependencyMixin):
         # find all the dependencies in the database
         dep_objs = {
             "channel": self.org.channels.filter(is_active=True, uuid__in=identifiers["channel"]),
-            "classifier": self.org.classifiers.filter(is_active=True, uuid__in=identifiers["classifier"]),
             "field": self.org.fields.filter(is_active=True, is_proxy=False, key__in=identifiers["field"]),
             "flow": self.org.flows.filter(is_active=True, uuid__in=identifiers["flow"]),
             "global": self.org.globals.filter(is_active=True, key__in=identifiers["global"]),
@@ -825,7 +873,6 @@ class Flow(LegacyUUIDMixin, TembaModel, DependencyMixin):
         return datetime.fromisoformat(first.scope[12:]).replace(tzinfo=utc_timezone).date() if first else None
 
     def get_engagement_timeline(self, since, until) -> dict:
-
         rollup_by = "day"
 
         # bucket dates into months or weeks depending on the range
@@ -908,7 +955,6 @@ class Flow(LegacyUUIDMixin, TembaModel, DependencyMixin):
             trigger.release(user)
 
         self.channel_dependencies.clear()
-        self.classifier_dependencies.clear()
         self.field_dependencies.clear()
         self.flow_dependencies.clear()
         self.global_dependencies.clear()
@@ -931,8 +977,7 @@ class Flow(LegacyUUIDMixin, TembaModel, DependencyMixin):
 
         assert not self.is_active, "can't delete flow which hasn't been released"
 
-        for rev in self.revisions.all():
-            rev.release()
+        delete_in_batches(self.revisions.all())
 
         for trigger in self.triggers.all():
             trigger.delete()
@@ -975,18 +1020,14 @@ class FlowSession(models.Model):
 
     id = models.BigAutoField(primary_key=True)
     uuid = models.UUIDField(unique=True)
-    contact_uuid = models.UUIDField(null=True)
+    contact_uuid = models.UUIDField()
     status = models.CharField(max_length=1, choices=STATUS_CHOICES)
     last_sprint_uuid = models.UUIDField(null=True)  # last sprint in this session
     current_flow_uuid = models.UUIDField(null=True)  # the flow of the waiting run
     call_uuid = models.UUIDField(null=True)  # the call used for sessions over IVR
 
-    # the modality of this session
-    session_type = models.CharField(max_length=1, choices=Flow.TYPE_CHOICES, default=Flow.TYPE_MESSAGE)
-
-    # the engine output of this session (either stored in this field or at the URL pointed to by output_url)
-    output = JSONAsTextField(null=True, default=dict)
-    output_url = models.URLField(null=True, max_length=2048)
+    session_type = models.CharField(max_length=1, choices=Flow.TYPE_CHOICES, default=Flow.TYPE_MESSAGE)  # flow type
+    output = JSONAsTextField(default=dict)  # the engine output
 
     # when this session was created and ended
     created_on = models.DateTimeField(default=timezone.now)
@@ -1003,12 +1044,7 @@ class FlowSession(models.Model):
         constraints = [
             # ensure that non-waiting sessions have an ended_on
             models.CheckConstraint(
-                check=Q(status="W") | Q(ended_on__isnull=False), name="flows_session_non_waiting_has_ended_on"
-            ),
-            # ensure that all sessions have output or output_url
-            models.CheckConstraint(
-                check=Q(output__isnull=False) | Q(output_url__isnull=False),
-                name="flows_session_has_output_or_url",
+                condition=Q(status="W") | Q(ended_on__isnull=False), name="flows_session_non_waiting_has_ended_on"
             ),
         ]
 
@@ -1141,7 +1177,7 @@ class FlowRun(models.Model):
         constraints = [
             # all non-active/waiting runs must have an exited_on
             models.CheckConstraint(
-                check=Q(status__in=("A", "W")) | Q(exited_on__isnull=False),
+                condition=Q(status__in=("A", "W")) | Q(exited_on__isnull=False),
                 name="flows_run_inactive_has_exited_on",
             ),
         ]
@@ -1153,11 +1189,17 @@ class FlowRevision(models.Model):
     """
 
     LAST_TRIM_KEY = "temba:last_flow_revision_trim"
+    MAX_REVISIONS = 500
 
     flow = models.ForeignKey(Flow, on_delete=models.PROTECT, related_name="revisions")
     definition = JSONAsTextField(default=dict)
     spec_version = models.CharField(default=Flow.FINAL_LEGACY_VERSION, max_length=8)
     revision = models.IntegerField()
+
+    # categorized record of what changed since the previous revision; null for legacy
+    # revisions that pre-date this field.
+    changes = models.JSONField(null=True, default=None)
+
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="revisions")
     created_on = models.DateTimeField(default=timezone.now)
 
@@ -1180,35 +1222,17 @@ class FlowRevision(models.Model):
     @classmethod
     def trim_for_flow(cls, flow_id):
         """
-        Trims the revisions for the passed in flow.
-
-        Our logic is:
-         * always keep last 25 revisions
-         * for any revision beyond those, collapse to first revision for that day
+        Keeps the MAX_REVISIONS most recent revisions for this flow and deletes the rest.
 
         :param flow: the id of the flow to trim revisions for
         :return: the number of trimmed revisions
         """
-        # find what date cutoff we will use for "25 most recent"
-        cutoff = FlowRevision.objects.filter(flow=flow_id).order_by("-created_on")[24:25]
-
-        # fewer than 25 revisions
-        if not cutoff:
-            return 0
-
-        cutoff = cutoff[0].created_on
-
-        # find the ids of the first revision for each day starting at the cutoff
-        keepers = (
-            FlowRevision.objects.filter(flow=flow_id, created_on__lt=cutoff)
-            .annotate(created_date=TruncDate("created_on"))
-            .values("created_date")
-            .annotate(max_id=Max("id"))
-            .values_list("max_id", flat=True)
+        keepers = list(
+            FlowRevision.objects.filter(flow=flow_id)
+            .order_by("-created_on", "-id")
+            .values_list("id", flat=True)[: cls.MAX_REVISIONS]
         )
-
-        # delete the rest
-        return FlowRevision.objects.filter(flow=flow_id, created_on__lt=cutoff).exclude(id__in=keepers).delete()[0]
+        return FlowRevision.objects.filter(flow=flow_id).exclude(id__in=keepers).delete()[0]
 
     @classmethod
     def validate_legacy_definition(cls, definition):
@@ -1283,10 +1307,8 @@ class FlowRevision(models.Model):
             "created_on": self.created_on.isoformat(),
             "version": self.spec_version,
             "revision": self.revision,
+            "changes": self.changes or {},
         }
-
-    def release(self):
-        self.delete()
 
 
 class FlowActivityCount(BaseScopedCount):
@@ -1713,6 +1735,12 @@ class FlowStart(models.Model):
             ),
             # used by the flow_starts type filters page
             models.Index(name="flows_flowstart_org_start_type", fields=["org", "start_type", "-created_on"]),
+            # used by get_active_start
+            models.Index(
+                name="flows_flowstarts_flow_active",
+                fields=["flow", "-created_on"],
+                condition=Q(status__in=("P", "S")),
+            ),
         ]
 
 
@@ -1773,7 +1801,7 @@ class FlowLabel(TembaModel):
         changed = []
 
         for flow in flows:
-            # if we are adding the flow label and this flow doesnt have it, add it
+            # if we are adding the flow label and this flow doesn't have it, add it
             if add:
                 if not flow.labels.filter(pk=self.id):
                     flow.labels.add(self)

@@ -7,7 +7,7 @@ from django.conf import settings
 
 from temba.contacts.models import Contact
 from temba.flows.models import FlowStart
-from temba.msgs.models import Broadcast, QuickReply
+from temba.msgs.models import Broadcast
 from temba.utils import json
 
 from ..modifiers import Modifier
@@ -46,9 +46,6 @@ class MailroomClient:
         if auth_token:
             self.headers["Authorization"] = "Token " + auth_token
 
-    def version(self):
-        return self._request("", post=False).get("version")
-
     def android_event(self, org, channel, phone: str, event_type: str, extra: dict, occurred_on):
         return self._request(
             "android/event",
@@ -83,18 +80,35 @@ class MailroomClient:
     def channel_interrupt(self, org, channel):
         self._request("channel/interrupt", {"org_id": org.id, "channel_id": channel.id})
 
-    def contact_create(self, org, user, contact: ContactSpec) -> Contact:
-        resp = self._request("contact/create", {"org_id": org.id, "user_id": user.id, "contact": asdict(contact)})
+    def contact_create(self, org, user, contact: ContactSpec, via: str) -> Contact:
+        resp = self._request(
+            "contact/create", {"org_id": org.id, "user_id": user.id, "contact": asdict(contact), "via": via}
+        )
 
         return Contact.objects.get(id=resp["contact"]["id"])
 
     def contact_deindex(self, org, contacts):
-        return self._request("contact/deindex", {"org_id": org.id, "contact_ids": [c.id for c in contacts]})
+        return self._request(
+            "contact/deindex",
+            {
+                "org_id": org.id,
+                "contact_uuids": [str(c.uuid) for c in contacts],
+            },
+        )
 
-    def contact_export(self, org, group, query: str) -> list[int]:
+    def contact_reindex(self, org, contacts):
+        return self._request(
+            "contact/reindex",
+            {
+                "org_id": org.id,
+                "contact_uuids": [str(c.uuid) for c in contacts],
+            },
+        )
+
+    def contact_export(self, org, group, query: str) -> list[str]:
         resp = self._request("contact/export", {"org_id": org.id, "group_id": group.id, "query": query})
 
-        return resp["contact_ids"]
+        return resp["contact_uuids"]
 
     def contact_export_preview(self, org, group, query: str) -> int:
         resp = self._request("contact/export_preview", {"org_id": org.id, "group_id": group.id, "query": query})
@@ -116,7 +130,7 @@ class MailroomClient:
             "contact/interrupt", {"org_id": org.id, "user_id": user.id, "contact_ids": [c.id for c in contacts]}
         )
 
-    def contact_modify(self, org, user, contacts, modifiers: list[Modifier]):
+    def contact_modify(self, org, user, contacts, modifiers: list[Modifier], via: str):
         return self._request(
             "contact/modify",
             {
@@ -124,6 +138,7 @@ class MailroomClient:
                 "user_id": user.id,
                 "contact_ids": [c.id for c in contacts],
                 "modifiers": [asdict(m) for m in modifiers],
+                "via": via,
             },
         )
 
@@ -135,13 +150,13 @@ class MailroomClient:
     def contact_populate_group(self, org, group):
         self._request("contact/populate_group", {"org_id": org.id, "group_id": group.id})
 
-    def contact_search(self, org, group, query: str, sort: str, offset=0, limit=50, exclude_ids=()) -> SearchResults:
+    def contact_search(self, org, group, query: str, sort: str, offset=0, limit=50, exclude=()) -> SearchResults:
         resp = self._request(
             "contact/search",
             {
                 "org_id": org.id,
                 "group_id": group.id,
-                "exclude_ids": exclude_ids,
+                "exclude_uuids": [str(c.uuid) for c in exclude],
                 "query": query,
                 "sort": sort,
                 "offset": offset,
@@ -152,7 +167,7 @@ class MailroomClient:
         return SearchResults(
             query=resp["query"],
             total=resp["total"],
-            contact_ids=resp["contact_ids"],
+            contact_uuids=resp["contact_uuids"],
             metadata=QueryMetadata(**resp.get("metadata", {})),
         )
 
@@ -234,17 +249,18 @@ class MailroomClient:
 
         return RecipientsPreview(query=resp["query"], total=resp["total"])
 
-    def llm_translate(self, llm, from_language: str, to_language: str, text: str) -> dict:
-        return self._request(
+    def llm_translate(self, llm, source: str, target: str, items: dict[str, list[str]]) -> dict[str, list[str]]:
+        resp = self._request(
             "llm/translate",
             {
                 "org_id": llm.org_id,
                 "llm_id": llm.id,
-                "from_language": from_language,
-                "to_language": to_language,
-                "text": text,
+                "source": source,
+                "target": target,
+                "items": items,
             },
         )
+        return resp["items"]
 
     def msg_broadcast(
         self,
@@ -311,7 +327,30 @@ class MailroomClient:
             {"org_id": org.id, "user_id": user.id, "msg_uuids": [str(m.uuid) for m in msgs]},
         )
 
-    def msg_send(self, org, user, contact, text: str, attachments: list[str], quick_replies: list[QuickReply], ticket):
+    def msg_search(self, org, text: str, contact=None, in_ticket=False) -> list[tuple[Contact, dict]]:
+        resp = self._request(
+            "msg/search",
+            {
+                "org_id": org.id,
+                "text": text,
+                "contact_uuid": str(contact.uuid) if contact else None,
+                "in_ticket": in_ticket,
+            },
+        )
+
+        contact_uuids = {r["contact"]["uuid"] for r in resp["results"]}
+        contacts_by_uuid = {
+            str(c.uuid): c for c in Contact.objects.filter(org=org, uuid__in=contact_uuids, is_active=True)
+        }
+
+        results = []
+        for r in resp["results"]:
+            if contact := contacts_by_uuid.get(r["contact"]["uuid"]):
+                results.append((contact, r["event"]))
+
+        return results
+
+    def msg_send(self, org, user, contact, text: str, attachments: list[str], quick_replies: list[dict], ticket=None):
         return self._request(
             "msg/send",
             {
@@ -320,7 +359,7 @@ class MailroomClient:
                 "contact_id": contact.id,
                 "text": text,
                 "attachments": attachments,
-                "quick_replies": [qr.as_json() for qr in quick_replies],
+                "quick_replies": quick_replies,
                 "ticket_uuid": str(ticket.uuid) if ticket else None,
             },
         )
@@ -355,7 +394,7 @@ class MailroomClient:
     def sim_resume(self, payload: dict):
         return self._request("sim/resume", payload, encode_json=True)
 
-    def ticket_add_note(self, org, user, tickets, note: str):
+    def ticket_add_note(self, org, user, tickets, note: str, via: str):
         return self._request(
             "ticket/add_note",
             {
@@ -363,10 +402,11 @@ class MailroomClient:
                 "user_id": user.id,
                 "ticket_uuids": [str(t.uuid) for t in tickets],
                 "note": note,
+                "via": via,
             },
         )
 
-    def ticket_change_assignee(self, org, user, tickets, assignee):
+    def ticket_change_assignee(self, org, user, tickets, assignee, via: str):
         return self._request(
             "ticket/change_assignee",
             {
@@ -374,10 +414,11 @@ class MailroomClient:
                 "user_id": user.id,
                 "ticket_uuids": [str(t.uuid) for t in tickets],
                 "assignee_id": assignee.id if assignee else None,
+                "via": via,
             },
         )
 
-    def ticket_change_topic(self, org, user, tickets, topic):
+    def ticket_change_topic(self, org, user, tickets, topic, via: str):
         return self._request(
             "ticket/change_topic",
             {
@@ -385,31 +426,37 @@ class MailroomClient:
                 "user_id": user.id,
                 "ticket_uuids": [str(t.uuid) for t in tickets],
                 "topic_uuid": str(topic.uuid),
+                "via": via,
             },
         )
 
-    def ticket_close(self, org, user, tickets):
+    def ticket_close(self, org, user, tickets, via: str):
         return self._request(
             "ticket/close",
             {
                 "org_id": org.id,
                 "user_id": user.id,
                 "ticket_uuids": [str(t.uuid) for t in tickets],
+                "via": via,
             },
         )
 
-    def ticket_reopen(self, org, user, tickets):
+    def ticket_reopen(self, org, user, tickets, via: str):
         return self._request(
             "ticket/reopen",
             {
                 "org_id": org.id,
                 "user_id": user.id,
                 "ticket_uuids": [str(t.uuid) for t in tickets],
+                "via": via,
             },
         )
 
     def system_errors(self, log, ret, panic):  # pragma: no cover
         return self._request("system/errors", {"log": log, "ret": ret, "panic": panic})
+
+    def system_latency(self) -> list:  # pragma: no cover
+        return self._request("system/latency", {}, post=False)
 
     def system_queues(self) -> dict:  # pragma: no cover
         return self._request("system/queues", {}, post=False)
@@ -432,7 +479,7 @@ class MailroomClient:
             kwargs = dict(json=payload)
 
         req_fn = requests.post if post else requests.get
-        response = req_fn("%s/mr/%s" % (self.base_url, endpoint), headers=headers, **kwargs)
+        response = req_fn("%s/mi/%s" % (self.base_url, endpoint), headers=headers, **kwargs)
 
         if response.headers.get("Content-Type") == "application/json":
             resp_body = response.json()

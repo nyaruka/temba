@@ -4,7 +4,7 @@ from uuid import UUID
 from django.utils import timezone
 
 from temba.flows.models import FlowRun, FlowSession
-from temba.tests import TembaTest, matchers
+from temba.tests import TembaTest, matchers, mock_mailroom
 from temba.tests.engine import MockSessionWriter
 from temba.utils.uuid import uuid4
 
@@ -47,7 +47,8 @@ class FlowRunTest(TembaTest):
             run.get_path(),
         )
 
-    def test_as_archive_json(self):
+    @mock_mailroom
+    def test_as_archive_json(self, mr_mocks):
         flow = self.get_flow("color_v13")
         flow_nodes = flow.get_definition()["nodes"]
         color_prompt = flow_nodes[0]
@@ -133,7 +134,7 @@ class FlowRunTest(TembaTest):
             uuid=uuid4(),
             contact_uuid=self.contact.uuid,
             status=FlowSession.STATUS_WAITING,
-            output_url="http://sessions.com/123.json",
+            output={"status": "waiting"},
             created_on=timezone.now(),
         )
         FlowRun.objects.create(

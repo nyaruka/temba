@@ -22,11 +22,30 @@ class LLMTest(TembaTest):
         self.assertEqual(1, LLM.objects.filter(is_active=False).count())
         self.assertEqual(2, LLM.objects.count())
 
+    def test_release_system(self):
+        system = LLM.create(self.org, self.admin, OpenAIType(), "gpt-4o", "System", {})
+        system.is_system = True
+        system.save(update_fields=("is_system",))
+
+        with self.assertRaises(AssertionError):
+            system.release(self.admin)
+
+        system.refresh_from_db()
+        self.assertTrue(system.is_active)
+
+    def test_is_available_to(self):
+        # by default available to any user
+        self.assertTrue(OpenAIType().is_available_to(self.org, self.admin))
+        self.assertTrue(OpenAIType().is_available_to(self.org, self.editor))
+
     @mock_mailroom
     def test_translate(self, mr_mocks):
         openai = LLM.create(self.org, self.admin, OpenAIType(), "gpt-4o", "GPT-4", {})
 
-        mr_mocks.llm_translate("Hola")
-        self.assertEqual(openai.translate("eng", "spa", "Hello"), "Hola")
+        items = {"a1:text": ["Hello"]}
+        translated = {"a1:text": ["Hola"]}
 
-        self.assertEqual(call(openai, "eng", "spa", "Hello"), mr_mocks.calls["llm_translate"][-1])
+        mr_mocks.llm_translate(translated)
+        self.assertEqual(openai.translate("eng", "spa", items), translated)
+
+        self.assertEqual(call(openai, "eng", "spa", items), mr_mocks.calls["llm_translate"][-1])

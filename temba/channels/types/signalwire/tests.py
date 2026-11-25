@@ -32,9 +32,15 @@ class SignalWireTest(TembaTest):
 
         post_data["country"] = "US"
         post_data["number"] = "2065551212"
-        post_data["domain"] = "temba.signalwire.com"
+        post_data["space"] = "temba"
         post_data["project_key"] = "key123"
         post_data["api_token"] = "token123"
+
+        # reject anything that isn't a plain space name
+        post_data["space"] = "temba.signalwire.com"
+        response = self.client.post(url, post_data)
+        self.assertFormError(response.context["form"], "space", "Enter a valid space name.")
+        post_data["space"] = "temba"
 
         # try once with an error
         with patch("requests.get") as mock_get:

@@ -1,11 +1,19 @@
 from django.urls import reverse
 
 from temba.campaigns.models import Campaign, CampaignEvent
-from temba.campaigns.views import CampaignEventCRUDL
+from temba.campaigns.views import CampaignEventCRUDL, CampaignEventForm
 from temba.contacts.models import ContactField
 from temba.flows.models import Flow
+from temba.msgs.models import Msg
+from temba.templates.models import TemplateTranslation
 from temba.tests import CRUDLTestMixin, TembaTest, mock_mailroom
+from temba.utils import json
+from temba.utils.compose import compose_serialize
 from temba.utils.views.mixins import TEMBA_MENU_SELECTION
+
+
+def _compose(translations):
+    return json.dumps(compose_serialize(translations))
 
 
 class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
@@ -95,7 +103,7 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
         # update org to use a single flow language
         self.org.set_flow_languages(self.admin, ["eng"])
 
-        non_lang_fields = [
+        form_fields = [
             "event_type",
             "relative_to",
             "offset",
@@ -105,11 +113,12 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
             "flow_to_start",
             "flow_start_mode",
             "message_start_mode",
+            "compose",
         ]
 
         self.assertRequestDisallowed(create_url, [None, self.agent])
 
-        response = self.assertCreateFetch(create_url, [self.editor, self.admin], form_fields=non_lang_fields + ["eng"])
+        response = self.assertCreateFetch(create_url, [self.editor, self.admin], form_fields=form_fields)
         self.assertEqual(3, len(response.context["form"].fields["message_start_mode"].choices))
 
         # try to submit with missing fields
@@ -118,7 +127,7 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
             self.admin,
             {
                 "event_type": "M",
-                "eng": "This is my message",
+                "compose": _compose({"eng": {"text": "This is my message"}}),
                 "direction": "A",
                 "offset": 1,
                 "unit": "W",
@@ -135,6 +144,7 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
                 "offset": 1,
                 "unit": "W",
                 "delivery_hour": 13,
+                "compose": _compose({}),
             },
             form_errors={"flow_start_mode": "This field is required.", "flow_to_start": "This field is required."},
         )
@@ -146,7 +156,7 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
             {
                 "relative_to": planting_date.id,
                 "event_type": "M",
-                "eng": "x" * 4097,
+                "compose": _compose({"eng": {"text": "x" * 4097}}),
                 "direction": "A",
                 "offset": 1,
                 "unit": "W",
@@ -154,7 +164,7 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
                 "delivery_hour": 13,
                 "message_start_mode": "I",
             },
-            form_errors={"__all__": "Translation for 'English' exceeds the 4096 character limit."},
+            form_errors={"compose": "Maximum allowed text is 4096 characters."},
         )
 
         # can create an event with just a eng translation
@@ -164,7 +174,7 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
             {
                 "relative_to": planting_date.id,
                 "event_type": "M",
-                "eng": "This is my message",
+                "compose": _compose({"eng": {"text": "This is my message"}}),
                 "direction": "A",
                 "offset": 1,
                 "unit": "W",
@@ -176,16 +186,15 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
         )
 
         event1 = CampaignEvent.objects.get(campaign=campaign)
-        self.assertEqual({"eng": {"text": "This is my message"}}, event1.translations)
+        self.assertEqual(
+            {"eng": {"text": "This is my message", "attachments": []}},
+            event1.translations,
+        )
 
         # add another language to our org
         self.org.set_flow_languages(self.admin, ["eng", "kin"])
-        # self.org2.set_flow_languages(self.admin, ["fra", "spa"])
 
-        response = self.assertCreateFetch(create_url, [self.admin], form_fields=non_lang_fields + ["eng", "kin"])
-
-        # and our language list should be there
-        self.assertContains(response, "show_language")
+        self.assertCreateFetch(create_url, [self.admin], form_fields=form_fields)
 
         # have to submit translation for primary language
         response = self.assertCreateSubmit(
@@ -194,8 +203,7 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
             {
                 "relative_to": planting_date.id,
                 "event_type": "M",
-                "eng": "",
-                "kin": "muraho",
+                "compose": _compose({"kin": {"text": "muraho"}}),
                 "direction": "B",
                 "offset": 2,
                 "unit": "W",
@@ -203,7 +211,7 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
                 "delivery_hour": 13,
                 "message_start_mode": "I",
             },
-            form_errors={"__all__": "A message is required for 'English'"},
+            form_errors={"compose": "This field is required."},
         )
 
         response = self.assertCreateSubmit(
@@ -212,8 +220,12 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
             {
                 "relative_to": planting_date.id,
                 "event_type": "M",
-                "eng": "hello",
-                "kin": "muraho",
+                "compose": _compose(
+                    {
+                        "eng": {"text": "hello", "quick_replies": [{"text": "Yes"}, {"text": "No"}]},
+                        "kin": {"text": "muraho"},
+                    }
+                ),
                 "direction": "B",
                 "offset": 2,
                 "unit": "W",
@@ -271,13 +283,23 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("I", event.start_mode)
         self.assertEqual("S", event.status)
         self.assertIsNone(event.flow)
-        self.assertEqual({"eng": {"text": "hello"}, "kin": {"text": "muraho"}}, event.translations)
+        self.assertEqual(
+            {
+                "eng": {
+                    "text": "hello",
+                    "attachments": [],
+                    "quick_replies": [{"text": "Yes"}, {"text": "No"}],
+                },
+                "kin": {"text": "muraho", "attachments": []},
+            },
+            event.translations,
+        )
         self.assertEqual("eng", event.base_language)
 
         event.status = CampaignEvent.STATUS_READY
         event.save(update_fields=("status",))
 
-        update_url = reverse("campaigns.campaignevent_update", args=[event.id])
+        update_url = reverse("campaigns.campaignevent_update", args=[event.uuid])
 
         # update the event to be passive
         response = self.assertUpdateSubmit(
@@ -286,8 +308,7 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
             {
                 "relative_to": planting_date.id,
                 "event_type": "M",
-                "eng": "hello",
-                "kin": "muraho",
+                "compose": _compose({"eng": {"text": "hello"}, "kin": {"text": "muraho"}}),
                 "direction": "B",
                 "offset": 3,
                 "unit": "W",
@@ -310,16 +331,17 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
         event.status = CampaignEvent.STATUS_READY
         event.save(update_fields=("status",))
 
-        update_url = reverse("campaigns.campaignevent_update", args=[event.id])
+        update_url = reverse("campaigns.campaignevent_update", args=[event.uuid])
 
         # and add another language to org
         self.org.set_flow_languages(self.admin, ["eng", "kin", "spa"])
 
         response = self.client.get(update_url)
 
-        self.assertEqual("hello", response.context["form"].fields["eng"].initial)
-        self.assertEqual("muraho", response.context["form"].fields["kin"].initial)
-        self.assertEqual("", response.context["form"].fields["spa"].initial)
+        compose_initial = response.context["form"].fields["compose"].initial
+        self.assertEqual("hello", compose_initial["eng"]["text"])
+        self.assertEqual("muraho", compose_initial["kin"]["text"])
+        self.assertNotIn("spa", compose_initial)
         self.assertEqual(2, len(response.context["form"].fields["flow_start_mode"].choices))
 
         # 'Created On' system field must be selectable in the form
@@ -333,9 +355,9 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
             {
                 "relative_to": planting_date.id,
                 "event_type": "M",
-                "eng": "Required",
-                "kin": "@fields.planting_date",
-                "spa": "",
+                "compose": _compose(
+                    {"eng": {"text": "Required"}, "kin": {"text": "@fields.planting_date"}, "spa": {"text": ""}}
+                ),
                 "direction": "B",
                 "offset": 1,
                 "unit": "W",
@@ -350,6 +372,9 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
         # we should retain our base language
         self.assertEqual("eng", event.base_language)
 
+        # empty translation should be dropped from the dict
+        self.assertNotIn("spa", event.translations)
+
         # update org languages to something not including the flow's base language
         self.org.set_flow_languages(self.admin, ["por", "kin"])
 
@@ -358,14 +383,12 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
 
         self.assertRequestDisallowed(update_url, [None, self.agent, self.admin2])
 
-        # should get new org primary language but also base language of flow
-        response = self.assertUpdateFetch(
-            update_url, [self.editor, self.admin], form_fields=non_lang_fields + ["por", "kin", "eng"]
-        )
+        # should still work since compose carries its own language list
+        response = self.assertUpdateFetch(update_url, [self.editor, self.admin], form_fields=form_fields)
 
-        self.assertEqual(response.context["form"].fields["por"].initial, "")
-        self.assertEqual(response.context["form"].fields["kin"].initial, "@fields.planting_date")
-        self.assertEqual(response.context["form"].fields["eng"].initial, "Required")
+        compose_initial = response.context["form"].fields["compose"].initial
+        self.assertEqual("@fields.planting_date", compose_initial["kin"]["text"])
+        self.assertEqual("Required", compose_initial["eng"]["text"])
 
     @mock_mailroom
     def test_update(self, mr_mocks):
@@ -374,7 +397,7 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
         accepted = self.create_field("accepted", "Accepted", value_type="D")
         flow = self.org.flows.get(name="Welcomes Flow")
 
-        update_url = reverse("campaigns.campaignevent_update", args=[event1.id])
+        update_url = reverse("campaigns.campaignevent_update", args=[event1.uuid])
 
         self.assertRequestDisallowed(update_url, [None, self.agent, self.admin2])
         self.assertUpdateFetch(
@@ -390,8 +413,7 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
                 "flow_to_start": flow,
                 "flow_start_mode": "I",
                 "message_start_mode": None,
-                "eng": "",
-                "kin": "",
+                "compose": {},
             },
         )
 
@@ -402,7 +424,7 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
             {
                 "event_type": "M",
                 "relative_to": accepted.id,
-                "eng": "Hi there",
+                "compose": _compose({"eng": {"text": "Hi there"}}),
                 "direction": "B",
                 "offset": 2,
                 "unit": "D",
@@ -419,7 +441,7 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(event1.unit, "D")
         self.assertEqual(event1.delivery_hour, 11)
         self.assertEqual(event1.start_mode, "I")
-        self.assertEqual(event1.translations, {"eng": {"text": "Hi there"}})
+        self.assertEqual(event1.translations, {"eng": {"text": "Hi there", "attachments": []}})
         self.assertEqual(event1.status, "S")
         self.assertEqual(event1.fire_version, 1)  # bumped
 
@@ -436,7 +458,7 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
             {
                 "event_type": "M",
                 "relative_to": accepted.id,
-                "eng": "Hi there friends",
+                "compose": _compose({"eng": {"text": "Hi there friends"}}),
                 "direction": "B",
                 "offset": 2,
                 "unit": "D",
@@ -448,7 +470,7 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(302, response.status_code)
 
         event1.refresh_from_db()
-        self.assertEqual(event1.translations, {"eng": {"text": "Hi there friends"}})
+        self.assertEqual(event1.translations, {"eng": {"text": "Hi there friends", "attachments": []}})
         self.assertEqual(event1.status, "R")  # unchanged
         self.assertEqual(event1.fire_version, 1)  # unchanged
 
@@ -456,12 +478,241 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
         event3.status = CampaignEvent.STATUS_READY
         event3.save(update_fields=("status",))
 
-        update_url = reverse("campaigns.campaignevent_update", args=[event3.id])
+        update_url = reverse("campaigns.campaignevent_update", args=[event3.uuid])
         response = self.requestView(update_url, self.admin)
         self.assertEqual(
             CampaignEventCRUDL.BACKGROUND_WARNING,
             response.context["form"].fields["flow_to_start"].widget.attrs["info_text"],
         )
+
+    @mock_mailroom
+    def test_read_with_translations(self, mr_mocks):
+        """The read view renders message content and a translation summary."""
+        self.org.set_flow_languages(self.admin, ["eng", "kin", "spa", "fra"])
+
+        event = CampaignEvent.create_message_event(
+            self.org,
+            self.admin,
+            self.campaign1,
+            self.org.fields.get(key="registered"),
+            offset=3,
+            unit="D",
+            translations={
+                "eng": {"text": "Hi there", "attachments": [], "quick_replies": [{"text": "Yes"}, {"text": "No"}]},
+                "kin": {"text": "Muraho", "attachments": []},
+            },
+            base_language="eng",
+            delivery_hour=9,
+        )
+
+        read_url = reverse("campaigns.campaignevent_read", args=[event.campaign.uuid, event.uuid])
+        response = self.requestView(read_url, self.admin)
+
+        # quick replies should be shown
+        self.assertContains(response, "Yes")
+        self.assertContains(response, "No")
+
+        # single non-base translation, no comma
+        self.assertContains(response, "Translation provided in <b>Kinyarwanda</b>")
+
+        # now add a second translation - should use "and" (alphabetical by language name)
+        event.translations["spa"] = {"text": "Hola", "attachments": []}
+        event.save(update_fields=("translations",))
+        response = self.requestView(read_url, self.admin)
+        self.assertContains(response, "Translations provided in <b>Kinyarwanda</b> and <b>Spanish</b>")
+
+        # three translations - oxford comma, alphabetical
+        event.translations["fra"] = {"text": "Bonjour", "attachments": []}
+        event.save(update_fields=("translations",))
+        response = self.requestView(read_url, self.admin)
+        self.assertContains(response, "Translations provided in <b>French</b>, <b>Kinyarwanda</b>, and <b>Spanish</b>")
+
+        # translations for languages no longer configured on the org should be omitted
+        self.org.set_flow_languages(self.admin, ["eng", "kin", "spa"])
+        response = self.requestView(read_url, self.admin)
+        self.assertContains(response, "Translations provided in <b>Kinyarwanda</b> and <b>Spanish</b>")
+        self.assertNotContains(response, "<b>French</b>")
+
+    @mock_mailroom
+    def test_create_with_template(self, mr_mocks):
+        """Creating a message event with a WhatsApp template persists template + variables."""
+        planting_date = self.create_field("planting_date", "Planting Date", ContactField.TYPE_DATETIME)
+        campaign = Campaign.create(self.org, self.admin, "With Template", self.create_group("G", []))
+        create_url = reverse("campaigns.campaignevent_create", args=[campaign.id])
+
+        template = self.create_template(
+            "Hello World",
+            [
+                TemplateTranslation(
+                    channel=self.channel,
+                    locale="eng-US",
+                    status=TemplateTranslation.STATUS_APPROVED,
+                    external_id="1003",
+                    external_locale="en_US",
+                    namespace="",
+                    components=[
+                        {"name": "header", "type": "header/media", "variables": {"1": 0}},
+                        {"name": "body", "type": "body/text", "content": "Hello {{1}}", "variables": {"1": 1}},
+                    ],
+                    variables=[{"type": "image"}, {"type": "text"}],
+                )
+            ],
+        )
+        trans = template.translations.all().first()
+
+        # missing required attachment variable should error
+        self.assertCreateSubmit(
+            create_url,
+            self.admin,
+            {
+                "relative_to": planting_date.id,
+                "event_type": "M",
+                "compose": _compose(
+                    {
+                        "eng": {
+                            "text": "Hello",
+                            "template": str(template.uuid),
+                            "variables": ["", "World"],
+                            "locale": trans.locale,
+                        }
+                    }
+                ),
+                "direction": "A",
+                "offset": 1,
+                "unit": "D",
+                "flow_to_start": "",
+                "delivery_hour": -1,
+                "message_start_mode": "I",
+            },
+            form_errors={"compose": "The attachment for the WhatsApp template is required."},
+        )
+
+        # with the attachment it saves
+        self.assertCreateSubmit(
+            create_url,
+            self.admin,
+            {
+                "relative_to": planting_date.id,
+                "event_type": "M",
+                "compose": _compose(
+                    {
+                        "eng": {
+                            "text": "Hello",
+                            "template": str(template.uuid),
+                            "variables": ["image/jpeg:http://domain/meow.jpg", "World"],
+                            "locale": trans.locale,
+                        }
+                    }
+                ),
+                "direction": "A",
+                "offset": 1,
+                "unit": "D",
+                "flow_to_start": "",
+                "delivery_hour": -1,
+                "message_start_mode": "I",
+            },
+            new_obj_query=CampaignEvent.objects.filter(campaign=campaign, template=template),
+        )
+
+        event = CampaignEvent.objects.get(campaign=campaign)
+        self.assertEqual(template, event.template)
+        self.assertEqual(["image/jpeg:http://domain/meow.jpg", "World"], event.template_variables)
+
+        # editing the event should expose the template + variables back through the compose initial
+        event.status = CampaignEvent.STATUS_READY
+        event.save(update_fields=("status",))
+        update_url = reverse("campaigns.campaignevent_update", args=[event.uuid])
+        response = self.requestView(update_url, self.admin)
+        initial = response.context["form"].fields["compose"].initial
+        self.assertEqual(str(template.uuid), initial["eng"]["template"])
+        self.assertEqual(["image/jpeg:http://domain/meow.jpg", "World"], initial["eng"]["variables"])
+
+    @mock_mailroom
+    def test_too_many_attachments(self, mr_mocks):
+        planting_date = self.create_field("planting_date", "Planting Date", ContactField.TYPE_DATETIME)
+        campaign = Campaign.create(self.org, self.admin, "Attachments", self.create_group("Ga", []))
+        create_url = reverse("campaigns.campaignevent_create", args=[campaign.id])
+
+        # build the compose payload directly (what the widget would send) to avoid going through
+        # compose_serialize which expects DB-format attachment strings
+        attachments = [{"content_type": "image/jpeg", "url": f"http://example.com/x{i}.jpg"} for i in range(12)]
+        compose = json.dumps({"eng": {"text": "Hi", "attachments": attachments}})
+        self.assertCreateSubmit(
+            create_url,
+            self.admin,
+            {
+                "relative_to": planting_date.id,
+                "event_type": "M",
+                "compose": compose,
+                "direction": "A",
+                "offset": 1,
+                "unit": "D",
+                "flow_to_start": "",
+                "delivery_hour": -1,
+                "message_start_mode": "I",
+            },
+            form_errors={"compose": f"Maximum allowed attachments is {Msg.MAX_ATTACHMENTS} files."},
+        )
+
+    @mock_mailroom
+    def test_update_form_language_edge_cases(self, mr_mocks):
+        """Form init should handle events whose base language or translations don't match current org languages."""
+        event = CampaignEvent.create_message_event(
+            self.org,
+            self.admin,
+            self.campaign1,
+            self.org.fields.get(key="registered"),
+            offset=3,
+            unit="D",
+            translations={
+                "eng": {"text": "Hello"},
+                "kin": {"text": "Muraho"},
+                "spa": {"text": "Hola"},
+            },
+            base_language="eng",
+            delivery_hour=9,
+        )
+        update_url = reverse("campaigns.campaignevent_update", args=[event.uuid])
+
+        # primary/base=eng is not in org langs; spa isn't either. Base language is prepended, spa is stripped.
+        self.org.set_flow_languages(self.admin, ["por", "kin"])
+        response = self.requestView(update_url, self.admin)
+        initial = response.context["form"].fields["compose"].initial
+        self.assertIn("eng", initial)
+        self.assertIn("kin", initial)
+        self.assertNotIn("spa", initial)
+        langs = json.loads(response.context["form"].fields["compose"].widget.attrs["languages"])
+        self.assertEqual([lang["iso"] for lang in langs][0], "eng")
+
+        # base=eng is not in org langs, but org's primary IS in compose — base is appended to the end
+        event.translations = {"eng": {"text": "Hi"}, "por": {"text": "Olá"}}
+        event.base_language = "eng"
+        event.save(update_fields=("translations", "base_language"))
+        self.org.set_flow_languages(self.admin, ["por", "kin"])
+        response = self.requestView(update_url, self.admin)
+        langs = json.loads(response.context["form"].fields["compose"].widget.attrs["languages"])
+        iso_order = [lang["iso"] for lang in langs]
+        self.assertEqual(iso_order, ["por", "kin", "eng"])
+
+        # base=eng is in org langs but isn't primary (por is), and por isn't in compose — base moves to the front
+        self.org.set_flow_languages(self.admin, ["por", "eng"])
+        event.translations = {"eng": {"text": "Hi"}, "kin": {"text": "Muraho"}}
+        event.save(update_fields=("translations",))
+        response = self.requestView(update_url, self.admin)
+        langs = json.loads(response.context["form"].fields["compose"].widget.attrs["languages"])
+        iso_order = [lang["iso"] for lang in langs]
+        self.assertEqual(iso_order[0], "eng")
+
+    @mock_mailroom
+    def test_form_flow_queryset_default(self, mr_mocks):
+        # the class-level queryset for flow_to_start must not leak flows across orgs - it should be empty by
+        # default and only populated when the form is instantiated with an org
+        self.assertEqual(0, CampaignEventForm.base_fields["flow_to_start"].queryset.count())
+
+        # but when instantiated with an org, the field should be scoped to that org's flows
+        form = CampaignEventForm(self.org)
+        flow_qs = form.fields["flow_to_start"].queryset
+        self.assertTrue(all(f.org_id == self.org.id for f in flow_qs))
 
     def test_delete(self):
         event = CampaignEvent.create_message_event(
@@ -476,7 +727,7 @@ class CampaignEventCRUDLTest(TembaTest, CRUDLTestMixin):
             delivery_hour=9,
         )
 
-        delete_url = reverse("campaigns.campaignevent_delete", args=[event.id])
+        delete_url = reverse("campaigns.campaignevent_delete", args=[event.uuid])
 
         # delete the event
         response = self.assertDeleteSubmit(delete_url, self.admin, object_deactivated=event)
