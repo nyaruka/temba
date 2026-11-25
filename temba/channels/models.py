@@ -952,7 +952,6 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
             trigger.delete()
 
         delete_in_batches(self.incidents.all())
-        delete_in_batches(self.sync_events.all())
         delete_in_batches(self.http_logs.all())
         delete_in_batches(self.template_translations.all())
         delete_in_batches(self.tallies.all(), pk="pk")
@@ -1469,84 +1468,3 @@ class TemplatesSync:
     @classmethod
     def from_json(cls, data: dict):
         return cls(synced_on=iso8601.parse_date(data["synced_on"]), failed=bool(data.get("failed")))
-
-
-class SyncEvent(models.Model):
-    """
-    A record of a sync from an Android channel
-    """
-
-    SOURCE_AC = "AC"
-    SOURCE_USB = "USB"
-    SOURCE_WIRELESS = "WIR"
-    SOURCE_BATTERY = "BAT"
-    SOURCE_CHOICES = (
-        (SOURCE_AC, "A/C"),
-        (SOURCE_USB, "USB"),
-        (SOURCE_WIRELESS, "Wireless"),
-        (SOURCE_BATTERY, "Battery"),
-    )
-
-    STATUS_UNKNOWN = "UNK"
-    STATUS_CHARGING = "CHA"
-    STATUS_DISCHARGING = "DIS"
-    STATUS_NOT_CHARGING = "NOT"
-    STATUS_FULL = "FUL"
-    STATUS_CHOICES = (
-        (STATUS_UNKNOWN, "Unknown"),
-        (STATUS_CHARGING, "Charging"),
-        (STATUS_DISCHARGING, "Discharging"),
-        (STATUS_NOT_CHARGING, "Not Charging"),
-        (STATUS_FULL, "Full"),
-    )
-
-    channel = models.ForeignKey(Channel, related_name="sync_events", on_delete=models.PROTECT)
-
-    # power status of the device
-    power_source = models.CharField(max_length=64, choices=SOURCE_CHOICES)
-    power_status = models.CharField(max_length=64, choices=STATUS_CHOICES, default=STATUS_UNKNOWN)
-    power_level = models.IntegerField()
-
-    network_type = models.CharField(max_length=128)
-
-    # counts of what was synced
-    pending_message_count = models.IntegerField(default=0)
-    retry_message_count = models.IntegerField(default=0)
-    incoming_command_count = models.IntegerField(default=0)
-    outgoing_command_count = models.IntegerField(default=0)
-
-    created_on = models.DateTimeField(default=timezone.now)
-
-    @classmethod
-    def create(cls, channel, cmd, incoming_commands):
-        # update country, device and OS on our channel
-        device = cmd.get("dev", None)
-        os = cmd.get("os", None)
-
-        # update our channel if anything is new
-        if channel.device != device or channel.os != os:  # pragma: no cover
-            channel.device = device
-            channel.os = os
-            channel.save(update_fields=["device", "os"])
-
-        sync_event = SyncEvent.objects.create(
-            channel=channel,
-            power_source=cmd.get("p_src", cmd.get("power_source")),
-            power_status=cmd.get("p_sts", cmd.get("power_status")),
-            power_level=cmd.get("p_lvl", cmd.get("power_level")),
-            network_type=cmd.get("net", cmd.get("network_type")),
-            pending_message_count=len(cmd.get("pending", cmd.get("pending_messages"))),
-            retry_message_count=len(cmd.get("retry", cmd.get("retry_messages"))),
-            incoming_command_count=max(len(incoming_commands) - 2, 0),
-        )
-
-        sync_event.pending_messages = cmd.get("pending", cmd.get("pending_messages"))
-        sync_event.retry_messages = cmd.get("retry", cmd.get("retry_messages"))
-
-        return sync_event
-
-    def get_pending_messages(self):
-        return getattr(self, "pending_messages", [])
-
-    def get_retry_messages(self):
-        return getattr(self, "retry_messages", [])

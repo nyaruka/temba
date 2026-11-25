@@ -16,7 +16,7 @@ from temba.triggers.models import Trigger
 from temba.utils import json
 from temba.utils.views.mixins import TEMBA_MENU_SELECTION
 
-from ..models import COURIER_QUEUE_STATE_KEY, Channel, ChannelTally, SyncEvent
+from ..models import COURIER_QUEUE_STATE_KEY, Channel, ChannelTally
 from ..views import ChannelCRUDL
 
 
@@ -206,11 +206,6 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.create_outgoing_msg(contact, "Hi", channel=channel1, status="E")
         self.create_outgoing_msg(contact, "Hi", channel=channel1, status="S")
         ChannelDisconnectedIncidentType.get_or_create(channel1)
-        SyncEvent.create(
-            channel1,
-            dict(p_src="AC", p_sts="DIS", p_lvl=80, net="WIFI", pending=[1, 2], retry=[3, 4], cc="RW"),
-            [1, 2],
-        )
         self.create_template(
             "reminder",
             [
@@ -228,11 +223,6 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         # and some on another channel
         self.create_outgoing_msg(contact, "Hi", channel=channel2, status="E")
         ChannelDisconnectedIncidentType.get_or_create(channel2)
-        SyncEvent.create(
-            channel2,
-            dict(p_src="AC", p_sts="DIS", p_lvl=80, net="WIFI", pending=[1, 2], retry=[3, 4], cc="RW"),
-            [1, 2],
-        )
         self.create_template(
             "reminder2",
             [
@@ -269,7 +259,6 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
 
         # other channel should be unaffected
         self.assertEqual(1, channel2.msgs.filter(status="E").count())
-        self.assertEqual(1, channel2.sync_events.count())
         self.assertEqual(1, channel2.triggers.filter(is_active=True).count())
         self.assertEqual(1, channel2.incidents.filter(ended_on=None).count())
         self.assertEqual(1, channel2.template_translations.count())

@@ -202,7 +202,7 @@ class User(LegacyIDMixin, UUIDMixin, AbstractBaseUser, PermissionsMixin):
         """
         Gets this users active API tokens for the given org
         """
-        return self.api_tokens.filter(org=org, is_active=True)
+        return self.api_tokens.filter(org=org, deleted_on=None)
 
     def as_engine_ref(self) -> dict:
         return {"uuid": str(self.uuid), "name": self.name}
@@ -233,7 +233,7 @@ class User(LegacyIDMixin, UUIDMixin, AbstractBaseUser, PermissionsMixin):
         self.emailaddress_set.all().delete()
 
         # release any API tokens, one by one so each is recorded
-        for token in self.api_tokens.filter(is_active=True):
+        for token in self.api_tokens.filter(deleted_on=None):
             token.release(user)
 
         # remove from any permission groups

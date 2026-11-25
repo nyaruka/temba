@@ -86,7 +86,7 @@ class APITokenAuthentication(RequestAttributesMixin, TokenAuthentication):
 
     def authenticate_credentials(self, key):
         try:
-            token = self.model.objects.select_related(*self.select_related).get(is_active=True, key=key)
+            token = self.model.objects.select_related(*self.select_related).get(deleted_on=None, key=key)
         except self.model.DoesNotExist:
             raise exceptions.AuthenticationFailed("Invalid token")
 
@@ -109,7 +109,7 @@ class APIBasicAuthentication(RequestAttributesMixin, BasicAuthentication):
 
     def authenticate_credentials(self, userid, password, request=None):
         try:
-            token = APIToken.objects.select_related("user", "org").get(is_active=True, key=password)
+            token = APIToken.objects.select_related("user", "org").get(deleted_on=None, key=password)
         except APIToken.DoesNotExist:
             raise exceptions.AuthenticationFailed("Invalid token or email")
 
