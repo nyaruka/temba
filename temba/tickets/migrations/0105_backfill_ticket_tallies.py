@@ -41,7 +41,7 @@ INSERT INTO orgs_orgtally AS t (org_id, scope, count, expires_on)
 ON CONFLICT (org_id, scope) DO UPDATE SET count = excluded.count WHERE excluded.count > t.count"""
 
 
-def backfill_ticket_tallies(apps, schema_editor):
+def backfill_ticket_tallies(apps, schema_editor):  # pragma: no cover
     Org = apps.get_model("orgs", "Org")
 
     with connection.cursor() as cursor:
@@ -56,7 +56,7 @@ def backfill_ticket_tallies(apps, schema_editor):
             cursor.execute(BACKFILL_SQL, {"org_id": org_id, "today": today})
             num_written += cursor.rowcount
 
-        if (i + 1) % 1000 == 0:  # pragma: no cover
+        if (i + 1) % 1000 == 0:
             print(f" > backfilled ticket tallies for {i + 1}/{len(org_ids)} orgs")
 
     if num_written:
