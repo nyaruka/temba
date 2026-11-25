@@ -3,6 +3,8 @@ from unittest.mock import call, patch
 
 from django_valkey import get_valkey_connection
 
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import date_format
@@ -369,7 +371,6 @@ class EndpointsTest(APITestMixin, TembaTest):
         self.assertGet(endpoint_url + f"?group={group.uuid}", [self.admin], results=[joe])
         self.assertGet(endpoint_url + "?group=foo", [self.admin], results=[])
 
-        # each row carries its group memberships so the component can pre-check the group dropdown
         def check_groups(data):
             return data["results"][0]["groups"] == [{"uuid": str(group.uuid), "name": "Crew"}]
 
@@ -447,6 +448,15 @@ class EndpointsTest(APITestMixin, TembaTest):
         # a non-integer page_size falls back to the default page size (matching DRF's pagination)
         mr_mocks.contact_search("", contacts=[joe, frank])
         self.assertGet(endpoint_url + "?sort=-field:gender&page_size=abc", [self.admin], results=[joe, frank])
+
+        # the number of queries doesn't depend on the number of contacts on the page
+        def count_queries(page_size: int) -> int:
+            with CaptureQueriesContext(connection) as queries:
+                response = self.client.get(endpoint_url + f"?page_size={page_size}")
+            self.assertEqual(page_size, len(response.json()["results"]))
+            return len(queries)
+
+        self.assertEqual(count_queries(1), count_queries(2))
         self.assertEqual(50, mr_mocks.calls["contact_search"][-1].kwargs["limit"])
 
         # ...as does a non-positive page_size

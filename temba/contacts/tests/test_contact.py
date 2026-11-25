@@ -628,6 +628,11 @@ class ContactTest(TembaTest):
         contacts = (self.joe, self.frank, self.billy)
         Contact.bulk_urn_cache_initialize(contacts)
 
+        # takes a single query even if contacts don't have their org loaded
+        contacts = list(Contact.objects.filter(id__in=[c.id for c in contacts]))
+        with self.assertNumQueries(1):
+            Contact.bulk_urn_cache_initialize(contacts)
+
         with self.assertNumQueries(0):
             self.assertEqual(["twitter:blow80", "tel:+250781111111"], [u.urn for u in self.joe.get_urns()])
             self.assertEqual(["twitter:blow80", "tel:+250781111111"], [u.urn for u in getattr(self.joe, "_urns_cache")])

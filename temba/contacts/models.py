@@ -1322,9 +1322,7 @@ class Contact(LegacyIDMixin, LegacyUUIDMixin, CreatedByMixin, ModifiedByMixin, S
             .order_by("contact", "-priority", "id")
         )
         for urn in urns:
-            contact = contact_map[urn.contact_id]
-            urn.org = contact.org
-            getattr(contact, "_urns_cache").append(urn)
+            getattr(contact_map[urn.contact_id], "_urns_cache").append(urn)
 
     @classmethod
     def bulk_inspect(self, contacts) -> dict:

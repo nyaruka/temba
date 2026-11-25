@@ -167,10 +167,9 @@ def _asset_by_field(model, id_field: str, **filters) -> AssetType:
 
 
 def _fetch_contacts(org, values: list):
-    # get_display needs id (for ref) and name, and bulk_urn_cache_initialize needs id and org, which we select related
-    # rather than let it be fetched once per contact
-    qs = Contact.objects.filter(org=org, uuid__in=values, is_active=True).only("id", "uuid", "name", "org")
-    contacts = list(qs.select_related("org").using("readonly"))
+    # get_display needs id (for ref) and name
+    qs = Contact.objects.filter(org=org, uuid__in=values, is_active=True).only("id", "uuid", "name")
+    contacts = list(qs.using("readonly"))
     Contact.bulk_urn_cache_initialize(contacts, using="readonly")
     return contacts
 
