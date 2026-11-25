@@ -382,7 +382,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     is_internal = models.BooleanField(default=False)
 
     released_on = models.DateTimeField(null=True)
-    deleted_on = models.DateTimeField(null=True)
+    purged_on = models.DateTimeField(null=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1300,7 +1300,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
 
         assert not self.is_active and self.released_on, "can't delete org which hasn't been released"
         assert self.released_on < timezone.now() - timedelta(days=7), "can't delete org which was released recently"
-        assert not self.deleted_on, "can't delete org twice"
+        assert not self.purged_on, "can't delete org twice"
 
         user = self.modified_by
         counts = defaultdict(int)
@@ -1411,11 +1411,11 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         # now that contacts are no longer in the database, we can start de-indexing them from search
         mailroom.get_client().org_deindex(self)
 
-        # save when we were actually deleted
+        # save when we were actually purged
         self.modified_on = timezone.now()
-        self.deleted_on = timezone.now()
+        self.purged_on = timezone.now()
         self.config = {}
-        self.save(update_fields=("modified_on", "deleted_on", "config"))
+        self.save(update_fields=("modified_on", "purged_on", "config"))
 
         return counts
 

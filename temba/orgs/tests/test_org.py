@@ -1229,7 +1229,7 @@ class OrgDeleteTest(TembaTest):
 
         self.assertTrue(org.is_active)
         self.assertIsNone(org.released_on)
-        self.assertIsNone(org.deleted_on)
+        self.assertIsNone(org.purged_on)
 
         for o in org_content:
             self.assertTrue(self._exists(o), f"{repr(o)} should still exist")
@@ -1239,7 +1239,7 @@ class OrgDeleteTest(TembaTest):
 
         self.assertFalse(org.is_active)
         self.assertIsNotNone(org.released_on)
-        self.assertIsNone(org.deleted_on)
+        self.assertIsNone(org.purged_on)
 
         for o in org_content:
             self.assertTrue(self._exists(o), f"{repr(o)} should still exist")
@@ -1250,7 +1250,7 @@ class OrgDeleteTest(TembaTest):
         self.assertFalse(org.is_active)
         self.assertEqual({}, org.config)
         self.assertIsNotNone(org.released_on)
-        self.assertIsNotNone(org.deleted_on)
+        self.assertIsNotNone(org.purged_on)
 
         for o in org_content:
             self.assertFalse(self._exists(o), f"{repr(o)} shouldn't still exist")
