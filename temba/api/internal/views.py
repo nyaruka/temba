@@ -41,6 +41,9 @@ class BaseEndpoint(BaseAPIView):
     authentication_classes = (APISessionAuthentication,)
     permission_classes = (SSLPermission, APIPermission)
 
+    # DRF's OPTIONS metadata assumes a serializer per endpoint, which many of these don't have
+    http_method_names = ["get", "post", "put", "patch", "delete", "head"]
+
     def get_paginated_response(self, data):
         response = super().get_paginated_response(data)
 

@@ -30,9 +30,6 @@ class BaseAPIView(NonAtomicMixin, generics.GenericAPIView):
     model_manager = "objects"
     lookup_params = {"uuid": "uuid"}
 
-    # DRF's OPTIONS metadata assumes a serializer per endpoint, which many of ours don't have
-    http_method_names = ["get", "post", "put", "patch", "delete", "head"]
-
     # whether servicing staff are limited to GET requests - endpoints whose POSTs are actually
     # reads (e.g. resolving references) can set this to False
     readonly_servicing = True
