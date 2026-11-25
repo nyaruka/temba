@@ -858,7 +858,7 @@ CELERY_BEAT_MAX_LOOP_INTERVAL = 30  # max sleep between beat ticks - each tick r
 # be backward compatible with the previous version during a rolling deploy
 CELERY_BEAT_SCHEDULE = {
     "check-android-channels": {"task": "check_android_channels", "schedule": timedelta(seconds=300)},
-    "delete-released-orgs": {"task": "delete_released_orgs", "schedule": crontab(hour=4, minute=0)},
+    "purge-deleted-orgs": {"task": "purge_deleted_orgs", "schedule": crontab(hour=4, minute=0)},
     "expire-invitations": {"task": "expire_invitations", "schedule": crontab(hour=0, minute=10)},
     "refresh-turn-whatsapp-tokens": {"task": "refresh_turn_whatsapp_tokens", "schedule": crontab(hour=6, minute=0)},
     "refresh-templates": {"task": "refresh_templates", "schedule": timedelta(hours=6)},
