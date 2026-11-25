@@ -103,13 +103,14 @@ class ReadonlyRouterTest(TembaTest):
         # instances from readonly and default can be related
         contact.org = Org.objects.get(id=self.org.id)
 
-        # and saving an instance read from readonly writes to default
+        # but writing through readonly, including saving an instance read from it, fails as it would on a replica
         contact.name = "Robert"
-        contact.save(update_fields=("name",))
+        with self.assertRaisesRegex(DatabaseError, "read-only transaction"):
+            with transaction.atomic(using="readonly"):
+                contact.save(update_fields=("name",))
 
-        self.assertEqual("Robert", Contact.objects.get(id=contact.id).name)
-
-        # writing through readonly fails as it would on a replica
         with self.assertRaisesRegex(DatabaseError, "read-only transaction"):
             with transaction.atomic(using="readonly"):
                 Contact.objects.using("readonly").filter(id=contact.id).update(name="Bobby")
+
+        self.assertEqual("Bob", Contact.objects.get(id=contact.id).name)
