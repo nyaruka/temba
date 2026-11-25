@@ -58,6 +58,15 @@ class MailroomClient:
 
         self._request("channel/interrupt", payload)
 
+    def channel_sync_templates(self, org, channel) -> int:
+        """
+        Syncs the channel's templates from its provider, returning how many translations it now has
+        """
+
+        # mailroom gives the provider less time than this to respond
+        resp = self._request("channel/sync_templates", {"org_id": org.id, "channel_id": channel.id}, timeout=60)
+        return resp["translations"]
+
     def contact_create(self, org, user, contact: ContactSpec, via: str) -> Contact:
         resp = self._request(
             "contact/create", {"org_id": org.id, "user_id": user.id, "contact": asdict(contact), "via": via}
@@ -473,7 +482,7 @@ class MailroomClient:
 
         if response.status_code == 422:
             error = resp_body["error"]
-            domain, code = resp_body["code"].split(":")
+            domain, _, code = resp_body.get("code", "").partition(":")
             extra = resp_body.get("extra", {})
 
             if domain == "flow":

@@ -13,6 +13,7 @@ from django.utils import timezone
 
 from temba import mailroom
 from temba.campaigns.models import CampaignEvent
+from temba.channels.models import Channel
 from temba.contacts.models import URN, Contact, ContactField, ContactGroup, ContactURN
 from temba.flows.models import Flow, FlowRun, FlowSession, FlowStart
 from temba.locations.models import AdminBoundary
@@ -372,6 +373,15 @@ class TestClient(MailroomClient):
     @_client_method
     def channel_interrupt(self, org, channel, *, reason: str = None):
         pass
+
+    @_client_method
+    def channel_sync_templates(self, org, channel) -> int:
+        # records a successful sync of whatever translations the channel already has
+        sync_state = Channel.objects.get(id=channel.id).sync_state
+        sync_state["templates"] = {"synced_on": timezone.now().isoformat(), "failed": False}
+        Channel.objects.filter(id=channel.id).update(sync_state=sync_state)
+
+        return channel.template_translations.count()
 
     @_client_method
     def contact_create(self, org, user, contact: mailroom.ContactSpec, via: str):

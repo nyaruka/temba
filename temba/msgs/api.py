@@ -35,9 +35,6 @@ class BroadcastsEndpoint(SearchLengthMixin, ListAPIMixin, BaseEndpoint):
     pagination_class = ListPagination
 
     def derive_queryset(self):
-        # Build from Broadcast.objects rather than the org.broadcasts related manager — a related manager would seed
-        # each fetched row with the in-memory org instance, which Django rejects on a GET because the org was loaded
-        # from the default database while this queryset reads from the readonly alias.
         qs = Broadcast.objects.filter(org=self.request.org, is_active=True)
 
         scheduled = self.request.query_params.get("folder", "sent").lower() == "scheduled"

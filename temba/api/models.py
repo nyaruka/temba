@@ -215,7 +215,6 @@ class APIToken(DeletedOnMixin):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="api_tokens")
     created = models.DateTimeField(default=timezone.now)
     last_used_on = models.DateTimeField(null=True)
-    is_active = models.BooleanField(default=True)  # still written for the previous release, which reads it
 
     @classmethod
     def create(cls, org, user):
@@ -240,9 +239,8 @@ class APIToken(DeletedOnMixin):
         return [k.decode() for k in r.spop("api_tokens_used", r.scard("api_tokens_used"))]
 
     def release(self, user=None):
-        self.is_active = False
         self.deleted_on = timezone.now()
-        self.save(update_fields=("is_active", "deleted_on"))
+        self.save(update_fields=("deleted_on",))
 
         audit.record("api_token.released", user=self.user, org=self.org, actor=user, token=self.key[:4])
 

@@ -4,13 +4,11 @@ import logging
 import requests
 
 from django.forms import ValidationError
-from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from temba.channels.models import Channel, ChannelType
 from temba.channels.types.turn.views import ClaimView
 from temba.contacts.models import URN
-from temba.request_logs.models import HTTPLog
 
 CONFIG_FB_BUSINESS_ID = "fb_business_id"
 CONFIG_FB_ACCESS_TOKEN = "fb_access_token"
@@ -83,34 +81,6 @@ class TurnType(ChannelType):
 
         if resp.status_code != 200:
             raise ValidationError(_("Unable to remove webhooks: %(resp)s"), params={"resp": resp.text})
-
-    def fetch_templates(self, channel) -> list:
-        # Retrieve the template domain, fallback to the default for channels that have been setup earlier for backwards
-        # compatibility
-        facebook_template_domain = channel.config.get(CONFIG_FB_TEMPLATE_LIST_DOMAIN, "graph.facebook.com")
-        facebook_business_id = channel.config.get(CONFIG_FB_BUSINESS_ID)
-        facebook_template_api_version = channel.config.get(CONFIG_FB_TEMPLATE_API_VERSION, "v14.0")
-        url = TEMPLATE_LIST_URL % (facebook_template_domain, facebook_template_api_version, facebook_business_id)
-        templates = []
-
-        while url:
-            start = timezone.now()
-            try:
-                response = requests.get(
-                    url, params={"access_token": channel.config[CONFIG_FB_ACCESS_TOKEN], "limit": 255}
-                )
-                response.raise_for_status()
-                HTTPLog.from_response(
-                    HTTPLog.WHATSAPP_TEMPLATES_SYNCED, response, start, timezone.now(), channel=channel
-                )
-
-                templates.extend(response.json()["data"])
-                url = response.json().get("paging", {}).get("next", None)
-            except requests.RequestException as e:
-                HTTPLog.from_exception(HTTPLog.WHATSAPP_TEMPLATES_SYNCED, e, start, channel=channel)
-                raise e
-
-        return templates
 
     def get_redact_values(self, channel) -> tuple:
         """

@@ -209,10 +209,8 @@ class UserTest(TembaTest):
         self.assertFalse(self.org.is_active)
 
         token.refresh_from_db()
-        self.assertFalse(token.is_active)
         self.assertIsNotNone(token.deleted_on)
         revoked.refresh_from_db()
-        self.assertTrue(revoked.is_active)
         self.assertEqual(revoked_on, revoked.deleted_on)
         self.assertEqual(0, self.admin.groups.count())
 

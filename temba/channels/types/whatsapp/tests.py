@@ -1,12 +1,9 @@
 import json
-from unittest.mock import call, patch
-
-from requests import RequestException
+from unittest.mock import patch
 
 from django.test import override_settings
 from django.urls import reverse
 
-from temba.request_logs.models import HTTPLog
 from temba.tests import MockJsonResponse, MockResponse, TembaTest
 from temba.tests.crudl import CRUDLTestMixin
 from temba.utils.views.mixins import TEMBA_MENU_SELECTION
@@ -318,7 +315,7 @@ class WhatsAppTypeTest(TembaTest, CRUDLTestMixin):
             self.assertEqual("111111", channel.config["wa_pin"])
             self.assertEqual("namespace-uuid", channel.config["wa_message_template_namespace"])
             self.assertEqual("WAC", channel.type.code)
-            self.assertEqual("whatsapp", channel.template_type.slug)
+            self.assertEqual("whatsapp", channel.type.template_type)
 
             response = self.client.get(reverse("channels.types.whatsapp.request_code", args=(channel.uuid,)))
             self.assertEqual(200, response.status_code)
@@ -643,104 +640,6 @@ class WhatsAppTypeTest(TembaTest, CRUDLTestMixin):
             self.assertEqual(response.context["waba_ids"], ["111111111111111", "333333333333333"])
 
     @override_settings(WHATSAPP_ADMIN_SYSTEM_USER_TOKEN="WA_ADMIN_TOKEN")
-    @patch("requests.get")
-    def test_fetch_templates(self, mock_get):
-        channel = self.create_channel(
-            "WAC",
-            "WABA name",
-            "123123123",
-            config={
-                "wa_waba_id": "111111111111111",
-            },
-        )
-
-        foo = {"name": "foo", "language": "en", "status": "APPROVED", "category": "UTILITY"}
-        bar = {"name": "bar", "language": "en", "status": "APPROVED", "category": "MARKETING", "source": "USER"}
-        auto = {
-            "name": "auto_generated_123",
-            "language": "en",
-            "status": "APPROVED",
-            "category": "UTILITY",
-            "source": "AUTO_GENERATED",
-        }
-
-        mock_get.side_effect = [
-            RequestException("Network is unreachable", response=MockResponse(100, "")),
-            MockResponse(400, '{ "meta": { "success": false } }'),
-            MockResponse(200, json.dumps({"data": [foo, bar]}), headers={"Authorization": "Bearer WA_ADMIN_TOKEN"}),
-            MockResponse(
-                200,
-                json.dumps(
-                    {
-                        "data": [foo],
-                        "paging": {
-                            "cursors": {"after": "MjQZD"},
-                            "next": "https://graph.facebook.com/v25.0/111111111111111/message_templates?after=MjQZD",
-                        },
-                    }
-                ),
-                headers={"Authorization": "Bearer WA_ADMIN_TOKEN"},
-            ),
-            MockResponse(
-                200,
-                json.dumps({"data": [bar], "paging": {"cursors": {"after": "MjQZD"}}}),
-                headers={"Authorization": "Bearer WA_ADMIN_TOKEN"},
-            ),
-            MockResponse(
-                200, json.dumps({"data": [foo, auto, bar]}), headers={"Authorization": "Bearer WA_ADMIN_TOKEN"}
-            ),
-        ]
-
-        with self.assertRaises(RequestException):
-            channel.type.fetch_templates(channel)
-
-        self.assertEqual(1, HTTPLog.objects.filter(log_type=HTTPLog.WHATSAPP_TEMPLATES_SYNCED, is_error=True).count())
-
-        with self.assertRaises(RequestException):
-            channel.type.fetch_templates(channel)
-
-        self.assertEqual(2, HTTPLog.objects.filter(log_type=HTTPLog.WHATSAPP_TEMPLATES_SYNCED, is_error=True).count())
-
-        # check when no next page
-        templates = channel.type.fetch_templates(channel)
-        self.assertEqual([foo, bar], templates)
-
-        self.assertEqual(2, HTTPLog.objects.filter(log_type=HTTPLog.WHATSAPP_TEMPLATES_SYNCED, is_error=True).count())
-        self.assertEqual(1, HTTPLog.objects.filter(log_type=HTTPLog.WHATSAPP_TEMPLATES_SYNCED, is_error=False).count())
-
-        # check admin token is redacted in HTTP logs
-        for log in HTTPLog.objects.all():
-            self.assertNotIn("WA_ADMIN_TOKEN", json.dumps(log.get_display()))
-
-        mock_get.assert_called_with(
-            "https://graph.facebook.com/v25.0/111111111111111/message_templates",
-            params={"limit": 255},
-            headers={"Authorization": "Bearer WA_ADMIN_TOKEN"},
-        )
-
-        # check when templates across two pages
-        templates = channel.type.fetch_templates(channel)
-        self.assertEqual([foo, bar], templates)
-
-        mock_get.assert_has_calls(
-            [
-                call(
-                    "https://graph.facebook.com/v25.0/111111111111111/message_templates",
-                    params={"limit": 255},
-                    headers={"Authorization": "Bearer WA_ADMIN_TOKEN"},
-                ),
-                call(
-                    "https://graph.facebook.com/v25.0/111111111111111/message_templates?after=MjQZD",
-                    params={"limit": 255},
-                    headers={"Authorization": "Bearer WA_ADMIN_TOKEN"},
-                ),
-            ]
-        )
-
-        # templates auto-generated by Meta for Direct Send messages are skipped
-        templates = channel.type.fetch_templates(channel)
-        self.assertEqual([foo, bar], templates)
-
     def test_update(self):
         channel = self.create_channel(
             "WAC",

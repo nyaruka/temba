@@ -83,9 +83,6 @@ export class NotificationList extends TembaList {
         } else if (notification.incident.type === 'channel:disconnected') {
           icon = Icon.channel;
           body = msg('Your android channel is not connected');
-        } else if (notification.incident.type === 'channel:templates_failed') {
-          icon = Icon.channel;
-          body = msg('Your WhatsApp channel templates failed syncing');
         } else if (notification.incident.type === 'webhooks:unhealthy') {
           icon = Icon.webhook;
           body = msg('Your webhook calls are not working properly.');

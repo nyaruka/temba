@@ -483,6 +483,9 @@ msgstr ""
 msgid "Webhook Verify"
 msgstr ""
 
+msgid "Template Sync"
+msgstr ""
+
 #, python-format
 msgid "%(link)s offers SMS short codes in over 20 countries across Africa through a single account, connected directly to each country's mobile networks. Connect a short code you have with them to message contacts throughout the region."
 msgstr ""
@@ -2975,9 +2978,6 @@ msgstr ""
 msgid "Webhooks Unhealthy"
 msgstr ""
 
-msgid "WhatsApp Templates Sync Failed"
-msgstr ""
-
 msgid "Incident"
 msgstr ""
 
@@ -4423,9 +4423,6 @@ msgstr ""
 msgid "Synced from the provider %(since)s ago."
 msgstr ""
 
-msgid "View sync logs"
-msgstr ""
-
 msgid "No templates have been synced for this channel."
 msgstr ""
 
@@ -5553,14 +5550,6 @@ msgid "Your workspace has a channel that appears to be still running an old vers
 msgstr ""
 
 #, python-format
-msgid "Your <a href=\"%(url)s\">WhatsApp channel</a> is currently having problems fetching templates."
-msgstr ""
-
-#, python-format
-msgid "Your WhatsApp channel (%(url)s) is currently having problems fetching templates."
-msgstr ""
-
-#, python-format
 msgid "User <b>%(email)s</b> accepted an invitation to join your workspace."
 msgstr ""
 
@@ -5577,10 +5566,6 @@ msgstr ""
 
 #, python-format
 msgid "Your <a href=\"%(read_url)s\">Android channel</a> appears to be still running an old version of the client app."
-msgstr ""
-
-#, python-format
-msgid "Your <a href=\"%(read_url)s\">WhatsApp channel</a> appears to not be syncing templates."
 msgstr ""
 
 #, python-format

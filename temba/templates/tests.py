@@ -5,12 +5,10 @@ import requests
 
 from django.urls import reverse
 
+from temba import mailroom
 from temba.channels.models import Channel
-from temba.notifications.incidents.builtin import ChannelTemplatesFailedIncidentType
-from temba.notifications.models import Incident
 from temba.orgs.models import Org, OrgRole
-from temba.request_logs.models import HTTPLog
-from temba.tests import CRUDLTestMixin, TembaTest
+from temba.tests import CRUDLTestMixin, MockResponse, TembaTest, mock_mailroom
 
 from .models import Template, TemplateTranslation
 from .tasks import refresh_channel_templates, refresh_templates
@@ -88,105 +86,43 @@ class TemplateTest(TembaTest):
         self.assertEqual(3, TemplateTranslation.objects.filter(channel=channel1).count())
         self.assertEqual(1, TemplateTranslation.objects.filter(channel=channel2).count())
 
-    def test_update_local(self):
-        channel = self.create_channel("D3C", "Channel 1", "1234")
+        hello = hello_eng.template
+        self.assertFalse(hello.is_approved())
+        self.assertFalse(Template.get_or_create(self.org, "empty").is_approved())
 
-        TemplateTranslation.update_local(
-            channel,
-            [
-                {
-                    "name": "hello",
-                    "components": [{"type": "BODY", "text": "Hello"}],
-                    "language": "en",
-                    "status": "APPROVED",
-                    "id": "1001",
-                },
-                {
-                    "name": "hello",
-                    "components": [{"type": "BODY", "text": "Hola"}],
-                    "language": "es",
-                    "status": "PENDING",
-                    "id": "1002",
-                },
-                {
-                    "name": "hello",
-                    "components": [{"type": "BODY", "text": "Bonjour {{1}}"}],
-                    "language": "fr",
-                    "status": "REJECTED",
-                    "id": "1003",
-                },
-                {
-                    "name": "goodbye",
-                    "components": [{"type": "BODY", "text": "Goodbye"}],
-                    "language": "fr",
-                    "status": "PENDING",
-                    "id": "2001",
-                },
-            ],
+        hello.update_base()
+        self.assertEqual(hello_eng, hello.base_translation)
+
+        # changing the base translation's variables makes the others incompatible
+        TemplateTranslation.get_or_create(
+            channel1,
+            "hello",
+            locale="eng-US",
+            status=TemplateTranslation.STATUS_APPROVED,
+            external_id="1234",
+            external_locale="en_US",
+            namespace="",
+            components=[],
+            variables=[{"type": "text"}],
+            is_supported=True,
         )
+        hello_fra.refresh_from_db()
+        self.assertFalse(hello_fra.is_compatible)
+        self.assertFalse(hello.is_approved())
 
-        hello, goodbye = self.org.templates.order_by("id")
-        self.assertEqual("hello", hello.name)
-        self.assertEqual("eng", hello.base_translation.locale)
-        self.assertEqual(3, hello.translations.count())
+        hello_fra.status = TemplateTranslation.STATUS_APPROVED
+        hello_fra.save(update_fields=("status",))
+        self.assertTrue(hello.is_approved())
 
-        hello_eng, hello_spa, hello_fra = hello.translations.order_by("id")
-        self.assertEqual("eng", hello_eng.locale)
-        self.assertEqual(TemplateTranslation.STATUS_APPROVED, hello_eng.status)
-        self.assertTrue(hello_eng.is_supported)
-        self.assertTrue(hello_eng.is_compatible)
-        self.assertEqual("spa", hello_spa.locale)
-        self.assertEqual(TemplateTranslation.STATUS_PENDING, hello_spa.status)
-        self.assertTrue(hello_spa.is_supported)
-        self.assertTrue(hello_spa.is_compatible)
-        self.assertEqual("fra", hello_fra.locale)
-        self.assertEqual(TemplateTranslation.STATUS_REJECTED, hello_fra.status)
-        self.assertTrue(hello_fra.is_supported)
-        self.assertFalse(hello_fra.is_compatible)  # because of parameter mismatch
+        # deleting a translation that isn't the base leaves the base alone
+        hello_fra.delete()
+        hello.refresh_from_db()
+        self.assertEqual(hello_eng, hello.base_translation)
 
-        self.assertEqual("goodbye", goodbye.name)
-        self.assertEqual("fra", goodbye.base_translation.locale)
-        self.assertEqual(1, goodbye.translations.count())
-        self.assertEqual(4, channel.template_translations.count())
-
-        # update again, no more fra translation, and parameter added to eng, so spa should become incompatible
-        TemplateTranslation.update_local(
-            channel,
-            [
-                {
-                    "name": "hello",
-                    "components": [{"type": "BODY", "text": "Hello {{1}}"}],
-                    "language": "en",
-                    "status": "APPROVED",
-                    "id": "1234",
-                },
-                {
-                    "name": "hello",
-                    "components": [{"type": "BODY", "text": "Hola"}],
-                    "language": "es",
-                    "status": "APPROVED",
-                    "id": "1002",
-                },
-            ],
-        )
-
-        hello, goodbye = self.org.templates.order_by("id")
-        self.assertEqual("eng", hello.base_translation.locale)
-        self.assertEqual(2, hello.translations.count())
-
-        hello_eng, hello_spa = hello.translations.order_by("id")
-        self.assertEqual("eng", hello_eng.locale)
-        self.assertEqual(TemplateTranslation.STATUS_APPROVED, hello_eng.status)
-        self.assertTrue(hello_eng.is_supported)
-        self.assertTrue(hello_eng.is_compatible)
-        self.assertEqual("spa", hello_spa.locale)
-        self.assertEqual(TemplateTranslation.STATUS_APPROVED, hello_spa.status)
-        self.assertTrue(hello_spa.is_supported)
-        self.assertFalse(hello_spa.is_compatible)
-
-        self.assertIsNone(goodbye.base_translation)
-        self.assertEqual(0, goodbye.translations.count())
-        self.assertEqual(2, channel.template_translations.count())
+        # deleting the base finds a new one, if there is one
+        hello_eng.delete()
+        hello.refresh_from_db()
+        self.assertIsNone(hello.base_translation)
 
     def test_refresh_task(self):
         org3 = Org.objects.create(
@@ -293,9 +229,8 @@ class TemplateTest(TembaTest):
             [call(restricted_channel.id), call(d3c_channel.id), call(twa_channel.id)], mock_delay.call_args_list
         )
 
-    @patch("temba.templates.models.TemplateTranslation.update_local")
-    @patch("temba.channels.types.dialog360.Dialog360Type.fetch_templates")
-    def test_refresh_channel_task(self, mock_d3c_fetch_templates, mock_update_local):
+    @mock_mailroom
+    def test_refresh_channel_task(self, mr_mocks):
         d3c_channel = self.create_channel(
             "D3C",
             "360Dialog channel",
@@ -307,72 +242,37 @@ class TemplateTest(TembaTest):
             },
         )
 
-        def mock_fetch(ch):
-            HTTPLog.objects.create(
-                org=ch.org, channel=ch, log_type=HTTPLog.WHATSAPP_TEMPLATES_SYNCED, request_time=0, is_error=False
-            )
-            return [{"name": "hello"}]
-
-        def mock_fail_fetch(ch):
-            HTTPLog.objects.create(
-                org=ch.org, channel=ch, log_type=HTTPLog.WHATSAPP_TEMPLATES_SYNCED, request_time=0, is_error=True
-            )
-            raise requests.ConnectionError("timeout")
-
-        mock_d3c_fetch_templates.side_effect = mock_fetch
-        mock_update_local.return_value = None
-
+        # mailroom does the sync and records it on the channel
         refresh_channel_templates(d3c_channel.id)
 
-        self.assertEqual(1, mock_d3c_fetch_templates.call_count)
-        self.assertEqual(1, mock_update_local.call_count)
-        self.assertEqual(0, Incident.objects.filter(incident_type=ChannelTemplatesFailedIncidentType.slug).count())
+        self.assertEqual([call(self.org, d3c_channel)], mr_mocks.calls["channel_sync_templates"])
+        d3c_channel.refresh_from_db()
+        self.assertFalse(d3c_channel.last_templates_sync.failed)
 
-        # request errors are swallowed as they're already logged against the channel
-        mock_d3c_fetch_templates.side_effect = mock_fail_fetch
-
+        # a failed fetch from the provider is recorded by mailroom, as is a sync already in progress
+        mr_mocks.exception(mailroom.RequestException("", "", MockResponse(422, '{"error": "boom"}')))
         refresh_channel_templates(d3c_channel.id)
 
-        self.assertEqual(2, mock_d3c_fetch_templates.call_count)
-        self.assertEqual(1, mock_update_local.call_count)
-
-        # one failure isn't enough to create an incident
-        self.assertEqual(0, Incident.objects.filter(incident_type=ChannelTemplatesFailedIncidentType.slug).count())
-
-        # but 5 will be
-        refresh_channel_templates(d3c_channel.id)
-        refresh_channel_templates(d3c_channel.id)
-        refresh_channel_templates(d3c_channel.id)
+        mr_mocks.exception(mailroom.RequestException("", "", MockResponse(409, '{"error": "already syncing"}')))
         refresh_channel_templates(d3c_channel.id)
 
-        self.assertEqual(
-            1,
-            Incident.objects.filter(
-                incident_type=ChannelTemplatesFailedIncidentType.slug, channel=d3c_channel, ended_on=None
-            ).count(),
-        )
-
-        # a successful fetch will clear it
-        mock_d3c_fetch_templates.side_effect = mock_fetch
-
-        refresh_channel_templates(d3c_channel.id)
-
-        self.assertEqual(
-            0,
-            Incident.objects.filter(
-                incident_type=ChannelTemplatesFailedIncidentType.slug, channel=d3c_channel, ended_on=None
-            ).count(),
-        )
-
-        # other exception logged to sentry
-        mock_d3c_fetch_templates.side_effect = Exception("boom")
-        with patch("logging.Logger.error") as mock_log_error:
+        # other errors, e.g. mailroom being down, are logged as warnings rather than failing the task
+        mr_mocks.exception(mailroom.RequestException("", "", MockResponse(500, '{"error": "boom"}')))
+        mr_mocks.exception(requests.ConnectionError("connection refused"))
+        with patch("logging.Logger.warning") as mock_warning:
             refresh_channel_templates(d3c_channel.id)
-            self.assertEqual(1, mock_log_error.call_count)
-            self.assertEqual("Error refreshing whatsapp templates: boom", mock_log_error.call_args[0][0])
+            refresh_channel_templates(d3c_channel.id)
+
+        self.assertEqual(
+            [
+                call(f"error syncing templates for channel #{d3c_channel.id}: boom"),
+                call(f"error syncing templates for channel #{d3c_channel.id}: connection refused"),
+            ],
+            mock_warning.call_args_list,
+        )
+        self.assertEqual(5, len(mr_mocks.calls["channel_sync_templates"]))
 
         # channel that has been released since being queued is skipped
-        mock_d3c_fetch_templates.reset_mock()
         d3c_channel.release(self.admin)
 
         refresh_channel_templates(d3c_channel.id)
@@ -380,7 +280,7 @@ class TemplateTest(TembaTest):
         # as is a channel that no longer exists
         refresh_channel_templates(d3c_channel.id + 1000)
 
-        mock_d3c_fetch_templates.assert_not_called()
+        self.assertEqual(5, len(mr_mocks.calls["channel_sync_templates"]))
 
 
 class TemplateCRUDLTest(CRUDLTestMixin, TembaTest):
@@ -493,10 +393,8 @@ class TemplateCRUDLTest(CRUDLTestMixin, TembaTest):
         self.assertContains(response, "Variable parameters don't match.")
         self.assertNotContains(response, "Goodbye")
 
-    @patch("temba.templates.models.TemplateTranslation.update_local")
-    @patch("temba.channels.types.twilio_whatsapp.TwilioWhatsappType.fetch_templates")
-    @patch("temba.channels.types.dialog360.Dialog360Type.fetch_templates")
-    def test_refresh_templates(self, mock_d3c_fetch_templates, mock_twa_fetch_templates, mock_update_local):
+    @mock_mailroom
+    def test_refresh_templates(self, mr_mocks):
         d3c_channel = self.create_channel(
             "D3C",
             "360Dialog channel",
@@ -507,7 +405,7 @@ class TemplateCRUDLTest(CRUDLTestMixin, TembaTest):
                 Channel.CONFIG_AUTH_TOKEN: "123456789",
             },
         )
-        self.create_channel(
+        twa_channel = self.create_channel(
             "TWA",
             "TWilio WhatsAPp channel",
             address="1234",
@@ -539,54 +437,27 @@ class TemplateCRUDLTest(CRUDLTestMixin, TembaTest):
         response = self.client.get(sync_templates_url)
         self.assertContains(response, "Refresh")
 
-        ChannelTemplatesFailedIncidentType.get_or_create(d3c_channel)
-        self.assertEqual(
-            1,
-            Incident.objects.filter(
-                incident_type=ChannelTemplatesFailedIncidentType.slug, channel=d3c_channel, ended_on=None
-            ).count(),
-        )
-
-        def mock_fetch(ch):
-            HTTPLog.objects.create(
-                org=ch.org, channel=ch, log_type=HTTPLog.WHATSAPP_TEMPLATES_SYNCED, request_time=0, is_error=False
-            )
-            return [{"name": "hello"}]
-
-        def mock_fail_fetch(ch):
-            HTTPLog.objects.create(
-                org=ch.org, channel=ch, log_type=HTTPLog.WHATSAPP_TEMPLATES_SYNCED, request_time=0, is_error=True
-            )
-            raise requests.ConnectionError("timeout")
-
-        mock_d3c_fetch_templates.side_effect = mock_fetch
-        mock_twa_fetch_templates.side_effect = mock_fetch
-        mock_update_local.return_value = None
-
+        # each of the workspace's channels with templates is synced through mailroom
         response = self.client.post(sync_templates_url, {}, follow=True)
         self.assertEqual(200, response.status_code)
         self.assertToast(response, "info", "Your templates have been fetched and refreshed.")
-
-        self.assertEqual(1, mock_d3c_fetch_templates.call_count)
-        self.assertEqual(1, mock_twa_fetch_templates.call_count)
-        self.assertEqual(2, mock_update_local.call_count)
-        self.assertEqual(
-            0,
-            Incident.objects.filter(
-                incident_type=ChannelTemplatesFailedIncidentType.slug, channel=d3c_channel, ended_on=None
-            ).count(),
+        self.assertCountEqual(
+            [call(self.org, d3c_channel), call(self.org, twa_channel)], mr_mocks.calls["channel_sync_templates"]
         )
 
-        # if one channel fails, others continue
-        mock_d3c_fetch_templates.side_effect = mock_fail_fetch
+        # if one channel fails, others continue, whether it's the provider, mailroom or the connection to it
+        for exception in (
+            mailroom.RequestException("", "", MockResponse(422, '{"error": "boom"}')),
+            mailroom.RequestException("", "", MockResponse(500, '{"error": "boom"}')),
+            requests.ConnectionError("connection refused"),
+        ):
+            mr_mocks.exception(exception)
+            num_calls = len(mr_mocks.calls["channel_sync_templates"])
 
-        response = self.client.post(sync_templates_url, {}, follow=True)
-        self.assertEqual(200, response.status_code)
-        self.assertToast(response, "error", "Unable to refresh all templates. See the log for details.")
-
-        self.assertEqual(2, mock_d3c_fetch_templates.call_count)
-        self.assertEqual(2, mock_twa_fetch_templates.call_count)
-        self.assertEqual(3, mock_update_local.call_count)
+            response = self.client.post(sync_templates_url, {}, follow=True)
+            self.assertEqual(200, response.status_code)
+            self.assertToast(response, "error", "Unable to refresh all templates. See the log for details.")
+            self.assertEqual(num_calls + 2, len(mr_mocks.calls["channel_sync_templates"]))
 
 
 class TemplateTagsTest(TembaTest):

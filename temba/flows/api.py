@@ -29,17 +29,13 @@ class FlowsEndpoint(SearchLengthMixin, ListAPIMixin, BaseEndpoint):
     }
 
     def derive_queryset(self):
-        # Build from Flow.objects rather than the org.flows related manager — a related manager would seed each
-        # fetched row with the in-memory org instance, which Django rejects on a GET because the org was loaded from
-        # the default database while this queryset reads from the readonly alias.
         org = self.request.org
         base = Flow.objects.filter(org=org, is_active=True)
 
         label_uuid = self.request.query_params.get("label")
         if label_uuid:
             # Validate before the lookup — an unparseable value would otherwise raise in the database's UUID
-            # coercion (500). FlowLabel.objects rather than org.flow_labels for the same readonly-alias reason as
-            # the flows queryset above.
+            # coercion (500).
             if not is_uuid(label_uuid):
                 return Flow.objects.none()
             label = FlowLabel.objects.filter(org=org, uuid=label_uuid, deleted_on=None).first()

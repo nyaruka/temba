@@ -88,6 +88,29 @@ class MailroomClientTest(TembaTest):
         )
 
     @patch("requests.post")
+    def test_channel_sync_templates(self, mock_post):
+        mock_post.return_value = MockJsonResponse(200, {"translations": 12})
+        self.assertEqual(12, self.client.channel_sync_templates(self.org, self.channel))
+
+        mock_post.assert_called_once_with(
+            "http://localhost:8090/mi/channel/sync_templates",
+            headers={"User-Agent": "Temba", "Authorization": "Token sesame"},
+            json={"org_id": self.org.id, "channel_id": self.channel.id},
+            timeout=60,
+        )
+
+        # a failed fetch from the provider is a 422 without an error code
+        mock_post.return_value = MockJsonResponse(
+            422, {"error": "error fetching templates: received non-2XX response: 401"}
+        )
+
+        with self.assertRaises(RequestException) as e:
+            self.client.channel_sync_templates(self.org, self.channel)
+
+        self.assertEqual(422, e.exception.response.status_code)
+        self.assertEqual("error fetching templates: received non-2XX response: 401", e.exception.error)
+
+    @patch("requests.post")
     def test_contact_create(self, mock_post):
         ann = self.create_contact("Ann", urns=["tel:+12340000001"])
         bob = self.create_contact("Bob", urns=["tel:+12340000002"])

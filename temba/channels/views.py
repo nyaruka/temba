@@ -883,16 +883,9 @@ class ChannelCRUDL(SmartCRUDL):
             return text % {"count": count}
 
         def get_template_summary(self, channel) -> dict:
-            from temba.request_logs.models import HTTPLog
             from temba.templates.models import TemplateTranslation
 
             counts = dict(channel.template_translations.values_list("status").annotate(count=Count("id")))
-            last_sync = (
-                HTTPLog.objects.filter(channel=channel, log_type=HTTPLog.WHATSAPP_TEMPLATES_SYNCED)
-                .order_by("-created_on")
-                .only("created_on", "is_error")
-                .first()
-            )
             others = []
             for status, _label in TemplateTranslation.STATUS_CHOICES:
                 if status != TemplateTranslation.STATUS_APPROVED and (count := counts.get(status)):
@@ -902,7 +895,7 @@ class ChannelCRUDL(SmartCRUDL):
                 "approved": counts.get(TemplateTranslation.STATUS_APPROVED, 0),
                 "total": sum(counts.values()),
                 "others": others,
-                "last_sync": last_sync,
+                "last_sync": channel.last_templates_sync,
             }
 
         def get_context_data(self, **kwargs):
@@ -1055,18 +1048,11 @@ class ChannelCRUDL(SmartCRUDL):
             return channel
 
         def get_context_data(self, **kwargs):
-            from temba.request_logs.models import HTTPLog
-
             context = super().get_context_data(**kwargs)
             context["translations"] = self.object.template_translations.select_related("template").order_by(
                 "template__name", "locale"
             )
-            context["last_sync"] = (
-                HTTPLog.objects.filter(channel=self.object, log_type=HTTPLog.WHATSAPP_TEMPLATES_SYNCED)
-                .order_by("-created_on")
-                .first()
-            )
-            context["can_view_syncs"] = self.has_org_perm("request_logs.httplog_list")
+            context["last_sync"] = self.object.last_templates_sync
             return context
 
     class Syncs(SpaMixin, BaseReadView):
