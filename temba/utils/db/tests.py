@@ -1,9 +1,11 @@
 import io
 from contextlib import redirect_stdout
 
-from django.db import connection
+from django.db import DatabaseError, connection, transaction
 from django.db.models import F, Value
 
+from temba.contacts.models import Contact
+from temba.orgs.models import Org
 from temba.tests import TembaTest
 
 from .functions import SplitPart
@@ -89,3 +91,25 @@ class SchemaTest(TembaTest):
             unindexed = {f"{table}.{column}" for table, column in cursor.fetchall()}
 
         self.assertEqual(self.UNINDEXED_FKS, unindexed)
+
+
+class ReadonlyRouterTest(TembaTest):
+    def test_relations_and_writes(self):
+        # the readonly connection is outside the test's transaction so can't see its rows, hence faking where this
+        # contact was read from
+        contact = Contact.objects.get(id=self.create_contact("Bob", phone="+16055741111").id)
+        contact._state.db = "readonly"
+
+        # instances from readonly and default can be related
+        contact.org = Org.objects.get(id=self.org.id)
+
+        # and saving an instance read from readonly writes to default
+        contact.name = "Robert"
+        contact.save(update_fields=("name",))
+
+        self.assertEqual("Robert", Contact.objects.get(id=contact.id).name)
+
+        # writing through readonly fails as it would on a replica
+        with self.assertRaisesRegex(DatabaseError, "read-only transaction"):
+            with transaction.atomic(using="readonly"):
+                Contact.objects.using("readonly").filter(id=contact.id).update(name="Bobby")

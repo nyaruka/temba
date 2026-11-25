@@ -804,8 +804,16 @@ _default_database_config = {
 }
 
 # installs can provide a default connection and an optional read-only connection (e.g. a separate read replica) which
-# will be used for certain fetch operations
-DATABASES = {"default": _default_database_config, "readonly": _default_database_config.copy()}
+# will be used for certain fetch operations. Its transactions are read-only so that anything which writes through it
+# fails here as it would on a replica.
+DATABASES = {
+    "default": _default_database_config,
+    "readonly": {
+        **_default_database_config,
+        "OPTIONS": {**_default_database_config["OPTIONS"], "options": "-c default_transaction_read_only=on"},
+    },
+}
+DATABASE_ROUTERS = ["temba.utils.db.routers.ReadonlyRouter"]
 
 
 # -----------------------------------------------------------------------------------

@@ -22,9 +22,6 @@ class CampaignsEndpoint(SearchLengthMixin, ListAPIMixin, BaseEndpoint):
     pagination_class = ListPagination
 
     def derive_queryset(self):
-        # Build from Campaign.objects rather than the org.campaigns related manager — a related manager would seed
-        # each fetched row with the in-memory org instance, which Django rejects on a GET because the org was loaded
-        # from the default database while this queryset reads from the readonly alias.
         org = self.request.org
         qs = Campaign.objects.filter(org=org, is_active=True)
 
