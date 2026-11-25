@@ -114,6 +114,16 @@ class TemplateTest(TembaTest):
         hello_fra.save(update_fields=("status",))
         self.assertTrue(hello.is_approved())
 
+        # deleting a translation that isn't the base leaves the base alone
+        hello_fra.delete()
+        hello.refresh_from_db()
+        self.assertEqual(hello_eng, hello.base_translation)
+
+        # deleting the base finds a new one, if there is one
+        hello_eng.delete()
+        hello.refresh_from_db()
+        self.assertIsNone(hello.base_translation)
+
     def test_refresh_task(self):
         org3 = Org.objects.create(
             name="Nyaruka 3",
