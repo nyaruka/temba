@@ -82,15 +82,12 @@ class SearchSliceQuerySet(models.query.RawQuerySet):
 
         return SearchSliceQuerySet(self.model, uuids, offset=0, total=len(uuids), using=self._db)
 
-    def using(self, alias):
-        return self._clone(using=alias)
-
-    def _clone(self, *, using=None):
+    def _clone(self):
         return self.__class__(
             self.model,
             self.uuids,
             offset=self.offset,
             total=self.total,
-            using=using or self._db,
+            using=self._db,
             _raw_query=self.raw_query,
         )

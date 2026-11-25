@@ -1173,7 +1173,7 @@ class ChannelTally(BaseTally):
 
     @classmethod
     def get_daily_totals_by_channel(
-        cls, channels, scopes: list[str], since: date, until: date, using: str = "default"
+        cls, channels, scopes: list[str], since: date, until: date, *, using: str = "default"
     ) -> dict[tuple[int, date, str], int]:
         """
         Gets totals by channel id, day and scope for the given undated scopes of each of the given channels over days

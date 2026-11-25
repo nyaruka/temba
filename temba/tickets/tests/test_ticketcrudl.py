@@ -1,7 +1,6 @@
 from datetime import date, timedelta
 from unittest.mock import call, patch
 
-from django.db import connection
 from django.urls import reverse
 from django.utils import timezone
 
@@ -1114,9 +1113,9 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
             update_url, self.admin, {"note": "I have a bad feeling about this."}, success_status=200
         )
 
-    # tally reads of earlier days go to the readonly database, which is outside the test's transaction
-    @patch("temba.orgs.models.connections", {"default": connection, "readonly": connection})
     def test_opened_chart(self):
+        self.enterContext(self.mockReadOnly())
+
         opened_url = reverse("tickets.ticket_chart", args=["opened"])
 
         cats = Topic.create(self.org, self.admin, "Cats")
@@ -1193,9 +1192,9 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
             response.json(),
         )
 
-    # tally reads of earlier days go to the readonly database, which is outside the test's transaction
-    @patch("temba.orgs.models.connections", {"default": connection, "readonly": connection})
     def test_resptime_chart(self):
+        self.enterContext(self.mockReadOnly())
+
         opened_url = reverse("tickets.ticket_chart", args=["resptime"])
 
         # response times aren't tracked per team so agents can't fetch them
@@ -1233,9 +1232,9 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
             response.json(),
         )
 
-    # tally reads of earlier days go to the readonly database, which is outside the test's transaction
-    @patch("temba.orgs.models.connections", {"default": connection, "readonly": connection})
     def test_replies_chart(self):
+        self.enterContext(self.mockReadOnly())
+
         replies_url = reverse("tickets.ticket_chart", args=["replies"])
 
         self.login(self.admin)
@@ -1296,9 +1295,9 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
             response.json(),
         )
 
-    # tally reads of earlier days go to the readonly database, which is outside the test's transaction
-    @patch("temba.orgs.models.connections", {"default": connection, "readonly": connection})
     def test_leaderboard(self):
+        self.enterContext(self.mockReadOnly())
+
         leaderboard_url = reverse("tickets.ticket_leaderboard")
 
         self.assertRequestDisallowed(leaderboard_url, [None])

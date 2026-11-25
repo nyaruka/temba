@@ -201,8 +201,9 @@ class ContactsEndpoint(SearchLengthMixin, ListAPIMixin, WriteAPIMixin, BaseEndpo
         return ("-" if desc else "") + key
 
     def get_queryset(self):
-        # only GETs list, so like other list endpoints this reads from the readonly database, which can briefly lag
-        # behind an update made through this endpoint's POST (get_object stays on the default database)
+        # only GETs list, so like other list endpoints the group and its membership are read from the readonly
+        # database, which can briefly lag behind an update made through this endpoint's POST (get_object stays on the
+        # default database)
         org = self.request.org
         group = self.derive_group()
         if group is None:
@@ -223,14 +224,14 @@ class ContactsEndpoint(SearchLengthMixin, ListAPIMixin, WriteAPIMixin, BaseEndpo
             except mailroom.QueryValidationException as e:
                 # Surface the validation error but keep a list-shaped response so the component just renders empty.
                 self._query_error = str(e)
-                return SearchSliceQuerySet(Contact, [], offset=0, total=0).using("readonly")
+                return SearchSliceQuerySet(Contact, [], offset=0, total=0)
 
             # Echo mailroom's parsed/normalized query (e.g. "age > 50" → "fields.age > 50") so the component can
             # rewrite its search box to match what the results actually reflect. Only meaningful when searching.
             self._parsed_query = results.query if search and results.query else None
 
-            slice = SearchSliceQuerySet(Contact, results.contact_uuids, offset=offset, total=results.total)
-            return slice.using("readonly")
+            # loaded from the default database as the search index can know of a contact before a replica does
+            return SearchSliceQuerySet(Contact, results.contact_uuids, offset=offset, total=results.total)
 
         # Patch .count() to read the precomputed ContactGroupCount squash (via get_member_count) instead of letting
         # DRF's paginator run a full SELECT COUNT(*) over the group membership — that COUNT is what makes the new list
