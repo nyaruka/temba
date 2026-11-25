@@ -13,7 +13,8 @@ from . import APITest
 class RunsEndpointTest(APITest):
     def test_readonly_routing(self):
         # custom Prefetch querysets should be routed to the same database as the instances they're prefetched for
-        # (regressed in Django 6.1) as otherwise bulk_urn_cache_initialize mixes contacts and URNs from different dbs
+        # (regressed in Django 6.1) as otherwise prefetched relations are read from a different database than their
+        # instances
         run = FlowRun()
         run._state.db = "readonly"
 

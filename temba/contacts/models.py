@@ -1304,7 +1304,8 @@ class Contact(LegacyIDMixin, LegacyUUIDMixin, CreatedByMixin, ModifiedByMixin, S
     @classmethod
     def bulk_urn_cache_initialize(cls, contacts, *, using: str = "default"):
         """
-        Initializes the URN caches on the given contacts.
+        Initializes the URN caches on the given contacts. The cached URNs don't have their org set, so callers that
+        display them should pass the workspace explicitly.
         """
         if not contacts:
             return
