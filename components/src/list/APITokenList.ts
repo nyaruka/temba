@@ -1,40 +1,30 @@
 import { css, html, TemplateResult } from 'lit';
 import { msg } from '@lit/localize';
-import { state } from 'lit/decorators.js';
 import { ContentList, ContentListColumn } from './ContentList';
 import { Icon } from '../Icons';
 import { APIToken, CustomEventType } from '../interfaces';
 
 /**
  * The user's API tokens for the workspace, oldest first. Each row shows
- * the key with a button to copy it, when it was created and when it was
- * last used, and a delete button which fires `temba-apitoken-delete` for
- * the host to confirm in a modal. Rows don't navigate anywhere, and there
- * are too few tokens to need search.
+ * the start of the key (the full key is only shown once, when the token is
+ * created), when it was created and when it was last used, and a delete
+ * button which fires `temba-apitoken-delete` for the host to confirm in a
+ * modal. Rows don't navigate anywhere, and there are too few tokens to
+ * need search.
  */
 export class APITokenList extends ContentList<APIToken> {
   static get styles() {
     return css`
       ${ContentList.styles}
-      .key-cell {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        min-width: 0;
-      }
       .key {
         font-family: var(--font-mono, 'Roboto Mono', monospace);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-      .key-cell temba-icon,
       .actions-cell temba-icon {
         flex: 0 0 auto;
         --icon-color: var(--text-3);
-      }
-      .key-cell temba-icon.copied {
-        --icon-color: var(--success);
       }
       .actions-cell {
         display: flex;
@@ -46,26 +36,23 @@ export class APITokenList extends ContentList<APIToken> {
     `;
   }
 
-  /** The key most recently copied, shown with a check for a moment. */
-  @state()
-  private copiedKey: string = null;
-
-  private copiedTimer: number = null;
-
   protected defaultEmptyMessage(): string {
     return msg('No API tokens');
   }
 
   constructor() {
     super();
-    this.valueKey = 'key';
+    this.valueKey = 'id';
     this.searchable = false;
     this.minTableWidth = '520px';
   }
 
-  public disconnectedCallback(): void {
-    super.disconnectedCallback();
-    window.clearTimeout(this.copiedTimer);
+  /** Also re-pulls the content menu, since creating or deleting a token
+   * changes whether another can be created. */
+  public refresh(): void {
+    super.refresh();
+    const header = this.shadowRoot?.querySelector('temba-page-header') as any;
+    header?.refresh();
   }
 
   protected buildColumns(): ContentListColumn[] {
@@ -87,18 +74,6 @@ export class APITokenList extends ContentList<APIToken> {
     return Icon.user_token;
   }
 
-  private handleCopy(item: APIToken, event: MouseEvent): void {
-    event.stopPropagation();
-    if (!navigator.clipboard) return;
-    navigator.clipboard.writeText(item.key).then(() => {
-      this.copiedKey = item.key;
-      window.clearTimeout(this.copiedTimer);
-      this.copiedTimer = window.setTimeout(() => {
-        this.copiedKey = null;
-      }, 1500);
-    });
-  }
-
   private handleDelete(item: APIToken, event: MouseEvent): void {
     event.stopPropagation();
     this.fireCustomEvent(CustomEventType.APITokenDelete, { item });
@@ -109,21 +84,8 @@ export class APITokenList extends ContentList<APIToken> {
     column: ContentListColumn
   ): TemplateResult | string {
     switch (column.key) {
-      case 'key': {
-        const copied = this.copiedKey === item.key;
-        return html`<div class="key-cell">
-          <span class="key">${item.key}</span>
-          <temba-icon
-            class=${copied ? 'copied' : ''}
-            name=${copied ? Icon.check : Icon.copy}
-            size="0.95"
-            clickable
-            aria-label=${msg('Copy')}
-            title=${msg('Copy')}
-            @click=${(e: MouseEvent) => this.handleCopy(item, e)}
-          ></temba-icon>
-        </div>`;
-      }
+      case 'key':
+        return html`<span class="key">${item.prefix}…</span>`;
       case 'created_on':
         return item.created_on
           ? html`<temba-date

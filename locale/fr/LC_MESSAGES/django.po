@@ -4089,6 +4089,19 @@ msgstr "Authentification à deux facteurs"
 msgid "Sessions"
 msgstr "Sessions"
 
+msgid "Copy your new token now."
+msgstr "Copiez votre nouveau jeton maintenant."
+
+msgid "For your security it won't be shown again. If you lose it, delete it and create a new one."
+msgstr "Pour votre sécurité, il ne sera plus affiché. Si vous le perdez, supprimez-le et créez-en un nouveau."
+
+#, python-format
+msgid "You already have the maximum of %(limit)s tokens. Delete one to create a new one."
+msgstr "Vous avez déjà le maximum de %(limit)s jetons. Supprimez-en un pour en créer un nouveau."
+
+msgid "Create a new token for accessing the API? Its key will only be shown once, so be ready to copy it."
+msgstr "Créer un nouveau jeton pour accéder à l'API ? Sa clé ne sera affichée qu'une seule fois, alors préparez-vous à la copier."
+
 #, python-format
 msgid "You are about to delete the API token <b>%(prefix)s</b>. There is no way to undo this. Are you sure?"
 msgstr "Vous êtes sur le point de supprimer le jeton d'API <b>%(prefix)s</b>. Cette action est irréversible. Voulez-vous continuer ?"

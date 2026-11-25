@@ -44,7 +44,7 @@
 
       list.addEventListener("temba-apitoken-delete", function(event) {
         var modax = document.querySelector("#delete-token");
-        modax.endpoint = `/apitoken/delete/${event.detail.item.key}/`;
+        modax.endpoint = `/apitoken/delete/${event.detail.item.id}/`;
         modax.open = true;
       });
 

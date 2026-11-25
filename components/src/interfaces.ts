@@ -357,9 +357,12 @@ export interface LLM {
   usages: number;
 }
 
-/** One of the user's API tokens, as served by the api_tokens endpoint. */
+/** One of the user's API tokens, as served by the api_tokens endpoint. The
+ * full key is only shown when a token is created, so rows carry just a
+ * non-secret `id` and the start of the key. */
 export interface APIToken {
-  key: string;
+  id: string;
+  prefix: string;
   created_on: string;
   last_used_on: string | null;
 }

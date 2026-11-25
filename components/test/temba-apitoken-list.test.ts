@@ -9,7 +9,8 @@ const getTokenList = async (attrs: any = {}, width = 700, height = 0) => {
 };
 
 const token = (over: any = {}) => ({
-  key: 'KEY1',
+  id: 'abc123',
+  prefix: 'KEY111',
   created_on: '2026-05-11T09:12:00.000000Z',
   last_used_on: null,
   ...over
@@ -35,7 +36,7 @@ describe('temba-apitoken-list', () => {
   it('can be created', async () => {
     const list: APITokenList = await getTokenList();
     assert.instanceOf(list, APITokenList);
-    expect(list.valueKey).to.equal('key');
+    expect(list.valueKey).to.equal('id');
     // too few tokens to need search
     expect(list.searchable).to.be.false;
   });
@@ -45,21 +46,29 @@ describe('temba-apitoken-list', () => {
     expect((list as any).getRowHref(token())).to.be.null;
   });
 
-  it('renders the key, created and last used cells', async () => {
+  it('renders the key prefix, created and last used cells', async () => {
     const list: APITokenList = await getTokenList();
     await renderRows(list, [
       token(),
-      token({ key: 'KEY2', last_used_on: '2026-05-11T10:00:00.000000Z' })
+      token({
+        id: 'def456',
+        prefix: 'KEY222',
+        last_used_on: '2026-05-11T10:00:00.000000Z'
+      })
     ]);
 
     const rows = list.shadowRoot.querySelectorAll('tr.row');
     expect(rows).to.have.length(2);
 
-    expect(rows[0].querySelector('.key').textContent.trim()).to.equal('KEY1');
+    expect(rows[0].querySelector('.key').textContent.trim()).to.equal(
+      'KEY111…'
+    );
     expect(rows[0].textContent).to.contain('Never');
     expect(rows[0].querySelectorAll('temba-date')).to.have.length(1);
 
-    expect(rows[1].querySelector('.key').textContent.trim()).to.equal('KEY2');
+    expect(rows[1].querySelector('.key').textContent.trim()).to.equal(
+      'KEY222…'
+    );
     expect(rows[1].textContent).to.not.contain('Never');
     expect(rows[1].querySelectorAll('temba-date')).to.have.length(2);
   });
@@ -85,47 +94,18 @@ describe('temba-apitoken-list', () => {
     );
 
     expect(deletes).to.have.length(1);
-    expect(deletes[0].item.key).to.equal('KEY1');
+    expect(deletes[0].item.id).to.equal('abc123');
     expect(rowClicks, 'the click stays on the button').to.have.length(0);
   });
 
-  it('copies the key from the copy button', async () => {
+  it('refreshes its content menu along with its rows', async () => {
     const list: APITokenList = await getTokenList();
-    await renderRows(list, [token()]);
+    const header = list.shadowRoot.querySelector('temba-page-header') as any;
 
-    const copied: string[] = [];
-    const original = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
-    Object.defineProperty(navigator, 'clipboard', {
-      configurable: true,
-      value: {
-        writeText: (text: string) => {
-          copied.push(text);
-          return Promise.resolve();
-        }
-      }
-    });
+    let headerRefreshes = 0;
+    header.refresh = () => headerRefreshes++;
 
-    try {
-      const button = list.shadowRoot.querySelector(
-        '.key-cell temba-icon'
-      ) as HTMLElement;
-      button.dispatchEvent(
-        new MouseEvent('click', { bubbles: true, composed: true })
-      );
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      await list.updateComplete;
-
-      expect(copied).to.deep.equal(['KEY1']);
-      const icon = list.shadowRoot.querySelector(
-        '.key-cell temba-icon'
-      ) as HTMLElement;
-      expect(icon.classList.contains('copied')).to.be.true;
-    } finally {
-      if (original) {
-        Object.defineProperty(navigator, 'clipboard', original);
-      } else {
-        delete (navigator as any).clipboard;
-      }
-    }
+    list.refresh();
+    expect(headerRefreshes).to.equal(1);
   });
 });

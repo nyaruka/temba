@@ -59,17 +59,38 @@ class EndpointsTest(APITestMixin, TembaTest):
             endpoint_url,
             [self.admin],
             results=[
-                {"key": token1.key, "created_on": matchers.ISODatetime(), "last_used_on": None},
-                {"key": token2.key, "created_on": matchers.ISODatetime(), "last_used_on": matchers.ISODatetime()},
+                {
+                    "id": token1.digest,
+                    "prefix": token1.key[:6],
+                    "created_on": matchers.ISODatetime(),
+                    "last_used_on": None,
+                },
+                {
+                    "id": token2.digest,
+                    "prefix": token2.key[:6],
+                    "created_on": matchers.ISODatetime(),
+                    "last_used_on": matchers.ISODatetime(),
+                },
             ],
             num_queries=NUM_BASE_QUERIES + 1,
         )
         self.assertEqual("cursor", response.json()["paged_by"])
 
+        # full keys are never served
+        self.assertNotContains(response, token1.key)
+        self.assertNotContains(response, token2.key)
+
         self.assertGet(
             endpoint_url,
             [self.editor],
-            results=[{"key": matchers.String(), "created_on": matchers.ISODatetime(), "last_used_on": None}],
+            results=[
+                {
+                    "id": matchers.String(),
+                    "prefix": matchers.String(),
+                    "created_on": matchers.ISODatetime(),
+                    "last_used_on": None,
+                }
+            ],
         )
 
     def test_locations(self):

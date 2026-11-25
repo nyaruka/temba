@@ -172,7 +172,6 @@
 's34bc4cc9fb5b7aa4': `Instruções`,
 's363a9cc509be1902': `Sem URNs`,
 's3643189d1abbb7f4': `Código`,
-'s3687049d1af562c4': `Copiar`,
 's36aa0b4519551ac3': `Pelo menos 2 grupos são necessários para a divisão aleatória`,
 's36d13fa8abfc1504': `A pesquisa falhou - tente novamente`,
 's36f5d5123da1d24d': `10 minutos`,

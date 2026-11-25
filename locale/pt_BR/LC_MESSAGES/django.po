@@ -4093,6 +4093,19 @@ msgstr "Autenticação de dois fatores"
 msgid "Sessions"
 msgstr "Sessões"
 
+msgid "Copy your new token now."
+msgstr "Copie seu novo token agora."
+
+msgid "For your security it won't be shown again. If you lose it, delete it and create a new one."
+msgstr "Por sua segurança, ele não será exibido novamente. Se você perdê-lo, exclua-o e crie um novo."
+
+#, python-format
+msgid "You already have the maximum of %(limit)s tokens. Delete one to create a new one."
+msgstr "Você já tem o máximo de %(limit)s tokens. Exclua um para criar um novo."
+
+msgid "Create a new token for accessing the API? Its key will only be shown once, so be ready to copy it."
+msgstr "Criar um novo token para acessar a API? A chave dele só será exibida uma vez, então esteja pronto para copiá-la."
+
 #, python-format
 msgid "You are about to delete the API token <b>%(prefix)s</b>. There is no way to undo this. Are you sure?"
 msgstr "Você está prestes a deletar o token de API <b>%(prefix)s</b>. Não é possível desfazer isso. Você tem certeza?"

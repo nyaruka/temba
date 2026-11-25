@@ -1,0 +1,73 @@
+{% extends "includes/modax.html" %}
+{% load i18n %}
+
+{% block fields %}
+  {% if new_key %}
+    <div class="mb-3">
+      <b>{% trans "Copy your new token now." %}</b>
+      {% trans "For your security it won't be shown again. If you lose it, delete it and create a new one." %}
+    </div>
+    <div class="new-token-key">
+      <code id="new-token-key">{{ new_key }}</code>
+      <temba-icon id="copy-new-token" name="copy" clickable="true" title='{{ _("Copy")|escapejs }}'> </temba-icon>
+    </div>
+  {% elif limit_reached %}
+    {% blocktrans trimmed with limit=token_limit %}
+      You already have the maximum of {{ limit }} tokens. Delete one to create a new one.
+    {% endblocktrans %}
+  {% else %}
+    {% blocktrans trimmed %}
+      Create a new token for accessing the API? Its key will only be shown once, so be ready to copy it.
+    {% endblocktrans %}
+  {% endif %}
+{% endblock fields %}
+{% block form-buttons %}
+  {% if not new_key and not limit_reached %}
+    <input type="submit" value="{{ submit_button_name }}" class="btn btn-primary">
+  {% endif %}
+{% endblock form-buttons %}
+{% block modal-extra-style %}
+  {{ block.super }}
+  <style>
+    .new-token-key {
+      display: flex;
+      align-items: center;
+      padding: 0.5rem 0.75rem;
+      gap: 0.5rem;
+      border-radius: var(--curvature);
+      background: #f3f4f6;
+    }
+
+    .new-token-key code {
+      font-family: var(--font-mono, 'Roboto Mono', monospace);
+      word-break: break-all;
+      user-select: all;
+    }
+  </style>
+{% endblock modal-extra-style %}
+{% block modal-script %}
+  {{ block.super }}
+  {% if new_key %}
+    <script>
+      (function() {
+        var modalBody = getModax("#new-token").shadowRoot;
+        var copy = modalBody.querySelector("#copy-new-token");
+        copy.addEventListener("click", function() {
+          var key = modalBody.querySelector("#new-token-key").textContent;
+          navigator.clipboard.writeText(key).then(function() {
+            copy.name = "check";
+            setTimeout(function() {
+              copy.name = "copy";
+            }, 1500);
+          });
+        });
+
+        // show the new token in the list behind the modal
+        var list = document.querySelector("#apitoken-list");
+        if (list) {
+          list.refresh();
+        }
+      })();
+    </script>
+  {% endif %}
+{% endblock modal-script %}
