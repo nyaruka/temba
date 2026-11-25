@@ -33,7 +33,7 @@ def omnibox_query(org, **kwargs) -> tuple:
     else:
         groups, contacts = _mixed_search(org, search.strip(), types)
 
-    Contact.bulk_urn_cache_initialize(contacts)
+    Contact.bulk_urn_cache_initialize(org, contacts)
 
     return groups, contacts
 

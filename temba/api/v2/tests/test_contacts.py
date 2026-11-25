@@ -68,7 +68,7 @@ class ContactsEndpointTest(APITest):
             endpoint_url,
             [self.editor, self.admin, self.agent],
             results=[contact4, self.joe, contact2, contact1, self.frank],
-            num_queries=self.BASE_SESSION_QUERIES + 7,
+            num_queries=self.BASE_SESSION_QUERIES + 6,
         )
         self.assertEqual(
             {
@@ -98,7 +98,7 @@ class ContactsEndpointTest(APITest):
             [self.admin],
             results=[contact4, self.joe, contact2, contact1, self.frank],
             by_token=True,
-            num_queries=self.BASE_TOKEN_QUERIES + 7,
+            num_queries=self.BASE_TOKEN_QUERIES + 6,
         )
 
         # with expanded URNs
@@ -148,7 +148,7 @@ class ContactsEndpointTest(APITest):
                 endpoint_url,
                 [self.editor, self.admin, self.agent],
                 results=[contact4, self.joe, contact2, contact1, self.frank],
-                num_queries=self.BASE_SESSION_QUERIES + 7,
+                num_queries=self.BASE_SESSION_QUERIES + 6,
             )
             self.assertEqual(
                 {
@@ -612,7 +612,7 @@ class ContactsEndpointTest(APITest):
 
         self.frank.refresh_from_db()
         response = self.assertGet(
-            frank_url, [self.editor], results=[self.frank], num_queries=self.BASE_SESSION_QUERIES + 7
+            frank_url, [self.editor], results=[self.frank], num_queries=self.BASE_SESSION_QUERIES + 6
         )
 
         # our oldest note should be number 5

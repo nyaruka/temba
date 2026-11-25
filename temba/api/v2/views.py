@@ -1255,7 +1255,6 @@ class ContactsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseEndpoint
 
         # use prefetch rather than select_related for foreign keys to avoid joins
         queryset = queryset.prefetch_related(
-            Prefetch("org"),
             Prefetch(
                 "groups",
                 queryset=ContactGroup.get_groups(org).only("uuid", "name", "org").order_by("id"),
@@ -1268,7 +1267,7 @@ class ContactsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseEndpoint
         return self.filter_before_after(queryset, "modified_on")
 
     def prepare_for_serialization(self, object_list, using: str):
-        Contact.bulk_urn_cache_initialize(object_list, using=using)
+        Contact.bulk_urn_cache_initialize(self.request.org, object_list, using=using)
         Contact.bulk_current_flow_cache_initialize(self.request.org, object_list, using=using)
 
         if str_to_bool(self.request.query_params.get("expand_urns")):
@@ -2943,15 +2942,14 @@ class RunsEndpoint(ListAPIMixin, BaseEndpoint):
         # use prefetch rather than select_related for foreign keys to avoid joins
         queryset = queryset.prefetch_related(
             Prefetch("flow", queryset=Flow.objects.only("uuid", "name", "base_language")),
-            Prefetch("contact", queryset=Contact.objects.only("uuid", "name", "language", "org")),
-            Prefetch("contact__org"),
+            Prefetch("contact", queryset=Contact.objects.only("uuid", "name", "language")),
             Prefetch("start", queryset=FlowStart.objects.only("uuid")),
         )
 
         return self.filter_before_after(queryset, "modified_on")
 
     def prepare_for_serialization(self, object_list, using: str):
-        Contact.bulk_urn_cache_initialize([r.contact for r in object_list], using=using)
+        Contact.bulk_urn_cache_initialize(self.request.org, [r.contact for r in object_list], using=using)
 
     def get_serializer_context(self):
         context = super().get_serializer_context()

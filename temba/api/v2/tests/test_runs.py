@@ -87,7 +87,7 @@ class RunsEndpointTest(APITest):
             endpoint_url,
             [self.editor, self.admin],
             results=[joe_run3, joe_run2, frank_run2, frank_run1, joe_run1],
-            num_queries=self.BASE_SESSION_QUERIES + 6,
+            num_queries=self.BASE_SESSION_QUERIES + 5,
         )
         resp_json = response.json()
         self.assertEqual(

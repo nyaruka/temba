@@ -622,22 +622,18 @@ class ContactTest(TembaTest):
             self.assertEqual("Billy Nophone", str(self.billy))
 
     def test_bulk_urn_cache_initialize(self):
-        self.joe.refresh_from_db()
-        self.billy.refresh_from_db()
+        # contacts loaded without their workspace, which will be set on them and their URNs
+        joe, frank, billy = Contact.objects.filter(id__in=[self.joe.id, self.frank.id, self.billy.id]).order_by("id")
 
-        contacts = (self.joe, self.frank, self.billy)
-        Contact.bulk_urn_cache_initialize(contacts)
-
-        # takes a single query even if contacts don't have their org loaded
-        contacts = list(Contact.objects.filter(id__in=[c.id for c in contacts]))
         with self.assertNumQueries(1):
-            Contact.bulk_urn_cache_initialize(contacts)
+            Contact.bulk_urn_cache_initialize(self.org, (joe, frank, billy))
 
         with self.assertNumQueries(0):
-            self.assertEqual(["twitter:blow80", "tel:+250781111111"], [u.urn for u in self.joe.get_urns()])
-            self.assertEqual(["twitter:blow80", "tel:+250781111111"], [u.urn for u in getattr(self.joe, "_urns_cache")])
-            self.assertEqual(["tel:+250782222222"], [u.urn for u in self.frank.get_urns()])
-            self.assertEqual([], [u.urn for u in self.billy.get_urns()])
+            self.assertEqual(["twitter:blow80", "tel:+250781111111"], [u.urn for u in joe.get_urns()])
+            self.assertEqual(["tel:+250782222222"], [u.urn for u in frank.get_urns()])
+            self.assertEqual([], [u.urn for u in billy.get_urns()])
+            self.assertEqual(self.org, joe.org)
+            self.assertEqual({self.org}, {u.org for u in joe.get_urns()})
 
     def test_bulk_inspect(self):
         self.assertEqual({}, Contact.bulk_inspect([]))
