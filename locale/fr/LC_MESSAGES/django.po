@@ -4448,9 +4448,6 @@ msgstr "Ces informations peuvent être obsolètes jusqu'à la prochaine synchron
 msgid "Synced from the provider %(since)s ago."
 msgstr "Synchronisés depuis le fournisseur il y a %(since)s."
 
-msgid "View sync logs"
-msgstr "Voir les journaux de synchronisation"
-
 msgid "No templates have been synced for this channel."
 msgstr "Aucun modèle n'a été synchronisé pour ce canal."
 

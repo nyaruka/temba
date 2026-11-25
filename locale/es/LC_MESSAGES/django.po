@@ -4448,9 +4448,6 @@ msgstr "Es posible que estén desactualizadas hasta que una sincronización se c
 msgid "Synced from the provider %(since)s ago."
 msgstr "Sincronizadas desde el proveedor hace %(since)s."
 
-msgid "View sync logs"
-msgstr "Ver registros de sincronización"
-
 msgid "No templates have been synced for this channel."
 msgstr "No se ha sincronizado ninguna plantilla para este canal."
 

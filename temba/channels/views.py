@@ -1053,10 +1053,6 @@ class ChannelCRUDL(SmartCRUDL):
                 "template__name", "locale"
             )
             context["last_sync"] = self.object.last_templates_sync
-
-            # syncs are logged with the channel's other logs
-            if self.object.type.has_logs and self.has_org_perm("channels.channel_logs"):
-                context["sync_logs_url"] = reverse("channels.channel_logs_list", args=[self.object.uuid])
             return context
 
     class Syncs(SpaMixin, BaseReadView):

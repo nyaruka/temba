@@ -4452,9 +4452,6 @@ msgstr "Estes podem estar desatualizados até que uma sincronização seja bem-s
 msgid "Synced from the provider %(since)s ago."
 msgstr "Sincronizado com o provedor há %(since)s."
 
-msgid "View sync logs"
-msgstr "Ver logs de sincronização"
-
 msgid "No templates have been synced for this channel."
 msgstr "Nenhum template foi sincronizado para este canal."
 

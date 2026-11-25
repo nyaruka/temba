@@ -4423,9 +4423,6 @@ msgstr ""
 msgid "Synced from the provider %(since)s ago."
 msgstr ""
 
-msgid "View sync logs"
-msgstr ""
-
 msgid "No templates have been synced for this channel."
 msgstr ""
 
