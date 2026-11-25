@@ -33,7 +33,7 @@ def omnibox_query(org, **kwargs) -> tuple:
     else:
         groups, contacts = _mixed_search(org, search.strip(), types)
 
-    Contact.bulk_urn_cache_initialize(contacts)
+    Contact.bulk_urn_cache_initialize(org, contacts)
 
     return groups, contacts
 
@@ -100,7 +100,7 @@ def omnibox_serialize(org, groups, contacts, *, encode=False):
         result = {"id": str(contact.uuid), "name": contact.get_display(org), "type": "contact"}
 
         if not org.is_anon:
-            result["urn"] = contact.get_urn_display()
+            result["urn"] = contact.get_urn_display(org=org)
 
         results.append(result)
 

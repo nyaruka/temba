@@ -1614,14 +1614,11 @@ class ResultsExport(ExportType):
         # get all the contacts referenced in this batch
         contact_uuids = {r["contact"]["uuid"] for r in runs}
         contacts = (
-            Contact.objects.filter(org=export.org, uuid__in=contact_uuids)
-            .select_related("org")
-            .prefetch_related("groups")
-            .using("readonly")
+            Contact.objects.filter(org=export.org, uuid__in=contact_uuids).prefetch_related("groups").using("readonly")
         )
         contacts_by_uuid = {str(c.uuid): c for c in contacts}
 
-        Contact.bulk_urn_cache_initialize(contacts, using="readonly")
+        Contact.bulk_urn_cache_initialize(export.org, contacts, using="readonly")
 
         for run in runs:
             contact = contacts_by_uuid.get(run["contact"]["uuid"])

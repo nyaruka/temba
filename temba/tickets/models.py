@@ -637,11 +637,11 @@ class TicketExport(ExportType):
             tickets = (
                 Ticket.objects.filter(id__in=batch_ids)
                 .order_by("opened_on")
-                .prefetch_related("org", "contact", "contact__org", "contact__groups", "assignee", "topic")
+                .prefetch_related("org", "contact", "contact__groups", "assignee", "topic")
                 .using("readonly")
             )
 
-            Contact.bulk_urn_cache_initialize([t.contact for t in tickets], using="readonly")
+            Contact.bulk_urn_cache_initialize(export.org, [t.contact for t in tickets], using="readonly")
 
             for ticket in tickets:
                 values = [

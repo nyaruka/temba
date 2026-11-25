@@ -1302,15 +1302,17 @@ class Contact(LegacyIDMixin, LegacyUUIDMixin, CreatedByMixin, ModifiedByMixin, S
         return counts
 
     @classmethod
-    def bulk_urn_cache_initialize(cls, contacts, *, using: str = "default"):
+    def bulk_urn_cache_initialize(cls, org, contacts, *, using: str = "default"):
         """
-        Initializes the URN caches on the given contacts.
+        Initializes the URN caches on the given contacts of the given workspace, which is also set on the contacts and
+        their URNs so that neither loads it again.
         """
         if not contacts:
             return
 
         contact_map = dict()
         for contact in contacts:
+            contact.org = org
             contact_map[contact.id] = contact
             # initialize URN list cache
             setattr(contact, "_urns_cache", list())
@@ -1322,9 +1324,8 @@ class Contact(LegacyIDMixin, LegacyUUIDMixin, CreatedByMixin, ModifiedByMixin, S
             .order_by("contact", "-priority", "id")
         )
         for urn in urns:
-            contact = contact_map[urn.contact_id]
-            urn.org = contact.org
-            getattr(contact, "_urns_cache").append(urn)
+            urn.org = org
+            getattr(contact_map[urn.contact_id], "_urns_cache").append(urn)
 
     @classmethod
     def bulk_inspect(self, contacts) -> dict:
@@ -2077,13 +2078,15 @@ class ContactExport(ExportType):
         for batch_uuids in itertools.batched(contact_uuids, 1000):
             # fetch all the contacts for our batch
             batch_contacts = (
-                Contact.objects.filter(uuid__in=batch_uuids).prefetch_related("org", "groups").using("readonly")
+                Contact.objects.filter(org=export.org, uuid__in=batch_uuids)
+                .prefetch_related("groups")
+                .using("readonly")
             )
 
             # to maintain our sort, we need to lookup by uuid, create a map of our uuid->contact to aid in that
             contact_by_uuid = {str(c.uuid): c for c in batch_contacts}
 
-            Contact.bulk_urn_cache_initialize(batch_contacts, using="readonly")
+            Contact.bulk_urn_cache_initialize(export.org, batch_contacts, using="readonly")
 
             for contact_uuid in batch_uuids:
                 contact = contact_by_uuid[str(contact_uuid)]

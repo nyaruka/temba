@@ -87,7 +87,7 @@ class ContactExportTest(TembaTest):
 
                     self.create_contact_import(tmp.name)
 
-        with self.assertNumQueries(24):
+        with self.assertNumQueries(23):
             sheets, export = self._export(self.org.active_contacts_group, with_groups=[group1])
             self.assertEqual(2, export.num_records)
             self.assertEqual("C", export.status)
@@ -159,7 +159,7 @@ class ContactExportTest(TembaTest):
         self.contactfield_2.priority = 15
         self.contactfield_2.save(update_fields=("priority",))
 
-        with self.assertNumQueries(23):
+        with self.assertNumQueries(22):
             sheets, export = self._export(self.org.active_contacts_group, with_groups=[group1])
             self.assertEqual(2, export.num_records)
             self.assertEqual("C", export.status)
@@ -229,7 +229,7 @@ class ContactExportTest(TembaTest):
         contact.urns.create(org=self.org, identity="tel:+12062233445", scheme="tel", path="+12062233445")
 
         # but should have additional Twitter and phone columns
-        with self.assertNumQueries(23):
+        with self.assertNumQueries(22):
             sheets, export = self._export(self.org.active_contacts_group, with_groups=[group1])
             self.assertEqual(4, export.num_records)
             self.assertExcelSheet(
@@ -332,7 +332,7 @@ class ContactExportTest(TembaTest):
         assertReimport(export)
 
         # export a specified group of contacts (only Ben and Adam are in the group)
-        with self.assertNumQueries(23):
+        with self.assertNumQueries(22):
             sheets, export = self._export(group1, with_groups=[group1])
             self.assertExcelSheet(
                 sheets[0],
@@ -446,7 +446,7 @@ class ContactExportTest(TembaTest):
 
         # export a search
         mr_mocks.contact_export([str(contact2.uuid), str(contact3.uuid)])
-        with self.assertNumQueries(24):
+        with self.assertNumQueries(23):
             sheets, export = self._export(
                 self.org.active_contacts_group, "name has adam or name has deng", with_groups=[group1]
             )
@@ -515,7 +515,7 @@ class ContactExportTest(TembaTest):
 
         # export a search within a specified group of contacts
         mr_mocks.contact_export([str(contact.uuid)])
-        with self.assertNumQueries(22):
+        with self.assertNumQueries(21):
             sheets, export = self._export(group1, search="Hagg", with_groups=[group1])
             self.assertExcelSheet(
                 sheets[0],

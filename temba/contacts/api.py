@@ -138,7 +138,7 @@ class ContactsEndpoint(SearchLengthMixin, ListAPIMixin, WriteAPIMixin, BaseEndpo
     def render_write_response(self, write_output, context):
         # the editor component expects the same shape it reads: the public API read serialization with URNs
         # expanded and in priority order
-        Contact.bulk_urn_cache_initialize([write_output], using="default")
+        Contact.bulk_urn_cache_initialize(self.request.org, [write_output], using="default")
         expanded_urns = Contact.bulk_inspect([write_output])[write_output]["urns"]
         priority = {(urn.scheme, urn.path): index for index, urn in enumerate(write_output.get_urns())}
         write_output.expanded_urns = sorted(
@@ -240,7 +240,7 @@ class ContactsEndpoint(SearchLengthMixin, ListAPIMixin, WriteAPIMixin, BaseEndpo
         return queryset
 
     def prepare_for_serialization(self, page, using: str):
-        Contact.bulk_urn_cache_initialize(page, using=using)
+        Contact.bulk_urn_cache_initialize(self.request.org, page, using=using)
         # Bulk-load each contact's group memberships (one query for the page) so as_json can report current
         # membership — used by the component to pre-check the group dropdown — without an N+1.
         prefetch_related_objects(
