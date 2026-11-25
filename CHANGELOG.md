@@ -1,3 +1,6 @@
+## v26.3.234 (2026-11-25)
+ * Drop the Org.deleted_on column (#7356)
+
 ## v26.3.233 (2026-11-25)
  * Pass the workspace to bulk_urn_cache_initialize so contacts and URNs don't load it again (#7351)
  * Rename delete_released_orgs to purge_deleted_orgs
