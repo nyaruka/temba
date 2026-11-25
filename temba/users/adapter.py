@@ -94,6 +94,13 @@ class TembaAccountAdapter(InviteAdapterMixin, DefaultAccountAdapter):
         domain = email.rsplit("@", 1)[-1].lower() if email else ""
         return {d.lower(): m for d, m in settings.SSO_ONLY_DOMAINS.items()}.get(domain)
 
+    def is_signup_allowed(self, email: str) -> bool:
+        """
+        Returns whether a signup without an invite is allowed for the given email address. Adapters that open signup
+        can override this to refuse some.
+        """
+        return True
+
     def pre_login(self, request, user, *, email_verification, signal_kwargs, email, signup, redirect_url):
         # users whose email domain requires SSO can't login any other way
         is_sso = bool(signal_kwargs and signal_kwargs.get("sociallogin"))

@@ -451,6 +451,33 @@ class UserAuthTest(TembaTest):
             self.assertNotIn("_auth_user_id", request.session)
             self.assertFalse(SocialAccount.objects.filter(user=user7).exists())
 
+    def test_signup_not_allowed(self):
+        signup_url = reverse("account_signup")
+
+        def signup(email):
+            return self.client.post(
+                signup_url, {"first_name": "Bob", "last_name": "Bot", "email": email, "password1": "arstqwfp"}
+            )
+
+        # adapters that open signup can still refuse some email addresses
+        with (
+            patch("temba.users.adapter.TembaAccountAdapter.is_open_for_signup", return_value=True),
+            patch("temba.users.adapter.TembaAccountAdapter.is_signup_allowed", side_effect=lambda e: e != "bob@x.com"),
+        ):
+            response = signup("bob@x.com")
+            self.assertFormError(response.context["form"], "email", "This email address can't be used to sign up.")
+            self.assertFalse(User.objects.filter(email="bob@x.com").exists())
+
+            signup("jim@x.com")
+            self.assertTrue(User.objects.filter(email="jim@x.com").exists())
+            self.client.logout()
+
+            # but not invited signups
+            invitation = Invitation.create(self.org, self.admin, "bob@x.com", OrgRole.EDITOR)
+            self.client.get(f"{signup_url}?invite={invitation.secret}")
+            signup("bob@x.com")
+            self.assertTrue(User.objects.filter(email="bob@x.com").exists())
+
     def test_signup(self):
         signup_url = reverse("account_signup")
 

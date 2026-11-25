@@ -57,7 +57,11 @@ class TembaSignupForm(InviteFormMixin, SignupForm):
             return self.invite.email
 
         # only reachable on deployments whose adapters reopen signup without an invite
-        return super().clean_email()  # pragma: no cover
+        email = super().clean_email()
+        if not get_adapter().is_signup_allowed(email):
+            raise forms.ValidationError(_("This email address can't be used to sign up."))
+
+        return email
 
     def save(self, request):
         # deferred for the same reason as in temba/users/adapter.py — keep this

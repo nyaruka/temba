@@ -3748,6 +3748,9 @@ msgstr ""
 msgid "Last name"
 msgstr ""
 
+msgid "This email address can't be used to sign up."
+msgstr ""
+
 msgid "This email is already in use"
 msgstr ""
 

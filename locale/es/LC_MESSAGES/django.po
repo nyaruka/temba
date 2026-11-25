@@ -3772,6 +3772,9 @@ msgstr "Primer nombre"
 msgid "Last name"
 msgstr "Apellido"
 
+msgid "This email address can't be used to sign up."
+msgstr "Esta dirección de correo electrónico no se puede usar para registrarse."
+
 msgid "This email is already in use"
 msgstr "Este correo electrónico ya está en uso"
 
