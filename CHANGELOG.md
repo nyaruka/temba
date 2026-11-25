@@ -1,3 +1,7 @@
+## v26.3.231 (2026-11-25)
+ * Remove APIToken.is_active from the model, keeping its column with a default (#7277)
+ * Sync channel templates through mailroom (#7349)
+
 ## v26.3.230 (2026-11-24)
  * Drop SyncEvent now that Android sync history is in DynamoDB (#7348)
 
