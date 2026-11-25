@@ -799,6 +799,7 @@ _default_database_config = {
     "PORT": "5432",
     "ATOMIC_REQUESTS": True,
     "CONN_MAX_AGE": 60,
+    "CONN_HEALTH_CHECKS": True,
     "OPTIONS": {},
     "DISABLE_SERVER_SIDE_CURSORS": True,
 }
