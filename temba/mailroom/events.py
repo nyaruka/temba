@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from uuid import UUID
 
+from temba.contacts.models import URN, ContactURN
+from temba.orgs.models import Org
 from temba.users.models import User
 from temba.utils import dynamo
 
@@ -47,6 +49,29 @@ class Event:
 
     basic_ticket_types = {TYPE_TICKET_CLOSED, TYPE_TICKET_OPENED, TYPE_TICKET_REOPENED}
     all_ticket_types = basic_ticket_types | {TYPE_TICKET_ASSIGNED, TYPE_TICKET_NOTE_ADDED, TYPE_TICKET_TOPIC_CHANGED}
+
+    @classmethod
+    def redact_for_org(cls, org: Org, event: dict) -> dict:
+        if not org.is_anon or not isinstance(event, dict):
+            return event
+        if event.get("type") == cls.TYPE_CONTACT_URNS_CHANGED:
+            urns = event.get("urns") or []
+            event = {**event, "urns": [cls._redact_urn(urn) for urn in urns]}
+        return event
+
+    @classmethod
+    def _redact_urn(cls, urn) -> str:
+        """
+        Mask the path but keep `scheme:********` so temba-contact-chat can parse
+        contact_urns_changed events (`urn.split(':')[1]`).
+        """
+        if not isinstance(urn, str):
+            return URN.from_parts(URN.EXTERNAL_SCHEME, ContactURN.ANON_MASK)
+        try:
+            scheme, _path, _query, _display = URN.to_parts(urn)
+            return URN.from_parts(scheme, ContactURN.ANON_MASK)
+        except ValueError:
+            return URN.from_parts(URN.EXTERNAL_SCHEME, ContactURN.ANON_MASK)
 
     @classmethod
     def _from_item(cls, contact, item: dict) -> dict:
@@ -179,3 +204,7 @@ class Event:
                     event["msg"]["attachments"] = [
                         f"{a['content_type']}:{a['url']}" if isinstance(a, dict) else a for a in attachments
                     ]
+
+        if org.is_anon:
+            for i, event in enumerate(events):
+                events[i] = cls.redact_for_org(org, event)

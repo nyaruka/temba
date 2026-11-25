@@ -2,13 +2,18 @@ from unittest.mock import MagicMock, patch
 
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.account.models import EmailAddress
-from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+from allauth.core import context as allauth_context
+from allauth.socialaccount.adapter import DefaultSocialAccountAdapter, get_adapter as get_social_adapter
+from allauth.socialaccount.internal.flows.login import complete_login
 from allauth.socialaccount.models import SocialAccount, SocialLogin
 
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
 from django.contrib.messages import get_messages
 from django.contrib.messages.storage.fallback import FallbackStorage
-from django.test import RequestFactory
+from django.contrib.sessions.middleware import SessionMiddleware
+from django.core import mail
+from django.test import RequestFactory, override_settings
 
 from temba.orgs.models import Invitation, OrgRole
 from temba.tests.base import TembaTest
@@ -51,6 +56,19 @@ class SSOAdapterTest(TembaTest):
         sociallogin = self._make_sociallogin("", upn="user@unicef.org")
         self.assertEqual("user@unicef.org", TembaSocialAccountAdapter.extract_email(sociallogin))
 
+    def test_extract_email_from_nested_userinfo(self):
+        sociallogin = SocialLogin()
+        sociallogin.user = User()
+        sociallogin.account = SocialAccount(
+            provider="unicef",
+            uid="uid-nested",
+            extra_data={
+                "userinfo": {"preferred_username": "user@unicef.org", "email_verified": False},
+                "id_token": {"sub": "oid-123"},
+            },
+        )
+        self.assertEqual("user@unicef.org", TembaSocialAccountAdapter.extract_email(sociallogin))
+
     def test_extract_email_from_email_addresses(self):
         sociallogin = self._make_sociallogin("")
         sociallogin.email_addresses = [EmailAddress(email="user@unicef.org", verified=False, primary=True)]
@@ -60,6 +78,33 @@ class SSOAdapterTest(TembaTest):
         provider = MagicMock()
         provider.id = "openid_connect"
         self.assertTrue(self.adapter.is_email_verified(provider, "user@unicef.org"))
+
+    def test_is_email_verified_for_other_providers_uses_provider_settings(self):
+        provider = MagicMock()
+        provider.id = "google"
+        provider.app = None
+        provider.get_settings.return_value = {}
+        self.assertFalse(self.adapter.is_email_verified(provider, "user@gmail.com"))
+
+    def test_can_authenticate_by_email(self):
+        self.assertTrue(self.adapter.can_authenticate_by_email(MagicMock(), "user@unicef.org"))
+
+    def test_populate_user_marks_email_addresses_verified(self):
+        request = self._make_request()
+        sociallogin = SocialLogin()
+        sociallogin.user = User()
+        sociallogin.account = SocialAccount(
+            provider="unicef",
+            uid="uid-populate",
+            extra_data={"userinfo": {"preferred_username": "user@unicef.org"}},
+        )
+
+        user = self.adapter.populate_user(request, sociallogin, {})
+
+        self.assertEqual("user@unicef.org", user.email)
+        self.assertEqual(1, len(sociallogin.email_addresses))
+        self.assertEqual("user@unicef.org", sociallogin.email_addresses[0].email)
+        self.assertTrue(sociallogin.email_addresses[0].verified)
 
     def test_pre_social_login_replaces_unverified_email_addresses(self):
         user = User.objects.create_user(
@@ -111,6 +156,24 @@ class SSOAdapterTest(TembaTest):
 
         self.assertEqual(user, sociallogin.user)
         self.assertTrue(EmailAddress.objects.get(user=user).verified)
+
+    def test_pre_social_login_finds_user_by_emailaddress_when_user_email_differs(self):
+        user = User.objects.create_user(
+            email="old@unicef.org",
+            password=self.default_password,
+            first_name="Test",
+            last_name="User",
+        )
+        EmailAddress.objects.filter(user=user).delete()
+        EmailAddress.objects.create(user=user, email="user@unicef.org", verified=False, primary=True)
+
+        request = self._make_request()
+        sociallogin = self._make_sociallogin("user@unicef.org")
+
+        self._run_pre_social_login(request, sociallogin)
+
+        self.assertEqual(user, sociallogin.user)
+        self.assertTrue(EmailAddress.objects.get(user=user, email="user@unicef.org").verified)
 
     def test_pre_social_login_keeps_verified_email_for_existing_user(self):
         user = User.objects.create_user(
@@ -216,3 +279,132 @@ class SSOAdapterTest(TembaTest):
         account_post_login.assert_called_once()
         invitation.refresh_from_db()
         self.assertFalse(invitation.is_active)
+
+    def test_send_mail_includes_email_in_context(self):
+        request = self._make_request()
+        self.account_adapter.request = request
+        context = {"password_reset_url": "https://example.com/reset"}
+
+        with patch("temba.users.adapter.EmailSender.from_email_type") as from_email_type:
+            sender = MagicMock()
+            from_email_type.return_value = sender
+            self.account_adapter.send_mail("account/email/account_already_exists", "user@unicef.org", context)
+
+        sender.send.assert_called_once()
+        recipients, template, sent_context = sender.send.call_args.args
+        self.assertEqual(["user@unicef.org"], recipients)
+        self.assertEqual("account/email/account_already_exists", template)
+        self.assertEqual("user@unicef.org", sent_context["email"])
+
+
+@override_settings(
+    SOCIALACCOUNT_PROVIDERS={
+        "openid_connect": {
+            "APPS": [
+                {
+                    "provider_id": "unicef",
+                    "name": "Microsoft Entra",
+                    "client_id": "client-id",
+                    "secret": "secret",
+                    "settings": {
+                        "server_url": "https://login.microsoftonline.com/tenant/v2.0",
+                        "email_authentication": True,
+                        "verified_email": True,
+                    },
+                }
+            ]
+        }
+    },
+    ACCOUNT_EMAIL_VERIFICATION="mandatory",
+    ACCOUNT_RATE_LIMITS=False,
+)
+class SSOLoginFlowTest(TembaTest):
+    """
+    Runs the real allauth social login flow (provider payload parsing, lookup, pre_social_login and login/signup)
+    with payloads shaped like Microsoft Entra responses on allauth >= 65.11.
+    """
+
+    EMAIL = "user@unicef.org"
+    BLOCKING_SUBJECTS = ("Account Already Exists", "Please Confirm Your Email Address")
+
+    def _create_user(self, *, email_address_verified):
+        user = User.objects.create_user(email=self.EMAIL, password=self.default_password)
+        EmailAddress.objects.filter(user=user).delete()
+        if email_address_verified is not None:
+            EmailAddress.objects.create(user=user, email=self.EMAIL, verified=email_address_verified, primary=True)
+        return user
+
+    def _complete_login(self, userinfo, id_token):
+        request = RequestFactory().get("/accounts/oidc/unicef/login/callback/")
+        SessionMiddleware(lambda r: None).process_request(request)
+        request._messages = FallbackStorage(request)
+        request.user = AnonymousUser()
+        request.branding = settings.BRAND
+        request.org = None
+
+        with allauth_context.request_context(request):
+            provider = get_social_adapter().get_provider(request, "unicef")
+            sociallogin = provider.sociallogin_from_response(request, {"userinfo": userinfo, "id_token": id_token})
+            sociallogin.state = {"process": "login"}
+            response = complete_login(request, sociallogin)
+
+        return request, response
+
+    def _assert_logged_in_as(self, user, request, response):
+        self.assertEqual(str(user.pk), str(request.session.get("_auth_user_id")))
+        self.assertNotIn("confirm-email", response.get("Location", ""))
+        self.assertNotIn("signup", response.get("Location", ""))
+        self.assertEqual(1, User.objects.filter(email__iexact=self.EMAIL).count())
+        self.assertFalse([m.subject for m in mail.outbox if m.subject in self.BLOCKING_SUBJECTS])
+
+    def test_existing_user_when_email_only_in_preferred_username(self):
+        user = self._create_user(email_address_verified=True)
+
+        request, response = self._complete_login(
+            userinfo={"sub": "sub-1", "name": "Test User"},
+            id_token={"sub": "sub-1", "preferred_username": self.EMAIL},
+        )
+
+        self._assert_logged_in_as(user, request, response)
+        self.assertTrue(SocialAccount.objects.filter(user=user, provider="unicef", uid="sub-1").exists())
+
+    def test_existing_user_when_email_only_in_id_token(self):
+        user = self._create_user(email_address_verified=True)
+
+        request, response = self._complete_login(
+            userinfo={"sub": "sub-1", "name": "Test User"},
+            id_token={"sub": "sub-1", "email": self.EMAIL, "preferred_username": "upn@unicef.org"},
+        )
+
+        self._assert_logged_in_as(user, request, response)
+
+    def test_existing_user_with_unverified_email_address(self):
+        user = self._create_user(email_address_verified=False)
+
+        request, response = self._complete_login(
+            userinfo={"sub": "sub-1", "name": "Test User", "email": "User@UNICEF.org"},
+            id_token={"sub": "sub-1", "preferred_username": self.EMAIL},
+        )
+
+        self._assert_logged_in_as(user, request, response)
+
+    def test_existing_user_without_email_address(self):
+        user = self._create_user(email_address_verified=None)
+
+        request, response = self._complete_login(
+            userinfo={"sub": "sub-1", "name": "Test User", "email": self.EMAIL},
+            id_token={"sub": "sub-1", "preferred_username": self.EMAIL},
+        )
+
+        self._assert_logged_in_as(user, request, response)
+
+    def test_existing_user_already_linked_with_unverified_email_address(self):
+        user = self._create_user(email_address_verified=False)
+        SocialAccount.objects.create(user=user, provider="unicef", uid="sub-1", extra_data={})
+
+        request, response = self._complete_login(
+            userinfo={"sub": "sub-1", "name": "Test User", "email": self.EMAIL},
+            id_token={"sub": "sub-1", "preferred_username": self.EMAIL},
+        )
+
+        self._assert_logged_in_as(user, request, response)
