@@ -61,6 +61,6 @@ class AirtimeCRUDL(SmartCRUDL):
             context = super().get_context_data(**kwargs)
 
             context["show_logs"] = not org.is_anon or user.is_staff
-            context["http_logs"] = self.get_object().http_logs.order_by("created_on", "id")
+            context["logs"] = [log.get_display() for log in self.object.get_logs()] if context["show_logs"] else []
 
             return context
