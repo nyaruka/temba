@@ -16,7 +16,7 @@ from temba.triggers.models import Trigger
 from temba.utils import json
 from temba.utils.views.mixins import TEMBA_MENU_SELECTION
 
-from ..models import COURIER_QUEUE_STATE_KEY, Channel, ChannelTally, SyncEvent
+from ..models import COURIER_QUEUE_STATE_KEY, Channel, ChannelTally
 from ..views import ChannelCRUDL
 
 
@@ -98,6 +98,21 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(40, android.last_sync.power_level)
         self.assertEqual(0, android.last_sync.retry_message_count)
         self.assertEqual("", android.last_sync.network_type)
+
+    def test_last_templates_sync(self):
+        wac = self.create_channel("WAC", "WhatsApp", "1234", config={"wa_waba_id": "1234"})
+        self.assertIsNone(wac.last_templates_sync)
+
+        Channel.objects.filter(id=wac.id).update(
+            sync_state={"templates": {"synced_on": "2026-11-24T12:00:00Z", "failed": True, "foo": 1}}
+        )
+        wac = Channel.objects.get(id=wac.id)
+        self.assertEqual(datetime(2026, 11, 24, 12, 0, tzinfo=tzone.utc), wac.last_templates_sync.synced_on)
+        self.assertTrue(wac.last_templates_sync.failed)
+
+        Channel.objects.filter(id=wac.id).update(sync_state={"templates": {"synced_on": "2026-11-24T12:00:00Z"}})
+        wac = Channel.objects.get(id=wac.id)
+        self.assertFalse(wac.last_templates_sync.failed)
 
     def test_get_address_display(self):
         self.assertEqual("+250 785 551 212", self.tel_channel.get_address_display())
@@ -191,11 +206,6 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.create_outgoing_msg(contact, "Hi", channel=channel1, status="E")
         self.create_outgoing_msg(contact, "Hi", channel=channel1, status="S")
         ChannelDisconnectedIncidentType.get_or_create(channel1)
-        SyncEvent.create(
-            channel1,
-            dict(p_src="AC", p_sts="DIS", p_lvl=80, net="WIFI", pending=[1, 2], retry=[3, 4], cc="RW"),
-            [1, 2],
-        )
         self.create_template(
             "reminder",
             [
@@ -213,11 +223,6 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         # and some on another channel
         self.create_outgoing_msg(contact, "Hi", channel=channel2, status="E")
         ChannelDisconnectedIncidentType.get_or_create(channel2)
-        SyncEvent.create(
-            channel2,
-            dict(p_src="AC", p_sts="DIS", p_lvl=80, net="WIFI", pending=[1, 2], retry=[3, 4], cc="RW"),
-            [1, 2],
-        )
         self.create_template(
             "reminder2",
             [
@@ -254,7 +259,6 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
 
         # other channel should be unaffected
         self.assertEqual(1, channel2.msgs.filter(status="E").count())
-        self.assertEqual(1, channel2.sync_events.count())
         self.assertEqual(1, channel2.triggers.filter(is_active=True).count())
         self.assertEqual(1, channel2.incidents.filter(ended_on=None).count())
         self.assertEqual(1, channel2.template_translations.count())
@@ -827,6 +831,25 @@ class ChannelTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(2, response.context["templates"]["total"])
         self.assertEqual(["1 rejected"], response.context["templates"]["others"])
         self.assertIn("templates", response.context["sheets"])
+
+        # once synced, the sheet says how that went, with a link to the sync logs for those who can see them
+        Channel.objects.filter(id=wac.id).update(
+            sync_state={"templates": {"synced_on": timezone.now().isoformat(), "failed": False}}
+        )
+        response = self.assertReadFetch(templates_url, [self.editor, self.admin])
+        self.assertFalse(response.context["last_sync"].failed)
+        self.assertContains(response, "Synced from the provider")
+        self.assertEqual(reverse("channels.channel_logs_list", args=[wac.uuid]), response.context["sync_logs_url"])
+
+        Channel.objects.filter(id=wac.id).update(
+            sync_state={"templates": {"synced_on": timezone.now().isoformat(), "failed": True}}
+        )
+        response = self.assertReadFetch(templates_url, [self.editor, self.admin])
+        self.assertContains(response, "The last sync failed")
+
+        response = self.requestView(reverse("channels.channel_read", args=[wac.uuid]), self.admin)
+        self.assertTrue(response.context["templates"]["last_sync"].failed)
+        self.assertContains(response, "Last sync failed")
 
         # only types with templates have them
         self.assertRequestDisallowed(

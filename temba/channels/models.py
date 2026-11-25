@@ -491,41 +491,23 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
 
         return TYPES.get(self.type.template_type)
 
-    def refresh_templates(self):
-        from temba.notifications.incidents.builtin import ChannelTemplatesFailedIncidentType
-        from temba.request_logs.models import HTTPLog
-        from temba.templates.models import TemplateTranslation
-
-        r = get_valkey_connection()
-
-        key = "refresh_channel_templates_%d" % self.id
-
-        # we need to make sure the channel is not syncing the templates
-        if r.get(key):  # pragma: no cover
-            return
-
-        with r.lock(key, 60):
-            try:
-                raw_templates = self.type.fetch_templates(self)
-
-                TemplateTranslation.update_local(self, raw_templates)
-
-                # if we have an ongoing template incident, end it
-                ongoing = self.incidents.filter(
-                    incident_type=ChannelTemplatesFailedIncidentType.slug, ended_on=None
-                ).first()
-                if ongoing:
-                    ongoing.end()
-            except requests.RequestException as e:
-                # if last 5 sync attempts have been errors, create an incident
-                recent_is_errors = list(
-                    self.http_logs.filter(log_type=HTTPLog.WHATSAPP_TEMPLATES_SYNCED)
-                    .order_by("-id")
-                    .values_list("is_error", flat=True)[:5]
-                )
-                if len(recent_is_errors) >= 5 and all(recent_is_errors):
-                    ChannelTemplatesFailedIncidentType.get_or_create(self)
-                raise e
+    def refresh_templates(self) -> bool:
+        """
+        Syncs this channel's templates from its provider through mailroom, returning whether it succeeded. Mailroom
+        records a failed fetch on the channel itself, and another sync already running counts as success.
+        """
+        try:
+            mailroom.get_client().channel_sync_templates(self.org, self)
+        except mailroom.RequestException as e:
+            if e.response.status_code == 409:
+                return True
+            if e.response.status_code != 422:
+                logger.warning(f"error syncing templates for channel #{self.id}: {e}")
+            return False
+        except requests.RequestException as e:
+            logger.warning(f"error syncing templates for channel #{self.id}: {e}")
+            return False
+        return True
 
     @classmethod
     def add_authenticated_external_channel(
@@ -649,6 +631,14 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
             return "%s (%s)" % (self.config.get("wa_number", ""), self.config.get("wa_verified_name", self.name))
 
         return self.address
+
+    @cached_property
+    def last_templates_sync(self) -> "TemplatesSync | None":
+        """
+        Gets the latest sync of this channel's templates from its provider
+        """
+        state = self.sync_state.get("templates")
+        return TemplatesSync.from_json(state) if state else None
 
     @cached_property
     def last_sync(self) -> "AndroidSync | None":
@@ -962,7 +952,6 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
             trigger.delete()
 
         delete_in_batches(self.incidents.all())
-        delete_in_batches(self.sync_events.all())
         delete_in_batches(self.http_logs.all())
         delete_in_batches(self.template_translations.all())
         delete_in_batches(self.tallies.all(), pk="pk")
@@ -1279,6 +1268,7 @@ class ChannelLog:
     LOG_TYPE_TOKEN_REFRESH = "token_refresh"
     LOG_TYPE_PAGE_SUBSCRIBE = "page_subscribe"
     LOG_TYPE_WEBHOOK_VERIFY = "webhook_verify"
+    LOG_TYPE_TEMPLATE_SYNC = "template_sync"
     LOG_TYPE_DISPLAY = {
         LOG_TYPE_UNKNOWN: _("Other Event"),
         LOG_TYPE_MSG_SEND: _("Message Send"),
@@ -1296,6 +1286,7 @@ class ChannelLog:
         LOG_TYPE_TOKEN_REFRESH: _("Token Refresh"),
         LOG_TYPE_PAGE_SUBSCRIBE: _("Page Subscribe"),
         LOG_TYPE_WEBHOOK_VERIFY: _("Webhook Verify"),
+        LOG_TYPE_TEMPLATE_SYNC: _("Template Sync"),
     }
 
     uuid: str
@@ -1464,82 +1455,16 @@ class AndroidSync:
         return cls(synced_on=iso8601.parse_date(data["synced_on"]), **values)
 
 
-class SyncEvent(models.Model):
+@dataclass(frozen=True)
+class TemplatesSync:
     """
-    A record of a sync from an Android channel
+    The latest sync of a channel's templates from its provider, as mailroom records it under the templates key of its
+    sync state
     """
 
-    SOURCE_AC = "AC"
-    SOURCE_USB = "USB"
-    SOURCE_WIRELESS = "WIR"
-    SOURCE_BATTERY = "BAT"
-    SOURCE_CHOICES = (
-        (SOURCE_AC, "A/C"),
-        (SOURCE_USB, "USB"),
-        (SOURCE_WIRELESS, "Wireless"),
-        (SOURCE_BATTERY, "Battery"),
-    )
-
-    STATUS_UNKNOWN = "UNK"
-    STATUS_CHARGING = "CHA"
-    STATUS_DISCHARGING = "DIS"
-    STATUS_NOT_CHARGING = "NOT"
-    STATUS_FULL = "FUL"
-    STATUS_CHOICES = (
-        (STATUS_UNKNOWN, "Unknown"),
-        (STATUS_CHARGING, "Charging"),
-        (STATUS_DISCHARGING, "Discharging"),
-        (STATUS_NOT_CHARGING, "Not Charging"),
-        (STATUS_FULL, "Full"),
-    )
-
-    channel = models.ForeignKey(Channel, related_name="sync_events", on_delete=models.PROTECT)
-
-    # power status of the device
-    power_source = models.CharField(max_length=64, choices=SOURCE_CHOICES)
-    power_status = models.CharField(max_length=64, choices=STATUS_CHOICES, default=STATUS_UNKNOWN)
-    power_level = models.IntegerField()
-
-    network_type = models.CharField(max_length=128)
-
-    # counts of what was synced
-    pending_message_count = models.IntegerField(default=0)
-    retry_message_count = models.IntegerField(default=0)
-    incoming_command_count = models.IntegerField(default=0)
-    outgoing_command_count = models.IntegerField(default=0)
-
-    created_on = models.DateTimeField(default=timezone.now)
+    synced_on: datetime
+    failed: bool = False
 
     @classmethod
-    def create(cls, channel, cmd, incoming_commands):
-        # update country, device and OS on our channel
-        device = cmd.get("dev", None)
-        os = cmd.get("os", None)
-
-        # update our channel if anything is new
-        if channel.device != device or channel.os != os:  # pragma: no cover
-            channel.device = device
-            channel.os = os
-            channel.save(update_fields=["device", "os"])
-
-        sync_event = SyncEvent.objects.create(
-            channel=channel,
-            power_source=cmd.get("p_src", cmd.get("power_source")),
-            power_status=cmd.get("p_sts", cmd.get("power_status")),
-            power_level=cmd.get("p_lvl", cmd.get("power_level")),
-            network_type=cmd.get("net", cmd.get("network_type")),
-            pending_message_count=len(cmd.get("pending", cmd.get("pending_messages"))),
-            retry_message_count=len(cmd.get("retry", cmd.get("retry_messages"))),
-            incoming_command_count=max(len(incoming_commands) - 2, 0),
-        )
-
-        sync_event.pending_messages = cmd.get("pending", cmd.get("pending_messages"))
-        sync_event.retry_messages = cmd.get("retry", cmd.get("retry_messages"))
-
-        return sync_event
-
-    def get_pending_messages(self):
-        return getattr(self, "pending_messages", [])
-
-    def get_retry_messages(self):
-        return getattr(self, "retry_messages", [])
+    def from_json(cls, data: dict):
+        return cls(synced_on=iso8601.parse_date(data["synced_on"]), failed=bool(data.get("failed")))

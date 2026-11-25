@@ -6,8 +6,8 @@ class Migration(migrations.Migration):
         ("api", "0056_backfill_apitoken_deleted_on"),
     ]
 
-    # is_active is only removed from the model state here, with its column given a database default so that the code
-    # from the previous release can still insert rows - a later migration drops the column
+    # is_active is only removed from the model state here, with its column given a database default so that this
+    # release's code, which no longer sets it, can still insert rows - a later migration drops the column
     operations = [
         migrations.SeparateDatabaseAndState(
             state_operations=[migrations.RemoveField(model_name="apitoken", name="is_active")],

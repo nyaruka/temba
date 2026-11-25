@@ -501,6 +501,9 @@ msgstr "Inscrição de página"
 msgid "Webhook Verify"
 msgstr "Verificação de webhook"
 
+msgid "Template Sync"
+msgstr "Sincronização de templates"
+
 #, python-format
 msgid "%(link)s offers SMS short codes in over 20 countries across Africa through a single account, connected directly to each country's mobile networks. Connect a short code you have with them to message contacts throughout the region."
 msgstr "%(link)s oferece códigos curtos de SMS em mais de 20 países da África com uma única conta, conectada diretamente às redes móveis de cada país. Conecte um código curto que você tem com eles para enviar mensagens a contatos em toda a região."
