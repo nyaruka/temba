@@ -1,3 +1,8 @@
+## v26.3.233 (2026-11-25)
+ * Pass the workspace to bulk_urn_cache_initialize so contacts and URNs don't load it again (#7351)
+ * Rename delete_released_orgs to purge_deleted_orgs
+ * Move the stamp of when a workspace was purged from Org.deleted_on to purged_on
+
 ## v26.3.232 (2026-11-25)
  * Remove the in-process template sync and its incident type (#7353)
  * Treat the readonly database connection as a replica of default (#7352)
