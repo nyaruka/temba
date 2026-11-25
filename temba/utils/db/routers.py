@@ -11,6 +11,4 @@ class ReadonlyRouter:
         return "default"
 
     def allow_relation(self, obj1, obj2, **hints):
-        if obj1._state.db in REPLICA_POOL and obj2._state.db in REPLICA_POOL:
-            return True
-        return None
+        return obj1._state.db in REPLICA_POOL and obj2._state.db in REPLICA_POOL
