@@ -3,11 +3,9 @@ import requests
 from django.conf import settings
 from django.forms import ValidationError
 from django.urls import re_path
-from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from temba.contacts.models import URN
-from temba.request_logs.models import HTTPLog
 
 from ...models import ChannelType
 from .views import (
@@ -83,30 +81,6 @@ class WhatsAppType(ChannelType):
             raise ValidationError(
                 _("Unable to register phone with ID %s from WABA with ID %s" % (channel.address, waba_id))
             )
-
-    def fetch_templates(self, channel) -> list:
-        waba_id = channel.config["wa_waba_id"]
-        url = f"{WHATSAPP_GRAPH_API_BASE}/{waba_id}/message_templates"
-        headers = {"Authorization": f"Bearer {settings.WHATSAPP_ADMIN_SYSTEM_USER_TOKEN}"}
-        templates = []
-
-        while url:
-            start = timezone.now()
-            try:
-                response = requests.get(url, params={"limit": 255}, headers=headers)
-                response.raise_for_status()
-                HTTPLog.from_response(
-                    HTTPLog.WHATSAPP_TEMPLATES_SYNCED, response, start, timezone.now(), channel=channel
-                )
-
-                # skip templates Meta generates for Direct Send messages
-                templates.extend(t for t in response.json()["data"] if t.get("source") != "AUTO_GENERATED")
-                url = response.json().get("paging", {}).get("next", None)
-            except requests.RequestException as e:
-                HTTPLog.from_exception(HTTPLog.WHATSAPP_TEMPLATES_SYNCED, e, start, channel=channel)
-                raise e
-
-        return templates
 
     def get_redact_values(self, channel) -> tuple:
         """

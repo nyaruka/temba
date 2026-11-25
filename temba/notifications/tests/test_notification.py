@@ -8,10 +8,7 @@ from django.utils import timezone
 from temba.contacts.models import ContactExport, ContactImport
 from temba.flows.models import ResultsExport
 from temba.msgs.models import MessageExport, MsgFolder
-from temba.notifications.incidents.builtin import (
-    ChannelDisconnectedIncidentType,
-    ChannelTemplatesFailedIncidentType,
-)
+from temba.notifications.incidents.builtin import ChannelDisconnectedIncidentType, ChannelOutdatedAppIncidentType
 from temba.notifications.models import Incident, Notification
 from temba.notifications.tasks import send_notification_emails, trim_notifications
 from temba.notifications.types.builtin import ExportFinishedNotificationType, InvitationAcceptedNotificationType
@@ -22,6 +19,11 @@ from temba.tickets.models import TicketExport
 
 
 class NotificationTest(TembaTest):
+    def outdated_app(self, channel):
+        return Incident.get_or_create(
+            channel.org, ChannelOutdatedAppIncidentType.slug, scope=str(channel.id), channel=channel
+        )
+
     def assert_notifications(self, *, after=None, expected_json, expected_target, expected_users, email):
         notifications = Notification.objects.all()
         if after:
@@ -335,42 +337,11 @@ class NotificationTest(TembaTest):
             email=False,
         )
 
-    def test_channel_templates_failed(self):
-        self.org.add_user(self.editor, OrgRole.ADMINISTRATOR)  # upgrade editor to administrator
-
-        ChannelTemplatesFailedIncidentType.get_or_create(channel=self.channel)
-
-        self.assert_notifications(
-            expected_json={
-                "type": "incident:started",
-                "created_on": matchers.ISODatetime(),
-                "is_seen": False,
-                "incident": {
-                    "type": "channel:templates_failed",
-                    "started_on": matchers.ISODatetime(),
-                    "ended_on": None,
-                },
-            },
-            expected_target=f"/channels/channel/read/{self.channel.uuid}/",
-            expected_users={self.editor, self.admin},
-            email=True,
-        )
-
-        send_notification_emails()
-
-        self.assertEqual(2, len(mail.outbox))
-        self.assertEqual("[Nyaruka] Incident: WhatsApp Templates Sync Failed", mail.outbox[0].subject)
-        self.assertEqual("[Nyaruka] Incident: WhatsApp Templates Sync Failed", mail.outbox[1].subject)
-        self.assertEqual(
-            {"admin@textit.com", "editor@textit.com"},
-            set(mail.outbox[0].recipients()).union(mail.outbox[1].recipients()),
-        )
-
-    @patch.object(ChannelTemplatesFailedIncidentType, "email_required", True)
+    @patch.object(ChannelOutdatedAppIncidentType, "email_required", True)
     def test_incident_started(self):
         self.org.add_user(self.editor, OrgRole.ADMINISTRATOR)  # upgrade editor to administrator
 
-        ChannelTemplatesFailedIncidentType.get_or_create(self.channel)
+        self.outdated_app(self.channel)
 
         self.assert_notifications(
             expected_json={
@@ -378,12 +349,12 @@ class NotificationTest(TembaTest):
                 "created_on": matchers.ISODatetime(),
                 "is_seen": False,
                 "incident": {
-                    "type": "channel:templates_failed",
+                    "type": "channel:outdated_app",
                     "started_on": matchers.ISODatetime(),
                     "ended_on": None,
                 },
             },
-            expected_target=f"/channels/channel/read/{self.channel.uuid}/",
+            expected_target="/incident/",
             expected_users={self.editor, self.admin},
             email=True,
         )
@@ -391,14 +362,14 @@ class NotificationTest(TembaTest):
         send_notification_emails()
 
         self.assertEqual(2, len(mail.outbox))
-        self.assertEqual("[Nyaruka] Incident: WhatsApp Templates Sync Failed", mail.outbox[0].subject)
-        self.assertEqual("[Nyaruka] Incident: WhatsApp Templates Sync Failed", mail.outbox[1].subject)
-        self.assertIn("is currently having problems fetching templates", mail.outbox[0].body)
+        self.assertEqual("[Nyaruka] Incident: Channel Android App Outdated", mail.outbox[0].subject)
+        self.assertEqual("[Nyaruka] Incident: Channel Android App Outdated", mail.outbox[1].subject)
+        self.assertIn("appears to be still running an old version of the client app", mail.outbox[0].body)
 
         recipients = set(mail.outbox[0].recipients()).union(mail.outbox[1].recipients())
         self.assertEqual({self.admin.email, self.editor.email}, recipients)
 
-    @patch.object(ChannelTemplatesFailedIncidentType, "email_required", True)
+    @patch.object(ChannelOutdatedAppIncidentType, "email_required", True)
     def test_email_notifications_disabled(self):
         self.org.add_user(self.editor, OrgRole.ADMINISTRATOR)  # upgrade editor to administrator
         OrgMembership.objects.filter(org=self.org, user=self.admin).update(email_notifications=False)
@@ -421,7 +392,7 @@ class NotificationTest(TembaTest):
 
         # but does about incidents whose emails are required
         mail.outbox.clear()
-        ChannelTemplatesFailedIncidentType.get_or_create(self.channel)
+        self.outdated_app(self.channel)
 
         send_notification_emails()
 
@@ -443,13 +414,13 @@ class NotificationTest(TembaTest):
             Notification.EMAIL_STATUS_PENDING, self.customer_support.notifications.get(export=export3).email_status
         )
 
-    @patch.object(ChannelTemplatesFailedIncidentType, "email_required", True)
+    @patch.object(ChannelOutdatedAppIncidentType, "email_required", True)
     def test_incident_started_unverified_user(self):
         self.org.add_user(self.editor, OrgRole.ADMINISTRATOR)  # upgrade editor to administrator
         self.editor.set_verified(False)
 
         # an unverified admin isn't emailed about an incident, even one whose emails are required...
-        ChannelTemplatesFailedIncidentType.get_or_create(self.channel)
+        self.outdated_app(self.channel)
 
         self.assertEqual(
             Notification.EMAIL_STATUS_UNVERIFIED, self.editor.notifications.get(incident__ended_on=None).email_status
@@ -461,10 +432,10 @@ class NotificationTest(TembaTest):
 
         # unless its type opts into emailing unverified addresses
         mail.outbox.clear()
-        ChannelTemplatesFailedIncidentType.end_ongoing(self.org)
+        ChannelOutdatedAppIncidentType.end_ongoing(self.org)
 
-        with patch.object(ChannelTemplatesFailedIncidentType, "email_unverified", True):
-            ChannelTemplatesFailedIncidentType.get_or_create(self.channel)
+        with patch.object(ChannelOutdatedAppIncidentType, "email_unverified", True):
+            self.outdated_app(self.channel)
 
         send_notification_emails()
 
@@ -481,7 +452,7 @@ class NotificationTest(TembaTest):
 
         self.assertEqual([["admin@textit.com"]], [m.recipients() for m in mail.outbox])
 
-    @patch.object(ChannelTemplatesFailedIncidentType, "email_required", True)
+    @patch.object(ChannelOutdatedAppIncidentType, "email_required", True)
     def test_unsubscribe_link(self):
         self.org.add_user(self.editor, OrgRole.ADMINISTRATOR)  # upgrade editor to administrator
 
@@ -516,7 +487,7 @@ class NotificationTest(TembaTest):
 
         # emails they'd get anyway don't offer it
         mail.outbox.clear()
-        ChannelTemplatesFailedIncidentType.get_or_create(self.channel)
+        self.outdated_app(self.channel)
 
         send_notification_emails()
 

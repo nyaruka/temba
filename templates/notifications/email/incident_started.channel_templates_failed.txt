@@ -1,8 +1,0 @@
-{% extends "notifications/email/base.txt" %}
-{% load i18n %}
-
-{% block notification-body %}
-{% blocktrans trimmed with url=read_url %}
-Your WhatsApp channel ({{ url }}) is currently having problems fetching templates.
-{% endblocktrans %}
-{% endblock notification-body %}

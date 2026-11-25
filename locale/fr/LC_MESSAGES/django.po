@@ -3001,9 +3001,6 @@ msgstr "Application Android du canal obsolète"
 msgid "Webhooks Unhealthy"
 msgstr "Webhooks défaillants"
 
-msgid "WhatsApp Templates Sync Failed"
-msgstr "Échec de la synchronisation des modèles WhatsApp"
-
 msgid "Incident"
 msgstr "Incident"
 
@@ -5594,14 +5591,6 @@ msgid "Your workspace has a channel that appears to be still running an old vers
 msgstr "Votre espace de travail comporte un canal qui semble encore utiliser une ancienne version de l'application cliente. Voir les incidents (%(url)s)"
 
 #, python-format
-msgid "Your <a href=\"%(url)s\">WhatsApp channel</a> is currently having problems fetching templates."
-msgstr "Votre <a href=\"%(url)s\">canal WhatsApp</a> rencontre actuellement des problèmes de récupération des modèles."
-
-#, python-format
-msgid "Your WhatsApp channel (%(url)s) is currently having problems fetching templates."
-msgstr "Votre canal WhatsApp (%(url)s) rencontre actuellement des problèmes de récupération des modèles."
-
-#, python-format
 msgid "User <b>%(email)s</b> accepted an invitation to join your workspace."
 msgstr "L'utilisateur %(email)s a accepté une invitation à rejoindre votre espace de travail."
 
@@ -5619,10 +5608,6 @@ msgstr "Votre <a href=\"%(read_url)s\">canal Android</a> semble déconnecté et 
 #, python-format
 msgid "Your <a href=\"%(read_url)s\">Android channel</a> appears to be still running an old version of the client app."
 msgstr "Votre <a href=\"%(read_url)s\">canal Android</a> semble encore utiliser une ancienne version de l'application cliente."
-
-#, python-format
-msgid "Your <a href=\"%(read_url)s\">WhatsApp channel</a> appears to not be syncing templates."
-msgstr "Votre <a href=\"%(read_url)s\">canal WhatsApp</a> ne semble pas synchroniser les modèles."
 
 #, python-format
 msgid "Some webhook calls from your flows are taking too long to respond or failing too frequently. If the problem persists these calls will be temporarily disabled. You can check the <a href=\"%(logs_url)s\">webhook call log</a> to see which calls are the problem."

@@ -3005,9 +3005,6 @@ msgstr "Aplicativo Android do canal desatualizado"
 msgid "Webhooks Unhealthy"
 msgstr "Webhooks com problemas"
 
-msgid "WhatsApp Templates Sync Failed"
-msgstr "Falha na sincronização dos templates do WhatsApp"
-
 msgid "Incident"
 msgstr "Incidente"
 
@@ -5598,14 +5595,6 @@ msgid "Your workspace has a channel that appears to be still running an old vers
 msgstr "Sua área de trabalho tem um canal que parece ainda estar rodando uma versão antiga do aplicativo cliente. Ver incidentes (%(url)s)"
 
 #, python-format
-msgid "Your <a href=\"%(url)s\">WhatsApp channel</a> is currently having problems fetching templates."
-msgstr "Seu <a href=\"%(url)s\">canal do WhatsApp</a> está tendo problemas para buscar templates no momento."
-
-#, python-format
-msgid "Your WhatsApp channel (%(url)s) is currently having problems fetching templates."
-msgstr "Seu canal do WhatsApp (%(url)s) está tendo problemas para buscar templates no momento."
-
-#, python-format
 msgid "User <b>%(email)s</b> accepted an invitation to join your workspace."
 msgstr "O usuário %(email)s aceitou um convite para entrar na sua área de trabalho."
 
@@ -5623,10 +5612,6 @@ msgstr "Seu <a href=\"%(read_url)s\">canal Android</a> parece estar desconectado
 #, python-format
 msgid "Your <a href=\"%(read_url)s\">Android channel</a> appears to be still running an old version of the client app."
 msgstr "Seu <a href=\"%(read_url)s\">canal Android</a> parece ainda estar rodando uma versão antiga do aplicativo cliente."
-
-#, python-format
-msgid "Your <a href=\"%(read_url)s\">WhatsApp channel</a> appears to not be syncing templates."
-msgstr "Seu <a href=\"%(read_url)s\">canal do WhatsApp</a> parece não estar sincronizando os templates."
 
 #, python-format
 msgid "Some webhook calls from your flows are taking too long to respond or failing too frequently. If the problem persists these calls will be temporarily disabled. You can check the <a href=\"%(logs_url)s\">webhook call log</a> to see which calls are the problem."

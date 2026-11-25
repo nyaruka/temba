@@ -130,7 +130,7 @@ class ChannelType(metaclass=ABCMeta):
     redact_request_keys = ()
     redact_response_keys = ()
 
-    # for channels that support templates this is the type slug and the channel type must define fetch_templates
+    # the kind of templates channels of this type have, if any, which mailroom syncs from the provider
     template_type: str = None
 
     def is_available_to(self, org, user):
@@ -484,12 +484,6 @@ class Channel(LegacyIDMixin, OrgAsset, DependencyMixin):
     @property
     def type(self) -> ChannelType:
         return self.get_type_from_code(self.channel_type)
-
-    @property
-    def template_type(self):
-        from temba.templates.types import TYPES
-
-        return TYPES.get(self.type.template_type)
 
     def refresh_templates(self) -> bool:
         """

@@ -1,13 +1,11 @@
 import requests
 
 from django.forms import ValidationError
-from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from temba.channels.models import Channel
 from temba.channels.types.dialog360.views import ClaimView, UpdateForm
 from temba.contacts.models import URN
-from temba.request_logs.models import HTTPLog
 
 from ...models import ChannelType, ConfigUI
 
@@ -65,20 +63,6 @@ class Dialog360Type(ChannelType):
 
         if resp.status_code != 200:
             raise ValidationError(_("Unable to register callbacks: %(resp)s"), params={"resp": resp.content})
-
-    def fetch_templates(self, channel) -> list:
-        templates_url = "%s/v1/configs/templates" % channel.config[Channel.CONFIG_BASE_URL]
-        start = timezone.now()
-        try:
-            response = requests.get(templates_url, headers=self.get_headers(channel))
-            response.raise_for_status()
-            HTTPLog.from_response(HTTPLog.WHATSAPP_TEMPLATES_SYNCED, response, start, timezone.now(), channel=channel)
-        except requests.RequestException as e:
-            HTTPLog.from_exception(HTTPLog.WHATSAPP_TEMPLATES_SYNCED, e, start, channel=channel)
-            raise e
-
-        # skip templates Meta generates for Direct Send messages
-        return [t for t in response.json()["waba_templates"] if t.get("source") != "AUTO_GENERATED"]
 
     def get_redact_values(self, channel) -> tuple:
         return (channel.config[Channel.CONFIG_AUTH_TOKEN],)
