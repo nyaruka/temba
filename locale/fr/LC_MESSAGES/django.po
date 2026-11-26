@@ -4774,8 +4774,21 @@ msgstr "Vous pouvez connecter rapidement les numéros TextIt WhatsApp en entrant
 msgid "To get started, you'll need your number and Commio account ID, along with your Commio username and an API token, which you can create under API, Tokens in the Commio customer portal."
 msgstr "Pour commencer, vous aurez besoin de votre numéro et de l'ID de votre compte Commio, ainsi que de votre nom d'utilisateur Commio et d'un jeton d'API, que vous pouvez créer sous API, Tokens dans le portail client Commio."
 
-msgid "To get started, you'll need your WhatsApp number along with its username, password, access token and namespace, all of which are under Settings &gt; API &amp; Webhooks in Turn."
-msgstr "Pour commencer, vous aurez besoin de votre numéro WhatsApp ainsi que de son nom d'utilisateur, de son mot de passe, de son jeton d'accès et de son namespace, tous disponibles sous Settings &gt; API &amp; Webhooks dans Turn."
+msgid "To get started, you'll need your WhatsApp number along with its access token and namespace, and an API token created in Turn.io:"
+msgstr "Pour commencer, vous aurez besoin de votre numéro WhatsApp ainsi que de son jeton d'accès et de son espace de noms, et d'un jeton API créé dans Turn.io :"
+
+msgid "In Turn.io, open Settings &gt; API &amp; Webhooks."
+msgstr "Dans Turn.io, ouvrez Settings &gt; API &amp; Webhooks."
+
+msgid "Click Create a Token."
+msgstr "Cliquez sur Create a Token."
+
+msgid "Give the token a name and an expiration date, then copy it into the form below."
+msgstr "Donnez au jeton un nom et une date d'expiration, puis copiez-le dans le formulaire ci-dessous."
+
+#, python-format
+msgid "See Turn.io's %(link)sauthentication documentation%(endlink)s for more about API tokens."
+msgstr "Consultez la %(link)sdocumentation d'authentification%(endlink)s de Turn.io pour en savoir plus sur les jetons API."
 
 msgid "To get started, pick a number that's already on your Twilio account, or search for a new one to buy. Buying a number charges your Twilio account."
 msgstr "Pour commencer, choisissez un numéro déjà présent sur votre compte Twilio, ou recherchez-en un nouveau à acheter. L'achat d'un numéro est facturé sur votre compte Twilio."

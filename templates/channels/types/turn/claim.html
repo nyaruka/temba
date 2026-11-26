@@ -4,7 +4,29 @@
 {% block form-lead %}
   <div class="mt-4">
     {% blocktrans trimmed %}
-      To get started, you'll need your WhatsApp number along with its username, password, access token and namespace, all of which are under Settings &gt; API &amp; Webhooks in Turn.
+      To get started, you'll need your WhatsApp number along with its access token and namespace, and an API token created in Turn.io:
     {% endblocktrans %}
+    <ol class="mt-2 ml-6 list-decimal">
+      <li>
+        {% blocktrans trimmed %}
+          In Turn.io, open Settings &gt; API &amp; Webhooks.
+        {% endblocktrans %}
+      </li>
+      <li>
+        {% blocktrans trimmed %}
+          Click Create a Token.
+        {% endblocktrans %}
+      </li>
+      <li>
+        {% blocktrans trimmed %}
+          Give the token a name and an expiration date, then copy it into the form below.
+        {% endblocktrans %}
+      </li>
+    </ol>
+    <div class="mt-2">
+      {% blocktrans trimmed with link='<a target="_blank" href="https://whatsapp.turn.io/docs/api/authentication">' endlink='</a>' %}
+        See Turn.io's {{ link }}authentication documentation{{ endlink }} for more about API tokens.
+      {% endblocktrans %}
+    </div>
   </div>
 {% endblock form-lead %}

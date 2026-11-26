@@ -4774,8 +4774,21 @@ msgstr "Puede conectar rápidamente los números de TextIt WhatsApp ingresando l
 msgid "To get started, you'll need your number and Commio account ID, along with your Commio username and an API token, which you can create under API, Tokens in the Commio customer portal."
 msgstr "Para comenzar, necesitará su número y el ID de su cuenta de Commio, junto con su nombre de usuario de Commio y un token de API, que puede crear en API, Tokens en el portal de clientes de Commio."
 
-msgid "To get started, you'll need your WhatsApp number along with its username, password, access token and namespace, all of which are under Settings &gt; API &amp; Webhooks in Turn."
-msgstr "Para comenzar, necesitará su número de WhatsApp junto con su nombre de usuario, contraseña, token de acceso y namespace, todos disponibles en Settings &gt; API &amp; Webhooks en Turn."
+msgid "To get started, you'll need your WhatsApp number along with its access token and namespace, and an API token created in Turn.io:"
+msgstr "Para comenzar, necesitará su número de WhatsApp junto con su token de acceso y namespace, y un token API creado en Turn.io:"
+
+msgid "In Turn.io, open Settings &gt; API &amp; Webhooks."
+msgstr "En Turn.io, abra Settings &gt; API &amp; Webhooks."
+
+msgid "Click Create a Token."
+msgstr "Haga clic en Create a Token."
+
+msgid "Give the token a name and an expiration date, then copy it into the form below."
+msgstr "Asigne al token un nombre y una fecha de vencimiento, y luego cópielo en el formulario de abajo."
+
+#, python-format
+msgid "See Turn.io's %(link)sauthentication documentation%(endlink)s for more about API tokens."
+msgstr "Consulte la %(link)sdocumentación de autenticación%(endlink)s de Turn.io para saber más sobre los tokens API."
 
 msgid "To get started, pick a number that's already on your Twilio account, or search for a new one to buy. Buying a number charges your Twilio account."
 msgstr "Para comenzar, elija un número que ya esté en su cuenta de Twilio o busque uno nuevo para comprar. Comprar un número genera un cargo en su cuenta de Twilio."

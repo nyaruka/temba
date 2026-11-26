@@ -4749,7 +4749,20 @@ msgstr ""
 msgid "To get started, you'll need your number and Commio account ID, along with your Commio username and an API token, which you can create under API, Tokens in the Commio customer portal."
 msgstr ""
 
-msgid "To get started, you'll need your WhatsApp number along with its username, password, access token and namespace, all of which are under Settings &gt; API &amp; Webhooks in Turn."
+msgid "To get started, you'll need your WhatsApp number along with its access token and namespace, and an API token created in Turn.io:"
+msgstr ""
+
+msgid "In Turn.io, open Settings &gt; API &amp; Webhooks."
+msgstr ""
+
+msgid "Click Create a Token."
+msgstr ""
+
+msgid "Give the token a name and an expiration date, then copy it into the form below."
+msgstr ""
+
+#, python-format
+msgid "See Turn.io's %(link)sauthentication documentation%(endlink)s for more about API tokens."
 msgstr ""
 
 msgid "To get started, pick a number that's already on your Twilio account, or search for a new one to buy. Buying a number charges your Twilio account."
