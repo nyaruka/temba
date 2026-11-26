@@ -56,7 +56,20 @@ class TurnTypeTest(CRUDLTestMixin, TembaTest):
             patch("requests.post") as mock_post,
             patch("requests.get") as mock_get,
         ):
-            mock_get.return_value = MockResponse(400, '{"data": []}')
+            # the token is rejected
+            mock_get.return_value = MockResponse(401, '{"errors": ["invalid"]}')
+            response = self.client.post(url, post_data)
+
+            self.assertEqual(200, response.status_code)
+            self.assertFalse(Channel.objects.all())
+            self.assertFormError(response.context["form"], "api_token", ["Unable to access Turn.io with this token."])
+
+            self.assertEqual(1, mock_get.call_count)
+            self.assertEqual("https://whatsapp.turn.io/v1/settings/application", mock_get.call_args[0][0])
+            self.assertEqual({"Authorization": "Bearer abc123"}, mock_get.call_args[1]["headers"])
+
+            # the token is accepted but the templates can't be listed
+            mock_get.side_effect = [MockResponse(200, '{"settings": {}}'), MockResponse(400, '{"data": []}')]
             response = self.client.post(url, post_data)
 
             self.assertEqual(200, response.status_code)
@@ -160,7 +173,20 @@ class TurnTypeTest(CRUDLTestMixin, TembaTest):
         self.assertUpdateFetch(
             update_url,
             [self.admin],
-            form_fields={"name": "Turn: 1234", "is_enabled": True, "auth_token": "authtoken123"},
+            form_fields={"name": "Turn: 1234", "is_enabled": True, "auth_token": ""},
+        )
+
+        # a log of a token being generated for the channel from its login credentials
+        HTTPLog.objects.create(
+            org=self.org,
+            channel=channel,
+            log_type=HTTPLog.WHATSAPP_TOKENS_SYNCED,
+            url="https://whatsapp.turn.io/v1/users/login",
+            request="POST /v1/users/login",
+            response='{"users": [{"token": "authtoken123"}]}',
+            status_code=200,
+            is_error=False,
+            request_time=10,
         )
 
         # rejected token
@@ -189,12 +215,11 @@ class TurnTypeTest(CRUDLTestMixin, TembaTest):
         self.assertEqual("temba", channel.config[Channel.CONFIG_USERNAME])
         self.assertEqual("tembapasswd", channel.config[Channel.CONFIG_PASSWORD])
 
-        # the token isn't checked if it's unchanged, and the login credentials are kept
+        # without a new token nothing is checked, and the current token and login credentials are kept
         mock_get.reset_mock(side_effect=True)
-        self.assertUpdateSubmit(
-            update_url, self.admin, {"name": "WhatsApp", "is_enabled": True, "auth_token": "authtoken123"}
-        )
+        self.assertUpdateSubmit(update_url, self.admin, {"name": "WhatsApp", "is_enabled": True, "auth_token": ""})
         mock_get.assert_not_called()
+        self.assertEqual(1, channel.http_logs.count())
 
         channel.refresh_from_db()
         self.assertEqual("WhatsApp", channel.name)
@@ -216,6 +241,14 @@ class TurnTypeTest(CRUDLTestMixin, TembaTest):
         self.assertNotIn(Channel.CONFIG_USERNAME, channel.config)
         self.assertNotIn(Channel.CONFIG_PASSWORD, channel.config)
         self.assertEqual("token123", channel.config[CONFIG_FB_ACCESS_TOKEN])
+
+        # the logs holding tokens generated from those credentials are gone, as only the current token is redacted
+        self.assertEqual(0, channel.http_logs.count())
+
+        # the new token isn't shown on the form either
+        self.assertUpdateFetch(
+            update_url, [self.admin], form_fields={"name": "WhatsApp", "is_enabled": True, "auth_token": ""}
+        )
         self.assertEqual(("newtoken456", "token123"), channel.type.get_redact_values(channel))
 
         with patch("requests.post") as mock_post:

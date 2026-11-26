@@ -5,10 +5,13 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from temba.contacts.models import URN
-from temba.utils.fields import SelectWidget
+from temba.request_logs.models import HTTPLog
+from temba.utils.fields import InputWidget, SelectWidget
 
 from ...models import Channel
 from ...views import ALL_COUNTRIES, ClaimViewMixin, UpdateChannelForm
+
+BASE_URL = "https://whatsapp.turn.io"
 
 API_TOKEN_HELP = _(
     "Created in the Turn.io settings under API & Webhooks, with an expiry date after which the channel stops working."
@@ -51,6 +54,12 @@ class ClaimView(ClaimViewMixin, SmartFormView):
                 return self.cleaned_data
             self.cleaned_data["address"] = normalized
 
+            # check the token before trying to create a channel with it
+            config = {Channel.CONFIG_BASE_URL: BASE_URL, Channel.CONFIG_AUTH_TOKEN: self.cleaned_data["api_token"]}
+            if not self.channel_type.check_credentials(config):
+                self.add_error("api_token", _("Unable to access Turn.io with this token."))
+                return self.cleaned_data
+
             # check we can access their messages templates
             from .type import TEMPLATE_LIST_URL
 
@@ -75,7 +84,7 @@ class ClaimView(ClaimViewMixin, SmartFormView):
 
         data = form.cleaned_data
         config = {
-            Channel.CONFIG_BASE_URL: "https://whatsapp.turn.io",
+            Channel.CONFIG_BASE_URL: BASE_URL,
             Channel.CONFIG_AUTH_TOKEN: data["api_token"],
             CONFIG_FB_BUSINESS_ID: data["address"].lstrip("+"),
             CONFIG_FB_ACCESS_TOKEN: data["access_token"],
@@ -106,16 +115,37 @@ class UpdateForm(UpdateChannelForm):
 
         self.add_config_field(
             Channel.CONFIG_AUTH_TOKEN,
-            forms.CharField(max_length=256, label=_("API Token"), help_text=API_TOKEN_HELP),
+            forms.CharField(
+                max_length=256,
+                label=_("API Token"),
+                help_text=_("Replaces the token the channel is using, which is kept if this is blank."),
+                widget=InputWidget(),
+                required=False,
+            ),
             default="",
         )
 
+        # the current token isn't shown - one generated from login credentials can be replaced by a refresh while the
+        # form is open, and submitting it back unchanged would then look like a new token
+        self.fields[Channel.CONFIG_AUTH_TOKEN].initial = ""
+
+    def get_config_values(self):
+        values = super().get_config_values()
+        if not values.get(Channel.CONFIG_AUTH_TOKEN):
+            values.pop(Channel.CONFIG_AUTH_TOKEN, None)
+        return values
+
     def save(self, commit=True):
+        token = self.cleaned_data[Channel.CONFIG_AUTH_TOKEN]
+
         # a channel given a new token no longer needs the login credentials that were used to generate tokens for it,
         # and keeping them would have its token replaced, and so invalidated, by the next refresh
-        if self.cleaned_data[Channel.CONFIG_AUTH_TOKEN] != self.instance.config.get(Channel.CONFIG_AUTH_TOKEN):
+        if token and token != self.instance.config.get(Channel.CONFIG_AUTH_TOKEN):
             self.instance.config.pop(Channel.CONFIG_USERNAME, None)
             self.instance.config.pop(Channel.CONFIG_PASSWORD, None)
+
+            # the logs of those tokens being generated include them, and only the current token is redacted
+            self.instance.http_logs.filter(log_type=HTTPLog.WHATSAPP_TOKENS_SYNCED).delete()
 
         return super().save(commit=commit)
 

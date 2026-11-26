@@ -1446,7 +1446,13 @@ msgstr ""
 msgid "The namespace of your WhatsApp templates."
 msgstr ""
 
+msgid "Unable to access Turn.io with this token."
+msgstr ""
+
 msgid "Unable to access Messages templates from turn.io"
+msgstr ""
+
+msgid "Replaces the token the channel is using, which is kept if this is blank."
 msgstr ""
 
 #, python-format

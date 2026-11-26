@@ -1464,8 +1464,14 @@ msgstr "Namespace"
 msgid "The namespace of your WhatsApp templates."
 msgstr "O namespace dos seus modelos do WhatsApp."
 
+msgid "Unable to access Turn.io with this token."
+msgstr "Não foi possível acessar a Turn.io com este token."
+
 msgid "Unable to access Messages templates from turn.io"
 msgstr "Não foi possível acessar os templates de mensagens da turn.io"
+
+msgid "Replaces the token the channel is using, which is kept if this is blank."
+msgstr "Substitui o token que o canal está usando, que é mantido se isto ficar em branco."
 
 #, python-format
 msgid "%(link)s offers phone numbers in many countries, and a number from your Twilio account can handle both SMS and voice calls, so contacts can text it or call it and be answered by your flows. Where the number supports it, messages can include photos and other media."
