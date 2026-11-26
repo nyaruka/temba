@@ -183,6 +183,12 @@ class TurnTypeTest(CRUDLTestMixin, TembaTest):
             object_unchanged=channel,
         )
 
+        # a token that can't be confirmed as valid isn't saved, and the login credentials it would replace are kept
+        channel.refresh_from_db()
+        self.assertEqual("authtoken123", channel.config[Channel.CONFIG_AUTH_TOKEN])
+        self.assertEqual("temba", channel.config[Channel.CONFIG_USERNAME])
+        self.assertEqual("tembapasswd", channel.config[Channel.CONFIG_PASSWORD])
+
         # the token isn't checked if it's unchanged, and the login credentials are kept
         mock_get.reset_mock(side_effect=True)
         self.assertUpdateSubmit(
