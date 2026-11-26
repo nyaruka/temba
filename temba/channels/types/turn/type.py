@@ -7,7 +7,7 @@ from django.forms import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from temba.channels.models import Channel, ChannelType
-from temba.channels.types.turn.views import ClaimView
+from temba.channels.types.turn.views import ClaimView, UpdateForm
 from temba.contacts.models import URN
 
 CONFIG_FB_BUSINESS_ID = "fb_business_id"
@@ -45,12 +45,25 @@ class TurnType(ChannelType):
         "approved by Meta."
     ) % {"link": '<a target="_blank" href="https://www.turn.io/">Turn.io</a>'}
     claim_view = ClaimView
+    update_form = UpdateForm
 
     def get_headers(self, channel):
         return {
             "Authorization": "Bearer %s" % channel.config[Channel.CONFIG_AUTH_TOKEN],
             "Content-Type": "application/json",
         }
+
+    def check_credentials(self, config: dict) -> bool:
+        try:
+            response = requests.get(
+                config[Channel.CONFIG_BASE_URL] + "/v1/settings/application",
+                headers={"Authorization": "Bearer %s" % config[Channel.CONFIG_AUTH_TOKEN]},
+                timeout=10,
+            )
+        except requests.RequestException:
+            return False
+
+        return response.status_code == 200
 
     def activate(self, channel):
         receive_url = channel.courier_url("receive")
@@ -86,11 +99,12 @@ class TurnType(ChannelType):
         """
         Gets the values to redact from logs
         """
-        credentials_base64 = base64.b64encode(
-            f"{channel.config[Channel.CONFIG_USERNAME]}:{channel.config[Channel.CONFIG_PASSWORD]}".encode()
-        ).decode()
-        return (
-            channel.config[CONFIG_FB_ACCESS_TOKEN],
-            channel.config[Channel.CONFIG_PASSWORD],
-            credentials_base64,
-        )
+        values = [channel.config[Channel.CONFIG_AUTH_TOKEN], channel.config[CONFIG_FB_ACCESS_TOKEN]]
+
+        # channels claimed with login credentials rather than an API token
+        username = channel.config.get(Channel.CONFIG_USERNAME)
+        password = channel.config.get(Channel.CONFIG_PASSWORD)
+        if username and password:
+            values += [password, base64.b64encode(f"{username}:{password}".encode()).decode()]
+
+        return tuple(values)

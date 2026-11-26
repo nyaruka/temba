@@ -19,8 +19,12 @@ def refresh_turn_whatsapp_tokens():
         return
 
     with r.lock("refresh_turn_whatsapp_tokens", 1800):
-        # iterate across each of our whatsapp channels and get a new token
+        # only channels claimed with login credentials need new tokens generating - doing so invalidates the previous
+        # token, so channels using an API token created by the user are left alone
         for channel in Channel.objects.filter(is_active=True, channel_type="TRN").order_by("id"):
+            if not channel.config.get(Channel.CONFIG_USERNAME) or not channel.config.get(Channel.CONFIG_PASSWORD):
+                continue
+
             try:
                 url = channel.config[Channel.CONFIG_BASE_URL] + "/v1/users/login"
 

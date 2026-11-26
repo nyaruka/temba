@@ -1431,6 +1431,9 @@ msgstr ""
 msgid "Unable to remove webhooks: %(resp)s"
 msgstr ""
 
+msgid "Created in the Turn.io settings under API & Webhooks, with an expiry date after which the channel stops working."
+msgstr ""
+
 msgid "Access Token"
 msgstr ""
 
@@ -1441,9 +1444,6 @@ msgid "Namespace"
 msgstr ""
 
 msgid "The namespace of your WhatsApp templates."
-msgstr ""
-
-msgid "Unable to check WhatsApp enterprise account, please check username and password"
 msgstr ""
 
 msgid "Unable to access Messages templates from turn.io"

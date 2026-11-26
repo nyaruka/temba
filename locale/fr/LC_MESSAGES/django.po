@@ -1445,6 +1445,9 @@ msgstr "Impossible d'enregistrer les webhooks: %(resp)s"
 msgid "Unable to remove webhooks: %(resp)s"
 msgstr "Impossible de supprimer les webhooks: %(resp)s"
 
+msgid "Created in the Turn.io settings under API & Webhooks, with an expiry date after which the channel stops working."
+msgstr "Créé dans les paramètres de Turn.io sous API & Webhooks, avec une date d'expiration après laquelle le canal cesse de fonctionner."
+
 msgid "Access Token"
 msgstr "Jeton d'accès"
 
@@ -1456,9 +1459,6 @@ msgstr "Namespace"
 
 msgid "The namespace of your WhatsApp templates."
 msgstr "L'espace de noms de vos modèles WhatsApp."
-
-msgid "Unable to check WhatsApp enterprise account, please check username and password"
-msgstr "Impossible de vérifier le compte d'entreprise WhatsApp, veuillez vérifier le nom d'utilisateur et le mot de passe"
 
 msgid "Unable to access Messages templates from turn.io"
 msgstr "Impossible d'accéder aux modèles de messages depuis turn.io"
