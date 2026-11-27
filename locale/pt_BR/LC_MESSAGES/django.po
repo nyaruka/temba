@@ -1449,6 +1449,9 @@ msgstr "Não foi possível registrar os webhooks: %(resp)s"
 msgid "Unable to remove webhooks: %(resp)s"
 msgstr "Não foi possível remover os webhooks: %(resp)s"
 
+msgid "Created in the Turn.io settings under API & Webhooks, with an expiry date after which the channel stops working."
+msgstr "Criado nas configurações da Turn.io em API & Webhooks, com uma data de expiração após a qual o canal deixa de funcionar."
+
 msgid "Access Token"
 msgstr "Token de acesso"
 
@@ -1461,11 +1464,14 @@ msgstr "Namespace"
 msgid "The namespace of your WhatsApp templates."
 msgstr "O namespace dos seus modelos do WhatsApp."
 
-msgid "Unable to check WhatsApp enterprise account, please check username and password"
-msgstr "Não foi possível checar a conta empresarial do Whatsapp, por favor verifique nome do usuário e senha"
+msgid "Unable to access Turn.io with this token."
+msgstr "Não foi possível acessar a Turn.io com este token."
 
 msgid "Unable to access Messages templates from turn.io"
 msgstr "Não foi possível acessar os templates de mensagens da turn.io"
+
+msgid "Replaces the token the channel is using, which is kept if this is blank."
+msgstr "Substitui o token que o canal está usando, que é mantido se isto ficar em branco."
 
 #, python-format
 msgid "%(link)s offers phone numbers in many countries, and a number from your Twilio account can handle both SMS and voice calls, so contacts can text it or call it and be answered by your flows. Where the number supports it, messages can include photos and other media."
@@ -4772,8 +4778,21 @@ msgstr "Você pode facilmente conectar números de WhatsApp TextIt inserindo as 
 msgid "To get started, you'll need your number and Commio account ID, along with your Commio username and an API token, which you can create under API, Tokens in the Commio customer portal."
 msgstr "Para começar, você vai precisar do seu número e do ID da sua conta Commio, junto com seu nome de usuário da Commio e um token de API, que você pode criar em API, Tokens no portal do cliente da Commio."
 
-msgid "To get started, you'll need your WhatsApp number along with its username, password, access token and namespace, all of which are under Settings &gt; API &amp; Webhooks in Turn."
-msgstr "Para começar, você vai precisar do seu número do WhatsApp, junto com o nome de usuário, a senha, o token de acesso e o namespace dele, todos em Settings &gt; API &amp; Webhooks no Turn."
+msgid "To get started, you'll need your WhatsApp number along with its access token and namespace, and an API token created in Turn.io:"
+msgstr "Para começar, você precisará do seu número do WhatsApp junto com o token de acesso e o namespace, e de um token API criado na Turn.io:"
+
+msgid "In Turn.io, open Settings &gt; API &amp; Webhooks."
+msgstr "Na Turn.io, abra Settings &gt; API &amp; Webhooks."
+
+msgid "Click Create a Token."
+msgstr "Clique em Create a Token."
+
+msgid "Give the token a name and an expiration date, then copy it into the form below."
+msgstr "Dê ao token um nome e uma data de expiração e depois copie-o para o formulário abaixo."
+
+#, python-format
+msgid "See Turn.io's %(link)sauthentication documentation%(endlink)s for more about API tokens."
+msgstr "Consulte a %(link)sdocumentação de autenticação%(endlink)s da Turn.io para saber mais sobre tokens API."
 
 msgid "To get started, pick a number that's already on your Twilio account, or search for a new one to buy. Buying a number charges your Twilio account."
 msgstr "Para começar, escolha um número que já esteja na sua conta Twilio ou pesquise um novo para comprar. A compra de um número é cobrada na sua conta Twilio."
