@@ -382,6 +382,7 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
     is_internal = models.BooleanField(default=False)
 
     released_on = models.DateTimeField(null=True)
+    deleted_on = models.DateTimeField(null=True)
     purged_on = models.DateTimeField(null=True)
 
     def __init__(self, *args, **kwargs):
@@ -1273,7 +1274,8 @@ class Org(LegacyIDMixin, CreatedByMixin, ModifiedByMixin, SoftDeleteMixin):
         self.is_active = False
         self.modified_by = user
         self.released_on = timezone.now()
-        self.save(update_fields=("is_active", "released_on", "modified_by", "modified_on"))
+        self.deleted_on = self.released_on
+        self.save(update_fields=("is_active", "released_on", "deleted_on", "modified_by", "modified_on"))
 
         # and immediately release our channels to halt messaging
         for channel in self.channels.filter(is_active=True):
