@@ -1890,9 +1890,6 @@ msgstr ""
 msgid "Delete Channel"
 msgstr ""
 
-msgid "Channel Log"
-msgstr ""
-
 msgid "In use by another contact."
 msgstr ""
 

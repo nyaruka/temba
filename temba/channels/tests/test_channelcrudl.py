@@ -1,4 +1,5 @@
 from unittest.mock import patch
+from urllib.parse import urlencode
 
 from django.conf import settings
 from django.test.utils import override_settings
@@ -415,9 +416,30 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
         logs_url = reverse("channels.channel_logs_list", args=[channel.uuid])
         log_url = reverse("channels.channel_logs_read", args=[channel.uuid, "log", log.uuid])
 
+        read_url = reverse("channels.channel_read", args=[channel.uuid])
+        webchat_channel = self.create_channel("CHP", "WebChat", "123")
+        webchat_logs_url = reverse("channels.channel_logs_list", args=[webchat_channel.uuid])
+
         self.assertRequestDisallowed(logs_url, [None, self.agent, self.editor, self.admin2])
 
-        # the page is a shell for the log list, which fetches the logs itself
+        # requested as a page, it redirects to the channel's page with the logs sheet open
+        self.login(self.admin)
+        self.assertEqual(f"{read_url}?sheet=logs", self.client.get(logs_url).url)
+
+        # on one of the channel's logs if that's selected, but not anything else
+        response = self.client.get(logs_url + f"?selected={log_url}")
+        self.assertEqual(f"{read_url}?{urlencode({'sheet': 'logs', 'item': log_url})}", response.url)
+
+        self.assertEqual(f"{read_url}?sheet=logs", self.client.get(logs_url + "?selected=/org/home/").url)
+
+        # channels of types that don't have logs return a 404
+        self.assertEqual(404, self.client.get(webchat_logs_url).status_code)
+
+        self.client.defaults["HTTP_X_TEMBA_SHEET"] = "1"
+
+        self.assertRequestDisallowed(logs_url, [None, self.agent, self.editor, self.admin2])
+
+        # in a sheet it's a shell for the log list, which fetches the logs itself
         response = self.assertReadFetch(logs_url, [self.admin], context_object=channel)
         self.assertEqual(f"/api/internal/channel_logs.json?channel={channel.uuid}", response.context["list_url"])
         self.assertContains(response, "<temba-log-list")
@@ -431,10 +453,7 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertNotIn("selected", response.context)
 
         # channels of types that don't have logs return a 404
-        webchat_channel = self.create_channel("CHP", "WebChat", "123")
-        self.login(self.admin)
-        response = self.client.get(reverse("channels.channel_logs_list", args=[webchat_channel.uuid]))
-        self.assertEqual(404, response.status_code)
+        self.assertEqual(404, self.client.get(webchat_logs_url).status_code)
 
     def test_logs_read(self):
         log1 = self.create_channel_log(
@@ -452,27 +471,40 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
 
         log1_url = reverse("channels.channel_logs_read", args=[self.channel.uuid, "log", log1.uuid])
 
+        read_url = reverse("channels.channel_read", args=[self.channel.uuid])
+        webchat_channel = self.create_channel("CHP", "WebChat", "123")
+        webchat_log_url = reverse("channels.channel_logs_read", args=[webchat_channel.uuid, "log", log1.uuid])
+
+        self.assertRequestDisallowed(log1_url, [None, self.agent, self.editor, self.admin2])
+
+        # requested as a page, it redirects to the channel's page with the logs sheet open on the log
+        self.login(self.admin)
+        response = self.client.get(log1_url)
+        self.assertEqual(f"{read_url}?{urlencode({'sheet': 'logs', 'item': log1_url})}", response.url)
+
+        # channels of types that don't have logs return a 404
+        self.assertEqual(404, self.client.get(webchat_log_url).status_code)
+
+        self.client.defaults["HTTP_X_TEMBA_SHEET"] = "1"
+
         self.assertRequestDisallowed(log1_url, [None, self.agent, self.editor, self.admin2])
         response = self.assertReadFetch(log1_url, [self.admin], context_object=self.channel)
         self.assertIsNone(response.context["msg"])
         self.assertIsNone(response.context["call"])
         self.assertEqual(1, len(response.context["logs"]))
         self.assertContains(response, "GET https://foo.bar/send1")
-        self.assertNotContains(response, "data-sheet-chrome")
 
-        # in a sheet it gives its own header, for when it's opened from somewhere other than the channel's page
-        response = self.client.get(log1_url, HTTP_X_TEMBA_SPA="1", HTTP_X_TEMBA_SHEET="1")
+        # it gives its own header, for when it's opened from somewhere other than the channel's page
         self.assertContains(response, "data-sheet-chrome")
         self.assertContains(response, f'data-header="{self.channel.name} Log"')
         self.assertContains(response, "<temba-channel-logo")
 
         # channels of types that don't have logs return a 404
-        webchat_channel = self.create_channel("CHP", "WebChat", "123")
-        self.login(self.admin)
-        response = self.client.get(reverse("channels.channel_logs_read", args=[webchat_channel.uuid, "log", log1.uuid]))
-        self.assertEqual(404, response.status_code)
+        self.assertEqual(404, self.client.get(webchat_log_url).status_code)
 
     def test_logs_msg(self):
+        self.client.defaults["HTTP_X_TEMBA_SHEET"] = "1"  # logs show in a sheet
+
         contact = self.create_contact("Fred", phone="+12067799191")
 
         log1 = self.create_channel_log(
@@ -533,8 +565,15 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("https://foo.bar/send1", response.context["logs"][0]["http_logs"][0]["url"])
         self.assertEqual("https://foo.bar/send2", response.context["logs"][1]["http_logs"][0]["url"])
 
-        response = self.client.get(logs_url)
-        self.assertEqual("/settings/channels", response.headers[TEMBA_MENU_SELECTION])
+        # requested as a page, it redirects to the channel's page with the logs sheet open on the message's logs
+        del self.client.defaults["HTTP_X_TEMBA_SHEET"]
+        read_url = reverse("channels.channel_read", args=[self.channel.uuid])
+        redirect_url = f"{read_url}?{urlencode({'sheet': 'logs', 'item': logs_url})}"
+        self.assertEqual(redirect_url, self.client.get(logs_url).url)
+
+        # as it does when navigated to within the app
+        self.assertEqual(redirect_url, self.client.get(logs_url, HTTP_X_TEMBA_SPA="1").url)
+        self.client.defaults["HTTP_X_TEMBA_SHEET"] = "1"
 
         # try to lookup log from different org using channel from this org
         org2_contact = self.create_contact("Alice", phone="+250788382382", org=self.org2)
@@ -547,7 +586,13 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
         logs_url = reverse("channels.channel_logs_read", args=[self.channel.uuid, "msg", org2_msg2.uuid])
         self.assertRequestDisallowed(logs_url, [None, self.editor, self.agent, self.admin, self.admin2])
 
+        # including when requested as a page
+        del self.client.defaults["HTTP_X_TEMBA_SHEET"]
+        self.assertRequestDisallowed(logs_url, [None, self.editor, self.agent, self.admin, self.admin2])
+
     def test_logs_call(self):
+        self.client.defaults["HTTP_X_TEMBA_SHEET"] = "1"  # logs show in a sheet
+
         contact = self.create_contact("Fred", phone="+12067799191")
         flow = self.create_flow("IVR")
 
@@ -599,7 +644,7 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
                 }
             ],
         )
-        self.create_incoming_call(flow, contact, logs=[log3])
+        call2 = self.create_incoming_call(flow, contact, logs=[log3])
 
         logs_url = reverse("channels.channel_logs_read", args=[self.channel.uuid, "call", call1.uuid])
 
@@ -608,6 +653,22 @@ class ChannelCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual(2, len(response.context["logs"]))
         self.assertEqual("https://foo.bar/call1", response.context["logs"][0]["http_logs"][0]["url"])
         self.assertEqual("https://foo.bar/call2", response.context["logs"][1]["http_logs"][0]["url"])
+
+        # can't view the logs of a call in a different workspace
+        call2.org = self.org2
+        call2.save(update_fields=("org",))
+        call2_logs_url = reverse("channels.channel_logs_read", args=[self.channel.uuid, "call", call2.uuid])
+        self.assertRequestDisallowed(call2_logs_url, [None, self.editor, self.agent, self.admin, self.admin2])
+
+        # requested as a page, the call's logs redirect to the channel's page with the logs sheet open on them
+        del self.client.defaults["HTTP_X_TEMBA_SHEET"]
+        self.login(self.admin)
+        read_url = reverse("channels.channel_read", args=[self.channel.uuid])
+        response = self.client.get(logs_url)
+        self.assertEqual(f"{read_url}?{urlencode({'sheet': 'logs', 'item': logs_url})}", response.url)
+
+        # unless the call is in a different workspace
+        self.assertRequestDisallowed(call2_logs_url, [None, self.editor, self.agent, self.admin, self.admin2])
 
     def test_delete(self):
         delete_url = reverse("channels.channel_delete", args=[self.ex_channel.uuid])

@@ -2,7 +2,7 @@ import logging
 from collections import defaultdict
 from datetime import timedelta
 from typing import Any
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 from uuid import UUID
 
 import phonenumbers
@@ -1265,49 +1265,63 @@ class ChannelCRUDL(SmartCRUDL):
             )
             return context
 
-    class LogsList(ChannelMenuMixin, SpaMixin, BaseReadView):
+    class LogsSheetMixin(SpaMixin):
         """
-        A channel's logs - the page is a shell for the log list component, which fetches and pages them itself
+        For the views of a channel's logs, which show in a sheet over its dashboard. Requested as a page of their own,
+        e.g. from an old link, they redirect to the dashboard with the sheet open on what was asked for.
         """
 
         permission = "channels.channel_logs"
+
+        def get_object(self, *args, **kwargs):
+            channel = super().get_object(*args, **kwargs)
+            if not channel.type.has_logs:
+                raise Http404()
+            return channel
+
+        def get(self, request, *args, **kwargs):
+            if not self.is_sheet():
+                channel = self.get_object()
+                params = {"sheet": "logs"}
+                if item := self.get_sheet_item():  # the log to open it on, if not the list of them all
+                    params["item"] = item
+                read_url = reverse("channels.channel_read", args=[channel.uuid])
+                return HttpResponseRedirect(f"{read_url}?{urlencode(params)}")
+
+            return super().get(request, *args, **kwargs)
+
+    class LogsList(LogsSheetMixin, BaseReadView):
+        """
+        A channel's logs - a shell for the log list component, which fetches and pages them itself
+        """
 
         @classmethod
         def derive_url_pattern(cls, path, action):
             return r"^%s/logs/(?P<uuid>[0-9a-f-]{36})/$" % path
 
-        def get_object(self, *args, **kwargs):
-            channel = super().get_object(*args, **kwargs)
-            if not channel.type.has_logs:
-                raise Http404()
-            return channel
-
-        def derive_title(self):
-            return _("%(channel)s Logs") % {"channel": self.object.name}
+        def get_sheet_item(self) -> str | None:
+            # a log to show beside the list, which has to be one of this channel's
+            selected = self.request.GET.get("selected", "")
+            return selected if selected.startswith(self.request.path) else None
 
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
             context["list_url"] = f"{reverse('api.internal.channel_logs')}.json?channel={self.object.uuid}"
 
-            # a log to show beside the list, which has to be one of this channel's
-            selected = self.request.GET.get("selected", "")
-            if selected.startswith(self.request.path):
+            if selected := self.get_sheet_item():
                 context["selected"] = selected
             return context
 
-    class LogsRead(ChannelMenuMixin, SpaMixin, BaseReadView):
-        permission = "channels.channel_logs"
-        title = _("Channel Log")
-
+    class LogsRead(LogsSheetMixin, BaseReadView):
         @classmethod
         def derive_url_pattern(cls, path, action):
             return r"^%s/logs/(?P<uuid>[0-9a-f-]{36})/(?P<reftype>log|msg|call)/(?P<refid>[0-9a-f-]{36})/$" % path
 
-        def get_object(self, *args, **kwargs):
-            channel = super().get_object(*args, **kwargs)
-            if not channel.type.has_logs:
-                raise Http404()
-            return channel
+        def get_sheet_item(self) -> str | None:
+            self.owner  # a message or call that can't be found is a 404 rather than a redirect to one
+
+            # keeping whether staff asked to see an anonymous workspace's logs as they are
+            return self.request.path + ("?break=1" if self.request.GET.get("break") else "")
 
         @cached_property
         def owner(self) -> Msg | Call | None:
