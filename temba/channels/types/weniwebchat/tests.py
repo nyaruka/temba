@@ -1,5 +1,6 @@
 from django.urls import reverse
 
+from temba.contacts.models import URN
 from temba.tests import TembaTest
 
 from ...models import Channel
@@ -16,7 +17,7 @@ class WeniWebChatTest(TembaTest):
 
         data = {
             "name": "Weni Testing",
-            "base_url": "https://google.com",
+            "base_url": "https://google.com/",
         }
 
         response = self.client.post(url, data, follow=True)
@@ -24,3 +25,4 @@ class WeniWebChatTest(TembaTest):
         channel = Channel.objects.get(name="Weni Testing")
 
         self.assertEqual(channel.config[CONFIG_BASE_URL], "https://google.com")
+        self.assertEqual(channel.schemes, [URN.WENIWEBCHAT_SCHEME, URN.EXTERNAL_SCHEME])

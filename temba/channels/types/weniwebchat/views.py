@@ -27,7 +27,7 @@ class ClaimView(ClaimViewMixin, SmartFormView):
         data = form.cleaned_data
 
         name = form.cleaned_data["name"]
-        base_url = data["base_url"]
+        base_url = data["base_url"].rstrip("/")
 
         config = {CONFIG_BASE_URL: base_url}
 
