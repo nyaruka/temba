@@ -357,6 +357,16 @@ export interface LLM {
   usages: number;
 }
 
+/** One of the user's API tokens, as served by the api_tokens endpoint. The
+ * full key is only shown when a token is created, so rows carry just a
+ * non-secret `id` and the start of the key. */
+export interface APIToken {
+  id: string;
+  prefix: string;
+  created_on: string;
+  last_used_on: string | null;
+}
+
 export interface Shortcut {
   uuid: string;
   name: string;
@@ -596,6 +606,9 @@ export enum CustomEventType {
   ShortcutDelete = 'temba-shortcut-delete',
   /** An AI model's usages link was clicked - detail carries the item. */
   LLMUsages = 'temba-llm-usages',
+  /** An API token's delete button was clicked - detail carries the
+   * token as `item` for the host to confirm the delete. */
+  APITokenDelete = 'temba-apitoken-delete',
   SelectionChange = 'temba-selection-change',
   BulkAction = 'temba-bulk-action',
   /** The label dropdown's "New Label…" row was clicked — detail

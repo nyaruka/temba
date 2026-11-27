@@ -1,3 +1,4 @@
+import hashlib
 import logging
 
 from django_valkey import get_valkey_connection
@@ -243,6 +244,32 @@ class APIToken(DeletedOnMixin):
         self.save(update_fields=("deleted_on",))
 
         audit.record("api_token.released", user=self.user, org=self.org, actor=user, token=self.key[:4])
+
+    @property
+    def digest(self) -> str:
+        """
+        A non-secret identifier for this token, so it can be referred to in URLs without exposing the key
+        """
+        return hashlib.sha256(self.key.encode()).hexdigest()[:16]
+
+    @property
+    def prefix(self) -> str:
+        """
+        The start of the key, enough for a user to recognize the token without it being usable
+        """
+        return self.key[:6]
+
+    def as_json(self, context=None) -> dict:
+        """
+        Internal API shape, consumed by the temba-apitoken-list component. The full key is only ever shown once,
+        when the token is created, so it's not included here.
+        """
+        return {
+            "id": self.digest,
+            "prefix": self.prefix,
+            "created_on": self.created.isoformat(),
+            "last_used_on": self.last_used_on.isoformat() if self.last_used_on else None,
+        }
 
     def __str__(self):
         return self.key

@@ -4065,6 +4065,19 @@ msgstr ""
 msgid "Sessions"
 msgstr ""
 
+msgid "Copy your new token now."
+msgstr ""
+
+msgid "For your security it won't be shown again. If you lose it, delete it and create a new one."
+msgstr ""
+
+#, python-format
+msgid "You already have the maximum of %(limit)s tokens. Delete one to create a new one."
+msgstr ""
+
+msgid "Create a new token for accessing the API? Its key will only be shown once, so be ready to copy it."
+msgstr ""
+
 #, python-format
 msgid "You are about to delete the API token <b>%(prefix)s</b>. There is no way to undo this. Are you sure?"
 msgstr ""
@@ -4072,14 +4085,11 @@ msgstr ""
 msgid "Delete Token"
 msgstr ""
 
+msgid "No tokens"
+msgstr ""
+
 #, python-format
 msgid "These are your personal tokens for accessing the <a href=\"%(api_url)s\">API</a>. You can have a maximum of %(limit)s."
-msgstr ""
-
-msgid "Last Used"
-msgstr ""
-
-msgid "No tokens"
 msgstr ""
 
 msgid "Endpoints"

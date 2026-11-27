@@ -4,19 +4,19 @@ from uuid import UUID
 import iso8601
 from rest_framework import generics, mixins, status
 from rest_framework.response import Response
-from smartmin.views import SmartCRUDL
+from smartmin.views import SmartCRUDL, SmartTemplateView
 
 from django.db import transaction
-from django.http import HttpResponseRedirect
+from django.http import Http404, HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from temba import mailroom
 from temba.api.support import InvalidQueryError
 from temba.contacts.models import URN
-from temba.orgs.views.base import BaseDeleteModal, BaseListView
+from temba.orgs.views.base import BaseDeleteModal, BaseListComponentView
 from temba.utils.models import OrgAsset, OrgLimitMixin
-from temba.utils.views.mixins import ContextMenuMixin, NonAtomicMixin, SpaMixin
+from temba.utils.views.mixins import NonAtomicMixin
 
 from .models import APIToken, BulkActionFailure
 
@@ -300,41 +300,76 @@ class DeleteAPIMixin(mixins.DestroyModelMixin):
 
 class APITokenCRUDL(SmartCRUDL):
     model = APIToken
-    actions = ("list", "delete")
+    actions = ("list", "create", "delete")
 
-    class List(SpaMixin, ContextMenuMixin, BaseListView):
+    class List(BaseListComponentView):
         title = _("API Tokens")
         menu_path = "/settings/api-tokens"
-        paginate_by = None
+        list_endpoint = "api.internal.api_tokens"
+        allow_search = False
         token_limit = 3
+
+        def derive_list_query(self) -> str:
+            return ""  # the endpoint has no folders
 
         def build_context_menu(self, menu):
             if self.request.user.get_api_tokens(self.request.org).count() < self.token_limit:
-                menu.add_url_post(_("New"), reverse("api.apitoken_list"), as_button=True)
+                menu.add_modax(_("New"), "new-token", reverse("api.apitoken_create"), as_button=True)
 
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
             context["token_limit"] = self.token_limit
             return context
 
-        def get_queryset(self, **kwargs):
-            return self.request.user.get_api_tokens(self.request.org).order_by("created")
+    class Create(SmartTemplateView):
+        """
+        Modal which creates a new token and shows its key - the only time the full key is ever shown to the user
+        """
+
+        submit_button_name = _("Create")
+
+        def has_permission(self, request, *args, **kwargs):
+            return (
+                request.user.is_authenticated
+                and request.org is not None
+                and request.org.get_user_role(request.user) in APIToken.ALLOWED_ROLES
+            )
+
+        def is_limit_reached(self) -> bool:
+            return self.request.user.get_api_tokens(self.request.org).count() >= APITokenCRUDL.List.token_limit
+
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            context["submit_button_name"] = self.submit_button_name
+            context["token_limit"] = APITokenCRUDL.List.token_limit
+            context["limit_reached"] = self.is_limit_reached()
+            return context
 
         def post(self, request, *args, **kwargs):
-            # there's no create view - just a POST to this view
-            if self.request.user.get_api_tokens(self.request.org).count() < self.token_limit:
-                APIToken.create(self.request.org, self.request.user)
+            # rather than redirecting, respond with the key so it's only ever sent to the user in this one response
+            new_key = None
+            if not self.is_limit_reached():
+                new_key = APIToken.create(request.org, request.user).key
 
-            return HttpResponseRedirect(reverse("api.apitoken_list"))
+            return self.render_to_response(self.get_context_data(new_key=new_key))
 
     class Delete(BaseDeleteModal):
-        slug_url_kwarg = "key"
-        fields = ("key",)
+        slug_url_kwarg = "id"
+        fields = ("id",)
         cancel_url = "@api.apitoken_list"
         redirect_url = "@api.apitoken_list"
 
         def has_permission(self, request, *args, **kwargs):
-            return self.get_object().user == request.user
+            return request.user.is_authenticated and self.get_object() is not None
+
+        def get_object(self, queryset=None):
+            # tokens are referenced by their digest so their keys never appear in URLs - a user only has a few, so
+            # we can find the one being deleted by checking each of theirs
+            for token in self.request.user.get_api_tokens(self.request.org):
+                if token.digest == self.kwargs["id"]:
+                    return token
+
+            raise Http404()
 
         def post(self, request, *args, **kwargs):
             self.get_object().release()
