@@ -1137,6 +1137,22 @@ msgid "Access Key"
 msgstr "Clave de acceso"
 
 #, python-format
+msgid "%(link)s provides voice numbers in Ghana. If you have an IVR number with them, connect it to make and receive calls. Calls can only play recorded audio, so every message in your voice flows needs a recording."
+msgstr "%(link)s ofrece números de voz en Ghana. Si tiene un número de IVR con ellos, conéctelo para hacer y recibir llamadas. Las llamadas solo pueden reproducir audio grabado, por lo que cada mensaje de sus flujos de voz necesita una grabación."
+
+msgid "To finish configuring this channel, you'll need to have mNotify set the following callback URL for your number. Voice flows on this channel need a recording for every message as text can't be read out."
+msgstr "Para terminar de configurar este canal, deberá pedir a mNotify que establezca la siguiente URL de callback para su número. Los flujos de voz en este canal necesitan una grabación para cada mensaje, ya que el texto no se puede leer en voz alta."
+
+msgid "All call events for your number are sent to this URL. Keep it private as it includes a secret."
+msgstr "Todos los eventos de llamada de su número se envían a esta URL. Manténgala privada, ya que incluye un secreto."
+
+msgid "e.g. 0501234567"
+msgstr "p. ej. 0501234567"
+
+msgid "Not a valid phone number."
+msgstr "No es un número de teléfono válido."
+
+#, python-format
 msgid "%(link)s is a French messaging platform with direct connections to mobile operators, used by more than 3,000 clients. Connect a service you have with MTarget to send and receive SMS in France and internationally."
 msgstr "%(link)s es una plataforma de mensajería francesa con conexiones directas a operadores móviles, que usan más de 3.000 clientes. Conecte un servicio que tenga con MTarget para enviar y recibir SMS en Francia y a nivel internacional."
 
@@ -2152,9 +2168,6 @@ msgstr "Eliminar todos"
 
 msgid "Usages"
 msgstr "Usos"
-
-msgid "Not a valid phone number."
-msgstr "No es un número de teléfono válido."
 
 msgid "An error occurred updating your contact. Please try again later."
 msgstr "Se produjo un error al actualizar su contacto. Por favor, inténtelo de nuevo más tarde."

@@ -275,6 +275,7 @@ export enum Icon {
   channel_ln = 'channel-line',
   channel_mbd = 'channel-bird',
   channel_mk = 'channel-macrokiosk',
+  channel_mn = 'zap', // TODO https://www.mnotify.com/
   channel_mt = 'channel-mtarget',
   channel_mtn = 'channel-mtn',
   channel_nx = 'channel-vonage',

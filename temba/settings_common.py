@@ -949,6 +949,7 @@ CHANNEL_TYPES = [
     "temba.channels.types.m3tech.M3TechType",
     "temba.channels.types.macrokiosk.MacrokioskType",
     "temba.channels.types.messagebird.MessageBirdType",
+    "temba.channels.types.mnotify.MNotifyType",
     "temba.channels.types.mtn.MtnType",
     "temba.channels.types.mtarget.MtargetType",
     "temba.channels.types.playmobile.PlayMobileType",
