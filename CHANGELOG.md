@@ -1,3 +1,6 @@
+## v26.3.236 (2026-11-27)
+ * Add Org.deleted_on, written alongside is_active and backfilled from released_on
+
 ## v26.3.235 (2026-11-25)
  * Return 400s rather than 500s for malformed flow saves, simulator requests and internal API OPTIONS (#7359)
  * Read airtime transfer logs from DynamoDB and drop HTTPLog.airtime_transfer
