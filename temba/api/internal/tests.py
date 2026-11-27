@@ -426,7 +426,8 @@ class EndpointsTest(APITestMixin, TembaTest):
         # an invalid query keeps a list-shaped (empty) response rather than erroring
         mr_mocks.exception(mailroom.QueryValidationException("bad", "syntax"))
         self.login(self.admin)
-        response = self.client.get(endpoint_url + "?search=(((")
+        with self.mockReadOnly():
+            response = self.client.get(endpoint_url + "?search=(((")
         self.assertEqual(200, response.status_code)
         self.assertEqual([], response.json()["results"])
         self.assertEqual(0, response.json()["count"])
@@ -842,29 +843,30 @@ class EndpointsTest(APITestMixin, TembaTest):
 
         # newest first, a page at a time, each linking to its page
         self.login(self.admin)
-        page1 = self.client.get(endpoint_url).json()
-        self.assertEqual(50, len(page1["results"]))
-        self.assertEqual(str(logs[54].uuid), page1["results"][0]["uuid"])
-        self.assertEqual("Message Send", page1["results"][0]["type_display"])
-        self.assertEqual(
-            reverse("channels.channel_logs_read", args=[channel.uuid, "log", logs[54].uuid]),
-            page1["results"][0]["url"],
-        )
-        self.assertIsNone(page1["previous"])
-        self.assertIn(f"after={logs[5].uuid}", page1["next"])
+        with self.mockReadOnly():
+            page1 = self.client.get(endpoint_url).json()
+            self.assertEqual(50, len(page1["results"]))
+            self.assertEqual(str(logs[54].uuid), page1["results"][0]["uuid"])
+            self.assertEqual("Message Send", page1["results"][0]["type_display"])
+            self.assertEqual(
+                reverse("channels.channel_logs_read", args=[channel.uuid, "log", logs[54].uuid]),
+                page1["results"][0]["url"],
+            )
+            self.assertIsNone(page1["previous"])
+            self.assertIn(f"after={logs[5].uuid}", page1["next"])
 
-        page2 = self.client.get(page1["next"]).json()
-        self.assertEqual([str(log.uuid) for log in reversed(logs[:5])], [r["uuid"] for r in page2["results"]])
-        self.assertIsNone(page2["next"])
-        self.assertIsNotNone(page2["previous"])
+            page2 = self.client.get(page1["next"]).json()
+            self.assertEqual([str(log.uuid) for log in reversed(logs[:5])], [r["uuid"] for r in page2["results"]])
+            self.assertIsNone(page2["next"])
+            self.assertIsNotNone(page2["previous"])
 
-        # a channel in another workspace, of a type without logs, or that isn't a channel at all, isn't found
-        other = self.create_channel("T", "Other", "+12065551313", org=self.org2)
-        webchat = self.create_channel("CHP", "WebChat", "123")
-        for uuid in (other.uuid, webchat.uuid, "nope"):
-            response = self.client.get(reverse("api.internal.channel_logs") + f".json?channel={uuid}")
-            self.assertEqual(404, response.status_code)
-        self.assertEqual(404, self.client.get(endpoint_url + "&after=nope").status_code)
+            # a channel in another workspace, of a type without logs, or that isn't a channel at all, isn't found
+            other = self.create_channel("T", "Other", "+12065551313", org=self.org2)
+            webchat = self.create_channel("CHP", "WebChat", "123")
+            for uuid in (other.uuid, webchat.uuid, "nope"):
+                response = self.client.get(reverse("api.internal.channel_logs") + f".json?channel={uuid}")
+                self.assertEqual(404, response.status_code)
+            self.assertEqual(404, self.client.get(endpoint_url + "&after=nope").status_code)
 
     def test_channel_http_logs(self):
         channel = self.create_channel("WAC", "WhatsApp", "1234")
@@ -891,31 +893,32 @@ class EndpointsTest(APITestMixin, TembaTest):
 
         # all of its syncs, newest first, a page at a time
         self.login(self.admin)
-        page1 = self.client.get(endpoint_url).json()
-        self.assertEqual(50, len(page1["results"]))
-        self.assertEqual(
-            {
-                "uuid": str(logs[50].id),
-                "type_display": "WhatsApp Tokens Synced",
-                "is_error": True,
-                "elapsed_ms": 10,
-                "created_on": matchers.ISODatetime(),
-                "url": reverse("request_logs.httplog_read", args=[logs[50].id]),
-            },
-            page1["results"][0],
-        )
+        with self.mockReadOnly():
+            page1 = self.client.get(endpoint_url).json()
+            self.assertEqual(50, len(page1["results"]))
+            self.assertEqual(
+                {
+                    "uuid": str(logs[50].id),
+                    "type_display": "WhatsApp Tokens Synced",
+                    "is_error": True,
+                    "elapsed_ms": 10,
+                    "created_on": matchers.ISODatetime(),
+                    "url": reverse("request_logs.httplog_read", args=[logs[50].id]),
+                },
+                page1["results"][0],
+            )
 
-        page2 = self.client.get(page1["next"]).json()
-        self.assertEqual([str(logs[0].id)], [r["uuid"] for r in page2["results"]])
-        self.assertIsNone(page2["next"])
+            page2 = self.client.get(page1["next"]).json()
+            self.assertEqual([str(logs[0].id)], [r["uuid"] for r in page2["results"]])
+            self.assertIsNone(page2["next"])
 
-        # only for channels of types with templates
-        response = self.client.get(reverse("api.internal.channel_http_logs") + f".json?channel={self.channel.uuid}")
-        self.assertEqual(404, response.status_code)
-        self.assertEqual(404, self.client.get(endpoint_url + "&before=nope").status_code)
-        self.assertEqual(
-            404, self.client.get(reverse("api.internal.channel_http_logs") + ".json?channel=x").status_code
-        )
+            # only for channels of types with templates
+            response = self.client.get(reverse("api.internal.channel_http_logs") + f".json?channel={self.channel.uuid}")
+            self.assertEqual(404, response.status_code)
+            self.assertEqual(404, self.client.get(endpoint_url + "&before=nope").status_code)
+            self.assertEqual(
+                404, self.client.get(reverse("api.internal.channel_http_logs") + ".json?channel=x").status_code
+            )
 
     @cleanup(valkey=True)
     def test_flows(self):
@@ -1258,7 +1261,8 @@ class EndpointsTest(APITestMixin, TembaTest):
         self.create_admin_group("Global Admins", orgs=[self.org, self.org2], users=[group_admin])
         self.login(group_admin, choose_org=self.org)
 
-        response = self.client.get(endpoint_url, content_type="application/json", HTTP_X_FORWARDED_HTTPS="https")
+        with self.mockReadOnly():
+            response = self.client.get(endpoint_url, content_type="application/json", HTTP_X_FORWARDED_HTTPS="https")
         self.assertEqual({self.org.id, self.org2.id}, {r["id"] for r in response.json()["results"]})
 
     def test_articles(self):

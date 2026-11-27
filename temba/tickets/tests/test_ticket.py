@@ -277,6 +277,8 @@ class TicketTest(TembaTest):
         )
 
     def test_export_ticket_stats(self):
+        self.enterContext(self.mockReadOnly())
+
         sales = Team.create(self.org, self.admin, "Sales")
         self.org.add_user(self.agent, OrgRole.AGENT, team=sales)
         self.org.add_user(self.editor, OrgRole.AGENT, team=sales)

@@ -1075,7 +1075,9 @@ class AnonymousOrg:
 
 class MockReadOnly:
     """
-    Context manager which mocks calls to .using("readonly") on querysets and records the model types.
+    Context manager which mocks calls to .using("readonly") on querysets and records the model types. Tally reads of
+    earlier days, which pick their connection by alias, are given the default one too, as the readonly connection is
+    outside the test's transaction.
     """
 
     def __init__(self, test_class, assert_models: set = None):
@@ -1084,18 +1086,21 @@ class MockReadOnly:
         self.actual_models = set()
 
     def __enter__(self):
-        self.patch_using = patch("django.db.models.query.QuerySet.using", autospec=True)
-        mock_using = self.patch_using.start()
-
         def using(qs, alias):
             if alias == "readonly":
                 self.actual_models.add(qs.model)
             return qs
 
-        mock_using.side_effect = using
+        self.patches = [
+            patch("django.db.models.query.QuerySet.using", autospec=True, side_effect=using),
+            patch("temba.orgs.models.connections", {"default": connection, "readonly": connection}),
+        ]
+        for p in self.patches:
+            p.start()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.patch_using.stop()
+        for p in self.patches:
+            p.stop()
 
         if self.assert_models:
             self.test_class.assertEqual(self.assert_models, self.actual_models)

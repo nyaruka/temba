@@ -1114,6 +1114,8 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         )
 
     def test_opened_chart(self):
+        self.enterContext(self.mockReadOnly())
+
         opened_url = reverse("tickets.ticket_chart", args=["opened"])
 
         cats = Topic.create(self.org, self.admin, "Cats")
@@ -1191,6 +1193,8 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         )
 
     def test_resptime_chart(self):
+        self.enterContext(self.mockReadOnly())
+
         opened_url = reverse("tickets.ticket_chart", args=["resptime"])
 
         # response times aren't tracked per team so agents can't fetch them
@@ -1229,6 +1233,8 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         )
 
     def test_replies_chart(self):
+        self.enterContext(self.mockReadOnly())
+
         replies_url = reverse("tickets.ticket_chart", args=["replies"])
 
         self.login(self.admin)
@@ -1290,6 +1296,8 @@ class TicketCRUDLTest(TembaTest, CRUDLTestMixin):
         )
 
     def test_leaderboard(self):
+        self.enterContext(self.mockReadOnly())
+
         leaderboard_url = reverse("tickets.ticket_leaderboard")
 
         self.assertRequestDisallowed(leaderboard_url, [None])

@@ -43,7 +43,9 @@ class MessageHistory(OrgPermsMixin, ChartViewMixin, SmartTemplateView):
         dates_set = set()
         values_by_scope = {SCOPE_TEXT_IN: defaultdict(int), SCOPE_TEXT_OUT: defaultdict(int)}
 
-        daily_totals = OrgTally.get_daily_totals_by_org(orgs, list(values_by_scope), since, until + timedelta(days=1))
+        daily_totals = OrgTally.get_daily_totals_by_org(
+            orgs, list(values_by_scope), since, until + timedelta(days=1), using="readonly"
+        )
         for (_org_id, day, scope), count in daily_totals.items():
             dates_set.add(day)
             values_by_scope[scope][day] += count
@@ -94,7 +96,7 @@ class WorkspaceStats(OrgPermsMixin, SmartTemplateView):
 
         totals = defaultdict(int)
         daily_totals = OrgTally.get_daily_totals_by_org(
-            orgs, [SCOPE_TEXT_IN, SCOPE_TEXT_OUT], since, until + timedelta(days=1)
+            orgs, [SCOPE_TEXT_IN, SCOPE_TEXT_OUT], since, until + timedelta(days=1), using="readonly"
         )
         for (org_id, _day, scope), count in daily_totals.items():
             totals[(org_id, scope)] += count

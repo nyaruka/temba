@@ -135,6 +135,8 @@ class DashboardTest(TembaTest):
 
     @cleanup(valkey=True)
     def test_child_workspaces(self):
+        self.enterContext(self.mockReadOnly())
+
         history_url = reverse("dashboard.dashboard_message_history")
         stats_url = reverse("dashboard.dashboard_workspace_stats")
 

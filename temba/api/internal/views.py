@@ -277,6 +277,7 @@ class OrgsEndpoint(ListAPIMixin, BaseEndpoint):
     pagination_class = ModifiedOnCursorPagination
 
     def get_queryset(self):
+        # stays on the default database as this is read straight after creating or joining a workspace
         return self.request.user.get_orgs(self.request)
 
 

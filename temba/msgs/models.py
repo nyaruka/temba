@@ -880,9 +880,10 @@ class BroadcastMsgCount(BaseSquashableCount):
         return broadcast.counts.all().sum()
 
     @classmethod
-    def bulk_annotate(cls, broadcasts):
+    def bulk_annotate(cls, broadcasts, *, using: str = "default"):
         counts = (
-            cls.objects.filter(broadcast_id__in=[b.id for b in broadcasts])
+            cls.objects.using(using)
+            .filter(broadcast_id__in=[b.id for b in broadcasts])
             .values("broadcast_id")
             .order_by("broadcast_id")
             .annotate(count=Sum("count"))
@@ -970,8 +971,8 @@ class MsgFolder(Enum):
         return org.counts.filter(scope=self._count_scope).sum()
 
     @classmethod
-    def get_counts(cls, org) -> dict:
-        counts = org.counts.prefix("msgs:folder:").scope_totals()
+    def get_counts(cls, org, *, using: str = "default") -> dict:
+        counts = org.counts.using(using).prefix("msgs:folder:").scope_totals()
         by_folder = {folder: counts.get(folder._count_scope, 0) for folder in cls}
 
         # TODO stuff counts for scheduled broadcasts and calls until we figure out what to do with them
@@ -1054,14 +1055,14 @@ class Label(OrgAsset, DependencyMixin):
 
         return qs.order_by("-label_msg_uuid")
 
-    def get_message_count(self):
+    def get_message_count(self, *, using: str = "default"):
         """
         Returns the count of messages tagged with this label, whatever folder they're in - a label is the user's own
         tag and is independent of where a message is filed. Deleted messages have their labellings removed so
         contribute nothing.
         """
 
-        return LabelCount.get_totals([self])[self]
+        return LabelCount.get_totals([self], using=using)[self]
 
     def toggle_label(self, msgs, add: bool):
         """
@@ -1126,11 +1127,13 @@ class LabelCount(BaseSquashableCount):
     label = models.ForeignKey(Label, on_delete=models.PROTECT, related_name="counts")
 
     @classmethod
-    def get_totals(cls, labels):
+    def get_totals(cls, labels, *, using: str = "default"):
         """
         Gets total counts for all the given labels
         """
-        counts = cls.objects.filter(label__in=labels).values_list("label_id").annotate(count_sum=Sum("count"))
+        counts = (
+            cls.objects.using(using).filter(label__in=labels).values_list("label_id").annotate(count_sum=Sum("count"))
+        )
         counts_by_label_id = {c[0]: c[1] for c in counts}
         return {lb: counts_by_label_id.get(lb.id, 0) for lb in labels}
 

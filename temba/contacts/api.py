@@ -179,15 +179,16 @@ class ContactsEndpoint(SearchLengthMixin, ListAPIMixin, WriteAPIMixin, BaseEndpo
             # Mirror GroupsEndpoint.filter_queryset: skip still-evaluating smart groups so we never page over a group
             # whose membership isn't yet populated.
             return (
-                org.groups.filter(uuid=group_uuid, is_active=True)
+                ContactGroup.objects.filter(org=org, uuid=group_uuid, is_active=True)
                 .exclude(status=ContactGroup.STATUS_INITIALIZING)
+                .using("readonly")
                 .first()
             )
 
         group_type = self.FOLDERS.get(self.request.query_params.get("folder", "active").lower())
         if not group_type:
             return None
-        return org.groups.filter(group_type=group_type).first()
+        return ContactGroup.objects.filter(org=org, group_type=group_type).using("readonly").first()
 
     def derive_sort(self) -> str:
         sort = self.request.query_params.get("sort") or ""
@@ -200,6 +201,9 @@ class ContactsEndpoint(SearchLengthMixin, ListAPIMixin, WriteAPIMixin, BaseEndpo
         return ("-" if desc else "") + key
 
     def get_queryset(self):
+        # only GETs list, so like other list endpoints the group and its membership are read from the readonly
+        # database, which can briefly lag behind an update made through this endpoint's POST (get_object stays on the
+        # default database)
         org = self.request.org
         group = self.derive_group()
         if group is None:
@@ -226,13 +230,14 @@ class ContactsEndpoint(SearchLengthMixin, ListAPIMixin, WriteAPIMixin, BaseEndpo
             # rewrite its search box to match what the results actually reflect. Only meaningful when searching.
             self._parsed_query = results.query if search and results.query else None
 
+            # loaded from the default database as the search index can know of a contact before a replica does
             return SearchSliceQuerySet(Contact, results.contact_uuids, offset=offset, total=results.total)
 
         # Patch .count() to read the precomputed ContactGroupCount squash (via get_member_count) instead of letting
         # DRF's paginator run a full SELECT COUNT(*) over the group membership — that COUNT is what makes the new list
         # far slower than the legacy view on large groups. Mirrors ContactListView.get_queryset.
-        qs = group.contacts.filter(org=org).order_by("-id")
-        patch_queryset_count(qs, group.get_member_count)
+        qs = group.contacts.filter(org=org).order_by("-id").using("readonly")
+        patch_queryset_count(qs, lambda: group.get_member_count(using="readonly"))
         return qs
 
     def filter_queryset(self, queryset):
